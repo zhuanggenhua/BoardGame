@@ -55,6 +55,9 @@ export const STATUS_IDS = {
 
     /** 工匠：纳米爆弹 */
     NANOBOMB: 'nanobomb',
+
+    /** 炽天使：眩光 */
+    DAZZLE: 'dazzle',
 } as const;
 
 export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
@@ -131,6 +134,10 @@ export const TOKEN_IDS = {
     NANOBOT: 'nanobot',
     SHOCK_BOT: 'shock_bot',
     HEAL_BOT: 'heal_bot',
+
+    /** 炽天使：飞行 / 神圣降临 */
+    FLIGHT: 'flight',
+    DIVINE_ARRIVAL: 'divine_arrival',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -261,6 +268,23 @@ export const ARTIFICER_DICE_FACE_IDS = {
 export type ArtificerDiceFaceId = (typeof ARTIFICER_DICE_FACE_IDS)[keyof typeof ARTIFICER_DICE_FACE_IDS];
 
 // ============================================================================
+// 骰面 ID（炽天使）
+// ============================================================================
+
+export const TIANSHI_DICE_FACE_IDS = {
+    /** 刀刃：骰子 1、2、3 */
+    BLADE: 'blade',
+    /** 羽翼：骰子 4 */
+    WING: 'wing',
+    /** 十字：骰子 5 */
+    CROSS: 'cross',
+    /** 盾牌：骰子 6 */
+    SHIELD: 'shield',
+} as const;
+
+export type TianshiDiceFaceId = (typeof TIANSHI_DICE_FACE_IDS)[keyof typeof TIANSHI_DICE_FACE_IDS];
+
+// ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
 
@@ -330,6 +354,7 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     ZHANSHUJIA: 'dicethrone:zhanshujia-cards',
     CURSED_PIRATE: 'dicethrone:cursed_pirate-cards',
     ARTIFICER: 'dicethrone:artificer-cards',
+    TIANSHI: 'dicethrone:tianshi-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -351,4 +376,5 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     ZHANSHUJIA: 'dicethrone:zhanshujia-status',
     CURSED_PIRATE: 'dicethrone:cursed_pirate-status',
     ARTIFICER: 'dicethrone:artificer-status',
+    TIANSHI: 'dicethrone:tianshi-status',
 } as const;

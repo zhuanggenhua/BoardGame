@@ -1,4 +1,5 @@
 import { isAndroidShellBuildMode, isNativeAndroidRuntime } from './mobile/androidRuntime';
+import { getLocalStorage } from './browserStorage';
 
 export const HOME_V2_PREVIEW_PATH = '/dev/home-v2-preview';
 export const HOME_ENTRY_STYLE_STORAGE_KEY = 'bg_home_entry_style';
@@ -28,29 +29,28 @@ function hasCurrentHomeEntryStyleVersion(search: string | URLSearchParams) {
 }
 
 function readStoredHomeEntryStyle() {
-    if (typeof window === 'undefined') {
-        return null;
-    }
+    const storage = getLocalStorage();
 
     try {
-        return normalizeHomeEntryStyle(window.localStorage.getItem(HOME_ENTRY_STYLE_STORAGE_KEY));
+        return normalizeHomeEntryStyle(storage?.getItem(HOME_ENTRY_STYLE_STORAGE_KEY));
     } catch {
         return null;
     }
 }
 
 function migrateStoredHomeEntryStyleIfNeeded() {
-    if (typeof window === 'undefined') {
+    const storage = getLocalStorage();
+    if (!storage) {
         return false;
     }
 
     try {
-        const storedVersion = window.localStorage.getItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY);
+        const storedVersion = storage.getItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY);
         if (storedVersion === HOME_ENTRY_STYLE_VERSION) {
             return false;
         }
-        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, 'classic');
-        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
+        storage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, 'classic');
+        storage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
         return true;
     } catch {
         return false;
@@ -104,8 +104,9 @@ export function persistHomeEntryStyle(style: HomeEntryStyle) {
     }
 
     try {
-        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, style);
-        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
+        const storage = getLocalStorage();
+        storage?.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, style);
+        storage?.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
     } catch {
         // ignore storage failures
     }

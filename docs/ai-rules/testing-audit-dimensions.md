@@ -19,13 +19,13 @@
 
 > 来源：从 `docs/ai-rules/testing-audit.md` 的旧“教训附录”无损搬入。此处只保留维度速览；具体审查方法见上方各 D 维度细则。
 
-> 所有审查/审计/新增功能验证时按维度检查。D1-D10 为原有维度（已扩展），D11-D57 为补充维度。
+> 所有审查/审计/新增功能验证时按维度检查。D1-D10 为原有维度（已扩展），D11-D58 为补充维度。
 
 | # | 维度 | 核心问题 |
 |---|------|---------|
 | D1 | 语义保真 | 实现是否忠实于权威描述？（多做/少做/做错）。**特别注意**：伤害/debuff 的作用目标是否与描述一致？custom action handler 中 targetId 来源是否正确？**实体筛选/收集操作的范围是否与描述一致？**（"本基地" vs "其他基地" vs "所有基地"等）**力量修正的主语是否与描述一致？**（"你/玩家 +N 力量" vs "随从 +N 力量"）**合法性、奖励条件、惩罚条件是否被拆开，禁止用奖励/惩罚口径反推动作非法。** |
 | D2 | 边界完整 | 所有限定条件是否全程约束？ |
-| D3 | 数据流闭环 | 定义→注册→执行→状态→验证→UI→i18n→测试 是否闭环？**写入→读取 ID 一致性**、**引擎 API 调用契约** |
+| D3 | 数据流闭环 | 定义→注册→执行→状态→验证→UI→i18n→测试 是否闭环？**写入→读取 ID 一致性**、**引擎 API 调用契约**。若静态定义 `effects: []` 但运行时由 helper / execute / abilityResolver / systems 等旁路消费，必须登记旁路消费证据映射；不得直接判未实现，也不得判静态定义已闭环。 |
 | D4 | 查询一致性 | 可被 buff/光环动态修改的属性是否走统一入口？ |
 | D5 | 交互完整 | 玩家决策点都有对应 UI？**交互模式与描述语义匹配？** **可选主效果与可选子动作是否被拆成不同入口？** **实现模式（额度 vs 交互）与描述语义匹配？** **UI 组件是否复用唯一来源？** |
 | D6 | 副作用传播 | 新增效果是否触发已有机制的连锁？**自伤、代价伤害、推拉、消灭、替换等副作用是否继续触发死亡后处理和后续被动？** |
@@ -41,7 +41,7 @@
 | D16 | **条件优先级** | reducer/validate 中多个条件分支（if/else if/else）的优先级是否正确？先命中的分支是否应该先命中？ |
 | D17 | **隐式依赖** | 功能是否依赖特定的调用顺序/状态前置条件但未显式检查？事件处理顺序变化是否会破坏功能？ |
 | D18 | **否定路径** | "不应该发生"的场景是否被测试覆盖？（如：额外额度不应消耗正常额度、基地限定额度不应影响其他基地）。**跳过整个效果、不执行某个可选子动作但继续主效果、因副作用死亡后不应继续作用于已死亡对象，必须分开覆盖。** |
-| D19 | **组合场景** | 两个独立正确的机制组合使用时是否仍然正确？（如：神秘花园额外额度 + 正常额度同时存在时的消耗行为） |
+| D19 | **关键组合场景** | 两个独立正确的机制组合后，是否会改变共享消费者、合法动作、流程态或最终权威状态？只补关键组合，不做无限全排列。（如：神秘花园额外额度 + 正常额度同时存在时的消耗行为） |
 | D20 | **状态可观测性** | 玩家能否从 UI 上区分不同来源的资源/额度？（如：正常随从额度 vs 基地额外额度在 UI 上是否可区分） |
 | D21 | **触发频率门控** | 触发型技能（`afterAttack`/`afterMove`/`onPhaseStart`/`onPhaseEnd`）是否有使用次数限制？同一效果的不同触发方式（攻击后 vs 代替攻击）是否互斥？ |
 | D22 | **伤害计算管线配置** | 使用 `createDamageCalculation` 时配置项是否正确？`autoCollectStatus`/`autoCollectTokens`/`autoCollectShields` 是否根据业务需求启用？伤害来源和目标是否正确？ |
@@ -55,7 +55,7 @@
 | D30 | **消灭流程时序与防止消灭白名单** | `processDestroyTriggers` 中：① onDestroy 必须在防止消灭触发器（基地能力/ongoing）之后执行，仅在确认消灭时触发；② pendingSave 判定使用 `PREVENT_DESTROY_SOURCE_IDS` 白名单，新增防止消灭能力时必须将其 sourceId 加入白名单，否则消灭不会被暂缓；③ 交互选项值必须快照所有 handler 需要的字段（如 `counterAmount`），因为来源实体可能在交互解决前离场 |
 | D31 | **效果拦截路径完整性** | 使用"注册+过滤"两步实现的拦截机制（如 `registerProtection` + `filterProtected*Events`），过滤函数是否在**所有事件产生路径**上被调用？① 直接命令执行（`execute()`/`reducer.ts` 后处理）② 交互解决（`afterEvents` in `systems.ts`）③ FlowHooks 后处理（`postProcess` in `index.ts`）④ 触发链递归（`processDestroyTriggers`/`processMoveTriggers` 内部产生的事件）。任一路径遗漏 = 保护机制在该路径下完全失效但不报错 |
 | D32 | **替代路径后处理对齐** | 代码中存在多条路径调用同一核心函数（如 `resolvePostDamageEffects`/`resolveAttack`）时，所有路径是否实现了相同的后处理检查集？替代/快捷路径（如潜行免伤、闪避、先手击杀）是否遗漏了规范路径中的 halt 检查、响应窗口、额外攻击等后处理逻辑？ |
-| D33 | **跨实体同类能力实现路径一致性** | 不同实体（英雄/派系/卡组/单位类型）中语义相同的能力（伤害/治疗/抽牌/移动/状态修正/额外行动/回收/限制等）是否使用一致的事件类型、注册模式和副作用处理？合理差异（语义本身不同导致的实现差异）需标注原因，不合理差异需修复 |
+| D33 | **跨实体同类能力实现路径一致性** | 不同实体（英雄/派系/卡组/单位类型）中语义相同的能力（伤害/治疗/抽牌/移动/状态修正/额外行动/回收/限制等）是否使用一致的事件类型、注册模式和副作用处理？合理差异（语义本身不同导致的实现差异）需标注原因，不合理差异需修复。同一批次里一部分能力走 `effects/custom action`，另一部分走 helper / execute / abilityResolver / systems 特判时，必须登记结构 finding 或写明为什么是合理差异。 |
 | D34 | **交互选项 UI 渲染模式正确性** | 交互选项的 `value` 字段是否包含会被 UI 误判为"卡牌选择"的字段（`defId`/`minionDefId`/`baseDefId`）？简单确认交互（是/否）是否显式声明 `displayMode: 'button'`？选项 `value` 中的字段是否都被交互处理器实际使用（禁止包含不必要的上下文字段）？UI 组件的 `isCardOption`/`extractDefId` 逻辑是否与交互设计意图一致？ |
 | D35 | **交互上下文快照完整性** | 交互创建时是否保存了所有必要的上下文信息到 `continuationContext`？**关键场景**：① 基地计分后创建交互（`afterScoring`），此时基地上的随从/ongoing 卡牌信息需要快照，因为 `BASE_CLEARED` 事件被延迟，但其他交互可能会修改基地状态；② 链式交互中，第一个交互解决后可能改变第二个交互的候选列表，需要在创建时快照；③ 交互处理器需要访问的任何"可能在交互解决前变化"的数据，都必须快照；④ **交互会跨基地清场/换基地/基地列表收缩后再解决时，不能只保存 `baseIndex`，必须同时保存稳定标识（如 `baseDefId`），handler 中先按稳定标识回找活体基地，再 fallback 到仍有效的 `baseIndex`。**`baseIndex` 只是快照位置，不是稳定身份。⑤ **快照字段与事务权威状态必须分离**：`continuationContext`/snapshot 负责保存 handler 需要的上下文，不能偷偷充当 deferred actions / deferred events / finalize 控制标志的唯一宿主；这类跨阶段事务状态必须有唯一权威宿主。**反模式**：只保存 `baseIndex`/`cardUid` 等引用，但不保存实体的详细信息（如力量值、defId、owner 等）；或把 `baseIndex` 当成跨时序稳定键使用；或把本应由 scoring frame / session 持有的 deferred 状态临时塞进 snapshot，导致 finalize 读不到。**审查补充**：只有 handler 真正需要跨时序重新定位基地时才应携带 `baseDefId` 等稳定标识，纯按钮确认类交互不要为了“保险”无脑塞入无用字段，避免引发 D34 的 UI 误判。**参考实现**：海盗湾（`base_pirate_cove`）的 `minionsSnapshot`；需要跨基地重定位时可参考 `resolveLiveBaseIndex` 一类 helper。 |
 | D35.1 | **多系统命令门控职责清晰** | 当 `responseWindow` 与 `simple-choice` 等交互并存时，命令是否合法应由哪个系统裁决？**强制规则**：若存在活动 `sys.responseWindow.current`，则响应牌/响应命令的放行权属于 `ResponseWindowSystem`；`SimpleChoiceSystem` 只能处理 simple-choice 自身的提交/超时/无响应窗口时的普通阻塞，不能一刀切拦截所有非 `SYS_` 命令。**测试要求**：必须同时验证 ① `sys.interaction.current` 仍存在 ② `sys.responseWindow.current` 仍存在 ③ 合法响应命令可以通过 ④ 非法普通命令仍被阻止。**典型缺陷**：系统状态看起来都对，但响应牌被“请先完成当前选择”误拦，属于门控职责串位，而不是单纯 UI 问题。 |
@@ -84,6 +84,7 @@
 | D55 | **共享合同多消费者一致性** | 同一业务合同若被 validator、候选生成、reaction session、UI 可见态、AI legal-actions、auto-continue/watchdog 等多层共同消费，修复或审计时是否只打穿了其中一层？**触发条件**：新增/修改 `validate(...)`、`canAdvancePhase`、`buildReactionOptions`、`optionsGenerator`、`canActivate*`、窗口可用态、`scoreBases`/`responseWindow`/`afterScoring` 共享 helper、AI 合法动作生成、空牌库/无候选自动结束阶段逻辑，或修“命令已放行但 UI 没入口 / prompt 里没有选项 / AI 提前结束阶段 / 召唤阶段有规则允许动作却只剩结束阶段 / watchdog 误关窗 / auto-continue 提前推进”类 bug 时必查。**核心原则**：共享合同不能只在一层为真。凡某条规则需要多个消费者共同表达，必须先找出唯一权威 helper/快照，再逐层确认所有消费者都读这份真相；只修 validator 而 reaction/AI/auto-continue 仍读旧字段，等于没有真正收口。**审查方法**：① 画出共享合同消费者清单：validator、候选生成、interaction/reaction prompt、UI 高亮、AI legal-actions、phase gate、watchdog/auto-continue、真实命令执行 ② 标出每层实际读取的字段/helper，查是否仍有旁路读取旧 `eligibleBaseIndices/currentPlayer/baseIndex/deck.length` 等近似值 ③ 对召唤阶段必须把“手牌普通召唤、召唤阶段事件/持续事件、弃牌堆复活、牺牲/替换型特殊召唤、空牌库自动跳过”放进同一合法动作矩阵 ④ 若问题发生在新增派系 / 新角色 / 新英雄，或当前配置 / UI 已标记为“实施中”的批次里，补审矩阵必须覆盖该批次对象全集；实施中批次包含多个派系 / 角色 / 英雄时，先按配置真相源列全集，并逐对象标明命中或不适用原因 ⑤ 至少补两类回归：一条锁命令/validator，一条锁上层消费者（如 live reaction/AI/auto-continue/空牌库自动跳过）⑥ 若用户反馈是“整轮都开不了/看不到入口/AI 直接跳过”，必须把上层消费者证明打到 L4，不能只用 L2 validator 代替。**典型缺陷模式**：❌ `ACTIVATE_SPECIAL` validate 已允许 afterScoring 当前结算基地，但 `buildReactionOptions()` 仍按 `eligibleBaseIndices` 过滤，prompt 里没有 special ❌ validator 已修，`canAdvancePhase()` / AI 仍按旧 eligible 语义判断“无动作可做”，直接给出 `advance-phase` ❌ 召唤阶段用牌库/手牌普通召唤判断“无动作”，漏掉复活死灵、火祀召唤、最终形态、召唤阶段持续事件这类不依赖牌库普通抽牌的合法动作 ❌ UI 高亮走 `canActivateSpecial`，命令校验走另一套 helper，导致“看起来能点，点了失败”或“命令能过，但入口被藏掉”。**修复策略**：① 抽共享 helper 表达唯一真相 ② 把所有消费者改为复用该 helper/快照 ③ 增加跨层合同测试，至少覆盖 validator + reaction/AI/auto-continue 中的两层。**排查信号**：① 用户描述是“所有/整轮/一类入口都开不了”，但单对象 executor/handler 单测正常 ② 修复后命令测试已绿，真实 prompt/AI 仍无入口 ③ 同一窗口里 human 玩家与 AI / UI 与命令层的结论不一致。**参考案例**：SmashUp `scoreBases -> ACTIVATE_SPECIAL` 曾只修到 validator，遗漏 `reactionSession.buildReactionOptions()` 与 `ai.canAdvancePhase()/buildSpecialActions()`，导致 afterScoring 当前结算基地即使已合法，live reaction 仍不暴露 special，AI 仍可能误给 `advance-phase`。召唤师战争中复活死灵、火祀召唤、最终形态曾在命令层合法，但 AI legal-actions 漏掉完整 payload，空牌库时策略只看到 `advance-phase`；莫古「狂热菌菇」这类召唤阶段持续事件也必须进入同一动作矩阵。 |
 | D56 | **nonattack / direct closeout 全路径收口一致性** | 非攻击分支、直伤分支、simple-choice followup、display-only 奖励骰后续链是否在**每条合法路径**都显式收口，而不是只在部分路径上把 `pendingAttack` 改成不可防御？**触发条件**：规则文本含“直接收口 / 不造成攻击伤害 / 造成真实伤害后结束 / 治疗/抽牌/养成后结束 / display-only 后继续攻击或继续收口”，或修“同 family 某分支能收口、某分支卡在可防御态 / 旧 prompt 结束了但攻击链还活着 / 某条 auto-resolve 路径漏 closeout”时必查。**核心原则**：`nonattack closeout` 不是一句抽象语义，而是每条合法路径都要明确表达的合同。自动单结果、无可选结果、choiceResolved 正常落地、followup handler 直出事件，这几条路只要漏任意一条，兄弟对象就会出现“L3 看似能跑、L4 仍漏收口”的假阳性。**强制补充**：① 不得只测“有选择窗的那条路径”；必须至少覆盖 `autoResolve(single outcome)` 与 `choiceResolved(multi outcome)` 两类。② 不得把 `pendingAttack?.isDefendable === false` 当成唯一收口标准；有些 seam 在 `resolveAttack/ATTACK_RESOLVED` 后会直接变成 `pendingAttack = null`。必须按所在 seam 同时断言：`TOKEN_RESPONSE_REQUESTED / ATTACK_DEFENSE_RESOLVED / pendingDamage / pendingAttack / ATTACK_RESOLVED` 中哪些应该存在、哪些不该存在。③ 只要本轮发现 1 个 family 分支漏 closeout，必须立刻扩审同 family 的 auto-resolve 与 choice-resolve 兄弟路径，不能只修单对象。**审查方法**：① 列出该 family 的所有合法收口路径（无候选、单候选自动执行、多候选选择、display-only 后 finalize/继续攻击）② 对每条路径分别写明“收口发生在哪个事件/哪个 reducer seam”③ 补至少 1 条“旧实现会保留错误可防御态或残留 pending”的红绿回归测试 ④ 若某兄弟对象只是 seam 不同而非 bug，必须在 evidence 明确写成“seam 裁定”，禁止误报实现缺失。**典型缺陷模式**：❌ 自然之怜 multi-choice 路径会 `isDefendable=false`，但同 family 的 `培育` 分支 choiceResolved 路径忘了 closeout，导致后续仍可进防御链 ❌ 只看 `isDefendable=false` 就把 `苦痛根系` 判成没收口，实际上该 seam 在 `ATTACK_RESOLVED` 后已直接 `pendingAttack=null` ❌ 只测 direct E2E 成功，不测 `resolveOffensivePreDefenseEffects -> CHOICE_RESOLVED -> resolveAttack` 的领域 seam，结果漏掉 auto-resolve/choice-resolve 分叉差异。**判定标准**：每条合法路径都能说明收口点、测试覆盖 auto-resolve + choice-resolve、最终权威态或本 seam 的收口态一致 → ✅；只证明某一条代表路径、或把不同 seam 的收口态混为一谈 → ❌。 |
 | D57 | **对象身份 / 归属 / 去向 provenance 一致性** | 当对象在流程中经历临时持有、控制迁移、宿主变化、附着/脱离、代打/代管、跨区再构造或“显示宿主”和“真实归属”分离时，系统是否仍保留可追溯的真实身份与归属信息，并把对象送往正确终点？**触发条件**：新增/修改对象转移、跨区重建、附着物/宿主物分离、临时控制、借用、代持、回收、弃置、放回牌库、移出游戏或任何“运行时持有者 ≠ 真实归属者/来源者”的机制时必查。**核心原则**：运行时持有者、当前控制者、显示宿主、来源操作者，不等于对象的真实归属或默认终点。凡规则只改变“谁在用/谁在持有/挂在谁身上/暂时由谁结算”，就必须把真实归属 provenance 单独保存；后续进入归属区、宿主区、来源区或默认回收区时，必须按这份 provenance 结算，而不是回退到当前活体上下文。**审查方法**：① 先画对象链路：真实归属、当前持有者、当前控制者、当前宿主、默认终点分别是谁/是什么 ② 核对事件与中间态：转移、打出、附着、离场、回收、跨区重建事件是否显式携带稳定 provenance，而不是只带当前上下文 ③ 检查 reducer / resolver：当来源区对象已经不可见或活体状态已变时，是否仍能依赖显式 provenance 正确重建对象并写入正确终点 ④ 至少补两类回归：一条“运行时持有/控制改变但真实归属不变”，一条“来源活体已不可见时仍进入正确终点”。**典型缺陷模式**：❌ 事件只记录当前持有者，导致后续跨区重建时把对象归给错误主体 ❌ 对象离开临时宿主后回到当前宿主区域，而不是规则约定的真实归属区 ❌ 来源对象清空/替换后，后续清理或回收退化成“按当前上下文随便找一个可写位置”。**判定标准**：真实 provenance 全程独立保存、终点写入不依赖易变活体上下文、测试覆盖“来源已不可见/上下文已变化”场景 → ✅；任一路径把当前上下文误当真实归属，或只在来源仍可见时才正确 → ❌。 |
+| D58 | **必选交互可完成性 / 空候选收口** | 任何会让真人或 AI 进入等待输入状态的交互，出生时是否已经有合法完成路径？**触发条件**：新增/修改 `createSimpleChoice`、`INTERACTION_REQUESTED`、`selectStatus`、`selectPlayer`、`selectHandCard`、`simple-choice`、`multistep-choice`、`optionsGenerator`，或修“无选项/无状态/空候选/无可点状态/卡住/不能继续/跳过/自动强制结束未触发/watchdog 未收口”类 bug 时必查。**核心原则**：交互创建不是 UI 展示行为，而是流程锁；创建前必须证明候选非空，或明确一种可完成收口语义：不创建交互并继续结算、自动跳过可选子效果、允许空选确认、提供跳过/取消并继续结算。强制效果但前置条件不满足时，不应创建必选交互；该子效果视为不发生，后续结算继续。可选效果必须有跳过/不执行路径，并验证有候选时不会误跳、无候选时不会卡住。**审查方法**：① 列出候选生成条件和最小/最大候选数 ② 在交互创建点前断言空候选分支如何收口 ③ 检查 UI、AI、watchdog/auto-continue 只是消费者，不得替代领域层创建门禁 ④ 至少补 1 条“无合法候选时不会创建必选交互或不会卡住”的负向断言；若存在合法候选，再补 1 条正常候选响应后最终权威状态和流程收口。**典型缺陷模式**：❌ 0 层状态/token 时仍创建必选 `selectStatus`，UI 只能显示“无状态”，玩家无法完成 ❌ optional 只有成功选项，没有跳过/取消 ❌ 自动强制结束只看超时或 UI 层提示，没处理空候选出生态。**参考案例**：DiceThrone 野蛮人“百折不挠 II”回血后，玩家没有任何合法状态可点却被锁进选择状态。**判定标准**：交互出生时有合法候选，或空候选分支在领域层明确跳过/空选/取消/不创建并继续结算，且测试覆盖空候选和有候选路径 → ✅；只证明 prompt 出现、UI 显示无选项、watchdog 最终安静或某一层自动跳过 → ❌。 |
 
 ### 维度选择指南
 
@@ -108,6 +109,7 @@
 | 修"阶段结束技能无效触发" | D8,D7,D2,D21 | D5,D3,D6,D23,D55 |
 | 修"阶段结束技能定义存在但真实阶段推进不触发/后续死亡链没跑" | D8,D6,D3,D55 | D1,D18,D21,D23 |
 | 修"AI 提前结束阶段/自动跳过/有合法召唤动作却只剩结束阶段" | D55,D8,D3,D5 | D6,D18,D23,D24 |
+| 修"静态定义空效果但运行时已生效/未实现误判" | D3,D33 | D1,D5,D8,D18,D55 |
 | 修"交互一闪而过" | D45,D46,D47 | D8,D9,D40 |
 | 修"重复触发" | D45,D40,D41,D42 | D8,D9,D43 |
 | 修"UI 显示不对" | D46,D15,D5 | D3,D34 |
@@ -119,10 +121,10 @@
 | 新增 UI 展示 | D5,D3,D15 | D1,D20 |
 | 新增基于位置计算的 UI 交互 | D15,D5,D1 | D2,D3 |
 | 修"UI 计算结果不符合描述" | D15,D1,D5 | D2,D3 |
-| 全面审查 | D1-D57 | — |
+| 全面审查 | D1-D58 | — |
 | 新增 buff/共享 | D4,D1,D6,D22 | D10,D13,D19 |
 | 重构事件流 | D3,D8,D9 | D10,D4,D17 |
-| 新增交互能力 | D5,D3,D1 | D2,D8,D21,D23,D24 |
+| 新增交互能力 | D5,D58,D3,D1 | D2,D8,D21,D23,D24 |
 | 新增额度/资源机制 | D7,D11,D12,D13,D18 | D14,D15,D16,D19,D20 |
 | 修"额度/资源消耗不对" | D11,D12,D13,D16 | D7,D15,D18 |
 | 修"UI 显示不对" | D15,D3,D12 | D20,D5 |
@@ -133,7 +135,8 @@
 | 迁移到新伤害计算管线 | D22,D3,D10 | D1,D4 |
 | 新增/修改底层验证函数 | D23,D1,D2 | D5,D8 |
 | 新增跨阶段/非常规目标机制 | D23,D1,D5 | D2,D8 |
-| 修"交互选项缺失/弹窗为空" | D24,D5,D3 | D8,D12,D17 |
+| 修"交互选项缺失/弹窗为空" | D24,D5,D58,D3 | D8,D12,D17 |
+| 修"无选项/无状态/空候选仍弹选择" | D58,D5,D18,D8 | D55,D37,D3 |
 | 修"功能在测试中正常但实际无效" | D8,D3,D10 | D5,D17 |
 | 修"操作影响了不该影响的数据" | D12,D11,D3 | D16,D18 |
 | 新增/修改 handler 共返 events+interaction | D24,D8,D12 | D3,D17 |
@@ -150,7 +153,7 @@
 | 修"替代路径下交互/动画不触发" | D32,D8,D5 | D17,D3 |
 | 新增/修改包含实体筛选的能力 | D1,D2,D3 | D5,D8,D12 |
 | 修"筛选结果为空/候选列表缺失" | D1,D2,D5 | D3,D12,D24 |
-| 修"操作后卡住/无法继续" | D39,D8,D3 | D5,D17 |
+| 修"操作后卡住/无法继续" | D58,D39,D8,D3 | D5,D17,D55 |
 | 修"交互完成后仍然 halt" | D39,D8,D5 | D3,D17 |
 | 新增/修改流程控制标志 | D39,D8,D17 | D3,D5 |
 | 修`scoreBases`/`afterScoring` 交互后效果丢失 | D12,D35,D36,D8 | D39,D24,D17 |

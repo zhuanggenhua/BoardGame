@@ -2,6 +2,7 @@ import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState }
 import {
     THE_GANG_COMMANDS,
     THE_GANG_EVENTS,
+    type ChipReturnedEvent,
     type HeistStartedEvent,
     type RoundEndedEvent,
     type ShowdownRevealedEvent,
@@ -14,6 +15,7 @@ export const THE_GANG_ACTION_ALLOWLIST = [
     THE_GANG_COMMANDS.START_HEIST,
     THE_GANG_COMMANDS.REDEAL_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
+    THE_GANG_COMMANDS.RETURN_CHIP,
     THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
@@ -25,6 +27,7 @@ export const THE_GANG_UNDO_ALLOWLIST = [
     THE_GANG_COMMANDS.START_HEIST,
     THE_GANG_COMMANDS.REDEAL_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
+    THE_GANG_COMMANDS.RETURN_CHIP,
     THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
@@ -81,6 +84,11 @@ const findHeistStartedEvent = (events: GameEvent[]): HeistStartedEvent | undefin
         event.type === THE_GANG_EVENTS.HEIST_STARTED,
     );
 
+const findChipReturnedEvent = (events: GameEvent[]): ChipReturnedEvent | undefined =>
+    events.find((event): event is ChipReturnedEvent =>
+        event.type === THE_GANG_EVENTS.CHIP_RETURNED,
+    );
+
 const findNextHeistEvent = (events: GameEvent[]): NextHeistStartedEvent | undefined =>
     events.find((event): event is NextHeistStartedEvent =>
         event.type === THE_GANG_EVENTS.NEXT_HEIST_STARTED,
@@ -127,6 +135,18 @@ export function formatTheGangActionEntry({
                 ...(payload.handSlot ? { hand: payload.handSlot === 'bottom' ? '下手' : '上手' } : {}),
             };
             return entry(command, [i18nSeg(payload.handSlot ? 'actionLog.takeChipHand' : 'actionLog.takeChip', params)]);
+        }
+        case THE_GANG_COMMANDS.RETURN_CHIP: {
+            const returned = findChipReturnedEvent(events);
+            if (!returned) return null;
+            const payload = command.payload as { handSlot?: 'top' | 'bottom' };
+            const params = {
+                player: actor,
+                round: returned.payload.round,
+                chip: returned.payload.chip,
+                ...(payload.handSlot ? { hand: payload.handSlot === 'bottom' ? '下手' : '上手' } : {}),
+            };
+            return entry(command, [i18nSeg(payload.handSlot ? 'actionLog.returnChipHand' : 'actionLog.returnChip', params)]);
         }
         case THE_GANG_COMMANDS.TAKE_EXIT_CHIP: {
             if (!hasEvent(events, THE_GANG_EVENTS.EXIT_CHIP_TAKEN)) return null;

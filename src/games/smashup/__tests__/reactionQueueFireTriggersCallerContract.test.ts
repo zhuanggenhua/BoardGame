@@ -50,6 +50,7 @@ describe('fireTriggers direct caller contract', () => {
       });
 
     expect(callers).toEqual([
+      { rel: 'abilities/munchkin_orcs.ts', timing: 'onActionPlayed', hasReplacementPhase: false },
       { rel: 'domain/duel.ts', timing: 'onDuelResolved', hasReplacementPhase: false },
       { rel: 'domain/duel.ts', timing: 'onDuelStarted', hasReplacementPhase: false },
       { rel: 'domain/reducer.ts', timing: 'onMinionDestroyed', hasReplacementPhase: true },

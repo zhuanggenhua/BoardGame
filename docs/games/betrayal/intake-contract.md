@@ -6,6 +6,22 @@
 - 用户素材根目录：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods`
 - 本轮目标：把本地素材转成后续易读、易实现、易索引的 intake 结果，而不是现在就完成玩法实现。
 
+### 1.1 2026-07-29 整牌库接续裁定
+
+本文件是首轮素材 intake 合同；整牌库发现牌的当前 S0 主合同已经迁到 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md`。后续引用本文件时必须按下面口径过滤旧结论：
+
+| 口径 | 当前裁定 |
+| --- | --- |
+| 官方基础游戏牌库 | 74 张游戏牌：43 张事件、22 张物品、9 张预兆 |
+| 当前整牌库主真相源 | 用户本地 TTS/Mod 图包、项目正式 atlas、完整裁图和 `full-deck-data-intake-contract.md`；百度、搜索结果、Wiki、旧 E2E、旧截图和当前运行池不能锁定逐卡字段 |
+| 事件 atlas | 已锁 43 张正面 + 1 个空黑格 + 1 张背面；E43「最深的壁橱」来自 frame 42，旧 TTS manifest 的 42 候选是旧 `ContainedObjects` 扫描口径，不是图包缺素材 |
+| 物品 atlas | 已锁 22 张正面 + 1 个空黑格 + 1 张背面；官方运行物品唯一覆盖 item frame 0-21 |
+| 物品 alias | `flashlight / lantern` 共用 frame 8，`map / notebook / journal / manuscript` 共用 frame 16；`lantern / notebook / journal / manuscript` 只作为 legacy / duplicate alias，不计入官方 22 张独立牌 |
+| 预兆 atlas | 已锁 9 张正面 frame 0-8；其它格子是牌背/非正面，不是第 10 张预兆 |
+| 当前状态 | S0 对象/素材/atlas 数量已闭合；整牌库仍为 `in_progress / downstream-blocked`，含义是可继续补合同和证据，但不能宣称整牌库完成，也不能进入 Board/UI、E2E 或截图验收 |
+
+若本文件下方首轮条目与上述裁定冲突，以 `full-deck-data-intake-contract.md` 的 6.15 合同层队列收口审计为准。
+
 ## 2. 真相源与对照源
 
 | 类型 | 现实含义 | 路径/链接 | 本轮角色 | 当前状态 |
@@ -66,8 +82,8 @@
 | `cards` | 12 | 牌背、玩家参考卡、中文参考卡 |
 | `explorers` | 13 | 已识别探索者角色牌 |
 | `monsters` | 3 | 已识别怪物/特殊角色卡 |
-| `tokens/explorers` | 2 | 已确认地图玩家指示物，来自 `384x336` 组 |
-| `tokens/monsters` | 2 | 已确认地图怪物 token，来自 `384x336` 组 |
+| `tokens/explorers` | 4 | 已确认地图玩家指示物，来自 `384x336` 组；Rebecca / Darryl 已从旧错图纠正 |
+| `tokens/monsters` | 43 | 已确认地图怪物 token：31 张用户点名的 3e 怪物 / Stunned token，以及小型怪物 1-6 双面图和正面裁片 |
 | `markers` | 28 | 数字、状态、资源标记 |
 
 资源映射真相源：`docs/games/betrayal/sources/image-index/runtime-resource-map.json`
@@ -91,6 +107,8 @@
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
 - 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 只能用牌背、对象名和类别临时维持可玩性，素材缺口必须记录在 intake / manifest / evidence，并向用户索要素材或锁定补源路径；不得误接错误拼页、marker 或其它无关素材，也不得把排障标签显示给玩家。
 - 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
+- 2026-07-31 `384x336` token 纠错：用户点名范围 `...EE7C83DC` 到 `...442F4782` 共 31 张，此前只登记 4 张，且 `...06AB53C7`、`...8EDF6B9A` 被误登记为 Rebecca / Darryl。现已全部落到 `tokens/monsters/*` 语义路径并生成同尺寸压缩产物；Rebecca / Darryl 已改回正确探索者 token 源图。证据见 `evidence/betrayal/full-audit/token-384x336-intake-correction-2026-07-31.md`。
+- 2026-07-31 木乃伊专项补充：旧版「木乃伊横行」规则要求「木乃伊怪物标记(大)」。虽然本轮已补齐 3e `384x336` 怪物 / Stunned token 组，但该组未发现木乃伊；当前代码仍引用 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`。用户批准先占位后，已新增明确写有“临时占位”的源图、压缩图、manifest 与 `runtime-resource-map.json` 记录；`evidence/betrayal/full-audit/mummy-token-source-search-2026-07-31.md` 已记录本地图包 `Mods\Images`、TTS、`Models`、`Assetbundles` 均未发现可确认木乃伊 token / portrait 源图。该对象正式素材状态仍必须保持 `blocked / visual-token-blocked`，不得把临时占位、其它怪物 token 或文字壳当成正式完成。
 - 山屋骰子素材真相已经从 TTS Workshop JSON 与本地解包文件锁定：
   - Workshop 真相源：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Workshop\3420850553.json`。
   - 真正的山屋 0/1/2 骰子是 `Custom_Model`，共 48 颗，使用同一模型 `MeshURL`：`https://steamusercontent-a.akamaihd.net/ugc/836952878380612616/2444D3E2AC5B69A7939369B3566A0941C2D881C9/`。
@@ -124,11 +142,28 @@
 
 - 探索者角色牌：已确认 13 张
 - 怪物/特殊角色卡：已确认 3 张
-- 探索者 / 怪物 token：当前确认 4 张，来自 `384x336` 组
+- 探索者 token：当前确认 4 张，来自 `384x336` 组
   - `tokens/explorers/jaden-jones.png`
   - `tokens/explorers/father-warren-leung.png`
+  - `tokens/explorers/rebecca-allen.png`
+  - `tokens/explorers/darryl-highla.png`
+- 怪物 / Stunned token：当前确认 31 张用户点名范围内的 3e token，来自 `384x336` 组；另有小型怪物 1-6 双面图和正面裁片
+  - `tokens/monsters/jacks-spirit.png`
+  - `tokens/monsters/head-of-the-house.png`
+  - `tokens/monsters/demon.png`
+  - `tokens/monsters/dark-queen.png`
+  - `tokens/monsters/ghost-shark.png`
+  - `tokens/monsters/construct.png`
+  - `tokens/monsters/bakeneko.png`
+  - `tokens/monsters/giant-wasp.png`
+  - `tokens/monsters/demon-dog.png`
   - `tokens/monsters/werewolf.png`
+  - `tokens/monsters/vampire.png`
+  - `tokens/monsters/faceless-man.png`
   - `tokens/monsters/ghost.png`
+  - `tokens/monsters/troll-right-hand.png`
+  - `tokens/monsters/giant-hair-monster.png`
+  - `tokens/monsters/troll-left-hand.png`
 - 牌背：已确认 5 张
 - 玩家/叛徒/怪物参考卡：已确认 6 张
 - 标记：已确认 28 张
@@ -142,9 +177,11 @@
 - 扫描 PDF 对应的规则书、剧本书、参考书具体分工
 - 剧本书 / 作祟文案 / 分阵营秘密阅读 / 开局朗读 / 结局朗读的玩家可见正文仍需回到已锁定原文或正式翻译原文后才能标 `locked`；当前整理稿、规则书口吻改写或目标摘要不能作为正式剧本原文。
 - 剩余探索者 token、其它怪物 token、状态 token 仍需逐类审查；不得再笼统写成“头像/模型/局部标记图待确认”
-- 其它物品正面仍需逐格确认；未确认前只允许在玩家 UI 显示对象名 + 类别 + 牌背临时承接，缺素材原因必须写入资源审计材料并进入补源/索要素材链路，不得作为完成态
+- 物品正面 atlas 的“逐格确认”已由 2026-07-29 整牌库合同覆盖：官方 22 张物品正面已锁定到 item frame 0-21；后续缺口不再是“其它物品正面缺素材”，而是物品效果的 UI 承接、组合测试和新增消费者再审。legacy alias 仍按 duplicate-alias 处理，不重复计数。
 
 ## 9. 后续实施入口
+
+2026-07-29 更新：本节是首轮 intake 遗留入口，不能自动接管当前执行队列。整牌库发现牌、事件/物品/预兆 atlas、duplicate-alias 和当前阻塞口径以 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md` 为准；进入 Board/UI、E2E、截图、完整作祟或剧本实现前，必须重新锁定目标、入口和验收口径。
 
 1. 先把当前候选资源从 `public/assets/betrayal/` 迁到 `public/assets/i18n/zh-CN/betrayal/`，并重新生成 manifest。
 2. 再从大拼版图中裁出房间板块、楼层板和可能的起始房间。

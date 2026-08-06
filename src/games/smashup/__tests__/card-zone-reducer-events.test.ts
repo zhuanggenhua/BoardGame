@@ -110,3 +110,65 @@ describe('HAND_SHUFFLED_INTO_DECK reducer', () => {
         expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['d1', 'h1']);
     });
 });
+
+describe('ACTION_PLAYED reducer', () => {
+    it('特殊行动已离开手牌时应使用事件 defId 兜底识别，不额外消耗行动额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    discard: [
+                        makeCard('salvage-1', 'munchkin_dwarves_salvage', 'action', '0'),
+                    ],
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const event: SmashUpEvent = {
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: {
+                playerId: '0',
+                cardUid: 'salvage-1',
+                defId: 'munchkin_dwarves_salvage',
+            },
+            timestamp: 0,
+        } as any;
+
+        const newState = reduce(state, event);
+        expect(newState.players['0'].actionsPlayed).toBe(1);
+        expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['salvage-1']);
+    });
+
+    it('牌仍在手牌时应优先使用牌区 defId，不允许事件 payload 把普通行动伪装成特殊行动', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('mine-1', 'munchkin_dwarves_mine', 'action', '0'),
+                    ],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const event: SmashUpEvent = {
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: {
+                playerId: '0',
+                cardUid: 'mine-1',
+                defId: 'munchkin_dwarves_salvage',
+            },
+            timestamp: 0,
+        } as any;
+
+        const newState = reduce(state, event);
+        expect(newState.players['0'].actionsPlayed).toBe(1);
+        expect(newState.players['0'].hand).toEqual([]);
+        expect(newState.players['0'].discard.map(card => card.defId)).toEqual(['munchkin_dwarves_mine']);
+    });
+});

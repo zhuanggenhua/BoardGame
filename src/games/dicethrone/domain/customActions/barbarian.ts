@@ -17,6 +17,7 @@ import type {
 } from '../types';
 import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { isRemovableStatusId } from '../statusRemoval';
 
 // ============================================================================
 // 閲庤洰浜烘妧鑳藉鐞嗗櫒
@@ -357,10 +358,20 @@ function handleBarbarianSlapUnblockableIfFourKind({ attackerId, state, timestamp
 }
 
 /**
- * 百折不挠 II：仅当攻击骰至少 3 个相同数字时，才允许移除自身 1 个状态。
+ * 百折不挠 II：仅当攻击骰至少 3 个相同数字，且自身有可移除状态时，才允许移除自身 1 个状态。
  */
 function handleBarbarianSteadfastRemoveStatusIfThreeKind({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     if (getAttackMaxDuplicateValueCount(state) < 3) {
+        return [];
+    }
+    const attacker = state.players[attackerId];
+    const hasRemovableStatus = [attacker?.statusEffects, attacker?.tokens].some((entries) =>
+        Object.entries(entries ?? {}).some(([statusId, stacks]) =>
+            stacks > 0 && isRemovableStatusId(state, statusId)
+        )
+    );
+
+    if (!hasRemovableStatus) {
         return [];
     }
 

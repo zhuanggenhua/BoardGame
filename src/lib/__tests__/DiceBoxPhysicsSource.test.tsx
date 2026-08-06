@@ -58,15 +58,20 @@ describe('DiceBoxPhysicsSource', () => {
                 recoverOutOfBoundsDice: vi.fn(),
                 freezeSettledDice: vi.fn(),
                 separateOverlappingDice: vi.fn(),
+                settleDiceIntoSafeSpread: vi.fn(),
                 getPhysicsState: vi.fn(),
-                hasDice: vi.fn().mockReturnValue(false),
+                hasDice: vi.fn()
+                    .mockReturnValueOnce(false)
+                    .mockReturnValueOnce(false)
+                    .mockReturnValueOnce(true)
+                    .mockReturnValue(true),
                 rollToValues: vi.fn().mockResolvedValue(undefined),
-                rerollToValues: vi.fn(),
+                rerollToValues: vi.fn().mockResolvedValue(undefined),
                 syncSettledValues: vi.fn(),
                 previewValues: vi.fn(),
                 clear: vi.fn(),
                 removeDice: vi.fn(),
-                restoreValues: vi.fn(),
+                restoreValues: vi.fn().mockResolvedValue(undefined),
             };
             createEngineMock.mockResolvedValue(engineMock);
 
@@ -88,7 +93,23 @@ describe('DiceBoxPhysicsSource', () => {
             await waitFor(() => {
                 expect(createEngineMock).toHaveBeenCalledTimes(1);
             });
-            expect(engineMock.rollToValues).toHaveBeenCalledWith([6]);
+            await waitFor(() => {
+                expect(engineMock.rerollToValues).toHaveBeenCalledWith([0], [6], []);
+            });
+            expect(engineMock.restoreValues).toHaveBeenCalledWith([6]);
+            expect(engineMock.rollToValues).not.toHaveBeenCalled();
+            expect(engineMock.recoverOutOfBoundsDice).toHaveBeenCalledWith({
+                strictProjectedBounds: true,
+            });
+            expect(engineMock.separateOverlappingDice).toHaveBeenCalledTimes(1);
+            expect(engineMock.separateOverlappingDice).toHaveBeenCalledWith({
+                settleAfter: true,
+            });
+            expect(engineMock.settleDiceIntoSafeSpread).toHaveBeenCalledTimes(1);
+            expect(engineMock.freezeSettledDice).toHaveBeenCalledTimes(2);
+            expect(
+                engineMock.restoreValues.mock.invocationCallOrder[0],
+            ).toBeLessThan(engineMock.rerollToValues.mock.invocationCallOrder[0]);
         } finally {
             HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
             Object.defineProperty(globalThis, 'ResizeObserver', {
@@ -107,6 +128,7 @@ describe('DiceBoxPhysicsSource', () => {
             recoverOutOfBoundsDice: vi.fn(),
             freezeSettledDice: vi.fn(),
             separateOverlappingDice: vi.fn(),
+            settleDiceIntoSafeSpread: vi.fn(),
             getPhysicsState: vi.fn(),
             hasDice: vi.fn().mockReturnValue(false),
             rollToValues: vi.fn(),
@@ -154,6 +176,7 @@ describe('DiceBoxPhysicsSource', () => {
             recoverOutOfBoundsDice: vi.fn(),
             freezeSettledDice: vi.fn(),
             separateOverlappingDice: vi.fn(),
+            settleDiceIntoSafeSpread: vi.fn(),
             getPhysicsState: vi.fn(),
             hasDice: vi.fn().mockReturnValue(false),
             rollToValues: vi.fn(),

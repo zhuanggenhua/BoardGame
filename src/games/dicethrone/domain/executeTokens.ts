@@ -8,13 +8,14 @@ import type {
     DiceThroneCore,
     DiceThroneCommand,
     DiceThroneEvent,
+    TurnPhase,
     CpChangedEvent,
     StatusRemovedEvent,
     PendingDamage,
     DamageDealtEvent,
     StatusAppliedEvent,
 } from './types';
-import { getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace, getRollerId, getTokenStackLimit } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -53,7 +54,8 @@ export function executeTokenCommand(
     state: DiceThroneCore,
     command: DiceThroneCommand,
     random: RandomFn,
-    timestamp: number
+    timestamp: number,
+    phase: TurnPhase = 'setup',
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
 
@@ -62,9 +64,70 @@ export function executeTokenCommand(
             const { tokenId, amount } = command.payload as { tokenId: string; amount: number };
             const pendingDamage = state.pendingDamage;
             const deferredDamageEvents: NonNullable<PendingDamage['deferredDamageEvents']> = [];
-            
+
             if (!pendingDamage) {
-                console.warn('[DiceThrone] USE_TOKEN: no pending damage');
+                const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
+                const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+                if (
+                    !tokenDef
+                    || !isRollPhase
+                    || !tokenDef.activeUse?.timing?.includes('duringRoll')
+                    || getRollerId(state, phase) !== command.playerId
+                    || !state.pendingAttack
+                    || !Number.isInteger(amount)
+                    || amount <= 0
+                ) {
+                    console.warn('[DiceThrone] USE_TOKEN: no pending damage or invalid roll timing');
+                    break;
+                }
+
+                const availableAmount = state.players[command.playerId]?.tokens[tokenId] ?? 0;
+                if (!getTokenUseOptions(tokenDef, availableAmount).includes(amount)) {
+                    console.warn('[DiceThrone] USE_TOKEN: invalid roll token amount');
+                    break;
+                }
+
+                const { events: tokenEvents, result } = processTokenUsage(
+                    state,
+                    tokenDef,
+                    command.playerId,
+                    amount,
+                    random,
+                    undefined,
+                    timestamp,
+                );
+                events.push(...tokenEvents);
+
+                if (result.success && tokenDef.activeUse.customActionId) {
+                    const targetId = phase === 'defensiveRoll'
+                        ? state.pendingAttack.attackerId
+                        : (state.pendingAttack.defenderId ?? state.pendingAttack.attackerId);
+                    const handler = getCustomActionHandler(tokenDef.activeUse.customActionId);
+                    if (handler) {
+                        events.push(...handler({
+                            ctx: {
+                                attackerId: command.playerId,
+                                defenderId: targetId,
+                                sourceAbilityId: tokenId,
+                                state,
+                                damageDealt: 0,
+                                timestamp,
+                            },
+                            targetId,
+                            attackerId: command.playerId,
+                            sourceAbilityId: tokenId,
+                            state,
+                            timestamp,
+                            random,
+                            action: {
+                                type: 'custom',
+                                target: 'self',
+                                customActionId: tokenDef.activeUse.customActionId,
+                                params: { phase },
+                            },
+                        }));
+                    }
+                }
                 break;
             }
             

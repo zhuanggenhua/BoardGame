@@ -102,6 +102,21 @@ export function getValidShourenFreezeTargets(state: SummonerWarsCore, playerId: 
   return targets;
 }
 
+/** 获取“灼烧”可选择的单位：己方召唤师 2 格内任意阵营的士兵或英雄。 */
+export function getHuijinScorchTargets(state: SummonerWarsCore, playerId: PlayerId): BoardUnit[] {
+  const summoner = getSummoner(state, playerId);
+  if (!summoner) return [];
+  const targets: BoardUnit[] = [];
+  for (const ownerId of ['0', '1'] as PlayerId[]) {
+    for (const unit of getPlayerUnits(state, ownerId)) {
+      if (unit.card.unitClass !== 'common' && unit.card.unitClass !== 'champion') continue;
+      if (manhattanDistance(summoner.position, unit.position) > 2) continue;
+      targets.push(unit);
+    }
+  }
+  return targets;
+}
+
 /** 获取相邻格子 */
 export function getAdjacentCells(coord: CellCoord): CellCoord[] {
   return getAdjacentPositionsEngine(coord, BOARD_ROWS, BOARD_COLS);
@@ -209,12 +224,6 @@ export function findUnitPositionByInstanceId(state: SummonerWarsCore, instanceId
 /** 按 instanceId 查找棋盘上的单位 */
 export function findUnitByInstanceId(state: SummonerWarsCore, instanceId: string): BoardUnit | undefined {
   const result = findOnGrid<BoardCell>(state.board, (cell) => !!cell.unit && cell.unit.instanceId === instanceId);
-  return result ? result.cell.unit! : undefined;
-}
-
-/** @deprecated 同类型多单位时只返回第一个，应使用 findUnitByInstanceId */
-function findUnitByCardId(state: SummonerWarsCore, cardId: string): BoardUnit | undefined {
-  const result = findOnGrid<BoardCell>(state.board, (cell) => !!cell.unit && cell.unit.cardId === cardId);
   return result ? result.cell.unit! : undefined;
 }
 
@@ -483,7 +492,9 @@ export function canAttack(
     // 远程：最多3格直线，路径必须无遮挡
     if (distance > RANGED_ATTACK_RANGE || distance === 0) return false;
     if (!isInStraightLine(attacker, target)) return false;
-    return isRangedPathClear(state, attacker, target, attackerUnit.owner);
+    const canPierceUnits = state.turnNumber === attackerUnit.summonedTurnNumber
+      && getUnitAbilities(attackerUnit, state).includes('shadow_piercing_light');
+    return isRangedPathClear(state, attacker, target, attackerUnit.owner, canPierceUnits);
   }
 }
 
@@ -1204,7 +1215,15 @@ export function canAttackEnhanced(
     if (distance > range || distance === 0) return false;
     if (!isInStraightLine(attacker, target)) return false;
     const canFlameBreathThroughUnits = getUnitAbilities(attackerUnit, state).includes('huijin_flame_breath');
-    return isRangedPathClear(state, attacker, target, attackerUnit.owner, canFlameBreathThroughUnits);
+    const canPierceUnits = state.turnNumber === attackerUnit.summonedTurnNumber
+      && getUnitAbilities(attackerUnit, state).includes('shadow_piercing_light');
+    return isRangedPathClear(
+      state,
+      attacker,
+      target,
+      attackerUnit.owner,
+      canFlameBreathThroughUnits || canPierceUnits,
+    );
   }
 }
 

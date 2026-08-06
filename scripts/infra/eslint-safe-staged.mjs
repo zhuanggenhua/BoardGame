@@ -22,7 +22,19 @@ function resolveEslintCli(startDir) {
 const eslintCli = resolveEslintCli(rootDir);
 
 const allFiles = process.argv.slice(2);
-const INITIAL_BATCH_SIZE = 20;
+const STABLE_ESLINT_NODE_OPTIONS = '--max-old-space-size=8192';
+const INITIAL_BATCH_SIZE = 5;
+
+function mergeNodeOptions(extraOption, existingValue = process.env.NODE_OPTIONS) {
+    const trimmedExtra = extraOption?.trim();
+    const trimmedExisting = existingValue?.trim();
+    if (!trimmedExtra) return trimmedExisting;
+    if (!trimmedExisting) return trimmedExtra;
+    return trimmedExisting.includes(trimmedExtra)
+        ? trimmedExisting
+        : `${trimmedExisting} ${trimmedExtra}`;
+}
+
 function chunkFiles(files, batchSize) {
     const batches = [];
     for (let index = 0; index < files.length; index += batchSize) {
@@ -40,7 +52,7 @@ function runEslint(files) {
                 cwd: rootDir,
                 env: {
                     ...process.env,
-                    NODE_OPTIONS: '--max-old-space-size=4096',
+                    NODE_OPTIONS: mergeNodeOptions(STABLE_ESLINT_NODE_OPTIONS),
                 },
                 stdio: 'inherit',
             },

@@ -28,6 +28,7 @@ export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   huijin: 7,
   shouren: 8,
   yongheng: 9,
+  shadow: 10,
 };
 
 // ============================================================================
@@ -173,8 +174,25 @@ export const selectFaction = async (page: Page, factionIndex: number) => {
 
 export const selectFactionById = async (page: Page, factionId: string) => {
   const factionCard = getFactionCard(page, factionId);
-  await expect(factionCard).toBeVisible({ timeout: 10000 });
-  await factionCard.click();
+  const factionGrid = page.getByTestId('sw-faction-grid');
+  await expect(factionGrid).toBeVisible({ timeout: 10000 });
+
+  const pageCount = Number((await factionGrid.getAttribute('data-page-count')) ?? '1');
+  for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+    if (await factionCard.isVisible().catch(() => false)) {
+      await expect(factionCard).toBeInViewport();
+      await factionCard.click();
+      return;
+    }
+
+    const nextPageButton = page.getByTestId('sw-faction-page-next');
+    await expect(nextPageButton).toBeEnabled({ timeout: 5000 });
+    await nextPageButton.click();
+    await expect.poll(async () => factionGrid.getAttribute('data-page')).toBe(String(pageIndex + 2));
+    await expect(factionCard).toBeInViewport();
+  }
+
+  throw new Error(`未在阵营分页中找到 ${factionId}`);
 };
 
 export const clickFactionReady = async (page: Page) => {

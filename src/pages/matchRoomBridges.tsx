@@ -70,7 +70,14 @@ export const TutorialDispatchBridge = ({ children }: { children: ReactNode }) =>
         if (!isTutorialMode || !state) return;
         const tutorial = (state as MatchState).sys.tutorial;
         if (!tutorial) return;
-        const sig = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}`;
+        const sig = [
+            tutorial.active,
+            tutorial.stepIndex,
+            tutorial.step?.id ?? '',
+            tutorial.step?.aiActions?.length ?? 0,
+            tutorial.aiActions?.length ?? 0,
+            tutorial.pendingAnimationAdvance ?? false,
+        ].join('-');
         if (lastSyncRef.current === sig) return;
         lastSyncRef.current = sig;
         contextRef.current.syncTutorialState(tutorial);

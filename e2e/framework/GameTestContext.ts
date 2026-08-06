@@ -26,6 +26,7 @@ import {
     PYROMANCER_DICE_FACE_IDS,
     SAMURAI_DICE_FACE_IDS,
     SHADOW_THIEF_DICE_FACE_IDS,
+    TIANSHI_DICE_FACE_IDS,
     TREANT_DICE_FACE_IDS,
     ZHANSHUJIA_DICE_FACE_IDS,
     CURSED_PIRATE_DICE_FACE_IDS,
@@ -338,6 +339,7 @@ function normalizeDiceThroneExtraDice(
             ninja: [NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.MASK],
             zhanshujia: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL],
             cursed_pirate: [CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.SKULL],
+            tianshi: [TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.WING, TIANSHI_DICE_FACE_IDS.CROSS, TIANSHI_DICE_FACE_IDS.SHIELD],
         };
         const normalized = Math.max(1, Math.min(6, Math.floor(value))) - 1;
         return faceMap[characterId]?.[normalized] ?? null;
@@ -1440,7 +1442,14 @@ export class GameTestContext {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness.state.get();
             const current = state.sys?.interaction?.current;
-            return current?.data?.options || [];
+            const data = current?.data;
+            if (typeof data?.optionsGenerator === 'function') {
+                const generatedOptions = data.optionsGenerator(state, data);
+                if (Array.isArray(generatedOptions)) {
+                    return generatedOptions;
+                }
+            }
+            return data?.options || [];
         });
     }
 
@@ -1460,7 +1469,10 @@ export class GameTestContext {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const interaction = state?.sys?.interaction?.current;
-            const options = interaction?.data?.options ?? [];
+            const data = interaction?.data;
+            const options = typeof data?.optionsGenerator === 'function'
+                ? data.optionsGenerator(state, data)
+                : data?.options ?? [];
             const option = options.find((entry: any) => entry.id === id);
             return {
                 interactionPlayerId: interaction?.playerId ?? null,

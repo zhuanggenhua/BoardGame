@@ -166,7 +166,7 @@ describe('diceThroneCriticalImageResolver', () => {
     });
 
     it('玩家面板布局调参必须包含 CenterBoard 所需的尺寸字段', () => {
-        for (const characterId of ['monk', 'gunslinger', 'samurai'] as const) {
+        for (const characterId of ['monk', 'gunslinger', 'samurai', 'tianshi'] as const) {
             const tuning = getPlayerBoardUiTuning(characterId);
 
             expect(tuning.playerBoardBaseHeightVw, `${characterId} 缺少 playerBoardBaseHeightVw`).toBeGreaterThan(0);
@@ -175,7 +175,7 @@ describe('diceThroneCriticalImageResolver', () => {
         }
     });
 
-    it('旧六名英雄玩家面板改用 v2 布局与新面板尺寸', () => {
+    it('新版玩家面板角色使用 v2 布局与对应面板尺寸', () => {
         const expectedDimensions = {
             barbarian: { width: 2048, height: 1260 },
             monk: { width: 2048, height: 1260 },
@@ -183,6 +183,7 @@ describe('diceThroneCriticalImageResolver', () => {
             paladin: { width: 2048, height: 1250 },
             pyromancer: { width: 2048, height: 1260 },
             shadow_thief: { width: 2048, height: 1260 },
+            tianshi: { width: 3643, height: 2234 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {

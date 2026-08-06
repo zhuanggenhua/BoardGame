@@ -1,4 +1,179 @@
 {
+  "configReview": {
+    "title": "骰子王权配置表",
+    "actions": {
+      "back": "返回",
+      "clearEdits": "清空修改",
+      "submitBatch": "提交 {{count}} 处修改",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "magnify": "放大查看 {{name}}",
+      "closePreview": "关闭预览"
+    },
+    "stats": {
+      "compactStatus": "{{version}}｜显示 {{visible}} / {{total}}｜本页 {{pageRows}}"
+    },
+    "filters": {
+      "searchPlaceholder": "搜索英雄、卡牌、技能、标记、字段值…",
+      "allCharacters": "全部英雄"
+    },
+    "types": {
+      "all": "全部类型",
+      "character": "英雄",
+      "diceFace": "骰面",
+      "ability": "技能",
+      "card": "卡牌",
+      "token": "标记/状态"
+    },
+    "columns": {
+      "image": "卡图",
+      "name": "名称",
+      "id": "编号",
+      "character": "英雄",
+      "rowType": "类型",
+      "sourceContexts": "配置来源",
+      "startingCp": "开局 CP",
+      "startingHealth": "开局生命",
+      "cpMax": "CP 上限",
+      "handLimit": "手牌上限",
+      "startingHandSize": "起手牌数",
+      "diceDefinitionId": "骰子定义",
+      "diceValue": "骰值",
+      "diceSymbols": "骰面符号",
+      "diceSprite": "骰子素材",
+      "abilityType": "技能类型",
+      "trigger": "触发条件",
+      "tags": "标签",
+      "effects": "效果配置",
+      "variants": "变体",
+      "initialAbilityLevel": "初始技能等级",
+      "passiveAbilities": "被动能力",
+      "cardType": "卡牌类型",
+      "cpCost": "CP 费用",
+      "timing": "使用时机",
+      "description": "描述",
+      "playCondition": "使用条件",
+      "isAttackModifier": "攻击修正",
+      "previewAtlas": "卡图图集",
+      "previewIndex": "卡图索引",
+      "sourceAtlasIndex": "源图索引",
+      "tokenCategory": "标记分类",
+      "stackLimit": "堆叠上限",
+      "initialTokenAmount": "初始标记",
+      "initialStatusAmount": "初始状态",
+      "passiveTrigger": "被动触发",
+      "activeUse": "主动使用",
+      "frameId": "帧编号",
+      "tokenAtlasId": "标记图集",
+      "statusAtlasId": "状态图集",
+      "statusAtlasPath": "状态图集路径",
+      "sfxKey": "音效"
+    },
+    "fields": {
+      "name": "名称",
+      "id": "编号",
+      "character": "英雄",
+      "rowType": "类型",
+      "sourceContexts": "配置来源",
+      "startingCp": "开局 CP",
+      "startingHealth": "开局生命",
+      "cpMax": "CP 上限",
+      "handLimit": "手牌上限",
+      "startingHandSize": "起手牌数",
+      "diceDefinitionId": "骰子定义",
+      "diceValue": "骰值",
+      "diceSymbols": "骰面符号",
+      "diceSprite": "骰子素材",
+      "abilityType": "技能类型",
+      "trigger": "触发条件",
+      "tags": "标签",
+      "effects": "效果配置",
+      "variants": "变体",
+      "initialAbilityLevel": "初始技能等级",
+      "passiveAbilities": "被动能力",
+      "cardType": "卡牌类型",
+      "cpCost": "CP 费用",
+      "timing": "使用时机",
+      "description": "描述",
+      "playCondition": "使用条件",
+      "isAttackModifier": "是否攻击修正",
+      "previewAtlas": "卡图图集",
+      "previewIndex": "卡图索引",
+      "sourceAtlasIndex": "源图索引",
+      "tokenCategory": "标记分类",
+      "stackLimit": "堆叠上限",
+      "initialTokenAmount": "初始标记数量",
+      "initialStatusAmount": "初始状态数量",
+      "passiveTrigger": "被动触发配置",
+      "activeUse": "主动使用配置",
+      "frameId": "帧编号",
+      "tokenAtlasId": "标记图集",
+      "statusAtlasId": "状态图集",
+      "statusAtlasPath": "状态图集路径",
+      "sfxKey": "音效"
+    },
+    "values": {
+      "boolean": {
+        "true": "是",
+        "false": "否"
+      },
+      "cardType": {
+        "action": "行动牌",
+        "upgrade": "升级牌"
+      },
+      "timing": {
+        "main": "主要阶段",
+        "roll": "掷骰阶段",
+        "instant": "瞬时"
+      },
+      "abilityType": {
+        "offensive": "进攻",
+        "defensive": "防御",
+        "utility": "功能",
+        "passive": "被动"
+      },
+      "tokenCategory": {
+        "buff": "正面状态",
+        "debuff": "负面状态",
+        "consumable": "可消耗标记"
+      },
+      "tags": {
+        "defensive": "防御",
+        "ultimate": "终极技",
+        "unblockable": "不可防御",
+        "uninterruptible": "不可打断"
+      }
+    },
+    "feedback": {
+      "pendingCount": "待提交 {{count}} 处",
+      "invalidCount": "{{count}} 处格式错误",
+      "emptyCell": "空",
+      "cellEditHint": "双击单元格修改，最后统一提交",
+      "rawValueLabel": "当前值",
+      "invalidNumber": "请输入数字",
+      "invalidBoolean": "请输入 是/否",
+      "initialBatchContent": "我想提交 {{count}} 处骰子王座配置修改，请审查是否应该进入配置源。"
+    },
+    "audio": {
+      "preview": "试听 {{name}}",
+      "stop": "停止 {{name}}",
+      "loading": "正在加载 {{name}}",
+      "missing": "音效文件未找到",
+      "loadFailed": "音效列表加载失败"
+    },
+    "tableScroll": {
+      "primaryHint": "横向内容请使用底部原生滚动条或触控板横滑",
+      "secondaryHint": "普通滚轮上下滚动；双击单元格后再修改"
+    },
+    "pagination": {
+      "visibleRange": "当前显示 {{start}}-{{end}} / {{total}}",
+      "pageSize": "每页",
+      "pageStatus": "第 {{page}} / {{total}} 页"
+    },
+    "material": {
+      "noPreview": "此行不是卡牌，或卡图未配置"
+    }
+  },
   "phase": {
     "title": "回合顺序",
     "setup": {
@@ -177,6 +352,12 @@
       "description": [
         "负面状态效果，上限 3。引爆时按数量造成 1/3/5 点伤害；维护阶段可尝试移除。"
       ]
+    },
+    "dazzle": {
+      "name": "眩光",
+      "description": [
+        "持有者下次进攻掷骰阶段结束时移除此状态并投 1 骰：1 点攻击无效；2-3 点本次攻击伤害减半并向上取整；4-6 点正常结算。"
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -262,6 +443,24 @@
       "name": "神圣祝福",
       "description": [
         "生命值降到 0 时，移除此标记并将生命值回到 1。此标记无法被任何方式移除、转移或偷取，不叠加。"
+      ]
+    },
+    "flight": {
+      "name": "飞行",
+      "description": [
+        "任意掷骰阶段可花费 1 个飞行并投 2 骰；若任一骰为 6，则进攻阶段使本次攻击不可防御，防御阶段忽略本次即将受到的全部伤害。"
+      ]
+    },
+    "divine_arrival": {
+      "name": "神圣降临",
+      "description": [
+        "自己的维持阶段，对所有真实对手各造成等同于神圣降临层数的伤害。不可转移，可被移除。"
+      ]
+    },
+    "dazzle": {
+      "name": "眩光",
+      "description": [
+        "持有者下次进攻掷骰阶段结束时移除此状态并投 1 骰：1 点攻击无效；2-3 点本次攻击伤害减半并向上取整；4-6 点正常结算。"
       ]
     },
     "loaded": {
@@ -454,7 +653,8 @@
       "damageBoost": "增伤",
       "damageReduction": "减伤",
       "evasionAttempt": "闪避判定",
-      "removeDebuff": "净化"
+      "removeDebuff": "净化",
+      "botActivation": "激活机器人"
     },
     "offensiveRollEndTokenUsed": "使用 {{tokenLabel}}（{{effectLabel}}）",
     "offensiveRollEndTokenEffect": {
@@ -529,7 +729,8 @@
     "moon_elf": "月精灵",
     "paladin": "圣骑士",
     "gunslinger": "枪手",
-    "samurai": "武士"
+    "samurai": "武士",
+    "tianshi": "炽天使"
   },
   "characters": {
     "monk": "僧侣",
@@ -544,7 +745,8 @@
     "ninja": "忍者",
     "zhanshujia": "战术家",
     "cursed_pirate": "咒缚海盗",
-    "artificer": "工匠"
+    "artificer": "工匠",
+    "tianshi": "炽天使"
   },
   "config": {
     "dice": {
@@ -589,6 +791,9 @@
       },
       "artificer": {
         "name": "工匠骰子"
+      },
+      "tianshi": {
+        "name": "炽天使骰子"
       }
     },
     "resources": {
@@ -752,7 +957,11 @@
       "skull": "骷髅",
       "wrench": "扳手",
       "gear": "齿轮",
-      "electricity": "电能"
+      "electricity": "电能",
+      "blade": "炽炎剑",
+      "wing": "双翼",
+      "cross": "十字",
+      "shield": "圣洁吊坠"
     }
   },
   "bonusDie": {
@@ -810,6 +1019,7 @@
       "gunslingerEatMyLead.otherContribution": "非子弹面：本次攻击伤害不增加",
       "gunslingerEatMyLead.result": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}，并施加击倒",
+      "tianshi.divinePunishment": "神圣惩戒：按额外骰面结算伤害、飞行、净化和眩光",
       "barbarianSuppress": "本骰点数 {{value}} 计入最终伤害；总和达阈值会施加脑震荡",
       "energeticStrength": "星！治疗 2 并施加脑震荡",
       "energeticOther": "抽 1 张牌",
@@ -982,7 +1192,14 @@
       "artificerCollectPartsElectricity": "收集配件 II：电能获得 2 合成器",
       "artificerNanobombUpkeep": "纳米爆弹：投出 6 移除 1 层",
       "artificerHealBot": "治疗机器人：根据骰面治疗",
-      "artificerPerfectlyCalibrated": "这玩意儿真棒：获得投掷数值一半向上取整的合成器"
+      "artificerPerfectlyCalibrated": "这玩意儿真棒：获得投掷数值一半向上取整的合成器",
+      "tianshi.flight": "飞行：投 2 骰；任一结果为 6 时触发本阶段效果",
+      "tianshi.dazzle": "眩光：本次攻击掷骰结果为 {{value}}",
+      "tianshi.triumphantReturn": "凯旋归来：炽炎剑 +1、双翼 +2、十字 +3；圣洁吊坠使攻击不可防御",
+      "tianshi.angelicCloak": "天使斗篷：根据骰面反击、获得飞行或抵挡伤害",
+      "tianshi.holyStrike": "圣击：每个炽炎剑使本次攻击伤害 +1；圣洁吊坠施加眩光",
+      "tianshi.angelicTactics": "天使战术：炽炎剑 +3 伤害；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临",
+      "tianshi.supremeHoliness": "至高圣洁：圣洁吊坠获得 2 飞行和 2 净化，否则抽 1 张牌"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -1174,7 +1391,11 @@
       "medal": "勋章",
       "cutlass": "弯刀",
       "loot": "战利品",
-      "skull": "骷髅"
+      "skull": "骷髅",
+      "blade": "炽炎剑",
+      "wing": "双翼",
+      "cross": "十字",
+      "shield": "圣洁吊坠"
     },
     "trigger": {
       "generic": "变体条件",
@@ -1442,6 +1663,18 @@
       "s0_a0_d1_p1": "养成后神性 1；对手获得生命源泉",
       "s1_a0_d1_p1": "养成后幼种 1，神性 1；对手获得生命源泉",
       "s0_a1_d1_p1": "养成后木苗 1，神性 1；对手获得生命源泉"
+    },
+    "tianshi": {
+      "player": "玩家 {{player}}",
+      "divinePurification": { "title": "神圣净化：选择一名玩家" },
+      "gospelArrival": { "title": "福音临世：选择一名对手施加眩光" },
+      "divineCommand": { "title": "神圣指令：选择一名对手承受 4 点不可防御伤害" },
+      "divineProtection": { "title": "神圣庇护：选择一名玩家获得 2 净化和 2 飞行" },
+      "takeoff": { "title": "起飞：选择一名玩家获得飞行并承受 3 点不可防御伤害" },
+      "divineArbitrationDazzle": { "title": "神圣裁决：选择一名玩家获得眩光" },
+      "divineArbitrationFlight": { "title": "神圣裁决：选择一名玩家获得 2 个飞行" },
+      "divineArbitrationPurify": { "title": "神圣裁决：选择一名玩家获得净化" },
+      "ascension": { "title": "飞升：选择一名玩家获得飞行" }
     }
   },
   "common": {
@@ -2137,7 +2370,7 @@
     },
     "ignite-2": {
       "name": "点燃 II",
-      "description": "大顺子：获得 2 精通，施加燃烧，并造成 5 + 2x精通 点伤害。炎热之魂：火焰精通上限提升 1，获得 5 精通，并施加燃烧。",
+      "description": "大顺子：获得 2 精通，施加燃烧，并造成 5 + 2x精通 点伤害。炙热之魂：火焰精通上限提升 1，获得 5 精通，并施加燃烧。",
       "effects": {
         "gainFM2": "获得 2 层火焰精通",
         "inflictBurn": "施加 1 个燃烧标记",
@@ -2145,8 +2378,8 @@
       }
     },
     "heat-of-soul": {
-      "name": "炎热之魂",
-      "description": "2 火 + 2 火魂触发：火焰精通堆叠上限提升 1，获得 5 层火焰精通，并施加燃烧。",
+      "name": "炙热之魂",
+      "description": "2 岩浆 + 2 火魂触发：火焰精通堆叠上限提升 1，获得 5 层火焰精通，并施加燃烧。",
       "effects": {
         "main": "火焰精通堆叠上限提升 1。获得 5 层火焰精通。施加 1 个燃烧标记。"
       }
@@ -3936,40 +4169,40 @@
     },
     "overclock": {
       "name": "超频运行",
-      "description": "4 电能：造成 6 点不可防御伤害，然后激活至多 2 个不同机器人（无视正常激活条件）。",
+      "description": "4 电能：造成 6 点不可防御伤害；免费激活至多 2 个不同机器人（无视正常激活条件）。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。"
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。"
       }
     },
     "overclock-2": {
       "name": "超频运行 II",
-      "description": "4 电能：施加纳米爆弹，造成 6 点不可防御伤害，然后激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 纳米爆弹。",
+      "description": "4 电能：施加纳米爆弹，造成 6 点不可防御伤害；免费激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 纳米爆弹。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。",
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。",
         "energyBoostInflictNanobomb3": "对 1 名对手施加 3 纳米爆弹。"
       }
     },
     "shock-bot": {
       "name": "电能脉冲",
-      "description": "大顺子：施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。",
+      "description": "大顺子：施加 1 纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage9": "造成 9 点伤害。",
-        "activateOneBot": "激活 1 个机器人（无视正常激活条件）。"
+        "activateOneBot": "免费激活 1 个机器人（无视正常激活条件）。"
       }
     },
     "shock-bot-3": {
       "name": "电能脉冲 III",
-      "description": "大顺子：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。",
+      "description": "大顺子：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。",
       "effects": {
         "gainSynth2": "获得 2 合成器。",
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage9": "造成 9 点伤害。",
-        "activateOneBot": "激活 1 个机器人（无视正常激活条件）。",
+        "activateOneBot": "免费激活 1 个机器人（无视正常激活条件）。",
         "mechanicalArmy": "造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。"
       }
     },
@@ -3989,12 +4222,12 @@
     },
     "maximum-power": {
       "name": "真本能量！",
-      "description": "终极：获得 2 合成器，施加 1 纳米爆弹，造成 10 点伤害，然后激活至多 2 个不同机器人（无视正常激活条件）。",
+      "description": "终极：获得 2 合成器，施加 1 纳米爆弹，造成 10 点伤害；免费激活至多 2 个不同机器人（无视正常激活条件）。",
       "effects": {
         "gainSynth2": "获得 2 合成器。",
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage10": "造成 10 点伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。"
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。"
       }
     },
     "card-artificer-masterpiece": {
@@ -4074,7 +4307,117 @@
       "effects": {
         "roll": "投 1 骰，获得投掷数值一半向上取整的合成器。"
       }
-    }
+    },
+    "holy-blade": {
+      "name": "圣刃",
+      "description": "3/4/5 个炽炎剑：造成 5/6/7 点伤害。",
+      "effects": { "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害", "damage7": "造成 7 点伤害" }
+    },
+    "holy-blade-2": {
+      "name": "圣刃 II",
+      "description": "3/4/5 个炽炎剑：造成 6/7/8 点伤害。",
+      "effects": { "damage6": "造成 6 点伤害", "damage7": "造成 7 点伤害", "damage8": "造成 8 点伤害" }
+    },
+    "holy-blade-3": {
+      "name": "圣刃 III",
+      "description": "3/4/5 个炽炎剑：造成 5/7/9 点伤害；若投出 4 个相同数字，对一名对手施加眩光。",
+      "effects": { "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "damage9": "造成 9 点伤害", "dazzleIfFourKind": "若投出 4 个相同数字，对一名对手施加 1 层眩光" }
+    },
+    "holy-radiance": {
+      "name": "圣洁光辉",
+      "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 6 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "damage6": "造成 6 点伤害" }
+    },
+    "holy-radiance-2": {
+      "name": "圣洁光辉 II",
+      "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 7 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "damage7": "造成 7 点伤害" }
+    },
+    "divine-purification": {
+      "name": "神圣净化",
+      "description": "2 个十字 + 1 个圣洁吊坠：选择一名玩家；对手受到 5 点不可防御伤害，自己治疗 4 点；之后可移除 1 个可移除状态。",
+      "effects": { "resolve": "选择一名玩家：对手受到 5 点不可防御伤害，自己治疗 4 点；之后选择移除 1 个可移除状态。" }
+    },
+    "divine-purification-2": {
+      "name": "神圣净化 II",
+      "description": "2 个十字 + 1 个圣洁吊坠：选择一名玩家；对手受到 6 点不可防御伤害，自己治疗 5 点；之后可移除 1 个可移除状态。",
+      "effects": { "resolve": "选择一名玩家：对手受到 6 点不可防御伤害，自己治疗 5 点；之后选择移除 1 个可移除状态。" }
+    },
+    "divine-punishment": {
+      "name": "神圣惩戒",
+      "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
+      "effects": { "resolve": "每个炽炎剑造成 2 点伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。" }
+    },
+    "divine-punishment-2": {
+      "name": "神圣惩戒 II",
+       "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点不可防御伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
+       "effects": { "resolve": "每个炽炎剑造成 2 点不可防御伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。" }
+    },
+    "triumphant-return": {
+      "name": "凯旋归来",
+      "description": "小顺子：造成 6 点伤害，然后投 1 个奖励骰。",
+      "effects": { "damage6": "造成 6 点伤害", "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御" }
+    },
+    "triumphant-return-2": {
+      "name": "凯旋归来 II",
+      "description": "小顺子：造成 8 点伤害，然后投 1 个奖励骰。",
+      "effects": { "damage8": "造成 8 点伤害", "roll": "投 1 个奖励骰：炽炎剑 +1 伤害、双翼 +2 伤害、十字 +3 伤害、圣洁吊坠使攻击不可防御" }
+    },
+    "supreme-power": {
+      "name": "无上之力",
+      "description": "4 个圣洁吊坠：获得飞行、神圣降临并施加眩光，造成 8 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "dazzle": "对手获得 1 个眩光", "damage8": "造成 8 点伤害" }
+    },
+    "supreme-power-2": {
+      "name": "无上之力 II",
+      "description": "4 个圣洁吊坠：获得飞行、神圣降临并施加眩光，造成 10 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "dazzle": "对手获得 1 个眩光", "damage10": "造成 10 点伤害" }
+    },
+    "archangel-resolve": {
+      "name": "天使长之志",
+      "description": "大顺子：获得飞行，对手获得眩光，造成 8 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "dazzle": "对手获得 1 个眩光", "damage8": "造成 8 点伤害" }
+    },
+    "archangel-resolve-2": {
+      "name": "天使长之志 II",
+      "description": "大顺子：获得飞行，对手获得眩光，造成 9 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "dazzle": "对手获得 1 个眩光", "damage9": "造成 9 点伤害" }
+    },
+    "angelic-cloak": {
+      "name": "天使斗篷",
+      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
+      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
+    },
+    "angelic-cloak-2": {
+      "name": "天使斗篷 II",
+      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
+      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
+    },
+    "angelic-cloak-3": {
+      "name": "天使斗篷 III",
+      "description": "防御投掷 1 骰：炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。",
+      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" }
+    },
+    "heavenly-severing": {
+      "name": "天堂断腕斩",
+      "description": "5 个圣洁吊坠：获得飞行、神圣降临和神圣祝福，造成 13 点伤害。",
+      "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "gainBlessing": "获得 1 个神圣祝福", "damage13": "造成 13 点伤害" }
+    },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "effects": { "upgrade": "将无上之力升级为 II 级。", "secondary": "获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。" } },
+    "upgrade-tianshi-divine-punishment-2-divine-command": { "effects": { "upgrade": "将神圣惩戒升级为 II 级。", "secondary": "治疗 1 点，并对一名对手造成 4 点不可防御伤害。" } },
+    "upgrade-tianshi-divine-purification-2": { "effects": { "upgrade": "将神圣净化升级为 II 级。" } },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "effects": { "upgrade": "将天使长之志升级为 II 级。", "secondary": "选择一名玩家获得 2 个净化和 2 个飞行。" } },
+    "upgrade-tianshi-angelic-cloak-3": { "effects": { "upgrade": "将天使斗篷升级为 III 级。" } },
+    "upgrade-tianshi-angelic-cloak-2": { "effects": { "upgrade": "将天使斗篷升级为 II 级。" } },
+    "upgrade-tianshi-triumphant-return-2": { "effects": { "upgrade": "将凯旋归来升级为 II 级。" } },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "将圣洁光辉升级为 II 级。", "secondary": "选择一名玩家获得飞行，并对其造成 3 点不可防御伤害。" } },
+    "upgrade-tianshi-holy-blade-3-cherub-2": { "effects": { "upgrade": "将圣刃升级为 III 级。", "secondary": "获得飞行、净化和神圣降临。" } },
+     "upgrade-tianshi-holy-blade-2-cherub": { "effects": { "upgrade": "将圣刃升级为 II 级。", "secondary": "获得飞行和神圣降临。" } },
+     "card-tianshi-holy-strike": { "effects": { "resolve": "投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。" } },
+    "card-tianshi-angelic-tactics": { "effects": { "resolve": "投 1 个奖励骰：炽炎剑使本次攻击伤害 +3；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临。" } },
+     "card-tianshi-divine-arbitration": { "effects": { "resolve": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" } },
+    "card-tianshi-supreme-holiness": { "effects": { "resolve": "投 1 个奖励骰：圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" } },
+    "card-tianshi-ascension": { "effects": { "resolve": "选择一名玩家获得飞行。" } }
   },
   "cards": {
     "card-energetic": {
@@ -4424,14 +4767,14 @@
     },
     "upgrade-artificer-overclock-2": {
       "name": "超频运行 II",
-      "description": "升级超频运行：4 电能，施加 1 个纳米爆弹，造成 6 点不可防御伤害，然后激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 个纳米爆弹。",
+      "description": "升级超频运行：4 电能，施加 1 个纳米爆弹，造成 6 点不可防御伤害；免费激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 个纳米爆弹。",
       "effects": {
         "upgrade": "升级超频运行至 II 级。"
       }
     },
     "upgrade-artificer-shock-bot-3": {
       "name": "电能脉冲 III",
-      "description": "升级电能脉冲：大顺子，获得 2 个合成器，施加 1 个纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害；你每有 1 个机器人，就再 +1 伤害。",
+      "description": "升级电能脉冲：大顺子，获得 2 个合成器，施加 1 个纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害；你每有 1 个机器人，就再 +1 伤害。",
       "effects": {
         "upgrade": "升级电能脉冲至 III 级。"
       }
@@ -5117,6 +5460,21 @@
       "name": "道场！",
       "description": "投掷 1 骰；如果掷出面具，则获得烟雾弹和 2 忍术。否则抽 1 张牌。"
     }
+    ,"card-tianshi-holy-strike": { "name": "圣击！", "description": "攻击修正：投 5 个奖励骰；每个炽炎剑使本次攻击伤害 +1，圣洁吊坠使对手获得眩光。" },
+    "card-tianshi-angelic-tactics": { "name": "天使战术！", "description": "攻击修正：投 1 个奖励骰；炽炎剑使本次攻击伤害 +3，双翼获得飞行，十字获得净化，圣洁吊坠获得神圣降临。" },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "name": "无上之力 II / 福音临世", "description": "上区：无上之力 II；下区：获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。" },
+    "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "神圣惩戒 II / 神圣指令", "description": "上区：神圣惩戒 II；下区：治疗 1 点，并对一名对手造成 4 点不可防御伤害。" },
+    "upgrade-tianshi-divine-purification-2": { "name": "神圣净化 II", "description": "升级神圣净化：对手伤害提升至 6 点，自己治疗提升至 5 点。" },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "天使长之志 II / 神圣庇护", "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。" },
+    "upgrade-tianshi-angelic-cloak-3": { "name": "天使斗篷 III", "description": "防御投掷 1 骰；炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" },
+    "upgrade-tianshi-angelic-cloak-2": { "name": "天使斗篷 II", "description": "防御投掷 1 骰；炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" },
+    "upgrade-tianshi-triumphant-return-2": { "name": "凯旋归来 II", "description": "小顺子造成 8 点伤害；奖励骰：炽炎剑 +1、双翼 +2、十字 +3、圣洁吊坠使攻击不可防御。" },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "圣洁光辉 II / 起飞", "description": "上区：圣洁光辉 II；下区：选择一名玩家获得飞行，并对其造成 3 点不可防御伤害。" },
+    "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "圣刃 III / 小天使 II", "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。" },
+    "card-tianshi-divine-arbitration": { "name": "神圣裁决！", "description": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" },
+    "card-tianshi-supreme-holiness": { "name": "至高圣洁！", "description": "投 1 个奖励骰；圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" },
+    "card-tianshi-ascension": { "name": "飞升！", "description": "选择一名玩家获得飞行。" },
+    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 小天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" }
   },
   "passive": {
     "tithes": {

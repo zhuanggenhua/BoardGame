@@ -1,4 +1,4 @@
-import { mkdirSync } from "fs";
+import { existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import {
   expect,
@@ -12,6 +12,7 @@ import {
   type BetrayalCommandMap,
   type BetrayalCore,
   type BetrayalTraitKey,
+  createBetrayalMonsterFromDefinition,
   createBetrayalMonsterEncounterCore,
 } from "../../src/games/betrayal/game";
 import { BETRAYAL_DISCOVERY_POOLS } from "../../src/games/betrayal/scenarioConfig";
@@ -40,6 +41,9 @@ import {
   createSkeletonKeyMoveReadyCore,
   createStartedFirstScenarioCore,
   createTradeReadyCore,
+  createMummyReadyToBanishCore,
+  playMummyScenarioToSurvivorVictory,
+  playMummyScenarioToTraitorVictory,
   playFirstScenarioToSurvivorVictory,
   playFirstScenarioToTraitorVictory,
 } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
@@ -228,7 +232,25 @@ export const warmBetrayalFrontend = async (
 
 export const saveScreenshot = async (page: Page, path: string) => {
   mkdirSync(dirname(path), { recursive: true });
-  await page.screenshot({ path, fullPage: false });
+  const image = await page.screenshot({ fullPage: false });
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
+    try {
+      writeFileSync(tempPath, image);
+      renameSync(tempPath, path);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (existsSync(tempPath)) {
+        unlinkSync(tempPath);
+      }
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+  }
+  throw lastError;
 };
 
 export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
@@ -243,6 +265,14 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     "transparent-virtual",
   );
   await expect(diceGroup).toHaveAttribute("data-dice-count", /[1-9]/);
+  const initialDiceState = await diceGroup.evaluate((node) => {
+    const group = node as HTMLElement;
+    return {
+      physicsReady: group.dataset.dicePhysicsReady ?? "",
+      preloadState: group.dataset.dicePreloadState ?? "",
+    };
+  });
+  expect(initialDiceState.preloadState).toBe("none");
   try {
     await expect
       .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
@@ -322,6 +352,10 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
       `山屋物理骰子没有渲染就绪：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`,
     );
   }
+  await expect(diceGroup).toHaveAttribute("data-dice-preload-state", "none");
+  await expect(
+    diceGroup.locator('[data-testid^="betrayal-house-dice-preloaded-"]'),
+  ).toHaveCount(0);
 
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
@@ -409,12 +443,184 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
+  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+  await expect
+    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
       timeout: 15000,
     })
     .toBe("true");
   await rollPanel.page().waitForTimeout(450);
+};
+
+export const expectPhysicalDiceStableAfterSettled = async (
+  rollPanel: Locator,
+  options: {
+    waitMs?: number;
+    maxCenterShiftPx?: number;
+    maxGroupDriftPx?: number;
+  } = {},
+) => {
+  const waitMs = options.waitMs ?? 600;
+  const maxCenterShiftPx = options.maxCenterShiftPx ?? 24;
+  const maxGroupDriftPx = options.maxGroupDriftPx ?? 8;
+  const physicsSource = rollPanel.getByTestId(
+    "betrayal-house-dice-physics-source",
+  );
+  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
+  await expect
+    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+
+  const readSnapshot = async () =>
+    rollPanel.evaluate((node) => {
+      type Layout = {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        visualWidth?: number;
+        visualHeight?: number;
+      };
+      type DebugDie = { layout?: Layout | null };
+      type DebugSnapshot = {
+        dice?: DebugDie[];
+        canvas?: { clientWidth?: number; clientHeight?: number } | null;
+      };
+      const panel = node as HTMLElement;
+      const group = panel.querySelector(
+        '[data-testid="betrayal-house-dice-3d-group"]',
+      ) as HTMLElement | null;
+      const groupRect = group?.getBoundingClientRect();
+      const debugRegistry =
+        (
+          window as typeof window & {
+            __diceBoxThreeDebug?: Record<string, () => DebugSnapshot | null>;
+          }
+        ).__diceBoxThreeDebug ?? {};
+      const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
+        (canvas): canvas is HTMLCanvasElement =>
+          canvas instanceof HTMLCanvasElement,
+      );
+      const activeCanvas =
+        canvases.find((canvas) => {
+          const testId = canvas.dataset.testid;
+          return Boolean(testId && typeof debugRegistry[testId] === "function");
+        }) ??
+        canvases[0] ??
+        null;
+      const activeCanvasTestId =
+        activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+      const snapshot = activeCanvasTestId
+        ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+        : (debugRegistry["betrayal-house-dice-box-canvas"]?.() ?? null);
+      const canvasClientWidth = snapshot?.canvas?.clientWidth ?? 0;
+      const canvasClientHeight = snapshot?.canvas?.clientHeight ?? 0;
+      const canvasRect = activeCanvas?.getBoundingClientRect();
+      const displayScaleX =
+        canvasRect && canvasClientWidth > 0
+          ? canvasRect.width / canvasClientWidth
+          : 1;
+      const displayScaleY =
+        canvasRect && canvasClientHeight > 0
+          ? canvasRect.height / canvasClientHeight
+          : 1;
+      const layouts = (snapshot?.dice ?? [])
+        .map((die) => die.layout)
+        .filter(
+          (layout): layout is Layout =>
+            Boolean(layout) &&
+            Number.isFinite(layout.x) &&
+            Number.isFinite(layout.y) &&
+            Number.isFinite(layout.width) &&
+            Number.isFinite(layout.height),
+        )
+        .map((layout) => ({
+          x: layout.x,
+          y: layout.y,
+          width: layout.visualWidth ?? layout.width,
+          height: layout.visualHeight ?? layout.height,
+        }));
+
+      return {
+        hasSnapshot: Boolean(snapshot),
+        activeCanvasTestId,
+        diceCount: layouts.length,
+        displayScaleX,
+        displayScaleY,
+        groupRect: groupRect
+          ? {
+              x: groupRect.x,
+              y: groupRect.y,
+              width: groupRect.width,
+              height: groupRect.height,
+            }
+          : null,
+        layouts,
+      };
+    });
+
+  const before = await readSnapshot();
+  await rollPanel.page().waitForTimeout(waitMs);
+  const after = await readSnapshot();
+  expect(
+    before.hasSnapshot && after.hasSnapshot,
+    `山屋骰盘停稳稳定性必须来自真实 Three.js 快照：${JSON.stringify({ before, after })}`,
+  ).toBe(true);
+  expect(
+    after.diceCount,
+    `山屋骰盘停稳后骰子数量不能变化：${JSON.stringify({ before, after })}`,
+  ).toBe(before.diceCount);
+  expect(
+    before.diceCount,
+    `山屋骰盘停稳稳定性至少要看到一颗骰子：${JSON.stringify({ before, after })}`,
+  ).toBeGreaterThan(0);
+
+  const shifts = before.layouts.map((layout, index) => {
+    const next = after.layouts[index];
+    if (!next) return Number.POSITIVE_INFINITY;
+    const dx = (next.x - layout.x) * after.displayScaleX;
+    const dy = (next.y - layout.y) * after.displayScaleY;
+    return Math.hypot(dx, dy);
+  });
+  const maxShift = Math.max(...shifts);
+  expect(
+    maxShift,
+    `山屋骰子停稳后不能二次瞬移：${JSON.stringify({ before, after, shifts })}`,
+  ).toBeLessThanOrEqual(maxCenterShiftPx);
+  if (before.groupRect && after.groupRect) {
+    const groupDrift = Math.max(
+      Math.abs(after.groupRect.x - before.groupRect.x),
+      Math.abs(after.groupRect.y - before.groupRect.y),
+      Math.abs(after.groupRect.width - before.groupRect.width),
+      Math.abs(after.groupRect.height - before.groupRect.height),
+    );
+    expect(
+      groupDrift,
+      `山屋骰盘停稳后容器不能漂移：${JSON.stringify({ before, after })}`,
+    ).toBeLessThanOrEqual(maxGroupDriftPx);
+  }
 };
 
 export const expectPhysicalDiceSeparated = async (
@@ -692,14 +898,26 @@ export function createMonsterEncounterCore(): BetrayalCore {
 }
 
 export function createFirstScenarioSurvivorEndgameCore(): BetrayalCore {
-  return playFirstScenarioToSurvivorVictory();
+  return playMummyScenarioToSurvivorVictory();
 }
 
 export function createFirstScenarioTraitorEndgameCore(): BetrayalCore {
-  return playFirstScenarioToTraitorVictory();
+  return playMummyScenarioToTraitorVictory();
 }
 
 export function createFirstScenarioReadyToExorciseRuntimeCore(): BetrayalCore {
+  return createMummyReadyToBanishCore();
+}
+
+export function createCrimsonJackSurvivorEndgameCore(): BetrayalCore {
+  return playFirstScenarioToSurvivorVictory();
+}
+
+export function createCrimsonJackTraitorEndgameCore(): BetrayalCore {
+  return playFirstScenarioToTraitorVictory();
+}
+
+export function createCrimsonJackReadyToExorciseRuntimeCore(): BetrayalCore {
   return createFirstScenarioReadyToExorciseCore();
 }
 
@@ -727,6 +945,29 @@ export function createMedicalKitUseReadyRuntimeCore(): BetrayalCore {
   return createMedicalKitUseReadyCore();
 }
 
+export function createToothNecklaceEndTurnRuntimeCore(): BetrayalCore {
+  let core = createStartedFirstScenarioCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    inventory: [
+      { id: "tooth-necklace", name: "牙齿项链", kind: "item" },
+    ],
+  };
+  setBetrayalE2ETraitTrack(core, "0", "might", [1, 2, 3], 0, 1);
+  setBetrayalE2ETraitTrack(core, "0", "speed", [1, 2, 3], 1, 1);
+  setBetrayalE2ETraitTrack(core, "0", "knowledge", [1, 2, 3], 1, 1);
+  setBetrayalE2ETraitTrack(core, "0", "sanity", [1, 2, 3], 1, 1);
+  syncBetrayalE2ECurrentExplorer(core);
+  core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.recentRoll = null;
+  core.recommendedAction = "endTurn";
+  return core;
+}
+
 export function createHolyWaterUseReadyRuntimeCore(): BetrayalCore {
   return createHolyWaterUseReadyCore();
 }
@@ -749,6 +990,96 @@ export function createFirstScenarioReadyToTraitorVictoryRuntimeCore(): BetrayalC
 
 export function createCorpseLootReadyRuntimeCore(): BetrayalCore {
   return createCorpseLootReadyCore();
+}
+
+export function createDustNonTraitorCorpseLootRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "2");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [
+          { id: "map", name: "地图", kind: "item" },
+          { id: "omen-book", name: "书本", kind: "omen" },
+        ],
+      };
+    }
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "entrance-hall" };
+    }
+    return explorer;
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["1"];
+  core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘非叛徒搜尸夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0"];
+  core.scenarioRuntime.dust.feverishPlayerIds =
+    core.scenarioRuntime.dust.feverishPlayerIds.filter((id) => id !== "1");
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.usedCardIdsThisTurn = [];
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "trade";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
+export function createDustDeadTraitorBurialNoLootRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "2");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [],
+      };
+    }
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "entrance-hall" };
+    }
+    return explorer;
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["1"];
+  core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘死亡叛徒掩埋夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["1"];
+  core.scenarioRuntime.dust.feverishPlayerIds = ["1"];
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.monsters = [
+    ...core.monsters.filter((monster) => monster.id !== "feverish-1"),
+    createBetrayalMonsterFromDefinition(
+      "dust-feverish-patient",
+      "feverish-1",
+      "hallway",
+    ),
+  ];
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.usedCardIdsThisTurn = [];
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "trade";
+  return dismissBetrayalE2EBlockingOverlays(core);
 }
 
 export function createJackSpiritReviveReadyRuntimeCore(): BetrayalCore {
@@ -954,6 +1285,71 @@ export function createDustOrdinaryAttackDeathRuntimeCore(): BetrayalCore {
   return dismissBetrayalE2EBlockingOverlays(core);
 }
 
+export type DustAttackWeaponE2ECardId = "hunting-knife" | "dagger" | "ring";
+
+const DUST_ATTACK_WEAPON_E2E_CARDS: Record<
+  DustAttackWeaponE2ECardId,
+  BetrayalCore["currentExplorer"]["inventory"][number]
+> = {
+  "hunting-knife": { id: "hunting-knife", name: "砍刀", kind: "item" },
+  dagger: { id: "dagger", name: "匕首", kind: "omen" },
+  ring: { id: "ring", name: "指环", kind: "omen" },
+};
+
+export function createDustAttackWeaponDeathRuntimeCore(
+  weaponCardId: DustAttackWeaponE2ECardId,
+): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [DUST_ATTACK_WEAPON_E2E_CARDS[weaponCardId]],
+  };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.turnStartInventoryCardIds = [weaponCardId];
+  core.usedCardIdsThisTurn = core.usedCardIdsThisTurn.filter(
+    (id) => id !== "haunt-attack" && id !== weaponCardId,
+  );
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [{ id: "map", name: "地图", kind: "item" }],
+      };
+    }
+    return { ...explorer, roomId: "entrance-hall" };
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["2"];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘武器攻击致死夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0", "1"];
+  setBetrayalE2ETraitTrack(core, "0", "might", [2], 0, 0);
+  setBetrayalE2ETraitTrack(core, "0", "speed", [2, 3, 3], 2, 2);
+  setBetrayalE2ETraitTrack(core, "0", "sanity", [2], 0, 0);
+  const physicalDeathPosition = weaponCardId === "dagger" ? 7 : 4;
+  const mentalDeathPosition = 3;
+  const physicalDeathTrack = Array.from(
+    { length: physicalDeathPosition + 1 },
+    () => 1,
+  );
+  const mentalDeathTrack = Array.from(
+    { length: mentalDeathPosition + 1 },
+    () => 1,
+  );
+  setBetrayalE2ETraitTrack(core, "1", "might", physicalDeathTrack, physicalDeathPosition, physicalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "speed", physicalDeathTrack, physicalDeathPosition, physicalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "knowledge", mentalDeathTrack, mentalDeathPosition, mentalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "sanity", mentalDeathTrack, mentalDeathPosition, mentalDeathPosition);
+  syncBetrayalE2ECurrentExplorer(core);
+  core.recommendedAction = "use";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 export function createDustRoomDamageDeathRuntimeCore(): BetrayalCore {
   let core = createDustHauntCore(["0", "1", "2"]);
   core = focusBetrayalE2EExplorer(core, "1");
@@ -1038,6 +1434,130 @@ export function createDustSkullDeathPreventionFailedRuntimeCore(): BetrayalCore 
   return core;
 }
 
+export function createDustRabbitFootDeathBurialRuntimeCore(): BetrayalCore {
+  const core = createDustSkullDeathPreventionBaseRuntimeCore();
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    inventory: [
+      { id: "skull", name: "头骨", kind: "omen" },
+      { id: "rope", name: "兔脚", kind: "item" },
+      { id: "map", name: "地图", kind: "item" },
+    ],
+  };
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘兔脚死亡回滚夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["1"];
+  syncBetrayalE2ECurrentExplorer(core);
+  return core;
+}
+
+export type DustActivePossessionE2ECardId =
+  | "medical-kit"
+  | "mirror"
+  | "holy-water"
+  | "map"
+  | "notebook"
+  | "journal"
+  | "manuscript"
+  | "mysterious-stopwatch"
+  | "angel-feather"
+  | "omen-book"
+  | "mask";
+
+export const DUST_ACTIVE_POSSESSION_E2E_CARDS: Record<
+  DustActivePossessionE2ECardId,
+  BetrayalCore["currentExplorer"]["inventory"][number]
+> = {
+  "medical-kit": { id: "medical-kit", name: "急救包", kind: "item" },
+  mirror: { id: "mirror", name: "镜子", kind: "item" },
+  "holy-water": { id: "holy-water", name: "奇怪的药品", kind: "item" },
+  map: { id: "map", name: "地图", kind: "item" },
+  notebook: { id: "notebook", name: "笔记本", kind: "item" },
+  journal: { id: "journal", name: "日记", kind: "item" },
+  manuscript: { id: "manuscript", name: "手稿", kind: "item" },
+  "mysterious-stopwatch": {
+    id: "mysterious-stopwatch",
+    name: "神秘秒表",
+    kind: "item",
+  },
+  "angel-feather": { id: "angel-feather", name: "天使之羽", kind: "item" },
+  "omen-book": { id: "omen-book", name: "书本", kind: "omen" },
+  mask: { id: "mask", name: "面具", kind: "omen" },
+};
+
+export function createDustActivePossessionRuntimeCore(
+  cardIds: DustActivePossessionE2ECardId[] = [
+    "medical-kit",
+    "mirror",
+    "holy-water",
+    "map",
+    "notebook",
+    "journal",
+    "manuscript",
+    "mysterious-stopwatch",
+    "angel-feather",
+    "omen-book",
+    "mask",
+  ],
+): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: cardIds.map((cardId) => ({
+      ...DUST_ACTIVE_POSSESSION_E2E_CARDS[cardId],
+    })),
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "0") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [],
+      };
+    }
+    if (explorer.playerId === "2") {
+      return {
+        ...explorer,
+        roomId: "upper-landing",
+        inventory: [],
+      };
+    }
+    return { ...explorer, inventory: [] };
+  });
+  for (const playerId of ["0", "1"]) {
+    for (const trait of BETRAYAL_E2E_TRAIT_KEYS) {
+      setBetrayalE2ETraitTrack(core, playerId, trait, [1, 2, 3, 4, 5], 1, 3);
+    }
+  }
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘主动持有牌夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0"];
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.monsters = [
+    ...core.monsters.filter(
+      (monster) => monster.id !== "feverish-active-possession-1",
+    ),
+    createBetrayalMonsterFromDefinition(
+      "dust-feverish-patient",
+      "feverish-active-possession-1",
+      "hallway",
+    ),
+  ];
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.pendingCardResolutionQueue = [];
+  core.usedCardIdsThisTurn = [];
+  core.activePlayerId = null;
+  core.recommendedAction = "use";
+  syncBetrayalE2ECurrentExplorer(core);
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 export function createDustForcedSicknessExchangeRuntimeCore(): BetrayalCore {
   let core = createDustHauntCore(["0", "1", "2", "3"]);
   core = focusBetrayalE2EExplorer(core, "1");
@@ -1082,6 +1602,40 @@ export function createDustForcedSicknessExchangeRuntimeCore(): BetrayalCore {
   syncBetrayalE2ECurrentExplorer(core);
   core.activePlayerId = null;
   core.recommendedAction = "endTurn";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
+export function createDustDogTradeSicknessSplitRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "entrance-hall",
+    inventory: [
+      { id: "dog", name: "狗", kind: "omen" },
+      { id: "medical-kit", name: "急救包", kind: "item" },
+      { id: "map", name: "地图", kind: "item" },
+    ],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "upper-landing", inventory: [] };
+    }
+    if (explorer.playerId === "2") {
+      return { ...explorer, roomId: "entrance-hall", inventory: [] };
+    }
+    return { ...explorer, inventory: [] };
+  });
+  if (core.scenarioRuntime.dust) {
+    core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+    core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  }
+  core.activePlayerId = null;
+  core.pendingTradeAgreement = null;
+  core.pendingCardResolutionQueue = [];
+  core.usedCardIdsThisTurn = [];
+  core.recommendedAction = "trade";
+  syncBetrayalE2ECurrentExplorer(core);
   return dismissBetrayalE2EBlockingOverlays(core);
 }
 

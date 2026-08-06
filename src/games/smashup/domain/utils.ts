@@ -5,6 +5,8 @@ import { getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { getCardDefActivatableAbilities } from './activationMetadata';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 
+const POTION_OF_STRAIGHT_LINE_RUNNING_AWAY = 'munchkin_treasure_potion_of_straight_line_running_away';
+
 // ============================================================================
 // 玩家显示名
 // ============================================================================
@@ -227,6 +229,10 @@ function isSpecialLimitBlockedByGroup(
     return state.specialLimitUsed?.[limitGroup]?.includes(baseIndex) ?? false;
 }
 
+function hasPendingMunchkinTreasureReward(state: SmashUpCore): boolean {
+    return (state.pendingMunchkinTreasureReward?.treasureCards.length ?? 0) > 0;
+}
+
 export function getMinionLikeResponseWindowLimitGroup(
     cardDefId: string,
     windowType: ResponseWindowType,
@@ -322,6 +328,13 @@ export function canCardBePlayedInResponseWindow(
     if (!actionDef || !isActionLikeRespondableInWindow(actionDef, windowType)) {
         return false;
     }
+    if (
+        normalizePodDefId(card.defId) === POTION_OF_STRAIGHT_LINE_RUNNING_AWAY
+        && windowType === 'afterScoring'
+        && !hasPendingMunchkinTreasureReward(state)
+    ) {
+        return false;
+    }
 
     if (
         actionLikeNeedsResponseWindowBase(actionDef)
@@ -352,6 +365,13 @@ export function canCardBePlayedInResponseWindowForMatchState(
     if (!isCardActionLike(card)) return false;
     const actionDef = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
     if (!actionDef || !isActionLikeRespondableInWindow(actionDef, windowType)) {
+        return false;
+    }
+    if (
+        normalizePodDefId(card.defId) === POTION_OF_STRAIGHT_LINE_RUNNING_AWAY
+        && windowType === 'afterScoring'
+        && !hasPendingMunchkinTreasureReward(state.core)
+    ) {
         return false;
     }
 

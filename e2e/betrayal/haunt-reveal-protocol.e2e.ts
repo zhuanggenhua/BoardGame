@@ -2,6 +2,7 @@ import { expect, test, type Locator } from '@playwright/test';
 import { BETRAYAL_COMMANDS, type BetrayalCore } from '../../src/games/betrayal/game';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
 import {
+    acknowledgePendingCardResolutions,
     applyBetrayalCommand,
     createBetrayalScriptedRandom,
     createStartedFirstScenarioCore,
@@ -20,11 +21,11 @@ import {
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/haunt-reveal-protocol';
 const ONE_TRAITOR_REVEAL_SCREENSHOT = `${EVIDENCE_DIR}/01-作祟揭示-一名叛徒横幅提示.jpg`;
-const ONE_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/02-作祟揭示-一名叛徒打开剧本书.jpg`;
+const ONE_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/02-作祟揭示-一名叛徒剧本阅读承接.jpg`;
 const ONE_TRAITOR_AFTER_READER_SCREENSHOT = `${EVIDENCE_DIR}/03-作祟揭示-一名叛徒关闭剧本书横幅仍在.jpg`;
 const ONE_TRAITOR_BOARD_SCREENSHOT = `${EVIDENCE_DIR}/04-作祟揭示-一名叛徒关闭横幅后牌桌.jpg`;
 const HIDDEN_TRAITOR_REVEAL_SCREENSHOT = `${EVIDENCE_DIR}/05-作祟揭示-剧本3横幅提示.jpg`;
-const HIDDEN_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/06-作祟揭示-剧本3打开剧本书.jpg`;
+const HIDDEN_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/06-作祟揭示-剧本3剧本阅读承接.jpg`;
 const HIDDEN_TRAITOR_AFTER_READER_SCREENSHOT = `${EVIDENCE_DIR}/07-作祟揭示-剧本3关闭剧本书横幅仍在.jpg`;
 const HIDDEN_TRAITOR_BOARD_SCREENSHOT = `${EVIDENCE_DIR}/08-作祟揭示-剧本3关闭横幅后牌桌.jpg`;
 
@@ -40,6 +41,8 @@ const FORBIDDEN_PLAYER_UI_INTERNAL_COPY = [
     '公开设置',
     'setup 队列',
     'setup queue',
+    '英雄和叛徒会分别阅读',
+    '分别阅读自己的剧本书',
 ] as const;
 
 function findBetrayalEventByName(name: string) {
@@ -48,6 +51,31 @@ function findBetrayalEventByName(name: string) {
         throw new Error(`山屋作祟揭示 E2E 缺少事件牌《${name}》`);
     }
     return event;
+}
+
+function cloneRoomDiscoveryTemplate(
+    room: BetrayalCore['roomDiscoveryDeck'][number]['room'],
+): BetrayalCore['roomDiscoveryDeck'][number]['room'] {
+    return {
+        ...room,
+        tags: [...room.tags],
+        doorways: [...room.doorways],
+    };
+}
+
+function setNextGroundEventRoom(core: BetrayalCore) {
+    const eventRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find(
+        (room) => room.visualId === 'kitchen',
+    );
+    if (!eventRoom) {
+        throw new Error('山屋作祟揭示 E2E 缺少地面事件房间：厨房');
+    }
+    const room = cloneRoomDiscoveryTemplate(eventRoom);
+    core.roomDiscoveryDeck = [{ floor: 'ground', room }];
+    core.roomDiscoveryOrderByFloor = {
+        ...core.roomDiscoveryOrderByFloor,
+        ground: [cloneRoomDiscoveryTemplate(eventRoom)],
+    };
 }
 
 async function expectNoForbiddenPlayerUiInternalCopy(locator: Locator, label: string) {
@@ -63,6 +91,7 @@ function createCrimsonHauntRevealCore(playerIds: string[] = ['0', '1', '2']): Be
     let core = createStartedFirstScenarioCore(playerIds);
     core.drawOrder = ['event'];
     core.eventOrder = [findBetrayalEventByName('一抹鲜红')];
+    setNextGroundEventRoom(core);
     core.currentExplorer.inventory = [
         ...core.currentExplorer.inventory,
         { id: 'omen-book', name: '书本', kind: 'omen' },
@@ -74,7 +103,10 @@ function createCrimsonHauntRevealCore(playerIds: string[] = ['0', '1', '2']): Be
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
+    if (core.pendingEventChoice?.sourceTitle !== '一抹鲜红') {
+        throw new Error('一名叛徒作祟揭示 E2E 未进入《一抹鲜红》事件选择');
+    }
+    core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
         '0',
@@ -82,12 +114,14 @@ function createCrimsonHauntRevealCore(playerIds: string[] = ['0', '1', '2']): Be
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    return acknowledgePendingCardResolutions(core);
 }
 
 function createDustHauntRevealCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
     let core = createStartedFirstScenarioCore(playerIds);
     core.drawOrder = ['event'];
     core.eventOrder = [findBetrayalEventByName('一瓶微尘')];
+    setNextGroundEventRoom(core);
     core.currentExplorer.inventory = [
         ...core.currentExplorer.inventory,
         { id: 'omen-book', name: '书本', kind: 'omen' },
@@ -99,7 +133,10 @@ function createDustHauntRevealCore(playerIds: string[] = ['0', '1', '2']): Betra
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
+    if (core.pendingEventChoice?.sourceTitle !== '一瓶微尘') {
+        throw new Error('隐藏叛徒作祟揭示 E2E 未进入《一瓶微尘》事件选择');
+    }
+    core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
         '0',
@@ -107,6 +144,7 @@ function createDustHauntRevealCore(playerIds: string[] = ['0', '1', '2']): Betra
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    return acknowledgePendingCardResolutions(core);
 }
 
 async function openInjectedBetrayalBoard(page: Parameters<typeof injectCore>[0], core: BetrayalCore) {
@@ -117,19 +155,22 @@ async function openInjectedBetrayalBoard(page: Parameters<typeof injectCore>[0],
     await waitForBetrayalPageReady(page);
     await injectCore(page, core);
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
+    await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|作祟中|Haunt/i);
 }
 
-async function expectScenarioReaderIsNotAutoOpened(page: Parameters<typeof injectCore>[0]) {
+async function expectScenarioReaderOpenedForRevealTransition(page: Parameters<typeof injectCore>[0], expectedText: RegExp) {
+    const scenarioReaderDialog = page.getByTestId('betrayal-scenario-reader-dialog');
     await expect(
-        page.getByTestId('betrayal-scenario-reader-dialog'),
-        '作祟揭示不能自动弹出剧本书；剧本书应由牌桌入口手动打开',
-    ).toHaveCount(0);
+        scenarioReaderDialog,
+        '页面从恶兆前同步到作祟揭示状态时必须承接一次剧本阅读',
+    ).toBeVisible();
+    await expect(scenarioReaderDialog.getByTestId('betrayal-scenario-opening-stage')).toBeVisible();
+    await expect(scenarioReaderDialog.getByTestId('betrayal-scenario-opening-cinematic')).toBeVisible();
+    await expect(scenarioReaderDialog).toContainText(expectedText);
     await expect(
         page.getByTestId('betrayal-recent-roll-panel'),
-        '作祟开场骰盘不能挡住牌桌公开提示',
+        '作祟开场不能继续用骰盘挡住剧本阅读承接',
     ).toHaveCount(0);
-    await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
 }
 
 async function expectHauntRevealSource(
@@ -171,10 +212,15 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await warmBetrayalFrontend(context);
         await openInjectedBetrayalBoard(page, createCrimsonHauntRevealCore());
 
+        await expectScenarioReaderOpenedForRevealTransition(page, /木乃伊横行|剧本1/);
+        await saveScreenshot(page, ONE_TRAITOR_READER_SCREENSHOT);
+        await page.getByTestId('betrayal-scenario-reader-close').click();
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toHaveCount(0);
+
         await expect(page.getByTestId('betrayal-haunt-reveal-player-title')).toContainText('作祟开始');
-        await expect(page.getByTestId('betrayal-haunt-reveal-lead')).toContainText('剧本发生变化，可以打开剧本查阅');
+        await expect(page.getByTestId('betrayal-haunt-reveal-lead')).toContainText('剧本已切换。');
         await expect(page.getByTestId('betrayal-haunt-reveal-close')).toContainText('关闭');
-        await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveAttribute('data-haunt-setup-count', '6');
+        await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveAttribute('data-haunt-setup-count', '7');
         await expect(page.getByTestId('betrayal-haunt-reveal-status-strip')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-action-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-resume-hint')).toHaveCount(0);
@@ -189,13 +235,12 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await expect(page.getByText('治疗并强化叛徒')).toHaveCount(0);
         await expect(page.getByText('准备杰克标记')).toHaveCount(0);
 
-        await expectScenarioReaderIsNotAutoOpened(page);
         const revealCue = page.getByTestId('betrayal-haunt-reveal-cue');
         await expect(revealCue).toBeVisible();
         await expectHauntRevealSource(page, {
-            scenarioCardId: 'crimson-jack-returns',
+            scenarioCardId: 'mummy-rampage',
             triggeringOmenId: null,
-            scenarioCardTitle: '赤红杰克归来',
+            scenarioCardTitle: '木乃伊横行',
             omenName: 'A Splash of Crimson',
             hauntNumber: 1,
         });
@@ -205,16 +250,6 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await expect(page.getByTestId('betrayal-action-trade')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-attack-weapon-selector')).toHaveCount(0);
         await saveScreenshot(page, ONE_TRAITOR_REVEAL_SCREENSHOT);
-
-        await page.getByTestId('betrayal-open-scenario').click();
-        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeVisible();
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).toContainText('剧本1');
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).not.toContainText(/剧本1查阅/);
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).toContainText('赤红杰克归来');
-        await saveScreenshot(page, ONE_TRAITOR_READER_SCREENSHOT);
-
-        await page.getByTestId('betrayal-scenario-reader-close').click();
-        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toHaveCount(0);
         await expect(revealCue).toBeVisible();
         await expect(page.getByTestId('betrayal-action-use')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-return-to-board')).toHaveCount(0);
@@ -238,8 +273,13 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await warmBetrayalFrontend(context);
         await openInjectedBetrayalBoard(page, createDustHauntRevealCore());
 
+        await expectScenarioReaderOpenedForRevealTransition(page, /灰尘|剧本3/);
+        await saveScreenshot(page, HIDDEN_TRAITOR_READER_SCREENSHOT);
+        await page.getByTestId('betrayal-scenario-reader-close').click();
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toHaveCount(0);
+
         await expect(page.getByTestId('betrayal-haunt-reveal-player-title')).toContainText('作祟开始');
-        await expect(page.getByTestId('betrayal-haunt-reveal-lead')).toContainText('剧本发生变化，可以打开剧本查阅');
+        await expect(page.getByTestId('betrayal-haunt-reveal-lead')).toContainText('剧本已切换。');
         await expect(page.getByTestId('betrayal-haunt-reveal-close')).toContainText('关闭');
         await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveAttribute('data-haunt-type', 'hidden-traitor');
         await expect(page.getByTestId('betrayal-haunt-reveal-status-strip')).toHaveCount(0);
@@ -256,13 +296,12 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await expect(page.getByTestId('betrayal-haunt-setup-queue')).toHaveCount(0);
         await expect(page.getByText('秘密分发疾病标记')).toHaveCount(0);
 
-        await expectScenarioReaderIsNotAutoOpened(page);
         const revealCue = page.getByTestId('betrayal-haunt-reveal-cue');
         await expect(revealCue).toBeVisible();
         await expectHauntRevealSource(page, {
-            scenarioCardId: 'crimson-jack-returns',
+            scenarioCardId: 'mummy-rampage',
             triggeringOmenId: null,
-            scenarioCardTitle: '赤红杰克归来',
+            scenarioCardTitle: '木乃伊横行',
             omenName: 'A Dusty Vial',
             hauntNumber: 3,
         });
@@ -276,16 +315,6 @@ test.describe('山屋惊魂作祟揭示顺序和秘密边界', () => {
         await expect(page.getByText('交换疾病')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-return-to-board')).toHaveCount(0);
         await saveScreenshot(page, HIDDEN_TRAITOR_REVEAL_SCREENSHOT);
-
-        await page.getByTestId('betrayal-open-scenario').click();
-        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeVisible();
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).toContainText('剧本3');
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).not.toContainText(/剧本3查阅/);
-        await expect(page.getByTestId('betrayal-scenario-objective-page')).toContainText('灰尘');
-        await saveScreenshot(page, HIDDEN_TRAITOR_READER_SCREENSHOT);
-
-        await page.getByTestId('betrayal-scenario-reader-close').click();
-        await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toHaveCount(0);
         await expect(revealCue).toBeVisible();
         await expect(page.getByTestId('betrayal-dust-progress-strip')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-use')).toHaveCount(0);

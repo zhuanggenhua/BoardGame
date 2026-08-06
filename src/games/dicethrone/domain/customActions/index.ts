@@ -12,6 +12,7 @@ import { registerTreantCustomActions } from './treant';
 import { registerNinjaCustomActions } from './ninja';
 import { registerZhanshujiaCustomActions } from './zhanshujia';
 import { registerCursedPirateCustomActions } from './cursed_pirate';
+import { registerTianshiCustomActions } from './tianshi';
 
 let initialized = false;
 
@@ -38,6 +39,7 @@ export function initializeCustomActions(): void {
     registerNinjaCustomActions();
     registerZhanshujiaCustomActions();
     registerCursedPirateCustomActions();
+    registerTianshiCustomActions();
 
     initialized = true;
 }
@@ -56,3 +58,4 @@ export { registerTreantCustomActions } from './treant';
 export { registerNinjaCustomActions } from './ninja';
 export { registerZhanshujiaCustomActions } from './zhanshujia';
 export { registerCursedPirateCustomActions } from './cursed_pirate';
+export { registerTianshiCustomActions } from './tianshi';

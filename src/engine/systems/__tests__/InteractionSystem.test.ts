@@ -8,11 +8,13 @@ import {
     createCompareRollChoice,
     createSimpleChoice,
     INTERACTION_COMMANDS,
+    queueInteraction,
 } from '../InteractionSystem';
 import { createResponseWindowSystem } from '../ResponseWindowSystem';
 import { createCompareRollChoiceSystem } from '../CompareRollChoiceSystem';
 import { createSimpleChoiceSystem } from '../SimpleChoiceSystem';
 import { setActiveResolutionBlock, upsertActiveResolutionFrame } from '../resolutionStack';
+import type { EngineSystem } from '../types';
 
 interface TestCore {
     value: number;
@@ -385,6 +387,92 @@ describe('InteractionSystem', () => {
 
         expect(option?.displayMode).toBe('card');
         expect(option?.value?.defId).toBe('test-card-1');
+    });
+
+    it('afterEvents 新建的动态交互应在同轮领域事件归约后刷新选项', () => {
+        interface DynamicCore {
+            hand: string[];
+        }
+        type DynamicChoiceValue = { card: string } | { skip: true };
+
+        const dynamicDomain: DomainCore<DynamicCore, Command, GameEvent> = {
+            gameId: 'after-events-dynamic-refresh-test',
+            setup: () => ({ hand: [] }),
+            validate: () => ({ valid: true }),
+            execute: () => [{
+                type: 'OPEN_DYNAMIC_INTERACTION',
+                payload: {},
+                timestamp: 100,
+            }],
+            reduce: (core, event) => {
+                if (event.type !== 'CARD_ADDED') return core;
+                const payload = event.payload as { card: string };
+                return { ...core, hand: [...core.hand, payload.card] };
+            },
+        };
+        const dynamicInteractionSystem: EngineSystem<DynamicCore> = {
+            id: 'dynamic-interaction-fixture',
+            name: '动态交互测试夹具',
+            afterEvents: (ctx) => {
+                if (!ctx.events.some((event) => event.type === 'OPEN_DYNAMIC_INTERACTION')) return;
+                const interaction = createSimpleChoice<DynamicChoiceValue>(
+                    'interaction-after-events-refresh',
+                    '0',
+                    '选择刚进入手牌的卡',
+                    [{ id: 'skip', label: '跳过', value: { skip: true } }],
+                    { sourceId: 'dynamic-refresh-test', targetType: 'hand' },
+                );
+                (interaction.data as typeof interaction.data & {
+                    optionsGenerator?: (state: MatchState<DynamicCore>) => Array<{
+                        id: string;
+                        label: string;
+                        value: DynamicChoiceValue;
+                    }>;
+                }).optionsGenerator = (state) => (
+                    state.core.hand.length > 0
+                        ? state.core.hand.map((card) => ({ id: `card:${card}`, label: card, value: { card } }))
+                        : [{ id: 'skip', label: '跳过', value: { skip: true } }]
+                );
+
+                return {
+                    state: queueInteraction(ctx.state, interaction),
+                    events: [{
+                        type: 'CARD_ADDED',
+                        payload: { card: 'fresh-card' },
+                        timestamp: 101,
+                    }],
+                };
+            },
+        };
+        const state: MatchState<DynamicCore> = {
+            core: { hand: [] },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as unknown as MatchState<DynamicCore>;
+
+        const result = executePipeline(
+            {
+                domain: dynamicDomain,
+                systems: [dynamicInteractionSystem],
+            },
+            state,
+            {
+                type: 'START_DYNAMIC_REFRESH',
+                playerId: '0',
+                payload: {},
+                timestamp: 99,
+            },
+            mockRandom,
+            ['0'],
+        );
+        const options = (result.state.sys.interaction.current?.data as {
+            options?: Array<{ id: string }>;
+        } | undefined)?.options ?? [];
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.hand).toEqual(['fresh-card']);
+        expect(options.map((option) => option.id)).toEqual(['card:fresh-card']);
     });
 
     it('compare-roll-choice 应对双方参战者可见，但仍对其他玩家保持隐藏', () => {

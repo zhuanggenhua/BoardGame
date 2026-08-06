@@ -16,7 +16,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
 
     it('普通 hand prompt 仍由手牌直选承接，普通 reaction_choose button prompt 不应被整体排除出 PromptOverlay', () => {
         const source = readBoardSource();
-        expect(source).toContain('isDirectHandSelectPrompt && handSelectExtraOptions.length > 0');
+        expect(source).toContain('isDirectHandSelectPrompt && (isMultiDirectHandSelect || handSelectExtraOptions.length > 0)');
         expect(source).toContain('const shouldRender = !isDirectHandSelectPrompt');
         expect(source).not.toContain('const shouldRender = !isReactionChoicePrompt');
         expect(source).toContain('&& !isDiscardCardPrompt');

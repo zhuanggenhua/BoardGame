@@ -1,0 +1,22 @@
+{
+  "port": "4293",
+  "url": "http://127.0.0.1:4293/games/summonerwars/config",
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\summonerwars\\config-review\\14-配置表第二页分页仍在底部.png",
+  "audit": {
+    "visibleRange": "显示 26-50 / 共 160 行",
+    "pageStatus": "第 2 / 7 页",
+    "rows": 25,
+    "headerContainsPagination": false,
+    "headerBottom": 354,
+    "tableBottom": 980,
+    "paginationTop": 992,
+    "paginationBottom": 1040,
+    "viewportHeight": 1080,
+    "bodyScrollHeight": 1080,
+    "paginationBelowHeader": true,
+    "paginationBelowTable": true,
+    "paginationVisibleInViewport": true,
+    "pageDoesNotVerticallyScroll": true
+  },
+  "events": []
+}

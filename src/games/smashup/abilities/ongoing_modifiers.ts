@@ -67,6 +67,9 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
     { defId: 'vigilantes_tough_it_out', location: 'minion', target: 'self', delta: 2 },
     { defId: 'mounties_haich_q', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'munchkin_treasure_spiky_boots', location: 'minion', target: 'self', delta: 1, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_bloody_dismemberment_chainsaw', location: 'minion', target: 'self', delta: 2, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_potion_of_cowardice', location: 'minion', target: 'self', delta: -2, variantPolicy: 'baseOnly' },
 ];
 
 function registerStructuredOngoingPowerModifiers(): void {
@@ -641,6 +644,69 @@ function registerMythicHorsesModifiers(): void {
         },
     ]);
 }
+
+function isMunchkinTreasureAttachment(defId: string): boolean {
+    return getCardDef(defId)?.faction === 'munchkin_treasures';
+}
+
+function countActiveMunchkinTreasureAttachments(ctx: PowerModifierContext): number {
+    return ctx.minion.attachedActions.filter(action => (
+        isMunchkinTreasureAttachment(action.defId)
+        && !isCardSuppressed(ctx.state, action.uid)
+    )).length;
+}
+
+function registerMunchkinTreasureModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_dwarves_loot_lover',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_loot_lover')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) * 2;
+            },
+        },
+        {
+            sourceDefId: 'munchkin_dwarves_gem_grabber',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_gem_grabber')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) > 0 ? 2 : 0;
+            },
+        },
+        {
+            sourceDefId: 'munchkin_treasure_loads_of_treasure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
+                const sourceCount = helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'munchkin_treasure_loads_of_treasure',
+                );
+                if (sourceCount === 0) return 0;
+                return sourceCount * countActiveMunchkinTreasureAttachments(ctx);
+            },
+        },
+        {
+            sourceDefId: 'munchkin_treasure_kneepads_of_allure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => (
+                ctx.base.minions.reduce((total, minion) => (
+                    total + minion.attachedActions.filter(action => (
+                        helpers.matchesRuntimeDefId(action.defId, 'munchkin_treasure_kneepads_of_allure')
+                        && !isCardSuppressed(ctx.state, action.uid)
+                    )).length
+                ), 0)
+            ),
+        },
+        {
+            sourceDefId: 'base_the_mines',
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_the_mines') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx);
+            },
+        },
+    ]);
+}
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
@@ -657,6 +723,56 @@ function registerBaseModifiers(): void {
                 const baseDef = getBaseDef(ctx.base.defId);
                 return baseDef?.minionPowerBonus ?? 0;
             },
+        },
+    ]);
+}
+
+function registerMunchkinElvesModifiers(): void {
+    registerCustomBasePowerModifiers([
+        {
+            defId: 'base_helpers_hollow',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_helpers_hollow' || isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+                return currentPlayerId && currentPlayerId !== ctx.playerId ? 1 : 0;
+            },
+        },
+    ]);
+}
+
+function registerMunchkinOrcsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_orcs_sword_lord',
+            compute: (ctx, helpers) => helpers.countMinionsOnBaseMatchingRuntimeDefId(
+                ctx,
+                'munchkin_orcs_sword_lord',
+                {
+                    controllerId: ctx.minion.controller,
+                    excludeSelf: true,
+                },
+            ),
+        },
+    ]);
+}
+
+function registerMunchkinWarriorsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_warriors_dumbbells',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'munchkin_warriors_dumbbells',
+            ) * 3,
+        },
+        {
+            sourceDefId: 'munchkin_warriors_shield_of_ubiquity',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'munchkin_warriors_shield_of_ubiquity',
+            ) * (ctx.base.monsters?.length ?? 0) * 2,
         },
     ]);
 }
@@ -863,9 +979,109 @@ function registerWhatWereWeThinkingModifiers(): void {
     ]);
 }
 
+function registerPolynesianVoyagersModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'polynesian_voyagers_tiki',
+            compute: (ctx, helpers) => (
+                helpers.matchesRuntimeDefId(ctx.minion.defId, 'polynesian_voyagers_tiki')
+                    && (ctx.minion.attachedActions?.length ?? 0) > 0
+                    ? 2
+                    : 0
+            ),
+        },
+        {
+            sourceDefId: 'polynesian_voyagers_sun_tattoo',
+            compute: (ctx) => ctx.minion.attachedActions.some(action => action.defId === 'polynesian_voyagers_sun_tattoo') ? 2 : 0,
+        },
+    ]);
+
+    registerBreakpointModifiers([
+        {
+            sourceDefId: 'base_tropical_paradise',
+            modifier: (ctx) => {
+                if (ctx.base.defId !== 'base_tropical_paradise') return 0;
+                const playersWithMinions = new Set(ctx.base.minions.map(minion => minion.controller));
+                return ctx.state.turnOrder.every(playerId => playersWithMinions.has(playerId)) ? -20 : 0;
+            },
+        },
+    ]);
+}
+
+function registerHalfTheBattleModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'rulers_cosmos_sword_thats_powerful',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                if (getCardPrintedPower(ctx.minion.defId) < 5) return 0;
+                return helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'rulers_cosmos_sword_thats_powerful',
+                    { relationToTargetController: 'same' },
+                ) * 2;
+            },
+        },
+    ]);
+}
+
+function registerGoblinsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'goblins_magic_helmet',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'goblins_magic_helmet') * 4,
+        },
+    ]);
+}
+
+function registerRoundTableKnightsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'round_table_knights_gawain',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'round_table_knights_gawain')) return 0;
+                return ctx.base.minions.filter(minion =>
+                    minion.uid !== ctx.minion.uid
+                    && minion.controller === ctx.minion.controller
+                    && (
+                        minion.basePower
+                        + (minion.powerCounters ?? 0)
+                        + (minion.powerModifier ?? 0)
+                        + (minion.tempPowerModifier ?? 0)
+                    ) >= 4
+                ).length;
+            },
+        },
+        {
+            sourceDefId: 'round_table_knights_excalibur',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'round_table_knights_excalibur') * 2,
+        },
+        {
+            sourceDefId: 'base_round_table',
+            variantPolicy: 'baseOnly',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_round_table') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                const targetPrintedPower = getCardPrintedPower(ctx.minion.defId);
+                const hasMatchingPeer = ctx.base.minions.some(minion =>
+                    minion.uid !== ctx.minion.uid
+                    && minion.controller === ctx.minion.controller
+                    && getCardPrintedPower(minion.defId) === targetPrintedPower
+                );
+                return hasMatchingPeer ? 1 : 0;
+            },
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
+    registerMunchkinElvesModifiers();
+    registerMunchkinOrcsModifiers();
+    registerMunchkinWarriorsModifiers();
     registerStructuredOngoingPowerModifiers();
     registerDinosaurModifiers();
     registerRobotModifiers();
@@ -886,6 +1102,7 @@ export function registerAllOngoingModifiers(): void {
     registerKaijuModifiers();
     registerKittyCatsModifiers();
     registerMythicHorsesModifiers();
+    registerMunchkinTreasureModifiers();
     registerWerewolfModifiers();
     registerDragonModifiers();
     registerSuperheroesModifiers();
@@ -895,4 +1112,8 @@ export function registerAllOngoingModifiers(): void {
     registerZhongguoModifiers();
     registerInternationalIncidentModifiers();
     registerWhatWereWeThinkingModifiers();
+    registerPolynesianVoyagersModifiers();
+    registerHalfTheBattleModifiers();
+    registerGoblinsModifiers();
+    registerRoundTableKnightsModifiers();
 }

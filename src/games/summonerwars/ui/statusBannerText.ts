@@ -39,6 +39,34 @@ const YONGHENG_BANNER_KEYS: Record<string, Partial<Record<AbilityModeState['step
   },
 };
 
+const SHADOW_BANNER_KEYS: Record<string, Partial<Record<AbilityModeState['step'], string>>> = {
+  shadow_return_to_shadow: {
+    selectUnit: 'interaction.sw.shadowReturnToShadow',
+  },
+  shadow_judgment: {
+    selectUnit: 'interaction.sw.shadowJudgmentTarget',
+    selectChoice: 'interaction.sw.shadowJudgmentAmount',
+  },
+  shadow_tear_the_veil: {
+    selectUnit: 'interaction.sw.shadowTearTheVeilUnit',
+    selectPosition: 'interaction.sw.shadowTearTheVeilGate',
+    selectNewPosition: 'interaction.sw.shadowTearTheVeilPosition',
+  },
+  shadow_forbidden_knowledge: {
+    selectPosition: 'interaction.sw.shadowForbiddenKnowledgeTarget',
+  },
+  shadow_feint: {
+    selectPosition: 'interaction.sw.shadowFeintPosition',
+  },
+  shadow_shadow_summon: {
+    selectPosition: 'interaction.sw.shadowSummonTarget',
+    selectNewPosition: 'interaction.sw.shadowSummonPosition',
+  },
+  shadow_sudden_assault: {
+    selectPosition: 'interaction.sw.shadowSuddenAssaultPosition',
+  },
+};
+
 export function getAbilityModeBannerFallbackText(
   t: BannerTranslate,
   abilityMode: AbilityModeState,
@@ -67,9 +95,18 @@ export function getAbilityModeBannerFallbackText(
     return t('interaction.sw.huijinQuickShot');
   }
 
+  if (abilityMode.abilityId === 'mogu_decay' && abilityMode.step === 'selectUnit') {
+    return t('interaction.sw.moguDecayTarget');
+  }
+
   const yonghengBannerKey = YONGHENG_BANNER_KEYS[abilityMode.abilityId]?.[abilityMode.step];
   if (yonghengBannerKey) {
     return t(yonghengBannerKey);
+  }
+
+  const shadowBannerKey = SHADOW_BANNER_KEYS[abilityMode.abilityId]?.[abilityMode.step];
+  if (shadowBannerKey) {
+    return t(shadowBannerKey);
   }
 
   const shourenPositionBannerKey = SHOUREN_POSITION_BANNER_KEYS[abilityMode.abilityId];

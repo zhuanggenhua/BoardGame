@@ -13,11 +13,12 @@ import type {
   BoardCell,
   FactionId,
 } from './types';
+import { SW_EVENTS } from './types';
 import { BOARD_ROWS, BOARD_COLS, FIRST_PLAYER_MAGIC, SECOND_PLAYER_MAGIC, getSummoner } from './helpers';
 import { executeCommand } from './execute';
 import { reduceEvent } from './reduce';
 import { validateCommand } from './validate';
-import { postProcessDeathChecks } from './execute/helpers';
+import { getShadowBloodMagicChargeEvents, postProcessDeathChecks } from './execute/helpers';
 import { interceptYonghengContinuanceEvent } from './yonghengMechanics';
 
 // 重新导出类型和常量
@@ -110,7 +111,17 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
   ): GameEvent[] => {
     const sys = matchState?.sys as { _ppseInputEventsReduced?: boolean } | undefined;
     if (sys?._ppseInputEventsReduced) return events;
-    return postProcessDeathChecks(events, core);
+    const processedEvents = postProcessDeathChecks(events, core);
+    const timestamp = processedEvents.at(-1)?.timestamp ?? 0;
+    const existingBloodMagicCharges = processedEvents.filter((event) => (
+      event.type === SW_EVENTS.UNIT_CHARGED
+      && (event.payload as { sourceAbilityId?: string }).sourceAbilityId === 'shadow_blood_magic'
+    )).length;
+    const generatedBloodMagicCharges = getShadowBloodMagicChargeEvents(processedEvents, core, timestamp);
+    return [
+      ...processedEvents,
+      ...generatedBloodMagicCharges.slice(existingBloodMagicCharges),
+    ];
   },
 
   /** 验证命令合法性 */

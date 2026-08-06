@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { LinearFilter, LinearMipmapLinearFilter, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { Euler, LinearFilter, LinearMipmapLinearFilter, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -42,6 +42,8 @@ export interface DiceBoxStyleProfile {
     recoverOutOfBounds?: boolean;
     settledLayoutScale?: number;
     settledLayout?: Array<{ x: number; y: number; yaw: number }>;
+    settledTiltX?: number;
+    settledTiltY?: number;
     compactSettledDice?: boolean;
     settledFaceForwardAnimationMs?: number;
     settledScreenZScale?: number;
@@ -132,6 +134,12 @@ type DiceBoxDieWithBody = DiceBoxDie & {
     body?: DiceBoxBodyLike;
 };
 
+type DiceBoxSurfaceObject = {
+    visible?: boolean;
+    receiveShadow?: boolean;
+    material?: DiceBoxMaterialInstance | DiceBoxMaterialInstance[];
+};
+
 type DiceBoxDieTransformSnapshot = {
     position: { x: number; y: number; z: number };
     quaternion: { x: number; y: number; z: number; w: number };
@@ -161,6 +169,16 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     settledLayoutScale: 1,
     compactSettledDice: false,
 };
+
+function usesTransparentVirtualSurface(styleProfile: DiceBoxStyleProfile): boolean {
+    return styleProfile.surface === 'transparent' || styleProfile.surface === 'transparent-virtual';
+}
+
+function resolveThemeSurface(styleProfile: DiceBoxStyleProfile): string {
+    return usesTransparentVirtualSurface(styleProfile)
+        ? DEFAULT_DICE_BOX_STYLE_PROFILE.surface ?? 'green-felt'
+        : styleProfile.surface ?? DEFAULT_DICE_BOX_STYLE_PROFILE.surface ?? 'green-felt';
+}
 
 let nextContainerId = 0;
 let diceBoxModulePromise: Promise<typeof DiceBoxModule> | null = null;
@@ -285,7 +303,6 @@ const SETTLED_SCREEN_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number
         { x: 0.78, y: 0.3, yaw: -0.08 },
     ],
 };
-const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -320,7 +337,7 @@ export class DiceBoxThreeEngine {
             sounds: false,
             color_spotlight: styleProfile.colorSpotlight ?? DEFAULT_DICE_BOX_STYLE_PROFILE.colorSpotlight,
             shadows: styleProfile.shadows ?? DEFAULT_DICE_BOX_STYLE_PROFILE.shadows,
-            theme_surface: styleProfile.surface ?? DEFAULT_DICE_BOX_STYLE_PROFILE.surface,
+            theme_surface: resolveThemeSurface(styleProfile),
             sound_dieMaterial: styleProfile.soundMaterial ?? styleProfile.material ?? DEFAULT_DICE_BOX_STYLE_PROFILE.soundMaterial,
             theme_colorset: styleProfile.colorset ?? DEFAULT_DICE_BOX_STYLE_PROFILE.colorset,
             theme_material: styleProfile.material ?? DEFAULT_DICE_BOX_STYLE_PROFILE.material,
@@ -346,9 +363,13 @@ export class DiceBoxThreeEngine {
         box.renderer.domElement.style.pointerEvents = 'none';
         box.renderer.domElement.style.background = 'transparent';
         box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
+        box.renderer.domElement.dataset.diceSurfaceMode = usesTransparentVirtualSurface(styleProfile)
+            ? 'transparent-virtual'
+            : 'theme-surface';
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
+        engine.applySurfaceVisibility();
         if (typeof window !== 'undefined' && config?.canvasTestId) {
             const debugWindow = window as unknown as {
                 __E2E_TEST_MODE__?: boolean;
@@ -652,6 +673,7 @@ export class DiceBoxThreeEngine {
             x: worldWidth,
             y: worldHeight,
         });
+        this.applySurfaceVisibility();
         this.applyCameraProfile();
 
         const canvas = this.box.renderer?.domElement;
@@ -677,6 +699,28 @@ export class DiceBoxThreeEngine {
 
         camera.zoom = cameraZoom;
         camera.updateProjectionMatrix?.();
+        this.box.renderer?.render?.(this.box.scene, this.box.camera);
+    }
+
+    private applySurfaceVisibility(): void {
+        if (!usesTransparentVirtualSurface(this.styleProfile)) return;
+
+        const runtime = this.box as DiceBoxInternalRuntime & {
+            desk?: DiceBoxSurfaceObject;
+        };
+        const desk = runtime.desk;
+        if (!desk) return;
+
+        desk.visible = false;
+        desk.receiveShadow = false;
+        const materials = Array.isArray(desk.material) ? desk.material : [desk.material];
+        for (const material of materials) {
+            if (!material) continue;
+            material.visible = false;
+            material.transparent = true;
+            material.opacity = 0;
+            material.needsUpdate = true;
+        }
         this.box.renderer?.render?.(this.box.scene, this.box.camera);
     }
 
@@ -1073,9 +1117,7 @@ export class DiceBoxThreeEngine {
             const slot = screenSlots[sortedIndex] ?? { x: 0.5, y: 0.5, yaw: 0 };
             const z = baseScale * settledScreenZScale;
             const target = this.getWorldPointAtScreenFraction(slot.x, slot.y, z);
-            const settledQuaternion = new Quaternion()
-                .setFromAxisAngle(WORLD_UP, slot.yaw)
-                .normalize();
+            const settledQuaternion = this.getSettledQuaternionForDie(slot);
             this.setVector(entry.die.position, target);
             this.setVector(entry.die.body?.position, target);
             this.setVector(entry.die.body?.velocity, { x: 0, y: 0, z: 0 });
@@ -1933,8 +1975,10 @@ export class DiceBoxThreeEngine {
 
     private getSettledQuaternionForDie(layout?: { yaw: number }): Quaternion {
         const yaw = layout?.yaw ?? 0;
+        const tiltX = this.styleProfile.settledTiltX ?? 0;
+        const tiltY = this.styleProfile.settledTiltY ?? 0;
         return new Quaternion()
-            .setFromAxisAngle(WORLD_UP, yaw)
+            .setFromEuler(new Euler(tiltX, tiltY, yaw, 'XYZ'))
             .normalize();
     }
 

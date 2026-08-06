@@ -10,6 +10,7 @@ import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { logger } from '../../lib/logger';
+import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../../lib/browserStorage';
 import { shouldAllowFabDragFromTarget } from './fabDrag';
 import { resolveExpandedFabLayout } from './fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from './fabPosition';
@@ -228,8 +229,8 @@ export const FabMenu = ({
         const frameId = window.requestAnimationFrame(() => {
             try {
                 const resolved = resolveFabStoredPosition({
-                    savedPosition: localStorage.getItem(HUD_FAB_POSITION_KEY),
-                    legacyOffset: localStorage.getItem(HUD_FAB_LEGACY_OFFSET_KEY),
+                    savedPosition: readLocalStorageItem(HUD_FAB_POSITION_KEY),
+                    legacyOffset: readLocalStorageItem(HUD_FAB_LEGACY_OFFSET_KEY),
                     viewportWidth,
                     viewportHeight,
                     basePosition: getInitialPosition(),
@@ -238,10 +239,10 @@ export const FabMenu = ({
                     resolvedButtonSize: dockedButtonSize,
                 });
                 if (resolved.shouldPersist) {
-                    localStorage.setItem(HUD_FAB_POSITION_KEY, JSON.stringify(resolved.percent));
+                    writeLocalStorageItem(HUD_FAB_POSITION_KEY, JSON.stringify(resolved.percent));
                 }
                 if (resolved.clearLegacyOffset) {
-                    localStorage.removeItem(HUD_FAB_LEGACY_OFFSET_KEY);
+                    removeLocalStorageItem(HUD_FAB_LEGACY_OFFSET_KEY);
                 }
                 setFabPosition(resolved.position);
                 setAlignment(getAlignmentForPosition(resolved.position, dockedButtonSize));
@@ -268,7 +269,7 @@ export const FabMenu = ({
         dragX.set(0);
         dragY.set(0);
         // 保存为百分比格式
-        localStorage.setItem(
+        writeLocalStorageItem(
             HUD_FAB_POSITION_KEY,
             JSON.stringify(serializeFabPositionPercent(next, viewportWidth, viewportHeight)),
         );
@@ -360,7 +361,7 @@ export const FabMenu = ({
             // 从 localStorage 读取百分比，按新尺寸重新计算
             try {
                 const resolved = resolveFabStoredPosition({
-                    savedPosition: localStorage.getItem(HUD_FAB_POSITION_KEY),
+                    savedPosition: readLocalStorageItem(HUD_FAB_POSITION_KEY),
                     legacyOffset: null,
                     viewportWidth,
                     viewportHeight,
@@ -370,7 +371,7 @@ export const FabMenu = ({
                     resolvedButtonSize: dockedButtonSize,
                 });
                 if (resolved.shouldPersist) {
-                    localStorage.setItem(HUD_FAB_POSITION_KEY, JSON.stringify(resolved.percent));
+                    writeLocalStorageItem(HUD_FAB_POSITION_KEY, JSON.stringify(resolved.percent));
                 }
                 setFabPosition(resolved.position);
                 setAlignment(getAlignmentForPosition(resolved.position, dockedButtonSize));

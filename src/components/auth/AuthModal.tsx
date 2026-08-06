@@ -47,16 +47,24 @@ function mergeRememberedFields(
     previous: AuthRememberedFields,
     incoming: Partial<AuthRememberedFields>
 ): AuthRememberedFields {
-    const nextAccount = typeof incoming.account === 'string' ? incoming.account.trim() : '';
-    const nextUsername = typeof incoming.username === 'string' ? incoming.username.trim() : '';
-    const nextEmail = typeof incoming.email === 'string' ? incoming.email.trim() : '';
-    const nextResetEmail = typeof incoming.resetEmail === 'string' ? incoming.resetEmail.trim() : '';
+    const readField = (key: keyof AuthRememberedFields) => {
+        if (!Object.prototype.hasOwnProperty.call(incoming, key)) {
+            return previous[key];
+        }
+        const value = incoming[key];
+        return typeof value === 'string' ? value.trim() : '';
+    };
+
+    const nextAccount = readField('account');
+    const nextUsername = readField('username');
+    const nextEmail = readField('email');
+    const nextResetEmail = readField('resetEmail');
 
     return {
-        account: nextAccount || previous.account,
-        username: nextUsername || previous.username,
-        email: nextEmail || previous.email,
-        resetEmail: nextResetEmail || previous.resetEmail || nextEmail || nextAccount,
+        account: nextAccount,
+        username: nextUsername,
+        email: nextEmail,
+        resetEmail: nextResetEmail,
     };
 }
 
@@ -67,19 +75,7 @@ function readRememberedFields(): AuthRememberedFields {
         const raw = window.localStorage.getItem(AUTH_REMEMBERED_FIELDS_STORAGE_KEY);
         if (!raw) return inMemoryRememberedFields;
         const parsed = JSON.parse(raw) as Partial<AuthRememberedFields>;
-        const merged = {
-            account: inMemoryRememberedFields.account,
-            username: inMemoryRememberedFields.username,
-            email: inMemoryRememberedFields.email,
-            resetEmail: inMemoryRememberedFields.resetEmail,
-        };
-        const nextFields = {
-            ...merged,
-            account: typeof parsed.account === 'string' && parsed.account.length > 0 ? parsed.account : merged.account,
-            username: typeof parsed.username === 'string' && parsed.username.length > 0 ? parsed.username : merged.username,
-            email: typeof parsed.email === 'string' && parsed.email.length > 0 ? parsed.email : merged.email,
-            resetEmail: typeof parsed.resetEmail === 'string' && parsed.resetEmail.length > 0 ? parsed.resetEmail : merged.resetEmail,
-        };
+        const nextFields = mergeRememberedFields(inMemoryRememberedFields, parsed);
         inMemoryRememberedFields = nextFields;
         return nextFields;
     } catch {
@@ -148,7 +144,6 @@ export const AuthModal = ({
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const resetCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const rememberedFieldsRef = useRef<AuthRememberedFields>(EMPTY_REMEMBERED_FIELDS);
-    const draftHydratedRef = useRef(false);
 
     const isCompactLandscape = useHomeV2CompactLandscape();
     const { t } = useTranslation('auth');
@@ -255,7 +250,6 @@ export const AuthModal = ({
         if (isOpen) {
             const remembered = readRememberedFields();
             rememberedFieldsRef.current = remembered;
-            draftHydratedRef.current = false;
             setMode(initialMode);
             onModeChange?.(initialMode);
             setAccount(remembered.account);
@@ -263,51 +257,8 @@ export const AuthModal = ({
             setEmail(remembered.email);
             setResetEmail(remembered.resetEmail || remembered.email || remembered.account);
             clearSensitiveFields();
-            draftHydratedRef.current = true;
         }
     }, [clearSensitiveFields, isOpen, initialMode, onModeChange]);
-
-    useEffect(() => {
-        if (!draftHydratedRef.current) return;
-        rememberedFieldsRef.current = {
-            account: account.trim(),
-            username: username.trim(),
-            email: email.trim(),
-            resetEmail: resetEmail.trim(),
-        };
-        writeRememberedFields(rememberedFieldsRef.current);
-    }, [account, username, email, resetEmail]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const remembered = readRememberedFields();
-        rememberedFieldsRef.current = remembered;
-
-        if (mode === 'login') {
-            const preferredAccount = remembered.account || remembered.email || remembered.resetEmail;
-            if (!account.trim() && preferredAccount) {
-                setAccount(preferredAccount);
-            }
-            return;
-        }
-
-        if (mode === 'register') {
-            const preferredEmail = remembered.email || remembered.account || remembered.resetEmail;
-            if (!email.trim() && preferredEmail) {
-                setEmail(preferredEmail);
-            }
-            if (!username.trim() && remembered.username) {
-                setUsername(remembered.username);
-            }
-            return;
-        }
-
-        const preferredResetEmail = remembered.resetEmail || remembered.email || remembered.account;
-        if (!resetEmail.trim() && preferredResetEmail) {
-            setResetEmail(preferredResetEmail);
-        }
-    }, [isOpen, mode, account, email, username, resetEmail]);
 
     useEffect(() => {
         return () => {

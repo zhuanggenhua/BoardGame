@@ -193,6 +193,21 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
             positionControl: 1.06,
         },
     },
+    shadow: {
+        factionId: 'shadow',
+        summary: ['暗影精灵离场与回收', '重视伤害充能和传送门周边压制'],
+        strategyTagWeights: {
+            'ability-tempo': 1.18,
+            'board-control': 1.14,
+            'summoner-defense': 1.08,
+            economy: 1.02,
+        },
+        evaluationWeights: {
+            positionControl: 1.12,
+            tempo: 1.1,
+            summonerSafety: 1.06,
+        },
+    },
 };
 
 export function getSummonerWarsFactionAiProfile(

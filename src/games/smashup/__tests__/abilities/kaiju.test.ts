@@ -9,6 +9,7 @@ import { SU_COMMANDS, SU_EVENTS, type TitanState } from '../../domain/types';
 import {
     getPromptOption,
     getPromptOptions,
+    getPromptSourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -449,6 +450,14 @@ describe('Kaiju 代表性玩法行为', () => {
         const replayed = resolveInteractionChain(
             chooseAction.finalState,
             prompt => {
+                if (getPromptSourceId(prompt) === 'smashup_immediate_extra_action_base') {
+                    const targetBase = getPromptOption(
+                        prompt,
+                        candidate => candidate.value?.baseIndex === 1,
+                        'returned Stomp immediate action target base',
+                    );
+                    return { optionId: targetBase.id };
+                }
                 const option = getPromptOption(
                     prompt,
                     candidate => candidate.value?.cardUid === 'stomp-field',

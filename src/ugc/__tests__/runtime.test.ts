@@ -128,9 +128,9 @@ describe('UGC Runtime', () => {
 
             expect(tabStrip).toEqual({
                 x: 738,
-                y: 0,
+                y: 96,
                 width: 158,
-                height: 720,
+                height: 262,
                 label: '书签槽位',
             });
             expect(lobbyTab?.label).toBe('大厅书签');
@@ -173,6 +173,8 @@ describe('UGC Runtime', () => {
 
             expect(flipToDetail?.props?.sequence?.frames?.[0]).toContain('/page-flip-left/');
             expect(flipToOverview?.props?.sequence?.frames?.[0]).toContain('/page-flip-right/');
+            expect(flipToDetail?.props?.sequence?.assetSource).toBe('local');
+            expect(flipToOverview?.props?.sequence?.assetSource).toBe('local');
         });
     });
 });

@@ -149,6 +149,63 @@ describe('TutorialSystem', () => {
         expect(result?.state?.sys.tutorial.step?.id).toBe('step-2');
     });
 
+    it('afterEvents: 传输裁剪 steps 后仍使用已启动 manifest 推进下一步', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = {
+            id: 'transport-stripped',
+            steps: [
+                {
+                    id: 'roll-review',
+                    content: 'ack roll',
+                    requireAction: true,
+                    advanceOnEvents: [{ type: 'ROLL_ACKNOWLEDGED' }],
+                },
+                {
+                    id: 'move-target',
+                    content: 'choose target',
+                    requireAction: true,
+                    advanceOnEvents: [{ type: 'MOVED' }],
+                },
+            ],
+        };
+        const state = createTestState();
+        const started = sys.beforeCommand?.({
+            state,
+            command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } },
+            events: [], random: mockRandom, playerIds: ['0', '1'],
+        });
+        const startedTutorial = started?.state?.sys.tutorial;
+        expect(startedTutorial?.step?.id).toBe('roll-review');
+
+        const strippedState: MatchState<TestCore> = {
+            ...(started?.state ?? state),
+            sys: {
+                ...(started?.state ?? state).sys,
+                tutorial: {
+                    ...startedTutorial!,
+                    steps: [],
+                    totalSteps: manifest.steps.length,
+                } as MatchState<TestCore>['sys']['tutorial'] & { totalSteps: number },
+            },
+        };
+
+        const result = sys.afterEvents?.({
+            state: strippedState,
+            command: { type: 'ACK_ROLL', playerId: '0', payload: {} },
+            events: [{ type: 'ROLL_ACKNOWLEDGED', payload: {}, timestamp: 1 } as GameEvent],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.state?.sys.tutorial.active).toBe(true);
+        expect(result?.state?.sys.tutorial.stepIndex).toBe(1);
+        expect(result?.state?.sys.tutorial.step?.id).toBe('move-target');
+        expect(result?.state?.sys.tutorial.steps.map((step) => step.id)).toEqual([
+            'roll-review',
+            'move-target',
+        ]);
+    });
+
     it('beforeCommand: infoStep 拦截所有非系统命令', () => {
         const manifest: TutorialManifest = {
             id: 'block',

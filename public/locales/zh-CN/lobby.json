@@ -199,6 +199,7 @@
     "singleDevice": "单机模式",
     "playAi": "对战 AI",
     "tutorial": "教程模式",
+    "configReview": "配置表",
     "createRoom": "创建房间",
     "backToDirectory": "返回目录",
     "confirm": "确认",
@@ -2095,6 +2096,21 @@
               "description": "持续：你的随从 +1 力量",
               "effect": "加成",
               "result": "+1 力量"
+            },
+            "buff_power": {
+              "label": "+1力量"
+            },
+            "move_minion": {
+              "label": "移动"
+            },
+            "return_to_hand": {
+              "label": "回手"
+            },
+            "discard_card": {
+              "label": "弃置"
+            },
+            "chain_trigger": {
+              "label": "连环"
             }
           },
           "preview": {
@@ -2107,7 +2123,15 @@
             },
             "effect_label": "触发效果",
             "minions_hint": "模拟基地上的随从",
-            "idle_hint": "点击卡牌名触发预览"
+            "idle_hint": "点击卡牌名触发预览",
+            "zones": {
+              "second_base": "第二基地",
+              "empty_slot": "空槽",
+              "deck": "牌库",
+              "hand": "手牌",
+              "discard": "弃牌堆",
+              "score": "胜利分数"
+            }
           }
         }
       },

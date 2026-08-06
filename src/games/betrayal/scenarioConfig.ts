@@ -3,15 +3,18 @@ import type { BetrayalMonsterDefinitionId } from './domain/monsterDefinitions';
 export type BetrayalTraitKey = 'might' | 'speed' | 'knowledge' | 'sanity';
 export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
+export type BetrayalRoomDiscoverySymbol = BetrayalDeckKind | 'none';
 export type BetrayalRecommendedAction = 'move' | 'explore' | 'trade' | 'use' | 'endTurn';
 export type BetrayalScenarioId = 'first-scenario';
 export type BetrayalScenarioCardId =
+    | 'mummy-rampage'
     | 'crimson-jack-returns'
     | 'friends-forever'
     | 'free-the-realtor'
     | 'blood-from-a-stone'
-    | 'inheritance';
-export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
+    | 'inheritance'
+    | 'upon-reflection';
+export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'runtime-supported' | 'contract-pending';
 export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo' | 'haunt';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
@@ -85,6 +88,11 @@ export interface BetrayalInventorySeed {
     kind: BetrayalInventoryKind;
 }
 
+export interface BetrayalExplorerTraitTrackSeed {
+    values: number[];
+    startPosition: number;
+}
+
 export interface BetrayalExplorerCatalogEntry {
     explorerId: string;
     displayName: string;
@@ -92,6 +100,7 @@ export interface BetrayalExplorerCatalogEntry {
     tokenAsset?: string;
     color: string;
     traits: Record<BetrayalTraitKey, number>;
+    traitTracks: Record<BetrayalTraitKey, BetrayalExplorerTraitTrackSeed>;
     abilityName: string;
     abilityText: string;
 }
@@ -121,10 +130,68 @@ export interface BetrayalRoomDiscoveryTemplate {
     hint: string;
     tags: string[];
     visualId: Exclude<BetrayalRoomVisualId, 'startTriple' | 'startHallway' | 'upperLanding' | 'basementLanding' | 'entranceHall' | 'foyer' | 'backUpper' | 'backGround' | 'backBasement'>;
+    discoverySymbol?: BetrayalRoomDiscoverySymbol;
     doorways: BetrayalRoomEdge[];
     discoveryEffect?: 'gainSanity1' | 'gainKnowledge1' | 'gainMight1' | 'gainSpeed1' | 'drawUntilWeapon' | 'placeObstacleToken';
     endTurnEffect?: 'physicalDamage1' | 'speedCheckFallToBasement' | 'moveToBasementLanding';
     enterEffect?: 'mysticElevator';
+}
+
+export const BETRAYAL_ROOM_DISCOVERY_SYMBOL_BY_VISUAL_ID = {
+    observatory: 'omen',
+    tower: 'event',
+    statuaryCorridor: 'event',
+    gallery: 'event',
+    ballroom: 'omen',
+    kitchen: 'event',
+    laboratory: 'event',
+    conservatory: 'omen',
+    graveyard: 'omen',
+    chapel: 'event',
+    larder: 'none',
+    diningRoom: 'event',
+    laundryChute: 'none',
+    vault: 'item',
+    chasm: 'event',
+    panicRoom: 'omen',
+    undergroundCavern: 'event',
+    ritualRoom: 'omen',
+    undergroundLake: 'event',
+    catacombs: 'omen',
+    secretStaircase: 'none',
+    furnaceRoom: 'event',
+    winterBedroom: 'omen',
+    guestQuarters: 'event',
+    bloodyRoom: 'item',
+    library: 'omen',
+    study: 'omen',
+    collapsedRoom: 'none',
+    junkRoom: 'item',
+    specimenRoom: 'omen',
+    charredRoom: 'omen',
+    salon: 'event',
+    bedroom: 'omen',
+    primaryBedroom: 'omen',
+    organRoom: 'event',
+    soundproofedRoom: 'omen',
+    nursery: 'omen',
+    operatingTheatre: 'item',
+    crawlspace: 'event',
+    gameRoom: 'item',
+    gymnasium: 'none',
+    armory: 'none',
+    crampedPassageway: 'event',
+    mysticElevator: 'none',
+} as const satisfies Partial<Record<BetrayalRoomVisualId, BetrayalRoomDiscoverySymbol>>;
+
+export function resolveBetrayalRoomDiscoverySymbol(
+    room: Pick<BetrayalRoomDiscoveryTemplate, 'visualId' | 'discoverySymbol'>,
+): BetrayalRoomDiscoverySymbol {
+    const symbol = room.discoverySymbol ?? BETRAYAL_ROOM_DISCOVERY_SYMBOL_BY_VISUAL_ID[room.visualId];
+    if (!symbol) {
+        throw new Error(`Betrayal room discovery symbol missing for visualId ${room.visualId}`);
+    }
+    return symbol;
 }
 
 export type BetrayalUseEffectSeed =
@@ -170,10 +237,22 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'fixedDamage';
+        amount: number;
+        damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'rolledDamage';
         dice: number;
         rolls?: number[];
         damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'traitRoll';
+        trait: BetrayalTraitKey;
+        branches: BetrayalEventResultBranch[];
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -196,9 +275,25 @@ export type BetrayalUseEffectSeed =
     }
     | {
         mode: 'placeExplorerInDiscoveredRoomByFloor';
-        targetRoomScope: 'anyDiscovered' | 'groundDiscovered' | 'basementDiscovered';
+        targetRoomScope:
+            | 'anyDiscovered'
+            | 'groundDiscovered'
+            | 'basementDiscovered'
+            | 'groundOrBasementDiscovered'
+            | 'sameFloorDiscovered'
+            | 'differentFloorDiscovered';
+        requiredIfDiscoveredVisualIds?: BetrayalRoomVisualId[];
         targetRoomId?: string;
         targetRoomName?: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInNextFloorStartingRoom';
+        basementFallbackFloor: Extract<BetrayalRoomFloor, 'upper' | 'ground'>;
+        basementFallbackDamage?: {
+            amount: number;
+            damageKind: 'physical' | 'mental';
+        };
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -218,6 +313,10 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'placeBlessingToken';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'placeSecretPassageToken';
         targetRoomScope?: 'anyOtherDiscovered' | 'groundDiscovered' | 'basementDiscovered';
         targetRoomId?: string;
@@ -227,6 +326,25 @@ export type BetrayalUseEffectSeed =
     | {
         mode: 'compound';
         effects: BetrayalUseEffectSeed[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalEffect';
+        acceptLabel: string;
+        declineLabel: string;
+        acceptEffect: BetrayalUseEffectSeed;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalItemEffect';
+        acceptLabel: string;
+        declineLabel: string;
+        itemFilter: 'item' | 'nonWeaponItem';
+        consumeAction: 'discard' | 'bury';
+        selectedCardId?: string;
+        selectedCardName?: string;
+        acceptEffect: BetrayalUseEffectSeed;
+        declineEffect: BetrayalUseEffectSeed;
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -301,20 +419,34 @@ export interface BetrayalEventSeed {
     );
 }
 
-// 12 号已接入官方 setup / 奇异护符控制权 / 巨魔手攻击和偷牌替代伤害。
-export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
+// 当前可进入正式运行链的作祟号；这不是“50 个作祟完整完成”的口径。
+export const BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS = [1, 3, 5, 12, 33] as const;
+export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS;
+const BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS = [
+    ...BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS,
+    7,
+] as const;
+
+export function isBetrayalHauntRuntimeSupported(hauntCardNumber: number): boolean {
+    return BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS.includes(
+        hauntCardNumber as typeof BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS[number],
+    );
+}
 
 export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
-    return BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS.includes(
-        hauntCardNumber as typeof BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS[number],
+    return isBetrayalHauntRuntimeSupported(hauntCardNumber);
+}
+
+export function isBetrayalOptionalHauntRollRuntimeSupported(hauntCardNumber: number): boolean {
+    return BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS.includes(
+        hauntCardNumber as typeof BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS[number],
     );
 }
 
 export function isBetrayalEventRuntimeSupported(event: BetrayalEventSeed): boolean {
-    if (event.effect?.mode !== 'optionalHauntRoll') {
-        return true;
-    }
-    return isImplementedBetrayalHauntCardNumber(event.effect.successHauntId);
+    // 事件牌本身可以进入运行牌堆；未实现的作祟入口在 RESOLVE_EVENT_CHOICE
+    // 和 Board 层禁用“接受作祟检定”，不再把整张事件牌排除出运行牌堆。
+    return Boolean(event.name);
 }
 
 export interface BetrayalMonsterSeed {
@@ -326,6 +458,8 @@ export interface BetrayalMonsterSeed {
     roomId: string;
     might: number;
     speed: number;
+    sanity?: number;
+    knowledge?: number;
     damage: number;
 }
 
@@ -348,8 +482,8 @@ export interface BetrayalScenarioCompletionConfig {
 export interface BetrayalScenarioConfig {
     id: BetrayalScenarioId;
     title: string;
-    scenarioCardLabel: 'NONE';
-    hauntId: 'crimson-jack-returns';
+    scenarioCardLabel: string;
+    hauntId: BetrayalScenarioCardId;
     hauntTitle: string;
     hauntTriggerLabel: string;
     presentation: {
@@ -396,16 +530,28 @@ export interface BetrayalHauntRevealResolution {
 
 export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCandidate[] = [
     {
+        id: 'mummy-rampage',
+        title: '木乃伊横行',
+        titleEn: 'Mummy Rampage',
+        scenarioCardLabel: 'Girl',
+        triggerOmenLabel: '女孩',
+        hauntNumber: 1,
+        summary: '一名探索者倒向木乃伊。英雄必须找出真名、学会驱逐法术，并在木乃伊完成婚礼前驱逐它。',
+        summaryEn: 'One explorer turns toward the mummy. Heroes must learn the true name, learn the banishment spell, and banish the mummy before the wedding is completed.',
+        implementationStatus: 'implemented',
+        implementedScenarioId: 'first-scenario',
+        sourcePath: 'docs/games/betrayal/haunts/01-mummy-rampage.md',
+    },
+    {
         id: 'crimson-jack-returns',
         title: '赤红杰克归来',
         titleEn: 'Crimson Jack Returns',
         scenarioCardLabel: 'NONE',
         triggerOmenLabel: 'A Splash of Crimson',
         hauntNumber: 1,
-        summary: '当前已接入真实运行时的代表作祟链路。',
-        summaryEn: 'Implemented as the current real runtime haunt chain.',
-        implementationStatus: 'implemented',
-        implementedScenarioId: 'first-scenario',
+        summary: '赤红杰克的传说重新回到山屋。一名同伴暗中背叛，英雄需要调查杰克并完成驱魔。',
+        summaryEn: 'Crimson Jack returns to the house. One companion secretly betrays the group while the heroes investigate Jack and prepare an exorcism.',
+        implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/01-stacked-like-cordwood-2.md',
     },
     {
@@ -415,8 +561,8 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'Cursed!',
         triggerOmenLabel: 'Ring',
         hauntNumber: 2,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '诅咒把友情拖进时间循环。队伍需要分清谁还可信，并打破指环带来的恶意。',
+        summaryEn: 'A curse drags friendship into a time loop. The group must decide who can still be trusted and break the Ring’s malice.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/02-friends-forever.md',
     },
@@ -427,21 +573,22 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'For Sale',
         triggerOmenLabel: 'Dog',
         hauntNumber: 4,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '恶魔房产经纪人盯上了这座宅邸。英雄要净化房间，在交易完成前把它赶走。',
+        summaryEn: 'A demonic realtor has claimed the house. Heroes must cleanse rooms and drive it out before the deal is sealed.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/04-free-the-realtor.md',
     },
     {
         id: 'blood-from-a-stone',
-        title: '石中血',
+        title: '顽石之血',
         titleEn: 'Blood From a Stone',
         scenarioCardLabel: 'Paranormal Investigators',
         triggerOmenLabel: 'Mask',
         hauntNumber: 5,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
-        implementationStatus: 'contract-pending',
+        summary: '宅邸里的石像小天使开始移动。英雄要利用房间和视线，让石像彼此对望并全部消失。',
+        summaryEn: 'Stone Cherubs begin moving through the house. Heroes must use rooms and line of sight to make the statues face each other and vanish.',
+        implementationStatus: 'runtime-supported',
+        implementedScenarioId: 'first-scenario',
         sourcePath: 'docs/games/betrayal/haunts/05-blood-from-a-stone.md',
     },
     {
@@ -451,17 +598,29 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'A Mysterious Invitation',
         triggerOmenLabel: 'Dagger',
         hauntNumber: 6,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '遗产背后藏着杀机。探索者要追查证据，同时提防真正的继承人露出獠牙。',
+        summaryEn: 'An inheritance hides a murder plot. Explorers must uncover evidence while the true heir waits for the right moment.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/06-inheritance.md',
+    },
+    {
+        id: 'upon-reflection',
+        title: '镜中回望',
+        titleEn: 'Upon Reflection',
+        scenarioCardLabel: 'NONE',
+        triggerOmenLabel: '怪异的镜子',
+        hauntNumber: 7,
+        summary: '怪异的镜子让宅邸变得不可靠。英雄需要寻找正确组合，破解镜中的诅咒。',
+        summaryEn: 'The Eerie Mirror makes the house untrustworthy. Heroes must find the right combination and break the mirror curse.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/07-upon-reflection.md',
     },
 ] as const;
 
 export const BETRAYAL_SCENARIO_CARD_IDS = BETRAYAL_SCENARIO_CARD_CANDIDATES
     .map((candidate) => candidate.id);
 
-export const DEFAULT_BETRAYAL_SCENARIO_CARD_ID: BetrayalScenarioCardId = 'crimson-jack-returns';
+export const DEFAULT_BETRAYAL_SCENARIO_CARD_ID: BetrayalScenarioCardId = 'mummy-rampage';
 
 const BETRAYAL_SCENARIO_CARD_BY_ID = new Map<BetrayalScenarioCardId, BetrayalScenarioCardCandidate>(
     BETRAYAL_SCENARIO_CARD_CANDIDATES.map((candidate) => [candidate.id, candidate]),
@@ -488,6 +647,25 @@ function normalizeHauntLookupLabel(label: string): string {
     return label.trim().toLocaleLowerCase();
 }
 
+function resolveScenarioCardCandidateForHauntOverride(
+    fallbackCandidate: BetrayalScenarioCardCandidate,
+    triggeringLabel: string,
+    hauntCardNumberOverride?: number,
+): BetrayalScenarioCardCandidate {
+    if (hauntCardNumberOverride === undefined || fallbackCandidate.hauntNumber === hauntCardNumberOverride) {
+        return fallbackCandidate;
+    }
+    const overrideCandidates = BETRAYAL_SCENARIO_CARD_CANDIDATES
+        .filter((candidate) => candidate.hauntNumber === hauntCardNumberOverride);
+    const triggerMatch = overrideCandidates.find((candidate) => (
+        normalizeHauntLookupLabel(candidate.triggerOmenLabel) === normalizeHauntLookupLabel(triggeringLabel)
+    ));
+    if (triggerMatch) {
+        return triggerMatch;
+    }
+    return overrideCandidates.length === 1 ? overrideCandidates[0]! : fallbackCandidate;
+}
+
 export function resolveBetrayalHauntRevealResolution({
     scenarioCardId,
     triggeringOmen,
@@ -501,90 +679,218 @@ export function resolveBetrayalHauntRevealResolution({
         ? getBetrayalScenarioCardCandidate(scenarioCardId)
         : getBetrayalScenarioCardCandidate(DEFAULT_BETRAYAL_SCENARIO_CARD_ID);
     const triggeringOmenName = triggeringOmen?.name?.trim() || candidate.triggerOmenLabel;
-    const hauntCardNumber = hauntCardNumberOverride ?? candidate.hauntNumber;
+    const resolvedCandidate = resolveScenarioCardCandidateForHauntOverride(
+        candidate,
+        triggeringOmenName,
+        hauntCardNumberOverride,
+    );
+    const hauntCardNumber = hauntCardNumberOverride ?? resolvedCandidate.hauntNumber;
     const triggerMatchesScenarioCard = normalizeHauntLookupLabel(triggeringOmenName)
-        === normalizeHauntLookupLabel(candidate.triggerOmenLabel)
-        && hauntCardNumber === candidate.hauntNumber;
+        === normalizeHauntLookupLabel(resolvedCandidate.triggerOmenLabel)
+        && hauntCardNumber === resolvedCandidate.hauntNumber;
 
     return {
-        scenarioCardId: candidate.id,
-        scenarioCardTitle: candidate.title,
-        scenarioCardLabel: candidate.scenarioCardLabel,
-        expectedTriggerOmenLabel: candidate.triggerOmenLabel,
+        scenarioCardId: resolvedCandidate.id,
+        scenarioCardTitle: resolvedCandidate.title,
+        scenarioCardLabel: resolvedCandidate.scenarioCardLabel,
+        expectedTriggerOmenLabel: resolvedCandidate.triggerOmenLabel,
         triggeringOmenId: triggeringOmen?.id ?? null,
         triggeringOmenName,
         hauntCardNumber,
-        implementationStatus: candidate.implementationStatus,
-        implementedScenarioId: candidate.implementedScenarioId,
+        implementationStatus: resolvedCandidate.implementationStatus,
+        implementedScenarioId: resolvedCandidate.implementedScenarioId,
         triggerMatchesScenarioCard,
-        representativeOnly: candidate.implementationStatus !== 'implemented' || !triggerMatchesScenarioCard,
+        representativeOnly: resolvedCandidate.implementationStatus !== 'implemented' || !triggerMatchesScenarioCard,
     };
 }
 
+const BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME = '无特殊能力';
+const BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT = '基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。';
+
 export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
     {
-        explorerId: 'jaden-jones',
-        displayName: '杰登·琼斯',
-        portraitAsset: 'betrayal/explorers/jade-jones',
-        tokenAsset: 'betrayal/tokens/explorers/jaden-jones',
-        color: '#8cc63f',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '大胆',
-        abilityText: '攻击投掷 +1。',
-    },
-    {
-        explorerId: 'rebecca-allen',
-        displayName: '丽贝卡·艾伦博士',
+        explorerId: 'isa-valencia',
+        displayName: '伊莎·瓦伦西亚',
         portraitAsset: 'betrayal/explorers/xia',
-        color: '#3699d3',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '冷静',
-        abilityText: '第一次事件检定后可重投 1 颗骰。',
+        color: '#d0a23e',
+        traits: { might: 3, speed: 5, knowledge: 4, sanity: 4 },
+        traitTracks: {
+            might: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            speed: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 3 },
+            sanity: { values: [2, 3, 4, 5, 6, 7, 7, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'darryl-highla',
-        displayName: '达里尔·海拉',
+        explorerId: 'anita-hernandez',
+        displayName: '安妮塔·赫南德兹',
         portraitAsset: 'betrayal/explorers/anita-hernandez',
+        color: '#d9b23f',
+        traits: { might: 4, speed: 4, knowledge: 5, sanity: 3 },
+        traitTracks: {
+            might: { values: [2, 2, 3, 4, 5, 6, 7], startPosition: 3 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [4, 4, 5, 5, 7, 8, 8], startPosition: 2 },
+            sanity: { values: [2, 2, 3, 4, 5, 5, 6, 6], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'father-warren-leung',
+        displayName: '神父 梁沃伦',
+        portraitAsset: 'betrayal/explorers/father-warren-leung',
+        tokenAsset: 'betrayal/tokens/explorers/father-warren-leung',
+        color: '#c8d0d2',
+        traits: { might: 3, speed: 4, knowledge: 4, sanity: 5 },
+        traitTracks: {
+            might: { values: [2, 2, 3, 3, 4, 5, 6, 6], startPosition: 2 },
+            speed: { values: [2, 3, 4, 4, 5, 5, 6, 6], startPosition: 2 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+            sanity: { values: [3, 3, 5, 5, 6, 6, 8, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'dan-nguyen-md',
+        displayName: '阮单 医学博士',
+        portraitAsset: 'betrayal/explorers/dan-nguyen-md',
+        color: '#d8dce0',
+        traits: { might: 4, speed: 3, knowledge: 5, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 4, 5, 5, 6, 7], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            sanity: { values: [2, 3, 4, 4, 5, 5, 6, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'michelle-monroe',
+        displayName: '米歇尔·梦露',
+        portraitAsset: 'betrayal/explorers/michelle-monroe',
+        tokenAsset: 'betrayal/tokens/explorers/michelle-monroe',
         color: '#b45ca3',
-        traits: { might: 3, speed: 4, knowledge: 3, sanity: 5 },
-        abilityName: '敏锐',
-        abilityText: '探索到事件房间时，知识 +1。',
+        traits: { might: 5, speed: 4, knowledge: 4, sanity: 3 },
+        traitTracks: {
+            might: { values: [2, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 5, 6, 7, 8], startPosition: 3 },
+            sanity: { values: [2, 2, 3, 4, 4, 5, 6, 6], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'beat-box-bowen',
+        displayName: '布里塔妮 “B-BOX” 鲍温',
+        portraitAsset: 'betrayal/explorers/beat-box-bowen',
+        color: '#b23f8a',
+        traits: { might: 5, speed: 3, knowledge: 4, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 5, 5, 6, 7, 7, 8], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+            sanity: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'josef-hooper',
+        displayName: '约瑟夫 “铁子” 霍珀',
+        portraitAsset: 'betrayal/explorers/josef-hooper',
+        color: '#c85045',
+        traits: { might: 5, speed: 4, knowledge: 3, sanity: 4 },
+        traitTracks: {
+            might: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 2, 3, 3, 5, 5, 6, 6], startPosition: 2 },
+            sanity: { values: [2, 2, 3, 4, 5, 5, 6, 6], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
         explorerId: 'oliver-swift',
         displayName: '奥利弗·斯威夫特',
         portraitAsset: 'betrayal/explorers/oliver-swift',
         color: '#d0603f',
-        traits: { might: 4, speed: 3, knowledge: 2, sanity: 4 },
-        abilityName: '谨慎',
-        abilityText: '结束回合时若未探索，移动 +1。',
+        traits: { might: 4, speed: 5, knowledge: 4, sanity: 3 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 5, 5, 6, 7], startPosition: 2 },
+            speed: { values: [3, 4, 5, 5, 6, 7, 7, 8], startPosition: 2 },
+            knowledge: { values: [3, 3, 4, 5, 6, 6, 7], startPosition: 2 },
+            sanity: { values: [2, 3, 3, 4, 5, 5, 6, 7], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'lia-valencia',
-        displayName: '莉娅·瓦伦西亚',
-        portraitAsset: 'betrayal/explorers/sera-nguyen',
-        color: '#d0a23e',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '专注',
-        abilityText: '使用物品后可查看顶牌。',
+        explorerId: 'stephanie-richter',
+        displayName: '斯蒂芬妮·里克特',
+        portraitAsset: 'betrayal/explorers/stephanie-richter',
+        tokenAsset: 'betrayal/tokens/explorers/stephanie-richter',
+        color: '#3699d3',
+        traits: { might: 4, speed: 3, knowledge: 4, sanity: 5 },
+        traitTracks: {
+            might: { values: [2, 3, 4, 5, 5, 6, 6], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 5, 5, 6, 7], startPosition: 1 },
+            knowledge: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 3 },
+            sanity: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'sam-yin',
-        displayName: '山姆·尹',
-        portraitAsset: 'betrayal/explorers/father-warren-leung',
+        explorerId: 'persephone-puleri',
+        displayName: '珀尔塞福涅·普拉里',
+        portraitAsset: 'betrayal/explorers/persephone-puleri',
+        color: '#478bbf',
+        traits: { might: 4, speed: 4, knowledge: 3, sanity: 5 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+            speed: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 5, 6, 6, 7], startPosition: 1 },
+            sanity: { values: [3, 3, 4, 5, 6, 7, 8, 8], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'sammy-angler',
+        displayName: '塞米·昂勒尔',
+        portraitAsset: 'betrayal/explorers/sammy-angler',
         color: '#719d4a',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '守护',
-        abilityText: '同房间队友受伤时可替其承受 1 点。',
+        traits: { might: 4, speed: 5, knowledge: 3, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 4, 5, 6, 8], startPosition: 2 },
+            speed: { values: [2, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            knowledge: { values: [2, 2, 3, 3, 4, 6, 7, 8], startPosition: 2 },
+            sanity: { values: [2, 3, 3, 4, 5, 6, 6, 7], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'michelle-monroe',
-        displayName: '米歇尔·门罗',
-        portraitAsset: 'betrayal/explorers/anita-hernandez',
-        color: '#777777',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '沉默',
-        abilityText: '长曲棍球冠军，适合作为首剧本叛徒基准角色。',
+        explorerId: 'jaden-jones',
+        displayName: '杰登·琼斯',
+        portraitAsset: 'betrayal/explorers/jade-jones',
+        tokenAsset: 'betrayal/tokens/explorers/jaden-jones',
+        color: '#8cc63f',
+        traits: { might: 3, speed: 4, knowledge: 5, sanity: 4 },
+        traitTracks: {
+            might: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            speed: { values: [3, 4, 4, 5, 5, 6, 7, 8], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 3 },
+            sanity: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
 ];
 
@@ -592,8 +898,8 @@ export const BETRAYAL_SHARED_PRE_HAUNT_SETUP = {
     explorerStartTileId: 'entrance-hall',
     initialDeckCounts: {
         omen: 9,
-        item: 12,
-        event: 20,
+        item: 22,
+        event: 43,
     } satisfies Record<BetrayalDeckKind, number>,
     startingRoomLayout: [
         {
@@ -823,17 +1129,27 @@ export const BETRAYAL_DISCOVERY_POOLS = {
     possessions: {
         item: [
             { id: 'camera', name: '魔法相机', kind: 'item' },
+            { id: 'scary-doll', name: '恐怖玩偶', kind: 'item' },
             { id: 'medical-kit', name: '急救包', kind: 'item' },
+            { id: 'mirror', name: '镜子', kind: 'item' },
             { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
+            { id: 'lucky-coin', name: '幸运硬币', kind: 'item' },
+            { id: 'leather-jacket', name: '皮夹克', kind: 'item' },
+            { id: 'tooth-necklace', name: '牙齿项链', kind: 'item' },
             { id: 'flashlight', name: '手电筒', kind: 'item' },
             { id: 'radio', name: '头戴耳机', kind: 'item' },
             { id: 'map', name: '地图', kind: 'item' },
             { id: 'strange-amulet', name: '奇异护符', kind: 'item' },
+            { id: 'brooch', name: '胸针', kind: 'item' },
+            { id: 'gun', name: '枪', kind: 'item' },
+            { id: 'crossbow', name: '十字弓', kind: 'item' },
             { id: 'rope', name: '兔脚', kind: 'item' },
             { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+            { id: 'mysterious-stopwatch', name: '神秘秒表', kind: 'item' },
             { id: 'hunting-knife', name: '砍刀', kind: 'item' },
-            { id: 'notebook', name: '笔记本', kind: 'item' },
-            { id: 'manuscript', name: '手稿', kind: 'item' },
+            { id: 'chainsaw', name: '电锯', kind: 'item' },
+            { id: 'dynamite', name: '炸药', kind: 'item' },
+            { id: 'angel-feather', name: '天使之羽', kind: 'item' },
         ],
         omen: [
             { id: 'omen-book', name: '书本', kind: 'omen' },
@@ -854,6 +1170,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '一层观测房间，中央器械让视线与路线都更紧张',
                 tags: ['一层', '观察'],
                 visualId: 'observatory',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south', 'west'],
             },
             {
@@ -861,6 +1178,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '玻璃与藤蔓围住的一层房间，适合制造视线遮挡',
                 tags: ['一层', '植物'],
                 visualId: 'conservatory',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -868,6 +1186,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通向地下洞窟的室外墓地，适合承接追逐与怪物线',
                 tags: ['一层', '室外'],
                 visualId: 'graveyard',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -875,6 +1194,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '宽敞的一层房间，适合会合与周旋',
                 tags: ['会合', '开阔'],
                 visualId: 'ballroom',
+                discoverySymbol: 'omen',
                 doorways: ['south', 'west'],
             },
             {
@@ -882,6 +1202,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '食物和器具堆在一层，是事件与物品都可能发生的房间',
                 tags: ['一层', '物资'],
                 visualId: 'kitchen',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south', 'west'],
             },
             {
@@ -889,6 +1210,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '长桌和阴影形成一层交汇点',
                 tags: ['一层', '会合'],
                 visualId: 'diningRoom',
+                discoverySymbol: 'event',
                 doorways: ['north', 'west'],
             },
             {
@@ -896,6 +1218,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '冷清肃穆，像在等待一件不该发生的事',
                 tags: ['神秘', '静压'],
                 visualId: 'chapel',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
                 discoveryEffect: 'gainSanity1',
             },
@@ -904,6 +1227,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '仪器和试剂暗示这里会触发危险事件',
                 tags: ['一层', '危险'],
                 visualId: 'laboratory',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east'],
             },
             {
@@ -911,6 +1235,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '一层封闭房间，适合放置剧本物件和高价值目标',
                 tags: ['一层', '目标'],
                 visualId: 'vault',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
             },
             {
@@ -918,6 +1243,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '炙热房间会改变移动与伤害判断',
                 tags: ['一层', '危险'],
                 visualId: 'furnaceRoom',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south', 'west'],
                 endTurnEffect: 'physicalDamage1',
             },
@@ -926,6 +1252,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类房间，后续剧本可作为特定目标房间',
                 tags: ['一层', '上层', '卧室'],
                 visualId: 'guestQuarters',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
             },
             {
@@ -933,6 +1260,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '血迹房间适合承接死亡、搜查和剧本标记',
                 tags: ['一层', '上层', '危险'],
                 visualId: 'bloodyRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
             },
             {
@@ -940,6 +1268,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '标本和柜架让这里适合触发异常事件',
                 tags: ['一层', '事件'],
                 visualId: 'specimenRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -947,6 +1276,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '桌椅和壁炉形成可会合的房间',
                 tags: ['一层', '会合'],
                 visualId: 'salon',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -954,6 +1284,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类核心房间，适合后续剧本定位',
                 tags: ['一层', '上层', '卧室'],
                 visualId: 'primaryBedroom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -961,6 +1292,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭窄房间，适合触发事件和剧本特殊物件',
                 tags: ['一层', '上层', '事件'],
                 visualId: 'nursery',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -968,6 +1300,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '危险的治疗房间，适合承接身体伤害事件',
                 tags: ['一层', '地下', '危险'],
                 visualId: 'operatingTheatre',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -975,6 +1308,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '武器与道具集中，适合物品奖励',
                 tags: ['一层', '物品'],
                 visualId: 'armory',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south'],
                 discoveryEffect: 'drawUntilWeapon',
             },
@@ -985,6 +1319,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层塔楼，边缘路线和高度感会影响移动判断',
                 tags: ['上层', '高处'],
                 visualId: 'tower',
+                discoverySymbol: 'event',
                 doorways: ['south', 'west'],
             },
             {
@@ -992,6 +1327,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层走廊，适合连接多个房间',
                 tags: ['上层', '走廊'],
                 visualId: 'statuaryCorridor',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -999,6 +1335,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '书桌和卷宗让这里成为调查线索的房间',
                 tags: ['知识', '调查'],
                 visualId: 'study',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'gainKnowledge1',
             },
@@ -1007,6 +1344,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '细长上层通道，容易观察别处动静',
                 tags: ['视野', '走位'],
                 visualId: 'gallery',
+                discoverySymbol: 'event',
                 doorways: ['north', 'south'],
             },
             {
@@ -1014,6 +1352,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '成排旧书和破纸页，是找知识的地方',
                 tags: ['知识', '调查'],
                 visualId: 'library',
+                discoverySymbol: 'omen',
                 doorways: ['south', 'west'],
                 discoveryEffect: 'gainKnowledge1',
             },
@@ -1022,6 +1361,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类上层房间，后续剧本可作为目标地点',
                 tags: ['上层', '卧室'],
                 visualId: 'winterBedroom',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -1029,6 +1369,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '结构破损会影响离开与坠落判断',
                 tags: ['上层', '危险'],
                 visualId: 'collapsedRoom',
+                discoverySymbol: 'none',
                 doorways: ['north', 'south'],
                 endTurnEffect: 'speedCheckFallToBasement',
             },
@@ -1037,6 +1378,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '火焰痕迹明确，适合承接火焰类剧本规则',
                 tags: ['上层', '危险'],
                 visualId: 'charredRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east'],
             },
             {
@@ -1044,6 +1386,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层仪式感房间，适合声音与精神事件',
                 tags: ['上层', '精神'],
                 visualId: 'organRoom',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1051,6 +1394,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '封闭空间，适合特殊事件和阻隔效果',
                 tags: ['上层', '封闭'],
                 visualId: 'soundproofedRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1058,6 +1402,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '娱乐桌面房间，适合物品和事件交汇',
                 tags: ['上层', '事件'],
                 visualId: 'gameRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1065,6 +1410,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '开阔空间，适合速度与力量检定',
                 tags: ['上层', '力量'],
                 visualId: 'gymnasium',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south'],
                 discoveryEffect: 'gainSpeed1',
             },
@@ -1073,6 +1419,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通道型房间，主要承担路线连接',
                 tags: ['上层', '通道'],
                 visualId: 'crampedPassageway',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south', 'west'],
             },
             {
@@ -1080,6 +1427,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '可连接任意楼层的特殊移动房间',
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'mysticElevator',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south', 'west'],
                 enterEffect: 'mysticElevator',
             },
@@ -1090,6 +1438,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通向地下室起始点的特殊竖向连接',
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'laundryChute',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
                 endTurnEffect: 'moveToBasementLanding',
             },
@@ -1098,6 +1447,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下危险地形，后续剧本可能要求丢弃或搬运物体',
                 tags: ['地下', '危险'],
                 visualId: 'chasm',
+                discoverySymbol: 'event',
                 doorways: ['north', 'south'],
             },
             {
@@ -1105,6 +1455,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '堆满旧箱和杂物，翻找起来最像物品点',
                 tags: ['物资', '翻找'],
                 visualId: 'larder',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'gainMight1',
             },
@@ -1113,6 +1464,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '黑水切开地下空间，移动时必须考虑绕行',
                 tags: ['地下', '水域'],
                 visualId: 'undergroundLake',
+                discoverySymbol: 'event',
                 doorways: ['north', 'west'],
             },
             {
@@ -1120,6 +1472,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '粗糙岩壁和阴影让这里更像怪物出没处',
                 tags: ['地下', '危险'],
                 visualId: 'undergroundCavern',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
             },
             {
@@ -1127,6 +1480,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '看得出有人在这里做过不该做的准备',
                 tags: ['仪式', '危险'],
                 visualId: 'ritualRoom',
+                discoverySymbol: 'omen',
                 doorways: ['west', 'south'],
             },
             {
@@ -1134,6 +1488,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭长墓道适合让追逐和围堵成立',
                 tags: ['地下', '墓穴'],
                 visualId: 'catacombs',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'south'],
             },
             {
@@ -1141,6 +1496,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下到一层的特殊连接房间',
                 tags: ['地下', '特殊移动'],
                 visualId: 'secretStaircase',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
             },
             {
@@ -1148,6 +1504,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下杂物房，适合放置障碍或物件',
                 tags: ['地下', '物品'],
                 visualId: 'junkRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'placeObstacleToken',
             },
@@ -1156,6 +1513,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭窄地下通路，适合限制移动',
                 tags: ['地下', '通道'],
                 visualId: 'crawlspace',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east'],
             },
         ],
@@ -1422,6 +1780,10 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     },
                 ],
             },
+        },
+        {
+            name: '片刻希望',
+            effect: { mode: 'placeBlessingToken', recommendedAction: 'explore' },
         },
         {
             name: '上古旧宅',
@@ -1834,6 +2196,45 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '游魂',
+            effect: {
+                mode: 'optionalItemEffect',
+                acceptLabel: '埋葬一件物品并获得 1 点任意属性',
+                declineLabel: '不埋葬物品',
+                itemFilter: 'item',
+                consumeAction: 'bury',
+                acceptEffect: {
+                    mode: 'chosenTrait',
+                    amount: 1,
+                    allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                    recommendedAction: 'explore',
+                },
+                declineEffect: {
+                    mode: 'traitRoll',
+                    trait: 'sanity',
+                    recommendedAction: 'use',
+                    branches: [
+                        {
+                            min: 4,
+                            label: '抽取一张物品卡',
+                            effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                        },
+                        {
+                            min: 0,
+                            label: '受到 1 点通用伤害',
+                            effect: {
+                                mode: 'generalDamageChoice',
+                                amount: 1,
+                                allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                                recommendedAction: 'endTurn',
+                            },
+                        },
+                    ],
+                },
+                recommendedAction: 'use',
+            },
+        },
+        {
             name: '葬礼',
             roll: {
                 trait: 'sanity',
@@ -1869,74 +2270,469 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 ],
             },
         },
+        {
+            name: '不可能的房间',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '地狱蝙蝠',
+            roll: {
+                trait: 'speed',
+                branches: [
+                    {
+                        min: 4,
+                        label: '放置到相邻板块',
+                        effect: { mode: 'placeExplorerInAdjacentRoom', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点物理伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '断手',
+            effect: {
+                mode: 'optionalEffect',
+                acceptLabel: '承受伤害并抽取物品',
+                declineLabel: '不触碰断手',
+                recommendedAction: 'use',
+                acceptEffect: {
+                    mode: 'compound',
+                    recommendedAction: 'endTurn',
+                    effects: [
+                        { mode: 'fixedDamage', amount: 2, damageKind: 'physical', recommendedAction: 'endTurn' },
+                        { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    ],
+                },
+            },
+        },
+        {
+            name: '怪异的镜子',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '抽取一张物品卡',
+                successHauntId: 7,
+                successHauntTriggerLabel: '怪异的镜子',
+                successLabel: '翻开作祟剧本7；该作祟没有奸徒',
+                failureEffect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                skippedOrStartedEffect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '花团锦簇',
+            effect: {
+                mode: 'compound',
+                recommendedAction: 'endTurn',
+                effects: [
+                    {
+                        mode: 'generalDamageChoice',
+                        amount: 1,
+                        allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                        recommendedAction: 'endTurn',
+                    },
+                    {
+                        mode: 'placeExplorerInDiscoveredRoomByFloor',
+                        targetRoomScope: 'groundOrBasementDiscovered',
+                        requiredIfDiscoveredVisualIds: ['conservatory'],
+                        recommendedAction: 'endTurn',
+                    },
+                ],
+            },
+        },
+        {
+            name: '晦暗暴风夜',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '技术难点',
+            effect: {
+                mode: 'placeExplorerInNextFloorStartingRoom',
+                basementFallbackFloor: 'upper',
+                basementFallbackDamage: { amount: 1, damageKind: 'mental' },
+                recommendedAction: 'endTurn',
+            },
+        },
+        {
+            name: '佳馔满桌',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择知识或神志进行检定',
+                allowedTraits: ['knowledge', 'sanity'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点通用伤害',
+                        effect: {
+                            mode: 'generalDamageChoice',
+                            amount: 1,
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '禁忌知识',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '获得 1 点知识并失去 1 点神志',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到两颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 2, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '可怜的尤里克',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '轮到约拿了',
+            effect: {
+                mode: 'optionalItemEffect',
+                acceptLabel: '弃置非武器物品并获得 1 点神志',
+                declineLabel: '不弃置物品',
+                itemFilter: 'nonWeaponItem',
+                consumeAction: 'discard',
+                acceptEffect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                declineEffect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '秘密升降机',
+            effect: {
+                mode: 'placeExplorerInDiscoveredRoomByFloor',
+                targetRoomScope: 'differentFloorDiscovered',
+                recommendedAction: 'explore',
+            },
+        },
+        {
+            name: '神秘液体',
+            effect: {
+                mode: 'optionalEventRoll',
+                acceptLabel: '喝下神秘液体',
+                declineLabel: '不喝',
+                recommendedAction: 'use',
+                roll: {
+                    kind: 'dice',
+                    dice: 3,
+                    label: '投 3 颗骰子',
+                    branches: [
+                        {
+                            min: 6,
+                            label: '每项属性 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 5,
+                            label: '力量与速度 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 4,
+                            label: '知识与神志 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 3,
+                            label: '知识 +1，力量 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 2,
+                            label: '知识与神志 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 1,
+                            label: '力量与速度 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 0,
+                            label: '每项属性 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+        },
+        {
+            name: '无线电广播',
+            roll: {
+                kind: 'dice',
+                dice: 2,
+                label: '投 2 颗骰子',
+                branches: [
+                    {
+                        min: 3,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '摇曳灯光',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择速度或力量进行检定',
+                allowedTraits: ['speed', 'might'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一罐器官',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点力量',
+                        effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一声呼救',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 4,
+                        label: '放置在所在区域的任意板块',
+                        effect: {
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'sameFloorDiscovered',
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '着火的人',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '放置到入口大厅',
+                        effect: {
+                            mode: 'placeExplorerInRoom',
+                            roomId: 'entrance-hall',
+                            roomName: '入口大厅',
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害和一颗骰子的精神伤害',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                                { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
     ] satisfies BetrayalEventSeed[],
 };
 
 export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScenarioConfig> = {
     'first-scenario': {
         id: 'first-scenario',
-        title: '首剧本：Crimson Jack Returns',
-        scenarioCardLabel: 'NONE',
-        hauntId: 'crimson-jack-returns',
-        hauntTitle: 'Crimson Jack Returns',
-        hauntTriggerLabel: 'A Splash of Crimson',
+        title: '首剧本：木乃伊横行',
+        scenarioCardLabel: 'Girl',
+        hauntId: 'mummy-rampage',
+        hauntTitle: '木乃伊横行',
+        hauntTriggerLabel: '女孩',
         presentation: {
             runtimeObjective: '恶兆前探索',
-            hauntObjective: '击倒叛徒，释放并驱魔杰克之灵',
+            hauntObjective: '找出真名、学习驱逐法术并驱逐木乃伊',
         },
-        startingInventoryByExplorerId: {
-            'jaden-jones': [
-                { id: 'rope', name: '兔脚', kind: 'item' },
-                { id: 'flashlight', name: '手电筒', kind: 'item' },
-                { id: 'omen-book', name: '书本', kind: 'omen' },
-            ],
-            'rebecca-allen': [
-                { id: 'rope', name: '兔脚', kind: 'item' },
-                { id: 'notebook', name: '笔记本', kind: 'item' },
-                { id: 'ring', name: '指环', kind: 'omen' },
-            ],
-            'darryl-highla': [
-                { id: 'medical-kit', name: '急救包', kind: 'item' },
-                { id: 'camera', name: '魔法相机', kind: 'item' },
-                { id: 'mask', name: '面具', kind: 'omen' },
-            ],
-            'oliver-swift': [
-                { id: 'map', name: '地图', kind: 'item' },
-                { id: 'lantern', name: '灯笼', kind: 'item' },
-                { id: 'holy-symbol', name: '圣符', kind: 'omen' },
-            ],
-            'lia-valencia': [
-                { id: 'journal', name: '日记', kind: 'item' },
-                { id: 'radio', name: '头戴耳机', kind: 'item' },
-                { id: 'skull', name: '头骨', kind: 'omen' },
-            ],
-            'sam-yin': [
-                { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
-                { id: 'flashlight', name: '手电筒', kind: 'item' },
-                { id: 'idol', name: '雕像', kind: 'omen' },
-            ],
-            'michelle-monroe': [
-                { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
-                { id: 'lantern', name: '灯笼', kind: 'item' },
-                { id: 'dagger', name: '匕首', kind: 'omen' },
-            ],
-        },
+        startingInventoryByExplorerId: {},
         logs: {
             scenarioStarted: '首剧本开始：恶兆前探索',
-            hauntTriggered: '首剧本触发：Crimson Jack Returns',
-            scenarioCompleted: '首剧本完成：杰克之灵被驱散',
+            hauntTriggered: '首剧本触发：木乃伊横行',
+            scenarioCompleted: '首剧本完成：木乃伊被驱逐',
         },
         runtimePreview: {
             monsters: [
                 {
-                    id: 'jack-spirit',
-                    definitionId: 'crimson-jack-spirit',
-                    name: '杰克之灵',
-                    portraitAsset: 'betrayal/monsters/spirit',
-                    tokenAsset: 'betrayal/tokens/monsters/ghost',
+                    id: 'mummy',
+                    definitionId: 'mummy',
+                    name: '木乃伊',
+                    portraitAsset: 'betrayal/monsters/mummy',
+                    tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
                     roomId: 'upper-landing',
-                    might: 5,
+                    might: 8,
                     speed: 3,
+                    sanity: 5,
                     damage: 1,
                 },
             ],

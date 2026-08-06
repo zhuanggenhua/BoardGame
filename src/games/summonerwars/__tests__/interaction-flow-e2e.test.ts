@@ -51,6 +51,16 @@ function allHitRandom(): RandomFn {
   };
 }
 
+/** 近战+特殊面：用于冰苔斗士狂暴和额外攻击组合。 */
+function meleeSpecialRandom(): RandomFn {
+  return {
+    shuffle: <T>(arr: T[]) => arr,
+    random: () => 0.7, // Math.floor(0.7 * 6) = 4 → melee + special 面
+    d: (max: number) => Math.max(1, max),
+    range: (min: number) => min,
+  };
+}
+
 function mkUnit(id: string, overrides?: Partial<UnitCard>): UnitCard {
   return {
     id, cardType: 'unit', name: `测试-${id}`, unitClass: 'common', faction: 'necromancer',
@@ -792,10 +802,10 @@ describe('灵魂羁绊 E2E 流程', () => {
     core.phase = 'move';
     core.currentPlayer = '0' as PlayerId;
 
-    // 放置祖灵法师（真实：STR 1, HP 2, ranged(3)，有 spirit_bond + gather_power）
+    // 放置祖灵法师（真实：STR 3, HP 2, ranged(3)，有 spirit_bond + gather_power）
     const shamanCard = mkUnit('barbaric-spirit-mage', {
       faction: 'barbaric', unitClass: 'common', abilities: ['gather_power', 'spirit_bond'],
-      strength: 1, life: 2, attackType: 'ranged', attackRange: 3,
+      strength: 3, life: 2, attackType: 'ranged', attackRange: 3,
     });
     const shaman = putUnit(core, { row: 4, col: 3 }, shamanCard, '0', { boosts: 3 });
 
@@ -1226,6 +1236,104 @@ describe('交缠颂歌 + 连续射击共享 E2E', () => {
     // 验证额外攻击已消耗
     const mokaAfterAttack2 = getUnitAt(coreAfterAttack2, { row: 4, col: 3 });
     expect(mokaAfterAttack2!.hasAttacked).toBe(true);
+  });
+});
+
+// ============================================================================
+// 9.5 冰苔斗士：狂暴额外攻击 + 激励保留
+// ============================================================================
+
+describe('冰苔斗士狂暴额外攻击与激励组合流程', () => {
+  let core: SummonerWarsCore;
+
+  beforeEach(() => {
+    resetInstanceCounter();
+    core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'shouren', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0' as PlayerId;
+  });
+
+  it('冰苔斗士狂暴授予额外攻击后，激励选择保留也应结算伤害并消耗额外攻击', () => {
+    const summoner = mkUnit('shouren-summoner', {
+      faction: 'shouren',
+      unitClass: 'summoner',
+      abilities: ['shouren_encourage'],
+      strength: 4,
+      life: 14,
+      attackType: 'melee',
+      attackRange: 1,
+    });
+    putUnit(core, { row: 3, col: 1 }, summoner, '0', { boosts: 1 });
+
+    const fighter = mkUnit('shouren-tundra-fighter', {
+      faction: 'shouren',
+      unitClass: 'common',
+      abilities: ['shouren_berserk'],
+      strength: 2,
+      life: 3,
+      attackType: 'melee',
+      attackRange: 1,
+    });
+    const attacker = putUnit(core, { row: 4, col: 2 }, fighter, '0');
+    putUnit(core, { row: 4, col: 3 }, mkUnit('necro-first-target', { faction: 'necromancer', life: 8 }), '1');
+    putUnit(core, { row: 4, col: 0 }, mkUnit('necro-extra-target', { faction: 'necromancer', life: 8 }), '1');
+
+    const { core: firstPending } = execAndApply(
+      core,
+      SW_COMMANDS.DECLARE_ATTACK,
+      { attacker: { row: 4, col: 2 }, target: { row: 4, col: 3 } },
+      meleeSpecialRandom(),
+    );
+    expect(firstPending.pendingAttackRoll?.attackerId).toBe(attacker.instanceId);
+
+    const { core: afterFirstAttack } = execAndApply(
+      firstPending,
+      SW_COMMANDS.RESOLVE_PENDING_ATTACK,
+      { choice: 'keep' },
+      meleeSpecialRandom(),
+    );
+    expect(afterFirstAttack.pendingAttackRoll?.kind).toBe('ability');
+    expect(afterFirstAttack.board[4][3].unit?.damage).toBe(2);
+
+    const { core: afterBerserkRoll } = execAndApply(
+      afterFirstAttack,
+      SW_COMMANDS.RESOLVE_PENDING_ATTACK,
+      { choice: 'keep' },
+      meleeSpecialRandom(),
+    );
+    expect(afterBerserkRoll.pendingAttackRoll).toBeUndefined();
+
+    const { core: afterBerserkMove } = execAndApply(
+      afterBerserkRoll,
+      SW_COMMANDS.ACTIVATE_ABILITY,
+      {
+        abilityId: 'shouren_berserk',
+        sourceUnitId: attacker.instanceId,
+        newPosition: { row: 4, col: 1 },
+      },
+      meleeSpecialRandom(),
+    );
+    expect(afterBerserkMove.board[4][1].unit?.extraAttacks).toBe(1);
+
+    const { core: extraPending } = execAndApply(
+      afterBerserkMove,
+      SW_COMMANDS.DECLARE_ATTACK,
+      { attacker: { row: 4, col: 1 }, target: { row: 4, col: 0 } },
+      meleeSpecialRandom(),
+    );
+    expect(extraPending.pendingAttackRoll?.attackerId).toBe(attacker.instanceId);
+    expect(extraPending.board[4][0].unit?.damage ?? 0).toBe(0);
+
+    const { core: afterExtraKeep } = execAndApply(
+      extraPending,
+      SW_COMMANDS.RESOLVE_PENDING_ATTACK,
+      { choice: 'keep' },
+      meleeSpecialRandom(),
+    );
+    expect(afterExtraKeep.pendingAttackRoll?.kind).toBe('ability');
+    expect(afterExtraKeep.board[4][0].unit?.damage).toBe(2);
+    expect(afterExtraKeep.board[4][1].unit?.extraAttacks).toBe(0);
   });
 });
 

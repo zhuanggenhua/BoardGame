@@ -256,11 +256,12 @@ describe('永恒议会 - 静态录入', () => {
       strength: card.strength,
       life: card.life,
       attackType: card.attackType,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: 'yongheng-supervisor-maruna', cost: 3, strength: 5, life: 8, attackType: 'melee', spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_MARUNA },
-      { id: 'yongheng-supervisor-ovi', cost: 2, strength: 4, life: 6, attackType: 'ranged', spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_OVI },
-      { id: 'yongheng-supervisor-katu', cost: 2, strength: 6, life: 10, attackType: 'ranged', spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_KATU },
+      { id: 'yongheng-supervisor-maruna', cost: 5, strength: 3, life: 8, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.EYE], spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_MARUNA },
+      { id: 'yongheng-supervisor-ovi', cost: 4, strength: 2, life: 6, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.EYE, DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_OVI },
+      { id: 'yongheng-supervisor-katu', cost: 6, strength: 2, life: 10, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.CHAMPION_SUPERVISOR_KATU },
     ]);
 
     expect(COMMON_UNITS_YONGHENG.map(card => ({
@@ -269,26 +270,29 @@ describe('永恒议会 - 静态录入', () => {
       strength: card.strength,
       life: card.life,
       attackType: card.attackType,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: 'yongheng-fortress-advisor', cost: 2, strength: 1, life: 3, attackType: 'ranged', spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_FORTRESS_ADVISOR },
-      { id: 'yongheng-psychic-knight', cost: 2, strength: 2, life: 4, attackType: 'melee', spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_PSYCHIC_KNIGHT },
-      { id: 'yongheng-ancient-scholar', cost: 3, strength: 1, life: 2, attackType: 'melee', spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_ANCIENT_SCHOLAR },
-      { id: 'yongheng-mystery-sage', cost: 3, strength: 2, life: 4, attackType: 'ranged', spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_MYSTERY_SAGE },
+      { id: 'yongheng-fortress-advisor', cost: 1, strength: 2, life: 3, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_FORTRESS_ADVISOR },
+      { id: 'yongheng-psychic-knight', cost: 2, strength: 2, life: 4, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.EYE], spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_PSYCHIC_KNIGHT },
+      { id: 'yongheng-ancient-scholar', cost: 1, strength: 3, life: 2, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_ANCIENT_SCHOLAR },
+      { id: 'yongheng-mystery-sage', cost: 2, strength: 3, life: 4, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.EYE], spriteIndex: SPRITE_INDEX_YONGHENG.COMMON_MYSTERY_SAGE },
     ]);
 
     expect(EVENT_CARDS_YONGHENG.map(card => ({
       id: card.id,
       eventType: card.eventType,
       playPhase: card.playPhase,
+      cost: card.cost,
       isActive: card.isActive,
       charges: card.charges,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: CARD_IDS.YONGHENG_LEARNING, eventType: 'legendary', playPhase: 'magic', isActive: true, charges: 2, spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_LEARNING },
-      { id: CARD_IDS.YONGHENG_INSIGHT, eventType: 'common', playPhase: 'summon', isActive: true, charges: undefined, spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_INSIGHT },
-      { id: CARD_IDS.YONGHENG_SEARCH, eventType: 'common', playPhase: 'summon', isActive: true, charges: undefined, spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_SEARCH },
-      { id: CARD_IDS.YONGHENG_MENTAL_INVASION, eventType: 'common', playPhase: 'summon', isActive: true, charges: undefined, spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_MENTAL_INVASION },
+      { id: CARD_IDS.YONGHENG_LEARNING, eventType: 'legendary', playPhase: 'magic', cost: 0, isActive: true, charges: 2, deckSymbols: [], spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_LEARNING },
+      { id: CARD_IDS.YONGHENG_INSIGHT, eventType: 'common', playPhase: 'summon', cost: 0, isActive: true, charges: undefined, deckSymbols: [DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_INSIGHT },
+      { id: CARD_IDS.YONGHENG_SEARCH, eventType: 'common', playPhase: 'summon', cost: 0, isActive: true, charges: undefined, deckSymbols: [DECK_SYMBOLS.EYE, DECK_SYMBOLS.COUNCIL], spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_SEARCH },
+      { id: CARD_IDS.YONGHENG_MENTAL_INVASION, eventType: 'common', playPhase: 'summon', cost: 0, isActive: true, charges: undefined, deckSymbols: [DECK_SYMBOLS.EYE], spriteIndex: SPRITE_INDEX_YONGHENG.EVENT_MENTAL_INVASION },
     ]);
   });
 });
@@ -486,11 +490,11 @@ describe('永恒议会 - 自动充能与战力', () => {
     const ovi = place(state, { row: 4, col: 4 }, oviCard);
 
     state.players['0'].hand = [];
-    expect(getEffectiveStrengthValue(ovi, state)).toBe(4);
+    expect(getEffectiveStrengthValue(ovi, state)).toBe(2);
     state.players['0'].hand = [unitCard('h1', '手牌1')];
-    expect(getEffectiveStrengthValue(ovi, state)).toBe(4);
+    expect(getEffectiveStrengthValue(ovi, state)).toBe(2);
     state.players['0'].hand = [unitCard('h1', '手牌1'), unitCard('h2', '手牌2')];
-    expect(getEffectiveStrengthValue(ovi, state)).toBe(5);
+    expect(getEffectiveStrengthValue(ovi, state)).toBe(3);
     state.players['0'].hand = [
       unitCard('h1', '手牌1'),
       unitCard('h2', '手牌2'),
@@ -498,7 +502,7 @@ describe('永恒议会 - 自动充能与战力', () => {
       unitCard('h4', '手牌4'),
       unitCard('h5', '手牌5'),
     ];
-    expect(getEffectiveStrengthValue(ovi, state)).toBe(6);
+    expect(getEffectiveStrengthValue(ovi, state)).toBe(4);
   });
 
   it('主管卡图只在牌库为空的回合结束充能一次，力量强化最多 +5', () => {
@@ -522,7 +526,7 @@ describe('永恒议会 - 自动充能与战力', () => {
 
     const cappedState = createState();
     const boostedKatu = place(cappedState, { row: 4, col: 4 }, katuCard, '0', { boosts: 9 });
-    expect(getEffectiveStrengthValue(boostedKatu, cappedState)).toBe(11);
+    expect(getEffectiveStrengthValue(boostedKatu, cappedState)).toBe(7);
   });
 });
 

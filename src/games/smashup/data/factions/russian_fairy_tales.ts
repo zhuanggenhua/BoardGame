@@ -2,7 +2,7 @@ import type { ActionCardDef, BaseCardDef, CardDef, MinionCardDef } from '../../d
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES;
-const CARD_ATLAS = SMASHUP_ATLAS_IDS.RUSSIAN_FAIRY_TALES_POD_CARDS;
+const CARD_ATLAS = SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS;
 const BASE_ATLAS = SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES;
 
 export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
@@ -15,7 +15,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 4,
         abilityTags: ['ongoing', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 17 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 31 },
     },
     {
         id: 'russian_fairy_tales_finist_the_falcon',
@@ -27,7 +27,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         abilityTags: ['special', 'extra'],
         activatableAbilities: [{ kind: 'special', zone: 'board', window: 'beforeScoring', sourceScope: 'anyBase' }],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 18 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 32 },
     },
     {
         id: 'russian_fairy_tales_baba_yaga',
@@ -38,7 +38,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 5,
         abilityTags: ['talent', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 19 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 33 },
     },
     {
         id: 'russian_fairy_tales_the_birch',
@@ -49,7 +49,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 2,
         abilityTags: ['ongoing', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 11 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 41 },
     },
     {
         id: 'russian_fairy_tales_tsar_eagle',
@@ -60,7 +60,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 2,
         abilityTags: ['onPlay'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 12 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 42 },
     },
     {
         id: 'russian_fairy_tales_the_gray_wolf',
@@ -71,7 +71,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 3,
         abilityTags: ['talent', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 14 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 43 },
     },
     {
         id: 'russian_fairy_tales_foolish_magician',
@@ -82,7 +82,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 3,
         abilityTags: ['onPlay'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 15 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 44 },
     },
     {
         id: 'russian_fairy_tales_toad',
@@ -93,7 +93,7 @@ export const RUSSIAN_FAIRY_TALES_MINIONS: MinionCardDef[] = [
         power: 0,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 45 },
     },
 ];
 
@@ -110,7 +110,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         playNeedsMinion: true,
         playTargetMinionController: 'self',
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 34 },
     },
     {
         id: 'russian_fairy_tales_the_water_of_life',
@@ -121,7 +121,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 35 },
     },
     {
         id: 'russian_fairy_tales_fetch_i_know_not_what',
@@ -132,7 +132,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 8 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 36 },
     },
     {
         id: 'russian_fairy_tales_go_i_know_not_whither',
@@ -144,7 +144,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         abilityTags: ['onPlay'],
         playNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 37 },
     },
     {
         id: 'russian_fairy_tales_go_see_my_sister',
@@ -157,7 +157,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'base',
         playNeedsBase: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 6 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 38 },
     },
     {
         id: 'russian_fairy_tales_bewitched',
@@ -170,7 +170,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'minion',
         playNeedsMinion: true,
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 5 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 39 },
     },
     {
         id: 'russian_fairy_tales_transformation',
@@ -181,7 +181,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 3 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 40 },
     },
     {
         id: 'russian_fairy_tales_mass_transformation',
@@ -192,7 +192,7 @@ export const RUSSIAN_FAIRY_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 9 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 46 },
     },
 ];
 

@@ -37,6 +37,7 @@ const MANUAL_CHUNK_PATTERNS: Array<[string, string[]]> = [
 ]
 const QIDAHEN_REGION_MASK_SAVE_ROUTE = '/devtools/qidahen-region-mask/save'
 const QIDAHEN_REGION_MASK_LOAD_ROUTE = '/devtools/qidahen-region-mask/load'
+const CONFIG_REVIEW_SPA_ROUTES = ['/games/summonerwars/config', '/games/dicethrone/config'] as const
 const QIDAHEN_REGION_MASK_DEFAULT_OUTPUT_DIR = path.resolve(configDir, 'src/games/qidahen/data')
 const QIDAHEN_REGION_MASK_WORKSPACE_ROOT = path.resolve(configDir, 'temp/devtools/qidahen-region-mask-workspaces')
 const QIDAHEN_REGION_MASK_OUTPUT_FILES = {
@@ -66,6 +67,9 @@ const API_DISABLED_PREFIXES = [
   '/devtools/ai-repo-workbench',
 ]
 const isTruthyFlag = (value: string | undefined) => /^(1|true|yes|on)$/i.test(value?.trim() || '')
+const isConfigReviewSpaRoute = (pathname: string) => CONFIG_REVIEW_SPA_ROUTES.some(
+  (route) => pathname === route || pathname.startsWith(`${route}/`),
+)
 
 const readCliFlag = (flagName: string): string | undefined => {
   const prefix = `--${flagName}=`
@@ -770,6 +774,14 @@ export default defineConfig(({ mode }) => {
         '/games': {
           target: `http://127.0.0.1:${gameServerPort}`,
           changeOrigin: true,
+          bypass: (req) => {
+            const pathname = (req.url || '/').split('?')[0] || '/'
+            if ((req.method === 'GET' || req.method === 'HEAD')
+              && req.headers.accept?.includes('text/html')
+              && isConfigReviewSpaRoute(pathname)) {
+              return '/index.html'
+            }
+          },
         },
         '/socket.io': {
           target: `http://127.0.0.1:${gameServerPort}`,

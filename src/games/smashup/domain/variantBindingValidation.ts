@@ -277,13 +277,19 @@ function validateBasePoolBindings(errors: string[], profile: SmashUpFactionVaria
     }
 }
 
-export function validateSmashUpVariantBindings(): void {
+export function collectSmashUpVariantBindingErrors(): string[] {
     const errors: string[] = [];
 
     for (const profile of getAllSmashUpVariantProfiles()) {
         validateBasePoolBindings(errors, profile);
         validateSharedRuntimeBindings(errors, profile);
     }
+
+    return errors;
+}
+
+export function validateSmashUpVariantBindings(): void {
+    const errors = collectSmashUpVariantBindingErrors();
 
     if (errors.length > 0) {
         throw new Error(`Smash Up 变体绑定校验失败:\n- ${errors.join('\n- ')}`);

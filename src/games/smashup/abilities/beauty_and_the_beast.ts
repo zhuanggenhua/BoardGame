@@ -1,3 +1,5 @@
+import type { MatchState, PlayerId } from '../../../engine/types';
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -5,17 +7,23 @@ import {
     addTempPower,
     buildAbilityFeedback,
     buildStandardDrawEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     grantContextualExtraAction,
     grantContextualExtraMinion,
     queueMinionPlayEffect,
 } from '../domain/abilityHelpers';
-import { createEffectProgram } from '../domain/abilityRuntime';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { registerActiveBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { registerTrigger } from '../domain/ongoingEffects';
-import type { TriggerContext } from '../domain/ongoingEffects';
-import type { BaseMetadataUpdatedEvent, SmashUpEvent } from '../domain/types';
+import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
+import type { BaseMetadataUpdatedEvent, CardsDiscardedEvent, DeckInspectedEvent, DeckReorderedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import {
@@ -38,6 +46,28 @@ const PETALS_OF_THE_ROSE = 'beauty_and_the_beast_petals_of_the_rose';
 const GASTON = 'beauty_and_the_beast_gaston';
 const BASE_ENCHANTED_CASTLE = 'base_enchanted_castle';
 const BASE_GASTONS_TAVERN = 'base_gastons_tavern';
+
+type BelleTalentChoice =
+    | { mode: 'draw' }
+    | { mode: 'discard'; cardUid: string; defId: string };
+
+type BelleTalentContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type PetalsChoice = { mode: 'keep' } | { mode: 'swap' };
+
+type PetalsContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+function abilityFromRuntime(result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> }): AbilityResult {
+    return result.matchState ? { events: result.events, matchState: result.matchState } : { events: result.events };
+}
 
 function source(ctx: AbilityContext) {
     return {
@@ -83,10 +113,62 @@ function belleOnPlay(ctx: AbilityContext): AbilityResult {
     };
 }
 
+const belleTalentPromptProgram = createPromptProgram<BelleTalentContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'beauty_and_the_beast_belle_talent',
+    buildInteraction: (context) => {
+        const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
+        const options: PromptOption<BelleTalentChoice>[] = [
+            {
+                id: 'draw',
+                label: '摸 1 张牌',
+                labelKey: 'ui.beauty_and_the_beast_belle_talent_draw',
+                value: { mode: 'draw' },
+                displayMode: 'button',
+            },
+            ...hand.map(card => ({
+                id: `discard:${card.uid}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { mode: 'discard' as const, cardUid: card.uid, defId: card.defId },
+                displayMode: 'card' as const,
+            })),
+        ];
+        return createAbilityRuntimeSimpleChoice(
+            `beauty_and_the_beast_belle_talent_${context.playerId}_${context.now}`,
+            context.playerId,
+            '贝儿：选择摸 1 张牌或弃 1 张牌',
+            options,
+            {
+                sourceId: 'beauty_and_the_beast_belle_talent',
+                targetType: 'card',
+                titleKey: 'ui.beauty_and_the_beast_belle_talent_title',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: (args) => {
+        const { state, playerId, value, timestamp } = args;
+        const choice = value as BelleTalentChoice | undefined;
+        if (choice?.mode === 'discard') {
+            const liveCard = state.core.players[playerId]?.hand.find(card => card.uid === choice.cardUid);
+            if (!liveCard) return { events: [] };
+            return {
+                events: [{
+                    type: SU_EVENTS.CARDS_DISCARDED,
+                    payload: { playerId, cardUids: [liveCard.uid] },
+                    timestamp,
+                } as CardsDiscardedEvent],
+            };
+        }
+        return { events: buildStandardDrawEventsFromRuntimeContext(args, playerId, 1) };
+    },
+});
+
 function belleTalent(ctx: AbilityContext): AbilityResult {
-    return {
-        events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
-    };
+    return abilityFromRuntime(executeAbilityProgram(belleTalentPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    }));
 }
 
 function beastOnPlay(ctx: AbilityContext): AbilityResult {
@@ -243,11 +325,78 @@ function discardedActionSpecial(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function petalsOfTheRose(ctx: TriggerContext): SmashUpEvent[] {
+const petalsPromptProgram = createPromptProgram<PetalsContext, SmashUpCore, SmashUpEvent>({
+    sourceId: PETALS_OF_THE_ROSE,
+    buildInteraction: (context) => {
+        const deck = context.matchState.core.players[context.playerId]?.deck ?? [];
+        const options: PromptOption<PetalsChoice>[] = [
+            {
+                id: 'keep',
+                label: '保持当前顺序',
+                labelKey: 'ui.beauty_and_the_beast_petals_keep',
+                value: { mode: 'keep' },
+                displayMode: 'button',
+            },
+            ...(deck.length >= 2
+                ? [{
+                    id: 'swap',
+                    label: '交换前两张',
+                    labelKey: 'ui.beauty_and_the_beast_petals_swap',
+                    value: { mode: 'swap' as const },
+                    displayMode: 'button' as const,
+                }]
+                : []),
+        ];
+        return createAbilityRuntimeSimpleChoice(
+            `beauty_and_the_beast_petals_${context.playerId}_${context.now}`,
+            context.playerId,
+            '玫瑰花瓣：查看并重排牌库顶',
+            options,
+            {
+                sourceId: PETALS_OF_THE_ROSE,
+                targetType: 'generic',
+                titleKey: 'ui.beauty_and_the_beast_petals_title',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const player = state.core.players[playerId];
+        if (!player || player.deck.length === 0) return { events: [] };
+        const choice = value as PetalsChoice | undefined;
+        const top = player.deck.slice(0, 2);
+        const rest = player.deck.slice(2);
+        const deckUids = choice?.mode === 'swap' && top.length >= 2
+            ? [top[1].uid, top[0].uid, ...rest.map(card => card.uid)]
+            : player.deck.map(card => card.uid);
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.DECK_INSPECTED,
+                    payload: {
+                        targetPlayerId: playerId,
+                        inspectorPlayerId: playerId,
+                        count: Math.min(2, player.deck.length),
+                        reason: PETALS_OF_THE_ROSE,
+                    },
+                    timestamp,
+                } as DeckInspectedEvent,
+                {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: { playerId, deckUids },
+                    timestamp,
+                } as DeckReorderedEvent,
+            ],
+        };
+    },
+});
+
+function petalsOfTheRose(ctx: TriggerContext): TriggerResult {
     if (!wasHandDiscard(ctx) || ctx.playerId !== ctx.sourceControllerId) return [];
     const player = ctx.state.players[ctx.playerId];
     if (!player || player.deck.length === 0) return [];
-    return [{
+    if (!ctx.matchState) {
+        return { events: [{
         type: SU_EVENTS.DECK_INSPECTED,
         payload: {
             targetPlayerId: ctx.playerId,
@@ -256,7 +405,13 @@ function petalsOfTheRose(ctx: TriggerContext): SmashUpEvent[] {
             reason: PETALS_OF_THE_ROSE,
         },
         timestamp: ctx.now,
-    } as SmashUpEvent];
+        } as DeckInspectedEvent] };
+    }
+    return executeAbilityProgram(petalsPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    });
 }
 
 function enchantedCastle(ctx: TriggerContext): SmashUpEvent[] {
@@ -317,7 +472,7 @@ export function registerBeautyAndTheBeastAbilities(): void {
 
     registerTrigger(ENCHANTED_OBJECTS, 'onCardsDiscarded', playDiscardedEnchantedObject, {
         global: true,
-        globalZones: ['hand'],
+        globalZones: ['hand', 'discard'],
         optional: true,
         playerContext: 'sourceController',
         baseScoped: false,
@@ -327,10 +482,15 @@ export function registerBeautyAndTheBeastAbilities(): void {
     });
     registerTrigger(PETALS_OF_THE_ROSE, 'onCardsDiscarded', petalsOfTheRose, {
         perInstance: true,
+        global: true,
+        globalZones: ['hand', 'discard'],
         optional: true,
         playerContext: 'sourceController',
         baseScoped: false,
-        canTrigger: ctx => wasHandDiscard(ctx) && ctx.playerId === ctx.sourceControllerId,
+        canTrigger: ctx => wasHandDiscard(ctx)
+            && ctx.playerId === ctx.sourceControllerId
+            && !!ctx.sourceCardUid
+            && (ctx.discardedCards ?? []).some(card => card.uid === ctx.sourceCardUid && card.defId === PETALS_OF_THE_ROSE),
     });
     registerTrigger(BASE_ENCHANTED_CASTLE, 'onCardsDiscarded', enchantedCastle, {
         perInstance: true,

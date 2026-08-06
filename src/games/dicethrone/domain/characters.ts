@@ -22,6 +22,7 @@ import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDe
 import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHANSHUJIA_PASSIVE_ABILITIES, getZhanshujiaStartingDeck } from '../heroes/zhanshujia';
 import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck, getCursedPirateAbilitiesForFace } from '../heroes/cursed_pirate';
 import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, ARTIFICER_PASSIVE_ABILITIES, getArtificerStartingDeck } from '../heroes/artificer';
+import { TIANSHI_ABILITIES, TIANSHI_TOKENS, TIANSHI_INITIAL_TOKENS, TIANSHI_INITIAL_STATUS_EFFECTS, getTianshiStartingDeck } from '../heroes/tianshi';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -375,6 +376,28 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
         statusAtlasPath: 'dicethrone/images/artificial/status-icons-atlas.json',
         passiveAbilities: ARTIFICER_PASSIVE_ABILITIES,
+    },
+    tianshi: {
+        id: 'tianshi',
+        abilities: TIANSHI_ABILITIES,
+        tokens: TIANSHI_TOKENS,
+        initialTokens: TIANSHI_INITIAL_TOKENS,
+        initialStatusEffects: TIANSHI_INITIAL_STATUS_EFFECTS,
+        diceDefinitionId: 'tianshi-dice',
+        getStartingDeck: getTianshiStartingDeck,
+        initialAbilityLevels: {
+            'holy-blade': 1,
+            'holy-radiance': 1,
+            'divine-purification': 1,
+            'divine-punishment': 1,
+            'triumphant-return': 1,
+            'supreme-power': 1,
+            'archangel-resolve': 1,
+            'angelic-cloak': 1,
+            'heavenly-severing': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.TIANSHI,
+        statusAtlasPath: 'dicethrone/images/tianshi/status-icons-atlas.json',
     },
 };
 

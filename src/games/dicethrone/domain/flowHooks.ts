@@ -56,7 +56,7 @@ import {
     buildPendingAttackResolvedEvent,
     getPendingAttackSettlementStage,
 } from './utils';
-import { resolveEffectsToEvents } from './effects';
+import { createDTPassiveTriggerHandler, resolveEffectsToEvents } from './effects';
 import type { ResponseWindowOpenedEvent } from './events';
 import { createDamageCalculation } from '../../../engine/primitives';
 import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
@@ -78,6 +78,7 @@ const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
 const POWDER_KEG_SETTLEMENT_ID = 'powder-keg-upkeep';
 const BLINDED_CHECK_SETTLEMENT_ID = 'blinded-check';
+const TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID = 'tianshi-dazzle-check';
 
 const formatSeatLabel = (playerId: string): string => {
     const seatNumber = Number.parseInt(playerId, 10) + 1;
@@ -187,6 +188,26 @@ registerBonusDiceSettlementHandler(BLINDED_CHECK_SETTLEMENT_ID, ({ settlement, t
                 patch: {
                     blindedCheckResolved: true,
                     blindedCheckMissed: value <= 2,
+                },
+            },
+            sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
+            timestamp: timestamp + 0.01,
+        } as DiceThroneEvent],
+    };
+});
+
+registerBonusDiceSettlementHandler(TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID, ({ settlement, timestamp }) => {
+    const value = Math.max(1, Math.min(6, Math.trunc(getPendingBonusSettlementDice(settlement)[0]?.value ?? 1)));
+    return {
+        totalDamage: 0,
+        followupEvents: [{
+            type: 'PENDING_ATTACK_UPDATED',
+            payload: {
+                attackerId: settlement.attackerId,
+                patch: {
+                    dazzleCheckResolved: true,
+                    dazzleCheckMissed: value === 1,
+                    dazzleDamagePercent: value === 2 || value === 3 ? -50 : 0,
                 },
             },
             sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
@@ -906,6 +927,141 @@ function resolveBlindedCheckExitResult(
     };
 }
 
+function resolveDazzleCheckExitResult(
+    core: DiceThroneCore,
+    pendingAttack: NonNullable<DiceThroneCore['pendingAttack']>,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): PhaseExitResult | null {
+    if (pendingAttack.dazzleCheckResolved === true) {
+        return pendingAttack.dazzleCheckMissed === true
+            ? { events: [], overrideNextPhase: 'main2' }
+            : null;
+    }
+
+    const dazzleStacks = core.players[pendingAttack.attackerId]?.statusEffects[STATUS_IDS.DAZZLE] ?? 0;
+    if (dazzleStacks <= 0 || !random) {
+        return null;
+    }
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(core, pendingAttack.attackerId, value) ?? '';
+    const settlement: PendingBonusDiceSettlement = {
+        id: `${TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID}-${pendingAttack.attackerId}-${timestamp}`,
+        sourceAbilityId: STATUS_IDS.DAZZLE,
+        attackerId: pendingAttack.attackerId,
+        targetId: pendingAttack.defenderId ?? pendingAttack.attackerId,
+        dice: [{
+            index: 0,
+            value,
+            face,
+            effectKey: 'bonusDie.effect.tianshi.dazzle',
+            effectParams: { value },
+        }],
+        rerollCostTokenId: '',
+        rerollCostAmount: 0,
+        rerollCount: 0,
+        maxRerollCount: 0,
+        readyToSettle: false,
+        displayOnly: true,
+        showTotal: false,
+        resolutionMode: 'none',
+        customResolutionId: TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID,
+        allowDiceModification: false,
+    };
+
+    return {
+        events: [{
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: pendingAttack.attackerId,
+                targetPlayerId: pendingAttack.defenderId ?? pendingAttack.attackerId,
+                effectKey: 'bonusDie.effect.tianshi.dazzle',
+                effectParams: { value },
+            },
+            sourceCommandType,
+            timestamp,
+        } as BonusDieRolledEvent, {
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: pendingAttack.attackerId,
+                statusId: STATUS_IDS.DAZZLE,
+                stacks: 1,
+            },
+            sourceCommandType,
+            timestamp: timestamp + 0.001,
+        } as StatusRemovedEvent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            sourceCommandType,
+            timestamp: timestamp + 0.002,
+        } as DiceThroneEvent],
+        halt: true,
+    };
+}
+
+function resolveTianshiDivineArrivalUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): DiceThroneEvent[] {
+    const stacks = core.players[playerId]?.tokens[TOKEN_IDS.DIVINE_ARRIVAL] ?? 0;
+    if (stacks <= 0) return [];
+
+    return getOpponents(core, playerId).flatMap((targetId, index) => {
+        const eventTimestamp = timestamp + index * 0.01;
+        const result = createDamageCalculation({
+            source: { playerId, abilityId: TOKEN_IDS.DIVINE_ARRIVAL },
+            target: { playerId: targetId },
+            baseDamage: stacks,
+            damageScope: 'direct',
+            state: core,
+            timestamp: eventTimestamp,
+            autoCollectShields: false,
+            passiveTriggerHandler: createDTPassiveTriggerHandler({
+                attackerId: playerId,
+                defenderId: targetId,
+                sourceAbilityId: TOKEN_IDS.DIVINE_ARRIVAL,
+                state: core,
+                damageDealt: 0,
+                timestamp: eventTimestamp,
+            }, random),
+        }).resolve();
+        const events: DiceThroneEvent[] = [...result.sideEffectEvents] as DiceThroneEvent[];
+        if (result.finalDamage > 0) {
+            events.push({
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId,
+                    amount: result.finalDamage,
+                    actualDamage: result.actualDamage,
+                    sourceAbilityId: TOKEN_IDS.DIVINE_ARRIVAL,
+                    sourcePlayerId: playerId,
+                    damageScope: 'direct',
+                    modifiers: result.modifiers.map(modifier => ({
+                        type: modifier.type as 'flat' | 'percent' | 'token' | 'status' | 'shield',
+                        value: modifier.value,
+                        sourceId: modifier.sourceId,
+                        sourceName: modifier.sourceName,
+                    })),
+                    breakdown: result.breakdown,
+                },
+                sourceCommandType,
+                timestamp: eventTimestamp,
+            } as DiceThroneEvent);
+        }
+        return events.map(event => ({
+            ...event,
+            sourceCommandType,
+        }));
+    });
+}
+
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
     initialPhase: 'setup',
 
@@ -1170,6 +1326,20 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
+                }
+
+                const dazzleCheckResult = resolveDazzleCheckExitResult(
+                    core,
+                    core.pendingAttack,
+                    command.type,
+                    timestamp,
+                    random,
+                );
+                if (dazzleCheckResult) {
+                    return {
+                        ...dazzleCheckResult,
+                        events: [...events, ...(dazzleCheckResult.events ?? [])],
+                    };
                 }
 
                 // ========== 致盲判定：攻击方有致盲时投掷1骰，确认前允许改骰牌修改 ==========
@@ -1521,6 +1691,20 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
+            }
+
+            const dazzleCheckResult = resolveDazzleCheckExitResult(
+                targetingCore,
+                pendingAttack,
+                command.type,
+                timestamp,
+                random,
+            );
+            if (dazzleCheckResult) {
+                return {
+                    ...dazzleCheckResult,
+                    events: [...events, ...(dazzleCheckResult.events ?? [])],
+                };
             }
 
             const blindedCheckResult = resolveBlindedCheckExitResult(
@@ -2000,6 +2184,15 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 timestamp,
                 random,
             }));
+
+            // 神圣降临只在持有者自己的维持阶段结算，并且只命中真实敌方玩家。
+            events.push(...resolveTianshiDivineArrivalUpkeepEvents(
+                phaseEnterCore,
+                activeId,
+                command.type,
+                timestamp + 0.001,
+                random,
+            ));
 
             if (player?.statusEffects) {
                 // 0. 火焰精通冷却 — 维持阶段移除 1 个火焰精通

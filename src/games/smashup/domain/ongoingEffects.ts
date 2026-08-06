@@ -49,6 +49,9 @@ export interface ProtectionCheckContext {
 
     sourceKind?: 'action' | 'nonAction';
 
+    /** 造成当前影响的牌定义，用于“只保护本次牌”的选择性保护。 */
+    sourceDefId?: string;
+
     sourceBaseIndex?: number;
 
     protectionType: ProtectionType;
@@ -89,6 +92,7 @@ export type TriggerTiming =
     | 'onDuelResolved'
     | 'onMinionPlayed'
     | 'onActionPlayed'
+    | 'onMonsterDestroyed'
     | 'onVpAwarded'
     | 'onCardsDiscarded'
     | 'onCardBuried'
@@ -169,6 +173,10 @@ export interface TriggerContext {
     triggerMinionDefId?: string;
     /** 触发相关随从力量 */
     triggerMinionPower?: number;
+    /** Munchkin 怪物被击败时的快照 */
+    destroyedMonsterUid?: string;
+    destroyedMonsterDefId?: string;
+    destroyedMonsterPower?: number;
     /** 触发相关场上行动牌 UID */
     triggerCardUid?: string;
     /** 触发相关场上行动牌 defId */
@@ -629,6 +637,9 @@ function createTriggerInstance(
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: ctx.triggerMinionPower,
+        destroyedMonsterUid: ctx.destroyedMonsterUid,
+        destroyedMonsterDefId: ctx.destroyedMonsterDefId,
+        destroyedMonsterPower: ctx.destroyedMonsterPower,
         triggerCardUid: ctx.triggerCardUid,
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,
@@ -856,6 +867,7 @@ export function collectTriggers(
     const buildExplicitSourceFallback = (entry: TriggerEntry): TriggerSourceLocation | undefined => {
         if (!entry.perInstance) return undefined;
         if (!ctx.sourceCardUid || ctx.sourceControllerId === undefined) return undefined;
+        if (isCardSuppressed(state, ctx.sourceCardUid)) return undefined;
         if (allowedSourceDefIds) {
             if (!allowedSourceDefIds.has(entry.sourceDefId)) return undefined;
         } else if (!ctx.sourceDefId || entry.sourceDefId !== ctx.sourceDefId) {
@@ -872,44 +884,45 @@ export function collectTriggers(
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
         if (allowedSourceDefIds && !allowedSourceDefIds.has(entry.sourceDefId)) continue;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         // Only queue reaction-phase triggers (replacement effects must remain immediate)
         if (entry.phase === 'replacement') continue;
         if (entry.global) {
             const located = selectGlobalTriggerSourceLocation(
-                state,
+                filteredState,
                 entry,
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
                 pid,
                 ctx,
                 candidate => !entry.canTrigger
-                    || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx)),
+                    || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, candidate, ctx)),
             );
             if (!located) continue;
-            if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-            const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-            if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+            if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+            const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+            if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
             triggers.push(trigger);
             continue;
         }
 
-        const locatedSources = locateSources(state, entry.sourceDefId);
+        const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
             const explicitSourceFallback = buildExplicitSourceFallback(entry);
             if (explicitSourceFallback) {
                 if (!isTriggerSourceEligible(entry, timing, explicitSourceFallback, ctx.baseIndex)) continue;
                 if (!isTurnBoundarySourceControllerEligible(entry, timing, explicitSourceFallback, pid)) continue;
-                if (shouldSkipTriggerInstance(state, entry, timing, explicitSourceFallback, ctx)) continue;
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, explicitSourceFallback, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, explicitSourceFallback, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                if (shouldSkipTriggerInstance(filteredState, entry, timing, explicitSourceFallback, ctx)) continue;
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, explicitSourceFallback, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, explicitSourceFallback, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
                 continue;
             }
-            if (!entry.perInstance && isSourceActive(state, entry.sourceDefId)) {
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, {}, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, {}, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, {}, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, {}, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
             }
             continue;
@@ -919,10 +932,10 @@ export function collectTriggers(
             for (const located of locatedSources) {
                 if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
                 if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
-                if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                if (shouldSkipTriggerInstance(filteredState, entry, timing, located, ctx)) continue;
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
             }
             continue;
@@ -931,14 +944,14 @@ export function collectTriggers(
         const located = selectSpecificSourceLocation(locatedSources, ctx, candidate => {
             if (!isTriggerSourceEligible(entry, timing, candidate, ctx.baseIndex)) return false;
             if (!isTurnBoundarySourceControllerEligible(entry, timing, candidate, pid)) return false;
-            if (shouldSkipTriggerInstance(state, entry, timing, candidate, ctx)) return false;
+            if (shouldSkipTriggerInstance(filteredState, entry, timing, candidate, ctx)) return false;
             return !entry.canTrigger
-                || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx));
+                || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, candidate, ctx));
         });
         if (!located) continue;
-        if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-        const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-        if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+        if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+        const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+        if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
         triggers.push(trigger);
     }
 
@@ -1447,7 +1460,10 @@ export function getModifiedBaseVp(
 }
 
 function getTurnScopedSuppressedCardUids(state: SmashUpCore): ReadonlySet<string> {
-    return new Set((state.suppressedCardsUntilTurnStart ?? []).map(entry => entry.cardUid));
+    return new Set([
+        ...(state.suppressedCardsUntilTurnStart ?? []).map(entry => entry.cardUid),
+        ...(state.suppressedCardUidsUntilTurnEnd ?? []),
+    ]);
 }
 
 function getSuppressedCardUids(state: SmashUpCore): Set<string> {
@@ -1552,7 +1568,7 @@ export function isMinionProtected(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceDefId?: string; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1563,6 +1579,7 @@ export function isMinionProtected(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceDefId: options?.sourceDefId,
         sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
@@ -1591,7 +1608,7 @@ export function isMinionProtectedNonConsumable(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceDefId?: string; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1602,6 +1619,7 @@ export function isMinionProtectedNonConsumable(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceDefId: options?.sourceDefId,
         sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
@@ -2307,6 +2325,11 @@ function selectGlobalTriggerSourceLocation(
 
  */
 function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
+    // 特殊响应牌打出后会进入弃牌堆，但其本回合的限制仍由基地 metadata 承载。
+    if (sourceDefId === 'munchkin_orcs_and_stay_down'
+        && state.bases.some(base => typeof base.metadata?.andStayDownTurnNumber === 'number')) {
+        return true;
+    }
     // PR63: Tricksters POD「睡眠印记」会写入 sleepMarkedPlayers / sleepMoveMarkedPlayers，
     // 同时使用 registerInterceptor('trickster_mark_of_sleep_pod') 拦截 MINION_MOVED。
     //

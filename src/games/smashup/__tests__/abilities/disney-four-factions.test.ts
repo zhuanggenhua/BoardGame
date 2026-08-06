@@ -15,6 +15,8 @@ import {
     expectRegisteredAbilityContract,
     getPromptOption,
     getPromptOptions,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -23,6 +25,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
     respondToPromptOption,
 } from '../helpers';
 
@@ -317,6 +320,104 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(targetUids).toContain('ally-at-palace');
         expect(targetUids).toContain('enemy-six-at-palace');
         expect(targetUids).not.toContain('enemy-six-here');
+    });
+
+    it('狮子王：刀疤消灭己方角色后按消灭前有效力量摸牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('draw-b', 'lion_king_zazu', 'minion', '0'),
+                        makeCard('draw-c', 'lion_king_lion_cub', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('scar', 'lion_king_scar', '0', 5),
+                makeMinion('own-target', 'frozen_snowgie', '0', 2, { powerCounters: 1 }),
+                makeMinion('enemy-target', 'frozen_snowgie', '1', 2),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_scar', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'scar',
+            defId: 'lion_king_scar',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 36,
+        });
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'own-target',
+            '刀疤消灭己方角色',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['scar', 'enemy-target']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['own-target']);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b', 'draw-c']);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ playerId: '0', count: 3, cardUids: ['draw-a', 'draw-b', 'draw-c'] }),
+        }));
+    });
+
+    it('狮子王：幼狮从基地进入弃牌堆后可触发搜寻力量不超过 4 的角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('scar-draw-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('scar-draw-b', 'lion_king_zazu', 'minion', '0'),
+                        makeCard('eligible-minion', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('too-large', 'lion_king_mufasa', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('scar', 'lion_king_scar', '0', 5),
+                makeMinion('cub', 'lion_king_lion_cub', '0', 2),
+                makeMinion('other-cub', 'lion_king_lion_cub', '0', 2),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_scar', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'scar',
+            defId: 'lion_king_scar',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 37,
+        });
+        const destroyed = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'cub',
+            '刀疤消灭幼狮',
+            '0',
+            FIXED_RANDOM,
+        );
+        const reactionPrompt = getReactionPrompt(destroyed.finalState);
+        const cubOption = getReactionPromptOptionBySourceDefId(destroyed.finalState, reactionPrompt, 'lion_king_lion_cub');
+        const searched = respondToPrompt(destroyed.finalState, cubOption.id, '0', FIXED_RANDOM);
+
+        expect(searched.success).toBe(true);
+        expect(searched.finalState.core.players['0'].hand.map(card => card.uid)).toContain('eligible-minion');
+        expect(searched.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['too-large']);
+        expect(searched.finalState.core.triggerQueue).toBeUndefined();
+        expect(searched.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ playerId: '0', cardUids: ['eligible-minion'] }),
+        }));
     });
 
     it('花木兰：集体训练给己方全场角色放指示物，金宝保护己方角色不受敌方影响', () => {

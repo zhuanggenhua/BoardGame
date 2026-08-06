@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
 
 interface DebugContextType {
     playerID: string | null;
@@ -11,14 +12,14 @@ const DebugContext = createContext<DebugContextType | undefined>(undefined);
 export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [playerID, setPlayerID] = useState<string | null>(() => {
         // 持久化调试玩家选择
-        return localStorage.getItem('debug_playerID') || '0';
+        return readLocalStorageItem('debug_playerID') || '0';
     });
 
     useEffect(() => {
         if (playerID) {
-            localStorage.setItem('debug_playerID', playerID);
+            writeLocalStorageItem('debug_playerID', playerID);
         } else {
-            localStorage.removeItem('debug_playerID');
+            removeLocalStorageItem('debug_playerID');
         }
     }, [playerID]);
 

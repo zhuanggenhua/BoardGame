@@ -13,7 +13,7 @@ import {
   getPlayerUnits, isCellEmpty, getAdjacentCells,
   manhattanDistance, isInStraightLine,
   getStructureAt, isValidCoord, getSummoner, findUnitPositionByInstanceId,
-  getValidShourenFreezeTargets, hasStableAbility, getUnitAt, getUnitAbilities,
+  getValidShourenFreezeTargets, getHuijinScorchTargets, hasStableAbility, getUnitAt, getUnitAbilities,
 } from '../domain/helpers';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { getBaseCardId, CARD_IDS, isMoguSporePlagueBodyCard } from '../domain/ids';
@@ -24,6 +24,7 @@ import type { BloodSummonModeState, AnnihilateModeState, FuneralPyreModeState } 
 import type {
   EventTargetModeState, MindControlModeState, ChantEntanglementModeState,
   MoguSymbioticSelfHealingModeState, MoguReleaseSporesModeState,
+  ShadowPulseModeState,
   WithdrawModeState, GlacialShiftModeState, SneakModeState,
   StunModeState, HypnoticLureModeState, TelekinesisTargetModeState,
 } from './modeTypes';
@@ -51,6 +52,10 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.GOBLIN_SNEAK,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.SHOUREN_FREEZE,
+  CARD_IDS.HUIJIN_SCORCH,
+  CARD_IDS.SHADOW_HIDE_IN_DARKNESS,
+  CARD_IDS.SHADOW_MARL_GRIMOIRE,
+  CARD_IDS.SHADOW_SHADOW_PULSE,
 ]);
 
 export function requiresEventInteraction(cardId: string): boolean {
@@ -148,10 +153,17 @@ export function useEventCardModes({
   );
 
   const eventTargetMode = useMemo<EventTargetModeState | null>(() => {
-    if (!swInteraction || swInteraction.type !== 'event_target') return null;
+    if (
+      !swInteraction
+      || (swInteraction.type !== 'event_target' && swInteraction.type !== 'shadow_marl_select_damage')
+    ) return null;
     const cardId = typeof swInteraction.meta?.cardId === 'string' ? swInteraction.meta.cardId : undefined;
     if (!cardId) return null;
-    const card = myHand.find((item) => item.id === cardId);
+    const card = [
+      ...myHand,
+      ...(core.players[myPlayerId as '0' | '1']?.discard ?? []),
+      ...(core.players[myPlayerId as '0' | '1']?.activeEvents ?? []),
+    ].find((item) => item.id === cardId);
     if (!card || card.cardType !== 'event') return null;
     const validTargets = swInteraction.options
       .map((option) => (option.value as { targetPosition?: CellCoord } | undefined)?.targetPosition)
@@ -161,7 +173,7 @@ export function useEventCardModes({
       card: card as EventCard,
       validTargets,
     };
-  }, [myHand, swInteraction]);
+  }, [core.players, myHand, myPlayerId, swInteraction]);
 
   const funeralPyreMode = useMemo<FuneralPyreModeState | null>(() => {
     if (!swInteraction || swInteraction.type !== 'funeral_pyre') return null;
@@ -256,6 +268,23 @@ export function useEventCardModes({
       selectedTargets,
     };
   }, [moguReleaseSporesOptions, selectedMultiTargetOptionIdSet, swInteraction]);
+
+  const shadowPulseOptions = useMemo(
+    () => extractTargetPositionOptions('shadow_pulse_select_targets', 'shadow_pulse_target'),
+    [extractTargetPositionOptions],
+  );
+
+  const shadowPulseMode = useMemo<ShadowPulseModeState | null>(() => {
+    if (!swInteraction || swInteraction.type !== 'shadow_pulse_select_targets') return null;
+    const cardId = typeof swInteraction.meta?.cardId === 'string' ? swInteraction.meta.cardId : '';
+    return {
+      cardId,
+      validTargets: shadowPulseOptions.map((option) => option.position),
+      selectedTargets: shadowPulseOptions
+        .filter((option) => selectedMultiTargetOptionIdSet.has(option.optionId))
+        .map((option) => option.position),
+    };
+  }, [selectedMultiTargetOptionIdSet, shadowPulseOptions, swInteraction]);
 
   const bloodSummonMode = useMemo<BloodSummonModeState | null>(() => {
     if (!swInteraction) return null;
@@ -430,7 +459,7 @@ export function useEventCardModes({
   const hasActiveEventMode = !!(eventTargetMode || bloodSummonMode || annihilateMode
     || funeralPyreMode || mindControlMode || stunMode || hypnoticLureMode || chantEntanglementMode
     || moguSymbioticSelfHealingMode || moguReleaseSporesMode
-    || sneakMode || glacialShiftMode || withdrawMode || telekinesisTargetMode);
+    || shadowPulseMode || sneakMode || glacialShiftMode || withdrawMode || telekinesisTargetMode);
 
   const lastInteractionIdRef = useRef<string | null>(null);
 
@@ -494,6 +523,9 @@ export function useEventCardModes({
       }
       case 'mogu_symbiotic_self_healing_select_targets':
       case 'mogu_release_spores_select_positions': {
+        break;
+      }
+      case 'shadow_pulse_select_targets': {
         break;
       }
       case 'sneak_select_unit':
@@ -571,6 +603,11 @@ export function useEventCardModes({
     if (!moguReleaseSporesMode) return [];
     return moguReleaseSporesMode.validTargets;
   }, [moguReleaseSporesMode]);
+
+  const shadowPulseHighlights = useMemo(() => {
+    if (!shadowPulseMode) return [];
+    return shadowPulseMode.validTargets;
+  }, [shadowPulseMode]);
 
   const glacialShiftHighlights = useMemo(() => {
     if (!glacialShiftMode) return [];
@@ -884,6 +921,19 @@ export function useEventCardModes({
       return true;
     }
 
+    // 暗影脉冲任意数量目标选择模式
+    if (shadowPulseMode) {
+      const option = shadowPulseOptions.find((item) => item.position.row === gameRow && item.position.col === gameCol);
+      if (option) {
+        setSelectedMultiTargetOptionIds((current) => (
+          current.includes(option.optionId)
+            ? current.filter((optionId) => optionId !== option.optionId)
+            : [...current, option.optionId]
+        ));
+      }
+      return true;
+    }
+
     // 催眠引诱目标选择模式
     if (hypnoticLureMode) {
       const isValid = hypnoticLureMode.validTargets.some(p => p.row === gameRow && p.col === gameCol);
@@ -915,9 +965,9 @@ export function useEventCardModes({
     glacialShiftMode, glacialShiftHighlights,
     sneakMode, sneakHighlights,
     chantEntanglementMode,
-    moguSymbioticSelfHealingMode, moguReleaseSporesMode,
+    moguSymbioticSelfHealingMode, moguReleaseSporesMode, shadowPulseMode,
     hypnoticLureMode, eventTargetMode,
-    chantEntanglementOptions, moguSymbioticSelfHealingOptions, moguReleaseSporesOptions, mindControlOptions, annihilateOptions,
+    chantEntanglementOptions, moguSymbioticSelfHealingOptions, moguReleaseSporesOptions, shadowPulseOptions, mindControlOptions, annihilateOptions,
     findInteractionOptionId, respondInteractionOption,
     respondPositionOption, swInteraction]);
 
@@ -1091,6 +1141,57 @@ export function useEventCardModes({
         activated = true;
         break;
       }
+      case CARD_IDS.HUIJIN_SCORCH: {
+        const targets = getHuijinScorchTargets(core, myPlayerId as '0' | '1');
+        if (targets.length === 0) break;
+        activated = true;
+        break;
+      }
+      case CARD_IDS.SHADOW_HIDE_IN_DARKNESS:
+      case CARD_IDS.SHADOW_MARL_GRIMOIRE:
+      case CARD_IDS.SHADOW_SHADOW_PULSE: {
+        const shadowSummoner = getSummoner(core, myPlayerId as '0' | '1');
+        if (!shadowSummoner) { failReason = t('eventCard.noSummoner'); break; }
+        if (baseId === CARD_IDS.SHADOW_HIDE_IN_DARKNESS) {
+          const hasUnitTarget = core.board.some((row) => row.some((cell) => {
+            const unit = cell.unit;
+            return !!unit
+              && unit.card.unitClass === 'common'
+              && unit.card.life - unit.damage <= 5
+              && manhattanDistance(shadowSummoner.position, unit.position) <= 3;
+          }));
+          const hasGateTarget = Array.from({ length: BOARD_ROWS }).some((_, row) => Array.from({ length: BOARD_COLS }).some((__, col) => {
+            const gate = getStructureAt(core, { row, col });
+            return !!gate?.card.isGate
+              && gate.card.life - gate.damage <= 5
+              && manhattanDistance(shadowSummoner.position, { row, col }) <= 3;
+          }));
+          if (!hasUnitTarget && !hasGateTarget) break;
+        }
+        if (baseId === CARD_IDS.SHADOW_MARL_GRIMOIRE) {
+          const player = core.players[myPlayerId as '0' | '1'];
+          const hasRetrievableCard = player.discard.some((discarded) => (
+            getBaseCardId(discarded.id) !== CARD_IDS.SHADOW_MARL_GRIMOIRE
+            && !(discarded.cardType === 'event' && discarded.eventType === 'legendary')
+          ));
+          const hasFriendlyUnit = getPlayerUnits(core, myPlayerId as '0' | '1')
+            .some((unit) => unit.card.unitClass !== 'summoner');
+          if (!hasRetrievableCard || !hasFriendlyUnit) break;
+        }
+        if (baseId === CARD_IDS.SHADOW_SHADOW_PULSE) {
+          const hasTarget = Array.from({ length: BOARD_ROWS }).some((_, row) => Array.from({ length: BOARD_COLS }).some((__, col) => {
+            const position = { row, col };
+            const unit = getUnitAt(core, position);
+            return !!unit && getAdjacentCells(position).some((gatePosition) => {
+              const gate = getStructureAt(core, gatePosition);
+              return !!gate?.card.isGate && gate.damage > 0;
+            });
+          }));
+          if (!hasTarget) break;
+        }
+        activated = true;
+        break;
+      }
       default: {
         // 无需多步骤交互的事件卡，直接 dispatch
         dispatch(SW_COMMANDS.PLAY_EVENT, { cardId });
@@ -1174,6 +1275,24 @@ export function useEventCardModes({
     respondInteractionOption(optionId);
   }, [findInteractionOptionId, respondInteractionOption, swInteraction]);
 
+  const handleConfirmShadowPulse = useCallback(() => {
+    if (!shadowPulseMode || swInteraction?.type !== 'shadow_pulse_select_targets') return;
+    const finishOptionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string } | undefined;
+      return value?.action === 'shadow_pulse_finish';
+    });
+    respondInteractionOption(finishOptionId, selectedMultiTargetOptionIds);
+  }, [findInteractionOptionId, respondInteractionOption, selectedMultiTargetOptionIds, shadowPulseMode, swInteraction]);
+
+  const handleSkipShadowPulse = useCallback(() => {
+    if (swInteraction?.type !== 'shadow_pulse_select_targets') return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; skip?: boolean } | undefined;
+      return value?.action === 'shadow_pulse_finish' || value?.skip === true;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, swInteraction]);
+
   // ---------- 副作用 ----------
 
   // ---------- 返回 ----------
@@ -1189,6 +1308,7 @@ export function useEventCardModes({
     chantEntanglementMode,
     moguSymbioticSelfHealingMode,
     moguReleaseSporesMode,
+    shadowPulseMode,
     sneakMode,
     glacialShiftMode,
     withdrawMode,
@@ -1197,7 +1317,7 @@ export function useEventCardModes({
     clearAllEventModes, hasActiveEventMode,
     // 高亮
     validEventTargets, bloodSummonHighlights, annihilateHighlights,
-    mindControlHighlights, entanglementHighlights, moguSymbioticSelfHealingHighlights, moguReleaseSporesHighlights, glacialShiftHighlights,
+    mindControlHighlights, entanglementHighlights, moguSymbioticSelfHealingHighlights, moguReleaseSporesHighlights, shadowPulseHighlights, glacialShiftHighlights,
     sneakHighlights, stunHighlights, hypnoticLureHighlights,
     withdrawHighlights, afterAttackAbilityHighlights, telekinesisHighlights,
     // 回调
@@ -1207,5 +1327,6 @@ export function useEventCardModes({
     handleConfirmEntanglement,
     handleConfirmMoguSymbioticSelfHealing, handleSkipMoguSymbioticSelfHealing,
     handleConfirmMoguReleaseSpores, handleSkipMoguReleaseSpores,
+    handleConfirmShadowPulse, handleSkipShadowPulse,
   };
 }

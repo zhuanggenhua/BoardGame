@@ -60,16 +60,28 @@ const buildOmenVisual = (frameIndex: number): BetrayalPossessionAtlasVisual => (
 
 const POSSESSION_FRONT_VISUALS: Record<string, BetrayalPossessionAtlasVisual> = {
     camera: buildItemVisual(0),
+    'scary-doll': buildItemVisual(1),
+    mirror: buildItemVisual(3),
     'medical-kit': buildItemVisual(4),
+    'lucky-coin': buildItemVisual(5),
+    'leather-jacket': buildItemVisual(6),
+    'tooth-necklace': buildItemVisual(7),
     flashlight: buildItemVisual(8),
     lantern: buildItemVisual(8),
     'lockpick-tool': buildItemVisual(14),
     map: buildItemVisual(16),
     'strange-amulet': buildItemVisual(10),
+    brooch: buildItemVisual(11),
+    gun: buildItemVisual(12),
+    crossbow: buildItemVisual(13),
     notebook: buildItemVisual(16),
     journal: buildItemVisual(16),
     manuscript: buildItemVisual(16),
+    'mysterious-stopwatch': buildItemVisual(15),
     'hunting-knife': buildItemVisual(17),
+    chainsaw: buildItemVisual(18),
+    dynamite: buildItemVisual(19),
+    'angel-feather': buildItemVisual(20),
     rope: buildItemVisual(21),
     'holy-water': buildItemVisual(2),
     radio: buildItemVisual(9),
@@ -93,7 +105,14 @@ export function resolvePossessionAtlasVisual(card: BetrayalInventoryCard): Betra
     const normalizedCardId = card.id
         .replace(/-preview-\d+$/, '')
         .replace(/-\d+$/, '');
-    return POSSESSION_FRONT_VISUALS[normalizedCardId] ?? null;
+    const exactVisual = POSSESSION_FRONT_VISUALS[normalizedCardId];
+    if (exactVisual) {
+        return exactVisual;
+    }
+    const runtimeCardId = Object.keys(POSSESSION_FRONT_VISUALS)
+        .sort((left, right) => right.length - left.length)
+        .find((cardId) => normalizedCardId.startsWith(`${cardId}-`));
+    return runtimeCardId ? POSSESSION_FRONT_VISUALS[runtimeCardId] ?? null : null;
 }
 
 export function buildPossessionAtlasImageStyle(visual: BetrayalPossessionAtlasVisual): CSSProperties & { aspectRatio: number } {

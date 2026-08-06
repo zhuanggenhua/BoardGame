@@ -54,7 +54,7 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(ANANSI_TALES_CARDS).toHaveLength(13);
         expect(ANANSI_TALES_CARDS.reduce((total, card) => total + card.count, 0)).toBe(20);
         expect(ANANSI_TALES_CARDS.map(card => card.previewRef?.index).sort((a, b) => Number(a) - Number(b))).toEqual(
-            [0, 1, 2, 4, 6, 7, 8, 9, 10, 14, 17, 18, 19],
+            Array.from({ length: 13 }, (_, index) => index),
         );
         expect(ANANSI_TALES_BASES.map(base => base.id).sort()).toEqual([
             'base_anansis_web',

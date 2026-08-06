@@ -386,4 +386,202 @@ describe('FeedbackModal', () => {
             useAuthSpy.mockRestore();
         }
     });
+
+    it('配置修正提案提交时应包含字段级上下文', async () => {
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'summonerwars' }}
+                    configProposal={{
+                        gameId: 'summonerwars',
+                        configVersion: 'legacy-ts-config-v1',
+                        objectId: 'necro-summoner',
+                        objectDisplayName: '瑞特-塔鲁斯',
+                        objectType: 'summoner',
+                        fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+                        fieldDisplayName: '攻击',
+                        currentValue: 3,
+                        suggestedValue: 4,
+                        currentDisplayValue: '3',
+                        updatedDisplayValue: '4',
+                        sourceContext: {
+                            tableId: 'summonerwars:legacy-config-review',
+                            rowId: 'summonerwars:necromancer:summoner:necro-summoner',
+                            cellKey: 'attack',
+                        },
+                        status: 'pending_ai_review',
+                    }}
+                    initialContent="瑞特-塔鲁斯的攻击值可能不对："
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('瑞特-塔鲁斯');
+        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('攻击');
+        expect(screen.getByTestId('feedback-config-proposal-change')).toHaveTextContent('当前值：3；修改后值：4');
+        expect(screen.queryByText(/建议值/)).not.toBeInTheDocument();
+
+        const textarea = screen.getByPlaceholderText(/描述/i);
+        fireEvent.change(textarea, { target: { value: '瑞特-塔鲁斯的攻击值应为 4，请核对卡图。' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交/i }));
+
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        const callArgs = (global.fetch as any).mock.calls[0];
+        const body = JSON.parse(callArgs[1].body);
+        expect(body.source).toBe('config-review');
+        expect(body.type).toBe('suggestion');
+        expect(body.gameName).toBe('summonerwars');
+        expect(body.configProposal).toMatchObject({
+            gameId: 'summonerwars',
+            objectId: 'necro-summoner',
+            objectDisplayName: '瑞特-塔鲁斯',
+            fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+            fieldDisplayName: '攻击',
+            currentValue: 3,
+            suggestedValue: 4,
+            currentDisplayValue: '3',
+            updatedDisplayValue: '4',
+            reason: '瑞特-塔鲁斯的攻击值应为 4，请核对卡图。',
+            status: 'pending_ai_review',
+        });
+    });
+
+    it('配置修正提案批量提交时应包含多项字段级上下文', async () => {
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'summonerwars' }}
+                    configProposals={[
+                        {
+                            gameId: 'summonerwars',
+                            configVersion: 'legacy-ts-config-v1',
+                            objectId: 'necro-summoner',
+                            objectDisplayName: '瑞特-塔鲁斯',
+                            objectType: 'summoner',
+                            fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+                            fieldDisplayName: '攻击',
+                            currentValue: 3,
+                            suggestedValue: 4,
+                            currentDisplayValue: '3',
+                            updatedDisplayValue: '4',
+                            sourceContext: {
+                                tableId: 'summonerwars:legacy-config-review',
+                                rowId: 'summonerwars:necromancer:summoner:necro-summoner',
+                                cellKey: 'attack',
+                            },
+                        },
+                        {
+                            gameId: 'summonerwars',
+                            configVersion: 'legacy-ts-config-v1',
+                            objectId: 'necro-starting-gate',
+                            objectDisplayName: '起始城门',
+                            objectType: 'gate',
+                            fieldPath: 'legacy.summonerwars.cardRegistry.necro-starting-gate.life',
+                            fieldDisplayName: '生命',
+                            currentValue: 9,
+                            suggestedValue: 10,
+                            currentDisplayValue: '9',
+                            updatedDisplayValue: '10',
+                            sourceContext: {
+                                tableId: 'summonerwars:legacy-config-review',
+                                rowId: 'summonerwars:necromancer:gate:necro-starting-gate',
+                                cellKey: 'life',
+                            },
+                        },
+                    ]}
+                    initialContent="这两处字段建议一起核对："
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('2 项配置字段修正');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('瑞特-塔鲁斯');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('起始城门');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('当前值');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).not.toHaveTextContent('necro-summoner');
+
+        const textarea = screen.getByPlaceholderText(/描述/i);
+        fireEvent.change(textarea, { target: { value: '两处数值都与卡图不一致，请一起核对。' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交/i }));
+
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        const callArgs = (global.fetch as any).mock.calls[0];
+        const body = JSON.parse(callArgs[1].body);
+        expect(body.source).toBe('config-review');
+        expect(body.configProposal).toBeUndefined();
+        expect(body.configProposals).toHaveLength(2);
+        expect(body.configProposals[0]).toMatchObject({
+            gameId: 'summonerwars',
+            objectId: 'necro-summoner',
+            objectDisplayName: '瑞特-塔鲁斯',
+            fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+            fieldDisplayName: '攻击',
+            currentDisplayValue: '3',
+            updatedDisplayValue: '4',
+            reason: '两处数值都与卡图不一致，请一起核对。',
+            status: 'pending_ai_review',
+        });
+        expect(body.configProposals[1]).toMatchObject({
+            gameId: 'summonerwars',
+            objectId: 'necro-starting-gate',
+            objectDisplayName: '起始城门',
+            fieldPath: 'legacy.summonerwars.cardRegistry.necro-starting-gate.life',
+            fieldDisplayName: '生命',
+            currentDisplayValue: '9',
+            updatedDisplayValue: '10',
+            reason: '两处数值都与卡图不一致，请一起核对。',
+            status: 'pending_ai_review',
+        });
+    });
+
+    it('配置修正草稿应按对象和字段隔离', () => {
+        const firstRender = render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'summonerwars' }}
+                    configProposal={{
+                        gameId: 'summonerwars',
+                        configVersion: 'legacy-ts-config-v1',
+                        objectId: 'necro-summoner',
+                        objectType: 'summoner',
+                        fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+                        currentValue: 3,
+                    }}
+                    initialContent="第一张卡的修正草稿"
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('第一张卡的修正草稿');
+        firstRender.unmount();
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'summonerwars' }}
+                    configProposal={{
+                        gameId: 'summonerwars',
+                        configVersion: 'legacy-ts-config-v1',
+                        objectId: 'necro-starting-gate',
+                        objectType: 'gate',
+                        fieldPath: 'legacy.summonerwars.cardRegistry.necro-starting-gate.life',
+                        currentValue: 9,
+                    }}
+                    initialContent="第二张卡的修正草稿"
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('第二张卡的修正草稿');
+    });
 });

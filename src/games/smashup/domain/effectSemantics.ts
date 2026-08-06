@@ -169,6 +169,7 @@ export function getMinionTargetBlockInfo(
         shouldRespectActionProtection(sourceKind, options.respectActionProtection)
         && isMinionProtected(state, minion, baseIndex, actionProtectionSourcePlayerId, 'action', {
             sourceKind: 'action',
+            sourceDefId: options.sourceDefId,
         })
     ) {
         return {
@@ -182,6 +183,7 @@ export function getMinionTargetBlockInfo(
     const primaryProtectionType = getPrimaryProtectionType(effectType);
     if (primaryProtectionType && isMinionProtected(state, minion, baseIndex, protectionSourcePlayerId, primaryProtectionType, {
         sourceKind,
+        sourceDefId: options.sourceDefId,
     })) {
         return {
             blocked: true,
@@ -196,9 +198,11 @@ export function getMinionTargetBlockInfo(
             options.mode === 'preview' && primaryProtectionType
                 ? isMinionProtectedNonConsumable(state, minion, baseIndex, protectionSourcePlayerId, 'affect', {
                     sourceKind,
+                    sourceDefId: options.sourceDefId,
                 })
                 : isMinionProtected(state, minion, baseIndex, protectionSourcePlayerId, 'affect', {
                     sourceKind,
+                    sourceDefId: options.sourceDefId,
                 })
         );
         if (broadAffectBlocked) {

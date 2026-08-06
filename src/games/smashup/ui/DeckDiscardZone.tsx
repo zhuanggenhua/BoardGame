@@ -9,6 +9,13 @@ import { UI_Z_INDEX } from '../../../core';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
 import { getCardDef, getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
+import {
+    getMunchkinSpecialCardDescriptor,
+    MUNCHKIN_MONSTER_DECK_PREVIEW_DEF_ID,
+    MUNCHKIN_MONSTER_DECK_SIZE,
+    MUNCHKIN_TREASURE_DECK_PREVIEW_DEF_ID,
+    MUNCHKIN_TREASURE_DECK_SIZE,
+} from '../data/factions/munchkin';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 import { getAccessoryChromeClass, getAccessorySurfaceClass } from './accessoryHighlight';
 
@@ -32,6 +39,8 @@ type Props = {
     deckCards?: CardInstance[];
     deckFactions?: string[];
     madnessSupplyCount?: number;
+    monsterDeckCount?: number;
+    treasureDeckCount?: number;
     discard: CardInstance[];
     isMyTurn: boolean;
     compactLayout?: boolean;
@@ -75,6 +84,8 @@ export const DeckDiscardZone: React.FC<Props> = ({
     deckCards = [],
     deckFactions = [],
     madnessSupplyCount,
+    monsterDeckCount,
+    treasureDeckCount,
     discard,
     isMyTurn,
     compactLayout = false,
@@ -108,6 +119,49 @@ export const DeckDiscardZone: React.FC<Props> = ({
     const clampedMadnessSupplyCount = typeof madnessSupplyCount === 'number'
         ? Math.max(0, Math.min(MADNESS_DECK_SIZE, madnessSupplyCount))
         : undefined;
+    const clampedMonsterDeckCount = typeof monsterDeckCount === 'number'
+        ? Math.max(0, Math.min(MUNCHKIN_MONSTER_DECK_SIZE, monsterDeckCount))
+        : undefined;
+    const clampedTreasureDeckCount = typeof treasureDeckCount === 'number'
+        ? Math.max(0, Math.min(MUNCHKIN_TREASURE_DECK_SIZE, treasureDeckCount))
+        : undefined;
+    const monsterDeckPreview = getMunchkinSpecialCardDescriptor(MUNCHKIN_MONSTER_DECK_PREVIEW_DEF_ID);
+    const treasureDeckPreview = getMunchkinSpecialCardDescriptor(MUNCHKIN_TREASURE_DECK_PREVIEW_DEF_ID);
+    const supplyBadges = [
+        ...(clampedMadnessSupplyCount !== undefined
+            ? [{
+                key: 'madness',
+                testId: 'su-madness-supply',
+                countTestId: 'su-madness-supply-count',
+                title: `疯狂牌剩余 ${clampedMadnessSupplyCount}`,
+                count: clampedMadnessSupplyCount,
+                previewRef: { type: 'renderer' as const, rendererId: 'smashup-card-renderer', payload: { defId: MADNESS_CARD_DEF_ID, cardUid: 'madness-supply-preview' } },
+                cardClassName: 'h-8 w-[22px]',
+            }]
+            : []),
+        ...(clampedMonsterDeckCount !== undefined && monsterDeckPreview
+            ? [{
+                key: 'monster',
+                testId: 'su-munchkin-monster-supply',
+                countTestId: 'su-munchkin-monster-supply-count',
+                title: `怪物牌库剩余 ${clampedMonsterDeckCount}`,
+                count: clampedMonsterDeckCount,
+                previewRef: monsterDeckPreview.previewRef,
+                cardClassName: 'h-8 w-[46px]',
+            }]
+            : []),
+        ...(clampedTreasureDeckCount !== undefined && treasureDeckPreview
+            ? [{
+                key: 'treasure',
+                testId: 'su-munchkin-treasure-supply',
+                countTestId: 'su-munchkin-treasure-supply-count',
+                title: `宝藏牌库剩余 ${clampedTreasureDeckCount}`,
+                count: clampedTreasureDeckCount,
+                previewRef: treasureDeckPreview.previewRef,
+                cardClassName: 'h-8 w-[22px]',
+            }]
+            : []),
+    ];
     const stackWidth = compactLayout ? '8.6vw' : '7.5vw';
     const titanWidth = compactLayout ? '5.6vw' : '4.8vw';
     const labelMinHeight = compactLayout ? '24px' : '20px';
@@ -426,26 +480,32 @@ export const DeckDiscardZone: React.FC<Props> = ({
                             aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
                         }}
                     >
-                        {clampedMadnessSupplyCount !== undefined && (
+                        {supplyBadges.length > 0 && (
                             <div
-                                className="pointer-events-none absolute inset-x-0 -top-6 z-20 flex justify-center"
-                                data-testid="su-madness-supply"
-                                title={`疯狂牌剩余 ${clampedMadnessSupplyCount}`}
+                                className="pointer-events-none absolute inset-x-0 -top-7 z-20 flex justify-center gap-2"
+                                data-testid="su-special-supply-row"
                             >
-                                <div className="flex items-center gap-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
-                                    <div className="h-8 w-[22px] overflow-hidden rounded-[3px]">
-                                        <CardPreview
-                                            previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: MADNESS_CARD_DEF_ID, cardUid: 'madness-supply-preview' } }}
-                                            className="h-full w-full"
-                                        />
-                                    </div>
-                                    <span
-                                        className="whitespace-nowrap text-[11px] font-black tabular-nums text-fuchsia-100"
-                                        data-testid="su-madness-supply-count"
+                                {supplyBadges.map((badge) => (
+                                    <div
+                                        key={badge.key}
+                                        className="flex items-center gap-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                                        data-testid={badge.testId}
+                                        title={badge.title}
                                     >
-                                        x {clampedMadnessSupplyCount}
-                                    </span>
-                                </div>
+                                        <div className={`${badge.cardClassName} overflow-hidden rounded-[3px]`}>
+                                            <CardPreview
+                                                previewRef={badge.previewRef}
+                                                className="h-full w-full"
+                                            />
+                                        </div>
+                                        <span
+                                            className="whitespace-nowrap text-[11px] font-black tabular-nums text-fuchsia-100"
+                                            data-testid={badge.countTestId}
+                                        >
+                                            x {badge.count}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
                         )}
                         <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />

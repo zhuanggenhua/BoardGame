@@ -509,6 +509,17 @@ export function buildValidatedMoveEvents(
         ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);
     if (!minion) return [];
 
+    const actingPlayerId = params.sourceControllerId ?? params.sourcePlayerId;
+    const targetMoai = targetBase?.minions.find(candidate =>
+        candidate.defId === 'polynesian_voyagers_moai'
+        && candidate.controller !== minion.controller,
+    );
+    const isOtherPlayerMovingMoai = minion.defId === 'polynesian_voyagers_moai'
+        && minion.controller !== actingPlayerId;
+    if (targetMoai || isOtherPlayerMovingMoai) {
+        return [buildAbilityFeedback(params.sourcePlayerId, 'feedback.target_protected', params.now, undefined, 'warning')];
+    }
+
     return buildSemanticSingleMinionEffectEvents(
         state,
         { minion, baseIndex: params.fromBaseIndex },
@@ -1145,7 +1156,7 @@ export function shuffleBaseDeck(
 /** 生成展示手牌事件 */
 export function revealHand(
     targetPlayerId: PlayerId | PlayerId[],
-    viewerPlayerId: PlayerId,
+    viewerPlayerId: PlayerId | 'all',
     cards: { uid: string; defId: string }[],
     reason: string,
     now: number,
@@ -1906,7 +1917,7 @@ import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSy
 // ============================================================================
 
 import type { MadnessDrawnEvent, MadnessReturnedEvent } from './types';
-import { MADNESS_CARD_DEF_ID, CTHULHU_EXPANSION_FACTIONS } from './types';
+import { MADNESS_CARD_DEF_ID, CTHULHU_EXPANSION_FACTIONS, MUNCHKIN_EXPANSION_FACTIONS } from './types';
 
 /**
  * 生成抽取疯狂卡事件
@@ -1966,6 +1977,17 @@ export function hasCthulhuExpansionFaction(players: Record<string, { factions: [
         for (const f of player.factions) {
             const baseFactionId = f.endsWith('_pod') ? f.slice(0, -4) : f;
             if (CTHULHU_EXPANSION_FACTIONS.some((factionId) => factionId === baseFactionId)) return true;
+        }
+    }
+    return false;
+}
+
+/** 检查游戏中是否有 Munchkin 扩展派系（需要怪物 / 宝藏牌库） */
+export function hasMunchkinExpansionFaction(players: Record<string, { factions: [string, string] }>): boolean {
+    for (const player of Object.values(players)) {
+        for (const f of player.factions) {
+            const baseFactionId = f.endsWith('_pod') ? f.slice(0, -4) : f;
+            if (MUNCHKIN_EXPANSION_FACTIONS.some((factionId) => factionId === baseFactionId)) return true;
         }
     }
     return false;

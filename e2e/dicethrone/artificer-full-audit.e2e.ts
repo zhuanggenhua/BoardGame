@@ -217,14 +217,10 @@ const waitForIconBadges = async (
     return readIconBadgeSnapshots(page, rootSelector);
 };
 
-const isPostDamageFollowUpSettled = (state: JsonRecord): boolean => {
+const isPreDamageBotChoiceSettled = (state: JsonRecord): boolean => {
     const pendingAttack = state?.core?.pendingAttack;
-    if (!pendingAttack) {
-        return state?.sys?.interaction?.current == null && state?.sys?.phase === 'main2';
-    }
-
-    return pendingAttack.postDamageFollowUpResolved === true
-        && pendingAttack.settlementStage === 'readyToResolve';
+    return pendingAttack?.preDefenseResolved === true
+        && pendingAttack?.settlementStage === 'preDamage';
 };
 
 const dismissAttackShowcaseIfVisible = async (page: Page): Promise<void> => {
@@ -450,7 +446,7 @@ const setupArtificerBeforeDamageResponseScene = async (
     });
 };
 
-const setupArtificerPostDamageBotChoiceScene = async (
+const setupArtificerPreDamageBotChoiceScene = async (
     game: GameTestContext,
     options: {
         tokenId: typeof TOKEN_IDS.SHOCK_BOT | typeof TOKEN_IDS.HEAL_BOT;
@@ -483,9 +479,9 @@ const setupArtificerPostDamageBotChoiceScene = async (
                 defenderId: '1',
                 sourceAbilityId: 'shock-bot',
                 isDefendable: true,
-                damageResolved: true,
-                resolvedDamage: 9,
-                settlementStage: 'postDamagePending',
+                damageResolved: false,
+                resolvedDamage: 0,
+                settlementStage: 'preDamage',
             },
         },
     });
@@ -2397,9 +2393,9 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-tinker-base-after-defense', testInfo);
     });
 
-    test('攻击后机器人选择链应可真实选择电能机器人并收口攻击后续', async ({ page, game }, testInfo) => {
-        await setupArtificerPostDamageBotChoiceScene(game, { tokenId: TOKEN_IDS.SHOCK_BOT });
-        await game.screenshot('artificer-post-damage-shock-bot-choice-open', testInfo);
+    test('伤害前机器人选择链应可免费选择电能机器人并把加伤并入当前攻击', async ({ page, game }, testInfo) => {
+        await setupArtificerPreDamageBotChoiceScene(game, { tokenId: TOKEN_IDS.SHOCK_BOT });
+        await game.screenshot('artificer-pre-damage-shock-bot-choice-open', testInfo);
 
         await clickSimpleChoiceByCustomId(page, game, 'artificer-activate-bot-resolve');
 
@@ -2410,27 +2406,29 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 shockBot: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SHOCK_BOT] ?? null,
                 shockBotUsed: state?.core?.players?.['0']?.artificerBotState?.[TOKEN_IDS.SHOCK_BOT]?.activationsUsedThisTurn ?? null,
                 defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                attackSettled: isPostDamageFollowUpSettled(state),
+                preDefenseSettled: isPreDamageBotChoiceSettled(state),
             };
         }, { timeout: 10000 }).toMatchObject({
-            synth: 0,
+            synth: 2,
             shockBot: 1,
             shockBotUsed: 1,
-            defenderHp: 47,
+            defenderHp: 50,
+            bonusDamage: 3,
             interactionKind: null,
-            attackSettled: true,
+            preDefenseSettled: true,
         });
 
-        await game.screenshot('artificer-post-damage-shock-bot-after-choice', testInfo);
+        await game.screenshot('artificer-pre-damage-shock-bot-after-choice', testInfo);
     });
 
-    test('攻击后机器人选择链应可真实选择治疗机器人并收口攻击后续', async ({ page, game }, testInfo) => {
-        await setupArtificerPostDamageBotChoiceScene(game, {
+    test('伤害前机器人选择链应可免费选择治疗机器人并继续当前攻击', async ({ page, game }, testInfo) => {
+        await setupArtificerPreDamageBotChoiceScene(game, {
             tokenId: TOKEN_IDS.HEAL_BOT,
             randomQueue: [1],
         });
-        await game.screenshot('artificer-post-damage-heal-bot-choice-open', testInfo);
+        await game.screenshot('artificer-pre-damage-heal-bot-choice-open', testInfo);
 
         await clickSimpleChoiceByCustomId(page, game, 'artificer-activate-bot-resolve');
 
@@ -2442,23 +2440,23 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 healBotUsed: state?.core?.players?.['0']?.artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn ?? null,
                 artificerHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                attackSettled: isPostDamageFollowUpSettled(state),
+                preDefenseSettled: isPreDamageBotChoiceSettled(state),
                 bonusDieFaces: (state?.sys?.eventStream?.entries ?? [])
                     .map((entry: JsonRecord) => entry?.event)
                     .filter((event: JsonRecord) => event?.type === 'BONUS_DIE_ROLLED')
                     .map((event: JsonRecord) => event?.payload?.face),
             };
         }, { timeout: 10000 }).toMatchObject({
-            synth: 0,
+            synth: 2,
             healBot: 1,
             healBotUsed: 1,
             artificerHp: 41,
             interactionKind: null,
-            attackSettled: true,
+            preDefenseSettled: true,
             bonusDieFaces: ['wrench'],
         });
 
-        await game.screenshot('artificer-post-damage-heal-bot-after-choice', testInfo);
+        await game.screenshot('artificer-pre-damage-heal-bot-after-choice', testInfo);
     });
 
     test('超高电压应可从真实手牌打出并获得 2 合成器', async ({ page, game }, testInfo) => {
@@ -3245,7 +3243,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-overclock-2-after-energy-boost', testInfo);
     });
 
-    test('基础超频运行应可从真实玩家板触发并在攻击后请求激活机器人', async ({ page, game }, testInfo) => {
+    test('基础超频运行应可从真实玩家板触发并在伤害前请求免费激活机器人', async ({ page, game }, testInfo) => {
         await setupArtificerMainHandScene(game, []);
         await prepareArtificerOverclockMainBoardScene(page);
         await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
@@ -3268,7 +3266,8 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 sourceAbilityId: interaction?.data?.sourceId ?? null,
                 pendingAttackSourceId: pendingAttack?.sourceAbilityId ?? null,
                 opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                optionLabels: options.map((option: JsonRecord) => option?.label ?? option?.labelKey),
+                synth: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'offensiveRoll',
@@ -3276,6 +3275,11 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             sourceAbilityId: 'overclock',
             pendingAttackSourceId: 'overclock',
             opponentNanobomb: 1,
+            synth: 2,
+            optionLabels: [
+                'choices.artificerBotActivation.activateShockBotFree',
+                'choices.artificerBotActivation.skip',
+            ],
         });
 
         await game.screenshot('artificer-overclock-base-choice-open', testInfo);
@@ -3385,7 +3389,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-shock-bot-3-after-mechanical-army', testInfo);
     });
 
-    test('基础电能脉冲应可从真实玩家板触发并在攻击后请求激活 1 个机器人', async ({ page, game }, testInfo) => {
+    test('基础电能脉冲应可从真实玩家板触发并在伤害前请求免费激活 1 个机器人', async ({ page, game }, testInfo) => {
         await setupArtificerMainHandScene(game, []);
         await prepareArtificerShockBotMainBoardScene(page);
         await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
@@ -3410,15 +3414,19 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 pendingAttackSourceId: pendingAttack?.sourceAbilityId ?? null,
                 opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
                 synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
-                optionCount: options.length,
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
             };
         }, { timeout: 10000 }).toMatchObject({
-            phase: 'defensiveRoll',
-            interactionKind: 'dt:token-response',
+            phase: 'offensiveRoll',
+            interactionKind: 'simple-choice',
+            sourceAbilityId: 'shock-bot',
             pendingAttackSourceId: 'shock-bot',
             opponentNanobomb: 1,
             synth: 2,
-            optionCount: 0,
+            optionLabels: [
+                'choices.artificerBotActivation.activateShockBotFree',
+                'choices.artificerBotActivation.skip',
+            ],
         });
 
         await game.screenshot('artificer-shock-bot-base-choice-open', testInfo);
@@ -3435,97 +3443,33 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
 
         await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;
-            const monk = state?.core?.players?.['1'];
-            const pendingDamage = state?.core?.pendingDamage;
-            const interaction = state?.sys?.interaction?.current;
-            return {
-                phase: state?.sys?.phase ?? null,
-                interactionKind: interaction?.kind ?? null,
-                pendingAttackSourceId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
-                responderId: pendingDamage?.responderId ?? null,
-                currentDamage: pendingDamage?.currentDamage ?? null,
-                opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            phase: 'offensiveRoll',
-            interactionKind: 'dt:token-response',
-            pendingAttackSourceId: 'maximum-power',
-            responderId: '0',
-            currentDamage: 10,
-            opponentNanobomb: 1,
-        });
-
-        await game.screenshot('artificer-maximum-power-token-response', testInfo);
-        await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', '0');
-
-        await expect.poll(async () => {
-            const state = await game.getState() as JsonRecord;
             const artificer = state?.core?.players?.['0'];
             const monk = state?.core?.players?.['1'];
-            const pendingDamage = state?.core?.pendingDamage;
-            const pendingAttack = state?.core?.pendingAttack;
             const interaction = state?.sys?.interaction?.current;
             const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
                 ? interaction.data.options
                 : [];
-
-            if (interaction?.kind === 'simple-choice' && interaction?.data?.sourceId === 'maximum-power') {
-                return {
-                    state: 'choice-open',
-                    phase: state?.sys?.phase ?? null,
-                    interactionKind: interaction?.kind ?? null,
-                    sourceAbilityId: interaction?.data?.sourceId ?? null,
-                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
-                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                    optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
-                };
-            }
-
-            if (typeof pendingDamage?.responderId === 'string' && pendingDamage.responderId.length > 0) {
-                await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', pendingDamage.responderId, {});
-                return {
-                    state: 'advancing-token-response',
-                    phase: state?.sys?.phase ?? null,
-                    interactionKind: interaction?.kind ?? null,
-                    sourceAbilityId: interaction?.data?.sourceId ?? null,
-                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
-                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                    optionLabels: [],
-                };
-            }
-
-            if (state?.sys?.phase === 'defensiveRoll' && pendingAttack?.defenderId === '1' && !interaction) {
-                await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '1');
-                return {
-                    state: 'advancing-defensive-roll',
-                    phase: state?.sys?.phase ?? null,
-                    interactionKind: null,
-                    sourceAbilityId: null,
-                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
-                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                    optionLabels: [],
-                };
-            }
-
             return {
-                state: 'waiting',
                 phase: state?.sys?.phase ?? null,
                 interactionKind: interaction?.kind ?? null,
                 sourceAbilityId: interaction?.data?.sourceId ?? null,
+                pendingAttackSourceId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
                 synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                opponentHp: monk?.resources?.[RESOURCE_IDS.HP] ?? null,
                 opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                optionLabels: [],
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
             };
         }, { timeout: 10000 }).toMatchObject({
-            state: 'choice-open',
             phase: 'offensiveRoll',
             interactionKind: 'simple-choice',
             sourceAbilityId: 'maximum-power',
+            pendingAttackSourceId: 'maximum-power',
             synth: 4,
+            opponentHp: 50,
             opponentNanobomb: 1,
             optionLabels: [
-                'choices.artificerBotActivation.activateNanobot',
-                'choices.artificerBotActivation.activateShockBot',
+                'choices.artificerBotActivation.activateNanobotFree',
+                'choices.artificerBotActivation.activateShockBotFree',
                 'choices.artificerBotActivation.skip',
             ],
         });
@@ -3547,16 +3491,18 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 sourceAbilityId: interaction?.data?.sourceId ?? null,
                 synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
                 opponentHp: monk?.resources?.[RESOURCE_IDS.HP] ?? null,
+                bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
                 optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'offensiveRoll',
             interactionKind: 'simple-choice',
             sourceAbilityId: 'maximum-power',
-            synth: 2,
-            opponentHp: 37,
+            synth: 4,
+            opponentHp: 50,
+            bonusDamage: 3,
             optionLabels: [
-                'choices.artificerBotActivation.activateNanobot',
+                'choices.artificerBotActivation.activateNanobotFree',
                 'choices.artificerBotActivation.skip',
             ],
         });

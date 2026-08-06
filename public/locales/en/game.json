@@ -164,9 +164,18 @@
       "imageAdded": "Screenshot added",
       "contactLabel": "Contact (optional)",
       "contactPlaceholder": "Email or QQ (for follow-up)",
-      "attachLog": "Attach action log",
-      "attachState": "Attach state snapshot (for precise reproduction)",
-      "submit": "Submit Feedback",
+    "attachLog": "Attach action log",
+    "attachState": "Attach state snapshot (for precise reproduction)",
+    "configProposal": {
+      "title": "Config correction proposal",
+      "batchTitle": "Config correction proposal batch",
+      "batchSummary": "This submits {{count}} configuration field corrections for AI review.",
+      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}: current value: {{currentValue}}; updated value: {{updatedValue}}",
+      "batchMore": "{{count}} more item(s) are not expanded here.",
+      "target": "Object: {{objectName}}; field: {{fieldName}}",
+      "change": "Current value: {{currentValue}}; updated value: {{updatedValue}}"
+    },
+    "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
         "loginRequired": "Login for better feedback tracking experience",

@@ -248,9 +248,9 @@ function StatusSelect({
     }, [disabled, open]);
 
     useEffect(() => {
-        if (disabled) {
-            setOpen(false);
-        }
+        if (!disabled) return;
+        const handle = window.setTimeout(() => setOpen(false), 0);
+        return () => window.clearTimeout(handle);
     }, [disabled]);
 
     return (

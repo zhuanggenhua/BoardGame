@@ -213,7 +213,7 @@ function winterSurprise(ctx: AbilityContext): AbilityResult {
     const card = ctx.state.players[ctx.playerId]?.discard.find(candidate => isCharacterModifier(candidate.defId));
     return {
         events: [
-            ...(card ? recoverCardsFromDiscard(ctx.playerId, [card.uid], WINTER_SURPRISE, ctx.now) : []),
+            ...(card ? [recoverCardsFromDiscard(ctx.playerId, [card.uid], WINTER_SURPRISE, ctx.now)] : []),
             ...(card ? [grantContextualExtraAction(ctx, WINTER_SURPRISE, { restrictToCardUid: card.uid })] : []),
             ...buildValidatedCardToDeckBottomEvents(ctx.state, {
                 cardUid: ctx.cardUid,

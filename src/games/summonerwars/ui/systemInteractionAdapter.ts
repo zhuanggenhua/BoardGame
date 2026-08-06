@@ -39,6 +39,7 @@ export const ACTIVATED_ABILITY_IDS = [
   'high_telekinesis_instead',
   'vanish',
   'mogu_blood_infusion',
+  'shadow_return_to_shadow',
 ] as const;
 
 type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
@@ -527,6 +528,62 @@ export function listSystemAbilityPositionTargets(
 ): CellCoord[] {
   if (!swInteraction || !abilityMode) return [];
 
+  const shadowPositionValues = swInteraction.options
+    .map((option) => option.value as {
+      action?: string;
+      targetPosition?: CellCoord;
+      gatePosition?: CellCoord;
+      newPosition?: CellCoord;
+    } | undefined)
+    .filter((value): value is {
+      action?: string;
+      targetPosition?: CellCoord;
+      gatePosition?: CellCoord;
+      newPosition?: CellCoord;
+    } => !!value);
+
+  if (abilityMode.abilityId === 'shadow_tear_the_veil' && swInteraction.type === 'shadow_tear_the_veil_select_gate') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_tear_the_veil_target_gate' && isCellCoord(value.gatePosition))
+      .map((value) => value.gatePosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_tear_the_veil' && swInteraction.type === 'shadow_tear_the_veil_select_position') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_tear_the_veil' && isCellCoord(value.newPosition))
+      .map((value) => value.newPosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_forbidden_knowledge' && swInteraction.type === 'shadow_forbidden_knowledge_select_target') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_forbidden_knowledge' && isCellCoord(value.targetPosition))
+      .map((value) => value.targetPosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_feint' && swInteraction.type === 'shadow_feint_select_position') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_feint' && isCellCoord(value.newPosition))
+      .map((value) => value.newPosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_shadow_summon' && swInteraction.type === 'shadow_shadow_summon_select_target') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_shadow_summon_target' && isCellCoord(value.targetPosition))
+      .map((value) => value.targetPosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_shadow_summon' && swInteraction.type === 'shadow_shadow_summon_select_position') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_shadow_summon' && isCellCoord(value.newPosition))
+      .map((value) => value.newPosition as CellCoord);
+  }
+
+  if (abilityMode.abilityId === 'shadow_sudden_assault' && swInteraction.type === 'shadow_sudden_assault_select_position') {
+    return shadowPositionValues
+      .filter((value) => value.action === 'shadow_sudden_assault' && isCellCoord(value.newPosition))
+      .map((value) => value.newPosition as CellCoord);
+  }
+
   if (abilityMode.abilityId === 'structure_shift' && abilityMode.step === 'selectNewPosition') {
     return swInteraction.options
       .map((option) => {
@@ -646,6 +703,50 @@ export function findSystemAbilityPositionOption(
 ): PromptOption | null {
   if (!swInteraction || !abilityMode) return null;
 
+  const matchesShadowPosition = (
+    action: string,
+    field: 'targetPosition' | 'gatePosition' | 'newPosition',
+  ): PromptOption | null => swInteraction.options.find((option) => {
+    const value = option.value as {
+      action?: string;
+      targetPosition?: CellCoord;
+      gatePosition?: CellCoord;
+      newPosition?: CellCoord;
+    } | undefined;
+    const candidate = value?.[field];
+    return value?.action === action
+      && candidate?.row === position.row
+      && candidate.col === position.col;
+  }) ?? null;
+
+  if (abilityMode.abilityId === 'shadow_tear_the_veil' && swInteraction.type === 'shadow_tear_the_veil_select_gate') {
+    return matchesShadowPosition('shadow_tear_the_veil_target_gate', 'gatePosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_tear_the_veil' && swInteraction.type === 'shadow_tear_the_veil_select_position') {
+    return matchesShadowPosition('shadow_tear_the_veil', 'newPosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_forbidden_knowledge' && swInteraction.type === 'shadow_forbidden_knowledge_select_target') {
+    return matchesShadowPosition('shadow_forbidden_knowledge', 'targetPosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_feint' && swInteraction.type === 'shadow_feint_select_position') {
+    return matchesShadowPosition('shadow_feint', 'newPosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_shadow_summon' && swInteraction.type === 'shadow_shadow_summon_select_target') {
+    return matchesShadowPosition('shadow_shadow_summon_target', 'targetPosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_shadow_summon' && swInteraction.type === 'shadow_shadow_summon_select_position') {
+    return matchesShadowPosition('shadow_shadow_summon', 'newPosition');
+  }
+
+  if (abilityMode.abilityId === 'shadow_sudden_assault' && swInteraction.type === 'shadow_sudden_assault_select_position') {
+    return matchesShadowPosition('shadow_sudden_assault', 'newPosition');
+  }
+
   if (abilityMode.abilityId === 'structure_shift' && abilityMode.step === 'selectNewPosition') {
     return abilityMode.targetPosition
       ? findStructureShiftDirectionOption(swInteraction, abilityMode.targetPosition, position)
@@ -729,6 +830,28 @@ export function findSystemAbilityUnitOptionByPosition(
   targetUnitId?: string,
 ): PromptOption | null {
   if (!swInteraction || !abilityMode || abilityMode.step !== 'selectUnit') return null;
+
+  if (abilityMode.abilityId === 'shadow_judgment' && swInteraction.type === 'shadow_judgment_select_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'shadow_judgment_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'shadow_tear_the_veil' && swInteraction.type === 'shadow_tear_the_veil_select_unit') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as {
+        action?: string;
+        targetUnitId?: string;
+        targetPosition?: CellCoord;
+      } | undefined;
+      return value?.action === 'shadow_tear_the_veil_target_unit'
+        && ((typeof targetUnitId === 'string' && value.targetUnitId === targetUnitId)
+          || (value.targetPosition?.row === position.row && value.targetPosition?.col === position.col));
+    }) ?? null;
+  }
 
   if (abilityMode.abilityId === 'ice_ram' && swInteraction.type === 'ice_ram_target') {
     return swInteraction.options.find((option) => {
@@ -860,6 +983,15 @@ export function findSystemAbilityUnitOptionByPosition(
     );
   }
 
+  if (abilityMode.abilityId === 'shadow_return_to_shadow') {
+    return findActivatedAbilityTargetOptionByPosition(
+      swInteraction,
+      'shadow_return_to_shadow',
+      position,
+      'selectUnit',
+    );
+  }
+
   if (abilityMode.abilityId === 'huijin_ram' && swInteraction.type === 'after_attack_huijin_ram_target') {
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
@@ -882,6 +1014,15 @@ export function findSystemAbilityUnitOptionByPosition(
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
       return value?.action === 'huijin_call_guards_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'mogu_decay' && swInteraction.type === 'mogu_decay_select_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'mogu_decay_target'
         && value.targetPosition?.row === position.row
         && value.targetPosition?.col === position.col;
     }) ?? null;
@@ -953,6 +1094,13 @@ export function getSystemAbilityUiRoute(
     || (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection')
     || (abilityMode.abilityId === 'yongheng_collision' && abilityMode.step === 'selectPushDirection')
     || (abilityMode.abilityId === 'yongheng_warning' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'shadow_tear_the_veil' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'shadow_tear_the_veil' && abilityMode.step === 'selectNewPosition')
+    || (abilityMode.abilityId === 'shadow_forbidden_knowledge' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'shadow_feint' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'shadow_shadow_summon' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'shadow_shadow_summon' && abilityMode.step === 'selectNewPosition')
+    || (abilityMode.abilityId === 'shadow_sudden_assault' && abilityMode.step === 'selectPosition')
     || (
       abilityMode.step === 'selectPosition'
       && Object.values(SHOUREN_POSITION_INTERACTIONS).some(({ abilityId }) => abilityId === abilityMode.abilityId)
@@ -973,12 +1121,16 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'telekinesis_instead'
       || abilityMode.abilityId === 'high_telekinesis_instead'
       || abilityMode.abilityId === 'mogu_blood_infusion'
+      || abilityMode.abilityId === 'mogu_decay'
       || abilityMode.abilityId === 'huijin_call_guards'
       || abilityMode.abilityId === 'huijin_ram'
       || abilityMode.abilityId === 'huijin_quick_shot'
       || abilityMode.abilityId === 'yongheng_mental_invasion'
       || abilityMode.abilityId === 'yongheng_collision'
       || abilityMode.abilityId === 'yongheng_application'
+      || abilityMode.abilityId === 'shadow_return_to_shadow'
+      || abilityMode.abilityId === 'shadow_judgment'
+      || abilityMode.abilityId === 'shadow_tear_the_veil'
     )
   ) {
     return 'board-cell-unit';
@@ -993,6 +1145,7 @@ export function getSystemAbilityUiRoute(
     && (
       abilityMode.abilityId === 'yongheng_draw'
       || abilityMode.abilityId === 'yongheng_continuance'
+      || abilityMode.abilityId === 'shadow_judgment'
     )
   ) {
     return 'status-banner-choice';
@@ -1019,6 +1172,7 @@ export function deriveSystemAbilityMode(
     sourcePosition?: CellCoord;
     structurePosition?: CellCoord;
     targetPosition?: CellCoord;
+    gatePosition?: CellCoord;
     cardId?: string;
     targetCardId?: string;
     abilityId?: string;
@@ -1045,6 +1199,94 @@ export function deriveSystemAbilityMode(
   }
 
   if (!meta.sourceUnitId) return null;
+
+  if (swInteraction.type === 'shadow_judgment_select_target') {
+    return {
+      abilityId: 'shadow_judgment',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_judgment_select_amount') {
+    return {
+      abilityId: 'shadow_judgment',
+      step: 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
+    };
+  }
+
+  if (swInteraction.type === 'shadow_tear_the_veil_select_unit') {
+    return {
+      abilityId: 'shadow_tear_the_veil',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_tear_the_veil_select_gate') {
+    return {
+      abilityId: 'shadow_tear_the_veil',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_tear_the_veil_select_position') {
+    return {
+      abilityId: 'shadow_tear_the_veil',
+      step: 'selectNewPosition',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.gatePosition) ? meta.gatePosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_forbidden_knowledge_select_target') {
+    return {
+      abilityId: 'shadow_forbidden_knowledge',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_feint_select_position') {
+    return {
+      abilityId: 'shadow_feint',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_shadow_summon_select_target') {
+    return {
+      abilityId: 'shadow_shadow_summon',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_shadow_summon_select_position') {
+    return {
+      abilityId: 'shadow_shadow_summon',
+      step: 'selectNewPosition',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'shadow_sudden_assault_select_position') {
+    return {
+      abilityId: 'shadow_sudden_assault',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
 
   const shourenPositionInteraction = getShourenPositionInteraction(swInteraction.type);
   if (shourenPositionInteraction) {
@@ -1151,6 +1393,14 @@ export function deriveSystemAbilityMode(
   if (swInteraction.type === 'huijin_call_guards_select_target') {
     return {
       abilityId: 'huijin_call_guards',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'mogu_decay_select_target') {
+    return {
+      abilityId: 'mogu_decay',
       step: 'selectUnit',
       sourceUnitId: meta.sourceUnitId,
     };
@@ -1295,6 +1545,14 @@ export function deriveSystemAbilityMode(
   }
 
   if (swInteraction.type === 'activated_ability_target' && isActivatedAbilityId(meta.abilityId)) {
+    if (meta.abilityId === 'shadow_return_to_shadow' && meta.step === 'selectUnit') {
+      return {
+        abilityId: 'shadow_return_to_shadow',
+        step: 'selectUnit',
+        sourceUnitId: meta.sourceUnitId,
+      };
+    }
+
     if (meta.abilityId === 'vanish' && meta.step === 'selectUnit') {
       return {
         abilityId: 'vanish',

@@ -321,6 +321,7 @@ export interface ResolutionState {
 // ============================================================================
 
 export type TutorialStepPosition = 'top' | 'bottom' | 'left' | 'right' | 'center';
+export type TutorialHighlightFrame = 'ring' | 'none';
 
 export interface TutorialEventMatcher {
     type: string;
@@ -344,6 +345,12 @@ export interface TutorialStepSnapshot {
     id: string;
     content: string;
     highlightTarget?: string;
+    /**
+     * Controls only the tutorial-drawn frame around the target.
+     * Use `none` when the target is already a self-explanatory game object
+     * and an extra rectangle would read as fake UI.
+     */
+    highlightFrame?: TutorialHighlightFrame;
     position?: TutorialStepPosition;
     requireAction?: boolean;
     showMask?: boolean;

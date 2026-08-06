@@ -230,6 +230,42 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(tutorialState.startTutorial).not.toHaveBeenCalled();
     });
 
+    it('教程启动请求在 Board 挂载前挂起时，Board 挂载后会补启动当前章节', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isActive = false;
+        tutorialState.tutorial.manifestId = null;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = false;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+
+        tutorialState.isBoardMounted = true;
+        rerender();
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledTimes(2);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+    });
+
     it('从一个教程路由切到另一个教程路由时，旧实例的延迟清理不能把新教程误关掉', async () => {
         const setPlayerID = vi.fn();
         const navigate = vi.fn();

@@ -1,6 +1,7 @@
 export type BetrayalMonsterDefinitionTraitKey = 'might' | 'speed' | 'knowledge' | 'sanity';
 
 export type BetrayalMonsterDefinitionId =
+    | 'mummy'
     | 'crimson-jack-spirit'
     | 'dust-feverish-patient'
     | 'helping-hands-troll-hand'
@@ -54,13 +55,32 @@ type MonsterDefinitionInstanceOverrides = Partial<
 >;
 
 export const BETRAYAL_MONSTER_DEFINITIONS: Record<BetrayalMonsterDefinitionId, BetrayalMonsterDefinition> = {
+    mummy: {
+        id: 'mummy',
+        name: '木乃伊',
+        hauntNumber: 1,
+        sourcePath: 'docs/games/betrayal/haunts/01-mummy-rampage.md',
+        portraitAsset: 'betrayal/monsters/mummy',
+        tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
+        traits: { might: 8, speed: 3, sanity: 5 },
+        damage: 1,
+        defaultAttackTrait: 'might',
+        canAttack: true,
+        canBeAttacked: true,
+        canBeStunned: false,
+        ruleNotes: [
+            '木乃伊速度 3、力量 8、神志 5；只用力量攻击。',
+            '速度攻击对木乃伊无效，包括手枪和炸药。',
+            '木乃伊移动掷骰结果为 0 或 1 时，可瞬移到任意房间；物件不会改变木乃伊属性。',
+        ],
+    },
     'crimson-jack-spirit': {
         id: 'crimson-jack-spirit',
         name: '杰克之灵',
         hauntNumber: 1,
         sourcePath: 'docs/games/betrayal/haunts/01-stacked-like-cordwood-2.md',
         portraitAsset: 'betrayal/monsters/spirit',
-        tokenAsset: 'betrayal/tokens/monsters/ghost',
+        tokenAsset: 'betrayal/tokens/monsters/jacks-spirit',
         traits: { might: 5, speed: 3, sanity: 4, knowledge: 4 },
         damage: 1,
         defaultAttackTrait: 'might',
@@ -94,7 +114,7 @@ export const BETRAYAL_MONSTER_DEFINITIONS: Record<BetrayalMonsterDefinitionId, B
         hauntNumber: 12,
         sourcePath: 'docs/games/betrayal/haunts/12-the-house-is-hungry-helping-hands.md',
         portraitAsset: 'betrayal/cards/back-monster',
-        tokenAsset: 'betrayal/tokens/monsters/small-monster-1-front',
+        tokenAsset: 'betrayal/tokens/monsters/troll-right-hand',
         traits: { might: 5, speed: 3, sanity: 4, knowledge: 4 },
         damage: 1,
         defaultAttackTrait: 'might',
@@ -147,7 +167,7 @@ export const BETRAYAL_MONSTER_DEFINITIONS: Record<BetrayalMonsterDefinitionId, B
         hauntNumber: 4,
         sourcePath: 'docs/games/betrayal/haunts/04-free-the-realtor.md',
         portraitAsset: 'betrayal/monsters/demon-realtor',
-        tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
+        tokenAsset: 'betrayal/tokens/monsters/demon',
         traits: { might: 5, speed: 3, sanity: 6, knowledge: 4 },
         damage: 1,
         defaultAttackTrait: 'sanity',

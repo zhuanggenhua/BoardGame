@@ -99,6 +99,8 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.usePossession', { player: actor })]);
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
             return entry(command, state, [i18nSeg('actionLog.useRabbitFoot', { player: actor })]);
+        case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM:
+            return entry(command, state, [i18nSeg('actionLog.useRollRerollItem', { player: actor })]);
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE:
             return entry(command, state, [i18nSeg('actionLog.resolveEventChoice', { player: actor })]);
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
@@ -180,6 +182,18 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.studyExorcism', { player: actor })]);
         case BETRAYAL_COMMANDS.EXORCISE_JACK:
             return entry(command, state, [i18nSeg('actionLog.exorciseJack', { player: actor })]);
+        case BETRAYAL_COMMANDS.STUDY_MUMMY_NAME:
+            return entry(command, state, [i18nSeg('actionLog.studyMummyName', { player: actor })]);
+        case BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT:
+            return entry(command, state, [i18nSeg('actionLog.learnMummyBanishment', { player: actor })]);
+        case BETRAYAL_COMMANDS.BANISH_MUMMY:
+            return entry(command, state, [i18nSeg('actionLog.banishMummy', { player: actor })]);
+        case BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL:
+            return entry(command, state, [i18nSeg('actionLog.pickUpMummyGirl', { player: actor })]);
+        case BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY:
+            return entry(command, state, [i18nSeg('actionLog.giveGirlToMummy', { player: actor })]);
+        case BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY:
+            return entry(command, state, [i18nSeg('actionLog.giveOmenToMummy', { player: actor })]);
         case BETRAYAL_COMMANDS.SEARCH_FOR_CURE:
             return entry(command, state, [i18nSeg('actionLog.searchForCure', { player: actor })]);
         case BETRAYAL_COMMANDS.CURE_THE_DUST:

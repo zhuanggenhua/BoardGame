@@ -1,4 +1,7 @@
 {
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "i18n",
   "basePrefix": "official/i18n/",
   "files": {
     "en/fantasyrealms/thumbnails/compressed/cover": {
@@ -10,11 +13,74 @@
         }
       }
     },
+    "en/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/dragons_pod": {
       "variants": {
         "webp": {
           "sha256": "8ef901a621ed68b6e2cf09f743fa35252b9ceaa4b507f26f285acdab3435bfa3",
           "bytes": 867782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/explorers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "b3fab24752d42c0c3892bedd7c0ee7398738b8cb4323fed6480df8944f9da033",
+          "bytes": 1734512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/luchadors_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "34b381ec25a80a0903483711c728d5fa1ddd82abaec3885b0bf7e8112ef60561",
+          "bytes": 1606662,
           "mime": "image/webp"
         }
       }
@@ -46,6 +112,15 @@
         }
       }
     },
+    "en/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/shapeshifters_pod": {
       "variants": {
         "webp": {
@@ -69,6 +144,15 @@
         "webp": {
           "sha256": "3d674fe88348336b0b3a6f5bdec2cf693d85d74db5a71714c59122285f56301b",
           "bytes": 1034372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/star_roamers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "991dcb7f93c04f5c9306be0e362339373dbd62397027921d6ac077f8b6bbeee7",
+          "bytes": 1310110,
           "mime": "image/webp"
         }
       }
@@ -2332,11 +2416,47 @@
         }
       }
     },
+    "en/smashup/cards/compressed/vigilantes_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "8595ba2d8acf58a85665ccc5044b45323ee45c74aa80f509b169a6c6ced8065a",
+          "bytes": 1883692,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/dragons_pod": {
       "variants": {
         "png": {
           "sha256": "3b7a5d5a132e2ac2d67b61e8496cd87c58dc5b29c24bd3e20e96d18938724996",
           "bytes": 20757916,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/explorers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
+          "bytes": 6223028,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/luchadors_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a0c1df6b6c99f47df59e2eae7bbf6abd7f6755746c31ee8c0800c3a21a4775e4",
+          "bytes": 6191722,
           "mime": "image/png"
         }
       }
@@ -2368,6 +2488,15 @@
         }
       }
     },
+    "en/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
     "en/smashup/cards/shapeshifters_pod": {
       "variants": {
         "png": {
@@ -2395,11 +2524,29 @@
         }
       }
     },
+    "en/smashup/cards/star_roamers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "285ab1ad04096c2616cabbd301b87c3d46467a1c9a1327ea01ceeab11a176305",
+          "bytes": 5711799,
+          "mime": "image/png"
+        }
+      }
+    },
     "en/smashup/cards/superheroes_pod": {
       "variants": {
         "png": {
           "sha256": "141e5bf1d0a775d33c3ca60f55db1e832c66a32bf4e1c57b820e107233f459ac",
           "bytes": 21859039,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/vigilantes_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fb88983da554fbef5e0308b43b25e40bb3c344d653b437ebe570529487e111c4",
+          "bytes": 7775772,
           "mime": "image/png"
         }
       }
@@ -4744,6 +4891,15 @@
         }
       }
     },
+    "zh-CN/betrayal/monsters/compressed/mummy": {
+      "variants": {
+        "webp": {
+          "sha256": "c60233f6df1ac0979aca3a458ef27b8c8b39c3ad9733b6fb0a15ca38e721745a",
+          "bytes": 28934,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/monsters/compressed/spirit": {
       "variants": {
         "webp": {
@@ -4759,6 +4915,15 @@
           "sha256": "5bd1e6f454ab1d77ed19c786fb2f0c623b67161a0b13b4780625b8b8cc97176a",
           "bytes": 146500,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/mummy": {
+      "variants": {
+        "png": {
+          "sha256": "85b1603042f2eb272cac36eda93585e313afc229413abe2b03a6f15cd6b7a003",
+          "bytes": 110469,
+          "mime": "image/png"
         }
       }
     },
@@ -4969,6 +5134,15 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/compressed/michelle-monroe": {
+      "variants": {
+        "webp": {
+          "sha256": "0dbacb2b5643facbac23274f6a3b6b6621c7bd0aa117d067fdb7c7ca9ed7c464",
+          "bytes": 30890,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/compressed/rebecca-allen": {
       "variants": {
         "webp": {
@@ -4978,11 +5152,20 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/compressed/stephanie-richter": {
+      "variants": {
+        "webp": {
+          "sha256": "fa5e92f43cb9b3461cf955d347dde9b3f0e8e4a5e6fe57346c689814d688d707",
+          "bytes": 42232,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/darryl-highla": {
       "variants": {
         "png": {
-          "sha256": "37ad637078bca7971f97b30b502445f0482cc6d22943cadc297bb3109de8255c",
-          "bytes": 219060,
+          "sha256": "603fc76b59557ab908fe427b2b37da891eee5e528d32973e4e05e19879915f6a",
+          "bytes": 142634,
           "mime": "image/png"
         }
       }
@@ -5005,12 +5188,156 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/explorers/michelle-monroe": {
+      "variants": {
+        "png": {
+          "sha256": "603fc76b59557ab908fe427b2b37da891eee5e528d32973e4e05e19879915f6a",
+          "bytes": 142634,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/explorers/rebecca-allen": {
       "variants": {
         "png": {
-          "sha256": "5254dadcb370a3a19e2b614a9a06386f16540ee0c1692d5ee8a164b5cb76cd16",
-          "bytes": 228823,
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/stephanie-richter": {
+      "variants": {
+        "png": {
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/bakeneko": {
+      "variants": {
+        "png": {
+          "sha256": "37ad637078bca7971f97b30b502445f0482cc6d22943cadc297bb3109de8255c",
+          "bytes": 219060,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/bakeneko-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "55f95c83b960c981febe67d93497c8f232510c38403d0384ce5d98e5c8d314c7",
+          "bytes": 224231,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/bakeneko": {
+      "variants": {
+        "webp": {
+          "sha256": "ac260cf5fd8c44dc51e906a6e95714e0a1b34cea27ecde2f00348887426c9918",
+          "bytes": 51458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/bakeneko-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "55439f05f29b70833e7647436eab0ed16ecb8902a4b91df4ec8f1e7e8b69a4b6",
+          "bytes": 54538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/construct": {
+      "variants": {
+        "webp": {
+          "sha256": "c90626466196e3e29a1fd39569f59535a3d681a86a74751ed3647d32f3e46285",
+          "bytes": 46212,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/construct-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "eb0347aa4620c1239bbeda7c300189baca320836eddbc773e453c5913ae707e9",
+          "bytes": 55530,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/dark-queen": {
+      "variants": {
+        "webp": {
+          "sha256": "e37397be2d0c94c19594f6a2cf65a9473cf0f6803f069683e940e6fd67694a40",
+          "bytes": 40944,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/dark-queen-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fbb38b91fddf03d8ff23061b601a1b52e8532775e8cf8fae202c43022d693b0d",
+          "bytes": 49218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/demon": {
+      "variants": {
+        "webp": {
+          "sha256": "78125e008768c42f7d4b757b704917833d57bfe77b6d8c54640c6b851db4b19d",
+          "bytes": 48762,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/demon-dog": {
+      "variants": {
+        "webp": {
+          "sha256": "2bda6669d03d7778b1cf3a1778f101c24d45cce9235acf022531768a53032186",
+          "bytes": 46982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/demon-dog-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "667686a0f9a2aec17a73093ca66468cfbb1ad1535cbf65fda42432665f64e05e",
+          "bytes": 43854,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/demon-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "86ff59d6acfa169478535ae84c78cbcdd3481211d876413e45292e2a043e58d8",
+          "bytes": 44218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/faceless-man": {
+      "variants": {
+        "webp": {
+          "sha256": "b6415c3446f5aa188564999979b822f3beb9cf01a4a737276ccaa4a9609a2dc0",
+          "bytes": 48094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/faceless-man-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "b4bf593749bf152421eb5f0408fc61b1fbe4acadff873e3dce83ce9edbdd5f48",
+          "bytes": 48346,
+          "mime": "image/webp"
         }
       }
     },
@@ -5019,6 +5346,114 @@
         "webp": {
           "sha256": "0c287281adb0d5726b1a32bcdcee49781cd7e300ce6ae1aaf0a3b234ffb25fd1",
           "bytes": 25274,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/ghost-shark": {
+      "variants": {
+        "webp": {
+          "sha256": "4ec8f0dd82bfc5d9c6736091b9bdb60f663d18650d1b8c07b1042694aa1c8380",
+          "bytes": 42248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/ghost-shark-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "8e34e432b101bf31e288658ae027755b16526e5fe3cd2073983bb3b20d69b108",
+          "bytes": 49160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/ghost-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "287b01469efed7e01e1b4ddd6fe0b276aba714114e64e57fe86b3186cbc7017d",
+          "bytes": 54652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/giant-hair-monster": {
+      "variants": {
+        "webp": {
+          "sha256": "a7b97a1bbce24a7d42b51640f6f254cf506f06cdef1e5e55a9307a283da0ecea",
+          "bytes": 48850,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/giant-hair-monster-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "251948a5e87a3f69b0abb4b41fc9d357db26b24ccdc6c17ed5a8c0cf66cbc69c",
+          "bytes": 47846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/giant-wasp": {
+      "variants": {
+        "webp": {
+          "sha256": "b4d3dd7df1f50939df18a864c16c5616a4fbf89e1323db69dc191849816b6401",
+          "bytes": 47272,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/giant-wasp-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "cfe3b2d617fcffbeeb083d4a341e4cb3b9a2c219d2a563d6b0a880920cadc92b",
+          "bytes": 54334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/head-of-the-house": {
+      "variants": {
+        "webp": {
+          "sha256": "eee502b30c09d1fa4445ece19a424d022a2e71ea7694b1f9ed95d5c0f08f450d",
+          "bytes": 46520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/head-of-the-house-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "a8c0918e55652c76789b5a318c47d8d6d202067407b783c2c44cc3b15adb9593",
+          "bytes": 54042,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/jacks-spirit": {
+      "variants": {
+        "webp": {
+          "sha256": "f27e568fd20274af2b3b8b34d7c835750aa48f080a0be648f696f8efb919a6c0",
+          "bytes": 47384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/jacks-spirit-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fae7b18fe0678487fa7d7c6b45b1fb6bf33b4d6ef90cc1bd1a8acb7139bf7cb8",
+          "bytes": 44326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/large-monster-front": {
+      "variants": {
+        "webp": {
+          "sha256": "d8ef1df79d88e1926134b01ac5a5cd983e963dab0326a135330ab97f5be233d3",
+          "bytes": 10764,
           "mime": "image/webp"
         }
       }
@@ -5131,6 +5566,51 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/monsters/compressed/troll-left-hand": {
+      "variants": {
+        "webp": {
+          "sha256": "6ea2bbb0060de715492057f067c3c6aee3c845287fe0935a7b73b6aebee90ba6",
+          "bytes": 51532,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/troll-right-hand": {
+      "variants": {
+        "webp": {
+          "sha256": "0e5a3c83c63e6636657e5d87a1a11f4a8d9f56f1fd7ef6575a12fe9d8945d436",
+          "bytes": 51482,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/troll-right-hand-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "c892ad1f9aad4097e41366c83e2d2697ecf576b38ac3e407e675cb77786672f8",
+          "bytes": 53994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/vampire": {
+      "variants": {
+        "webp": {
+          "sha256": "1055127b580e15732a0101f9ee4a4d84733060e5540adaa55b95604a64a03af7",
+          "bytes": 42760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/vampire-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fc5f8ca49d18a622d86f20b0e2a54d599d337d5c301b0930119503722a301bc4",
+          "bytes": 44962,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/monsters/compressed/werewolf": {
       "variants": {
         "webp": {
@@ -5140,11 +5620,218 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/monsters/compressed/werewolf-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "c428efe03bedf4922315ff85899053e5f7f25c66ca1b661fd7331a77efb7186f",
+          "bytes": 53364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/construct": {
+      "variants": {
+        "png": {
+          "sha256": "1585cb8e728920bccddfe8a618c75172d449d104cfe2452a0ddaedad4b2e617e",
+          "bytes": 197241,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/construct-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "5254dadcb370a3a19e2b614a9a06386f16540ee0c1692d5ee8a164b5cb76cd16",
+          "bytes": 228823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/dark-queen": {
+      "variants": {
+        "png": {
+          "sha256": "2600bcdcf4eec539653105261641b8ddc441bf530775ef7aecf2003beda4e5cf",
+          "bytes": 185746,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/dark-queen-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "cb0477ce7e5c08b0f52485519e7102b5d3a47b98d9e252f64f5996ecaee352ec",
+          "bytes": 209726,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/demon": {
+      "variants": {
+        "png": {
+          "sha256": "c8a15ef410553c6fa6e833cd0e5a84e3c8dcca2fdb36cd5c29e4f3590c4883a7",
+          "bytes": 212291,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/demon-dog": {
+      "variants": {
+        "png": {
+          "sha256": "2c21c444e5b8ad9e16cdd9f83d6e9e423b610fcf16d2caf169a590346e9a1231",
+          "bytes": 203729,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/demon-dog-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "9c4f1ca1ea84dec4207b24a444bbc01a1dec274a13408e26fb58d88ef956ea11",
+          "bytes": 195765,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/demon-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "a332601ba35da7661739e819a539d5ed3dba9edc18fea83a946a18b12004107c",
+          "bytes": 195656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/faceless-man": {
+      "variants": {
+        "png": {
+          "sha256": "6b37560b9753fc266f398d3a1adb02fe3fea87e0cab962a6cd43ed24cdfd165c",
+          "bytes": 203879,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/faceless-man-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "59e4b993dbc0ee7ed1d41f398bb3b8abb294a91603cec6dc29358a5db755ca9b",
+          "bytes": 208835,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/monsters/ghost": {
       "variants": {
         "png": {
           "sha256": "8068a1acfe6e6d21c231b9ad04bada3cc9e368a0faf2fcd18276f7ade2ee0629",
           "bytes": 197927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/ghost-shark": {
+      "variants": {
+        "png": {
+          "sha256": "aabda129407219b945b460c9222e410a41f202c29a827fea420bce3168dde52d",
+          "bytes": 188623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/ghost-shark-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "a976287e51c1d5fb867be495d2f6abcb936952c6607569c5159a176ec9175d34",
+          "bytes": 209412,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/ghost-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "7546c0a3d8e5a2296b1138160597923526a913a07e7034e6229087ee617ff489",
+          "bytes": 225791,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/giant-hair-monster": {
+      "variants": {
+        "png": {
+          "sha256": "fedd6c7a8cb97668bb172dacca7d58a5e5de7578fee5bdafe1d0563e1373f685",
+          "bytes": 206330,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/giant-hair-monster-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "ad9f1b0f4db387fb3bb5539cd5ff11ff15c982e819f41fb3c43c184741f7566d",
+          "bytes": 207766,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/giant-wasp": {
+      "variants": {
+        "png": {
+          "sha256": "541e7bf78223d16b6bc2e6eb97e8023982f46ab37f494ae72ccbe337e62f2383",
+          "bytes": 198601,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/giant-wasp-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "9128ee144ec757d0fc7313530fa510cbaf7750e92687a78668c52150a476a3da",
+          "bytes": 223189,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/head-of-the-house": {
+      "variants": {
+        "png": {
+          "sha256": "17b8e51a4105f9ae777c3fa07b6fd85aed499160d5f8346fba8a68d20c97983a",
+          "bytes": 201202,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/head-of-the-house-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "892ef0ed1bb1a4d15cd06c0035b871b99fd79f950f41790678fc004a7c40b8e1",
+          "bytes": 224914,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/jacks-spirit": {
+      "variants": {
+        "png": {
+          "sha256": "caae6aee3a2c4301499281ffdfd8c38d2d23ed7c16e6e53998c90999278fdb17",
+          "bytes": 205716,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/jacks-spirit-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "0cd2091477266ca049f4974840c4b289e4daca36473a0ba9ddbc393bfa27b4de",
+          "bytes": 194640,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/large-monster-front": {
+      "variants": {
+        "png": {
+          "sha256": "48154dc5133290d8e2d134af67616b3795456a5f8cf3a3095a40ebd041424ac9",
+          "bytes": 23677,
           "mime": "image/png"
         }
       }
@@ -5257,11 +5944,65 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/monsters/troll-left-hand": {
+      "variants": {
+        "png": {
+          "sha256": "93de0a4bcc51128d967dbff2547d68f1838fa958358e58460b7539592b8195ad",
+          "bytes": 222178,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/troll-right-hand": {
+      "variants": {
+        "png": {
+          "sha256": "b8029f74a1051784fe804da85e58a732b833205108351011b5d8cdacb0674e23",
+          "bytes": 222039,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/troll-right-hand-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "7a5c4510db9b200d02380faf74ed7697562a6beed48337171ef8e86e4e22908c",
+          "bytes": 223839,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/vampire": {
+      "variants": {
+        "png": {
+          "sha256": "f431b3a29aa4f0207f675851fb77dd9f618472295e6418fe07a26f5e1ba31afb",
+          "bytes": 190101,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/vampire-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "92fb550ad23697924ca54190136af285716cceb24a80978ecc15ed5e66fab843",
+          "bytes": 196720,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/monsters/werewolf": {
       "variants": {
         "png": {
           "sha256": "e82e8e9ffb72b279f1972835a701da81aea6ef9cacff89a2950915f30e45bbf4",
           "bytes": 193203,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/werewolf-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "6b3a30adea1b9a4c587aaa822e0f2bf28d18f7fa3d8c4249badd29153d31e240",
+          "bytes": 223203,
           "mime": "image/png"
         }
       }
@@ -6009,15 +6750,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/artificial/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
-          "bytes": 771,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
       "variants": {
         "png": {
@@ -6235,15 +6967,6 @@
       }
     },
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
-          "bytes": 387,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/barbarian/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
@@ -6509,15 +7232,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
-          "bytes": 647,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/cursed/status/凋零": {
       "variants": {
         "png": {
@@ -6671,12 +7385,21 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json": {
+    "zh-CN/dicethrone/images/lieren/player-board": {
       "variants": {
-        "json": {
-          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
-          "bytes": 738,
-          "mime": "application/json"
+        "png": {
+          "sha256": "ed1e8043acb45ab3d345695202f0ee9cbb4d3ebefe0029fddae6e16ab1c6f9b0",
+          "bytes": 11549952,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "b9005884ea62ac6bbc1d1cbe3734a375d48874e5348333182028b12c94502b96",
+          "bytes": 1481068,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -6752,15 +7475,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/monk/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
-          "bytes": 640,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/monk/tip": {
       "variants": {
         "png": {
@@ -6825,15 +7539,6 @@
       }
     },
     "zh-CN/dicethrone/images/moon_elf/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
-          "bytes": 642,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/moon_elf/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
@@ -6968,15 +7673,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
-          "bytes": 526,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/paladin/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -7032,15 +7728,6 @@
       }
     },
     "zh-CN/dicethrone/images/paladin/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
-          "bytes": 797,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/paladin/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
@@ -7122,15 +7809,6 @@
       }
     },
     "zh-CN/dicethrone/images/pyromancer/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
-          "bytes": 664,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/pyromancer/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
@@ -7238,15 +7916,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
-          "bytes": 627,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/shadow_thief/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -7310,20 +7979,196 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
-          "bytes": 521,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/shadow_thief/tip": {
       "variants": {
         "png": {
           "sha256": "24eee5d2515fb1c183289cb9cdabc22c5ad62388cb6b965aa386ebe2a98f2d43",
           "bytes": 9059653,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/飞行": {
+      "variants": {
+        "png": {
+          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
+          "bytes": 68756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/神圣降临 ": {
+      "variants": {
+        "png": {
+          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
+          "bytes": 101236,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/神圣祝福": {
+      "variants": {
+        "png": {
+          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
+          "bytes": 162242,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/炫光": {
+      "variants": {
+        "png": {
+          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
+          "bytes": 112218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
+          "bytes": 14654587,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/cards": {
+      "variants": {
+        "png": {
+          "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
+          "bytes": 14654587,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
+      "variants": {
+        "webp": {
+          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
+          "bytes": 15206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
+      "variants": {
+        "webp": {
+          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
+          "bytes": 17874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
+      "variants": {
+        "webp": {
+          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
+          "bytes": 29734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
+      "variants": {
+        "webp": {
+          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
+          "bytes": 22126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "65450ae53be098d0ab974d2e39eb79a62ac09781ee4b345d34ed7ed32663c88a",
+          "bytes": 36796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "6a4ae546327bda781e8563df32e96a9801bc6015271f2db1ad119498a2b06be4",
+          "bytes": 1963960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "da4f66bd5a3bf98ac5606c8d4b67431e44e378dd659d7ba4e2746864f96ba10c",
+          "bytes": 87764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "186274a3d0fac112846a9b7b19870af6c81a0a54253295a74730865509ae5726",
+          "bytes": 702920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/dice": {
+      "variants": {
+        "png": {
+          "sha256": "3fc0926e3a9907d76f2375a954d1891f9bc80722cc0378f8f37de295d8a7b66d",
+          "bytes": 54780,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "3ffa794ae27cf1fdb1809ea7cf542e4849083254f7204f09b10cc1a294a442ae",
+          "bytes": 10830955,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "f081694215d3a8656801f3aa90b2eb228ee225c2777f5ca3f4d0f5d60157bea6",
+          "bytes": 612,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "dcdb39a70056badef9b068fe5be38a94693bb71ff770cb19456120af493976ec",
+          "bytes": 407076,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/tip": {
+      "variants": {
+        "png": {
+          "sha256": "c9b9cf8579cfc880c543ed184e83ffb46a2494408ded49a799169d3fc8d9a7bb",
+          "bytes": 4377670,
           "mime": "image/png"
         }
       }
@@ -7446,15 +8291,6 @@
       }
     },
     "zh-CN/dicethrone/images/treant/status-icons-atlas": {
-      "variants": {
-        "json": {
-          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
-          "bytes": 789,
-          "mime": "application/json"
-        }
-      }
-    },
-    "zh-CN/dicethrone/images/treant/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
@@ -7621,15 +8457,6 @@
         }
       }
     },
-    "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
-      "variants": {
-        "json": {
-          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
-          "bytes": 397,
-          "mime": "application/json"
-        }
-      }
-    },
     "zh-CN/dicethrone/images/zhanshujia/status/紧缚": {
       "variants": {
         "png": {
@@ -7681,6 +8508,1140 @@
           "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
           "bytes": 9768,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/compressed/player-1": {
+      "variants": {
+        "webp": {
+          "sha256": "eba9a0bfa606602adbdcea1958372557dd1e9d1248a436e54ff41399b8f7c24c",
+          "bytes": 20538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/compressed/player-2": {
+      "variants": {
+        "webp": {
+          "sha256": "e34d2c58e0b1ccb1939090ec4518567519bca772ac9c08df2ed205d05a1bfb62",
+          "bytes": 20114,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/compressed/player-3": {
+      "variants": {
+        "webp": {
+          "sha256": "4549074e1c1291eafc8e71437443b3040c63ae8aca4d70ab251e7600a6d51c60",
+          "bytes": 19926,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/player-1": {
+      "variants": {
+        "png": {
+          "sha256": "cf7c7dbc843d628b307b9475920edc122231db343ade0b0af3f75d5033980c48",
+          "bytes": 52295,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/player-2": {
+      "variants": {
+        "png": {
+          "sha256": "7cf35c0105b836b70a191975cdd42b6069c8fe83a8be94e5aec18b572ee04b44",
+          "bytes": 52604,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/avatars/player-3": {
+      "variants": {
+        "png": {
+          "sha256": "0bb8a5db58ae03c956fb4590f1323bb3a46c78b224719eb6e3ef204d2d7c389b",
+          "bytes": 52184,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/card-back": {
+      "variants": {
+        "png": {
+          "sha256": "e3bbdcbfa2313cc20ec8de2f240a2e603b0f8dbec8a9dc35e2a97f85dbc207f5",
+          "bytes": 61626,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/compressed/card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "bd92ee4a5749062128b9e1aa688f73cf434c281770cb23b8a09eaa7ec19c1599",
+          "bytes": 21548,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-10": {
+      "variants": {
+        "png": {
+          "sha256": "fa3de53bf6d62932c0566acba13cbd8bbdab9e28e407b24e7793940a7d6220a7",
+          "bytes": 76695,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-2": {
+      "variants": {
+        "png": {
+          "sha256": "c5520ded01bf39f605dc9b51f7ef6693fd5e57344d4e7c3d694103a5d53104ba",
+          "bytes": 73297,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-3": {
+      "variants": {
+        "png": {
+          "sha256": "c07afb5456223c0fad997101ded8b3b474b9c7281ba70401598cc1ffd51f8c7f",
+          "bytes": 74712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-4": {
+      "variants": {
+        "png": {
+          "sha256": "8cbedb5793579412f49bb2f568ae41c7d6f9490197ece5c5f419e5ba85a02805",
+          "bytes": 73422,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-5": {
+      "variants": {
+        "png": {
+          "sha256": "fc88098cdbdfb808002f950d7d656d5a352b47a793b1c2f7dfff2542a6ca2604",
+          "bytes": 75014,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-6": {
+      "variants": {
+        "png": {
+          "sha256": "7d46859692cb4cea4fbe6f21abf48af27749ef640f2417820b5432479bda1de4",
+          "bytes": 76019,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-7": {
+      "variants": {
+        "png": {
+          "sha256": "9a94bbd870597d55a0153f125e8aecb3cd0648565e4e25fad6d4da87109956a0",
+          "bytes": 74281,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-8": {
+      "variants": {
+        "png": {
+          "sha256": "80e7601e9137b26364e74d57e517000c19244b4219270920d7e01f31288e0d9a",
+          "bytes": 77113,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-9": {
+      "variants": {
+        "png": {
+          "sha256": "3c928e97cdc4267b0375d3c98b32c09447b7ea305a5df224e1e094887a7338fc",
+          "bytes": 77220,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-a": {
+      "variants": {
+        "png": {
+          "sha256": "e06f055f5c3ce8f8bb381bde0a6a4eb56fcd7f5530096704f049e398a1dc3677",
+          "bytes": 72609,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-j": {
+      "variants": {
+        "png": {
+          "sha256": "5c80349d41004c503e3aa32bbf95b57bcd2292fc49838a8b9fb12980f4155249",
+          "bytes": 69661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-k": {
+      "variants": {
+        "png": {
+          "sha256": "7276df8967c076fdf99d56c0b4f7f11632714b9f8ac58aff6f18332ced7417d5",
+          "bytes": 71214,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/club-q": {
+      "variants": {
+        "png": {
+          "sha256": "836dee30b9b89b8cca2f4f74741ce33846f5d739a23a288cd989366f57e78ff6",
+          "bytes": 72091,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-10": {
+      "variants": {
+        "webp": {
+          "sha256": "43df9a4e3b93caac4f538ea6fdf8ce042b781c55f360a488f7cb01c386dffbf5",
+          "bytes": 18844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-2": {
+      "variants": {
+        "webp": {
+          "sha256": "bcd4b3ad31a97e251ff7e2a6fdad925b3c1c98a90ddd95bd955020295e8f8a63",
+          "bytes": 15496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-3": {
+      "variants": {
+        "webp": {
+          "sha256": "d1493ccb06d0453526bb8598e3224b541c23026ff557b47d13e9aa8af1f807a6",
+          "bytes": 16370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-4": {
+      "variants": {
+        "webp": {
+          "sha256": "2892c3e7098a29077ca2fa7da31feacb51da6b95e4759af41d15a7f758e27f07",
+          "bytes": 16140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-5": {
+      "variants": {
+        "webp": {
+          "sha256": "ff87e8c7ed4c3a8fd163768b3bb344e4bfca4eb5c1f40c8f54ce362ec09a3cf0",
+          "bytes": 16988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-6": {
+      "variants": {
+        "webp": {
+          "sha256": "ecc26d6fc157f00bca9ca4689fa2e41a3e4962f350457287e69f320651a4a70f",
+          "bytes": 17688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-7": {
+      "variants": {
+        "webp": {
+          "sha256": "abeb2dc9096277f3fbe3d690304bd474965075b6af6b90e351671f24a3890b1d",
+          "bytes": 17124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-8": {
+      "variants": {
+        "webp": {
+          "sha256": "b8b50054fd5f06ab8d2dc9828dced899eb46145ca5a03952444cabb4260cf62d",
+          "bytes": 18494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-9": {
+      "variants": {
+        "webp": {
+          "sha256": "4014fc8606f5e248b436a1f62e92bf7b37446630d7c82de954a36c5f51892454",
+          "bytes": 18794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-a": {
+      "variants": {
+        "webp": {
+          "sha256": "5f1a6bd7bac7c5f5092ba4babb0927d66b53693319a48a8927c4224703168809",
+          "bytes": 15018,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-j": {
+      "variants": {
+        "webp": {
+          "sha256": "73d068334a5158abd21579afe25e2622cb56e0428a60529b7408aeddf69bb488",
+          "bytes": 21292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-k": {
+      "variants": {
+        "webp": {
+          "sha256": "9beca98524d7525a680090210b71a133f97d45bb834396b24ff96098939888ee",
+          "bytes": 21960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/club-q": {
+      "variants": {
+        "webp": {
+          "sha256": "63408950bc8c005d0a90c9b8411444b8bcb98ae493dcee229b1ba591160edfa6",
+          "bytes": 22666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-10": {
+      "variants": {
+        "webp": {
+          "sha256": "8f6f65c79ca205916831e0ca7cd4d87e387be8c993d61856935df4a3651bb804",
+          "bytes": 17070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-2": {
+      "variants": {
+        "webp": {
+          "sha256": "e3d21023d0dfc69254ddc16e7430e11f777e1f91350fe6e267a750f7fdc71c56",
+          "bytes": 14990,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-3": {
+      "variants": {
+        "webp": {
+          "sha256": "34c702694820f1ed9d12f3f07380588e85a4e6440418e86e9f278f3ec736fbc6",
+          "bytes": 15580,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-4": {
+      "variants": {
+        "webp": {
+          "sha256": "5a380d0fa220e250adde1073a4ba0d7320c7ed12cab446eb2061b1fd708c0dc8",
+          "bytes": 15270,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-5": {
+      "variants": {
+        "webp": {
+          "sha256": "7fb7b103e7b47f58907deb94d435817bccf5fbe37bce04b2e15c95c48e422528",
+          "bytes": 15964,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-6": {
+      "variants": {
+        "webp": {
+          "sha256": "ac446c476966ee542fbb1c8ff114c6162e2dccf0c4280a967669180ac6fa66d5",
+          "bytes": 16736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-7": {
+      "variants": {
+        "webp": {
+          "sha256": "746e0f17266ddb08644c4f059c954f90db6e5f9d9261ab0611c9017145518742",
+          "bytes": 16228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-8": {
+      "variants": {
+        "webp": {
+          "sha256": "fb7af96f3b163ac95055d3c910fd1a3566ba262d986d35264e5d2487a65a1e0c",
+          "bytes": 17268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-9": {
+      "variants": {
+        "webp": {
+          "sha256": "a9bf637f7d3e2cefa984fb0e19baf4a94ac98781fbee5ddb932e51ca65da2287",
+          "bytes": 17290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-a": {
+      "variants": {
+        "webp": {
+          "sha256": "663d9234bf9bf5df0f0383730ac2397f0b2bd32ee08e5245580b5837ca31c69d",
+          "bytes": 14674,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-j": {
+      "variants": {
+        "webp": {
+          "sha256": "6e415a32fd6c4b8773fab7ee1ba66ca70d6d8d78a95dd6b2c878ee5265e6815e",
+          "bytes": 20780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-k": {
+      "variants": {
+        "webp": {
+          "sha256": "2cef275bc629836059e5d1953a8730bfe4269ac4e56ad39d33f7f6c809118c95",
+          "bytes": 21714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/diamond-q": {
+      "variants": {
+        "webp": {
+          "sha256": "76d53e4a682593e79a2d5483d99488afb7f8b2d81f0a028e12748e9c2bf84203",
+          "bytes": 21816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-10": {
+      "variants": {
+        "webp": {
+          "sha256": "2e4e74bfa998027d8e4e31ce07df5b922dae010b911a2312b97c05954e145d53",
+          "bytes": 17112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-2": {
+      "variants": {
+        "webp": {
+          "sha256": "a2ca5f7ce20d5daf4244d88a39b672c11b16db383cc366fa81b676e9761e19db",
+          "bytes": 15270,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-3": {
+      "variants": {
+        "webp": {
+          "sha256": "ebf3533369ae4853debad1d12ddf915d1c7411db1eb5eb27669fd2b1ea89093a",
+          "bytes": 15924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-4": {
+      "variants": {
+        "webp": {
+          "sha256": "99b58b2f1f3e207fb523695599a0f409f349557411c01a80adf6a4ffe66f5d18",
+          "bytes": 15606,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-5": {
+      "variants": {
+        "webp": {
+          "sha256": "78336b38a38c193ab51a71957b63d75f27d7c4e4874f54deca1d3c81edbabcfe",
+          "bytes": 16348,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-6": {
+      "variants": {
+        "webp": {
+          "sha256": "fafd65445c3c81ec1a8a5c05740f0abc6523dcd3877c8a0c6f723335495fb45f",
+          "bytes": 17108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-7": {
+      "variants": {
+        "webp": {
+          "sha256": "f5c096a6ff0eaef1ca6993d166244f340b607d82ea38669dc21f988462570704",
+          "bytes": 16474,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-8": {
+      "variants": {
+        "webp": {
+          "sha256": "01ab5becd362208aeb5fc6a1d34675ba520dfcf8e933c4dbcf868c4cefba7a54",
+          "bytes": 17604,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-9": {
+      "variants": {
+        "webp": {
+          "sha256": "6aca1e5b5deaa9d8eb61bf4f8dc0f63ce95b80db26cb957a2f12f46d9b0e25cb",
+          "bytes": 18268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-a": {
+      "variants": {
+        "webp": {
+          "sha256": "303d5ac809ef30095c597914d7cf0bc42e480d75d46c6de6dbd7bbfab110945e",
+          "bytes": 14866,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-j": {
+      "variants": {
+        "webp": {
+          "sha256": "e2e1c0b7064b5830ff3d9fb63bb06180e515bcee19a42b62bfc8779f7f34465e",
+          "bytes": 21000,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-k": {
+      "variants": {
+        "webp": {
+          "sha256": "7e4cfb4aad81be8888955a236a4b55976c79b3f0f55dc3a77b12ec27d4f45e19",
+          "bytes": 21838,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/heart-q": {
+      "variants": {
+        "webp": {
+          "sha256": "ff81c9d8ef7a7b628bb9c244f9e7b9b123f92bce61ec35f985aa07b76a796062",
+          "bytes": 21936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/joker-big": {
+      "variants": {
+        "webp": {
+          "sha256": "5fb1d3e58e0f94b2cab87d9eb6be7fd9e7b3556e0627e6a0cc501cedc984b412",
+          "bytes": 23394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/joker-small": {
+      "variants": {
+        "webp": {
+          "sha256": "7bda7353597fcc2643242f27e94645aa05d577996bf678669f307722e716959d",
+          "bytes": 23564,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-10": {
+      "variants": {
+        "webp": {
+          "sha256": "671f9954e1477fbd3c68aa8cfb34a5750a8ea78c5b89486d205d965ee37cccca",
+          "bytes": 17636,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-2": {
+      "variants": {
+        "webp": {
+          "sha256": "fa506dfccc3a55cc31a8ab224cb70e22b6217747dee99e126d3f382fbc2316bf",
+          "bytes": 15094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-3": {
+      "variants": {
+        "webp": {
+          "sha256": "5318a200873671ac28c3e099629b31079280a41e055fac507a1496630aca400d",
+          "bytes": 15850,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-4": {
+      "variants": {
+        "webp": {
+          "sha256": "9fdbffb13c70fec6ce10aa7428a3dce9f769face43dd68d81f78ba35aaeda448",
+          "bytes": 15618,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-5": {
+      "variants": {
+        "webp": {
+          "sha256": "f083bd516f80283465f1c86e843f04d3719780b6842ca3e49666e993809e06b8",
+          "bytes": 16458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-6": {
+      "variants": {
+        "webp": {
+          "sha256": "7cfb713b4033f09f1e3bc41492f8b13a113f5a3431353842b26987fd381d2cba",
+          "bytes": 17044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-7": {
+      "variants": {
+        "webp": {
+          "sha256": "1f2f58739740cbc3332e009465a69522c013ec27e325bf8980c5385138ca4555",
+          "bytes": 16590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-8": {
+      "variants": {
+        "webp": {
+          "sha256": "6e15c53b018bd70b80b85cfd271e663bdce8182f2afff94afd3b87d3dbe625e2",
+          "bytes": 17794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-9": {
+      "variants": {
+        "webp": {
+          "sha256": "af9f12ec038e764057fa25e8708925a509b7ebba8ad04a0e670180e52de776a7",
+          "bytes": 18036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-a": {
+      "variants": {
+        "webp": {
+          "sha256": "41e23558a9c5d368c06c49c3a63840d4a096de44b490177a43050e1929094b04",
+          "bytes": 14706,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-j": {
+      "variants": {
+        "webp": {
+          "sha256": "5b9abd2b2849bcd2794ab35f7606234a60cfe1e5393ce7d76094db51b8ad87bc",
+          "bytes": 21058,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-k": {
+      "variants": {
+        "webp": {
+          "sha256": "1a30f6556235b074577210c1a3868a165ba0ec0170f2fa3f55c156cd60689e77",
+          "bytes": 21730,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/compressed/spade-q": {
+      "variants": {
+        "webp": {
+          "sha256": "b8805c392970ddd4275d3af509bd61a5edb4ec3792c6e26e171e5491ee0ad5e9",
+          "bytes": 22444,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-10": {
+      "variants": {
+        "png": {
+          "sha256": "bca2a80f8eb07913041f39e8c435fd79329bbcdb5cd279cbe2fa20debf2297aa",
+          "bytes": 74426,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-2": {
+      "variants": {
+        "png": {
+          "sha256": "9ea661091facc280896fc8605e0410efe518467ce2fea60e47713c770a90c52f",
+          "bytes": 72207,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-3": {
+      "variants": {
+        "png": {
+          "sha256": "04bea3e279cd38c29f56f648e5c2c11df07f2f4ed0680808ff7cc3f3e77515e4",
+          "bytes": 73378,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-4": {
+      "variants": {
+        "png": {
+          "sha256": "7e8d7c58608c420499b0df3b1e326bdec6893d2f9a467e8e04876bff10a4f39f",
+          "bytes": 71902,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-5": {
+      "variants": {
+        "png": {
+          "sha256": "6307b7a2125200438f621ece9cc8516bc28106ea857c7c638acf853b6ac5ccfe",
+          "bytes": 73366,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-6": {
+      "variants": {
+        "png": {
+          "sha256": "9c225e5636dc4fda67ef021aa17aaa578005ed595729676a761986a2a9f25961",
+          "bytes": 74215,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-7": {
+      "variants": {
+        "png": {
+          "sha256": "776b759580be02b643cc6bae0fea3da7b74eb319db471c5462c00d0499688424",
+          "bytes": 72474,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-8": {
+      "variants": {
+        "png": {
+          "sha256": "0939db013f738a1b9ec2d0251edcbd2f0776173dfb993246795780f7d57d225d",
+          "bytes": 74678,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-9": {
+      "variants": {
+        "png": {
+          "sha256": "91006dce6dd7c2d1cd0bed842b498d9e6894684b5b9d0140761f4bddee48ed1b",
+          "bytes": 74872,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-a": {
+      "variants": {
+        "png": {
+          "sha256": "f7c23b54cffc6ff452f0bbebd67a27ac57bc69df3a0d69d5df37b959ecbd25c2",
+          "bytes": 71787,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-j": {
+      "variants": {
+        "png": {
+          "sha256": "d1fafa14f7084fa76839f3cb79b98ee320ca7c608dfd0c89ec307d96cb988e2e",
+          "bytes": 68688,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-k": {
+      "variants": {
+        "png": {
+          "sha256": "abdda191817aaa93609174fadd650ef342c8586262623df5b947eebfd2b7a067",
+          "bytes": 70085,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/diamond-q": {
+      "variants": {
+        "png": {
+          "sha256": "45140607a610210eea56b59ccf9529eee5a28debfff2dfa097df1cb4d71e7063",
+          "bytes": 70988,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-10": {
+      "variants": {
+        "png": {
+          "sha256": "6a71055b98d93b721661d6549ecc9e65f59cca61642f41932fc66821aae1812c",
+          "bytes": 74751,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-2": {
+      "variants": {
+        "png": {
+          "sha256": "81d0d712a2c3a86e0f260f0325bb0c5e5664452c3000a547b3866edd9360aa27",
+          "bytes": 72286,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-3": {
+      "variants": {
+        "png": {
+          "sha256": "acceb4416624aa76d00e20285bdcafd05d88acaa4bf982d9c47577424ea215c0",
+          "bytes": 73325,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-4": {
+      "variants": {
+        "png": {
+          "sha256": "ac77f848739056f1fea5b56531b18e7cda38c27a26fda71d732ca18d5a8729a4",
+          "bytes": 72102,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-5": {
+      "variants": {
+        "png": {
+          "sha256": "2003f131e74b03f36d8c21316749d0b25c843e9b5e4749ba812d653c5f86c5a9",
+          "bytes": 73638,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-6": {
+      "variants": {
+        "png": {
+          "sha256": "6da997ea97afab72304135fc12f6382ac3181556ec0aac459cb0a461f0b6c5e3",
+          "bytes": 74529,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-7": {
+      "variants": {
+        "png": {
+          "sha256": "79a4d3581db4cca5d8347338c3fc2f3459b7e3e45312742e5fcf7fff525ba45d",
+          "bytes": 72717,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-8": {
+      "variants": {
+        "png": {
+          "sha256": "799754462405716e992ed1dcd8d0cce182784166ce4678ad1434c4fd79c4eda6",
+          "bytes": 75079,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-9": {
+      "variants": {
+        "png": {
+          "sha256": "adb10b1cc4fc186121b57cda0ec9651f6ab68dc4b06bdcdbf2da0ae3dd735c82",
+          "bytes": 75210,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-a": {
+      "variants": {
+        "png": {
+          "sha256": "6a260552ef8075dae3103dabeecf3a6ef979d8a8239882c579aef0dbf1fa3b7d",
+          "bytes": 71602,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-j": {
+      "variants": {
+        "png": {
+          "sha256": "4ad8df846d9b92bc3ff33c11d120fb02fb1e572145e8b9772991e1b910a39df3",
+          "bytes": 68913,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-k": {
+      "variants": {
+        "png": {
+          "sha256": "0776b69ea09346d7a05877a0c0581b94bcdc41dbb4e7dc05bd420b2b1f60e92f",
+          "bytes": 70330,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/heart-q": {
+      "variants": {
+        "png": {
+          "sha256": "f66a44a5a8d77fa7841b8c5b506baff03241598262a628e40ecfb564e61a5207",
+          "bytes": 71236,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/joker-big": {
+      "variants": {
+        "png": {
+          "sha256": "4df6c09c2a666de029b0731f42d12350d2402f119e4072e673499750bdb2d54a",
+          "bytes": 67782,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/joker-small": {
+      "variants": {
+        "png": {
+          "sha256": "9cce3d24e38b1161ff5bd1bd8bbbe3c6f2eb7fae3ffa1c6db4634a35c169704f",
+          "bytes": 68266,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-10": {
+      "variants": {
+        "png": {
+          "sha256": "8a679cae793551cd9231d12621a0c922a1242059953035cbc1506e47fa15278d",
+          "bytes": 76046,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-2": {
+      "variants": {
+        "png": {
+          "sha256": "36d892331e7e8a79360a3553acbd10103b0fe7a4ca1b430612b5f49ad7f0eadd",
+          "bytes": 72999,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-3": {
+      "variants": {
+        "png": {
+          "sha256": "0425e012e8bf62a9c463928e7f2527b7e60626767a31ebd6ea267d6bf4988fb8",
+          "bytes": 74382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-4": {
+      "variants": {
+        "png": {
+          "sha256": "8304683c426a389c3c5b3fde33b1a29120d715b9ac35677e28a2ca96dda2d659",
+          "bytes": 72896,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-5": {
+      "variants": {
+        "png": {
+          "sha256": "74e47de3b546448daa204e81eba857d2d74a1a359ea3da2e8e77baa501e1a393",
+          "bytes": 74662,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-6": {
+      "variants": {
+        "png": {
+          "sha256": "ae639cd3ad13c11eee58a1dc21d14ba0ca91e88728a13367619c9ada3b8bb7d1",
+          "bytes": 75543,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-7": {
+      "variants": {
+        "png": {
+          "sha256": "2e57a6e641b0ff18c2cbfee6397e713bfa8af9e325388aaf7151a53d896cb310",
+          "bytes": 73829,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-8": {
+      "variants": {
+        "png": {
+          "sha256": "8d0332f230103d9ba398d32f8c285e89baceea3b85072e48ded69d5a1d01e14c",
+          "bytes": 76257,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-9": {
+      "variants": {
+        "png": {
+          "sha256": "93fded3dd1e3e985dd510130149478d33653098b53ec236176f37ad1f34fd710",
+          "bytes": 76696,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-a": {
+      "variants": {
+        "png": {
+          "sha256": "c9c5b0e7d38d5b13cd6be97cf1e4937b16282c98376b7da383aee620ece489b9",
+          "bytes": 72537,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-j": {
+      "variants": {
+        "png": {
+          "sha256": "2e085f3f16ba5bae8a560241b05c64e63fbe84704fa0ea6e0073ec161b3246af",
+          "bytes": 69344,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-k": {
+      "variants": {
+        "png": {
+          "sha256": "714f226bda4a2394aa271d454c1c98a794dff4943b05454859a589630669e265",
+          "bytes": 70893,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/cards/faces/spade-q": {
+      "variants": {
+        "png": {
+          "sha256": "d86d7611dc1689263985b074a41ebabf38e031476821a965f8d089de8a7c1fb6",
+          "bytes": 71766,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/bid-1": {
+      "variants": {
+        "png": {
+          "sha256": "aaea7895eebc37804eea6bd3252301b8d5597032b9b982fd9a635301cf1bdcd2",
+          "bytes": 48608,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/bid-2": {
+      "variants": {
+        "png": {
+          "sha256": "27de97d47bbef5e5d0d2ac1abd05c64cfcfde3526f3ebc5ad619273ab2a77e57",
+          "bytes": 49072,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/bid-3": {
+      "variants": {
+        "png": {
+          "sha256": "0290e5d29221e8c71e414eabc16d03395ab58f915f9999da1c30525a0cf58af5",
+          "bytes": 51855,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/bid-pass": {
+      "variants": {
+        "png": {
+          "sha256": "e39d7110354e85a8758e1c1cf872edf577baaa4440df900ab738a762b8333a33",
+          "bytes": 51102,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/compressed/bid-1": {
+      "variants": {
+        "webp": {
+          "sha256": "166f40eb5574da40f9c90211a69465e4abf1829f42a801396093aa4cbcbf5120",
+          "bytes": 17752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/compressed/bid-2": {
+      "variants": {
+        "webp": {
+          "sha256": "4d409f44685dc4cb4f775725f38694a7cad3a4adeee8a5e70fbbee0dd622fe15",
+          "bytes": 18618,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/compressed/bid-3": {
+      "variants": {
+        "webp": {
+          "sha256": "bda37b0840a9de7b99675bf6935a468e303e046f8f5f8d4b9fc16803f0c40091",
+          "bytes": 18688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/chips/compressed/bid-pass": {
+      "variants": {
+        "webp": {
+          "sha256": "cceae364178ced5e3b0836e69117021d359433a6a713ce62eabf25728082eeb2",
+          "bytes": 18408,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/table/compressed/felt": {
+      "variants": {
+        "webp": {
+          "sha256": "276f5fa8d76bb41e61f185a3b4a7824eb9ed728cd32482c34625d7f67486c462",
+          "bytes": 28286,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/doudizhu/table/felt": {
+      "variants": {
+        "png": {
+          "sha256": "43d0fcb938beb0233d669c8f324e88aa2c37416e952cf96885ccdf993482d5d5",
+          "bytes": 723211,
+          "mime": "image/png"
         }
       }
     },
@@ -9511,11 +11472,38 @@
         }
       }
     },
-    "zh-CN/smashup/base/compressed/huluwawa_bases": {
+    "zh-CN/smashup/base/compressed/disney_four_faction_bases": {
       "variants": {
         "webp": {
-          "sha256": "c957d112aca3780013c720d42f14d73367f272a55dd654994dcef7b5bc5cbefd",
-          "bytes": 377686,
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/diy_clowns_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5918fb7166b393388cdbe8614ac2f7812e5a6e390c49f281af189e3ed2a14851",
+          "bytes": 487418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/diy_killers_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "7285f0152fee32a672611af3df22dc648b76df9ccd0694e6aae17941237fb08b",
+          "bytes": 482650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/half_the_battle_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "fd8047133071ede8778287a8e1849ba2c5f85c78640912aef608eb7dd71e65f4",
+          "bytes": 1710948,
           "mime": "image/webp"
         }
       }
@@ -9529,11 +11517,110 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/munchkin_clerics_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5ad3e612d1d13f87c63fb96cba626e8165e690a5e27ed28da95ff4a845cf19dd",
+          "bytes": 458384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_dwarves_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5daee2cfe675d9fc2331a2e192024ad4c46473b23f1a2f4f109a7565d39b75fc",
+          "bytes": 550516,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_elves_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "0a2250dfdfb2b1c53b415772eb3edd68de8faa1dd6f569ce30558fc0e032baec",
+          "bytes": 633820,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_halflings_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5838617bfd2dcdb809196112b5e972d67c5c7848d3cf3326eb5330b4fe99c28c",
+          "bytes": 616614,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_mages_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "cabc75ee372fde1dec9272e02986c768f3dbd4a31ef90831df9839c47037677a",
+          "bytes": 630664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_orcs_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "d54450da73a565ad59ab6179bcb54c1ffb594cb9aa7a16492831de882294133b",
+          "bytes": 680650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_thieves_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "b2fc13a9ca9377f0cdec5d934ff42e3cd9a58cc091f6c2c86aeeb33935ca93d0",
+          "bytes": 584826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/munchkin_warriors_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "f1d07e0fc8a7324fa24b312f439744f3f0be5d3aab9e3d8730582099fe963295",
+          "bytes": 638380,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/goblins_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "59d5772ad03db29b90fd0f995487b1ac3eba88c4482a82f14829c67cbcb2d7c3",
+          "bytes": 421638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/round_table_knights_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "1f74fe28a409ba144b2820861c8185511ae6a21907a4679bab43d9272fdb8f16",
+          "bytes": 443064,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/paladin_bases": {
       "variants": {
         "webp": {
           "sha256": "02fbf6e788a5263d6e6b37d3e369e962c3b232112d35e97f49e3bd3f93084c8a",
           "bytes": 320516,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/penguins": {
+      "variants": {
+        "webp": {
+          "sha256": "6ae3ed74cf5ab2e5aebd3517dba7d97e2adfce9f351541913a8f319f3fd43799",
+          "bytes": 1118082,
           "mime": "image/webp"
         }
       }
@@ -9601,11 +11688,38 @@
         }
       }
     },
-    "zh-CN/smashup/base/huluwawa_bases": {
+    "zh-CN/smashup/base/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_clowns_bases": {
       "variants": {
         "png": {
-          "sha256": "a84672e60bdc7b4e9b25e4ace4354733c8559d0fc617d6b99642512205c4e6f1",
-          "bytes": 5469582,
+          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
+          "bytes": 2871712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_killers_bases": {
+      "variants": {
+        "png": {
+          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
+          "bytes": 2862123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/half_the_battle_bases": {
+      "variants": {
+        "png": {
+          "sha256": "b2ebf074e8c1a0855ebe80a36a4f52462f0563879c39d1a8b02f4461d91c14fb",
+          "bytes": 10812801,
           "mime": "image/png"
         }
       }
@@ -9615,6 +11729,105 @@
         "png": {
           "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
           "bytes": 30275972,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_clerics_bases": {
+      "variants": {
+        "png": {
+          "sha256": "e5403c478dde2c6366f674b055bb133327207d82d37ef0f94b3bb60f7c259845",
+          "bytes": 4452028,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_dwarves_bases": {
+      "variants": {
+        "png": {
+          "sha256": "f30fe6d4cfa4554eeaaaee0b21ec7d0955cdc366af63ed01fb06f00c3d8719a0",
+          "bytes": 5082884,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_elves_bases": {
+      "variants": {
+        "png": {
+          "sha256": "4a3e234221781672b2350c07afe85cee9c92545449030dcba6cfc5539a7547c9",
+          "bytes": 5067056,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_halflings_bases": {
+      "variants": {
+        "png": {
+          "sha256": "fad74583953e9975865d9d3ed3812b686d5e8a77a03d85eef2e122550a8f7f40",
+          "bytes": 5546131,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_mages_bases": {
+      "variants": {
+        "png": {
+          "sha256": "4cbd9a4f6520b60f97c051b8699314b49b38222945317ddacdf46e2ea0d8762b",
+          "bytes": 5315218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_orcs_bases": {
+      "variants": {
+        "png": {
+          "sha256": "9d1289015de03d503a917f57dce64128eeec5397c074079d540c4475cda424c8",
+          "bytes": 5114906,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_thieves_bases": {
+      "variants": {
+        "png": {
+          "sha256": "30f3c5aa91fbd833cfd63df9e50c803d68b5d3bca8910b4cc86e03e530af1824",
+          "bytes": 5078544,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/munchkin_warriors_bases": {
+      "variants": {
+        "png": {
+          "sha256": "a9ebde6cbb2249c46e8a24b39f7eb3e6d41e1a9139a185d23dfe33f363fbbf18",
+          "bytes": 5304036,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/goblins_bases": {
+      "variants": {
+        "png": {
+          "sha256": "de25f5e7efe8e7edc26d0ba3a23b1ab4803cfbc3c21f4674d3de16a9e541a257",
+          "bytes": 2778756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/round_table_knights_bases": {
+      "variants": {
+        "png": {
+          "sha256": "3afd85778effdf3442c1ce2b6a9269b709269d486c31c5aa6c23d7299beaa99a",
+          "bytes": 2679470,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/penguins": {
+      "variants": {
+        "png": {
+          "sha256": "6bee13fe3b910d0a4dd48c0f260ebdd5d38c0a958d434c4ba0ac4bdf164619c2",
+          "bytes": 4443493,
           "mime": "image/png"
         }
       }
@@ -9673,6 +11886,24 @@
         }
       }
     },
+    "zh-CN/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/smashup/cards/baokemeng": {
       "variants": {
         "png": {
@@ -9709,11 +11940,29 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/baokemeng": {
       "variants": {
         "webp": {
-          "sha256": "2a9157d4f3d28633f6d3215411d5e0fd426b0163b9224151dc46cd7e5b93f631",
-          "bytes": 1126378,
+          "sha256": "8dcaee24d95267d116ebfaed4517ae68926b8064ad57a7af4a577146791a8fec",
+          "bytes": 8197826,
           "mime": "image/webp"
         }
       }
@@ -9766,8 +12015,8 @@
     "zh-CN/smashup/cards/compressed/cease_and_desist": {
       "variants": {
         "webp": {
-          "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
-          "bytes": 887820,
+          "sha256": "090e4e3f08cfa6ed98ac506b19635eb91b34bdd5e688fa43e2994a420d619e19",
+          "bytes": 5576034,
           "mime": "image/webp"
         }
       }
@@ -9775,8 +12024,44 @@
     "zh-CN/smashup/cards/compressed/disney": {
       "variants": {
         "webp": {
-          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
-          "bytes": 7904230,
+          "sha256": "08144b9d38fcaffea883696734a5c4c57496d85af8249eba6beab33f465a234f",
+          "bytes": 7904228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "141e1bb8e5de2305da57ed51099cc7f0c97493974ba3242857e2373d1ac9e84d",
+          "bytes": 8103050,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_clowns": {
+      "variants": {
+        "webp": {
+          "sha256": "c2888bb67bd2478fddd11278b8b677f753405a6abbff2570889172864dab5f75",
+          "bytes": 4664140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_killers": {
+      "variants": {
+        "webp": {
+          "sha256": "21d750563dc60f8db69f4c50da5b387df0c4ad723d7c4259a1abf0dc5b641c73",
+          "bytes": 4870398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/excellent_movies_teens": {
+      "variants": {
+        "webp": {
+          "sha256": "56fe667dcd95ac16a94304f7362a1fd1c6c13e3b094532e21f678dee13569daf",
+          "bytes": 8659584,
           "mime": "image/webp"
         }
       }
@@ -9790,11 +12075,38 @@
         }
       }
     },
-    "zh-CN/smashup/cards/compressed/huluwawa_cards": {
+    "zh-CN/smashup/cards/compressed/half_the_battle_cosmos": {
       "variants": {
         "webp": {
-          "sha256": "e2cb2ea775bcb4ef44f5c783bb9547e2ac911eb845872e7d15a5137ae4418fd0",
-          "bytes": 865614,
+          "sha256": "23b9084f3ac4518e74e5047f67c43a9f5dbff27d8e2dc9baa60de1a1b5675657",
+          "bytes": 4299216,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/half_the_battle_geckos": {
+      "variants": {
+        "webp": {
+          "sha256": "7ee82396fde206817b6c72d26e28b7e440ac3de18a88d52863051e9f425baae4",
+          "bytes": 4776586,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/half_the_battle_gerald": {
+      "variants": {
+        "webp": {
+          "sha256": "d27c4a0eed0cb9a14921f5205bbc70f0111179bd2fc5a39264a2f495044482d2",
+          "bytes": 5157030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/half_the_battle_pearl_images": {
+      "variants": {
+        "webp": {
+          "sha256": "e782a65443b551570eff12c8479f54f5bbe3c17368b0aee142164911a3ad99f2",
+          "bytes": 3935812,
           "mime": "image/webp"
         }
       }
@@ -9802,8 +12114,8 @@
     "zh-CN/smashup/cards/compressed/international_incident": {
       "variants": {
         "webp": {
-          "sha256": "c106174d2e747c89c7a02b5d3855be7ecd0cd2c7ed8df82bf267b94dad0ce685",
-          "bytes": 969464,
+          "sha256": "963edcbc67b11b5125c8a3f098aca5cfa4053b57137b6abf86baab281b584065",
+          "bytes": 4905358,
           "mime": "image/webp"
         }
       }
@@ -9811,8 +12123,8 @@
     "zh-CN/smashup/cards/compressed/itty_critters_pod": {
       "variants": {
         "webp": {
-          "sha256": "5e3e09cba33325864461a162ce118f5894fe690df506f3e63a979bdae61c9e76",
-          "bytes": 621570,
+          "sha256": "93d8f20afc69fdaaa486d7532090c152c82971f4a5d6bbb04a2fb1c32159e478",
+          "bytes": 1090690,
           "mime": "image/webp"
         }
       }
@@ -9826,11 +12138,20 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/longzu": {
       "variants": {
         "webp": {
-          "sha256": "3850908ee5521dc3e58b77ce142c26a1d5e3909aeb36ca1fe5788ecb207f6e8b",
-          "bytes": 953548,
+          "sha256": "2e79887700fb61dd69ddde14ed23400c50025e898f4015e02cbc3582e9884d60",
+          "bytes": 4883052,
           "mime": "image/webp"
         }
       }
@@ -9838,8 +12159,17 @@
     "zh-CN/smashup/cards/compressed/marvel_villains": {
       "variants": {
         "webp": {
-          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
-          "bytes": 1046742,
+          "sha256": "45f5879b5e0c893688a0a78c6dcb45ac8a8debe630fa172f1f881e43580e3577",
+          "bytes": 6351464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/marvel_villains_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "56217cd4fb306a7413788bbe5f0f3c4a8f1d3aed03939f6f4ae96a5cfe348d3d",
+          "bytes": 6320702,
           "mime": "image/webp"
         }
       }
@@ -9847,8 +12177,17 @@
     "zh-CN/smashup/cards/compressed/marvel_wave_one": {
       "variants": {
         "webp": {
-          "sha256": "50c3addaf130dd61821f25e4f8a1b2767351f1845071f77b30530ae2d89db5ef",
-          "bytes": 1103642,
+          "sha256": "253220422625f448d803e01a442b3e86b66b71cc82c0c3e483dcf6c642c6305d",
+          "bytes": 6887738,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/marvel_wave_one_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "72a9e97f68c61bc75938fec61414daa0e588722053687c353d84abb064d8d665",
+          "bytes": 6257662,
           "mime": "image/webp"
         }
       }
@@ -9858,6 +12197,96 @@
         "webp": {
           "sha256": "3ed44dc79922adeb969d98ae1b83e5f47de34fed3029efadb7263648e0593c80",
           "bytes": 926414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_clerics": {
+      "variants": {
+        "webp": {
+          "sha256": "2fc0e81d494b700cc0f4e038583ccde15154c71eb2c846c82ff9c255732d5718",
+          "bytes": 3575736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_dwarves": {
+      "variants": {
+        "webp": {
+          "sha256": "26911f29f5639ee6f3a675bbc6b0f2f05512121bf6436dfe4393b8a86f1f7511",
+          "bytes": 4434966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_elves": {
+      "variants": {
+        "webp": {
+          "sha256": "0f47c8cf3223c77517d02aff2860fc0b4b1ace3fee1b87834918cbff494d50e6",
+          "bytes": 4503882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_halflings": {
+      "variants": {
+        "webp": {
+          "sha256": "c62936ea3acf5766a0a01bb9308ed92ec34321ee2ea7bbe4ef8232618ee41070",
+          "bytes": 4234612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_mages": {
+      "variants": {
+        "webp": {
+          "sha256": "66d14970adf9d394d6e6d21d805210587d59e3ae82916601d1afbe86dd75cf0b",
+          "bytes": 4191842,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_monsters": {
+      "variants": {
+        "webp": {
+          "sha256": "c714ca676370238b8d4ebdb8de5c45a9d3aa37068c8f18539af7d20a170fad05",
+          "bytes": 6951672,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_orcs": {
+      "variants": {
+        "webp": {
+          "sha256": "17ef6c7de9d80f37caf906a8b468d07d77f9afd2d5b74430ca7e2c9aa586d883",
+          "bytes": 3925634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_thieves": {
+      "variants": {
+        "webp": {
+          "sha256": "5cf23d9367ee413aa5483ddb6f385f21cfc1ea00a0278b3a04718f262f8c38a9",
+          "bytes": 3850112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_treasures": {
+      "variants": {
+        "webp": {
+          "sha256": "724f09b01b089a49abca89cfff0ad0052a6acdb88266b2cbc45df33eec8c30fc",
+          "bytes": 4777288,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/munchkin_warriors": {
+      "variants": {
+        "webp": {
+          "sha256": "ad03696d756e69067c094cce59ba7823fd1b297d8ac83c7d419f853b8c7e837c",
+          "bytes": 4026464,
           "mime": "image/webp"
         }
       }
@@ -9880,11 +12309,47 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/goblins": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c7fa5279f96638a307a82dcd524d6534018dead71b2bd87d9ffcdfb0c5182f",
+          "bytes": 4029816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/round_table_knights": {
+      "variants": {
+        "webp": {
+          "sha256": "f8ee8f98e823c96792138ee787b94daa74ddb019c3052054490fd7ef70d6fc03",
+          "bytes": 5265048,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/paladin_cards": {
       "variants": {
         "webp": {
           "sha256": "88d7fa52cab93e59bb10e4f4a6001f5637e062ee1f8b2b0b9eb734f544b185a7",
           "bytes": 1157846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/penguins": {
+      "variants": {
+        "webp": {
+          "sha256": "c7d03dba56947abe24b437472d2365d1ba725fb7b5f92338ec6347149c1047ab",
+          "bytes": 1902054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/polynesian_voyagers": {
+      "variants": {
+        "webp": {
+          "sha256": "989403c1366435feb89daf70bfd1618e7b5df4b79f1a0774feeced06882c5389",
+          "bytes": 1765534,
           "mime": "image/webp"
         }
       }
@@ -9912,6 +12377,15 @@
         "webp": {
           "sha256": "c052ca0f5e79ff77be9de8d9bcb4a7974cc5ce11f7f9e8c2f03dc6f7168dc23a",
           "bytes": 704114,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
           "mime": "image/webp"
         }
       }
@@ -10024,11 +12498,146 @@
         }
       }
     },
-    "zh-CN/smashup/cards/huluwawa_cards": {
+    "zh-CN/smashup/cards/disney_four_factions": {
       "variants": {
         "png": {
-          "sha256": "402e7b2e90216a162a1876c71c2c66efab69663194911c1e4b52fa6a0b9be4c8",
-          "bytes": 47501004,
+          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
+          "bytes": 41387810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_clowns": {
+      "variants": {
+        "png": {
+          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
+          "bytes": 23916659,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_killers": {
+      "variants": {
+        "png": {
+          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
+          "bytes": 26436318,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/assassination": {
+      "variants": {
+        "webp": {
+          "sha256": "dd62aaa54b2fdd64f34bd96a0a4e16446648e87e1e9402ad11cb0ab82c26dd11",
+          "bytes": 22596,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/brownie": {
+      "variants": {
+        "webp": {
+          "sha256": "f6353a945b17fa21a448a41b810cd3b3982517e4b7c92ced8d67aef1ffb1c6b7",
+          "bytes": 28066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/flame-trap": {
+      "variants": {
+        "webp": {
+          "sha256": "388a69b0f58fcd128d36b6867c145b2e91fe34c74525b9650f2c63f486b80808",
+          "bytes": 23460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/gnome": {
+      "variants": {
+        "webp": {
+          "sha256": "9cacaac595b07532c580c4ce21fd884a84b921d56ff113ccf4aad124845a57d5",
+          "bytes": 25550,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/high-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "5b115faef24e2ce9ee4f4b04bd5207e1bd0f3a0cf280e2d5b113a9a58232cd67",
+          "bytes": 31808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/imp": {
+      "variants": {
+        "webp": {
+          "sha256": "1774192d4ec2b51a4d5e428070fa67c5e59bb2ab3e6579377b6ae9e09a3c6b32",
+          "bytes": 24296,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/leprechaun": {
+      "variants": {
+        "webp": {
+          "sha256": "bae7c7ba8c2862b5916f9d44d56b9161333e68c9e48ca6e4d4422da428b487da",
+          "bytes": 22708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/effect-preview/compressed/winds-of-change": {
+      "variants": {
+        "webp": {
+          "sha256": "48a9f818b78f0792722be0c6357fc4639d6bcc67b9df49809f67a31afb0ee89f",
+          "bytes": 26364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/excellent_movies_teens": {
+      "variants": {
+        "png": {
+          "sha256": "62a150f66f95e4fafc84d5cfbc22dfe57783511d19ad4a7ea8f8e49948ab07ad",
+          "bytes": 57778043,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/half_the_battle_cosmos": {
+      "variants": {
+        "png": {
+          "sha256": "585e59539514f2ba180c0e05e5c277e453ec0d5cc713835301bb756852248ec8",
+          "bytes": 24294207,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/half_the_battle_geckos": {
+      "variants": {
+        "png": {
+          "sha256": "59e0eb702c9e4ef3501280c3b013ab16a81c84529a565e0e04b6b14653834f36",
+          "bytes": 22800669,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/half_the_battle_gerald": {
+      "variants": {
+        "png": {
+          "sha256": "5674b78fa3b27177ec97d93a6d1450a260618966d56fd4e9c25b5bbf31d53ec9",
+          "bytes": 22101189,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/half_the_battle_pearl_images": {
+      "variants": {
+        "png": {
+          "sha256": "8a25cc8893363c33797c08f12d352c490aa336438ba5ca4bfefc77a6d0e96fde",
+          "bytes": 17679181,
           "mime": "image/png"
         }
       }
@@ -10051,6 +12660,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/smashup/cards/longzu": {
       "variants": {
         "png": {
@@ -10069,11 +12687,155 @@
         }
       }
     },
+    "zh-CN/smashup/cards/marvel_villains_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/smashup/cards/marvel_wave_one": {
       "variants": {
         "png": {
           "sha256": "1d0e1bdfc79005ae2fdac697c4d5ac47f5b00bb219e707c1e44258a4986d95e1",
           "bytes": 36067834,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/marvel_wave_one_pod": {
+      "variants": {
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_clerics": {
+      "variants": {
+        "png": {
+          "sha256": "ee0430559780355f62bce6ec8384faa2b08b68d2a79a1bc8f13a8380d594fe46",
+          "bytes": 28758694,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_dwarves": {
+      "variants": {
+        "png": {
+          "sha256": "760d39317aa4a1c937626bf7bfb956d34f3b57cb087dbd8096569392c2d9a9c2",
+          "bytes": 34365106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_elves": {
+      "variants": {
+        "png": {
+          "sha256": "c6c5c8586e706066c3dd5ca2fa3439b408b3a0f923d4f8e1fe904392df3e2089",
+          "bytes": 34735106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_halflings": {
+      "variants": {
+        "png": {
+          "sha256": "29b454de7b6983a7e5951ec3f2eef889258b34f776a1b9c8cf854be4efdb3a1a",
+          "bytes": 33277742,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_mages": {
+      "variants": {
+        "png": {
+          "sha256": "cb4ce9155b7474f8781d8bfa495d9c91e9e707846e68fcde5f5fef82775f98a6",
+          "bytes": 34549561,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_monsters": {
+      "variants": {
+        "png": {
+          "sha256": "30ab937b521e22704b353a7e9fc82b9e85570bfc822293d2581fb0c58e98660a",
+          "bytes": 29198391,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_orcs": {
+      "variants": {
+        "png": {
+          "sha256": "a7bd268aaf9fc72dd2a16e49a36700353fc97b5e3c199ee1a14865d7ca4b1424",
+          "bytes": 30761668,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_thieves": {
+      "variants": {
+        "png": {
+          "sha256": "e835952adb7cf4e841271e9e7750d2079e0c4f8bce0feec860cf428a1436bca4",
+          "bytes": 30002842,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_treasures": {
+      "variants": {
+        "png": {
+          "sha256": "9681fcc11c4feae21ecda52f7f88e41bd6f5f554f2d79f759001e80b1ba1dc80",
+          "bytes": 54430488,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/munchkin_warriors": {
+      "variants": {
+        "png": {
+          "sha256": "6a78000f4229f634c83535c69b0825da586d76e7c779c40afac1ec345e65a610",
+          "bytes": 34110184,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/goblins": {
+      "variants": {
+        "png": {
+          "sha256": "8136163f1799bb828e1c0c06b3e7a78f2f1e87858e94aff0e57ef138fef601b6",
+          "bytes": 18409367,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/round_table_knights": {
+      "variants": {
+        "png": {
+          "sha256": "ae94250d829759bc88863b8099fcf48f710bfcc2f66a15029e956acfcddb0cc9",
+          "bytes": 30567071,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/penguins": {
+      "variants": {
+        "png": {
+          "sha256": "b34ac6108260ecdcb21b3896a179438fa637fff65b73535c3b1e0bd2868b22b7",
+          "bytes": 26245540,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/polynesian_voyagers": {
+      "variants": {
+        "png": {
+          "sha256": "97299d31a0a98eba7e00411e75a612ad8cf3611fb1c25fec3349a73901b677d8",
+          "bytes": 11247201,
           "mime": "image/png"
         }
       }
@@ -10092,6 +12854,15 @@
         "png": {
           "sha256": "f01d0ab000a18f0e167045f1279372c9a54b13d16d9794cf02bc1640e4fbc7c3",
           "bytes": 34483656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
           "mime": "image/png"
         }
       }
@@ -10141,15 +12912,6 @@
         }
       }
     },
-    "zh-CN/smashup/emotes/compressed/smug-v1": {
-      "variants": {
-        "webp": {
-          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
-          "bytes": 133764,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/smashup/emotes/raider/angry-v1": {
       "variants": {
         "png": {
@@ -10165,15 +12927,6 @@
           "sha256": "6f591eec6d11e5074e4548b6c2c53be348a7de77132581d70cd23bca68dd8168",
           "bytes": 217900,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/emotes/smug-v1": {
-      "variants": {
-        "png": {
-          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
-          "bytes": 1932442,
-          "mime": "image/png"
         }
       }
     },
@@ -10195,15 +12948,6 @@
         }
       }
     },
-    "zh-CN/smashup/taitan/compressed/huluwawa_titan": {
-      "variants": {
-        "webp": {
-          "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
-          "bytes": 262096,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/smashup/taitan/compressed/paladin_seraphim": {
       "variants": {
         "webp": {
@@ -10219,15 +12963,6 @@
           "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
           "bytes": 2185502,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/taitan/huluwawa_titan": {
-      "variants": {
-        "png": {
-          "sha256": "ccbf162296b3ebcf62d3b050685e2761530e88e02e0e8e1ad1c75bb1531a29ad",
-          "bytes": 2591063,
-          "mime": "image/png"
         }
       }
     },
@@ -10534,6 +13269,60 @@
           "sha256": "8a8068f046d456a26a47cffad4826933df2129b2c73e371b5a3509c45540378e",
           "bytes": 106306,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "93be01d71bd1971d73111a986afbac7ab34257ac101ac733abef86cf7e73780d",
+          "bytes": 1712169,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "5c123ef9633982a1f85d9cbf98e606bf26d518ecadb88e75cf495cdf795324fc",
+          "bytes": 1392428,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "c6dfde095ec62bc89689d4dc9eab6ef851536adb09a5661d0ebdbf8076151f53",
+          "bytes": 124048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "5b648edcdc9dc451bea09e18649957193454f57e1373d2ff549eeebdd2afaab7",
+          "bytes": 137360,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/hero": {
+      "variants": {
+        "jpg": {
+          "sha256": "e04bc9cb1b6c2553757909b145a84bf554b02fcd95f77566577ed3343ddf9622",
+          "bytes": 112060,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/shadow/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "d90b3f7c34fe363de401a1cf81ab2fb489a36ab241232c88c95a5c24de5953e0",
+          "bytes": 114078,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -13273,30 +16062,12 @@
         }
       }
     },
-    "zh-CN/the-gang/thumbnails/compressed/cover": {
-      "variants": {
-        "webp": {
-          "sha256": "5ecfea83b34e860ff53fe71817539d88a3b276f270a793fe1d4eafeae7838536",
-          "bytes": 43054,
-          "mime": "image/webp"
-        }
-      }
-    },
     "zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail": {
       "variants": {
         "webp": {
           "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
           "bytes": 67012,
           "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/the-gang/thumbnails/cover": {
-      "variants": {
-        "png": {
-          "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
-          "bytes": 71553,
-          "mime": "image/png"
         }
       }
     },
@@ -13309,532 +16080,214 @@
         }
       }
     },
-    "zh-CN/smashup/cards/compressed/marvel_villains_pod": {
+    "zh-CN/dicethrone/images/artificial/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
+          "bytes": 771,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
+          "bytes": 387,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
+          "bytes": 647,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
+          "bytes": 738,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
+          "bytes": 640,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
+          "bytes": 642,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
+          "bytes": 797,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
+          "bytes": 664,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
+          "bytes": 521,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
+          "bytes": 397,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/huluwawa_bases": {
       "variants": {
         "webp": {
-          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
-          "bytes": 6320664,
+          "sha256": "c957d112aca3780013c720d42f14d73367f272a55dd654994dcef7b5bc5cbefd",
+          "bytes": 377686,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/smashup/cards/compressed/marvel_wave_one_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
-          "bytes": 6257536,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/marvel_villains_pod": {
+    "zh-CN/smashup/base/huluwawa_bases": {
       "variants": {
         "png": {
-          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
-          "bytes": 34711937,
+          "sha256": "a84672e60bdc7b4e9b25e4ace4354733c8559d0fc617d6b99642512205c4e6f1",
+          "bytes": 5469582,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/smashup/cards/marvel_wave_one_pod": {
+    "zh-CN/smashup/cards/compressed/huluwawa_cards": {
+      "variants": {
+        "webp": {
+          "sha256": "e2cb2ea775bcb4ef44f5c783bb9547e2ac911eb845872e7d15a5137ae4418fd0",
+          "bytes": 865614,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/huluwawa_cards": {
       "variants": {
         "png": {
-          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
-          "bytes": 35943625,
+          "sha256": "402e7b2e90216a162a1876c71c2c66efab69663194911c1e4b52fa6a0b9be4c8",
+          "bytes": 47501004,
           "mime": "image/png"
         }
       }
     },
-    "en/smashup/cards/anansi_tales_pod": {
+    "zh-CN/smashup/emotes/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
+          "bytes": 133764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/smug-v1": {
       "variants": {
         "png": {
-          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
-          "bytes": 6213661,
+          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
+          "bytes": 1932442,
           "mime": "image/png"
         }
       }
     },
-    "en/smashup/cards/compressed/anansi_tales_pod": {
+    "zh-CN/smashup/taitan/compressed/huluwawa_titan": {
       "variants": {
         "webp": {
-          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
-          "bytes": 1645714,
+          "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
+          "bytes": 262096,
           "mime": "image/webp"
         }
       }
     },
-    "en/smashup/cards/astroknights_pod": {
+    "zh-CN/smashup/taitan/huluwawa_titan": {
       "variants": {
         "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
+          "sha256": "ccbf162296b3ebcf62d3b050685e2761530e88e02e0e8e1ad1c75bb1531a29ad",
+          "bytes": 2591063,
           "mime": "image/png"
         }
       }
     },
-    "en/smashup/cards/compressed/astroknights_pod": {
+    "zh-CN/the-gang/thumbnails/compressed/cover": {
       "variants": {
         "webp": {
-          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
-          "bytes": 1624082,
+          "sha256": "5ecfea83b34e860ff53fe71817539d88a3b276f270a793fe1d4eafeae7838536",
+          "bytes": 43054,
           "mime": "image/webp"
         }
       }
     },
-    "en/smashup/cards/kung_fu_fighters_pod": {
+    "zh-CN/the-gang/thumbnails/cover": {
       "variants": {
         "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/kung_fu_fighters_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
-          "bytes": 1729742,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/russian_fairy_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
-          "bytes": 6438382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/russian_fairy_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
-          "bytes": 1489418,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/anansi_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
-          "bytes": 6213661,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/anansi_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
-          "bytes": 1645714,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/astroknights_pod": {
-      "variants": {
-        "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/astroknights_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
-          "bytes": 1624082,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/kung_fu_fighters_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
-          "bytes": 1729742,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/russian_fairy_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
-          "bytes": 6438382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/russian_fairy_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
-          "bytes": 1489418,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/explorers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
-          "bytes": 6223028,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/star_roamers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "285ab1ad04096c2616cabbd301b87c3d46467a1c9a1327ea01ceeab11a176305",
-          "bytes": 5711799,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/vigilantes_pod": {
-      "variants": {
-        "png": {
-          "sha256": "fb88983da554fbef5e0308b43b25e40bb3c344d653b437ebe570529487e111c4",
-          "bytes": 7775772,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/luchadors_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a0c1df6b6c99f47df59e2eae7bbf6abd7f6755746c31ee8c0800c3a21a4775e4",
-          "bytes": 6191722,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/explorers_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "b3fab24752d42c0c3892bedd7c0ee7398738b8cb4323fed6480df8944f9da033",
-          "bytes": 1734512,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/star_roamers_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "991dcb7f93c04f5c9306be0e362339373dbd62397027921d6ac077f8b6bbeee7",
-          "bytes": 1310110,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/vigilantes_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "8595ba2d8acf58a85665ccc5044b45323ee45c74aa80f509b169a6c6ced8065a",
-          "bytes": 1883692,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/luchadors_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "34b381ec25a80a0903483711c728d5fa1ddd82abaec3885b0bf7e8112ef60561",
-          "bytes": 1606662,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/disney_four_factions": {
-      "variants": {
-        "webp": {
-          "sha256": "d40f52dcbb015bfa2cee1a657d6fd8549f2e8b1640acb5355b5b8abe2c34cd3c",
-          "bytes": 8103102,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/disney_four_factions": {
-      "variants": {
-        "png": {
-          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
-          "bytes": 41387810,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/compressed/disney_four_faction_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
-          "bytes": 1261136,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/base/disney_four_faction_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
-          "bytes": 1261136,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/anansi_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
-          "bytes": 6213661,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/anansi_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
-          "bytes": 1645714,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/astroknights_pod": {
-      "variants": {
-        "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/astroknights_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
-          "bytes": 1624082,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/kung_fu_fighters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/kung_fu_fighters_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
-          "bytes": 1729742,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/russian_fairy_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
-          "bytes": 6438382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/russian_fairy_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
-          "bytes": 1489418,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/anansi_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
-          "bytes": 6213661,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/anansi_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
-          "bytes": 1645714,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/astroknights_pod": {
-      "variants": {
-        "png": {
-          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
-          "bytes": 6565353,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/astroknights_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
-          "bytes": 1624082,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
-      "variants": {
-        "png": {
-          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
-          "bytes": 5995300,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/kung_fu_fighters_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
-          "bytes": 1729742,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/russian_fairy_tales_pod": {
-      "variants": {
-        "png": {
-          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
-          "bytes": 6438382,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/russian_fairy_tales_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
-          "bytes": 1489418,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/excellent_movies_teens": {
-      "variants": {
-        "png": {
-          "sha256": "62a150f66f95e4fafc84d5cfbc22dfe57783511d19ad4a7ea8f8e49948ab07ad",
-          "bytes": 57778043,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/excellent_movies_teens": {
-      "variants": {
-        "webp": {
-          "sha256": "9af400ebdd443dc5f0f8a03985ca14162e0211932b33fa534e807d56ccc47e2f",
-          "bytes": 5032252,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/base/compressed/diy_clowns_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "5918fb7166b393388cdbe8614ac2f7812e5a6e390c49f281af189e3ed2a14851",
-          "bytes": 487418,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/base/compressed/diy_killers_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "7285f0152fee32a672611af3df22dc648b76df9ccd0694e6aae17941237fb08b",
-          "bytes": 482650,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/base/diy_clowns_bases": {
-      "variants": {
-        "png": {
-          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
-          "bytes": 2871712,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/base/diy_killers_bases": {
-      "variants": {
-        "png": {
-          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
-          "bytes": 2862123,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/diy_clowns": {
-      "variants": {
-        "webp": {
-          "sha256": "c2888bb67bd2478fddd11278b8b677f753405a6abbff2570889172864dab5f75",
-          "bytes": 4664140,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/compressed/diy_killers": {
-      "variants": {
-        "webp": {
-          "sha256": "21d750563dc60f8db69f4c50da5b387df0c4ad723d7c4259a1abf0dc5b641c73",
-          "bytes": 4870398,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/diy_clowns": {
-      "variants": {
-        "png": {
-          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
-          "bytes": 23916659,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/smashup/cards/diy_killers": {
-      "variants": {
-        "png": {
-          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
-          "bytes": 26436318,
+          "sha256": "0dbbfae7081bacc90d95b80e13a0e5f1c0ede27a57b58f4b09ba5f8a3065c04f",
+          "bytes": 71553,
           "mime": "image/png"
         }
       }
     }
   },
-  "id": "i18n",
-  "manifestVersion": 1,
-  "scope": "official",
   "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
     "variants": {
       "webp": {

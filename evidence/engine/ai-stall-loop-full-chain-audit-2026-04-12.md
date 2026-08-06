@@ -89,6 +89,15 @@
 用例：`online AI watchdog 在 active-turn 卡死时应持续推进直到交还给真人回合（或遇到 blocker/步数上限）`
 本轮未运行测试（历史有对应用例）：`npm test -- src/engine/transport/__tests__/server.test.ts`
 
+**2026-08-06 资源占用修订**：这里的“连续推进”只表示恢复目标跨 tick 保持，不再表示单次 `runOnlineAiRecoverySequence()` 可以一直执行到真人回合。生产 20 次高 CPU 重启证明，原先最多 16 步的紧循环会让单个复杂/离线 AI 房间长期占用 Node 单线程。当前合同改为：
+
+- 单个恢复时间片默认最多执行 3 步；
+- 三步内已经交还真人则仍在本次序列完成；
+- 三步后仍是同一 AI，则保存下一候选并释放执行权，下一 watchdog tick 继续；
+- 时间片结束不是失败，不得写成 `no_progress` / `blocker_persisted`。
+
+新增回归 `online AI watchdog 应按时间片限制连续恢复步数，并在下一 tick 继续交还真人回合` 已先红后绿；`online AI watchdog` 相关 134 条测试通过。原“单序列持续推进”的资源调度语义失效，功能目标“最终交还真人”保持不变。
+
 ### 7) 自动反馈携带“无法选择原因”与选项诊断
 **实现**：`src/engine/transport/server.ts`
 - `buildUnsatisfiableInteractionStateSnapshot()` 会附带：

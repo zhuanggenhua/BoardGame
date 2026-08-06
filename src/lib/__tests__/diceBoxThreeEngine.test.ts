@@ -121,4 +121,22 @@ describe('DiceBoxThreeEngine', () => {
         expect(preset.labels).toEqual(['', '', '拳', '掌', '禅', '莲', '太极', '终极']);
         expect(box.DiceFactory.materials_cache).toEqual({});
     });
+
+    it('山屋惊魂骰子停稳时保留俯仰和侧倾，避免俯视镜头把骰体压成平面', () => {
+        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
+            styleProfile: { settledTiltX: number; settledTiltY: number };
+            getSettledQuaternionForDie: (layout?: { yaw: number }) => {
+                x: number;
+                y: number;
+                z: number;
+                w: number;
+            };
+        };
+        engine.styleProfile = { settledTiltX: -0.42, settledTiltY: 0.38 };
+
+        const quaternion = engine.getSettledQuaternionForDie({ yaw: 0 });
+
+        expect(Math.abs(quaternion.x) + Math.abs(quaternion.y)).toBeGreaterThan(0.1);
+        expect(Math.abs(quaternion.z)).toBeLessThan(0.1);
+    });
 });

@@ -96,6 +96,33 @@ export interface FeedbackPageFlags {
     mobileProfile?: string;
 }
 
+export interface FeedbackConfigProposalSourceContext {
+    route?: string;
+    tableId?: string;
+    rowId?: string;
+    cellKey?: string;
+    language?: string;
+    objectContext?: Record<string, unknown>;
+}
+
+export interface FeedbackConfigProposalContext {
+    gameId: string;
+    configVersion: string;
+    objectId: string;
+    objectDisplayName?: string;
+    objectType?: string;
+    fieldPath: string;
+    fieldDisplayName?: string;
+    currentValue?: unknown;
+    suggestedValue?: unknown;
+    currentDisplayValue?: string;
+    updatedDisplayValue?: string;
+    reason: string;
+    evidence?: string;
+    sourceContext?: FeedbackConfigProposalSourceContext;
+    status?: string;
+}
+
 @Schema({ timestamps: true })
 export class Feedback {
     @Prop({ type: Types.ObjectId, ref: 'User', required: false })
@@ -172,6 +199,12 @@ export class Feedback {
 
     @Prop({ type: Object })
     errorContext?: FeedbackErrorContext;
+
+    @Prop({ type: Object })
+    configProposal?: FeedbackConfigProposalContext;
+
+    @Prop({ type: [Object] })
+    configProposals?: FeedbackConfigProposalContext[];
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);

@@ -30,8 +30,10 @@ import {
     DEFAULT_BETRAYAL_SCENARIO_ID,
     getBetrayalScenarioCardCandidate,
     isBetrayalEventRuntimeSupported,
+    isBetrayalOptionalHauntRollRuntimeSupported,
     isBetrayalScenarioCardId,
     isImplementedBetrayalHauntCardNumber,
+    resolveBetrayalRoomDiscoverySymbol,
     resolveBetrayalHauntRevealResolution,
     resolveImplementedScenarioIdForCard,
     type BetrayalDeckKind as ConfigDeckKind,
@@ -43,15 +45,16 @@ import {
     type BetrayalEventSeed,
     type BetrayalInventoryKind as ConfigInventoryKind,
     type BetrayalInventorySeed,
+    type BetrayalExplorerTraitTrackSeed,
     type BetrayalMonsterSeed,
     type BetrayalRecommendedAction as ConfigRecommendedAction,
+    type BetrayalRoomDiscoverySymbol,
     type BetrayalRoomDiscoveryTemplate,
     type BetrayalRoomSeed,
     type BetrayalScenarioCardId,
     type BetrayalScenarioId,
     type BetrayalScenarioOutcome,
     type BetrayalTraitKey as ConfigTraitKey,
-    type BetrayalSurvivorSelectionPolicy,
 } from './scenarioConfig';
 import {
     POSSESSION_USE_EFFECTS as USE_EFFECTS,
@@ -69,6 +72,7 @@ import {
 } from './domain/monsterDefinitions';
 
 export { resolveUseEffect } from './possessionEffects';
+export { resolveInventoryEffectId } from './possessionEffects';
 export type { PossessionUseEffectProfile, UseEffectProfile } from './possessionEffects';
 export {
     BETRAYAL_MONSTER_DEFINITIONS,
@@ -83,23 +87,35 @@ export type {
 export type BetrayalTraitKey = ConfigTraitKey;
 export type BetrayalInventoryKind = ConfigInventoryKind;
 export type BetrayalDeckKind = ConfigDeckKind;
+export type { BetrayalRoomDiscoverySymbol };
 export type { BetrayalRoomEdge, BetrayalRoomVisualId, BetrayalRoomFloor };
 export type BetrayalPhase = 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
 export type BetrayalRecommendedAction = ConfigRecommendedAction;
 type BetrayalRoomEndTurnEffect = NonNullable<BetrayalRoomDiscoveryTemplate['endTurnEffect']>;
 type BetrayalRoomEnterEffect = 'mysticElevator';
 type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;
-export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage';
+export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage' | 'blessing';
+type BetrayalHauntAttackTarget =
+    | 'traitor'
+    | 'hero'
+    | 'jack-spirit'
+    | 'phantom-photographer'
+    | 'troll-hand'
+    | 'dynamite-room';
 
 const HELPING_HANDS_STRANGE_AMULET_CARD_ID = 'strange-amulet';
+const BROOCH_CARD_ID = 'brooch';
+const TOOTH_NECKLACE_CARD_ID = 'tooth-necklace';
+const MYSTERIOUS_STOPWATCH_CARD_ID = 'mysterious-stopwatch';
+const DYNAMITE_CARD_ID = 'dynamite';
 const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
     id: HELPING_HANDS_STRANGE_AMULET_CARD_ID,
     name: '奇异护符',
     kind: 'item',
 };
 const HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS = [
-    'betrayal/tokens/monsters/small-monster-1-front',
-    'betrayal/tokens/monsters/small-monster-2-front',
+    'betrayal/tokens/monsters/troll-right-hand',
+    'betrayal/tokens/monsters/troll-left-hand',
 ] as const;
 const MAGIC_CAMERA_PHANTOM_PHOTOGRAPHER_TRAITS = {
     might: 4,
@@ -122,6 +138,7 @@ export interface BetrayalExplorerTemplate {
     tokenAsset?: string;
     color: string;
     traits: Record<BetrayalTraitKey, number>;
+    traitTracks: Record<BetrayalTraitKey, BetrayalExplorerTraitTrackSeed>;
     abilityName: string;
     abilityText: string;
 }
@@ -186,6 +203,25 @@ export interface BetrayalMonsterDamageOutcome {
     removedFromHouse: boolean;
     logLabel: string;
     ruleNote: string;
+}
+
+interface BetrayalDynamiteExplorerRoll {
+    playerId: string;
+    displayName: string;
+    dice: number[];
+    passiveBonus: number;
+    total: number;
+    passed: boolean;
+    traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+}
+
+interface BetrayalDynamiteMonsterRoll {
+    monsterId: string;
+    monsterName: string;
+    dice: number[];
+    total: number;
+    passed: boolean;
+    monsterDamageOutcome?: BetrayalMonsterDamageOutcome | null;
 }
 
 export interface BetrayalMonsterTraitReadModel {
@@ -310,6 +346,7 @@ export interface BetrayalMonsterTurnRuntimeState {
     resolvedStartMonsterIds: string[];
     skippedMonsterIdsThisTurn: string[];
     attackedMonsterIdsThisTurn: string[];
+    movedMonsterIdsThisTurn: string[];
     movementRollsByGroupId: Record<string, BetrayalMonsterMovementRollGroupResult>;
     moveRemainingById: Record<string, number>;
 }
@@ -521,7 +558,7 @@ export interface BetrayalRoomPlacementPreview {
     floor: BetrayalRoomFloor;
     entryRoomId: string | null;
     entryEdge: BetrayalRoomEdge;
-    deckKind: BetrayalDeckKind;
+    deckKind: BetrayalDeckKind | null;
     skippedRoomName?: string;
     buriedRoomNames?: string[];
     room: Pick<BetrayalRoomNode, 'name' | 'hint' | 'tags' | 'discoveryReward' | 'visualId' | 'doorways' | 'backVisualId' | 'orientationTurns' | 'discoveryEffect' | 'endTurnEffect' | 'enterEffect'>;
@@ -623,7 +660,7 @@ export interface BetrayalRoomTileAdjustmentOption extends BetrayalRoomTileAdjust
 }
 
 export interface BetrayalDiscoverySummary {
-    kind: BetrayalDeckKind;
+    kind: BetrayalRoomDiscoverySymbol;
     title: string;
     summary: string;
     detail: string;
@@ -694,6 +731,7 @@ export interface BetrayalRecentRollState {
         traitTracksBeforeEffect: BetrayalTraitTrackMap;
         roomIdBeforeEffect: string;
         possessionOrderByKindBeforeEffect: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]>;
+        currentExplorerInventoryBeforeEffect: BetrayalInventoryCard[];
         deckCountsBeforeEffect: Record<BetrayalDeckKind, number>;
         damageRolls: number[];
         drawnCards: BetrayalInventoryCard[];
@@ -715,12 +753,13 @@ export interface BetrayalRecentRollState {
         skipBloodFromStoneMonsterTurnStart?: boolean;
     };
     attack?: {
-        target: 'traitor' | 'hero' | 'jack-spirit' | 'phantom-photographer' | 'troll-hand';
+        target: BetrayalHauntAttackTarget;
         defenderPlayerId?: string;
         damageKind: 'physical' | 'mental';
         previousDamageToAttacker: number;
         previousDamageToDefender: number;
         defenderRoll: number;
+        defenderDefenseExtraDice?: number;
         attackerTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
         defenderTraitsBeforeDamage?: BetrayalExplorerSummary['traits'];
         weaponCardId?: string;
@@ -760,6 +799,35 @@ export interface BetrayalMonsterMovementRollResult {
     moveAllowance: number;
 }
 
+interface BetrayalHelpingHandsMonsterTurnStartedPayload {
+    controllerPlayerId: string;
+    moveAllowance: number;
+    moveDice: number[];
+    logText: string;
+}
+
+interface BetrayalTurnEndedPayload {
+    previousPlayerId: string;
+    nextPlayerId: string;
+    logText: string;
+    roomEndTurnEffect?: BetrayalRoomEndTurnEffectResult | null;
+    monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
+    helpingHandsMonsterTurnControllerPlayerId?: string;
+    deferAdvanceUntilRollAcknowledged?: boolean;
+    turnLogText?: string;
+    dustEndTurn?: BetrayalDustEndTurnResult;
+    magicCameraEndTurnCapturedEssencePlayerIds?: string[];
+    deferredHelpingHandsMonsterTurnStart?: BetrayalHelpingHandsMonsterTurnStartedPayload;
+    extraTurnAfterCurrentTurn?: BetrayalExtraTurnAfterCurrentTurnState;
+    skipBloodFromStoneMonsterTurnStart?: boolean;
+}
+
+interface BetrayalExtraTurnAfterCurrentTurnState {
+    playerId: string;
+    sourceCardId: string;
+    sourceCardName: string;
+}
+
 export interface BetrayalPendingEventChoiceState {
     id: string;
     playerId: string;
@@ -767,6 +835,10 @@ export interface BetrayalPendingEventChoiceState {
     acceptLabel?: string;
     declineLabel?: string;
     effect: UseEffectProfile;
+    sourceKind?: 'event' | 'item';
+    itemResolution?: 'tooth-necklace-end-turn';
+    itemCardId?: string;
+    deferredTurnEnd?: BetrayalTurnEndedPayload;
 }
 
 export type BetrayalPendingCardResolutionStepKind = Extract<
@@ -777,6 +849,8 @@ export type BetrayalPendingCardResolutionStepKind = Extract<
 export interface BetrayalPendingCardResolutionState {
     id: string;
     playerId: string;
+    requiredPlayerIds?: string[];
+    acknowledgedPlayerIds?: string[];
     deckKind?: BetrayalDeckKind;
     cardId?: string;
     cardName: string;
@@ -805,6 +879,12 @@ export interface BetrayalPendingDamageAllocationState {
     amount: number;
     originalAmount: number;
     allowedTraits: BetrayalTraitKey[];
+    damageReplacement?: {
+        kind: 'brooch-general-damage';
+        cardId: string;
+        cardName: string;
+    };
+    forcedTraitSequence?: BetrayalTraitKey[];
     allowSkull: boolean;
     traitsBeforeDamage: BetrayalExplorerSummary['traits'];
     nextPlayerId?: string;
@@ -824,7 +904,7 @@ export interface BetrayalAllTraitCheckResult {
 }
 
 export interface BetrayalEndgameResult {
-    hauntId: 'crimson-jack-returns' | 'the-dust' | 'blood-from-a-stone' | 'helping-hands' | 'magic-camera';
+    hauntId: 'mummy-rampage' | 'crimson-jack-returns' | 'the-dust' | 'blood-from-a-stone' | 'helping-hands' | 'magic-camera' | 'upon-reflection';
     hauntTitle: string;
     outcome: BetrayalScenarioOutcome;
     winners: string[];
@@ -869,6 +949,33 @@ export interface BetrayalMagicCameraRuntimeState {
     phantomPhotographerIds: string[];
     killedPhantomPhotographerIds: string[];
     stunnedPhantomPhotographerIds: string[];
+}
+
+export interface BetrayalMummyRuntimeState {
+    mummyMonsterId: string;
+    sarcophagusRoomId: string;
+    girlRoomId: string | null;
+    girlHolderPlayerId: string | null;
+    girlHeldByMummy: boolean;
+    mummyCarriedOmenIds: string[];
+    mummyCarriedCards: BetrayalInventoryCard[];
+    pendingAttackReward?: BetrayalMummyAttackRewardChoice;
+    knowledgeTokenCount: number;
+    trueNameFound: boolean;
+    banishmentSpellLearned: boolean;
+    bookRequired: boolean;
+    requiredOmenIds: string[];
+}
+
+export interface BetrayalMummyAttackRewardChoice {
+    id: string;
+    controllerPlayerId: string;
+    monsterId: string;
+    monsterName: string;
+    defenderPlayerId: string;
+    damageToHero: number;
+    defenderTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
+    stealableCardIds: string[];
 }
 
 export interface BetrayalHelpingHandsAttackRewardChoice {
@@ -967,6 +1074,44 @@ export interface BetrayalBloodFromStonePeekabooOption {
     lineOfSightRoomName: string;
 }
 
+export interface BetrayalUponReflectionSecretCombination {
+    trait: BetrayalTraitKey;
+    omenId: string;
+    omenName: string;
+    roomId: string | null;
+    roomName: string;
+    roomVisualId?: BetrayalRoomVisualId;
+}
+
+export interface BetrayalUponReflectionBreakAttempt {
+    playerId: string;
+    roomId: string;
+    roomName: string;
+    trait: BetrayalTraitKey;
+    omenId: string;
+    omenName: string;
+    rollTotal: number;
+    dice: number[];
+    passiveBonus: number;
+    successRoll: boolean;
+    combinationCorrect: boolean;
+}
+
+export interface BetrayalUponReflectionHintedEvent {
+    revealerPlayerId: string;
+    targetPlayerId: string;
+    eventName: string;
+    eventText: string;
+    turnNumber: number;
+}
+
+export interface BetrayalUponReflectionRuntimeState {
+    revealerPlayerId: string;
+    secretCombination: BetrayalUponReflectionSecretCombination | null;
+    breakAttempts: BetrayalUponReflectionBreakAttempt[];
+    hintedEvents: BetrayalUponReflectionHintedEvent[];
+}
+
 export interface BetrayalScenarioRuntimeStatus {
     hauntTriggered: boolean;
     hauntRevealerPlayerId: string | null;
@@ -1003,6 +1148,8 @@ export interface BetrayalScenarioRuntimeStatus {
     dust?: BetrayalDustRuntimeState;
     helpingHands?: BetrayalHelpingHandsRuntimeState;
     magicCamera?: BetrayalMagicCameraRuntimeState;
+    mummy?: BetrayalMummyRuntimeState;
+    uponReflection?: BetrayalUponReflectionRuntimeState;
 }
 
 export interface BetrayalHauntRiskStatus {
@@ -1186,6 +1333,9 @@ export type BetrayalHauntSetupQueueEntryId =
     | 'traitor-remains-in-game'
     | 'heal-and-boost-traitor'
     | 'prepare-jack-spirit-tokens'
+    | 'place-mummy-and-sarcophagus'
+    | 'place-girl-token'
+    | 'prepare-mummy-knowledge-tokens'
     | 'monster-card-left-of-traitor'
     | 'first-player-left-of-traitor'
     | 'announce-hidden-traitor'
@@ -1195,6 +1345,9 @@ export type BetrayalHauntSetupQueueEntryId =
     | 'monster-card-left-of-revealer'
     | 'prepare-research-tokens'
     | 'first-player-left-of-revealer'
+    | 'mirror-revealer-falls-silent'
+    | 'deal-secret-mirror-combination'
+    | 'place-mirror-beings'
     | 'place-phantom-photographers'
     | 'recover-magic-camera'
     | 'deal-hero-essence-tokens'
@@ -1255,6 +1408,7 @@ export type BetrayalHauntSetupCommandPreviewGap =
     | 'token-placement-command'
     | 'room-selection'
     | 'secret-visibility'
+    | 'communication-limitation'
     | 'full-haunt-definition';
 
 export interface BetrayalHauntSetupCommandPreview {
@@ -1406,6 +1560,13 @@ export interface BetrayalCore {
         sourceCardId: string;
         replacementTrait: BetrayalTraitKey;
     } | null;
+    nextNonCombatTraitRollTotalReplacement: {
+        playerId: string;
+        sourceCardId: string;
+        sourceCardName: string;
+        selectedTotal: number;
+    } | null;
+    pendingExtraTurnAfterCurrentTurn: BetrayalExtraTurnAfterCurrentTurnState | null;
     pendingEventChoice: BetrayalPendingEventChoiceState | null;
     pendingCardResolutionQueue: BetrayalPendingCardResolutionState[];
     pendingTradeAgreement: BetrayalPendingTradeAgreementState | null;
@@ -1447,21 +1608,25 @@ export type BetrayalCommandMap = {
         targetPlayerId?: string;
         targetRoomId?: string;
         targetRoomIdsByTokenId?: Record<string, string>;
+        replacementRollTotal?: number;
     };
     [BETRAYAL_COMMANDS.USE_RABBIT_FOOT]: { cardId?: string; dieIndex?: number };
-    [BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE]: { accept?: boolean; trait?: BetrayalTraitKey; traits?: BetrayalTraitKey[]; targetRoomId?: string };
+    [BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM]: { cardId?: string; dieIndex?: number };
+    [BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE]: { accept?: boolean; trait?: BetrayalTraitKey; traits?: BetrayalTraitKey[]; targetRoomId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION]: { resolutionId?: string };
     [BETRAYAL_COMMANDS.USE_ROOM_EFFECT]: Record<string, never>;
     [BETRAYAL_COMMANDS.TRADE_POSSESSION]: { cardId?: string; cardIds?: string[]; targetCardIds?: string[]; targetPlayerId?: string; useDog?: boolean };
     [BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT]: { accept: boolean };
     [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.END_TURN]: Record<string, never>;
+    [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL]: Record<string, never>;
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL]: Record<string, never>;
-    [BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION]: { traits?: BetrayalTraitKey[] };
+    [BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION]: { traits?: BetrayalTraitKey[]; useBrooch?: boolean };
     [BETRAYAL_COMMANDS.HAUNT_ATTACK]: {
-        target: 'traitor' | 'hero' | 'jack-spirit' | 'phantom-photographer' | 'troll-hand';
+        target: BetrayalHauntAttackTarget;
         targetPlayerId?: string;
         targetMonsterId?: string;
+        targetRoomId?: string;
         weaponCardId?: string;
     };
     [BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE]: {
@@ -1475,6 +1640,8 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO]: { monsterId?: string; targetPlayerId?: string };
     [BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN]: Record<string, never>;
     [BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS]: { roomIds?: string[] };
+    [BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE]: { trait?: BetrayalTraitKey; omenId?: string; omenName?: string };
+    [BETRAYAL_COMMANDS.GIVE_MIRROR_HINT]: { eventName?: string; targetPlayerId?: string };
     [BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD]: { choice?: 'damage' | 'steal'; cardId?: string };
     [BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND]: { monsterId?: string; roomId?: string };
     [BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK]: { monsterId?: string; targetPlayerId?: string; combined?: boolean };
@@ -1482,6 +1649,13 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.LEARN_ABOUT_JACK]: Record<string, never>;
     [BETRAYAL_COMMANDS.STUDY_EXORCISM]: Record<string, never>;
     [BETRAYAL_COMMANDS.EXORCISE_JACK]: Record<string, never>;
+    [BETRAYAL_COMMANDS.STUDY_MUMMY_NAME]: Record<string, never>;
+    [BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT]: Record<string, never>;
+    [BETRAYAL_COMMANDS.BANISH_MUMMY]: Record<string, never>;
+    [BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL]: Record<string, never>;
+    [BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY]: Record<string, never>;
+    [BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY]: { cardId?: string };
+    [BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD]: { choice?: 'damage' | 'steal'; cardId?: string };
     [BETRAYAL_COMMANDS.SEARCH_FOR_CURE]: { trait?: Extract<BetrayalTraitKey, 'knowledge' | 'sanity'> };
     [BETRAYAL_COMMANDS.CURE_THE_DUST]: { trait?: BetrayalTraitKey };
     [BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE]: { targetPlayerId?: string };
@@ -1507,6 +1681,8 @@ const EVENTS = {
     EXPLORER_MOVED: 'EXPLORER_MOVED',
     ROOM_EXPLORED: 'ROOM_EXPLORED',
     EVENT_CHOICE_RESOLVED: 'EVENT_CHOICE_RESOLVED',
+    TOOTH_NECKLACE_CHOICE_STARTED: 'TOOTH_NECKLACE_CHOICE_STARTED',
+    TOOTH_NECKLACE_TRAIT_GAINED: 'TOOTH_NECKLACE_TRAIT_GAINED',
     CARD_RESOLUTION_ACKNOWLEDGED: 'CARD_RESOLUTION_ACKNOWLEDGED',
     POSSESSION_USED: 'POSSESSION_USED',
     RABBIT_FOOT_USED: 'RABBIT_FOOT_USED',
@@ -1516,10 +1692,12 @@ const EVENTS = {
     POSSESSION_TRADE_DECLINED: 'POSSESSION_TRADE_DECLINED',
     CORPSE_LOOTED: 'CORPSE_LOOTED',
     TURN_ENDED: 'TURN_ENDED',
+    RECENT_ROLL_ACKNOWLEDGED: 'RECENT_ROLL_ACKNOWLEDGED',
     TURN_END_ROLL_ACKNOWLEDGED: 'TURN_END_ROLL_ACKNOWLEDGED',
     DAMAGE_ALLOCATION_RESOLVED: 'DAMAGE_ALLOCATION_RESOLVED',
     HAUNT_TRIGGERED: 'HAUNT_TRIGGERED',
     HAUNT_ATTACK_RESOLVED: 'HAUNT_ATTACK_RESOLVED',
+    DYNAMITE_ATTACK_RESOLVED: 'DYNAMITE_ATTACK_RESOLVED',
     MONSTER_DAMAGE_RESOLVED: 'MONSTER_DAMAGE_RESOLVED',
     MONSTER_TURN_START_RESOLVED: 'MONSTER_TURN_START_RESOLVED',
     MONSTER_MOVEMENT_GROUP_ROLLED: 'MONSTER_MOVEMENT_GROUP_ROLLED',
@@ -1535,6 +1713,13 @@ const EVENTS = {
     JACK_LEARNED: 'JACK_LEARNED',
     EXORCISM_STUDIED: 'EXORCISM_STUDIED',
     JACK_EXORCISED: 'JACK_EXORCISED',
+    MUMMY_NAME_STUDIED: 'MUMMY_NAME_STUDIED',
+    MUMMY_BANISHMENT_LEARNED: 'MUMMY_BANISHMENT_LEARNED',
+    MUMMY_BANISHED: 'MUMMY_BANISHED',
+    MUMMY_GIRL_PICKED_UP: 'MUMMY_GIRL_PICKED_UP',
+    MUMMY_GIRL_GIVEN: 'MUMMY_GIRL_GIVEN',
+    MUMMY_OMEN_GIVEN: 'MUMMY_OMEN_GIVEN',
+    MUMMY_ATTACK_REWARD_RESOLVED: 'MUMMY_ATTACK_REWARD_RESOLVED',
     DUST_SEARCH_RESOLVED: 'DUST_SEARCH_RESOLVED',
     DUST_CURE_RESOLVED: 'DUST_CURE_RESOLVED',
     SICKNESS_EXCHANGE_REQUESTED: 'SICKNESS_EXCHANGE_REQUESTED',
@@ -1544,6 +1729,8 @@ const EVENTS = {
     MAGIC_CAMERA_SMASHED: 'MAGIC_CAMERA_SMASHED',
     PHANTOM_PHOTOGRAPHER_ATTACK_RESOLVED: 'PHANTOM_PHOTOGRAPHER_ATTACK_RESOLVED',
     BLOOD_FROM_STONE_PEEKABOO_RESOLVED: 'BLOOD_FROM_STONE_PEEKABOO_RESOLVED',
+    UPON_REFLECTION_CURSE_BREAK_ATTEMPTED: 'UPON_REFLECTION_CURSE_BREAK_ATTEMPTED',
+    UPON_REFLECTION_EVENT_HINT_GIVEN: 'UPON_REFLECTION_EVENT_HINT_GIVEN',
     SCENARIO_COMPLETED: 'SCENARIO_COMPLETED',
 } as const;
 
@@ -1571,7 +1758,7 @@ type BetrayalEvent =
         playerId: string;
         roomId: string;
         room: Pick<BetrayalRoomNode, 'name' | 'hint' | 'tags' | 'discoveryReward' | 'visualId' | 'doorways' | 'backVisualId' | 'orientationTurns' | 'discoveryEffect' | 'endTurnEffect' | 'enterEffect'>;
-        deckKind: BetrayalDeckKind;
+        deckKind: BetrayalDeckKind | null;
         drawnCard?: BetrayalInventoryCard;
         roomDiscoveryCards?: BetrayalInventoryCard[];
         buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
@@ -1602,12 +1789,19 @@ type BetrayalEvent =
             name: string;
         };
         skippedEventWithTraitorPower?: boolean;
+        skippedEventWithUponReflection?: boolean;
         skippedRoomWithHolySymbol?: {
             name: string;
         };
         roomDrawResolution?: BetrayalRoomDrawResolution;
         discovery: BetrayalDiscoverySummary;
         logText: string;
+        mummyForcedOmenSearch?: {
+            role: 'hero-book' | 'traitor-wedding-omen';
+            cardId: string;
+            cardName: string;
+            shuffledOmenDeck: BetrayalInventoryCard[];
+        };
         hauntRoll?: BetrayalHauntRollResult;
         hauntTriggered?: boolean;
         hauntRevealResolution?: BetrayalHauntRevealResolution;
@@ -1626,6 +1820,7 @@ type BetrayalEvent =
         dustSetup?: BetrayalDustRuntimeState;
         magicCameraSetup?: BetrayalMagicCameraRuntimeState;
         helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
+        uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
         nextPendingEventChoice?: BetrayalPendingEventChoiceState;
         eventEffect?: UseEffectProfile;
         deathPrevention?: {
@@ -1653,10 +1848,29 @@ type BetrayalEvent =
         discovery: BetrayalDiscoverySummary;
         logText: string;
     }>
+    | GameEvent<typeof EVENTS.TOOTH_NECKLACE_CHOICE_STARTED, {
+        playerId: string;
+        cardId: string;
+        cardName: string;
+        allowedTraits: BetrayalTraitKey[];
+        deferredTurnEnd: BetrayalTurnEndedPayload;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.TOOTH_NECKLACE_TRAIT_GAINED, {
+        playerId: string;
+        cardId: string;
+        cardName: string;
+        accepted: boolean;
+        trait?: BetrayalTraitKey;
+        deferredTurnEnd: BetrayalTurnEndedPayload;
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.CARD_RESOLUTION_ACKNOWLEDGED, {
         playerId: string;
         resolution: BetrayalPendingCardResolutionState;
         remainingCount: number;
+        acknowledgedPlayerIds?: string[];
+        remainingAcknowledgementCount?: number;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.POSSESSION_USED, {
@@ -1666,13 +1880,18 @@ type BetrayalEvent =
         targetPlayerId?: string;
         targetRoomId?: string;
         targetRoomIdsByTokenId?: Record<string, string>;
+        replacementRollTotal?: number;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.RABBIT_FOOT_USED, {
         playerId: string;
         cardId: string;
+        cardName?: string;
         dieIndex: number;
         newPip: number;
+        dieIndices?: number[];
+        newPips?: number[];
+        mentalDamageAfterReroll?: number;
         eventRerollEffect?: UseEffectProfile;
         logText: string;
     }>
@@ -1681,18 +1900,8 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.POSSESSION_TRADED, { playerId: string; targetPlayerId: string; cardId: string; cardIds?: string[]; targetCardIds?: string[]; sourceCardId?: string; logText: string }>
     | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, { playerId: string; targetPlayerId: string; cardIds: string[]; targetCardIds?: string[]; logText: string }>
     | GameEvent<typeof EVENTS.CORPSE_LOOTED, { playerId: string; sourcePlayerId: string; cardId: string; logText: string }>
-    | GameEvent<typeof EVENTS.TURN_ENDED, {
-        previousPlayerId: string;
-        nextPlayerId: string;
-        logText: string;
-        roomEndTurnEffect?: BetrayalRoomEndTurnEffectResult | null;
-        monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
-        helpingHandsMonsterTurnControllerPlayerId?: string;
-        deferAdvanceUntilRollAcknowledged?: boolean;
-        turnLogText?: string;
-        dustEndTurn?: BetrayalDustEndTurnResult;
-        magicCameraEndTurnCapturedEssencePlayerIds?: string[];
-    }>
+    | GameEvent<typeof EVENTS.TURN_ENDED, BetrayalTurnEndedPayload>
+    | GameEvent<typeof EVENTS.RECENT_ROLL_ACKNOWLEDGED, { playerId: string; rollId: string; sourceTitle: string; logText: string }>
     | GameEvent<typeof EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
         previousPlayerId: string;
         nextPlayerId: string;
@@ -1744,11 +1953,12 @@ type BetrayalEvent =
         dustSetup?: BetrayalDustRuntimeState;
         magicCameraSetup?: BetrayalMagicCameraRuntimeState;
         helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
+        uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.HAUNT_ATTACK_RESOLVED, {
         attackerPlayerId: string;
-        target: 'traitor' | 'hero' | 'jack-spirit' | 'phantom-photographer' | 'troll-hand';
+        target: BetrayalHauntAttackTarget;
         defenderPlayerId?: string;
         defenderMonsterId?: string;
         defeatedPlayerId?: string;
@@ -1791,6 +2001,16 @@ type BetrayalEvent =
         helpingHandsAttackRewardChoice?: BetrayalHelpingHandsAttackRewardChoice;
         logText: string;
     }>
+    | GameEvent<typeof EVENTS.DYNAMITE_ATTACK_RESOLVED, {
+        attackerPlayerId: string;
+        cardId: string;
+        cardName: string;
+        targetRoomId: string;
+        targetRoomName: string;
+        explorerRolls: BetrayalDynamiteExplorerRoll[];
+        monsterRolls: BetrayalDynamiteMonsterRoll[];
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.MONSTER_DAMAGE_RESOLVED, {
         playerId: string;
         monsterId: string;
@@ -1824,6 +2044,7 @@ type BetrayalEvent =
         toRoomId: string;
         moveCost: number;
         moveRemaining: number;
+        teleportMove: boolean;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.MONSTER_ATTACK_HERO_RESOLVED, {
@@ -1832,6 +2053,7 @@ type BetrayalEvent =
         monsterName: string;
         targetPlayerId: string;
         attackTrait: BetrayalTraitKey;
+        damageKind: 'physical' | 'mental';
         monsterRoll: number;
         heroRoll: number;
         damageToHero?: number;
@@ -1874,12 +2096,7 @@ type BetrayalEvent =
         };
         logText: string;
     }>
-    | GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, {
-        controllerPlayerId: string;
-        moveAllowance: number;
-        moveDice: number[];
-        logText: string;
-    }>
+    | GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, BetrayalHelpingHandsMonsterTurnStartedPayload>
     | GameEvent<typeof EVENTS.HELPING_HANDS_TROLL_HAND_MOVED, {
         controllerPlayerId: string;
         monsterId: string;
@@ -1940,6 +2157,66 @@ type BetrayalEvent =
         passiveBonus: number;
         regionBonus: number;
         success: boolean;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_NAME_STUDIED, {
+        playerId: string;
+        roomId: string;
+        rollTotal: number;
+        dice: number[];
+        passiveBonus: number;
+        success: boolean;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_BANISHMENT_LEARNED, {
+        playerId: string;
+        roomId: string;
+        rollTotal: number;
+        dice: number[];
+        passiveBonus: number;
+        success: boolean;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_BANISHED, {
+        playerId: string;
+        roomId: string;
+        heroRoll: number;
+        mummyRoll: number;
+        heroDice: number[];
+        mummyDice: number[];
+        passiveBonus: number;
+        success: boolean;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_GIRL_PICKED_UP, {
+        playerId: string;
+        roomId: string;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_GIRL_GIVEN, {
+        playerId: string;
+        monsterId: string;
+        roomId: string;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_OMEN_GIVEN, {
+        playerId: string;
+        monsterId: string;
+        roomId: string;
+        cardId: string;
+        cardName: string;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.MUMMY_ATTACK_REWARD_RESOLVED, {
+        controllerPlayerId: string;
+        monsterId: string;
+        monsterName: string;
+        defenderPlayerId: string;
+        choice: 'damage' | 'steal';
+        stolenCardId?: string;
+        stolenCardName?: string;
+        damageToHero?: number;
+        damageKind?: 'physical';
         logText: string;
     }>
     | GameEvent<typeof EVENTS.DUST_SEARCH_RESOLVED, {
@@ -2023,6 +2300,28 @@ type BetrayalEvent =
         damageAmount?: number;
         logText: string;
     }>
+    | GameEvent<typeof EVENTS.UPON_REFLECTION_CURSE_BREAK_ATTEMPTED, {
+        playerId: string;
+        roomId: string;
+        roomName: string;
+        trait: BetrayalTraitKey;
+        omenId: string;
+        omenName: string;
+        rollTotal: number;
+        dice: number[];
+        passiveBonus: number;
+        successRoll: boolean;
+        combinationCorrect: boolean;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.UPON_REFLECTION_EVENT_HINT_GIVEN, {
+        revealerPlayerId: string;
+        targetPlayerId: string;
+        eventName: string;
+        eventText: string;
+        turnNumber: number;
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.SCENARIO_COMPLETED, { result: BetrayalEndgameResult }>;
 
 export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = BETRAYAL_EXPLORER_CATALOG.map((entry) => ({ ...entry }));
@@ -2080,12 +2379,29 @@ const EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID: Record<string, number> = {
     lantern: 2,
 };
 
+type RecentRollRerollItemMode = 'single-die' | 'all-trait-check-dice' | 'blank-trait-check-dice';
+
+interface RecentRollRerollItemRule {
+    label: string;
+    mode: RecentRollRerollItemMode;
+}
+
+const RECENT_ROLL_REROLL_ITEM_RULES_BY_CARD_ID: Record<string, RecentRollRerollItemRule> = {
+    rope: { label: '兔脚', mode: 'single-die' },
+    'scary-doll': { label: '恐怖玩偶', mode: 'all-trait-check-dice' },
+    'lucky-coin': { label: '幸运硬币', mode: 'blank-trait-check-dice' },
+};
+
 const PHYSICAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
     armor: 1,
 };
 
 const MENTAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
     radio: 1,
+};
+
+const DEFENSE_EXTRA_DICE_WHEN_ATTACKED_BY_CARD_ID: Record<string, number> = {
+    'leather-jacket': 1,
 };
 
 const DEATH_PREVENTION_ROLL_CARDS_BY_ID: Record<string, { dice: number; minTotal: number }> = {
@@ -2098,6 +2414,7 @@ const ATTACK_ROLL_BONUS_WEAPONS_BY_CARD_ID: Record<string, number> = {
 
 const ATTACK_EXTRA_DICE_WEAPONS_BY_CARD_ID: Record<string, number> = {
     dagger: 2,
+    chainsaw: 1,
 };
 
 const ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID: Record<string, number> = {
@@ -2105,6 +2422,8 @@ const ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID: Record<string, number> = {
 };
 
 const ATTACK_TRAIT_WEAPONS_BY_CARD_ID: Partial<Record<string, BetrayalTraitKey>> = {
+    crossbow: 'speed',
+    gun: 'speed',
     ring: 'sanity',
 };
 
@@ -2112,8 +2431,21 @@ const ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID: Record<string, 'physical' | 'mental
     ring: 'mental',
 };
 
-const RANGED_ATTACK_WEAPON_CARD_IDS = new Set([
+const LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS = new Set([
+    'gun',
+]);
+
+const ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS = new Set([
     'crossbow',
+]);
+
+const DYNAMITE_ATTACK_WEAPON_CARD_IDS = new Set([
+    DYNAMITE_CARD_ID,
+]);
+
+const NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS = new Set([
+    'crossbow',
+    'gun',
 ]);
 
 const ATTACK_WEAPON_CARD_IDS = new Set([
@@ -2122,8 +2454,15 @@ const ATTACK_WEAPON_CARD_IDS = new Set([
     ...Object.keys(ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID),
     ...Object.keys(ATTACK_TRAIT_WEAPONS_BY_CARD_ID),
     ...Object.keys(ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID),
-    ...RANGED_ATTACK_WEAPON_CARD_IDS,
+    ...LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS,
+    ...ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS,
+    ...DYNAMITE_ATTACK_WEAPON_CARD_IDS,
 ]);
+
+type AttackWeaponRangeKind = 'same-room' | 'same-or-adjacent-room' | 'line-of-sight';
+
+const MUMMY_WEDDING_OMEN_CARD_IDS = new Set(['holy-symbol', 'ring']);
+const MUMMY_GIRL_STEAL_CARD_ID = 'mummy-girl-token';
 
 const EVENT_POOL: EventTemplate[] = BETRAYAL_DISCOVERY_POOLS.events
     .filter(isBetrayalEventRuntimeSupported)
@@ -2404,11 +2743,33 @@ function cloneUseEffect(effect: UseEffectProfile): UseEffectProfile {
             },
         };
     }
+    if (effect.mode === 'optionalEffect') {
+        return {
+            ...effect,
+            acceptEffect: cloneUseEffect(effect.acceptEffect),
+        };
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return {
+            ...effect,
+            acceptEffect: cloneUseEffect(effect.acceptEffect),
+            declineEffect: cloneUseEffect(effect.declineEffect),
+        };
+    }
     if (effect.mode === 'optionalHauntRoll') {
         return {
             ...effect,
             failureEffect: cloneUseEffect(effect.failureEffect),
             skippedOrStartedEffect: cloneUseEffect(effect.skippedOrStartedEffect),
+        };
+    }
+    if (effect.mode === 'traitRoll') {
+        return {
+            ...effect,
+            branches: effect.branches.map((branch) => ({
+                ...branch,
+                effect: cloneUseEffect(branch.effect),
+            })),
         };
     }
     if (effect.mode === 'chooseTraitRoll') {
@@ -2457,6 +2818,14 @@ function cloneUseEffect(effect: UseEffectProfile): UseEffectProfile {
             drawnCard: effect.drawnCard ? { ...effect.drawnCard } : undefined,
         };
     }
+    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
+        return {
+            ...effect,
+            requiredIfDiscoveredVisualIds: effect.requiredIfDiscoveredVisualIds
+                ? [...effect.requiredIfDiscoveredVisualIds]
+                : undefined,
+        };
+    }
     return { ...effect };
 }
 
@@ -2470,7 +2839,39 @@ function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDis
 function clonePendingCardResolution(
     resolution: BetrayalPendingCardResolutionState,
 ): BetrayalPendingCardResolutionState {
-    return { ...resolution };
+    return {
+        ...resolution,
+        requiredPlayerIds: resolution.requiredPlayerIds
+            ? [...resolution.requiredPlayerIds]
+            : undefined,
+        acknowledgedPlayerIds: resolution.acknowledgedPlayerIds
+            ? [...resolution.acknowledgedPlayerIds]
+            : undefined,
+    };
+}
+
+function resolvePendingCardResolutionRequiredPlayerIds(
+    resolution: BetrayalPendingCardResolutionState,
+): string[] {
+    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    return configuredPlayerIds.length > 0 ? configuredPlayerIds : [resolution.playerId];
+}
+
+function resolvePendingCardResolutionAcknowledgedPlayerIds(
+    resolution: BetrayalPendingCardResolutionState,
+): string[] {
+    return Array.from(new Set(
+        resolution.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
+    ));
+}
+
+function isPendingCardResolutionFullyAcknowledged(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    resolution: BetrayalPendingCardResolutionState,
+    acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
+): boolean {
+    const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
+    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
 function isPendingCardResolutionStepKind(
@@ -2486,9 +2887,10 @@ function isPendingCardResolutionStepKind(
 
 function createPendingCardResolutionQueue(options: {
     playerId: string;
+    requiredPlayerIds: string[];
     roomId: string;
     timestamp: number;
-    deckKind: BetrayalDeckKind;
+    deckKind: BetrayalDeckKind | null;
     discovery: BetrayalDiscoverySummary;
     drawnCard?: BetrayalInventoryCard;
     roomDiscoveryCards?: BetrayalInventoryCard[];
@@ -2516,8 +2918,9 @@ function createPendingCardResolutionQueue(options: {
             cardId: options.drawnCard.id,
             }]
             : [];
+    const visibleAcknowledgementSteps = collapseSameScreenOmenResolutionSteps(steps);
 
-    return steps.map((step, index) => {
+    return visibleAcknowledgementSteps.map((step, index) => {
         const card = step.cardId ? cardById.get(step.cardId) : undefined;
         const deckKind = step.deckKind === 'event' || step.deckKind === 'item' || step.deckKind === 'omen'
             ? step.deckKind
@@ -2527,6 +2930,8 @@ function createPendingCardResolutionQueue(options: {
         return {
             id: `${options.playerId}-${options.roomId}-${options.timestamp}-${step.id}`,
             playerId: options.playerId,
+            requiredPlayerIds: Array.from(new Set(options.requiredPlayerIds)),
+            acknowledgedPlayerIds: [],
             deckKind,
             cardId: step.cardId,
             cardName: card?.name ?? (step.kind === 'room-effect' ? step.text : deckKind === 'event' ? options.discovery.title : step.text),
@@ -2534,9 +2939,37 @@ function createPendingCardResolutionQueue(options: {
             stepKind: step.kind,
             text: step.text,
             index: index + 1,
-            total: steps.length,
+            total: visibleAcknowledgementSteps.length,
         };
     });
+}
+
+function collapseSameScreenOmenResolutionSteps(
+    steps: BetrayalDiscoveryResolutionStep[],
+): BetrayalDiscoveryResolutionStep[] {
+    const collapsed: BetrayalDiscoveryResolutionStep[] = [];
+    for (let index = 0; index < steps.length; index += 1) {
+        const step = steps[index]!;
+        const nextStep = steps[index + 1];
+        if (
+            step.kind === 'drawn-card'
+            && nextStep?.kind === 'haunt-roll'
+            && step.deckKind === 'omen'
+            && nextStep.deckKind === 'omen'
+            && step.cardId
+            && step.cardId === nextStep.cardId
+        ) {
+            collapsed.push({
+                ...step,
+                id: `${step.id}-with-${nextStep.id}`,
+                text: `${step.text}；${nextStep.text}`,
+            });
+            index += 1;
+            continue;
+        }
+        collapsed.push(step);
+    }
+    return collapsed;
 }
 
 function withEventChoiceResolutionStep(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
@@ -2559,12 +2992,18 @@ function effectNeedsTraitChoice(effect: UseEffectProfile): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some(effectNeedsTraitChoice);
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectNeedsTraitChoice(effect.acceptEffect) || effectNeedsTraitChoice(effect.declineEffect);
+    }
     return effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait' || effect.mode === 'generalDamageChoice';
 }
 
 function effectHasUnresolvedTraitChoice(effect: UseEffectProfile): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some(effectHasUnresolvedTraitChoice);
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectHasUnresolvedTraitChoice(effect.acceptEffect) || effectHasUnresolvedTraitChoice(effect.declineEffect);
     }
     if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
         return !effect.chosenTrait;
@@ -2579,6 +3018,9 @@ function effectHasUnresolvedChosenTraitChoice(effect: UseEffectProfile): boolean
     if (effect.mode === 'compound') {
         return effect.effects.some(effectHasUnresolvedChosenTraitChoice);
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectHasUnresolvedChosenTraitChoice(effect.acceptEffect) || effectHasUnresolvedChosenTraitChoice(effect.declineEffect);
+    }
     if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
         return !effect.chosenTrait;
     }
@@ -2588,6 +3030,9 @@ function effectHasUnresolvedChosenTraitChoice(effect: UseEffectProfile): boolean
 function effectHasUnresolvedGeneralDamageChoice(effect: UseEffectProfile): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some(effectHasUnresolvedGeneralDamageChoice);
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectHasUnresolvedGeneralDamageChoice(effect.acceptEffect) || effectHasUnresolvedGeneralDamageChoice(effect.declineEffect);
     }
     if (effect.mode === 'generalDamageChoice') {
         return !effect.selectedTraits || effect.selectedTraits.length !== effect.amount;
@@ -2599,12 +3044,18 @@ function effectNeedsAdjacentRoomChoice(effect: UseEffectProfile): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some(effectNeedsAdjacentRoomChoice);
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectNeedsAdjacentRoomChoice(effect.acceptEffect) || effectNeedsAdjacentRoomChoice(effect.declineEffect);
+    }
     return effect.mode === 'placeExplorerInAdjacentRoom' && !effect.targetRoomId;
 }
 
 function effectNeedsRoomTargetChoice(effect: UseEffectProfile): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some(effectNeedsRoomTargetChoice);
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectNeedsRoomTargetChoice(effect.acceptEffect) || effectNeedsRoomTargetChoice(effect.declineEffect);
     }
     return (
         (
@@ -2621,8 +3072,11 @@ function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | undefined
         return false;
     }
     return effect.mode === 'optionalEventRoll'
+        || effect.mode === 'optionalEffect'
+        || effect.mode === 'optionalItemEffect'
         || effect.mode === 'optionalHauntRoll'
         || effect.mode === 'chooseTraitRoll'
+        || effect.mode === 'traitRoll'
         || effectHasUnresolvedTraitChoice(effect)
         || effectNeedsAdjacentRoomChoice(effect)
         || effectNeedsRoomTargetChoice(effect)
@@ -2636,6 +3090,10 @@ function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | undefined
 function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffectProfile, targetRoomId: string): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some((childEffect) => effectAllowsRoomTargetChoice(core, childEffect, targetRoomId));
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectAllowsRoomTargetChoice(core, effect.acceptEffect, targetRoomId)
+            || effectAllowsRoomTargetChoice(core, effect.declineEffect, targetRoomId);
     }
     if (
         (
@@ -2653,6 +3111,14 @@ function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffectProfi
     if (effect.mode === 'placeSecretPassageToken' && targetRoom.markerTokens?.includes('secretPassage')) {
         return false;
     }
+    const requiredRoom = effect.requiredIfDiscoveredVisualIds?.length
+        ? core.rooms.find((room) => (
+            room.state === 'discovered' && effect.requiredIfDiscoveredVisualIds!.includes(room.visualId)
+        ))
+        : null;
+    if (requiredRoom) {
+        return targetRoom.id === requiredRoom.id;
+    }
     if (effect.targetRoomScope === 'anyDiscovered') {
         return true;
     }
@@ -2662,7 +3128,20 @@ function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffectProfi
     if (effect.targetRoomScope === 'groundDiscovered') {
         return targetRoom.floor === 'ground';
     }
-    return targetRoom.floor === 'basement';
+    if (effect.targetRoomScope === 'basementDiscovered') {
+        return targetRoom.floor === 'basement';
+    }
+    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
+    if (effect.targetRoomScope === 'groundOrBasementDiscovered') {
+        return targetRoom.floor === 'ground' || targetRoom.floor === 'basement';
+    }
+    if (effect.targetRoomScope === 'sameFloorDiscovered') {
+        return Boolean(currentRoom && targetRoom.floor === currentRoom.floor);
+    }
+    if (effect.targetRoomScope === 'differentFloorDiscovered') {
+        return Boolean(currentRoom && targetRoom.floor !== currentRoom.floor);
+    }
+    return false;
 }
 
 function effectAllowsAdjacentRoomChoice(core: BetrayalCore, targetRoomId: string): boolean {
@@ -2677,6 +3156,9 @@ function effectAllowsAdjacentRoomChoice(core: BetrayalCore, targetRoomId: string
 function effectAllowsChosenTrait(effect: UseEffectProfile, trait: BetrayalTraitKey): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some((childEffect) => effectAllowsChosenTrait(childEffect, trait));
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectAllowsChosenTrait(effect.acceptEffect, trait) || effectAllowsChosenTrait(effect.declineEffect, trait);
     }
     if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
         return effect.allowedTraits.includes(trait);
@@ -2709,6 +3191,20 @@ function damageTraitsAreAssignable(
     ));
 }
 
+function resolvePossessionUseCostUnavailableReason(
+    explorer: BetrayalExplorerSummary,
+    effect: PossessionUseEffectProfile,
+    cardName: string,
+): string | null {
+    if (
+        effect.mode === 'nextNonCombatTraitReplacement'
+        && resolveTraitDamageAssignableSteps(explorer, 'sanity') < effect.sanityCost
+    ) {
+        return `神志不足，不能支付${cardName}的 ${effect.sanityCost} 点神志。`;
+    }
+    return null;
+}
+
 function effectAllowsGeneralDamageTraits(
     effect: UseEffectProfile,
     traits: BetrayalTraitKey[] | undefined,
@@ -2717,6 +3213,10 @@ function effectAllowsGeneralDamageTraits(
 ): boolean {
     if (effect.mode === 'compound') {
         return effect.effects.some((childEffect) => effectAllowsGeneralDamageTraits(childEffect, traits, explorer, options));
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return effectAllowsGeneralDamageTraits(effect.acceptEffect, traits, explorer, options)
+            || effectAllowsGeneralDamageTraits(effect.declineEffect, traits, explorer, options);
     }
     if (effect.mode !== 'generalDamageChoice') {
         return false;
@@ -2751,6 +3251,13 @@ function applyAdjacentRoomChoiceToEffect(
             effects: effect.effects.map((childEffect) => applyAdjacentRoomChoiceToEffect(core, childEffect, targetRoomId)),
         };
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return {
+            ...effect,
+            acceptEffect: applyAdjacentRoomChoiceToEffect(core, effect.acceptEffect, targetRoomId),
+            declineEffect: applyAdjacentRoomChoiceToEffect(core, effect.declineEffect, targetRoomId),
+        };
+    }
     if (
         effect.mode === 'placeExplorerInAdjacentRoom'
         && targetRoomId
@@ -2771,6 +3278,13 @@ function applyRoomTargetChoiceToEffect(
         return {
             ...effect,
             effects: effect.effects.map((childEffect) => applyRoomTargetChoiceToEffect(core, childEffect, targetRoomId)),
+        };
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return {
+            ...effect,
+            acceptEffect: applyRoomTargetChoiceToEffect(core, effect.acceptEffect, targetRoomId),
+            declineEffect: applyRoomTargetChoiceToEffect(core, effect.declineEffect, targetRoomId),
         };
     }
     if (
@@ -2794,6 +3308,13 @@ function applyChosenTraitToEffect(effect: UseEffectProfile, trait?: BetrayalTrai
             effects: effect.effects.map((childEffect) => applyChosenTraitToEffect(childEffect, trait)),
         };
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return {
+            ...effect,
+            acceptEffect: applyChosenTraitToEffect(effect.acceptEffect, trait),
+            declineEffect: applyChosenTraitToEffect(effect.declineEffect, trait),
+        };
+    }
     if (
         trait
         && (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait')
@@ -2814,6 +3335,13 @@ function applyGeneralDamageTraitsToEffect(
             effects: effect.effects.map((childEffect) => applyGeneralDamageTraitsToEffect(childEffect, traits)),
         };
     }
+    if (effect.mode === 'optionalItemEffect') {
+        return {
+            ...effect,
+            acceptEffect: applyGeneralDamageTraitsToEffect(effect.acceptEffect, traits),
+            declineEffect: applyGeneralDamageTraitsToEffect(effect.declineEffect, traits),
+        };
+    }
     if (
         effect.mode === 'generalDamageChoice'
         && traits
@@ -2823,6 +3351,52 @@ function applyGeneralDamageTraitsToEffect(
         return { ...effect, selectedTraits: [...traits] };
     }
     return effect;
+}
+
+function eventInventoryCardMatchesFilter(
+    card: BetrayalInventoryCard,
+    filter: Extract<UseEffectProfile, { mode: 'optionalItemEffect' }>['itemFilter'],
+): boolean {
+    if (card.kind !== 'item') {
+        return false;
+    }
+    if (filter === 'nonWeaponItem') {
+        return !ATTACK_WEAPON_CARD_IDS.has(resolveInventoryEffectId(card.id));
+    }
+    return true;
+}
+
+function effectAllowsItemChoice(core: BetrayalCore, effect: UseEffectProfile, cardId: string | undefined): boolean {
+    if (!cardId) {
+        return false;
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.some((childEffect) => effectAllowsItemChoice(core, childEffect, cardId));
+    }
+    if (effect.mode !== 'optionalItemEffect') {
+        return false;
+    }
+    return core.currentExplorer.inventory.some((card) => (
+        card.id === cardId && eventInventoryCardMatchesFilter(card, effect.itemFilter)
+    ));
+}
+
+function applyItemChoiceToEffect(core: BetrayalCore, effect: UseEffectProfile, cardId?: string): UseEffectProfile {
+    if (effect.mode === 'compound') {
+        return {
+            ...effect,
+            effects: effect.effects.map((childEffect) => applyItemChoiceToEffect(core, childEffect, cardId)),
+        };
+    }
+    if (effect.mode !== 'optionalItemEffect' || !cardId || !effectAllowsItemChoice(core, effect, cardId)) {
+        return effect;
+    }
+    const card = core.currentExplorer.inventory.find((candidate) => candidate.id === cardId)!;
+    return {
+        ...effect,
+        selectedCardId: card.id,
+        selectedCardName: card.name,
+    };
 }
 
 function createShuffledDiscoveryState(random: RandomFn) {
@@ -2887,6 +3461,28 @@ function buildDefaultTraitTrack(trackId: string, startValue: number): BetrayalTr
     };
 }
 
+function buildTraitTrackFromSeed(
+    trackId: string,
+    seed: BetrayalExplorerTraitTrackSeed,
+    fallbackStartValue: number,
+): BetrayalTraitTrackState {
+    if (seed.values.length === 0) {
+        return buildDefaultTraitTrack(trackId, fallbackStartValue);
+    }
+    const values = [...seed.values];
+    const maxPosition = values.length - 1;
+    const startPosition = Math.max(0, Math.min(maxPosition, seed.startPosition));
+    return {
+        trackId,
+        values,
+        position: startPosition,
+        startPosition,
+        criticalPosition: 0,
+        skullPosition: -1,
+        maxPosition,
+    };
+}
+
 function cloneTraitTrack(track: BetrayalTraitTrackState): BetrayalTraitTrackState {
     return { ...track, values: [...track.values] };
 }
@@ -2913,6 +3509,19 @@ function buildTraitTracksFromValues(
         BETRAYAL_TRAIT_KEYS.map((trait) => [
             trait,
             buildDefaultTraitTrack(`${explorerId}-${trait}`, values[trait]),
+        ]),
+    ) as BetrayalTraitTrackMap;
+}
+
+function buildTraitTracksFromTemplate(template: BetrayalExplorerTemplate): BetrayalTraitTrackMap {
+    return Object.fromEntries(
+        BETRAYAL_TRAIT_KEYS.map((trait) => [
+            trait,
+            buildTraitTrackFromSeed(
+                `${template.explorerId}-${trait}`,
+                template.traitTracks[trait],
+                template.traits[trait],
+            ),
         ]),
     ) as BetrayalTraitTrackMap;
 }
@@ -3126,6 +3735,17 @@ function buryEventCardToBottom(core: BetrayalCore, eventName: string): void {
     core.eventOrder = deck;
 }
 
+function removeEventCardForUponReflectionHint(core: BetrayalCore, eventName: string): void {
+    const index = core.eventOrder.findIndex((eventCard) => eventCard.name === eventName);
+    if (index < 0) {
+        return;
+    }
+    const deck = core.eventOrder.map(cloneEventTemplate);
+    deck.splice(index, 1);
+    core.eventOrder = deck;
+    core.deckCounts.event = Math.max(0, core.deckCounts.event - 1);
+}
+
 function cloneRoom(room: BetrayalRoomNode): BetrayalRoomNode {
     return {
         ...room,
@@ -3180,6 +3800,7 @@ function createInitialMonsterTurnRuntimeState(): BetrayalMonsterTurnRuntimeState
         resolvedStartMonsterIds: [],
         skippedMonsterIdsThisTurn: [],
         attackedMonsterIdsThisTurn: [],
+        movedMonsterIdsThisTurn: [],
         movementRollsByGroupId: {},
         moveRemainingById: {},
     };
@@ -3204,12 +3825,70 @@ function cloneMonsterMovementRollResult(
     };
 }
 
+function cloneRoomEndTurnEffectResult(
+    result: BetrayalRoomEndTurnEffectResult,
+): BetrayalRoomEndTurnEffectResult {
+    return {
+        ...result,
+        speedRollDice: result.speedRollDice ? [...result.speedRollDice] : undefined,
+    };
+}
+
+function cloneDustEndTurnResult(result: BetrayalDustEndTurnResult): BetrayalDustEndTurnResult {
+    return {
+        ...result,
+        swaps: result.swaps.map((swap) => ({ ...swap })),
+        damageTraits: result.damageTraits ? [...result.damageTraits] : undefined,
+    };
+}
+
+function cloneTurnEndedPayload(payload: BetrayalTurnEndedPayload): BetrayalTurnEndedPayload {
+    return {
+        ...payload,
+        roomEndTurnEffect: payload.roomEndTurnEffect
+            ? cloneRoomEndTurnEffectResult(payload.roomEndTurnEffect)
+            : payload.roomEndTurnEffect,
+        monsterMovementRoll: payload.monsterMovementRoll
+            ? cloneMonsterMovementRollResult(payload.monsterMovementRoll)
+            : payload.monsterMovementRoll,
+        dustEndTurn: payload.dustEndTurn
+            ? cloneDustEndTurnResult(payload.dustEndTurn)
+            : undefined,
+        magicCameraEndTurnCapturedEssencePlayerIds: payload.magicCameraEndTurnCapturedEssencePlayerIds
+            ? [...payload.magicCameraEndTurnCapturedEssencePlayerIds]
+            : undefined,
+        deferredHelpingHandsMonsterTurnStart: payload.deferredHelpingHandsMonsterTurnStart
+            ? {
+                ...payload.deferredHelpingHandsMonsterTurnStart,
+                moveDice: [...payload.deferredHelpingHandsMonsterTurnStart.moveDice],
+            }
+            : undefined,
+        extraTurnAfterCurrentTurn: payload.extraTurnAfterCurrentTurn
+            ? { ...payload.extraTurnAfterCurrentTurn }
+            : undefined,
+    };
+}
+
+function clonePendingEventChoice(
+    pending: BetrayalPendingEventChoiceState,
+): BetrayalPendingEventChoiceState {
+    return {
+        ...pending,
+        effect: cloneUseEffect(pending.effect),
+        deferredTurnEnd: pending.deferredTurnEnd
+            ? cloneTurnEndedPayload(pending.deferredTurnEnd)
+            : undefined,
+    };
+}
+
 function clonePendingDamageAllocation(
     pending: BetrayalPendingDamageAllocationState,
 ): BetrayalPendingDamageAllocationState {
     return {
         ...pending,
         allowedTraits: [...pending.allowedTraits],
+        damageReplacement: pending.damageReplacement ? { ...pending.damageReplacement } : undefined,
+        forcedTraitSequence: pending.forcedTraitSequence ? [...pending.forcedTraitSequence] : undefined,
         traitsBeforeDamage: { ...pending.traitsBeforeDamage },
         nextDamageAllocations: pending.nextDamageAllocations?.map(clonePendingDamageAllocation),
         monsterMovementRoll: pending.monsterMovementRoll
@@ -3230,6 +3909,7 @@ function cloneMonsterTurnRuntimeState(
         resolvedStartMonsterIds: [...(monsterTurn.resolvedStartMonsterIds ?? [])],
         skippedMonsterIdsThisTurn: [...(monsterTurn.skippedMonsterIdsThisTurn ?? [])],
         attackedMonsterIdsThisTurn: [...(monsterTurn.attackedMonsterIdsThisTurn ?? [])],
+        movedMonsterIdsThisTurn: [...(monsterTurn.movedMonsterIdsThisTurn ?? [])],
         movementRollsByGroupId: Object.fromEntries(
             Object.entries(movementRollsByGroupId).map(([groupId, result]) => [
                 groupId,
@@ -3252,6 +3932,22 @@ function cloneMagicCameraRuntimeState(magicCamera: BetrayalMagicCameraRuntimeSta
     };
 }
 
+function cloneMummyRuntimeState(mummy: BetrayalMummyRuntimeState): BetrayalMummyRuntimeState {
+    return {
+        ...mummy,
+        mummyCarriedOmenIds: [...mummy.mummyCarriedOmenIds],
+        mummyCarriedCards: mummy.mummyCarriedCards.map(cloneInventoryCard),
+        pendingAttackReward: mummy.pendingAttackReward
+            ? {
+                ...mummy.pendingAttackReward,
+                defenderTraitsBeforeDamage: { ...mummy.pendingAttackReward.defenderTraitsBeforeDamage },
+                stealableCardIds: [...mummy.pendingAttackReward.stealableCardIds],
+            }
+            : undefined,
+        requiredOmenIds: [...mummy.requiredOmenIds],
+    };
+}
+
 function cloneInventorySeed(card: BetrayalInventorySeed): BetrayalInventoryCard {
     return { ...card };
 }
@@ -3270,7 +3966,7 @@ function createExplorer(
         tokenAsset: template.tokenAsset,
         roomId,
         traits: { ...template.traits },
-        traitTracks: buildTraitTracksFromValues(template.explorerId, template.traits),
+        traitTracks: buildTraitTracksFromTemplate(template),
         inventory: inventory.map(cloneInventorySeed),
     };
     normalizeExplorerTraitTracks(explorer);
@@ -3316,6 +4012,12 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         ),
         nextNonCombatTraitReplacement: core.nextNonCombatTraitReplacement
             ? { ...core.nextNonCombatTraitReplacement }
+            : null,
+        nextNonCombatTraitRollTotalReplacement: core.nextNonCombatTraitRollTotalReplacement
+            ? { ...core.nextNonCombatTraitRollTotalReplacement }
+            : null,
+        pendingExtraTurnAfterCurrentTurn: core.pendingExtraTurnAfterCurrentTurn
+            ? { ...core.pendingExtraTurnAfterCurrentTurn }
             : null,
         recentRoll: core.recentRoll
             ? {
@@ -3368,10 +4070,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
             }
             : null,
         pendingEventChoice: core.pendingEventChoice
-            ? {
-                ...core.pendingEventChoice,
-                effect: cloneUseEffect(core.pendingEventChoice.effect),
-            }
+            ? clonePendingEventChoice(core.pendingEventChoice)
             : null,
         pendingCardResolutionQueue: (core.pendingCardResolutionQueue ?? []).map(clonePendingCardResolution),
         pendingTradeAgreement: core.pendingTradeAgreement
@@ -3578,6 +4277,8 @@ function makeBaseCore(
         turnStartInventoryCardIds: currentExplorer.inventory.map((card) => card.id),
         receivedCardIdsThisTurnByPlayerId: {},
         nextNonCombatTraitReplacement: null,
+        nextNonCombatTraitRollTotalReplacement: null,
+        pendingExtraTurnAfterCurrentTurn: null,
         pendingEventChoice: null,
         pendingCardResolutionQueue: [],
         pendingTradeAgreement: null,
@@ -3666,20 +4367,6 @@ function getExplorersInTurnOrder(core: BetrayalCore): BetrayalExplorerSummary[] 
         .filter((explorer): explorer is BetrayalExplorerSummary => Boolean(explorer));
 }
 
-function resolveScenarioSurvivors(
-    explorers: BetrayalExplorerSummary[],
-    traitor: BetrayalExplorerSummary,
-    policy: BetrayalSurvivorSelectionPolicy,
-): BetrayalExplorerSummary[] {
-    switch (policy) {
-        case 'current-explorer-only':
-            return explorers.filter((explorer) => explorer.playerId === explorers[0]?.playerId);
-        case 'all-non-traitor':
-        default:
-            return explorers.filter((explorer) => explorer.playerId !== traitor.playerId);
-    }
-}
-
 function replaceExplorers(
     core: BetrayalCore,
     explorers: BetrayalExplorerSummary[],
@@ -3717,6 +4404,431 @@ const DUST_RESEARCH_ROOM_VISUAL_IDS = new Set<BetrayalRoomVisualId>([
     'observatory',
     'kitchen',
 ]);
+
+function resolveMummyGirlStartingRoomId(core: BetrayalCore, mummyRoomId: string): string | null {
+    const mummyRoom = core.rooms.find((room) => room.id === mummyRoomId);
+    if (!mummyRoom) {
+        return null;
+    }
+    const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered' && room.id !== mummyRoom.id);
+    const sameFloorRooms = discoveredRooms
+        .filter((room) => room.floor === mummyRoom.floor)
+        .map((room) => ({
+            room,
+            distance: roomDistanceByLayout(mummyRoom, room),
+        }))
+        .sort((a, b) => b.distance - a.distance);
+    const farEnoughRoom = sameFloorRooms.find(({ distance }) => distance >= 5);
+    if (farEnoughRoom) {
+        return farEnoughRoom.room.id;
+    }
+    if (sameFloorRooms[0]) {
+        return sameFloorRooms[0].room.id;
+    }
+    const anyFloorRoom = discoveredRooms
+        .map((room) => ({
+            room,
+            distance: roomDistanceByLayout(mummyRoom, room),
+        }))
+        .sort((a, b) => b.distance - a.distance)[0];
+    return anyFloorRoom?.room.id ?? null;
+}
+
+function removeMummyGirlOmenFromExplorers(core: BetrayalCore): void {
+    const isGirlOmen = (card: BetrayalInventoryCard) => (
+        card.kind === 'omen'
+        && (
+            card.id === 'girl'
+            || card.id === 'omen-girl'
+            || card.name.includes('女孩')
+            || card.name.toLowerCase() === 'girl'
+        )
+    );
+    const explorers = getAllExplorers(core);
+    for (const explorer of explorers) {
+        explorer.inventory = explorer.inventory.filter((card) => !isGirlOmen(card));
+    }
+    core.currentExplorerInventory = core.currentExplorer.inventory.map(cloneInventoryCard);
+}
+
+function createMummyRuntimeState(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMummyRuntimeState {
+    const traitor = traitorPlayerId ? findExplorerByPlayerId(core, traitorPlayerId) : null;
+    const sarcophagusRoomId = traitor?.roomId ?? core.activeRoomId;
+    const girlRoomId = resolveMummyGirlStartingRoomId(core, sarcophagusRoomId);
+    return {
+        mummyMonsterId: 'mummy',
+        sarcophagusRoomId,
+        girlRoomId,
+        girlHolderPlayerId: null,
+        girlHeldByMummy: false,
+        mummyCarriedOmenIds: [],
+        mummyCarriedCards: [],
+        knowledgeTokenCount: 0,
+        trueNameFound: false,
+        banishmentSpellLearned: false,
+        bookRequired: !getAllExplorers(core).some((explorer) => hasOmenBook(explorer)),
+        requiredOmenIds: ['omen-book', 'holy-symbol', 'ring'],
+    };
+}
+
+function setupMummyHaunt(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMummyRuntimeState {
+    const mummy = createMummyRuntimeState(core, traitorPlayerId);
+    removeMummyGirlOmenFromExplorers(core);
+    core.monsters = [
+        ...core.monsters.filter((monster) => monster.id !== mummy.mummyMonsterId && monster.definitionId !== 'mummy'),
+        createBetrayalMonsterFromDefinition('mummy', mummy.mummyMonsterId, mummy.sarcophagusRoomId),
+    ];
+    return mummy;
+}
+
+function isMummyHaunt(core: BetrayalCore): boolean {
+    return core.phase === 'haunt'
+        && core.scenarioRuntime.hauntCardNumber === 1
+        && core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage'
+        && Boolean(core.scenarioRuntime.mummy);
+}
+
+function hasOmenBook(explorer: BetrayalExplorerSummary | null | undefined): boolean {
+    return Boolean(explorer?.inventory.some((card) => (
+        card.kind === 'omen'
+        && (
+            resolveInventoryEffectId(card.id) === 'omen-book'
+            || card.name === '书本'
+            || card.name.toLowerCase() === 'book'
+        )
+    )));
+}
+
+function isMummyMonster(core: BetrayalCore, monsterOrId: BetrayalMonsterSummary | string | null | undefined): boolean {
+    if (!isMummyHaunt(core) || !monsterOrId) {
+        return false;
+    }
+    const mummyId = core.scenarioRuntime.mummy?.mummyMonsterId ?? 'mummy';
+    const monster = typeof monsterOrId === 'string'
+        ? core.monsters.find((item) => item.id === monsterOrId)
+        : monsterOrId;
+    return Boolean(monster && (monster.id === mummyId || monster.definitionId === 'mummy'));
+}
+
+function isOmenStillInDeck(core: BetrayalCore, effectId: string): boolean {
+    return core.possessionOrderByKind.omen.some((card) => resolveInventoryEffectId(card.id) === effectId);
+}
+
+function isOmenRevealed(core: BetrayalCore, effectId: string): boolean {
+    if (!isOmenStillInDeck(core, effectId)) {
+        return true;
+    }
+    const explorerHasOmen = getAllExplorers(core).some((explorer) => (
+        explorer.inventory.some((card) => card.kind === 'omen' && resolveInventoryEffectId(card.id) === effectId)
+    ));
+    if (explorerHasOmen) {
+        return true;
+    }
+    const mummy = core.scenarioRuntime.mummy;
+    return Boolean(
+        mummy?.mummyCarriedOmenIds.some((cardId) => resolveInventoryEffectId(cardId) === effectId)
+        || mummy?.mummyCarriedCards.some((card) => card.kind === 'omen' && resolveInventoryEffectId(card.id) === effectId),
+    );
+}
+
+function shouldMummyForceHeroBookDraw(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    return isMummyHaunt(core)
+        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !isOmenRevealed(core, 'omen-book');
+}
+
+function shouldMummyForceTraitorWeddingOmenDraw(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    return isMummyHaunt(core)
+        && actor.playerId === core.scenarioRuntime.traitorPlayerId
+        && [...MUMMY_WEDDING_OMEN_CARD_IDS].every((cardId) => !isOmenRevealed(core, cardId));
+}
+
+function resolveMummyForcedOmenDraw(
+    core: BetrayalCore,
+    actor: BetrayalExplorerSummary,
+    fallbackDrawnCard: BetrayalInventoryCard,
+    random: RandomFn,
+): {
+    drawnCard: BetrayalInventoryCard;
+    forcedOmenSearch?: {
+        role: 'hero-book' | 'traitor-wedding-omen';
+        cardId: string;
+        cardName: string;
+        shuffledOmenDeck: BetrayalInventoryCard[];
+    };
+} {
+    const targetEffectIds = shouldMummyForceHeroBookDraw(core, actor)
+        ? ['omen-book']
+        : shouldMummyForceTraitorWeddingOmenDraw(core, actor)
+            ? [...MUMMY_WEDDING_OMEN_CARD_IDS]
+            : [];
+    if (targetEffectIds.length === 0) {
+        return { drawnCard: fallbackDrawnCard };
+    }
+    const targetIndex = core.possessionOrderByKind.omen.findIndex((card) => (
+        targetEffectIds.includes(resolveInventoryEffectId(card.id))
+    ));
+    const template = targetIndex >= 0 ? core.possessionOrderByKind.omen[targetIndex] : null;
+    if (!template) {
+        return { drawnCard: fallbackDrawnCard };
+    }
+    const drawnCard = createDrawnCardFromTemplate(core, template);
+    const remainingDeck = core.possessionOrderByKind.omen
+        .filter((_, index) => index !== targetIndex)
+        .map(cloneInventoryCard);
+    const role = resolveInventoryEffectId(template.id) === 'omen-book'
+        ? 'hero-book'
+        : 'traitor-wedding-omen';
+    return {
+        drawnCard,
+        forcedOmenSearch: {
+            role,
+            cardId: drawnCard.id,
+            cardName: drawnCard.name,
+            shuffledOmenDeck: random.shuffle(remainingDeck).map(cloneInventoryCard),
+        },
+    };
+}
+
+function isMummyWeddingOmenCard(card: BetrayalInventoryCard): boolean {
+    const normalizedName = card.name.trim().toLowerCase();
+    return card.kind === 'omen'
+        && (
+            MUMMY_WEDDING_OMEN_CARD_IDS.has(resolveInventoryEffectId(card.id))
+            || card.name === '圣符'
+            || card.name === '指环'
+            || normalizedName === 'holy symbol'
+            || normalizedName === 'ring'
+        );
+}
+
+function findMummyWeddingOmenCard(
+    explorer: BetrayalExplorerSummary | null | undefined,
+    cardId?: string,
+): BetrayalInventoryCard | null {
+    const cards = explorer?.inventory.filter(isMummyWeddingOmenCard) ?? [];
+    if (cardId) {
+        return cards.find((card) => card.id === cardId) ?? null;
+    }
+    return cards[0] ?? null;
+}
+
+function findMummyMonster(core: BetrayalCore): BetrayalMonsterSummary | null {
+    const mummyId = core.scenarioRuntime.mummy?.mummyMonsterId ?? 'mummy';
+    return core.monsters.find((monster) => monster.id === mummyId || monster.definitionId === 'mummy') ?? null;
+}
+
+function resolveMummyGirlStealCard(): BetrayalInventoryCard {
+    return {
+        id: MUMMY_GIRL_STEAL_CARD_ID,
+        name: '女孩',
+        kind: 'omen',
+    };
+}
+
+export function resolveMummyStealableCards(
+    core: BetrayalCore,
+    defenderPlayerId: string,
+): BetrayalInventoryCard[] {
+    if (!isMummyHaunt(core)) {
+        return [];
+    }
+    const defender = findExplorerByPlayerId(core, defenderPlayerId);
+    if (!defender) {
+        return [];
+    }
+    const cards = defender.inventory.filter((card) => card.kind === 'item' || card.kind === 'omen');
+    const mummy = core.scenarioRuntime.mummy;
+    return mummy?.girlHolderPlayerId === defenderPlayerId
+        ? [...cards, resolveMummyGirlStealCard()]
+        : cards;
+}
+
+export function resolveMummyPendingAttackReward(core: BetrayalCore): BetrayalMummyAttackRewardChoice | null {
+    return isMummyHaunt(core)
+        ? core.scenarioRuntime.mummy?.pendingAttackReward ?? null
+        : null;
+}
+
+function resolveMummyForcedDamageTraits(
+    explorer: BetrayalExplorerSummary,
+    amount: number,
+    options: { allowSkull?: boolean } = {},
+): BetrayalTraitKey[] {
+    const sequence: BetrayalTraitKey[] = [];
+    const speedSteps = resolveTraitDamageAssignableSteps(explorer, 'speed', options);
+    const mightSteps = resolveTraitDamageAssignableSteps(explorer, 'might', options);
+    const speedDamage = Math.min(amount, speedSteps);
+    const mightDamage = Math.min(Math.max(0, amount - speedDamage), mightSteps);
+    sequence.push(...repeatTraitForDamage('speed', speedDamage));
+    sequence.push(...repeatTraitForDamage('might', mightDamage));
+    return sequence;
+}
+
+function resolveMummyMovementRollThisTurn(
+    core: BetrayalCore,
+    monsterId: string,
+): BetrayalMonsterMovementRollGroupResult | null {
+    if (!isMummyMonster(core, monsterId)) {
+        return null;
+    }
+    return Object.values(core.scenarioRuntime.monsterTurn?.movementRollsByGroupId ?? {})
+        .find((result) => result.monsterIds.includes(monsterId)) ?? null;
+}
+
+function hasMummyTeleportMoveAvailable(core: BetrayalCore, monsterId: string): boolean {
+    const roll = resolveMummyMovementRollThisTurn(core, monsterId);
+    return Boolean(
+        roll
+        && roll.total <= 1
+        && !(core.scenarioRuntime.monsterTurn?.movedMonsterIdsThisTurn ?? []).includes(monsterId),
+    );
+}
+
+function resolveMummySameRoomAttackTargets(
+    core: BetrayalCore,
+    monster: BetrayalMonsterSummary,
+): BetrayalExplorerSummary[] {
+    if (!isMummyMonster(core, monster)) {
+        return [];
+    }
+    return getAllExplorers(core).filter((explorer) => (
+        resolveExplorerSide(core, explorer.playerId) === 'hero'
+        && explorer.roomId === monster.roomId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+}
+
+function mustMummyAttackBeforeMoving(core: BetrayalCore, monster: BetrayalMonsterSummary): boolean {
+    return isMummyMonster(core, monster)
+        && !monsterAttackedThisTurn(core, monster.id)
+        && resolveMummySameRoomAttackTargets(core, monster).length > 0;
+}
+
+function collectMummyGirlByExplorerIfPresent(
+    core: BetrayalCore,
+    playerId: string,
+    roomId: string,
+): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    if (
+        !isMummyHaunt(core)
+        || !mummy
+        || mummy.girlRoomId !== roomId
+        || mummy.girlHolderPlayerId
+        || mummy.girlHeldByMummy
+        || core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
+    ) {
+        return false;
+    }
+    mummy.girlRoomId = null;
+    mummy.girlHolderPlayerId = playerId;
+    mummy.girlHeldByMummy = false;
+    return true;
+}
+
+function collectMummyGirlByMummyIfPresent(
+    core: BetrayalCore,
+    monsterId: string,
+    roomId: string,
+): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    if (
+        !isMummyMonster(core, monsterId)
+        || !mummy
+        || mummy.girlRoomId !== roomId
+        || mummy.girlHolderPlayerId
+        || mummy.girlHeldByMummy
+    ) {
+        return false;
+    }
+    mummy.girlRoomId = null;
+    mummy.girlHolderPlayerId = null;
+    mummy.girlHeldByMummy = true;
+    return true;
+}
+
+function isMummyNameStudyRoom(core: BetrayalCore, roomId: string): boolean {
+    const room = core.rooms.find((item) => item.id === roomId);
+    const mummy = core.scenarioRuntime.mummy;
+    return Boolean(
+        room
+        && mummy
+        && (
+            room.id === mummy.sarcophagusRoomId
+            || room.visualId === 'study'
+            || room.visualId === 'library'
+            || ['研究室', '书房', '图书馆'].includes(room.name)
+        ),
+    );
+}
+
+function createMummyEndgameResult(core: BetrayalCore, outcome: 'survivors' | 'traitor'): BetrayalEndgameResult {
+    const livingHeroes = getAllExplorers(core)
+        .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
+        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId));
+    const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
+    const winners = outcome === 'survivors'
+        ? livingHeroes.map((explorer) => explorer.playerId)
+        : [traitor.playerId];
+    return {
+        hauntId: 'mummy-rampage',
+        hauntTitle: '木乃伊横行',
+        outcome,
+        winners,
+        traitorPlayerId: traitor.playerId,
+        survivorsEscaped: outcome === 'survivors' ? [...winners] : [],
+        reward: {
+            stars: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.stars : 0,
+            omens: countDrawnCards(core, 'omen'),
+            logs: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.logs : 0,
+        },
+        stats: {
+            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
+            omensDrawn: countDrawnCards(core, 'omen'),
+            itemsDrawn: countDrawnCards(core, 'item'),
+            eventsDrawn: countDrawnCards(core, 'event'),
+        },
+    };
+}
+
+function completeMummyTraitorVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
+    const mummy = core.scenarioRuntime.mummy;
+    const mummyMonster = findMummyMonster(core);
+    if (!isMummyHaunt(core) || !mummy || !mummyMonster) {
+        return null;
+    }
+    if (!mummy.girlHeldByMummy || mummyMonster.roomId !== mummy.sarcophagusRoomId) {
+        return null;
+    }
+    if (!mummy.mummyCarriedOmenIds.some((cardId) => MUMMY_WEDDING_OMEN_CARD_IDS.has(resolveInventoryEffectId(cardId)))) {
+        return null;
+    }
+    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+        result: createMummyEndgameResult(core, 'traitor'),
+    }, timestamp));
+}
+
+function resolveCrimsonJackHauntTitle(): string {
+    return getBetrayalScenarioCardCandidate('crimson-jack-returns').titleEn;
+}
+
+function resolveScenarioCompletedLog(core: BetrayalCore, result: BetrayalEndgameResult): string {
+    if (result.hauntId === 'crimson-jack-returns') {
+        return result.outcome === 'survivors'
+            ? '杰克之灵被驱散，英雄完成驱魔'
+            : 'Crimson Jack 击倒了所有英雄';
+    }
+    if (result.hauntId === 'mummy-rampage') {
+        return result.outcome === 'survivors'
+            ? '英雄念出木乃伊真名并完成驱逐'
+            : '木乃伊完成婚礼，或所有英雄都已倒下';
+    }
+    if (result.hauntId === 'upon-reflection') {
+        return '英雄破除镜中诅咒，作祟揭秘者回到现实';
+    }
+    return scenarioConfigById(core.scenarioId).logs.scenarioCompleted;
+}
 
 function createDustRuntimeState(core: BetrayalCore, random: RandomFn): BetrayalDustRuntimeState {
     const playerIds = [...core.playerIds];
@@ -4329,12 +5441,7 @@ function createHelpingHandsMonsterTurnStartedEvent(
     controllerPlayerId: string,
     random: RandomFn,
     timestamp: number,
-): GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, {
-    controllerPlayerId: string;
-    moveAllowance: number;
-    moveDice: number[];
-    logText: string;
-}> {
+): GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, BetrayalHelpingHandsMonsterTurnStartedPayload> {
     const moveDice = rollDicePips(random, 3);
     const moveAllowance = Math.max(1, moveDice.reduce((sum, pip) => sum + pip, 0));
     return nowEvent(EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, {
@@ -4489,6 +5596,177 @@ function setupMagicCameraHaunt(core: BetrayalCore, traitorPlayerId: string | nul
     return runtime;
 }
 
+function resolveUponReflectionMirrorBeingCount(playerCount: number): number {
+    if (playerCount >= 6) {
+        return 5;
+    }
+    if (playerCount >= 5) {
+        return 4;
+    }
+    if (playerCount >= 4) {
+        return 3;
+    }
+    return 2;
+}
+
+function setupUponReflectionHaunt(core: BetrayalCore): void {
+    const mirrorBeingCount = resolveUponReflectionMirrorBeingCount(core.playerIds.length);
+    const mirrorBeings = Array.from({ length: mirrorBeingCount }, (_, index) => (
+        createBetrayalMonsterFromDefinition(
+            'upon-reflection-mirror-being',
+            `mirror-being-${index + 1}`,
+            'entrance-hall',
+        )
+    ));
+    core.monsters = [
+        ...core.monsters.filter((monster) => (
+            monster.definitionId !== 'upon-reflection-mirror-being'
+            && !monster.id.startsWith('mirror-being-')
+        )),
+        ...mirrorBeings,
+    ];
+}
+
+function isUponReflectionHaunt(core: BetrayalCore): boolean {
+    return core.phase === 'haunt'
+        && core.scenarioRuntime.hauntCardNumber === 7
+        && core.scenarioRuntime.hauntScenarioCardId === 'upon-reflection'
+        && Boolean(core.scenarioRuntime.uponReflection);
+}
+
+function shouldSkipEventSymbolForUponReflection(core: BetrayalCore): boolean {
+    return isUponReflectionHaunt(core);
+}
+
+function createUponReflectionRuntimeState(
+    core: BetrayalCore,
+    revealerPlayerId: string,
+    random: RandomFn,
+): BetrayalUponReflectionRuntimeState {
+    const trait = random.shuffle(BETRAYAL_TRAIT_KEYS)[0] ?? 'might';
+    const omen = random.shuffle(DRAW_POOL.omen.map(cloneInventoryCard))[0]
+        ?? { id: 'omen-book', name: '书本', kind: 'omen' as const };
+    const shuffledRoomDeck = random.shuffle(resolveCurrentRoomDiscoveryDeck(core));
+    const bottomRoomEntry = shuffledRoomDeck[shuffledRoomDeck.length - 1] ?? null;
+    const matchingDiscoveredRoom = bottomRoomEntry
+        ? core.rooms.find((room) => (
+            room.visualId === bottomRoomEntry.room.visualId
+            || room.name === bottomRoomEntry.room.name
+        ))
+        : null;
+    const fallbackRoom = matchingDiscoveredRoom
+        ?? core.rooms.find((room) => room.state === 'discovered')
+        ?? core.rooms[0]
+        ?? null;
+    return {
+        revealerPlayerId,
+        secretCombination: {
+            trait,
+            omenId: resolveInventoryEffectId(omen.id),
+            omenName: omen.name,
+            roomId: matchingDiscoveredRoom?.id ?? fallbackRoom?.id ?? null,
+            roomName: bottomRoomEntry?.room.name ?? fallbackRoom?.name ?? '未知房间',
+            roomVisualId: bottomRoomEntry?.room.visualId ?? fallbackRoom?.visualId,
+        },
+        breakAttempts: [],
+        hintedEvents: [],
+    };
+}
+
+function resolveUponReflectionOmenSelection(
+    actor: BetrayalExplorerSummary,
+    payload: BetrayalCommandMap[typeof BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE],
+): BetrayalInventoryCard | null {
+    const requestedId = payload.omenId ? resolveInventoryEffectId(payload.omenId) : null;
+    const requestedName = payload.omenName?.trim();
+    const omenCards = actor.inventory.filter((card) => card.kind === 'omen');
+    return omenCards.find((card) => (
+        (requestedId && resolveInventoryEffectId(card.id) === requestedId)
+        || (payload.omenId && card.id === payload.omenId)
+        || (requestedName && card.name === requestedName)
+    )) ?? null;
+}
+
+function roomMatchesUponReflectionSecret(
+    room: BetrayalRoomNode | null | undefined,
+    secret: BetrayalUponReflectionSecretCombination,
+): boolean {
+    if (!room) {
+        return false;
+    }
+    return room.id === secret.roomId
+        || room.name === secret.roomName
+        || (secret.roomVisualId ? room.visualId === secret.roomVisualId : false);
+}
+
+function canBreakMirrorCurse(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    return Boolean(
+        isUponReflectionHaunt(core)
+        && core.scenarioRuntime.uponReflection?.secretCombination
+        && actor.playerId !== core.scenarioRuntime.hauntRevealerPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
+        && actor.inventory.some((card) => card.kind === 'omen')
+    );
+}
+
+function isExplorerTargetableByMonsters(core: BetrayalCore, explorer: BetrayalExplorerSummary): boolean {
+    if (core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)) {
+        return false;
+    }
+    if (
+        isUponReflectionHaunt(core)
+        && explorer.playerId === (
+            core.scenarioRuntime.uponReflection?.revealerPlayerId
+            ?? core.scenarioRuntime.hauntRevealerPlayerId
+        )
+    ) {
+        return false;
+    }
+    return true;
+}
+
+function resolveUponReflectionHintEvent(core: BetrayalCore, eventName: string | undefined): EventTemplate | null {
+    const requestedEventName = eventName?.trim();
+    if (!requestedEventName) {
+        return null;
+    }
+    const eventCard = core.eventOrder.find((candidate) => candidate.name === requestedEventName);
+    return eventCard ? cloneEventTemplate(eventCard) : null;
+}
+
+function hasUsedMirrorHintThisTurn(core: BetrayalCore, revealerPlayerId: string): boolean {
+    return core.usedCardIdsThisTurn.includes('give-mirror-hint')
+        || Boolean(core.scenarioRuntime.uponReflection?.hintedEvents.some((hintedEvent) => (
+            hintedEvent.revealerPlayerId === revealerPlayerId
+            && hintedEvent.turnNumber === core.turnNumber
+        )));
+}
+
+function createUponReflectionEndgameResult(core: BetrayalCore, outcome: 'survivors'): BetrayalEndgameResult {
+    const winners = getAllExplorers(core)
+        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
+        .map((explorer) => explorer.playerId);
+    return {
+        hauntId: 'upon-reflection',
+        hauntTitle: 'Upon Reflection',
+        outcome,
+        winners,
+        traitorPlayerId: '',
+        survivorsEscaped: [...winners],
+        reward: {
+            stars: scenarioConfigById(core.scenarioId).completion.reward.stars,
+            omens: countDrawnCards(core, 'omen'),
+            logs: scenarioConfigById(core.scenarioId).completion.reward.logs,
+        },
+        stats: {
+            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
+            omensDrawn: countDrawnCards(core, 'omen'),
+            itemsDrawn: countDrawnCards(core, 'item'),
+            eventsDrawn: countDrawnCards(core, 'event'),
+        },
+    };
+}
+
 function resolveExplorerRoom(core: BetrayalCore, explorer: BetrayalExplorerSummary | null): BetrayalRoomNode | null {
     return explorer ? core.rooms.find((room) => room.id === explorer.roomId) ?? null : null;
 }
@@ -4589,6 +5867,9 @@ function inferMonsterDefinitionId(monster: BetrayalMonsterSummary): BetrayalMons
     if (monster.id === 'jack-spirit') {
         return 'crimson-jack-spirit';
     }
+    if (monster.id === 'mummy' || monster.name === '木乃伊') {
+        return 'mummy';
+    }
     if (monster.id.startsWith('feverish-') || monster.name === '狂热病患') {
         return 'dust-feverish-patient';
     }
@@ -4622,7 +5903,7 @@ function monsterCanBeStunned(monster: BetrayalMonsterSummary): boolean {
     if (definition) {
         return definition.canBeStunned;
     }
-    return !monster.id.startsWith('troll-hand-') && monster.id !== 'jack-spirit';
+    return !monster.id.startsWith('troll-hand-') && monster.id !== 'jack-spirit' && monster.id !== 'mummy';
 }
 
 function monsterCanBeAttacked(monster: BetrayalMonsterSummary): boolean {
@@ -4635,6 +5916,12 @@ function monsterCanAttack(monster: BetrayalMonsterSummary): boolean {
 
 function resolveMonsterDefaultAttackTrait(monster: BetrayalMonsterSummary): BetrayalTraitKey {
     return (resolveMonsterDefinition(monster)?.defaultAttackTrait ?? 'might') as BetrayalTraitKey;
+}
+
+function resolveAttackDamageKind(attackTrait: BetrayalTraitKey): 'physical' | 'mental' {
+    return attackTrait === 'sanity' || attackTrait === 'knowledge'
+        ? 'mental'
+        : 'physical';
 }
 
 function monsterKilledByDamageTrait(
@@ -4830,8 +6117,88 @@ function isBloodFromStoneHaunt(core: BetrayalCore): boolean {
         && core.scenarioRuntime.hauntCardNumber === 5;
 }
 
+function isUponReflectionMirrorBeingMonster(monster: BetrayalMonsterSummary): boolean {
+    return inferMonsterDefinitionId(monster) === 'upon-reflection-mirror-being';
+}
+
 function isStoneCherubMonster(monster: BetrayalMonsterSummary): boolean {
     return inferMonsterDefinitionId(monster) === 'blood-from-stone-stone-cherub';
+}
+
+function resolveDiscoveredRoomGraphDistances(
+    rooms: BetrayalRoomNode[],
+    sourceRoomId: string,
+): Map<string, number> {
+    const sourceRoom = rooms.find((room) => room.id === sourceRoomId && room.state === 'discovered');
+    if (!sourceRoom) {
+        return new Map();
+    }
+    const distances = new Map<string, number>([[sourceRoom.id, 0]]);
+    const queue = [sourceRoom.id];
+    while (queue.length > 0) {
+        const roomId = queue.shift()!;
+        const nextDistance = (distances.get(roomId) ?? 0) + 1;
+        for (const connectedRoomId of resolveConnectedRoomIds(rooms, roomId)) {
+            const connectedRoom = rooms.find((room) => room.id === connectedRoomId && room.state === 'discovered');
+            if (!connectedRoom || distances.has(connectedRoom.id)) {
+                continue;
+            }
+            distances.set(connectedRoom.id, nextDistance);
+            queue.push(connectedRoom.id);
+        }
+    }
+    return distances;
+}
+
+function resolveUponReflectionTargetExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
+    return getAllExplorers(core).filter((explorer) => {
+        if (!isExplorerTargetableByMonsters(core, explorer)) {
+            return false;
+        }
+        const room = core.rooms.find((candidate) => candidate.id === resolveControlledRoomId(core, explorer));
+        return room?.state === 'discovered';
+    });
+}
+
+function resolveUponReflectionMirrorBeingMoveTargetRooms(
+    core: BetrayalCore,
+    monster: BetrayalMonsterSummary,
+    connectedRooms: BetrayalRoomNode[],
+): BetrayalRoomNode[] {
+    if (!isUponReflectionHaunt(core) || !isUponReflectionMirrorBeingMonster(monster)) {
+        return connectedRooms;
+    }
+    const targetExplorers = resolveUponReflectionTargetExplorers(core);
+    if (targetExplorers.length === 0) {
+        return [];
+    }
+    const sourceDistances = resolveDiscoveredRoomGraphDistances(core.rooms, monster.roomId);
+    const targetDistances = targetExplorers
+        .map((explorer) => ({
+            explorer,
+            distance: sourceDistances.get(resolveControlledRoomId(core, explorer)) ?? null,
+        }))
+        .filter((entry): entry is { explorer: BetrayalExplorerSummary; distance: number } => entry.distance !== null);
+    if (targetDistances.length === 0) {
+        return connectedRooms;
+    }
+    const nearestDistance = Math.min(...targetDistances.map((entry) => entry.distance));
+    if (nearestDistance <= 0) {
+        return [];
+    }
+    const nearestTargetRoomIds = new Set(
+        targetDistances
+            .filter((entry) => entry.distance === nearestDistance)
+            .map((entry) => resolveControlledRoomId(core, entry.explorer)),
+    );
+    const towardNearestExplorers = connectedRooms.filter((room) => {
+        const distancesFromCandidate = resolveDiscoveredRoomGraphDistances(core.rooms, room.id);
+        return [...nearestTargetRoomIds].some((targetRoomId) => {
+            const targetDistance = distancesFromCandidate.get(targetRoomId);
+            return targetDistance !== undefined && targetDistance < nearestDistance;
+        });
+    });
+    return towardNearestExplorers;
 }
 
 function resolveLivingHeroRooms(core: BetrayalCore): BetrayalRoomNode[] {
@@ -5310,6 +6677,7 @@ function removeBloodFromStoneStoneCherubs(core: BetrayalCore, monsterIds: string
         resolvedStartMonsterIds: monsterTurn.resolvedStartMonsterIds.filter((monsterId) => !removedIds.has(monsterId)),
         skippedMonsterIdsThisTurn: monsterTurn.skippedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
         attackedMonsterIdsThisTurn: monsterTurn.attackedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
+        movedMonsterIdsThisTurn: monsterTurn.movedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
         moveRemainingById: Object.fromEntries(
             Object.entries(monsterTurn.moveRemainingById ?? {}).filter(([monsterId]) => !removedIds.has(monsterId)),
         ),
@@ -5744,7 +7112,7 @@ export function resolveBetrayalMonsterMovementGroups(core: BetrayalCore): Betray
             speed: monster.speed,
             diceCount: monster.speed,
             rollOnceForGroup: true,
-            minimumMoveAllowance: 1,
+            minimumMoveAllowance: isMummyMonster(core, monster) ? 0 : 1,
         });
     }
     return Array.from(groups.values());
@@ -5851,8 +7219,8 @@ export function resolveBetrayalMonsterMoveCost(
         return 0;
     }
     const sharesRoomWithLivingExplorer = getAllExplorers(core).some((explorer) => (
-        explorer.roomId === monster.roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+        resolveControlledRoomId(core, explorer) === monster.roomId
+        && isExplorerTargetableByMonsters(core, explorer)
     ));
     return sharesRoomWithLivingExplorer ? 2 : 1;
 }
@@ -5873,13 +7241,23 @@ export function resolveBetrayalMonsterMoveTargetRooms(
     if (!sourceRoom || sourceRoom.state !== 'discovered') {
         return [];
     }
+    if (mustMummyAttackBeforeMoving(core, monster)) {
+        return [];
+    }
+    if (hasMummyTeleportMoveAvailable(core, monster.id)) {
+        return core.rooms.filter((room) => (
+            room.state === 'discovered'
+            && room.id !== sourceRoom.id
+        ));
+    }
     const connectedRoomIds = resolveConnectedRoomIds(core.rooms, sourceRoom.id);
     const connectedRooms = core.rooms.filter((room) => (
         room.state === 'discovered'
         && room.id !== sourceRoom.id
         && connectedRoomIds.has(room.id)
     ));
-    return resolveStoneCherubMoveTargetRooms(core, monster, connectedRooms);
+    const stoneCherubTargets = resolveStoneCherubMoveTargetRooms(core, monster, connectedRooms);
+    return resolveUponReflectionMirrorBeingMoveTargetRooms(core, monster, stoneCherubTargets);
 }
 
 export function resolveBetrayalMonsterActionSet(
@@ -5894,6 +7272,7 @@ export function resolveBetrayalMonsterActionSet(
     }
     const moveTargetRoomIds = resolveBetrayalMonsterMoveTargetRooms(core, monsterId)
         .map((room) => room.id);
+    const isMummyActionSet = isMummyMonster(core, monsterId);
     return {
         monsterId: monsterStatus.monsterId,
         name: monsterStatus.name,
@@ -5904,19 +7283,26 @@ export function resolveBetrayalMonsterActionSet(
         canAttack: turnStartStatus.canAttack,
         defaultAttackTrait: monsterStatus.defaultAttackTrait,
         usesNormalAttackRules: turnStartStatus.canAttack,
-        canHoldPossessions: false,
-        canHoldOmens: false,
+        canHoldPossessions: isMummyActionSet,
+        canHoldOmens: isMummyActionSet,
         canUsePossessionActions: false,
         canExploreNewRooms: false,
         canDiscoverRoomTiles: false,
         canIgnoreDamagingRoomEffects: turnStartStatus.canStartTurn,
         scenarioSpecificOverridesMayApply: true,
         reason: turnStartStatus.reason,
-        ruleNotes: [
-            '怪物默认使用力量进行正常攻击，除非作祟另有说明。',
-            '怪物不能持有物品或预兆，也不能探索新房间。',
-            '怪物可忽略伤害性房间效果；作祟专属规则仍可覆盖该默认口径。',
-        ],
+        ruleNotes: isMummyActionSet
+            ? [
+                '木乃伊只用力量攻击；同房有英雄且能攻击时必须先攻击。',
+                '木乃伊可携带/偷取物品和预兆，但物件不改变木乃伊固定属性。',
+                '木乃伊移动骰为 0 或 1 时，可瞬移到任意已发现房间；不能探索新房间。',
+                '怪物可忽略伤害性房间效果；作祟专属规则仍可覆盖该默认口径。',
+            ]
+            : [
+                '怪物默认使用力量进行正常攻击，除非作祟另有说明。',
+                '怪物不能持有物品或预兆，也不能探索新房间。',
+                '怪物可忽略伤害性房间效果；作祟专属规则仍可覆盖该默认口径。',
+            ],
     };
 }
 
@@ -6056,6 +7442,25 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
             reason: resolveBloodFromStoneMonsterTurnStatus(core).reason,
         };
     }
+    const helpingHandsMonsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
+    const isMonsterActionControllerTurn = isBloodFromStoneHaunt(core)
+        ? resolveBloodFromStoneMonsterTurnStatus(core).active
+            && resolveBloodFromStoneMonsterTurnStatus(core).controllerPlayerId === core.currentPlayer
+        : isHelpingHandsHaunt(core)
+            ? helpingHandsMonsterTurnStatus.active
+                && helpingHandsMonsterTurnStatus.controllerPlayerId === core.currentPlayer
+            : Boolean(core.scenarioRuntime.traitorPlayerId)
+                && core.scenarioRuntime.traitorPlayerId === core.currentPlayer;
+    if (!isMonsterActionControllerTurn) {
+        return {
+            active: false,
+            monsterIds: monsterStatuses.map((status) => status.monsterId),
+            movementGroupIds: [],
+            slots: [],
+            contractGaps: [],
+            reason: '当前是玩家回合，等待怪物控制者回合后才能处理怪物动作。',
+        };
+    }
 
     const movementGroups = resolveBetrayalMonsterMovementGroups(core);
     const actionSets = resolveBetrayalMonsterActionSets(core);
@@ -6112,13 +7517,20 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
             ? resolveBetrayalMonsterMoveCost(core, actionSet.monsterId)
             : 0;
         const moveRemaining = core.scenarioRuntime.monsterTurn.moveRemainingById[actionSet.monsterId] ?? 0;
-        const hasMoveAllowance = moveRemaining >= moveCost && moveCost > 0;
+        const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, actionSet.monsterId);
+        const hasMoveAllowance = (moveRemaining >= moveCost && moveCost > 0) || canMummyTeleportNow;
         const canMoveNow = actionSet.canMove && targetRoomIds.length > 0 && hasMoveAllowance;
+        const mustAttackBeforeMoving = isMummyMonster(core, actionSet.monsterId) && mustMummyAttackBeforeMoving(
+            core,
+            core.monsters.find((monster) => monster.id === actionSet.monsterId)!,
+        );
         const moveReason = actionSet.reason
-            ?? (!actionSet.canMove
-                ? '该怪物当前不能移动。'
-                : targetRoomIds.length === 0
-                    ? '该怪物没有已发现的相邻移动目标。'
+            ?? (mustAttackBeforeMoving
+                ? '木乃伊与英雄同房且尚未攻击，必须先攻击。'
+                : !actionSet.canMove
+                    ? '该怪物当前不能移动。'
+                    : targetRoomIds.length === 0
+                        ? '该怪物没有已发现的移动目标。'
                     : !hasMoveAllowance
                         ? '请先为该怪物所属类型掷移动骰，或移动点不足以离开当前房间。'
                         : null);
@@ -6235,8 +7647,8 @@ export function resolveBetrayalNormalMonsterAttackTargets(
         };
     }
     const targetExplorers = getAllExplorers(core).filter((explorer) => (
-        explorer.roomId === monster.roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+        resolveControlledRoomId(core, explorer) === monster.roomId
+        && isExplorerTargetableByMonsters(core, explorer)
         && resolveExplorerSide(core, explorer.playerId) === 'hero'
     ));
     const attackCommand = resolveMonsterAttackCommand(core, monsterId);
@@ -6393,6 +7805,21 @@ function resolveTurnStartSpeed(core: BetrayalCore, playerId = core.currentExplor
     return Math.max(0, explorer.traits.speed);
 }
 
+function canUseMysteriousStopwatch(core: BetrayalCore): boolean {
+    return core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
+}
+
+function clearPendingExtraTurnAfterCurrentTurn(
+    core: BetrayalCore,
+    previousPlayerId: string,
+): BetrayalExtraTurnAfterCurrentTurnState | null {
+    const pending = core.pendingExtraTurnAfterCurrentTurn;
+    if (!pending || pending.playerId === previousPlayerId) {
+        return null;
+    }
+    return { ...pending };
+}
+
 export interface BetrayalPossessionSpecialActionStatus {
     sourceKind: 'possession';
     sourceId: string;
@@ -6416,6 +7843,7 @@ export function resolveBetrayalPossessionSpecialActionStatus(
     const sourceId = cardId ?? '';
     const effectId = resolveInventoryEffectId(sourceId);
     const active = Boolean(card && Object.prototype.hasOwnProperty.call(USE_EFFECTS, effectId));
+    const effect = active ? USE_EFFECTS[effectId] : null;
     const usedThisTurn = Boolean(cardId && core.usedCardIdsThisTurn.includes(cardId));
     const receivedThisTurn = Boolean(
         cardId
@@ -6427,10 +7855,16 @@ export function resolveBetrayalPossessionSpecialActionStatus(
         reason = '当前没有可使用持有物。';
     } else if (!active) {
         reason = '该持有物没有主动使用效果。';
+    } else if (effectId === MYSTERIOUS_STOPWATCH_CARD_ID && !canUseMysteriousStopwatch(core)) {
+        reason = '神秘秒表只能在作祟开始后使用。';
+    } else if (effectId === MYSTERIOUS_STOPWATCH_CARD_ID && core.pendingExtraTurnAfterCurrentTurn?.playerId === playerId) {
+        reason = '神秘秒表的额外行动已经待结算。';
     } else if (usedThisTurn) {
         reason = '该持有物本回合已经使用。';
     } else if (!availableAtTurnStart || receivedThisTurn) {
         reason = '本回合新获得的持有物不能立刻使用。';
+    } else if (effect) {
+        reason = resolvePossessionUseCostUnavailableReason(explorer, effect, card?.name ?? sourceId);
     }
 
     return {
@@ -6551,7 +7985,7 @@ export function resolveBetrayalTraitorPowerStatus(
     const currentRoomEndTurnEffect = currentRoom?.endTurnEffect ?? null;
     const damagingRoomEffect = isBetrayalDamagingRoomEndTurnEffect(currentRoom?.endTurnEffect);
     const mandatoryRoomEffect = isBetrayalMandatoryRoomEffect(currentRoom);
-    const nextDeckKind = resolveNextDeckKind(core);
+    const nextDeckKind = resolveNextRoomDiscoveryDeckKind(core);
     const eventSymbolTrigger = active
         && nextDeckKind === 'event'
         && resolveExplorableRoomSlots(core).length > 0;
@@ -6591,12 +8025,16 @@ export type BetrayalHauntSpecialActionId =
     | 'learn-about-jack'
     | 'study-exorcism'
     | 'exorcise-jack'
+    | 'study-mummy-name'
+    | 'learn-mummy-banishment'
+    | 'banish-mummy'
     | 'search-for-cure'
     | 'cure-the-dust'
     | 'sickness-exchange'
     | 'take-photo'
     | 'smash-magic-camera'
-    | 'play-peekaboo';
+    | 'play-peekaboo'
+    | 'break-mirror-curse';
 
 interface BetrayalHauntSpecialActionDefinition {
     sourceName: string;
@@ -6615,6 +8053,18 @@ const HAUNT_SPECIAL_ACTION_DEFINITIONS: Record<BetrayalHauntSpecialActionId, Bet
     'exorcise-jack': {
         sourceName: '驱魔',
         commandType: BETRAYAL_COMMANDS.EXORCISE_JACK,
+    },
+    'study-mummy-name': {
+        sourceName: '寻找木乃伊真名',
+        commandType: BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
+    },
+    'learn-mummy-banishment': {
+        sourceName: '学习驱逐法术',
+        commandType: BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
+    },
+    'banish-mummy': {
+        sourceName: '驱逐木乃伊',
+        commandType: BETRAYAL_COMMANDS.BANISH_MUMMY,
     },
     'search-for-cure': {
         sourceName: '寻找解药',
@@ -6639,6 +8089,10 @@ const HAUNT_SPECIAL_ACTION_DEFINITIONS: Record<BetrayalHauntSpecialActionId, Bet
     'play-peekaboo': {
         sourceName: '玩躲猫猫',
         commandType: BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+    },
+    'break-mirror-curse': {
+        sourceName: '破咒',
+        commandType: BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
     },
 };
 
@@ -6700,6 +8154,58 @@ function canExorciseJack(core: BetrayalCore, actor: BetrayalExplorerSummary): bo
     );
 }
 
+function isLivingMummyHero(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    return isMummyHaunt(core)
+        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId);
+}
+
+function hasLivingHeroWithBookInRoom(core: BetrayalCore, roomId: string): boolean {
+    return getAllExplorers(core).some((explorer) => (
+        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+        && explorer.roomId === roomId
+        && hasOmenBook(explorer)
+    ));
+}
+
+function canStudyMummyName(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    return Boolean(
+        mummy
+        && isLivingMummyHero(core, actor)
+        && mummy.knowledgeTokenCount < 1
+        && !mummy.trueNameFound
+        && isMummyNameStudyRoom(core, actor.roomId),
+    );
+}
+
+function canLearnMummyBanishment(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    return Boolean(
+        mummy
+        && isLivingMummyHero(core, actor)
+        && mummy.trueNameFound
+        && !mummy.banishmentSpellLearned
+        && mummy.knowledgeTokenCount < 2
+        && hasOmenBook(actor),
+    );
+}
+
+function canBanishMummy(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    const monster = findMummyMonster(core);
+    return Boolean(
+        mummy
+        && monster
+        && isLivingMummyHero(core, actor)
+        && mummy.knowledgeTokenCount >= 2
+        && mummy.banishmentSpellLearned
+        && actor.roomId === monster.roomId
+        && hasLivingHeroWithBookInRoom(core, monster.roomId),
+    );
+}
+
 function canSmashMagicCameraIgnoringBudget(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
     const magicCamera = core.scenarioRuntime.magicCamera;
     const traitor = core.scenarioRuntime.traitorPlayerId
@@ -6728,6 +8234,12 @@ function resolveBetrayalHauntSpecialActionActive(
             return canStudyExorcism(core, actor);
         case 'exorcise-jack':
             return canExorciseJack(core, actor);
+        case 'study-mummy-name':
+            return canStudyMummyName(core, actor);
+        case 'learn-mummy-banishment':
+            return canLearnMummyBanishment(core, actor);
+        case 'banish-mummy':
+            return canBanishMummy(core, actor);
         case 'search-for-cure':
             return canSearchForCure(core, actor);
         case 'cure-the-dust':
@@ -6740,6 +8252,8 @@ function resolveBetrayalHauntSpecialActionActive(
             return canSmashMagicCameraIgnoringBudget(core, actor);
         case 'play-peekaboo':
             return resolveBloodFromStonePeekabooOptions(core, actor.playerId).length > 0;
+        case 'break-mirror-curse':
+            return canBreakMirrorCurse(core, actor);
         default:
             return false;
     }
@@ -6967,6 +8481,22 @@ function cloneHauntFirstPlayerResolution(
     return resolution ? { ...resolution } : null;
 }
 
+function cloneUponReflectionRuntimeState(
+    uponReflection: BetrayalUponReflectionRuntimeState,
+): BetrayalUponReflectionRuntimeState {
+    return {
+        revealerPlayerId: uponReflection.revealerPlayerId,
+        secretCombination: uponReflection.secretCombination
+            ? { ...uponReflection.secretCombination }
+            : null,
+        breakAttempts: uponReflection.breakAttempts.map((attempt) => ({
+            ...attempt,
+            dice: [...attempt.dice],
+        })),
+        hintedEvents: uponReflection.hintedEvents.map((hintedEvent) => ({ ...hintedEvent })),
+    };
+}
+
 function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): BetrayalScenarioRuntimeStatus {
     return {
         ...status,
@@ -6993,6 +8523,22 @@ function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): Betr
         dust: status.dust ? cloneDustRuntimeState(status.dust) : undefined,
         helpingHands: status.helpingHands ? cloneHelpingHandsRuntimeState(status.helpingHands) : undefined,
         magicCamera: status.magicCamera ? cloneMagicCameraRuntimeState(status.magicCamera) : undefined,
+        mummy: status.mummy ? cloneMummyRuntimeState(status.mummy) : undefined,
+        uponReflection: status.uponReflection ? cloneUponReflectionRuntimeState(status.uponReflection) : undefined,
+    };
+}
+
+function maskUponReflectionRuntimeForPlayer(
+    uponReflection: BetrayalUponReflectionRuntimeState,
+    viewingPlayerId: PlayerId,
+): BetrayalUponReflectionRuntimeState {
+    return {
+        ...cloneUponReflectionRuntimeState(uponReflection),
+        secretCombination: uponReflection.revealerPlayerId === viewingPlayerId
+            ? uponReflection.secretCombination
+                ? { ...uponReflection.secretCombination }
+                : null
+            : null,
     };
 }
 
@@ -7028,9 +8574,21 @@ function createBetrayalPlayerView(state: BetrayalCore, viewingPlayerId: PlayerId
     if (view.scenarioRuntime.dust) {
         view.scenarioRuntime.dust = maskDustRuntimeForPlayer(view.scenarioRuntime.dust, viewingPlayerId);
     }
+    if (view.scenarioRuntime.uponReflection) {
+        view.scenarioRuntime.uponReflection = maskUponReflectionRuntimeForPlayer(
+            view.scenarioRuntime.uponReflection,
+            viewingPlayerId,
+        );
+    }
     const deathPreventionRuntime = view.recentRoll?.deathPrevention?.scenarioRuntimeBeforeDefeat;
     if (deathPreventionRuntime?.dust) {
         deathPreventionRuntime.dust = maskDustRuntimeForPlayer(deathPreventionRuntime.dust, viewingPlayerId);
+    }
+    if (deathPreventionRuntime?.uponReflection) {
+        deathPreventionRuntime.uponReflection = maskUponReflectionRuntimeForPlayer(
+            deathPreventionRuntime.uponReflection,
+            viewingPlayerId,
+        );
     }
     return view;
 }
@@ -7158,56 +8716,26 @@ function clampBetrayalNumberTrackProgress(value: number, min: number, max: numbe
     return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
-function resolveHauntRollChancePercent(diceCount: number, threshold: number): number {
-    const normalizedDiceCount = normalizeBetrayalDiceCount(diceCount);
-    if (normalizedDiceCount <= 0) {
-        return 0;
-    }
-    let totals = new Map<number, number>([[0, 1]]);
-    for (let dieIndex = 0; dieIndex < normalizedDiceCount; dieIndex += 1) {
-        const nextTotals = new Map<number, number>();
-        for (const [total, count] of totals.entries()) {
-            for (const pip of [0, 1, 2]) {
-                nextTotals.set(total + pip, (nextTotals.get(total + pip) ?? 0) + count);
-            }
-        }
-        totals = nextTotals;
-    }
-    let successOutcomes = 0;
-    let totalOutcomes = 0;
-    for (const [total, count] of totals.entries()) {
-        totalOutcomes += count;
-        if (total >= threshold) {
-            successOutcomes += count;
-        }
-    }
-    if (totalOutcomes <= 0) {
-        return 0;
-    }
-    return Math.round((successOutcomes / totalOutcomes) * 100);
-}
-
 function resolveBetrayalHauntRiskNumberTrack(core: BetrayalCore): BetrayalNumberTrackStatus {
     const risk = resolveBetrayalHauntRisk(core);
-    const progressPercent = risk.hauntStarted || risk.nextOmenAutomatic
-        ? 100
-        : resolveHauntRollChancePercent(risk.nextRollDiceCount, risk.threshold);
+    const maxOmenCount = BETRAYAL_INITIAL_DECK_COUNTS.omen;
+    const progressPercent = clampBetrayalNumberTrackProgress(risk.omenCount, 0, maxOmenCount);
     return {
         id: 'haunt-risk',
         kind: 'haunt-risk',
-        label: '作祟风险',
+        label: '预兆状态',
         labelKey: 'board.status.hauntRiskLabel',
-        value: risk.requestedRollOmenCount,
+        value: risk.omenCount,
         min: 0,
-        max: Math.max(risk.threshold, risk.requestedRollOmenCount),
-        targetValue: risk.threshold,
+        max: maxOmenCount,
+        targetValue: maxOmenCount,
         currentLabel: `预兆 ${risk.omenCount}`,
-        targetLabel: `${risk.threshold}+ 作祟`,
+        targetLabel: '牌堆末张',
         statusLabel: risk.hauntStarted
             ? '作祟已开始'
             : risk.nextOmenAutomatic
-                ? '最后预兆自动作祟'
-                : `下次 ${risk.nextRollDiceCount} 骰`,
+                ? '再抽预兆即作祟'
+                : '预兆已发现',
         progressPercent,
         source: 'base-rule',
         representativeOnly: false,
@@ -7221,7 +8749,29 @@ export function resolveBetrayalNumberTracks(core: BetrayalCore): BetrayalNumberT
     if (core.phase !== 'haunt' || !core.scenarioRuntime.hauntTriggered) {
         return tracks;
     }
-    if (core.scenarioRuntime.hauntCardNumber === 1) {
+    if (core.scenarioRuntime.hauntCardNumber === 1 && core.scenarioRuntime.mummy) {
+        const value = core.scenarioRuntime.mummy.knowledgeTokenCount;
+        tracks.push({
+            id: 'mummy-knowledge-tokens',
+            kind: 'haunt-objective',
+            label: '知识标记',
+            labelKey: 'board.status.mummyKnowledgeTokensLabel',
+            value,
+            min: 0,
+            max: 2,
+            targetValue: 2,
+            currentLabel: `${value}/2`,
+            targetLabel: '2 枚知识标记',
+            statusLabel: value >= 2
+                ? '驱逐法术已就绪'
+                : value >= 1
+                    ? '继续学习驱逐法术'
+                    : '寻找木乃伊真名',
+            progressPercent: clampBetrayalNumberTrackProgress(value, 0, 2),
+            source: 'haunt-contract',
+            representativeOnly: true,
+        });
+    } else if (core.scenarioRuntime.hauntCardNumber === 1) {
         const value = core.scenarioRuntime.exorcismCircleRoomIds.length;
         tracks.push({
             id: 'crimson-jack-exorcism-circles',
@@ -7326,6 +8876,16 @@ const CRIMSON_JACK_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
     { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
 ];
 
+const MUMMY_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'assign-revealer-traitor', side: 'all', status: 'resolved' },
+    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
+    { id: 'place-mummy-and-sarcophagus', side: 'all', status: 'resolved' },
+    { id: 'place-girl-token', side: 'all', status: 'resolved' },
+    { id: 'prepare-mummy-knowledge-tokens', side: 'heroes', status: 'manual-check' },
+    { id: 'monster-card-left-of-traitor', side: 'all', status: 'manual-check' },
+    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
+];
+
 const DUST_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
     { id: 'announce-hidden-traitor', side: 'all', status: 'resolved' },
     { id: 'deal-secret-sickness-tokens', side: 'all', status: 'resolved' },
@@ -7338,6 +8898,15 @@ const HELPING_HANDS_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
     { id: 'recover-strange-amulet', side: 'all', status: 'resolved' },
     { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
     { id: 'place-troll-hands', side: 'all', status: 'resolved' },
+    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
+];
+
+const UPON_REFLECTION_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'announce-no-traitor', side: 'all', status: 'resolved' },
+    { id: 'mirror-revealer-falls-silent', side: 'all', status: 'manual-check' },
+    { id: 'deal-secret-mirror-combination', side: 'all', status: 'manual-check' },
+    { id: 'place-mirror-beings', side: 'all', status: 'resolved' },
+    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
     { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
 ];
 
@@ -7391,11 +8960,17 @@ export function resolveBetrayalHauntSetupQueue(core: BetrayalCore): BetrayalHaun
     }
     switch (core.scenarioRuntime.hauntCardNumber) {
         case 1:
-            return cloneHauntSetupQueue(CRIMSON_JACK_HAUNT_SETUP_QUEUE);
+            return cloneHauntSetupQueue(
+                core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage'
+                    ? MUMMY_HAUNT_SETUP_QUEUE
+                    : CRIMSON_JACK_HAUNT_SETUP_QUEUE,
+            );
         case 3:
             return cloneHauntSetupQueue(DUST_HAUNT_SETUP_QUEUE);
         case 5:
             return cloneHauntSetupQueue(createBloodFromStoneHauntSetupQueue(core));
+        case 7:
+            return cloneHauntSetupQueue(UPON_REFLECTION_HAUNT_SETUP_QUEUE);
         case 12:
             return cloneHauntSetupQueue(HELPING_HANDS_HAUNT_SETUP_QUEUE);
         case 33:
@@ -7426,7 +9001,7 @@ export function resolveBetrayalHauntSetupProgress(core: BetrayalCore): BetrayalH
         needsFormalConfirmationCommand: active && manualCheckEntries.length > 0,
         representativeOnly: active && (
             core.scenarioRuntime.hauntResolutionRepresentativeOnly
-            || ![1, 3, 5, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
+            || ![1, 3, 5, 7, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
         ),
         ruleNotes: active
             ? [
@@ -7548,6 +9123,41 @@ function createBetrayalHauntSetupCommandPreview(
                 : ['token-placement-command'];
             break;
         }
+        case 'place-mummy-and-sarcophagus': {
+            action = 'place-monster-tokens';
+            label = '放置木乃伊和石棺';
+            const mummy = core.scenarioRuntime.mummy;
+            if (mummy) {
+                targetRoomIds = [mummy.sarcophagusRoomId];
+                targetMonsterIds = [mummy.mummyMonsterId];
+                evidence = [
+                    `木乃伊和石棺已放在${formatBetrayalRoomTargetLabel(core, mummy.sarcophagusRoomId)}。`,
+                ];
+            } else {
+                evidence = ['木乃伊 setup 状态尚未写入。'];
+            }
+            extraGaps = ['token-placement-command'];
+            break;
+        }
+        case 'place-girl-token': {
+            action = 'place-monster-tokens';
+            label = '放置女孩标记';
+            const mummy = core.scenarioRuntime.mummy;
+            targetRoomIds = uniqueBetrayalStrings([mummy?.girlRoomId]);
+            evidence = mummy?.girlRoomId
+                ? [`女孩标记已放在${formatBetrayalRoomTargetLabel(core, mummy.girlRoomId)}。`]
+                : ['当前没有可放置女孩标记的已发现房间，需人工确认。'];
+            extraGaps = ['token-placement-command', 'room-selection'];
+            break;
+        }
+        case 'prepare-mummy-knowledge-tokens':
+            action = 'prepare-token-pool';
+            label = '准备 2 枚知识标记';
+            evidence = [
+                `当前英雄已取得 ${core.scenarioRuntime.mummy?.knowledgeTokenCount ?? 0}/2 枚知识标记。`,
+            ];
+            extraGaps = ['token-placement-command'];
+            break;
         case 'prepare-jack-spirit-tokens':
             action = 'prepare-token-pool';
             label = '准备杰克之灵和驱魔相关 token';
@@ -7616,6 +9226,42 @@ function createBetrayalHauntSetupCommandPreview(
                 ? [`已放置研究 token：${targetRoomIds.map((roomId) => formatBetrayalRoomTargetLabel(core, roomId)).join('、')}。`]
                 : ['研究 token 池仍需 setup 确认，后续由寻找解药行动放置到对应房间。'];
             extraGaps = ['token-placement-command', 'room-selection'];
+            break;
+        }
+        case 'mirror-revealer-falls-silent':
+            action = 'confirm-state';
+            label = '确认作祟揭秘者倒伏并保持镜中沉默';
+            targetPlayerIds = uniqueBetrayalStrings([revealerPlayerId]);
+            evidence = revealerPlayerId
+                ? [`作祟揭秘者：${formatBetrayalPlayerTargetLabel(core, revealerPlayerId)}。`]
+                : ['作祟揭秘者仍未写入运行态。'];
+            extraGaps = ['communication-limitation', 'ui-confirmation'];
+            break;
+        case 'deal-secret-mirror-combination':
+            action = 'deal-secret-tokens';
+            label = '秘密记录 Trait / Omen / Room 组合';
+            targetPlayerIds = uniqueBetrayalStrings([revealerPlayerId]);
+            if (core.scenarioRuntime.uponReflection?.secretCombination) {
+                evidence = ['秘密组合已写入作祟揭秘者私密状态。'];
+                extraGaps = ['secret-visibility'];
+            } else {
+                evidence = ['正确属性、预兆和房间组合仍需私密状态与可见性接入。'];
+                extraGaps = ['secret-visibility', 'full-haunt-definition'];
+            }
+            break;
+        case 'place-mirror-beings': {
+            action = 'place-monster-tokens';
+            label = '在入口大厅放置镜中怪物';
+            targetMonsterIds = core.monsters
+                .filter((monster) => monster.definitionId === 'upon-reflection-mirror-being')
+                .map((monster) => monster.id);
+            targetRoomIds = uniqueBetrayalStrings(targetMonsterIds.map((monsterId) => (
+                core.monsters.find((monster) => monster.id === monsterId)?.roomId
+            )));
+            evidence = targetMonsterIds.length > 0
+                ? [`已放置镜中怪物：${targetMonsterIds.map((monsterId) => formatBetrayalMonsterTargetLabel(core, monsterId)).join('、')}。`]
+                : ['镜中怪物尚未放置。'];
+            extraGaps = ['token-placement-command'];
             break;
         }
         case 'recover-strange-amulet': {
@@ -7744,7 +9390,7 @@ export function resolveBetrayalHauntSetupCommandPreviews(
         needsFormalConfirmationCommand: active && previews.length > 0,
         representativeOnly: active && (
             core.scenarioRuntime.hauntResolutionRepresentativeOnly
-            || ![1, 3, 5, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
+            || ![1, 3, 5, 7, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
         ),
         ruleNotes: active
             ? [
@@ -7924,7 +9570,8 @@ function resolveAttackWeaponEffect(
     speedCost: number;
     attackTrait: BetrayalTraitKey;
     damageKind: 'physical' | 'mental';
-    ranged: boolean;
+    rangeKind: AttackWeaponRangeKind;
+    attackerTakesDamageOnFailure: boolean;
 } | null {
     if (!weaponCardId) {
         return null;
@@ -7939,10 +9586,44 @@ function resolveAttackWeaponEffect(
     const speedCost = ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID[effectId] ?? 0;
     const attackTrait = ATTACK_TRAIT_WEAPONS_BY_CARD_ID[effectId] ?? 'might';
     const damageKind = ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID[effectId] ?? 'physical';
-    const ranged = RANGED_ATTACK_WEAPON_CARD_IDS.has(effectId);
-    return bonus > 0 || extraDice > 0 || speedCost > 0 || attackTrait !== 'might' || damageKind !== 'physical' || ranged
-        ? { card, bonus, extraDice, speedCost, attackTrait, damageKind, ranged }
+    const rangeKind = LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS.has(effectId)
+        ? 'line-of-sight'
+        : ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS.has(effectId)
+            ? 'same-or-adjacent-room'
+            : 'same-room';
+    const attackerTakesDamageOnFailure = !NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS.has(effectId);
+    return bonus > 0
+        || extraDice > 0
+        || speedCost > 0
+        || attackTrait !== 'might'
+        || damageKind !== 'physical'
+        || rangeKind !== 'same-room'
+        || !attackerTakesDamageOnFailure
+        ? {
+            card,
+            bonus,
+            extraDice,
+            speedCost,
+            attackTrait,
+            damageKind,
+            rangeKind,
+            attackerTakesDamageOnFailure,
+        }
         : null;
+}
+
+function isDynamiteCardId(cardId: string | undefined): boolean {
+    return Boolean(cardId && DYNAMITE_ATTACK_WEAPON_CARD_IDS.has(resolveInventoryEffectId(cardId)));
+}
+
+function resolveDynamiteInventoryCard(
+    explorer: BetrayalExplorerSummary,
+    weaponCardId: string | undefined,
+): BetrayalInventoryCard | null {
+    if (!isDynamiteCardId(weaponCardId)) {
+        return null;
+    }
+    return explorer.inventory.find((card) => card.id === weaponCardId && isDynamiteCardId(card.id)) ?? null;
 }
 
 export function resolveAttackWeaponCards(core: BetrayalCore): BetrayalInventoryCard[] {
@@ -7961,7 +9642,7 @@ export interface BetrayalAttackWeaponCardStatus {
 
 export function resolveAttackWeaponCardStatuses(core: BetrayalCore): BetrayalAttackWeaponCardStatus[] {
     return core.currentExplorer.inventory.flatMap((card) => {
-        if (!resolveAttackWeaponEffect(core.currentExplorer, card.id)) {
+        if (!resolveAttackWeaponEffect(core.currentExplorer, card.id) && !isDynamiteCardId(card.id)) {
             return [];
         }
         const availableAtTurnStart = core.turnStartInventoryCardIds.includes(card.id);
@@ -8037,14 +9718,6 @@ export function resolveBetrayalAttackTargetPlayerIds(
     return { traitorPlayerId, heroPlayerIds };
 }
 
-function rollAttack(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-): number {
-    return rollAttackWithDice(random, explorer, weaponEffect).total;
-}
-
 function rollAttackWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
@@ -8064,9 +9737,17 @@ function rollAttackDefense(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
+    fallbackTrait: BetrayalTraitKey = 'might',
 ): number {
-    const trait = weaponEffect?.attackTrait ?? 'might';
-    return rollTrait(random, explorer.traits[trait]);
+    const trait = weaponEffect?.attackTrait ?? fallbackTrait;
+    const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
+    return rollTrait(random, explorer.traits[trait] + extraDice);
+}
+
+function resolveDefenseExtraDiceWhenAttacked(explorer: BetrayalExplorerSummary): number {
+    return explorer.inventory.reduce((total, card) => (
+        total + (DEFENSE_EXTRA_DICE_WHEN_ATTACKED_BY_CARD_ID[resolveInventoryEffectId(card.id)] ?? 0)
+    ), 0);
 }
 
 function isAttackTargetInWeaponRange(
@@ -8078,7 +9759,37 @@ function isAttackTargetInWeaponRange(
     if (actorRoomId === targetRoomId) {
         return true;
     }
-    return Boolean(weaponEffect?.ranged && isBetrayalRoomInLineOfSight(core, actorRoomId, targetRoomId));
+    if (weaponEffect?.rangeKind === 'line-of-sight') {
+        return isBetrayalRoomInLineOfSight(core, actorRoomId, targetRoomId);
+    }
+    if (weaponEffect?.rangeKind === 'same-or-adjacent-room') {
+        return resolveConnectedRoomIds(core.rooms, actorRoomId).has(targetRoomId);
+    }
+    return false;
+}
+
+function isDynamiteTargetRoom(core: BetrayalCore, actorRoomId: string, targetRoomId: string): boolean {
+    return actorRoomId === targetRoomId || resolveConnectedRoomIds(core.rooms, actorRoomId).has(targetRoomId);
+}
+
+function resolveFailedAttackDamage(
+    defenderRoll: number,
+    attackerRoll: number,
+    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
+): number {
+    return weaponEffect?.attackerTakesDamageOnFailure === false
+        ? 0
+        : Math.max(0, defenderRoll - attackerRoll);
+}
+
+function formatAttackRangeLabel(weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>): string {
+    if (weaponEffect?.rangeKind === 'line-of-sight') {
+        return '同板块或视线内';
+    }
+    if (weaponEffect?.rangeKind === 'same-or-adjacent-room') {
+        return '同板块或相邻板块';
+    }
+    return '同板块';
 }
 
 function applyAttackDamage(
@@ -8095,7 +9806,7 @@ function applyAttackDamage(
 
 function canDeferOrdinaryAttackDamageToDefender(
     core: BetrayalCore,
-    target: 'traitor' | 'hero' | 'jack-spirit' | 'phantom-photographer' | 'troll-hand',
+    target: BetrayalHauntAttackTarget,
 ): boolean {
     return !isMagicCameraHaunt(core)
         && !isHelpingHandsHaunt(core)
@@ -8152,20 +9863,18 @@ function resolveNonCombatTraitCheckValue(
     return resolveTraitCheckValue(explorer, trait);
 }
 
-function rollTraitCheck(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-): number {
-    return rollTrait(random, resolveTraitCheckValue(explorer, trait)) + resolveTraitRollPassiveBonus(explorer, trait);
+function resolveRoomBlessingExtraDice(core: BetrayalCore | undefined, explorer: BetrayalExplorerSummary): number {
+    const room = core?.rooms.find((candidate) => candidate.id === explorer.roomId);
+    return room?.markerTokens?.includes('blessing') ? 1 : 0;
 }
 
 function rollTraitCheckWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
+    core?: BetrayalCore,
 ): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollDicePips(random, resolveTraitCheckValue(explorer, trait));
+    const dice = rollDicePips(random, resolveTraitCheckValue(explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
     const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
@@ -8180,7 +9889,11 @@ function rollNonCombatTraitCheck(
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
 ): number {
-    return rollTrait(random, resolveNonCombatTraitCheckValue(core, explorer, trait)) + resolveTraitRollPassiveBonus(explorer, trait);
+    const rollTotalReplacement = core.nextNonCombatTraitRollTotalReplacement;
+    if (rollTotalReplacement?.playerId === explorer.playerId) {
+        return rollTotalReplacement.selectedTotal + resolveTraitRollPassiveBonus(explorer, trait);
+    }
+    return rollTrait(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer)) + resolveTraitRollPassiveBonus(explorer, trait);
 }
 
 function rollNonCombatTraitCheckWithDice(
@@ -8189,8 +9902,16 @@ function rollNonCombatTraitCheckWithDice(
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
 ): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait));
     const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
+    const rollTotalReplacement = core.nextNonCombatTraitRollTotalReplacement;
+    if (rollTotalReplacement?.playerId === explorer.playerId) {
+        return {
+            total: rollTotalReplacement.selectedTotal + passiveBonus,
+            dice: [rollTotalReplacement.selectedTotal],
+            passiveBonus,
+        };
+    }
+    const dice = rollDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
         dice,
@@ -8203,26 +9924,27 @@ function resolveEventTraitCheckExtraDice(explorer: BetrayalExplorerSummary): num
     return [...cardIds].reduce((total, cardId) => total + (EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID[cardId] ?? 0), 0);
 }
 
-function rollEventTraitCheck(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    core?: BetrayalCore,
-): number {
-    return rollEventTraitCheckWithDice(random, explorer, trait, core).total;
-}
-
 function rollEventTraitCheckWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
     core?: BetrayalCore,
 ): { total: number; dice: number[]; passiveBonus: number } {
+    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
+    const rollTotalReplacement = core?.nextNonCombatTraitRollTotalReplacement;
+    if (rollTotalReplacement?.playerId === explorer.playerId) {
+        return {
+            total: rollTotalReplacement.selectedTotal + passiveBonus,
+            dice: [rollTotalReplacement.selectedTotal],
+            passiveBonus,
+        };
+    }
     const diceCount = (core
         ? resolveNonCombatTraitCheckValue(core, explorer, trait)
-        : resolveTraitCheckValue(explorer, trait)) + resolveEventTraitCheckExtraDice(explorer);
+        : resolveTraitCheckValue(explorer, trait))
+        + resolveEventTraitCheckExtraDice(explorer)
+        + resolveRoomBlessingExtraDice(core, explorer);
     const dice = rollDicePips(random, diceCount);
-    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
         dice,
@@ -8242,6 +9964,26 @@ function consumeNextNonCombatTraitReplacementAfterTraitRoll(
         && core.nextNonCombatTraitReplacement?.playerId === playerId
     ) {
         core.nextNonCombatTraitReplacement = null;
+    }
+    if (
+        eventRoll
+        && eventRoll.kind !== 'dice'
+        && eventRoll.trait
+        && core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId
+    ) {
+        core.nextNonCombatTraitRollTotalReplacement = null;
+    }
+}
+
+function clearNextNonCombatTraitRollReplacementsForPlayer(
+    core: BetrayalCore,
+    playerId: string,
+): void {
+    if (core.nextNonCombatTraitReplacement?.playerId === playerId) {
+        core.nextNonCombatTraitReplacement = null;
+    }
+    if (core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId) {
+        core.nextNonCombatTraitRollTotalReplacement = null;
     }
 }
 
@@ -8270,8 +10012,76 @@ function resolveRabbitFootCard(core: BetrayalCore, cardId?: string, playerId = c
     return cards[0] ?? null;
 }
 
-export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
-    const card = resolveRabbitFootCard(core, cardId, playerId);
+function resolveRecentRollRerollItemRule(cardId: string): RecentRollRerollItemRule | null {
+    return RECENT_ROLL_REROLL_ITEM_RULES_BY_CARD_ID[resolveInventoryEffectId(cardId)] ?? null;
+}
+
+function resolveRecentRollRerollItemCard(
+    core: BetrayalCore,
+    cardId?: string,
+    playerId = core.currentExplorer.playerId,
+): BetrayalInventoryCard | null {
+    const owner = findExplorerByPlayerId(core, playerId);
+    const cards = owner?.inventory.filter((card) => Boolean(resolveRecentRollRerollItemRule(card.id))) ?? [];
+    if (cardId) {
+        return cards.find((card) => card.id === cardId) ?? null;
+    }
+    return cards[0] ?? null;
+}
+
+function isRecentTraitCheckRoll(recentRoll: BetrayalRecentRollState): boolean {
+    return recentRoll.kind === 'eventTraitCheck'
+        || recentRoll.kind === 'roomEndTurnTraitCheck';
+}
+
+function recentRollAllowsRerollItem(recentRoll: BetrayalRecentRollState, rule: RecentRollRerollItemRule): boolean {
+    if (rule.mode === 'single-die') {
+        return recentRoll.kind !== 'monsterMoveRoll' && recentRoll.kind !== 'hauntRoll';
+    }
+    return isRecentTraitCheckRoll(recentRoll);
+}
+
+export function resolveRecentRollRerollSelectableDieIndices(
+    recentRoll: BetrayalRecentRollState,
+    cardId: string,
+): number[] {
+    const rule = resolveRecentRollRerollItemRule(cardId);
+    if (!rule || !recentRollAllowsRerollItem(recentRoll, rule)) {
+        return [];
+    }
+    if (rule.mode === 'blank-trait-check-dice') {
+        return recentRoll.dice
+            .map((pip, dieIndex) => (pip === 0 ? dieIndex : -1))
+            .filter((dieIndex) => dieIndex >= 0);
+    }
+    return recentRoll.dice.map((_, dieIndex) => dieIndex);
+}
+
+function resolveRecentRollRerollCommandDieIndices(
+    recentRoll: BetrayalRecentRollState,
+    cardId: string,
+    dieIndex = 0,
+): number[] {
+    const rule = resolveRecentRollRerollItemRule(cardId);
+    if (!rule || !recentRollAllowsRerollItem(recentRoll, rule)) {
+        return [];
+    }
+    if (rule.mode === 'single-die') {
+        return Number.isInteger(dieIndex) && dieIndex >= 0 && dieIndex < recentRoll.dice.length
+            ? [dieIndex]
+            : [];
+    }
+    if (rule.mode === 'blank-trait-check-dice') {
+        return recentRoll.dice
+            .map((pip, index) => (pip === 0 ? index : -1))
+            .filter((index) => index >= 0);
+    }
+    return recentRoll.dice.map((_, index) => index);
+}
+
+export function canUseRecentRollRerollItemForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
+    const card = resolveRecentRollRerollItemCard(core, cardId, playerId);
+    const rule = card ? resolveRecentRollRerollItemRule(card.id) : null;
     const receivedThisTurn = core.receivedCardIdsThisTurnByPlayerId[playerId] ?? [];
     const existedAtRollWindowStart = core.recentRoll?.kind === 'roomEndTurnTraitCheck'
         || core.recentRoll?.kind === 'deathPrevention'
@@ -8279,16 +10089,32 @@ export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: stri
         : core.turnStartInventoryCardIds.includes(card?.id ?? '');
     return Boolean(
         card
+        && rule
         && core.recentRoll
-        && core.recentRoll.kind !== 'monsterMoveRoll'
-        && core.recentRoll.kind !== 'hauntRoll'
+        && recentRollAllowsRerollItem(core.recentRoll, rule)
         && core.recentRoll.playerId === playerId
         && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
         && existedAtRollWindowStart
         && !receivedThisTurn.includes(card.id)
         && !core.usedCardIdsThisTurn.includes(card.id)
-        && core.recentRoll.dice.length > 0,
+        && resolveRecentRollRerollSelectableDieIndices(core.recentRoll, card.id).length > 0,
     );
+}
+
+export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
+    const card = resolveRabbitFootCard(core, cardId, playerId);
+    return card ? canUseRecentRollRerollItemForRecentRoll(core, playerId, card.id) : false;
+}
+
+function resolveToothNecklaceCard(explorer: BetrayalExplorerSummary): BetrayalInventoryCard | null {
+    return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === TOOTH_NECKLACE_CARD_ID) ?? null;
+}
+
+function resolveDeathsDoorTraitGainChoices(explorer: BetrayalExplorerSummary): BetrayalTraitKey[] {
+    return BETRAYAL_TRAIT_KEYS.filter((trait) => {
+        const track = explorer.traitTracks[trait];
+        return track.position === track.criticalPosition && track.position < track.maxPosition;
+    });
 }
 
 function resolveRecentRollTotal(recentRoll: BetrayalRecentRollState): number {
@@ -8310,7 +10136,10 @@ function resolveAttackRerollOutcome(
             : { outcome: 'wound', latestLabel: '未压制杰克之灵' };
     }
     const damageToDefender = Math.max(0, nextAttackRoll - attack.defenderRoll);
-    const damageToAttacker = Math.max(0, attack.defenderRoll - nextAttackRoll);
+    const damageToAttacker = attack.weaponCardId
+        && NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS.has(resolveInventoryEffectId(attack.weaponCardId))
+        ? 0
+        : Math.max(0, attack.defenderRoll - nextAttackRoll);
     if (nextAttackRoll === attack.defenderRoll) {
         return { outcome: 'no-damage', latestLabel: '平手无伤害' };
     }
@@ -8330,6 +10159,7 @@ function createEventEffectSnapshot(core: BetrayalCore): EventEffectSnapshot {
         traitTracksBeforeEffect: cloneTraitTracks(core.currentExplorer.traitTracks),
         roomIdBeforeEffect: core.currentExplorer.roomId,
         possessionOrderByKindBeforeEffect: clonePossessionOrderByKind(core.possessionOrderByKind),
+        currentExplorerInventoryBeforeEffect: core.currentExplorer.inventory.map(cloneInventoryCard),
         deckCountsBeforeEffect: { ...core.deckCounts },
         damageRolls: [],
         drawnCards: [],
@@ -8341,9 +10171,10 @@ function rollAllTraitChecks(
     traits: BetrayalTraitKey[],
     passMin: number,
     random: RandomFn,
+    core?: BetrayalCore,
 ): BetrayalAllTraitCheckResult[] {
     return traits.map((trait) => {
-        const result = rollEventTraitCheckWithDice(random, explorer, trait);
+        const result = rollEventTraitCheckWithDice(random, explorer, trait, core);
         return {
             trait,
             total: result.total,
@@ -8378,6 +10209,7 @@ function revertEventEffect(core: BetrayalCore, effect: UseEffectProfile, snapsho
         core.currentExplorer.traits = { ...snapshot.traitsBeforeEffect };
         core.currentExplorer.traitTracks = cloneTraitTracks(snapshot.traitTracksBeforeEffect);
         core.currentExplorer.roomId = snapshot.roomIdBeforeEffect;
+        core.currentExplorer.inventory = snapshot.currentExplorerInventoryBeforeEffect.map(cloneInventoryCard);
         revertEventSideEffects(core, effect);
         for (const drawnCard of snapshot.drawnCards) {
             core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== drawnCard.id);
@@ -8430,6 +10262,12 @@ function revertEventEffect(core: BetrayalCore, effect: UseEffectProfile, snapsho
         return;
     }
     if (effect.mode === 'chooseTraitRoll') {
+        return;
+    }
+    if (effect.mode === 'traitRoll') {
+        return;
+    }
+    if (effect.mode === 'optionalItemEffect') {
         return;
     }
     if (effect.mode === 'rolledDamage') {
@@ -8513,6 +10351,7 @@ function createPendingDamageAllocation(params: {
     damageKind: BetrayalPendingDamageAllocationState['damageKind'];
     amount: number;
     allowSkull?: boolean;
+    forcedTraitSequence?: BetrayalTraitKey[];
     nextPlayerId?: string;
     nextDamageAllocations?: BetrayalPendingDamageAllocationState[];
     monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
@@ -8539,6 +10378,10 @@ function createPendingDamageAllocation(params: {
         amount: assignableAmount,
         originalAmount: params.amount,
         allowedTraits,
+        damageReplacement: resolveBroochDamageReplacement(params.explorer, params.damageKind),
+        forcedTraitSequence: params.forcedTraitSequence
+            ? [...params.forcedTraitSequence].slice(0, assignableAmount)
+            : undefined,
         allowSkull: Boolean(params.allowSkull),
         traitsBeforeDamage: { ...params.explorer.traits },
         nextPlayerId: params.nextPlayerId,
@@ -8548,6 +10391,28 @@ function createPendingDamageAllocation(params: {
         helpingHandsMonsterTurnControllerPlayerId: params.helpingHandsMonsterTurnControllerPlayerId,
         skipBloodFromStoneMonsterTurnStart: params.skipBloodFromStoneMonsterTurnStart,
     };
+}
+
+function createRecentRollRerollMentalDamageAllocation(
+    core: BetrayalCore,
+    playerId: string,
+    cardId: string,
+    amount: number | undefined,
+    timestamp: number,
+): BetrayalPendingDamageAllocationState | null {
+    const rule = resolveRecentRollRerollItemRule(cardId);
+    const explorer = findExplorerByPlayerId(core, playerId);
+    if (!rule || rule.mode !== 'blank-trait-check-dice' || !explorer || !amount || amount <= 0) {
+        return null;
+    }
+    return createPendingDamageAllocation({
+        id: `recent-reroll-mental-damage-${playerId}-${cardId}-${timestamp}`,
+        explorer,
+        sourceTitle: rule.label,
+        damageKind: 'mental',
+        amount,
+        allowSkull: core.phase === 'haunt',
+    });
 }
 
 function chainPendingDamageAllocations(
@@ -8641,8 +10506,12 @@ function applyPhysicalDamage(
     explorer: BetrayalExplorerSummary,
     amount: number,
     options: { allowSkull?: boolean } = {},
-): void {
-    applyTraitLoss(explorer, ['might', 'speed'], Math.max(0, amount - resolvePhysicalDamageReduction(explorer)), options);
+): number {
+    const applied = applyTraitLoss(explorer, ['might', 'speed'], Math.max(0, amount - resolvePhysicalDamageReduction(explorer)), options);
+    if (applied > 0) {
+        applyStrangeAmuletPhysicalDamageBonus(explorer);
+    }
+    return applied;
 }
 
 function applyMentalDamage(
@@ -8653,19 +10522,47 @@ function applyMentalDamage(
     applyTraitLoss(explorer, ['knowledge', 'sanity'], Math.max(0, amount - resolveMentalDamageReduction(explorer)), options);
 }
 
+function applyStrangeAmuletPhysicalDamageBonus(explorer: BetrayalExplorerSummary): void {
+    const hasStrangeAmulet = explorer.inventory.some((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID);
+    if (hasStrangeAmulet) {
+        moveExplorerTraitSteps(explorer, 'sanity', 1, { allowSkull: true });
+    }
+}
+
+function resolveBroochDamageReplacement(
+    explorer: BetrayalExplorerSummary,
+    damageKind: BetrayalPendingDamageAllocationState['damageKind'],
+): BetrayalPendingDamageAllocationState['damageReplacement'] {
+    if (damageKind === 'general') {
+        return undefined;
+    }
+    const card = explorer.inventory.find((inventoryCard) => resolveInventoryEffectId(inventoryCard.id) === BROOCH_CARD_ID);
+    return card
+        ? {
+            kind: 'brooch-general-damage',
+            cardId: card.id,
+            cardName: card.name,
+        }
+        : undefined;
+}
+
 function applyGeneralDamage(
     explorer: BetrayalExplorerSummary,
     amount: number,
     selectedTraits: BetrayalTraitKey[],
     options: { allowSkull?: boolean } = {},
-): void {
+): number {
     let remaining = Math.max(0, amount);
+    let applied = 0;
     for (const trait of selectedTraits) {
         if (remaining <= 0) {
             break;
         }
-        remaining -= applyTraitLoss(explorer, [trait], 1, options);
+        const traitLoss = applyTraitLoss(explorer, [trait], 1, options);
+        remaining -= traitLoss;
+        applied += traitLoss;
     }
+    return applied;
 }
 
 type EventDamageDeathPreview = {
@@ -8728,6 +10625,16 @@ function resolveDamageFromEventEffect(effect: UseEffectProfile): Omit<EventDamag
             traits: [],
         };
     }
+    if (effect.mode === 'fixedDamage') {
+        return {
+            amount: effect.amount,
+            kind: effect.damageKind,
+            traits: [],
+        };
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return resolveDamageFromEventEffect(effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
+    }
     return null;
 }
 
@@ -8758,6 +10665,10 @@ function applyEventDeathPreviewNonDamageEffect(
         for (const trait of failedTraits) {
             applyTraitLoss(explorer, [trait], effect.failAmount, { allowSkull: true });
         }
+        return;
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        applyEventDeathPreviewNonDamageEffect(explorer, effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
     }
 }
 
@@ -8776,6 +10687,9 @@ function resolveEventDamageDeathPreview(
     }
     if (effect.mode === 'allTraitChecks' && effect.results?.every((result) => result.passed)) {
         return resolveEventDamageDeathPreview(explorer, effect.allPassEffect);
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return resolveEventDamageDeathPreview(explorer, effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
     }
     const damage = resolveDamageFromEventEffect(effect) ?? resolveDirectTraitLossFromEventEffect(effect);
     if (damage) {
@@ -8849,6 +10763,13 @@ function applyEventEffect(
         }
         return nextSnapshot;
     }
+    if (effect.mode === 'placeBlessingToken') {
+        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
+        if (room) {
+            room.markerTokens = Array.from(new Set([...(room.markerTokens ?? []), 'blessing']));
+        }
+        return nextSnapshot;
+    }
     if (effect.mode === 'move') {
         core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + effect.amount));
         return nextSnapshot;
@@ -8875,7 +10796,18 @@ function applyEventEffect(
         applyGeneralDamage(core.currentExplorer, effect.amount, effect.selectedTraits ?? effect.allowedTraits, { allowSkull: core.phase === 'haunt' });
         return nextSnapshot;
     }
+    if (effect.mode === 'fixedDamage') {
+        if (effect.damageKind === 'physical') {
+            applyPhysicalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
+        } else {
+            applyMentalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
+        }
+        return nextSnapshot;
+    }
     if (effect.mode === 'optionalEventRoll') {
+        return nextSnapshot;
+    }
+    if (effect.mode === 'optionalEffect') {
         return nextSnapshot;
     }
     if (effect.mode === 'optionalHauntRoll') {
@@ -8884,11 +10816,29 @@ function applyEventEffect(
     if (effect.mode === 'chooseTraitRoll') {
         return nextSnapshot;
     }
+    if (effect.mode === 'traitRoll') {
+        return nextSnapshot;
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        const selectedCard = effect.selectedCardId
+            ? core.currentExplorer.inventory.find((card) => card.id === effect.selectedCardId)
+            : null;
+        if (selectedCard) {
+            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== selectedCard.id);
+            if (effect.consumeAction === 'bury') {
+                restorePossessionCardToBottom(core, selectedCard.kind, selectedCard);
+            }
+            applyEventEffect(core, effect.acceptEffect, random, nextSnapshot);
+        } else {
+            applyEventEffect(core, effect.declineEffect, random, nextSnapshot);
+        }
+        return nextSnapshot;
+    }
     if (effect.mode === 'allTraitChecks') {
         if (!effect.results && !random) {
             throw new Error('allTraitChecks requires random');
         }
-        const results = effect.results ?? rollAllTraitChecks(core.currentExplorer, effect.traits, effect.passMin, random!);
+        const results = effect.results ?? rollAllTraitChecks(core.currentExplorer, effect.traits, effect.passMin, random!, core);
         const failedTraits = results.filter((result) => !result.passed).map((result) => result.trait);
         for (const trait of failedTraits) {
             applyTraitLoss(core.currentExplorer, [trait], effect.failAmount, { allowSkull: core.phase === 'haunt' });
@@ -8937,6 +10887,26 @@ function applyEventEffect(
         }
         return nextSnapshot;
     }
+    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
+        const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
+        const targetFloor: BetrayalRoomFloor = currentRoom?.floor === 'upper'
+            ? 'ground'
+            : currentRoom?.floor === 'ground'
+                ? 'basement'
+                : effect.basementFallbackFloor;
+        const targetRoom = core.rooms.find((room) => room.floor === targetFloor && room.startingTile);
+        if (targetRoom) {
+            core.currentExplorer.roomId = targetRoom.id;
+        }
+        if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
+            if (effect.basementFallbackDamage.damageKind === 'physical') {
+                applyPhysicalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
+            } else {
+                applyMentalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
+            }
+        }
+        return nextSnapshot;
+    }
     if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
         const targetRoom = core.rooms.find((room) => (
             room.state === 'discovered' && effect.visualIds.includes(room.visualId)
@@ -8972,11 +10942,12 @@ function materializeEventEffect(
     effect: UseEffectProfile,
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
+    core?: BetrayalCore,
 ): UseEffectProfile {
     if (effect.mode === 'compound') {
         return {
             ...effect,
-            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer)),
+            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer, core)),
         };
     }
     if (effect.mode === 'optionalEventRoll') {
@@ -8988,8 +10959,14 @@ function materializeEventEffect(
     if (effect.mode === 'chooseTraitRoll') {
         return cloneUseEffect(effect);
     }
+    if (effect.mode === 'traitRoll') {
+        return cloneUseEffect(effect);
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        return cloneUseEffect(effect);
+    }
     if (effect.mode === 'allTraitChecks') {
-        const results = rollAllTraitChecks(explorer, effect.traits, effect.passMin, random);
+        const results = rollAllTraitChecks(explorer, effect.traits, effect.passMin, random, core);
         const hasFailure = results.some((result) => !result.passed);
         return {
             ...effect,
@@ -9026,6 +11003,28 @@ function materializeEventEffect(
         return { ...effect };
     }
     if (effect.mode === 'placeExplorerInFloorStartingRoom') {
+        return { ...effect };
+    }
+    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
+        const currentRoom = core?.rooms.find((room) => room.id === explorer.roomId);
+        if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
+            return {
+                mode: 'compound',
+                effects: [
+                    {
+                        ...effect,
+                        basementFallbackDamage: undefined,
+                    },
+                    {
+                        mode: 'fixedDamage',
+                        amount: effect.basementFallbackDamage.amount,
+                        damageKind: effect.basementFallbackDamage.damageKind,
+                        recommendedAction: effect.recommendedAction,
+                    },
+                ],
+                recommendedAction: effect.recommendedAction,
+            };
+        }
         return { ...effect };
     }
     if (effect.mode === 'placeExplorerInAdjacentRoom') {
@@ -9111,6 +11110,60 @@ function createRoomDiscoveryEffectResolutionSteps(
         : [];
 }
 
+function getRoomDiscoveryRewardNames(roomDiscoveryCards: {
+    roomDiscoveryCards?: BetrayalInventoryCard[];
+    buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+}): { gained: string[]; buried: string[] } {
+    return {
+        gained: roomDiscoveryCards.roomDiscoveryCards?.map((card) => card.name) ?? [],
+        buried: roomDiscoveryCards.buriedRoomDiscoveryCards?.map((card) => card.name) ?? [],
+    };
+}
+
+function createRoomDiscoveryCardResolutionSteps(
+    roomName: string,
+    roomDiscoveryCards: {
+        roomDiscoveryCards?: BetrayalInventoryCard[];
+        buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+    },
+): BetrayalDiscoveryResolutionStep[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        ...rewardNames.gained.map((name, index) => ({
+            id: `room-discovery-card-${roomDiscoveryCards.roomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'room-discovery-card' as const,
+            text: `${roomName}获得${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.roomDiscoveryCards?.[index]?.id,
+        })),
+        ...rewardNames.buried.map((name, index) => ({
+            id: `buried-room-discovery-card-${roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'buried-room-discovery-card' as const,
+            text: `展示后埋葬${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id,
+        })),
+    ];
+}
+
+function formatRoomDiscoveryRewardDetailParts(
+    roomName: string,
+    roomDiscoveryCards: {
+        roomDiscoveryCards?: BetrayalInventoryCard[];
+        buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+    },
+): string[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        rewardNames.gained.length > 0
+            ? `${roomName}获得${rewardNames.gained.join('、')}`
+            : null,
+        rewardNames.buried.length > 0
+            ? `展示后埋葬${rewardNames.buried.join('、')}`
+            : null,
+    ].filter((part): part is string => Boolean(part));
+}
+
 function resolveEndTurnRoomEffect(core: BetrayalCore, random: RandomFn): BetrayalRoomEndTurnEffectResult | null {
     const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
     const effect = resolveRoomEndTurnEffect(currentRoom);
@@ -9141,7 +11194,7 @@ function resolveEndTurnRoomEffect(core: BetrayalCore, random: RandomFn): Betraya
         };
     }
 
-    const speedRoll = rollTraitCheckWithDice(random, core.currentExplorer, 'speed');
+    const speedRoll = rollTraitCheckWithDice(random, core.currentExplorer, 'speed', core);
     if (speedRoll.total >= 5) {
         return {
             kind: effect,
@@ -9960,10 +12013,6 @@ function rollMysticElevatorWithDice(random: RandomFn): { total: number; dice: nu
     };
 }
 
-function rollMysticElevator(random: RandomFn): number {
-    return rollMysticElevatorWithDice(random).total;
-}
-
 function resolveMysticElevatorAllowedFloors(rollTotal: number): BetrayalRoomFloor[] {
     if (rollTotal >= 4) {
         return ['upper', 'ground', 'basement'];
@@ -10115,9 +12164,9 @@ function resolveHauntRoll(
 
 function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
     if (hauntRoll.automatic) {
-        return '抽到最后一张预兆，按通用预兆规则自动触发作祟';
+        return '预兆牌堆耗尽，自动触发作祟';
     }
-    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.threshold}+ 作祟开始，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
+    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
 }
 
 function resolveHauntRevealResolutionForTrigger(
@@ -10649,6 +12698,7 @@ function resolveHauntFirstPlayerPolicyModel(
             return { policy: 'left-of-traitor', reasonLabel: '叛徒左侧玩家先行动' };
         case 3:
         case 5:
+        case 7:
         case 12:
             return { policy: 'left-of-revealer', reasonLabel: '作祟揭秘者左侧玩家先行动' };
         default:
@@ -10856,8 +12906,7 @@ export function resolveRoomPlacementPreview(
     const slot = options.roomId
         ? explorableSlots.find((room) => room.id === options.roomId) ?? null
         : explorableSlots[0] ?? null;
-    const deckKind = resolveNextDeckKind(core);
-    if (!slot || !deckKind) {
+    if (!slot) {
         return null;
     }
     const placement = resolveRoomPlacementContext(core, slot);
@@ -10870,6 +12919,7 @@ export function resolveRoomPlacementPreview(
     if (!roomTemplate) {
         return null;
     }
+    const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
     const defaultPlacement = orientDoorwaysToEntry(roomTemplate.doorways, placement.entryEdge);
     const orientationOptions = resolveRoomPlacementOrientationOptions(
         core,
@@ -11092,6 +13142,8 @@ function formatBetrayalRoomMarkerTokenLabel(token: BetrayalRoomMarkerToken): str
             return '障碍物';
         case 'secretPassage':
             return '秘密通道';
+        case 'blessing':
+            return '祝福';
         default:
             return token;
     }
@@ -11126,11 +13178,68 @@ export function resolveBetrayalHauntTokenInstances(core: BetrayalCore): Betrayal
                 valueHidden: false,
                 asset: null,
                 status: 'placed',
-                source: markerToken === 'obstacle' ? 'room-effect' : 'base-rule',
+                source: markerToken === 'obstacle'
+                    ? 'room-effect'
+                    : markerToken === 'blessing'
+                        ? 'event-effect'
+                        : 'base-rule',
                 representativeOnly: false,
                 ruleNotes: markerToken === 'obstacle'
                     ? ['障碍物所在房间的离开移动成本提高。']
-                    : ['秘密通道标记之间按规则视为额外相连。'],
+                    : markerToken === 'blessing'
+                        ? ['祝福所在房间的属性检定额外增加 1 颗骰子。']
+                        : ['秘密通道标记之间按规则视为额外相连。'],
+            }));
+        }
+    }
+
+    const mummy = core.scenarioRuntime.mummy;
+    if (mummy) {
+        const sarcophagusRoom = roomById.get(mummy.sarcophagusRoomId);
+        tokens.push(createBetrayalHauntTokenInstance(core, {
+            id: 'mummy-sarcophagus',
+            kind: 'haunt-objective',
+            label: '石棺',
+            labelKey: 'board.hauntTokens.sarcophagus',
+            roomId: mummy.sarcophagusRoomId,
+            roomName: sarcophagusRoom?.name ?? null,
+            ownerPlayerId: null,
+            ownerName: null,
+            visibility: 'public',
+            value: null,
+            valueHidden: false,
+            asset: null,
+            status: 'placed',
+            source: 'haunt-contract',
+            representativeOnly: true,
+            ruleNotes: ['1 号作祟「木乃伊横行」：石棺是木乃伊目标返回地点。'],
+        }));
+        const girlHolder = mummy.girlHolderPlayerId
+            ? findExplorerByPlayerId(core, mummy.girlHolderPlayerId)
+            : null;
+        const mummyMonster = mummy.girlHeldByMummy ? findMummyMonster(core) : null;
+        const girlTokenRoomId = mummy.girlHeldByMummy
+            ? (mummyMonster?.roomId ?? mummy.sarcophagusRoomId)
+            : girlHolder?.roomId ?? mummy.girlRoomId;
+        if (girlTokenRoomId) {
+            const girlRoom = roomById.get(girlTokenRoomId);
+            tokens.push(createBetrayalHauntTokenInstance(core, {
+                id: 'mummy-girl-token',
+                kind: 'haunt-resource',
+                label: '女孩',
+                labelKey: 'board.hauntTokens.girl',
+                roomId: girlTokenRoomId,
+                roomName: girlRoom?.name ?? null,
+                ownerPlayerId: girlHolder?.playerId ?? null,
+                ownerName: girlHolder?.displayName ?? (mummy.girlHeldByMummy ? '木乃伊' : null),
+                visibility: 'public',
+                value: null,
+                valueHidden: false,
+                asset: null,
+                status: mummy.girlHeldByMummy ? 'held-by-mummy' : girlHolder ? 'held-by-player' : 'placed',
+                source: 'haunt-contract',
+                representativeOnly: true,
+                ruleNotes: ['1 号作祟「木乃伊横行」：女孩预兆旁置后由公开品红标记代表；被探索者或木乃伊持有时仍公开追踪。'],
             }));
         }
     }
@@ -11323,9 +13432,22 @@ function formatBetrayalOutcomeLabel(outcome: BetrayalScenarioOutcome): string {
 }
 
 function isBetrayalIfYouWinTextAvailable(result: BetrayalEndgameResult): boolean {
-    return result.hauntId === 'the-dust' && (
+    return (result.hauntId === 'the-dust' || result.hauntId === 'mummy-rampage') && (
         result.outcome === 'survivors' || result.outcome === 'traitor'
     );
+}
+
+function formatBetrayalIfYouWinSourceNote(result: BetrayalEndgameResult, available: boolean): string {
+    if (!available) {
+        return 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。';
+    }
+    if (result.hauntId === 'mummy-rampage') {
+        return '木乃伊 If You Win 胜利文本已接入。';
+    }
+    if (result.hauntId === 'the-dust') {
+        return '灰尘 If You Win 胜利文本已接入。';
+    }
+    return 'If You Win 原文已接入。';
 }
 
 export function resolveBetrayalEndgameReadModel(core: BetrayalCore): BetrayalEndgameReadModel {
@@ -11379,9 +13501,7 @@ export function resolveBetrayalEndgameReadModel(core: BetrayalCore): BetrayalEnd
         representativeOnly: true,
         ruleNotes: [
             '终局结果已记录胜方和获胜玩家。',
-            hasIfYouWinText
-                ? '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。'
-                : 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。',
+            formatBetrayalIfYouWinSourceNote(result, hasIfYouWinText),
             hasDustSpecificEndgamePolicy
                 ? '灰尘按当前完成的结算事件收口：治愈成功立即英雄胜利；全员感染或死亡只在交换、伤害或死亡事件结算后触发叛徒胜利。'
                 : '同时达成、平局或共享胜利处理仍需逐作祟合同接入。',
@@ -11394,14 +13514,28 @@ function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
     return Array.from(new Set(rooms.map((room) => room.name))).join(' / ');
 }
 
-function resolveNextDeckKind(core: BetrayalCore): BetrayalDeckKind | null {
-    for (let index = 0; index < core.drawOrder.length; index += 1) {
-        const kind = core.drawOrder[(core.exploreIndex + index) % core.drawOrder.length]!;
-        if (core.deckCounts[kind] > 0) {
-            return kind;
-        }
+const DECK_KIND_LABEL: Record<BetrayalDeckKind, string> = {
+    event: '事件',
+    item: '物品',
+    omen: '预兆',
+};
+
+function roomDiscoverySymbolToDeckKind(symbol: BetrayalRoomDiscoverySymbol): BetrayalDeckKind | null {
+    return symbol === 'none' ? null : symbol;
+}
+
+function resolveRoomTemplateDiscoveryDeckKind(roomTemplate: RoomTemplate): BetrayalDeckKind | null {
+    return roomDiscoverySymbolToDeckKind(resolveBetrayalRoomDiscoverySymbol(roomTemplate));
+}
+
+function hasAvailableDiscoveryDeckCard(core: BetrayalCore, deckKind: BetrayalDeckKind): boolean {
+    if (core.deckCounts[deckKind] <= 0) {
+        return false;
     }
-    return null;
+    if (deckKind === 'event') {
+        return core.eventOrder.length > 0;
+    }
+    return core.possessionOrderByKind[deckKind].length > 0;
 }
 
 interface ResolvedRoomDraw {
@@ -11565,6 +13699,25 @@ export function resolveBetrayalRoomDrawResolution(
     }).resolution);
 }
 
+export function resolveNextRoomDiscoveryDeckKind(
+    core: BetrayalCore,
+    options: { roomId?: string; useHolySymbol?: boolean } = {},
+): BetrayalDeckKind | null {
+    const explorableSlots = resolveExplorableRoomSlots(core);
+    const slot = options.roomId
+        ? explorableSlots.find((room) => room.id === options.roomId) ?? null
+        : explorableSlots[0] ?? null;
+    if (!slot) {
+        return null;
+    }
+    const placement = resolveRoomPlacementContext(core, slot);
+    const roomDraw = resolveRoomDraw(core, slot.floor, {
+        useHolySymbol: options.useHolySymbol && canUseHolySymbolForDiscovery(core),
+        placement,
+    });
+    return roomDraw.roomTemplate ? resolveRoomTemplateDiscoveryDeckKind(roomDraw.roomTemplate) : null;
+}
+
 function roomDiscoveryEntryMatchesSelectedRoom(
     entry: BetrayalRoomDiscoveryDeckEntry,
     selectedRoom: NonNullable<BetrayalRoomDrawResolution['selectedRoom']>,
@@ -11639,6 +13792,18 @@ export function canUseSkeletonKeyForMove(core: BetrayalCore, targetRoomId: strin
     );
 }
 
+function createDrawnCardFromTemplate(
+    core: BetrayalCore,
+    template: BetrayalInventoryCard,
+    options: { suffix?: string | number } = {},
+): BetrayalInventoryCard {
+    return {
+        id: `${template.id}-${options.suffix ?? core.exploreIndex}`,
+        name: template.name,
+        kind: template.kind,
+    };
+}
+
 function createDrawnCard(
     core: BetrayalCore,
     kind: Exclude<BetrayalDeckKind, 'event'>,
@@ -11646,11 +13811,7 @@ function createDrawnCard(
 ): BetrayalInventoryCard {
     const drawnCount = options.additionalDrawnCount ?? 0;
     const template = core.possessionOrderByKind[kind][drawnCount % core.possessionOrderByKind[kind].length]!;
-    return {
-        id: `${template.id}-${core.exploreIndex}`,
-        name: template.name,
-        kind: template.kind,
-    };
+    return createDrawnCardFromTemplate(core, template);
 }
 
 function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInventoryCard | null; buriedCards: BetrayalInventoryCard[] } {
@@ -11691,6 +13852,9 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'nextNonCombatTraitReplacement') {
         return `下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`;
     }
+    if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
+        return `下一次属性检定可用 ${effect.minTotal}-${effect.maxTotal} 的结果替代投骰`;
+    }
     if (effect.mode === 'healTraits') {
         return `治疗${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`;
     }
@@ -11715,8 +13879,14 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'placeSecretPassageToken') {
         return `在${effect.targetRoomName ?? '当前板块'}放置秘密通道标志物`;
     }
+    if (effect.mode === 'placeBlessingToken') {
+        return '放置祝福标志物';
+    }
     if (effect.mode === 'rolledDamage') {
         return `受到 ${effect.dice} 颗骰子的${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
+    }
+    if (effect.mode === 'fixedDamage') {
+        return `受到 ${effect.amount} 点${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
     }
     if (effect.mode === 'drawPossession') {
         return `抽取一张${effect.kind === 'item' ? '物品' : '预兆'}卡`;
@@ -11739,10 +13909,33 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
         return `放置到${effect.roomNames.join('或')}`;
     }
     if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
-        return `放置到${effect.targetRoomName ?? '目标板块'}`;
+        if (effect.targetRoomName) {
+            return `放置到${effect.targetRoomName}`;
+        }
+        const scopeLabelByTarget = {
+            anyDiscovered: '任意已发现板块',
+            groundDiscovered: '任意地面层板块',
+            basementDiscovered: '任意地下室板块',
+            groundOrBasementDiscovered: '任意地面层或地下室板块',
+            sameFloorDiscovered: '所在区域的任意板块',
+            differentFloorDiscovered: '不同区域的任意板块',
+        } satisfies Record<Extract<UseEffectProfile, { mode: 'placeExplorerInDiscoveredRoomByFloor' }>['targetRoomScope'], string>;
+        return `放置到${scopeLabelByTarget[effect.targetRoomScope]}`;
+    }
+    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
+        return '放置到下一楼层起始点';
     }
     if (effect.mode === 'placeExplorerInAdjacentRoom') {
         return `放置到${effect.targetRoomName ?? '相邻板块'}`;
+    }
+    if (effect.mode === 'optionalEffect') {
+        return `可选择${effect.acceptLabel}`;
+    }
+    if (effect.mode === 'optionalItemEffect') {
+        if (effect.selectedCardName) {
+            return `${effect.consumeAction === 'bury' ? '埋葬' : '弃置'}${effect.selectedCardName}；${formatEffectLabel(effect.acceptEffect)}`;
+        }
+        return `可选择${effect.acceptLabel}`;
     }
     if (effect.mode === 'optionalEventRoll') {
         return `可选择${effect.acceptLabel}`;
@@ -11752,6 +13945,9 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     }
     if (effect.mode === 'chooseTraitRoll') {
         return effect.prompt;
+    }
+    if (effect.mode === 'traitRoll') {
+        return `${TRAIT_LABEL[effect.trait]}检定`;
     }
     if (effect.mode === 'allTraitChecks') {
         return '每项属性各检定一次';
@@ -11782,7 +13978,7 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     }
 
     const canMove = core.movesRemaining > 0 && resolveMoveTargetRooms(core).length > 0;
-    const canExplore = Boolean(resolveNextExplorableRoomSlot(core) && resolveNextDeckKind(core));
+    const canExplore = Boolean(resolveNextExplorableRoomSlot(core));
     const canTrade = core.currentExplorer.inventory.length > 0
         && (resolveTradeTargets(core).length > 0 || resolveDogTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
     const cardId = options.cardId
@@ -11908,6 +14104,29 @@ function resolvePendingTurnEndRoll(core: BetrayalCore): BetrayalRecentRollState 
     return null;
 }
 
+function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRollState | null {
+    const recentRoll = core.recentRoll;
+    const currentDecisionPlayerIds = new Set(
+        [core.currentPlayer, core.activePlayerId].filter((playerId): playerId is string => Boolean(playerId)),
+    );
+    if (!recentRoll || !currentDecisionPlayerIds.has(recentRoll.playerId)) {
+        return null;
+    }
+    if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
+        return null;
+    }
+    const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'mysticElevator',
+        'attackRoll',
+        'hauntActionTraitCheck',
+        'monsterMoveRoll',
+    ];
+    if (!acknowledgeableKinds.includes(recentRoll.kind)) {
+        return null;
+    }
+    return recentRoll;
+}
+
 function validateTurnEndRollAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
     const pendingRoll = resolvePendingTurnEndRoll(core);
     if (!pendingRoll) {
@@ -11936,11 +14155,30 @@ function validateDamageAllocationResolution(core: BetrayalCore, command: Betraya
     if (pending.playerId !== command.playerId) {
         return { valid: false, error: '必须由受伤玩家分配伤害。' };
     }
+    const useBrooch = Boolean(command.payload.useBrooch);
+    if (useBrooch && !pending.damageReplacement) {
+        return { valid: false, error: '当前伤害不能使用胸针替换为通用伤害。' };
+    }
+    if (useBrooch && pending.forcedTraitSequence) {
+        return { valid: false, error: '当前强制伤害顺序不能使用胸针替换。' };
+    }
+    const allowedTraits = useBrooch
+        ? resolveDamageAllocationAllowedTraits('general')
+        : pending.allowedTraits;
     const traits = command.payload.traits ?? [];
     if (traits.length !== pending.amount) {
         return { valid: false, error: '伤害分配点数不正确。' };
     }
-    if (!traits.every((trait) => pending.allowedTraits.includes(trait))) {
+    if (
+        pending.forcedTraitSequence
+        && (
+            pending.forcedTraitSequence.length !== traits.length
+            || pending.forcedTraitSequence.some((trait, index) => trait !== traits[index])
+        )
+    ) {
+        return { valid: false, error: '木乃伊伤害必须先扣速度，速度降到底后才扣力量。' };
+    }
+    if (!traits.every((trait) => allowedTraits.includes(trait))) {
         return { valid: false, error: '该伤害不能分配到所选属性。' };
     }
     const explorer = findExplorerByPlayerId(core, pending.playerId);
@@ -11953,6 +14191,54 @@ function validateDamageAllocationResolution(core: BetrayalCore, command: Betraya
     return { valid: true };
 }
 
+type RecentRollRerollCommand = Extract<
+    BetrayalCommand,
+    { type: typeof BETRAYAL_COMMANDS.USE_RABBIT_FOOT | typeof BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM }
+>;
+
+function isRecentRollRerollCommand(command: BetrayalCommand): command is RecentRollRerollCommand {
+    return command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM;
+}
+
+function validateRecentRollRerollItemCommand(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
+    if (!isRecentRollRerollCommand(command)) {
+        return null;
+    }
+    if (isPlayerControllingMonster(core, command.playerId) && !isOwnDeathPreventionRerollWindow(core, command.playerId)) {
+        return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
+    }
+    const isLegacyRabbitFootCommand = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT;
+    const card = isLegacyRabbitFootCommand
+        ? resolveRabbitFootCard(core, command.payload.cardId, command.playerId)
+        : resolveRecentRollRerollItemCard(core, command.payload.cardId, command.playerId);
+    if (!card) {
+        return {
+            valid: false,
+            error: isLegacyRabbitFootCommand ? '当前探索者没有兔脚。' : '当前探索者没有可用于最近投骰重掷的物品。',
+        };
+    }
+    const canUse = isLegacyRabbitFootCommand
+        ? canUseRabbitFootForRecentRoll(core, command.playerId, card.id)
+        : canUseRecentRollRerollItemForRecentRoll(core, command.playerId, card.id);
+    if (!canUse) {
+        return {
+            valid: false,
+            error: isLegacyRabbitFootCommand ? '当前没有可被兔脚重掷的最近投骰。' : '当前没有可被该物品重掷的最近投骰。',
+        };
+    }
+    const dieIndices = core.recentRoll
+        ? resolveRecentRollRerollCommandDieIndices(core.recentRoll, card.id, command.payload.dieIndex ?? 0)
+        : [];
+    if (dieIndices.length === 0) {
+        return {
+            valid: false,
+            error: isLegacyRabbitFootCommand ? '兔脚必须选择刚刚投过的一颗骰子。' : '该物品没有可重掷的骰子。',
+        };
+    }
+    return { valid: true };
+}
+
 function validateCardResolutionAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
     if (command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION) {
         return null;
@@ -11961,8 +14247,13 @@ function validateCardResolutionAcknowledgement(core: BetrayalCore, command: Betr
     if (!pendingResolution) {
         return { valid: false, error: '当前没有待确认的翻牌结算。' };
     }
-    if (pendingResolution.playerId !== command.playerId) {
-        return { valid: false, error: '必须由抽到该卡的玩家确认。' };
+    const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(pendingResolution);
+    if (!requiredPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '只有本局玩家可以确认当前翻牌结算。' };
+    }
+    const acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(pendingResolution);
+    if (acknowledgedPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '你已经确认过当前翻牌结算。' };
     }
     if (command.payload.resolutionId && command.payload.resolutionId !== pendingResolution.id) {
         return { valid: false, error: '必须按当前翻牌顺序确认。' };
@@ -11975,6 +14266,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     const canReuseDuringHaunt = core.phase === 'haunt' && (
         command.type === BETRAYAL_COMMANDS.EXPLORE_ROOM
         || command.type === BETRAYAL_COMMANDS.USE_ROOM_EFFECT
+        || command.type === BETRAYAL_COMMANDS.USE_POSSESSION
         || command.type === BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
     );
     if (core.phase !== 'preHaunt' && !canReuseDuringHaunt) {
@@ -11997,6 +14289,59 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         const pending = core.pendingEventChoice;
         if (!pending || pending.playerId !== command.playerId) {
             return { valid: false, error: '当前没有待结算的事件选择。' };
+        }
+        if (pending.itemResolution === 'tooth-necklace-end-turn') {
+            if (command.payload.accept === false) {
+                return { valid: true };
+            }
+            if (!command.payload.trait || !pending.effect.allowedTraits.includes(command.payload.trait)) {
+                return { valid: false, error: '牙齿项链必须选择一项当前濒死属性。' };
+            }
+            return { valid: true };
+        }
+        if (pending.effect.mode === 'optionalItemEffect') {
+            const selectedEffect = command.payload.accept
+                ? pending.effect.acceptEffect
+                : pending.effect.declineEffect;
+            if (
+                command.payload.accept
+                && !effectAllowsItemChoice(core, pending.effect, command.payload.cardId)
+            ) {
+                return { valid: false, error: '该事件必须选择一件有效持有物。' };
+            }
+            if (
+                effectNeedsAdjacentRoomChoice(selectedEffect)
+                && (!command.payload.targetRoomId || !effectAllowsAdjacentRoomChoice(core, command.payload.targetRoomId))
+            ) {
+                return { valid: false, error: '该事件必须选择一个已发现的相邻板块。' };
+            }
+            if (
+                effectNeedsRoomTargetChoice(selectedEffect)
+                && (!command.payload.targetRoomId || !effectAllowsRoomTargetChoice(core, selectedEffect, command.payload.targetRoomId))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效目标板块。' };
+            }
+            if (
+                effectHasUnresolvedChosenTraitChoice(selectedEffect)
+                && (!command.payload.trait || !effectAllowsChosenTrait(selectedEffect, command.payload.trait))
+            ) {
+                return { valid: false, error: '该事件必须选择一个有效属性。' };
+            }
+            if (
+                effectHasUnresolvedGeneralDamageChoice(selectedEffect)
+                && !effectAllowsGeneralDamageTraits(
+                    selectedEffect,
+                    command.payload.traits,
+                    core.currentExplorer,
+                    { allowSkull: core.phase === 'haunt' },
+                )
+            ) {
+                return { valid: false, error: '该事件必须选择足够的受伤属性。' };
+            }
+            return { valid: true };
+        }
+        if (pending.effect.mode === 'traitRoll') {
+            return { valid: true };
         }
         if (
             effectNeedsAdjacentRoomChoice(pending.effect)
@@ -12080,7 +14425,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         if (pending.effect.mode === 'optionalHauntRoll') {
             if (
                 command.payload.accept
-                && !isImplementedBetrayalHauntCardNumber(pending.effect.successHauntId)
+                && !isBetrayalOptionalHauntRollRuntimeSupported(pending.effect.successHauntId)
             ) {
                 return { valid: false, error: `作祟剧本${pending.effect.successHauntId}尚未接入完整剧本链路。` };
             }
@@ -12109,22 +14454,9 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         return { valid: true };
     }
-    if (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT) {
-        if (isPlayerControllingMonster(core, command.playerId) && !isOwnDeathPreventionRerollWindow(core, command.playerId)) {
-            return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
-        }
-        const card = resolveRabbitFootCard(core, command.payload.cardId, command.playerId);
-        if (!card) {
-            return { valid: false, error: '当前探索者没有兔脚。' };
-        }
-        if (!canUseRabbitFootForRecentRoll(core, command.playerId, card.id)) {
-            return { valid: false, error: '当前没有可被兔脚重掷的最近投骰。' };
-        }
-        const dieIndex = command.payload.dieIndex ?? 0;
-        if (!Number.isInteger(dieIndex) || dieIndex < 0 || dieIndex >= (core.recentRoll?.dice.length ?? 0)) {
-            return { valid: false, error: '兔脚必须选择刚刚投过的一颗骰子。' };
-        }
-        return { valid: true };
+    const recentRollRerollValidation = validateRecentRollRerollItemCommand(core, command);
+    if (recentRollRerollValidation) {
+        return recentRollRerollValidation;
     }
     const cardResolutionAcknowledgement = validateCardResolutionAcknowledgement(core, command);
     if (cardResolutionAcknowledgement) {
@@ -12154,6 +14486,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         core.turnEndedByDiscovery
         && command.type !== BETRAYAL_COMMANDS.END_TURN
         && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
     ) {
@@ -12177,7 +14510,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             const nextSlot = command.payload.roomId
                 ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? null
                 : explorableSlots[0] ?? null;
-            if (!nextSlot || !resolveNextDeckKind(core)) {
+            if (!nextSlot) {
                 return { valid: false, error: '当前没有可探索房间。' };
             }
             if (command.payload.roomId && !explorableSlots.some((room) => room.id === command.payload.roomId)) {
@@ -12195,6 +14528,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (!roomTemplate) {
                 return { valid: false, error: '当前区域没有可发现房间。' };
             }
+            const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
             const orientationOptions = resolveRoomPlacementOrientationOptions(
                 core,
                 roomTemplate,
@@ -12205,7 +14539,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                 if (!canUseIdolToSkipEvent(core)) {
                     return { valid: false, error: '当前探索者不能使用雕像跳过事件抽取。' };
                 }
-                if (resolveNextDeckKind(core) !== 'event') {
+                if (deckKind !== 'event') {
                     return { valid: false, error: '雕像只能在发现事件符号板块时使用。' };
                 }
             }
@@ -12216,7 +14550,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                 if (!canUseBetrayalTraitorPowers(core, command.playerId)) {
                     return { valid: false, error: '只有作祟开始后的存活叛徒能忽略事件符号。' };
                 }
-                if (resolveNextDeckKind(core) !== 'event') {
+                if (deckKind !== 'event') {
                     return { valid: false, error: '叛徒只能在发现事件符号板块时忽略事件符号。' };
                 }
             }
@@ -12337,6 +14671,12 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                     return { valid: false, error: '面具只能把同板块其他角色移动到已发现的相邻板块。' };
                 }
             }
+            if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
+                const selectedTotal = command.payload.replacementRollTotal;
+                if (!Number.isInteger(selectedTotal) || selectedTotal < effect.minTotal || selectedTotal > effect.maxTotal) {
+                    return { valid: false, error: `天使之羽必须选择 ${effect.minTotal}-${effect.maxTotal} 之间的整数作为投骰结果。` };
+                }
+            }
             if (!actionStatus.canUse) {
                 return { valid: false, error: actionStatus.reason ?? '该持有物当前不能使用。' };
             }
@@ -12404,6 +14744,15 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return { valid: false, error: '当前没有待确认的投骰结果。' };
+            }
+            return command.playerId === recentRoll.playerId
+                ? { valid: true }
+                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+        }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION:
@@ -12418,6 +14767,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         case BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO:
         case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN:
         case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS:
+        case BETRAYAL_COMMANDS.GIVE_MIRROR_HINT:
         case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD:
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND:
         case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK:
@@ -12429,6 +14779,13 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK:
         case BETRAYAL_COMMANDS.STUDY_EXORCISM:
         case BETRAYAL_COMMANDS.EXORCISE_JACK:
+        case BETRAYAL_COMMANDS.STUDY_MUMMY_NAME:
+        case BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT:
+        case BETRAYAL_COMMANDS.BANISH_MUMMY:
+        case BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL:
+        case BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY:
+        case BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY:
+        case BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD:
         case BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY:
             return { valid: false, error: '当前还未进入 haunt 阶段。' };
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
@@ -12474,28 +14831,24 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (
         pendingHelpingHandsReward
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD
+        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
     ) {
         return { valid: false, error: '请先选择造成伤害或偷取物品/预兆。' };
     }
-    if (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT) {
-        if (isPlayerControllingMonster(core, command.playerId) && !isOwnDeathPreventionRerollWindow(core, command.playerId)) {
-            return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
-        }
-        const card = resolveRabbitFootCard(core, command.payload.cardId, command.playerId);
-        if (!card) {
-            return { valid: false, error: '当前探索者没有兔脚。' };
-        }
-        if (!canUseRabbitFootForRecentRoll(core, command.playerId, card.id)) {
-            return { valid: false, error: '当前没有可被兔脚重掷的最近投骰。' };
-        }
-        const dieIndex = command.payload.dieIndex ?? 0;
-        if (!Number.isInteger(dieIndex) || dieIndex < 0 || dieIndex >= (core.recentRoll?.dice.length ?? 0)) {
-            return { valid: false, error: '兔脚必须选择刚刚投过的一颗骰子。' };
-        }
+    const pendingMummyReward = resolveMummyPendingAttackReward(core);
+    if (
+        pendingMummyReward
+        && command.type !== BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD
+        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+    ) {
+        return { valid: false, error: '请先选择木乃伊造成伤害或偷取物品/预兆。' };
+    }
+    const recentRollRerollValidation = validateRecentRollRerollItemCommand(core, command);
+    if (recentRollRerollValidation) {
         if (core.pendingDamageAllocation && !isPendingDamageAllocationForAttackRoll(core)) {
             return { valid: false, error: '请先分配当前伤害。' };
         }
-        return { valid: true };
+        return recentRollRerollValidation;
     }
     const pendingDamageAllocationValidation = validateDamageAllocationResolution(core, command);
     if (pendingDamageAllocationValidation) {
@@ -12560,6 +14913,10 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         !isPlayersTurn(core, command.playerId)
         && !(helpingHandsMonsterTurnStatus.active && isHelpingHandsMonsterCommand)
         && !(bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand)
+        && !(
+            command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+            && resolveAcknowledgeableRecentRoll(core)?.playerId === command.playerId
+        )
     ) {
         return { valid: false, error: '还没有轮到该玩家。' };
     }
@@ -12571,6 +14928,16 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     const actorRoomId = resolveControlledRoomId(core, actor);
     const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
     const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(command.playerId);
+    const isStandardMonsterTurnCommand = (
+        command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
+        || command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
+        || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+        || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
+        || command.type === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
+    ) && !isHelpingHandsMonsterCommand && !isBloodFromStoneMonsterCommand;
+    if (isStandardMonsterTurnCommand && !isTraitor) {
+        return { valid: false, error: '只有当前叛徒能执行普通怪物回合动作。' };
+    }
 
     if (command.type === BETRAYAL_COMMANDS.HAUNT_ATTACK && core.usedCardIdsThisTurn.includes('haunt-attack')) {
         return { valid: false, error: '本回合已经攻击过。' };
@@ -12642,7 +15009,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             }
             return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.USE_POSSESSION:
+            return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
+        case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM:
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:
         case BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT:
         case BETRAYAL_COMMANDS.LOOT_CORPSE:
@@ -12651,6 +15020,15 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return { valid: false, error: '当前没有待确认的投骰结果。' };
+            }
+            return command.playerId === recentRoll.playerId
+                ? { valid: true }
+                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+        }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE: {
@@ -12710,11 +15088,12 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 return { valid: false, error: '当前宅邸中找不到该怪物。' };
             }
             const moveRemaining = core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monsterId] ?? 0;
-            if (moveRemaining <= 0) {
+            const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, monsterId);
+            if (moveRemaining <= 0 && !canMummyTeleportNow) {
                 return { valid: false, error: '该怪物本回合没有剩余移动额度。' };
             }
             const moveCost = resolveBetrayalMonsterMoveCost(core, monsterId);
-            if (moveRemaining < moveCost) {
+            if (moveRemaining < moveCost && !canMummyTeleportNow) {
                 return { valid: false, error: '该怪物本回合剩余移动不足。' };
             }
             const canMoveToTarget = resolveBetrayalMonsterMoveTargetRooms(core, monsterId)
@@ -12767,6 +15146,32 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             }
             if (!resolveHelpingHandsStealableCards(core, pending.defenderPlayerId).some((card) => card.id === cardId)) {
                 return { valid: false, error: '只能偷取防守者持有的物品或预兆。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD: {
+            const pending = pendingMummyReward;
+            if (!pending) {
+                return { valid: false, error: '当前没有待选择的木乃伊攻击奖励。' };
+            }
+            if (pending.controllerPlayerId !== actor.playerId) {
+                return { valid: false, error: '必须由木乃伊控制者选择伤害或偷取。' };
+            }
+            if (command.payload.choice === 'damage') {
+                return { valid: true };
+            }
+            if (command.payload.choice !== 'steal') {
+                return { valid: false, error: '必须选择造成伤害或偷取物品/预兆。' };
+            }
+            const cardId = command.payload.cardId;
+            if (!cardId) {
+                return { valid: false, error: '偷取时必须选择一张物品或预兆。' };
+            }
+            if (!pending.stealableCardIds.includes(cardId)) {
+                return { valid: false, error: '只能偷取防守者当前可被木乃伊夺取的物品或预兆。' };
+            }
+            if (!resolveMummyStealableCards(core, pending.defenderPlayerId).some((card) => card.id === cardId)) {
+                return { valid: false, error: '该木乃伊奖励目标已经不再可偷。' };
             }
             return { valid: true };
         }
@@ -12880,6 +15285,65 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             }
             return { valid: true };
         }
+        case BETRAYAL_COMMANDS.GIVE_MIRROR_HINT: {
+            const uponReflection = core.scenarioRuntime.uponReflection;
+            if (!isUponReflectionHaunt(core) || !uponReflection) {
+                return { valid: false, error: '当前不是怪异的镜子作祟。' };
+            }
+            if (actor.playerId !== uponReflection.revealerPlayerId) {
+                return { valid: false, error: '只有作祟揭秘者能给出镜中提示。' };
+            }
+            if (isDead) {
+                return { valid: false, error: '死亡探索者不能给出镜中提示。' };
+            }
+            if (hasUsedMirrorHintThisTurn(core, actor.playerId)) {
+                return { valid: false, error: '作祟揭秘者本回合已经给过镜中提示。' };
+            }
+            const target = command.payload.targetPlayerId
+                ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                : null;
+            if (!target || core.scenarioRuntime.deadExplorerPlayerIds.includes(target.playerId)) {
+                return { valid: false, error: '镜中提示必须交给一名存活玩家。' };
+            }
+            if (!command.payload.eventName?.trim()) {
+                return { valid: false, error: '镜中提示必须选择一张事件牌。' };
+            }
+            if (core.deckCounts.event <= 0 || core.eventOrder.length === 0) {
+                return { valid: false, error: '事件牌堆没有可用于镜中提示的事件牌。' };
+            }
+            if (!resolveUponReflectionHintEvent(core, command.payload.eventName)) {
+                return { valid: false, error: '镜中提示只能选择当前事件牌堆中的事件牌。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE: {
+            const uponReflection = core.scenarioRuntime.uponReflection;
+            if (!isUponReflectionHaunt(core) || !uponReflection?.secretCombination) {
+                return { valid: false, error: '当前不是怪异的镜子作祟，或秘密组合尚未记录。' };
+            }
+            if (actor.playerId === uponReflection.revealerPlayerId) {
+                return { valid: false, error: '作祟揭秘者被困镜中，不能执行破咒。' };
+            }
+            if (isDead) {
+                return { valid: false, error: '死亡探索者不能破咒。' };
+            }
+            const trait = command.payload.trait;
+            if (!trait || !BETRAYAL_TRAIT_KEYS.includes(trait)) {
+                return { valid: false, error: '破咒必须选择一个有效属性。' };
+            }
+            if (!command.payload.omenId && !command.payload.omenName?.trim()) {
+                return { valid: false, error: '破咒必须报出自己持有的一张预兆。' };
+            }
+            const selectedOmen = resolveUponReflectionOmenSelection(actor, command.payload);
+            if (!selectedOmen) {
+                return { valid: false, error: '破咒只能报出当前行动者持有的预兆。' };
+            }
+            const actionBudget = validateHauntSpecialActionBudget(core, 'break-mirror-curse', actor);
+            if (actionBudget) {
+                return actionBudget;
+            }
+            return { valid: true };
+        }
         case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS: {
             if (!isBloodFromStoneHaunt(core) || isDead) {
                 return { valid: false, error: '只有第5号作祟《顽石之血》中的存活英雄能补放石像小天使。' };
@@ -12924,9 +15388,41 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return { valid: true };
         }
         case BETRAYAL_COMMANDS.HAUNT_ATTACK:
+            if (command.payload.target === 'dynamite-room' || isDynamiteCardId(command.payload.weaponCardId)) {
+                const dynamiteCard = resolveDynamiteInventoryCard(actor, command.payload.weaponCardId);
+                if (command.payload.target !== 'dynamite-room' || !isDynamiteCardId(command.payload.weaponCardId)) {
+                    return { valid: false, error: '炸药必须作为攻击使用，并选择当前或相邻板块作为目标。' };
+                }
+                if (isDead) {
+                    return { valid: false, error: '死亡探索者不能使用炸药。' };
+                }
+                if (!dynamiteCard) {
+                    return { valid: false, error: '当前探索者没有可用于攻击的炸药。' };
+                }
+                if (!core.turnStartInventoryCardIds.includes(dynamiteCard.id)) {
+                    return { valid: false, error: '本回合新获得的武器不能立刻使用。' };
+                }
+                if (core.usedCardIdsThisTurn.includes(dynamiteCard.id)) {
+                    return { valid: false, error: '这把武器本回合已经使用。' };
+                }
+                const targetRoomId = command.payload.targetRoomId;
+                if (!targetRoomId) {
+                    return { valid: false, error: '炸药攻击必须选择当前或相邻板块。' };
+                }
+                const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
+                if (!targetRoom || targetRoom.state !== 'discovered') {
+                    return { valid: false, error: '炸药只能选择已发现板块。' };
+                }
+                if (!isDynamiteTargetRoom(core, actorRoomId, targetRoom.id)) {
+                    return { valid: false, error: '炸药只能选择你所在的板块或相邻板块。' };
+                }
+                return { valid: true };
+            }
             if (isDustHaunt(core)) {
+                const weaponEffect = command.payload.weaponCardId
+                    ? resolveAttackWeaponEffect(actor, command.payload.weaponCardId)
+                    : null;
                 if (command.payload.weaponCardId) {
-                    const weaponEffect = resolveAttackWeaponEffect(actor, command.payload.weaponCardId);
                     if (!weaponEffect) {
                         return { valid: false, error: '当前探索者没有可用于攻击的这把武器。' };
                     }
@@ -12946,8 +15442,8 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 if (core.scenarioRuntime.deadExplorerPlayerIds.includes(target.playerId)) {
                     return { valid: false, error: '不能攻击已经死亡的探索者。' };
                 }
-                if (target.roomId !== actorRoomId) {
-                    return { valid: false, error: '灰尘剧本只能攻击同板块的探索者。' };
+                if (!isAttackTargetInWeaponRange(core, actorRoomId, target.roomId, weaponEffect)) {
+                    return { valid: false, error: `灰尘剧本只能攻击${formatAttackRangeLabel(weaponEffect)}的探索者。` };
                 }
                 return { valid: true };
             }
@@ -12990,9 +15486,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 ) {
                     return {
                         valid: false,
-                        error: weaponEffect?.ranged
-                            ? '自由混战只能攻击同板块或视线内的其他存活探索者。'
-                            : '自由混战只能攻击同板块的其他存活探索者。',
+                        error: `自由混战只能攻击${formatAttackRangeLabel(weaponEffect)}的其他存活探索者。`,
                     };
                 }
                 return { valid: true };
@@ -13069,8 +15563,8 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     if (!traitor || !isAttackTargetInWeaponRange(core, actorRoomId, traitor.roomId, attackWeaponEffect)) {
                         return {
                             valid: false,
-                            error: attackWeaponEffect?.ranged
-                                ? '远程武器只能攻击同板块或视线内的叛徒。'
+                            error: attackWeaponEffect
+                                ? `${attackWeaponEffect.card.name}只能攻击${formatAttackRangeLabel(attackWeaponEffect)}的叛徒。`
                                 : '必须和叛徒处于同一房间才能攻击。',
                         };
                     }
@@ -13084,9 +15578,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     if (livingHeroesInAttackRange.length === 0) {
                         return {
                             valid: false,
-                            error: attackWeaponEffect?.ranged
-                                ? '当前同板块或视线内没有可攻击的英雄。'
-                                : '当前房间没有可攻击的英雄。',
+                            error: `当前${formatAttackRangeLabel(attackWeaponEffect)}没有可攻击的英雄。`,
                         };
                     }
                     if (!command.payload.targetPlayerId) {
@@ -13098,9 +15590,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     ) {
                         return {
                             valid: false,
-                            error: attackWeaponEffect?.ranged
-                                ? '指定的英雄不在当前同板块或视线内。'
-                                : '指定的英雄不在当前房间。',
+                            error: `指定的英雄不在当前${formatAttackRangeLabel(attackWeaponEffect)}。`,
                         };
                     }
                 }
@@ -13223,6 +15713,102 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 }
             }
             return { valid: true };
+        case BETRAYAL_COMMANDS.STUDY_MUMMY_NAME:
+            if (!isMummyHaunt(core) || isTraitor || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活英雄能寻找木乃伊真名。' };
+            }
+            if (!isMummyNameStudyRoom(core, actor.roomId)) {
+                return { valid: false, error: '必须在石棺房、书房或图书馆才能寻找木乃伊真名。' };
+            }
+            {
+                const actionBudget = validateHauntSpecialActionBudget(core, 'study-mummy-name', actor);
+                if (actionBudget) {
+                    return actionBudget;
+                }
+            }
+            return { valid: true };
+        case BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT:
+            if (!isMummyHaunt(core) || isTraitor || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活英雄能学习驱逐法术。' };
+            }
+            if (!core.scenarioRuntime.mummy?.trueNameFound) {
+                return { valid: false, error: '必须先找到木乃伊真名。' };
+            }
+            if (!hasOmenBook(actor)) {
+                return { valid: false, error: '必须由持有书本的英雄学习驱逐法术。' };
+            }
+            {
+                const actionBudget = validateHauntSpecialActionBudget(core, 'learn-mummy-banishment', actor);
+                if (actionBudget) {
+                    return actionBudget;
+                }
+            }
+            return { valid: true };
+        case BETRAYAL_COMMANDS.BANISH_MUMMY: {
+            const mummy = findMummyMonster(core);
+            if (!isMummyHaunt(core) || isTraitor || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活英雄能驱逐木乃伊。' };
+            }
+            if (!core.scenarioRuntime.mummy?.banishmentSpellLearned || core.scenarioRuntime.mummy.knowledgeTokenCount < 2) {
+                return { valid: false, error: '必须先取得两枚知识标记并学会驱逐法术。' };
+            }
+            if (!mummy || actor.roomId !== mummy.roomId) {
+                return { valid: false, error: '行动英雄必须与木乃伊处于同一房间。' };
+            }
+            if (!hasLivingHeroWithBookInRoom(core, mummy.roomId)) {
+                return { valid: false, error: '木乃伊所在房间必须有一名存活英雄持有书本。' };
+            }
+            const actionBudget = validateHauntSpecialActionBudget(core, 'banish-mummy', actor);
+            if (actionBudget) {
+                return actionBudget;
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!isMummyHaunt(core) || !mummy || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活探索者能拾起女孩。' };
+            }
+            if (mummy.girlHeldByMummy || mummy.girlHolderPlayerId) {
+                return { valid: false, error: '女孩已经被持有。' };
+            }
+            if (!mummy.girlRoomId || actorRoomId !== mummy.girlRoomId) {
+                return { valid: false, error: '必须与女孩标记处于同一房间。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY: {
+            const mummy = core.scenarioRuntime.mummy;
+            const mummyMonster = findMummyMonster(core);
+            if (!isMummyHaunt(core) || !mummy || !mummyMonster || !isTraitor || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活叛徒能把女孩交给木乃伊。' };
+            }
+            if (mummy.girlHolderPlayerId !== actor.playerId) {
+                return { valid: false, error: '必须由当前持有女孩的探索者交给木乃伊。' };
+            }
+            if (actorRoomId !== mummyMonster.roomId) {
+                return { valid: false, error: '必须与木乃伊处于同一房间才能交出女孩。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY: {
+            const mummy = core.scenarioRuntime.mummy;
+            const mummyMonster = findMummyMonster(core);
+            const card = findMummyWeddingOmenCard(actor, command.payload.cardId);
+            if (!isMummyHaunt(core) || !mummy || !mummyMonster || !isTraitor || isDead) {
+                return { valid: false, error: '只有木乃伊横行剧本中的存活叛徒能把圣符或指环交给木乃伊。' };
+            }
+            if (!card) {
+                return { valid: false, error: '必须持有圣符或指环。' };
+            }
+            if (mummy.mummyCarriedOmenIds.includes(card.id)) {
+                return { valid: false, error: '木乃伊已经携带这张预兆。' };
+            }
+            if (actorRoomId !== mummyMonster.roomId) {
+                return { valid: false, error: '必须与木乃伊处于同一房间才能交出圣符或指环。' };
+            }
+            return { valid: true };
+        }
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
             return { valid: false, error: '真实首剧本不能通过手工结算完成。' };
         default:
@@ -13269,8 +15855,19 @@ function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalComma
         case BETRAYAL_COMMANDS.START_SCENARIO:
             if (core.phase !== 'characterSelect') return { valid: false, error: '当前不在角色选择阶段。' };
             {
-                const participatingPlayerIds = Object.keys(core.selectedExplorerByPlayerId);
-                const missingConfirmationPlayerId = participatingPlayerIds.find(
+                const missingExplorerPlayerId = core.playerIds.find(
+                    (playerId) => !core.selectedExplorerByPlayerId[playerId],
+                );
+                if (missingExplorerPlayerId) {
+                    return { valid: false, error: '每位玩家都需要先选择探索者。' };
+                }
+                const unconfirmedExplorerPlayerId = core.playerIds.find(
+                    (playerId) => !core.readyPlayerIds.includes(playerId),
+                );
+                if (unconfirmedExplorerPlayerId) {
+                    return { valid: false, error: '每位玩家都需要先确认探索者。' };
+                }
+                const missingConfirmationPlayerId = core.playerIds.find(
                     (playerId) => core.scenarioCardConfirmations[playerId] !== core.proposedScenarioCardId,
                 );
                 if (missingConfirmationPlayerId) {
@@ -13278,7 +15875,7 @@ function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalComma
                 }
                 const implementedScenarioId = resolveImplementedScenarioIdForCard(core.proposedScenarioCardId);
                 if (!implementedScenarioId) {
-                    return { valid: false, error: '所选剧本卡的运行时规则尚未接入，不能开始剧本。' };
+                    return { valid: false, error: '这个剧本现在不能开始。' };
                 }
                 if (command.payload.scenarioId && command.payload.scenarioId !== implementedScenarioId) {
                     return { valid: false, error: '开始剧本与当前剧本卡提议不一致。' };
@@ -13411,7 +16008,6 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const nextSlot = command.payload.roomId
                 ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? explorableSlots[0]!
                 : explorableSlots[0]!;
-            const deckKind = resolveNextDeckKind(core)!;
             const placement = resolveRoomPlacementContext(core, nextSlot);
             const roomDraw = resolveRoomDraw(core, nextSlot.floor, {
                 useHolySymbol: command.payload.useHolySymbol && canUseHolySymbolForDiscovery(core),
@@ -13425,6 +16021,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (!roomTemplate || (roomDraw.resolution.requiresTileAdjustment && !roomTileAdjustment)) {
                 return [];
             }
+            const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
             const roomTextResolvedCore = resolveCoreAfterRoomDiscoveryText(core, roomTemplate.discoveryEffect);
             const roomDiscoveryCards = resolveRoomDiscoveryCards(roomTextResolvedCore, roomTemplate.discoveryEffect);
             const roomDiscoveryEffectResolutionSteps = createRoomDiscoveryEffectResolutionSteps(
@@ -13446,8 +16043,138 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const tileAdjustmentLogPrefix = roomTileAdjustment
                 ? `${core.currentExplorer.displayName}先调整房间板块后继续探索；`
                 : '';
+            const roomDiscoveryRewardDetailParts = formatRoomDiscoveryRewardDetailParts(roomTemplate.name, roomDiscoveryCards);
+            const roomDiscoveryCardResolutionSteps = createRoomDiscoveryCardResolutionSteps(roomTemplate.name, roomDiscoveryCards);
+
+            if (deckKind === null) {
+                const noSymbolDetailParts = [
+                    ...roomDiscoveryRewardDetailParts,
+                    '没有事件、物品或预兆发现牌',
+                ];
+                return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                    playerId: command.playerId,
+                    roomId: nextSlot.id,
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: null,
+                        visualId: roomTemplate.visualId,
+                        doorways: selectedOrientation.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                        orientationTurns: selectedOrientation.orientationTurns,
+                        discoveryEffect: roomTemplate.discoveryEffect,
+                        endTurnEffect: roomTemplate.endTurnEffect,
+                        enterEffect: roomTemplate.enterEffect,
+                    },
+                    deckKind,
+                    ...roomDiscoveryCards,
+                    skippedRoomWithHolySymbol: skippedRoomTemplate
+                        ? { name: skippedRoomTemplate.name }
+                        : undefined,
+                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                    roomTileAdjustment,
+                    discovery: {
+                        kind: 'none',
+                        title: roomTemplate.name,
+                        summary: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
+                            ? '房间文字已结算'
+                            : '无发现符号',
+                        detail: noSymbolDetailParts.join('；'),
+                        tone: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
+                            ? 'accent'
+                            : 'neutral',
+                        resolutionSteps: [
+                            ...roomDiscoveryEffectResolutionSteps,
+                            ...roomDiscoveryCardResolutionSteps,
+                        ],
+                    },
+                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，房间没有发现符号`,
+                    hauntTriggered: false,
+                }, timestamp)];
+            }
+
+            if (!hasAvailableDiscoveryDeckCard(core, deckKind)) {
+                const emptyDeckDetailParts = [
+                    ...roomDiscoveryRewardDetailParts,
+                    `${DECK_KIND_LABEL[deckKind]}牌堆已空，没有抽取发现牌`,
+                ];
+                return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                    playerId: command.playerId,
+                    roomId: nextSlot.id,
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: deckKind,
+                        visualId: roomTemplate.visualId,
+                        doorways: selectedOrientation.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                        orientationTurns: selectedOrientation.orientationTurns,
+                        discoveryEffect: roomTemplate.discoveryEffect,
+                        endTurnEffect: roomTemplate.endTurnEffect,
+                        enterEffect: roomTemplate.enterEffect,
+                    },
+                    deckKind,
+                    ...roomDiscoveryCards,
+                    skippedRoomWithHolySymbol: skippedRoomTemplate
+                        ? { name: skippedRoomTemplate.name }
+                        : undefined,
+                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                    roomTileAdjustment,
+                    discovery: {
+                        kind: deckKind,
+                        title: `${DECK_KIND_LABEL[deckKind]}符号`,
+                        summary: '牌堆已空',
+                        detail: emptyDeckDetailParts.join('；'),
+                        tone: 'neutral',
+                        resolutionSteps: [
+                            ...roomDiscoveryEffectResolutionSteps,
+                            ...roomDiscoveryCardResolutionSteps,
+                        ],
+                    },
+                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，${DECK_KIND_LABEL[deckKind]}牌堆已空`,
+                    hauntTriggered: false,
+                }, timestamp)];
+            }
 
             if (deckKind === 'event') {
+                if (shouldSkipEventSymbolForUponReflection(core)) {
+                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                        playerId: command.playerId,
+                        roomId: nextSlot.id,
+                        room: {
+                            name: roomTemplate.name,
+                            hint: roomTemplate.hint,
+                            tags: roomTemplate.tags,
+                            discoveryReward: deckKind,
+                            visualId: roomTemplate.visualId,
+                            doorways: selectedOrientation.doorways,
+                            backVisualId: nextSlot.backVisualId,
+                            orientationTurns: selectedOrientation.orientationTurns,
+                            discoveryEffect: roomTemplate.discoveryEffect,
+                            endTurnEffect: roomTemplate.endTurnEffect,
+                            enterEffect: roomTemplate.enterEffect,
+                        },
+                        deckKind,
+                        ...roomDiscoveryCards,
+                        skippedEventWithUponReflection: true,
+                        skippedRoomWithHolySymbol: skippedRoomTemplate
+                            ? { name: skippedRoomTemplate.name }
+                            : undefined,
+                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                        roomTileAdjustment,
+                        discovery: {
+                            kind: deckKind,
+                            title: '事件符号',
+                            summary: '镜中沉默',
+                            detail: '7 号作祟中不抽取或结算事件卡，且探索事件符号房间不会结束回合',
+                            tone: 'accent',
+                        },
+                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，镜中沉默使事件符号无事发生`,
+                        hauntTriggered: false,
+                    }, timestamp)];
+                }
                 if (command.payload.ignoreEventSymbolWithTraitorPower && canUseBetrayalTraitorPowers(core, command.playerId)) {
                     return [nowEvent(EVENTS.ROOM_EXPLORED, {
                         playerId: command.playerId,
@@ -13535,7 +16262,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 if (!eventEffect) {
                     throw new Error(`event ${eventCard.name} has no resolvable effect`);
                 }
-                const materializedEventEffect = materializeEventEffect(eventEffect, random, roomTextResolvedCore.currentExplorer);
+                const materializedEventEffect = materializeEventEffect(eventEffect, random, roomTextResolvedCore.currentExplorer, roomTextResolvedCore);
                 const deathPrevention = resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
                 const effectLabel = formatEffectLabel(materializedEventEffect);
                 const eventRollLabel = eventCard.roll
@@ -13618,48 +16345,36 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
 
             const roomDiscoveryItemDrawCount = (roomDiscoveryCards.roomDiscoveryCards?.length ?? 0)
                 + (roomDiscoveryCards.buriedRoomDiscoveryCards?.length ?? 0);
-            const drawnCard = createDrawnCard(core, deckKind, {
+            const fallbackDrawnCard = createDrawnCard(core, deckKind, {
                 additionalDrawnCount: deckKind === 'item' ? roomDiscoveryItemDrawCount : 0,
             });
+            const mummyForcedOmenDraw = deckKind === 'omen'
+                ? resolveMummyForcedOmenDraw(roomTextResolvedCore, roomTextResolvedCore.currentExplorer, fallbackDrawnCard, random)
+                : { drawnCard: fallbackDrawnCard };
+            const drawnCard = mummyForcedOmenDraw.drawnCard;
             const regularDrawnCard = drawnCard;
             const drawnCardEffect = resolveUseEffect(drawnCard);
             const hauntRoll = resolveHauntRoll(roomTextResolvedCore, deckKind, random);
             const hauntRevealResolution = hauntRoll?.triggered
                 ? resolveHauntRevealResolutionForTrigger(core, drawnCard)
                 : undefined;
-            const roomDiscoveryRewardNames = roomDiscoveryCards.roomDiscoveryCards?.map((card) => card.name) ?? [];
-            const buriedRoomDiscoveryRewardNames = roomDiscoveryCards.buriedRoomDiscoveryCards?.map((card) => card.name) ?? [];
-            const roomDiscoveryRewardDetailParts = [
-                roomDiscoveryRewardNames.length > 0
-                    ? `${roomTemplate.name}获得${roomDiscoveryRewardNames.join('、')}`
-                    : null,
-                buriedRoomDiscoveryRewardNames.length > 0
-                    ? `展示后埋葬${buriedRoomDiscoveryRewardNames.join('、')}`
-                    : null,
-            ].filter((part): part is string => Boolean(part));
+            const roomDiscoveryRewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
             const drawnCardBaseDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
+            const mummyForcedOmenDetail = mummyForcedOmenDraw.forcedOmenSearch
+                ? mummyForcedOmenDraw.forcedOmenSearch.role === 'hero-book'
+                    ? '木乃伊横行：英雄首次需要预兆时，从预兆堆找出书本并洗牌'
+                    : '木乃伊横行：叛徒首次需要预兆时，从预兆堆找出圣符或指环并洗牌'
+                : null;
             const drawnCardDetailParts = [
                 ...roomDiscoveryRewardDetailParts,
+                mummyForcedOmenDetail,
                 drawnCardBaseDetail,
                 hauntRoll ? formatHauntRollDiscoveryDetail(hauntRoll) : null,
             ].filter((part): part is string => Boolean(part));
             const drawnCardDetail = drawnCardDetailParts.join('；');
             const discoveryResolutionSteps: BetrayalDiscoveryResolutionStep[] = [
                 ...roomDiscoveryEffectResolutionSteps,
-                ...roomDiscoveryRewardNames.map((name, index) => ({
-                    id: `room-discovery-card-${roomDiscoveryCards.roomDiscoveryCards?.[index]?.id ?? index}`,
-                    kind: 'room-discovery-card' as const,
-                    text: `${roomTemplate.name}获得${name}`,
-                    deckKind: 'item' as const,
-                    cardId: roomDiscoveryCards.roomDiscoveryCards?.[index]?.id,
-                })),
-                ...buriedRoomDiscoveryRewardNames.map((name, index) => ({
-                    id: `buried-room-discovery-card-${roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id ?? index}`,
-                    kind: 'buried-room-discovery-card' as const,
-                    text: `展示后埋葬${name}`,
-                    deckKind: 'item' as const,
-                    cardId: roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id,
-                })),
+                ...roomDiscoveryCardResolutionSteps,
                 {
                     id: `drawn-card-${drawnCard.id}`,
                     kind: 'drawn-card' as const,
@@ -13677,7 +16392,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     }]
                     : []),
             ];
-            const gainedCardNames = [...roomDiscoveryRewardNames, drawnCard.name];
+            const gainedCardNames = [...roomDiscoveryRewardNames.gained, drawnCard.name];
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
                 playerId: command.playerId,
                 roomId: nextSlot.id,
@@ -13711,6 +16426,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     resolutionSteps: discoveryResolutionSteps,
                 },
                 logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，拿到了${gainedCardNames.join('、')}`,
+                mummyForcedOmenSearch: mummyForcedOmenDraw.forcedOmenSearch,
                 hauntRoll: hauntRoll ?? undefined,
                 hauntTriggered: hauntRoll?.triggered ?? false,
                 hauntRevealResolution,
@@ -13722,11 +16438,46 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [];
             }
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(pendingResolution);
+            const acknowledgedPlayerIds = Array.from(new Set([
+                ...resolvePendingCardResolutionAcknowledgedPlayerIds(pendingResolution),
+                command.playerId,
+            ]));
+            const isComplete = isPendingCardResolutionFullyAcknowledged(
+                core,
+                pendingResolution,
+                acknowledgedPlayerIds,
+            );
             return [nowEvent(EVENTS.CARD_RESOLUTION_ACKNOWLEDGED, {
                 playerId: command.playerId,
-                resolution: clonePendingCardResolution(pendingResolution),
-                remainingCount: Math.max(0, (core.pendingCardResolutionQueue ?? []).length - 1),
-                logText: `${actor.displayName}确认${pendingResolution.cardName}：${pendingResolution.text}`,
+                resolution: clonePendingCardResolution({
+                    ...pendingResolution,
+                    requiredPlayerIds,
+                    acknowledgedPlayerIds,
+                }),
+                remainingCount: Math.max(
+                    0,
+                    (core.pendingCardResolutionQueue ?? []).length - (isComplete ? 1 : 0),
+                ),
+                acknowledgedPlayerIds,
+                remainingAcknowledgementCount: Math.max(
+                    0,
+                    requiredPlayerIds.length - acknowledgedPlayerIds.length,
+                ),
+                logText: `${actor.displayName}确认${pendingResolution.cardName}（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）：${pendingResolution.text}`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return [];
+            }
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            return [nowEvent(EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
+                playerId: command.playerId,
+                rollId: recentRoll.id,
+                sourceTitle: recentRoll.sourceTitle,
+                logText: `${actor.displayName}确认${recentRoll.sourceTitle}投骰结果`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
@@ -13749,13 +16500,17 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 ? `${core.currentExplorer.displayName}用${card.name}稳住路线，额外获得 ${effect.amount} 点移动`
                 : effect.mode === 'nextNonCombatTraitReplacement'
                     ? `${core.currentExplorer.displayName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本回合下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`
-                    : effect.mode === 'healTraits'
-                        ? `${core.currentExplorer.displayName}埋葬${card.name}，治疗${targetExplorer?.displayName ?? core.currentExplorer.displayName}的${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`
-                        : effect.mode === 'placeExplorer'
-                            ? `${core.currentExplorer.displayName}埋葬${card.name}，放置到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '目标板块'}`
-                            : effect.mode === 'moveOthersInRoom'
-                                ? `${core.currentExplorer.displayName}使用${card.name}，将同板块其他角色移动到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '相邻板块'}`
-                                : `${core.currentExplorer.displayName}用${card.name}调整状态，${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
+                    : effect.mode === 'nextNonCombatTraitRollTotalReplacement'
+                        ? `${core.currentExplorer.displayName}埋葬${card.name}，下一次属性检定使用 ${command.payload.replacementRollTotal} 作为投骰结果`
+                        : effect.mode === 'extraTurnAfterTurnEnd'
+                            ? `${core.currentExplorer.displayName}埋葬${card.name}，本回合结束后再进行一轮行动`
+                            : effect.mode === 'healTraits'
+                                ? `${core.currentExplorer.displayName}埋葬${card.name}，治疗${targetExplorer?.displayName ?? core.currentExplorer.displayName}的${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`
+                                : effect.mode === 'placeExplorer'
+                                    ? `${core.currentExplorer.displayName}埋葬${card.name}，放置到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '目标板块'}`
+                                    : effect.mode === 'moveOthersInRoom'
+                                        ? `${core.currentExplorer.displayName}使用${card.name}，将同板块其他角色移动到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '相邻板块'}`
+                                        : `${core.currentExplorer.displayName}用${card.name}调整状态，${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
             return [nowEvent(EVENTS.POSSESSION_USED, {
                 playerId: command.playerId,
                 cardId: card.id,
@@ -13763,47 +16518,164 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 targetPlayerId: targetExplorer?.playerId,
                 targetRoomId: command.payload.targetRoomId,
                 targetRoomIdsByTokenId: command.payload.targetRoomIdsByTokenId,
+                replacementRollTotal: command.payload.replacementRollTotal,
                 logText,
             }, timestamp)];
         }
-        case BETRAYAL_COMMANDS.USE_RABBIT_FOOT: {
-            const card = resolveRabbitFootCard(core, command.payload.cardId, command.playerId)!;
+        case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
+        case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM: {
+            const card = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+                ? resolveRabbitFootCard(core, command.payload.cardId, command.playerId)!
+                : resolveRecentRollRerollItemCard(core, command.payload.cardId, command.playerId)!;
+            const rule = resolveRecentRollRerollItemRule(card.id)!;
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
             const dieIndex = command.payload.dieIndex ?? 0;
-            const previousPip = core.recentRoll?.dice[dieIndex] ?? 0;
-            const newPip = rollBetrayalPip(random);
+            const dieIndices = core.recentRoll
+                ? resolveRecentRollRerollCommandDieIndices(core.recentRoll, card.id, dieIndex)
+                : [];
+            const previousPips = dieIndices.map((index) => core.recentRoll?.dice[index] ?? 0);
+            const newPips = dieIndices.map(() => rollBetrayalPip(random));
             const nextDice = core.recentRoll ? [...core.recentRoll.dice] : [];
-            if (core.recentRoll) {
-                nextDice[dieIndex] = newPip;
-            }
+            dieIndices.forEach((index, valueIndex) => {
+                nextDice[index] = newPips[valueIndex] ?? nextDice[index] ?? 0;
+            });
             const nextEventBranch = core.recentRoll
                 && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
                 && core.recentRoll.branchThresholds
                 ? resolveEventBranch(core.recentRoll.branchThresholds, nextDice.reduce((sum, pip) => sum + pip, 0) + core.recentRoll.passiveBonus)
                 : null;
+            const rerollSummary = rule.mode === 'single-die'
+                ? `第 ${dieIndex + 1} 颗骰子：${previousPips[0] ?? 0} → ${newPips[0] ?? 0}`
+                : `${dieIndices.length} 颗骰子：${previousPips.join('/')} → ${newPips.join('/')}`;
+            const mentalDamageAfterReroll = rule.mode === 'blank-trait-check-dice'
+                ? newPips.filter((pip) => pip === 0).length
+                : 0;
+            const mentalDamageSummary = mentalDamageAfterReroll > 0
+                ? `；重投后仍有 ${mentalDamageAfterReroll} 个空白，承受 ${mentalDamageAfterReroll} 点精神伤害`
+                : '';
             return [nowEvent(EVENTS.RABBIT_FOOT_USED, {
                 playerId: command.playerId,
                 cardId: card.id,
-                dieIndex,
-                newPip,
-                eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer) : undefined,
-                logText: `${actor.displayName}使用兔脚重掷第 ${dieIndex + 1} 颗骰子：${previousPip} → ${newPip}`,
+                cardName: rule.label,
+                dieIndex: dieIndices[0] ?? dieIndex,
+                newPip: newPips[0] ?? 0,
+                dieIndices,
+                newPips,
+                mentalDamageAfterReroll: mentalDamageAfterReroll || undefined,
+                eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer, core) : undefined,
+                logText: `${actor.displayName}使用${rule.label}重掷${rerollSummary}${mentalDamageSummary}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
             const pending = core.pendingEventChoice!;
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            if (pending.itemResolution === 'tooth-necklace-end-turn' && pending.deferredTurnEnd) {
+                const accepted = command.payload.accept !== false;
+                const trait = accepted ? command.payload.trait : undefined;
+                const traitLabel = trait ? TRAIT_LABEL[trait] : '';
+                return [nowEvent(EVENTS.TOOTH_NECKLACE_TRAIT_GAINED, {
+                    playerId: command.playerId,
+                    cardId: pending.itemCardId ?? TOOTH_NECKLACE_CARD_ID,
+                    cardName: pending.sourceTitle,
+                    accepted,
+                    trait,
+                    deferredTurnEnd: cloneTurnEndedPayload(pending.deferredTurnEnd),
+                    logText: accepted && trait
+                        ? `${actor.displayName}使用${pending.sourceTitle}，${traitLabel}从濒死提升 1 步`
+                        : `${actor.displayName}跳过${pending.sourceTitle}的回合结束属性提升`,
+                }, timestamp)];
+            }
+            const resolveTraitRollEventChoice = (
+                traitRollEffect: Extract<UseEffectProfile, { mode: 'traitRoll' }>,
+                summary: string,
+                logVerb: string,
+            ) => {
+                const rollResult = rollEventTraitCheckWithDice(random, core.currentExplorer, traitRollEffect.trait, core);
+                const rollTotal = rollResult.total;
+                const eventBranch = resolveEventBranch(traitRollEffect.branches, rollTotal);
+                const branchEffect = cloneUseEffect(eventBranch.effect);
+                const selectedTraitEffect = applyChosenTraitToEffect(branchEffect, command.payload.trait);
+                const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                const unresolvedSelectedEffect = effectHasUnresolvedTraitChoice(selectedEffect)
+                    || effectHasUnresolvedGeneralDamageChoice(selectedEffect)
+                    || effectNeedsAdjacentRoomChoice(selectedEffect)
+                    || effectNeedsRoomTargetChoice(selectedEffect);
+                const rollLabel = `${TRAIT_LABEL[traitRollEffect.trait]}检定`;
+                const eventRoll = {
+                    kind: 'trait' as const,
+                    trait: traitRollEffect.trait,
+                    total: rollTotal,
+                    label: eventBranch.label,
+                    rollLabel,
+                    dice: rollResult.dice,
+                    passiveBonus: rollResult.passiveBonus,
+                    branchThresholds: traitRollEffect.branches.map((branch) => ({
+                        ...branch,
+                        effect: cloneUseEffect(branch.label === eventBranch.label ? selectedEffect : branch.effect),
+                    })),
+                };
+                if (unresolvedSelectedEffect) {
+                    return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        accepted: command.payload.accept ?? true,
+                        nextPendingEventChoice: {
+                            id: `${pending.id}-trait-roll-${timestamp}`,
+                            playerId: command.playerId,
+                            sourceTitle: pending.sourceTitle,
+                            effect: cloneUseEffect(selectedEffect),
+                        },
+                        eventRoll,
+                        discovery: {
+                            kind: 'event',
+                            title: pending.sourceTitle,
+                            summary,
+                            detail: `${rollLabel} ${rollTotal}：${eventBranch.label}`,
+                            tone: 'accent',
+                        },
+                        logText: `${actor.displayName}${logVerb}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，等待选择事件效果）`,
+                    }, timestamp)];
+                }
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+                const effectLabel = formatEffectLabel(eventEffect);
+                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: command.payload.accept ?? true,
+                    eventEffect,
+                    deathPrevention,
+                    eventRoll,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary,
+                        detail: `${rollLabel} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
+                        tone: eventEffect.mode === 'generalDamage'
+                            || eventEffect.mode === 'generalDamageChoice'
+                            || eventEffect.mode === 'rolledDamage'
+                            || eventEffect.mode === 'fixedDamage'
+                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                    },
+                    logText: `${actor.displayName}${logVerb}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，${effectLabel}）`,
+                }, timestamp)];
+            };
             if (pending.effect.mode === 'optionalHauntRoll') {
                 if (
                     command.payload.accept
-                    && !isImplementedBetrayalHauntCardNumber(pending.effect.successHauntId)
+                    && !isBetrayalOptionalHauntRollRuntimeSupported(pending.effect.successHauntId)
                 ) {
                     return [];
                 }
                 if (!command.payload.accept || core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered) {
                     const traitSelectedEffect = applyChosenTraitToEffect(pending.effect.skippedOrStartedEffect, command.payload.trait);
                     const selectedEffect = applyGeneralDamageTraitsToEffect(traitSelectedEffect, command.payload.traits);
-                    const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                    const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
                     const effectLabel = formatEffectLabel(eventEffect);
                     const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
                     return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -13829,9 +16701,12 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const dustSetup = hauntTriggered && pending.effect.successHauntId === 3
                     ? createDustRuntimeState(core, random)
                     : undefined;
+                const uponReflectionSetup = hauntTriggered && pending.effect.successHauntId === 7
+                    ? createUponReflectionRuntimeState(core, command.playerId, random)
+                    : undefined;
                 const eventEffect = hauntTriggered
                     ? { mode: 'none' as const, recommendedAction: 'endTurn' as const }
-                    : materializeEventEffect(pending.effect.failureEffect, random, core.currentExplorer);
+                    : materializeEventEffect(pending.effect.failureEffect, random, core.currentExplorer, core);
                 const effectLabel = hauntTriggered ? pending.effect.successLabel : formatEffectLabel(eventEffect);
                 const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
                 const hauntRevealResolution = hauntTriggered
@@ -13861,6 +16736,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     hauntRevealResolution,
                     hauntTraitorResolution,
                     dustSetup,
+                    uponReflectionSetup,
                     eventEffect,
                     deathPrevention,
                     eventRoll: {
@@ -13887,7 +16763,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         kind: 'event',
                         title: pending.sourceTitle,
                         summary: pending.effect.acceptLabel,
-                        detail: `选择进行作祟检定：总点数 ${rollTotal}（${dice.length} 颗骰子，${hauntRisk.threshold}+ 作祟开始，${effectLabel}）`,
+                        detail: `选择进行作祟检定：总点数 ${rollTotal}（${dice.length} 颗骰子，${effectLabel}）`,
                         tone: hauntTriggered ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}进行作祟检定：${pending.sourceTitle}（总点数 ${rollTotal}，${effectLabel}）`,
@@ -13903,7 +16779,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
                 const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
                 const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
-                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
                 const effectLabel = formatEffectLabel(eventEffect);
                 const rollLabel = `${TRAIT_LABEL[selectedTrait]}检定`;
                 const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
@@ -13949,7 +16825,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (pending.effect.mode === 'allTraitChecks') {
                 const traitSelectedEffect = applyChosenTraitToEffect(pending.effect.allPassEffect, command.payload.trait);
                 const selectedEffect = applyGeneralDamageTraitsToEffect(traitSelectedEffect, command.payload.traits);
-                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
                 const effectLabel = formatEffectLabel(eventEffect);
                 const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
                 return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -13968,6 +16844,94 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     logText: `${actor.displayName}选择${command.payload.trait ? TRAIT_LABEL[command.payload.trait] : '任意属性'}：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
             }
+            if (pending.effect.mode === 'traitRoll') {
+                return resolveTraitRollEventChoice(
+                    pending.effect,
+                    `${TRAIT_LABEL[pending.effect.trait]}检定`,
+                    `进行${TRAIT_LABEL[pending.effect.trait]}检定`,
+                );
+            }
+            if (pending.effect.mode === 'optionalItemEffect') {
+                if (command.payload.accept) {
+                    const itemSelectedEffect = applyItemChoiceToEffect(core, pending.effect, command.payload.cardId);
+                    if (itemSelectedEffect.mode !== 'optionalItemEffect') {
+                        return [];
+                    }
+                    const selectedTraitEffect = applyChosenTraitToEffect(itemSelectedEffect.acceptEffect, command.payload.trait);
+                    const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                    const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                    const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                    const eventEffect = materializeEventEffect(
+                        { ...itemSelectedEffect, acceptEffect: selectedEffect },
+                        random,
+                        core.currentExplorer,
+                        core,
+                    );
+                    const effectLabel = formatEffectLabel(eventEffect);
+                    const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                    return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        accepted: true,
+                        eventEffect,
+                        deathPrevention,
+                        discovery: {
+                            kind: 'event',
+                            title: pending.sourceTitle,
+                            summary: pending.effect.acceptLabel,
+                            detail: effectLabel,
+                            tone: eventEffect.mode === 'optionalItemEffect'
+                                && (
+                                    eventEffect.acceptEffect.mode === 'generalDamage'
+                                    || eventEffect.acceptEffect.mode === 'generalDamageChoice'
+                                    || eventEffect.acceptEffect.mode === 'rolledDamage'
+                                    || eventEffect.acceptEffect.mode === 'fixedDamage'
+                                    || (eventEffect.acceptEffect.mode === 'trait' && eventEffect.acceptEffect.amount < 0)
+                                    || (eventEffect.acceptEffect.mode === 'chosenTrait' && eventEffect.acceptEffect.amount < 0)
+                                )
+                                ? 'warning'
+                                : 'accent',
+                        },
+                        logText: `${actor.displayName}选择${pending.effect.acceptLabel}：${pending.sourceTitle}（${effectLabel}）`,
+                    }, timestamp)];
+                }
+                if (pending.effect.declineEffect.mode === 'traitRoll') {
+                    return resolveTraitRollEventChoice(
+                        pending.effect.declineEffect,
+                        pending.effect.declineLabel,
+                        `选择${pending.effect.declineLabel}`,
+                    );
+                }
+                const selectedTraitEffect = applyChosenTraitToEffect(pending.effect.declineEffect, command.payload.trait);
+                const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+                const effectLabel = formatEffectLabel(eventEffect);
+                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: false,
+                    eventEffect,
+                    deathPrevention,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.effect.declineLabel,
+                        detail: effectLabel,
+                        tone: eventEffect.mode === 'generalDamage'
+                            || eventEffect.mode === 'generalDamageChoice'
+                            || eventEffect.mode === 'rolledDamage'
+                            || eventEffect.mode === 'fixedDamage'
+                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                    },
+                    logText: `${actor.displayName}选择${pending.effect.declineLabel}：${pending.sourceTitle}（${effectLabel}）`,
+                }, timestamp)];
+            }
             if (
                 effectHasUnresolvedTraitChoice(pending.effect)
                 || effectNeedsAdjacentRoomChoice(pending.effect)
@@ -13977,7 +16941,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
                 const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
                 const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
-                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
                 const effectLabel = formatEffectLabel(eventEffect);
                 const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
                 return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -13998,6 +16962,51 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             : 'accent',
                     },
                     logText: `${actor.displayName}选择事件效果：${pending.sourceTitle}（${effectLabel}）`,
+                }, timestamp)];
+            }
+            if (pending.effect.mode === 'optionalEffect') {
+                if (!command.payload.accept) {
+                    return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        accepted: false,
+                        discovery: {
+                            kind: 'event',
+                            title: pending.sourceTitle,
+                            summary: pending.effect.declineLabel,
+                            detail: '无事发生',
+                            tone: 'accent',
+                        },
+                        logText: `${actor.displayName}选择${pending.effect.declineLabel}：${pending.sourceTitle}`,
+                    }, timestamp)];
+                }
+                const selectedTraitEffect = applyChosenTraitToEffect(pending.effect.acceptEffect, command.payload.trait);
+                const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
+                const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
+                const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+                const effectLabel = formatEffectLabel(eventEffect);
+                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    eventEffect,
+                    deathPrevention,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.effect.acceptLabel,
+                        detail: effectLabel,
+                        tone: eventEffect.mode === 'generalDamage'
+                            || eventEffect.mode === 'rolledDamage'
+                            || eventEffect.mode === 'fixedDamage'
+                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
+                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                    },
+                    logText: `${actor.displayName}选择${pending.effect.acceptLabel}：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
             }
             if (!command.payload.accept || pending.effect.mode !== 'optionalEventRoll') {
@@ -14061,7 +17070,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，等待选择事件效果）`,
                 }, timestamp)];
             }
-            const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
+            const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
             const effectLabel = formatEffectLabel(eventEffect);
             const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
             return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -14194,7 +17203,12 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const roomEndTurnEffect = resolveEndTurnRoomEffect(core, random);
             const dustEndTurn = resolveDustEndTurn(core, random);
             const magicCameraEndTurnCapturedEssencePlayerIds = resolveMagicCameraEndTurn(core);
-            const nextPlayerId = core.phase === 'haunt'
+            const extraTurnAfterCurrentTurn = core.pendingExtraTurnAfterCurrentTurn?.playerId === core.currentPlayer
+                ? { ...core.pendingExtraTurnAfterCurrentTurn }
+                : null;
+            const nextPlayerId = extraTurnAfterCurrentTurn
+                ? core.currentPlayer
+                : core.phase === 'haunt'
                 ? rotateToNextLivingPlayer(core, core.currentPlayer)
                 : (() => {
                     const explorers = getExplorersInTurnOrder(core);
@@ -14203,12 +17217,16 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 })();
             const nextExplorer = findExplorerByPlayerId(core, nextPlayerId) ?? core.currentExplorer;
             const previewCore = replaceExplorers(core, getExplorersInTurnOrder(core), nextExplorer.playerId);
-            const monsterMovementRoll = canReviveTraitorAtMonsterTurnStart(previewCore, nextPlayerId)
+            const monsterMovementRoll = extraTurnAfterCurrentTurn
+                ? null
+                : canReviveTraitorAtMonsterTurnStart(previewCore, nextPlayerId)
                 ? null
                 : resolveJackSpiritMonsterMovementRoll(previewCore, nextPlayerId, random)
                     ?? resolveFeverishMonsterMovementRoll(previewCore, nextPlayerId, random);
             const targets = resolveMoveTargetRooms(previewCore);
-            const baseLogText = targets.length > 0
+            const baseLogText = extraTurnAfterCurrentTurn
+                ? `${extraTurnAfterCurrentTurn.sourceCardName}生效，${nextExplorer.displayName}再进行一轮行动`
+                : targets.length > 0
                 ? `轮到${nextExplorer.displayName}，可前往${formatRoomTargetList(targets)}`
                 : `轮到${nextExplorer.displayName}`;
             const turnLogText = monsterMovementRoll
@@ -14219,9 +17237,12 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 && roomEndTurnEffect.speedRollDice?.length,
             );
             const helpingHandsMonsterTurnControllerPlayerId = (
-                isHelpingHandsHaunt(core)
-                && core.scenarioRuntime.helpingHands?.monsterTurnAfterPlayerId === core.currentPlayer
-                && !core.scenarioRuntime.helpingHands.activeMonsterTurn
+                !extraTurnAfterCurrentTurn
+                && (
+                    isHelpingHandsHaunt(core)
+                    && core.scenarioRuntime.helpingHands?.monsterTurnAfterPlayerId === core.currentPlayer
+                    && !core.scenarioRuntime.helpingHands.activeMonsterTurn
+                )
             )
                 ? resolveHelpingHandsControllerPlayerId(core)
                 : null;
@@ -14238,6 +17259,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     monsterMovementRoll,
                     turnLogText,
                     helpingHandsMonsterTurnControllerPlayerId: helpingHandsMonsterTurnControllerPlayerId ?? undefined,
+                    skipBloodFromStoneMonsterTurnStart: Boolean(extraTurnAfterCurrentTurn),
                 })
                 : null;
             const logText = roomEndTurnEffect
@@ -14260,6 +17282,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 : '';
             const hauntLogText = [dustLogText, magicCameraLogText].filter(Boolean).join('；');
             const helpingHandsLogText = (
+                !extraTurnAfterCurrentTurn
+                &&
                 isHelpingHandsHaunt(core)
                 && core.scenarioRuntime.helpingHands?.monsterTurnAfterPlayerId === core.currentPlayer
                 && !helpingHandsMonsterTurnControllerPlayerId
@@ -14271,7 +17295,19 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 helpingHandsLogText,
                 logText,
             ].filter(Boolean).join('；');
-            const events: BetrayalEvent[] = [nowEvent(EVENTS.TURN_ENDED, {
+            const shouldStartHelpingHandsMonsterTurn = Boolean(
+                helpingHandsMonsterTurnControllerPlayerId
+                && !shouldDeferAdvanceUntilRollAcknowledged
+                && !pendingRoomDamageAllocationPreview,
+            );
+            const deferredHelpingHandsMonsterTurnStart = shouldStartHelpingHandsMonsterTurn && helpingHandsMonsterTurnControllerPlayerId
+                ? createHelpingHandsMonsterTurnStartedEvent(
+                    helpingHandsMonsterTurnControllerPlayerId,
+                    random,
+                    timestamp,
+                ).payload
+                : undefined;
+            const turnEndedPayload: BetrayalTurnEndedPayload = {
                 previousPlayerId: core.currentPlayer,
                 nextPlayerId,
                 logText: fullLogText,
@@ -14282,19 +17318,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 turnLogText,
                 dustEndTurn,
                 magicCameraEndTurnCapturedEssencePlayerIds,
-            }, timestamp)];
-            if (
-                helpingHandsMonsterTurnControllerPlayerId
-                && !shouldDeferAdvanceUntilRollAcknowledged
-                && !pendingRoomDamageAllocationPreview
-            ) {
-                events.push(createHelpingHandsMonsterTurnStartedEvent(
-                    helpingHandsMonsterTurnControllerPlayerId,
-                    random,
-                    timestamp,
-                ));
+                deferredHelpingHandsMonsterTurnStart,
+                extraTurnAfterCurrentTurn: extraTurnAfterCurrentTurn ?? undefined,
+                skipBloodFromStoneMonsterTurnStart: Boolean(extraTurnAfterCurrentTurn),
+            };
+            const toothNecklaceCard = resolveToothNecklaceCard(core.currentExplorer);
+            const toothNecklaceTraits = toothNecklaceCard
+                ? resolveDeathsDoorTraitGainChoices(core.currentExplorer)
+                : [];
+            if (toothNecklaceCard && toothNecklaceTraits.length > 0) {
+                return [nowEvent(EVENTS.TOOTH_NECKLACE_CHOICE_STARTED, {
+                    playerId: core.currentPlayer,
+                    cardId: toothNecklaceCard.id,
+                    cardName: toothNecklaceCard.name,
+                    allowedTraits: toothNecklaceTraits,
+                    deferredTurnEnd: cloneTurnEndedPayload(turnEndedPayload),
+                    logText: `${core.currentExplorer.displayName}可以使用${toothNecklaceCard.name}提升一项濒死属性`,
+                }, timestamp)];
             }
-            return events;
+            return [nowEvent(EVENTS.TURN_ENDED, turnEndedPayload, timestamp)];
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL: {
             const pendingRoll = resolvePendingTurnEndRoll(core);
@@ -14342,8 +17384,17 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const actor = findExplorerByPlayerId(core, pending.playerId) ?? core.currentExplorer;
             const traits = command.payload.traits ?? [];
             const traitText = traits.map((trait) => TRAIT_LABEL[trait]).join('、');
+            const useBrooch = Boolean(command.payload.useBrooch && pending.damageReplacement);
+            const resolvedDamageKind = useBrooch ? 'general' : pending.damageKind;
+            const broochLog = useBrooch
+                ? `使用${pending.damageReplacement!.cardName}将${pending.damageKind === 'physical' ? '物理' : '精神'}伤害替换为通用伤害，`
+                : '';
             const deathPreview = cloneExplorer(actor);
-            applyGeneralDamage(deathPreview, pending.amount, traits, { allowSkull: pending.allowSkull });
+            const projectedAppliedDamage = applyGeneralDamage(deathPreview, pending.amount, traits, { allowSkull: pending.allowSkull });
+            const strangeAmuletBonusCard = resolvedDamageKind === 'physical' && projectedAppliedDamage > 0
+                ? actor.inventory.find((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID)
+                : undefined;
+            const strangeAmuletLog = strangeAmuletBonusCard ? `；${strangeAmuletBonusCard.name}使神志 +1` : '';
             const deathPreventionRoll = pending.allowSkull
                 && isExplorerDead(deathPreview)
                 ? rollDeathPrevention(random, actor)
@@ -14356,7 +17407,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 ? {
                     ...deathPreventionRoll,
                     damageAmount: pending.amount,
-                    damageKind: pending.damageKind,
+                    damageKind: resolvedDamageKind,
                     damageTraits: [...traits],
                     traitsBeforeDamage: { ...pending.traitsBeforeDamage },
                     releasedJackSpiritRoomId,
@@ -14371,7 +17422,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             return [nowEvent(EVENTS.DAMAGE_ALLOCATION_RESOLVED, {
                 playerId: pending.playerId,
                 sourceTitle: pending.sourceTitle,
-                damageKind: pending.damageKind,
+                damageKind: resolvedDamageKind,
                 amount: pending.amount,
                 traits,
                 nextPlayerId: pending.nextPlayerId,
@@ -14380,7 +17431,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 helpingHandsMonsterTurnControllerPlayerId: pending.helpingHandsMonsterTurnControllerPlayerId,
                 skipBloodFromStoneMonsterTurnStart: pending.skipBloodFromStoneMonsterTurnStart,
                 deathPrevention,
-                logText: `${actor.displayName}将${pending.sourceTitle}的 ${pending.amount} 点伤害分配到${traitText}${deathPreventionLog}`,
+                logText: `${actor.displayName}${broochLog}将${pending.sourceTitle}的 ${pending.amount} 点伤害分配到${traitText}${deathPreventionLog}${strangeAmuletLog}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
@@ -14395,6 +17446,68 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 : resolveAttackWeaponEffect(attacker, command.payload.weaponCardId);
             const attackDamageKind = weaponEffect?.damageKind ?? 'physical';
             const attackDamageLabel = `${attackDamageKind} damage`;
+            if (command.payload.target === 'dynamite-room') {
+                const dynamiteCard = resolveDynamiteInventoryCard(attacker, command.payload.weaponCardId);
+                const targetRoom = command.payload.targetRoomId
+                    ? core.rooms.find((room) => room.id === command.payload.targetRoomId && room.state === 'discovered')
+                    : null;
+                if (!dynamiteCard || !targetRoom) {
+                    return [];
+                }
+                const explorerRolls = getAllExplorers(core)
+                    .filter((explorer) => (
+                        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                        && resolveControlledRoomId(core, explorer) === targetRoom.id
+                    ))
+                    .map((explorer): BetrayalDynamiteExplorerRoll => {
+                        const speedRoll = rollTraitCheckWithDice(random, explorer, 'speed', core);
+                        return {
+                            playerId: explorer.playerId,
+                            displayName: explorer.displayName,
+                            dice: speedRoll.dice,
+                            passiveBonus: speedRoll.passiveBonus,
+                            total: speedRoll.total,
+                            passed: speedRoll.total >= 4,
+                            traitsBeforeDamage: { ...explorer.traits },
+                        };
+                    });
+                const monsterRolls = core.monsters
+                    .filter((monster) => monster.roomId === targetRoom.id && resolveMonsterStatusKind(core, monster.id) === 'active')
+                    .map((monster): BetrayalDynamiteMonsterRoll => {
+                        const dice = rollDicePips(random, resolveMonsterTrait(monster, 'speed'));
+                        const total = dice.reduce((sum, pip) => sum + pip, 0);
+                        const passed = total >= 4;
+                        return {
+                            monsterId: monster.id,
+                            monsterName: monster.name,
+                            dice,
+                            total,
+                            passed,
+                            monsterDamageOutcome: passed
+                                ? null
+                                : resolveBetrayalMonsterDamageOutcome(core, monster.id, {
+                                    damageAmount: 4,
+                                    damageTrait: 'speed',
+                                }),
+                        };
+                    });
+                const failedExplorerNames = explorerRolls.filter((roll) => !roll.passed).map((roll) => roll.displayName);
+                const failedMonsterNames = monsterRolls.filter((roll) => !roll.passed).map((roll) => roll.monsterName);
+                const failedNames = [...failedExplorerNames, ...failedMonsterNames];
+                const resultText = failedNames.length > 0
+                    ? `${failedNames.join('、')}速度检定失败，需承受 4 点物理伤害`
+                    : '所有人速度检定均为 4+，无人受伤';
+                return [nowEvent(EVENTS.DYNAMITE_ATTACK_RESOLVED, {
+                    attackerPlayerId: attacker.playerId,
+                    cardId: dynamiteCard.id,
+                    cardName: dynamiteCard.name,
+                    targetRoomId: targetRoom.id,
+                    targetRoomName: targetRoom.name,
+                    explorerRolls,
+                    monsterRolls,
+                    logText: `${attacker.displayName}使用炸药攻击${targetRoom.name}，${resultText}`,
+                }, timestamp)];
+            }
             if (isHelpingHandsHaunt(core)) {
                 if (command.payload.target === 'troll-hand') {
                     const trollHand = findHelpingHandsTrollHand(core, command.payload.targetMonsterId);
@@ -14412,7 +17525,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         damageAmount: damageToMonster,
                         damageTrait: weaponEffect?.attackTrait ?? 'might',
                     });
-                    const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                    const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                     const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
                         ? rollDeathPrevention(random, attacker)
                         : null;
@@ -14482,7 +17595,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const attackerRoll = attackRoll.total;
                 const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const attackTrait = weaponEffect?.attackTrait ?? 'might';
                 const canChooseSteal = attackTrait === 'might'
                     && damageToDefender > 0
@@ -14651,7 +17764,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const attackerRoll = attackRoll.total + essenceBonus;
                 const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const defenderDeathPrevention = wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
                     ? rollDeathPrevention(random, defender)
                     : null;
@@ -14741,7 +17854,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const attackerRoll = attackRoll.total;
                 const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const defenderStealableCards = resolveHelpingHandsStealableCards(core, defender.playerId);
                 const pendingAttackReward = damageToDefender > 0 && defenderStealableCards.length > 0
                     ? {
@@ -14855,7 +17968,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const attackerRoll = dustAttackRoll.dice.reduce((sum, pip) => sum + pip, 0) + dustAttackRoll.passiveBonus;
                 const defenderRoll = rollAttackDefense(random, targetExplorer, weaponEffect);
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = feverish ? 0 : Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = feverish ? 0 : resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const defenderDeathPrevention = wouldExplorerDieFromAttackDamage(targetExplorer, damageToDefender, attackDamageKind)
                     ? rollDeathPrevention(random, targetExplorer)
                     : null;
@@ -14944,7 +18057,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const attackerRoll = attackRoll.total + heroBonus;
                 const defenderRoll = traitor ? rollAttackDefense(random, traitor, weaponEffect) : 0;
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
                     ? rollDeathPrevention(random, attacker)
                     : null;
@@ -15007,7 +18120,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const heroTargets = getAllExplorers(core).filter((explorer) => (
                     explorer.playerId !== core.scenarioRuntime.traitorPlayerId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && explorer.roomId === attackerRoomId
+                    && isAttackTargetInWeaponRange(core, attackerRoomId, explorer.roomId, weaponEffect)
                 ));
                 const targetHero = heroTargets.find((explorer) => explorer.playerId === command.payload.targetPlayerId);
                 if (!targetHero) {
@@ -15030,7 +18143,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     : 0;
                 const defenderRoll = targetHero ? rollAttackDefense(random, targetHero, weaponEffect) + defenderBonus : 0;
                 const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = jackSpirit ? 0 : Math.max(0, defenderRoll - attackerRoll);
+                const damageToAttacker = jackSpirit ? 0 : resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
                 const traitorDeathPrevention = !jackSpirit && wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
                     ? rollDeathPrevention(random, attacker)
                     : null;
@@ -15192,17 +18305,20 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (!monster || !targetRoom) {
                 return [];
             }
-            const moveCost = resolveBetrayalMonsterMoveCost(core, monster.id);
+            const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, monster.id);
+            const moveCost = canMummyTeleportNow ? 0 : resolveBetrayalMonsterMoveCost(core, monster.id);
             const moveRemainingAfterCost = Math.max(
                 0,
                 (core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monster.id] ?? 0) - moveCost,
             );
-            const moveRemaining = resolveStoneCherubMoveRemainingAfterMove(
-                core,
-                monster,
-                targetRoom.id,
-                moveRemainingAfterCost,
-            );
+            const moveRemaining = canMummyTeleportNow
+                ? 0
+                : resolveStoneCherubMoveRemainingAfterMove(
+                    core,
+                    monster,
+                    targetRoom.id,
+                    moveRemainingAfterCost,
+                );
             const stoppedInHeroLineOfSight = moveRemainingAfterCost > 0 && moveRemaining === 0;
             return [nowEvent(EVENTS.MONSTER_MOVED, {
                 playerId: command.playerId,
@@ -15212,7 +18328,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 toRoomId: targetRoom.id,
                 moveCost,
                 moveRemaining,
-                logText: `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}移动到${targetRoom.name}，消耗 ${moveCost} 点移动${stoppedInHeroLineOfSight ? '；进入英雄视线后立即停止' : ''}`,
+                teleportMove: canMummyTeleportNow,
+                logText: canMummyTeleportNow
+                    ? `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}瞬移到${targetRoom.name}`
+                    : `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}移动到${targetRoom.name}，消耗 ${moveCost} 点移动${stoppedInHeroLineOfSight ? '；进入英雄视线后立即停止' : ''}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN: {
@@ -15271,10 +18390,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (!monster || !target) {
                 return [];
             }
-            const attackTrait: BetrayalTraitKey = 'might';
+            const attackTrait = resolveMonsterDefaultAttackTrait(monster);
+            const damageKind = resolveAttackDamageKind(attackTrait);
             const monsterDice = rollDicePips(random, resolveMonsterTrait(monster, attackTrait));
             const monsterRoll = monsterDice.reduce((sum, pip) => sum + pip, 0);
-            const heroRoll = rollAttackDefense(random, target, null);
+            const heroRoll = rollAttackDefense(random, target, null, attackTrait);
             const damageToHero = Math.max(0, monsterRoll - heroRoll);
             const damageToMonster = Math.max(0, heroRoll - monsterRoll);
             const monsterDamageOutcome = damageToMonster > 0
@@ -15286,7 +18406,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const resultText = monsterRoll === heroRoll
                 ? '双方都没有受伤'
                 : damageToHero > 0
-                    ? `造成 ${damageToHero} 点 physical damage`
+                    ? `造成 ${damageToHero} 点 ${damageKind} damage`
                     : (monsterDamageOutcome?.logLabel ?? `承受 ${damageToMonster} 点伤害`);
             return [nowEvent(EVENTS.MONSTER_ATTACK_HERO_RESOLVED, {
                 playerId: command.playerId,
@@ -15294,6 +18414,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 monsterName: monster.name,
                 targetPlayerId: target.playerId,
                 attackTrait,
+                damageKind,
                 monsterRoll,
                 heroRoll,
                 damageToHero: damageToHero || undefined,
@@ -15347,6 +18468,42 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 defeatedPlayerId: defenderDefeated ? defender.playerId : undefined,
                 deathPrevention,
                 logText: `${attacker.displayName}选择造成 ${pending.damageToDefender} 点 ${pending.damageKind} damage${deathPreventionLog}`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD: {
+            const pending = resolveMummyPendingAttackReward(core);
+            const defender = pending ? findExplorerByPlayerId(core, pending.defenderPlayerId) : null;
+            if (!pending || !defender) {
+                return [];
+            }
+            if (command.payload.choice === 'steal') {
+                const cardId = command.payload.cardId;
+                const stolenCard = cardId === MUMMY_GIRL_STEAL_CARD_ID
+                    ? resolveMummyGirlStealCard()
+                    : defender.inventory.find((item) => item.id === cardId);
+                if (!stolenCard || (stolenCard.kind !== 'item' && stolenCard.kind !== 'omen')) {
+                    return [];
+                }
+                return [nowEvent(EVENTS.MUMMY_ATTACK_REWARD_RESOLVED, {
+                    controllerPlayerId: pending.controllerPlayerId,
+                    monsterId: pending.monsterId,
+                    monsterName: pending.monsterName,
+                    defenderPlayerId: defender.playerId,
+                    choice: 'steal',
+                    stolenCardId: stolenCard.id,
+                    stolenCardName: stolenCard.name,
+                    logText: `${pending.monsterName}没有造成伤害，改为从${defender.displayName}手中夺走${stolenCard.name}`,
+                }, timestamp)];
+            }
+            return [nowEvent(EVENTS.MUMMY_ATTACK_REWARD_RESOLVED, {
+                controllerPlayerId: pending.controllerPlayerId,
+                monsterId: pending.monsterId,
+                monsterName: pending.monsterName,
+                defenderPlayerId: defender.playerId,
+                choice: 'damage',
+                damageToHero: pending.damageToHero,
+                damageKind: 'physical',
+                logText: `${pending.monsterName}选择造成 ${pending.damageToHero} 点 physical damage`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND: {
@@ -15610,6 +18767,63 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     : `${actor.displayName}玩躲猫猫失败，承受 ${damageAmount ?? 0} 点一般伤害`,
             }, timestamp)];
         }
+        case BETRAYAL_COMMANDS.GIVE_MIRROR_HINT: {
+            const revealer = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const target = command.payload.targetPlayerId
+                ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                : null;
+            const eventCard = resolveUponReflectionHintEvent(core, command.payload.eventName);
+            if (!target || !eventCard) {
+                return [];
+            }
+            return [nowEvent(EVENTS.UPON_REFLECTION_EVENT_HINT_GIVEN, {
+                revealerPlayerId: revealer.playerId,
+                targetPlayerId: target.playerId,
+                eventName: eventCard.name,
+                eventText: eventCard.text,
+                turnNumber: core.turnNumber,
+                logText: `作祟揭秘者用事件牌「${eventCard.name}」给${target.displayName}作镜中提示；该事件不结算并放到一边`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const trait = command.payload.trait!;
+            const selectedOmen = resolveUponReflectionOmenSelection(actor, command.payload);
+            const secret = core.scenarioRuntime.uponReflection?.secretCombination;
+            if (!selectedOmen || !secret) {
+                return [];
+            }
+            const roomId = resolveControlledRoomId(core, actor);
+            const room = core.rooms.find((item) => item.id === roomId);
+            const roll = rollNonCombatTraitCheckWithDice(random, core, actor, trait);
+            const successRoll = roll.total >= 5;
+            const omenMatches = resolveInventoryEffectId(selectedOmen.id) === secret.omenId
+                || selectedOmen.name === secret.omenName;
+            const combinationCorrect = Boolean(
+                successRoll
+                && trait === secret.trait
+                && omenMatches
+                && roomMatchesUponReflectionSecret(room, secret)
+            );
+            return [nowEvent(EVENTS.UPON_REFLECTION_CURSE_BREAK_ATTEMPTED, {
+                playerId: actor.playerId,
+                roomId,
+                roomName: room?.name ?? '当前房间',
+                trait,
+                omenId: resolveInventoryEffectId(selectedOmen.id),
+                omenName: selectedOmen.name,
+                rollTotal: roll.total,
+                dice: roll.dice,
+                passiveBonus: roll.passiveBonus,
+                successRoll,
+                combinationCorrect,
+                logText: combinationCorrect
+                    ? `${actor.displayName}完成破咒，镜中诅咒被打破`
+                    : successRoll
+                        ? `${actor.displayName}尝试破咒，作祟揭秘者给出否定反馈`
+                        : `${actor.displayName}尝试破咒，但没有得到镜中反馈`,
+            }, timestamp)];
+        }
         case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK: {
             const actor = core.currentExplorer;
             const rollTotal = rollNonCombatTraitCheck(random, core, actor, 'knowledge');
@@ -15660,6 +18874,103 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 logText: rollTotal >= 7
                     ? `${actor.displayName}成功驱散了杰克之灵`
                     : `${actor.displayName}尝试驱魔失败，杰克之灵反扑了所有英雄`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.STUDY_MUMMY_NAME: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const room = core.rooms.find((item) => item.id === actor.roomId);
+            const roll = rollNonCombatTraitCheckWithDice(random, core, actor, 'knowledge');
+            const success = roll.total >= 6;
+            return [nowEvent(EVENTS.MUMMY_NAME_STUDIED, {
+                playerId: actor.playerId,
+                roomId: actor.roomId,
+                rollTotal: roll.total,
+                dice: roll.dice,
+                passiveBonus: roll.passiveBonus,
+                success,
+                logText: success
+                    ? `${actor.displayName}在${room?.name ?? '当前房间'}找到了木乃伊真名，取得第 1 枚知识标记`
+                    : `${actor.displayName}寻找木乃伊真名失败，暂未取得知识标记`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const roll = rollNonCombatTraitCheckWithDice(random, core, actor, 'knowledge');
+            const success = roll.total >= 6;
+            return [nowEvent(EVENTS.MUMMY_BANISHMENT_LEARNED, {
+                playerId: actor.playerId,
+                roomId: actor.roomId,
+                rollTotal: roll.total,
+                dice: roll.dice,
+                passiveBonus: roll.passiveBonus,
+                success,
+                logText: success
+                    ? `${actor.displayName}用书本学会驱逐木乃伊的法术，取得第 2 枚知识标记`
+                    : `${actor.displayName}翻查书本失败，尚未学会驱逐法术`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.BANISH_MUMMY: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const mummy = findMummyMonster(core);
+            if (!mummy) {
+                return [];
+            }
+            const heroRoll = rollTraitCheckWithDice(random, actor, 'sanity', core);
+            const mummyDice = rollDicePips(random, resolveMonsterTrait(mummy, 'sanity'));
+            const mummyRoll = mummyDice.reduce((sum, pip) => sum + pip, 0);
+            const success = heroRoll.total > mummyRoll;
+            return [nowEvent(EVENTS.MUMMY_BANISHED, {
+                playerId: actor.playerId,
+                roomId: actor.roomId,
+                heroRoll: heroRoll.total,
+                mummyRoll,
+                heroDice: heroRoll.dice,
+                mummyDice,
+                passiveBonus: heroRoll.passiveBonus,
+                success,
+                logText: success
+                    ? `${actor.displayName}以神志压过木乃伊，将木乃伊驱逐回亡者之国`
+                    : `${actor.displayName}驱逐木乃伊失败，木乃伊仍在宅邸中`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const room = core.rooms.find((item) => item.id === actor.roomId);
+            return [nowEvent(EVENTS.MUMMY_GIRL_PICKED_UP, {
+                playerId: actor.playerId,
+                roomId: actor.roomId,
+                logText: `${actor.displayName}在${room?.name ?? '当前房间'}拾起了女孩`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const mummy = findMummyMonster(core);
+            if (!mummy) {
+                return [];
+            }
+            const room = core.rooms.find((item) => item.id === actor.roomId);
+            return [nowEvent(EVENTS.MUMMY_GIRL_GIVEN, {
+                playerId: actor.playerId,
+                monsterId: mummy.id,
+                roomId: actor.roomId,
+                logText: `${actor.displayName}在${room?.name ?? '当前房间'}把女孩交给了木乃伊`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY: {
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const mummy = findMummyMonster(core);
+            const card = findMummyWeddingOmenCard(actor, command.payload.cardId);
+            if (!mummy || !card) {
+                return [];
+            }
+            const room = core.rooms.find((item) => item.id === actor.roomId);
+            return [nowEvent(EVENTS.MUMMY_OMEN_GIVEN, {
+                playerId: actor.playerId,
+                monsterId: mummy.id,
+                roomId: actor.roomId,
+                cardId: card.id,
+                cardName: card.name,
+                logText: `${actor.displayName}在${room?.name ?? '当前房间'}把${card.name}交给了木乃伊`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
@@ -15788,7 +19099,15 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     event.payload.playerId,
                 ]));
             }
+            const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
+                core,
+                event.payload.playerId,
+                event.payload.roomId,
+            );
             const synced = syncCurrentExplorerProjection(core);
+            const mummyGirlPickupLog = mummyGirlPickedUp
+                ? `；${synced.currentExplorer.displayName}拾起女孩`
+                : '';
             if (bloodFromStoneNewLineOfSightDamageRoll) {
                 const pendingBloodFromStoneNewLineOfSightDamageAllocation =
                     createBloodFromStoneNewLineOfSightDamageAllocation(synced, bloodFromStoneNewLineOfSightDamageRoll);
@@ -15804,13 +19123,13 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return {
                     ...synced,
                     recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, bloodFromStoneNewLineOfSightDamageLogText, 'warning'),
+                    activityLog: appendActivity(synced, `${bloodFromStoneNewLineOfSightDamageLogText}${mummyGirlPickupLog}`, 'warning'),
                 };
             }
             return {
                 ...synced,
                 recommendedAction: resolveRecommendedAction(synced),
-                activityLog: appendActivity(synced, event.payload.logText, 'neutral'),
+                activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, 'neutral'),
             };
         }
         case EVENTS.ROOM_EXPLORED: {
@@ -15887,6 +19206,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.pendingEventChoice = null;
             core.pendingCardResolutionQueue = createPendingCardResolutionQueue({
                 playerId: event.payload.playerId,
+                requiredPlayerIds: core.playerIds,
                 roomId: event.payload.roomId,
                 timestamp: event.timestamp,
                 deckKind: event.payload.deckKind,
@@ -15895,7 +19215,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 roomDiscoveryCards: event.payload.roomDiscoveryCards,
                 buriedRoomDiscoveryCards: event.payload.buriedRoomDiscoveryCards,
             });
-            if (event.payload.deckKind === 'event' && !event.payload.skippedEventWithTraitorPower) {
+            if (
+                event.payload.deckKind === 'event'
+                && !event.payload.skippedEventWithTraitorPower
+                && !event.payload.skippedEventWithUponReflection
+            ) {
                 buryEventCardToBottom(core, event.payload.discovery.title);
             }
             if (event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds) {
@@ -15951,8 +19275,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 }
             }
 
-            if (event.payload.skippedEventWithTraitorPower) {
-                // 叛徒忽略的是房间事件符号，没有抽事件牌，因此不移动事件牌堆。
+            if (event.payload.skippedEventWithTraitorPower || event.payload.skippedEventWithUponReflection) {
+                // 跳过的是房间事件符号，没有抽事件牌，因此不移动事件牌堆。
+                if (event.payload.skippedEventWithUponReflection) {
+                    core.turnEndedByDiscovery = false;
+                }
             } else if (event.payload.skippedEventWithIdol) {
                 // 雕像仍消耗这次事件牌堆顺序，但不结算事件效果。
             } else if (
@@ -15968,10 +19295,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
                     acceptLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalEffect'
+                        || event.payload.eventEffect.mode === 'optionalItemEffect'
                         || event.payload.eventEffect.mode === 'optionalHauntRoll'
                         ? event.payload.eventEffect.acceptLabel
                         : undefined,
                     declineLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalEffect'
+                        || event.payload.eventEffect.mode === 'optionalItemEffect'
                         || event.payload.eventEffect.mode === 'optionalHauntRoll'
                         ? event.payload.eventEffect.declineLabel
                         : undefined,
@@ -16064,16 +19395,40 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
                 core.turnEndedByDiscovery = true;
-            } else if (event.payload.drawnCard) {
+            } else if (
+                event.payload.drawnCard
+                && (event.payload.deckKind === 'item' || event.payload.deckKind === 'omen')
+            ) {
                 core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(event.payload.drawnCard)];
                 removePossessionCardFromDeck(core, event.payload.deckKind, event.payload.drawnCard.id);
+                if (event.payload.mummyForcedOmenSearch) {
+                    core.possessionOrderByKind = {
+                        ...core.possessionOrderByKind,
+                        omen: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
+                    };
+                    core.scenarioRuntime = {
+                        ...core.scenarioRuntime,
+                        mummyForcedOmenSearch: {
+                            ...event.payload.mummyForcedOmenSearch,
+                            shuffledOmenDeck: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
+                        },
+                    };
+                }
             }
 
+            const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
+                core,
+                event.payload.playerId,
+                event.payload.roomId,
+            );
             const synced = syncCurrentExplorerProjection(core);
+            const mummyGirlPickupLog = mummyGirlPickedUp
+                ? `；${synced.currentExplorer.displayName}拾起女孩`
+                : '';
             let nextCore = {
                 ...synced,
                 recommendedAction: resolveRecommendedAction(synced),
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
+                activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, event.payload.discovery.tone),
             };
             const dustCompletedAfterEventDraw = completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
             if (dustCompletedAfterEventDraw) {
@@ -16098,6 +19453,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     { revealRepresentativeOnly: hauntRevealResolution.representativeOnly },
                 );
                 const nextPlayerId = hauntFirstPlayerResolution.nextPlayerId;
+                const uponReflectionSetup = hauntRevealResolution.hauntCardNumber === 7
+                    ? createUponReflectionRuntimeState(core, hauntRevealerPlayerId, DEFAULT_BETRAYAL_RANDOM)
+                    : undefined;
                 nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
                     traitorPlayerId: hauntTraitorPlayerId,
                     hauntRevealerPlayerId,
@@ -16107,6 +19465,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     hauntRevealResolution,
                     hauntTraitorResolution,
                     hauntFirstPlayerResolution,
+                    uponReflectionSetup,
                     logText: hauntRevealResolution.hauntCardNumber === 1
                         ? scenarioConfigById(core.scenarioId).logs.hauntTriggered
                         : `作祟触发：剧本${hauntRevealResolution.hauntCardNumber}（${hauntRevealResolution.triggeringOmenName}）`,
@@ -16212,6 +19571,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? []
                 : createPendingCardResolutionQueue({
                     playerId: event.payload.playerId,
+                    requiredPlayerIds: core.playerIds,
                     roomId: core.currentExplorer.roomId,
                     timestamp: event.timestamp,
                     deckKind: 'event',
@@ -16263,6 +19623,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     dustSetup: event.payload.dustSetup,
                     magicCameraSetup: event.payload.magicCameraSetup,
                     helpingHandsSetup: event.payload.helpingHandsSetup,
+                    uponReflectionSetup: event.payload.uponReflectionSetup,
                     logText: hauntCardNumber !== 1
                         ? `作祟触发：剧本${hauntCardNumber}（${event.payload.hauntTriggerLabel ?? event.payload.sourceTitle}）`
                         : scenario.logs.hauntTriggered,
@@ -16271,8 +19632,25 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return nextCore;
         }
         case EVENTS.CARD_RESOLUTION_ACKNOWLEDGED: {
+            const acknowledgedPlayerIds = event.payload.acknowledgedPlayerIds
+                ?? event.payload.resolution.acknowledgedPlayerIds
+                ?? [];
+            const acknowledgedResolution = {
+                ...event.payload.resolution,
+                acknowledgedPlayerIds: [...acknowledgedPlayerIds],
+            };
+            const isComplete = isPendingCardResolutionFullyAcknowledged(
+                core,
+                acknowledgedResolution,
+                acknowledgedPlayerIds,
+            );
             core.pendingCardResolutionQueue = (core.pendingCardResolutionQueue ?? [])
-                .filter((resolution) => resolution.id !== event.payload.resolution.id);
+                .flatMap((resolution) => {
+                    if (resolution.id !== event.payload.resolution.id) {
+                        return [resolution];
+                    }
+                    return isComplete ? [] : [acknowledgedResolution];
+                });
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,
@@ -16286,18 +19664,60 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return core;
             }
             const dice = [...recentRoll.dice];
-            dice[event.payload.dieIndex] = event.payload.newPip;
+            const dieIndices = event.payload.dieIndices ?? [event.payload.dieIndex];
+            const newPips = event.payload.newPips ?? [event.payload.newPip];
+            dieIndices.forEach((dieIndex, valueIndex) => {
+                if (dieIndex >= 0 && dieIndex < dice.length) {
+                    dice[dieIndex] = newPips[valueIndex] ?? dice[dieIndex] ?? 0;
+                }
+            });
             const nextRoll: BetrayalRecentRollState = {
                 ...recentRoll,
                 dice,
                 consumedRabbitFootCardIds: [...recentRoll.consumedRabbitFootCardIds, event.payload.cardId],
-                lastRabbitFootRerollDieIndex: event.payload.dieIndex,
+                lastRabbitFootRerollDieIndex: dieIndices.length === 1 ? dieIndices[0] : undefined,
             };
             const nextTotal = resolveRecentRollTotal(nextRoll);
+            const finalizeRecentRollReroll = (
+                tone: BetrayalDiscoverySummary['tone'] = 'accent',
+            ): BetrayalCore => {
+                const rerollDamageAllocation = core.pendingDamageAllocation
+                    ?? createRecentRollRerollMentalDamageAllocation(
+                        core,
+                        event.payload.playerId,
+                        event.payload.cardId,
+                        event.payload.mentalDamageAfterReroll,
+                        event.timestamp,
+                    );
+                if (rerollDamageAllocation) {
+                    core.pendingDamageAllocation = rerollDamageAllocation;
+                    core.activePlayerId = rerollDamageAllocation.playerId;
+                }
+                const synced = syncCurrentExplorerProjection(core);
+                if (rerollDamageAllocation) {
+                    return {
+                        ...synced,
+                        pendingDamageAllocation: rerollDamageAllocation,
+                        activePlayerId: rerollDamageAllocation.playerId,
+                        recommendedAction: 'endTurn',
+                        activityLog: appendActivity(synced, event.payload.logText, 'warning'),
+                    };
+                }
+                return {
+                    ...synced,
+                    recommendedAction: resolveRecommendedAction(synced),
+                    activityLog: appendActivity(synced, event.payload.logText, tone),
+                };
+            };
 
             if (recentRoll.kind === 'eventTraitCheck' || recentRoll.kind === 'eventDiceRoll') {
-                if (!recentRoll.branchThresholds || (recentRoll.kind === 'eventTraitCheck' && !recentRoll.trait)) {
+                if (recentRoll.kind === 'eventTraitCheck' && !recentRoll.trait) {
                     return core;
+                }
+                if (!recentRoll.branchThresholds) {
+                    core.recentRoll = nextRoll;
+                    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
+                    return finalizeRecentRollReroll();
                 }
                 const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
                 const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
@@ -16322,12 +19742,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                             tone: 'accent',
                         };
                     }
-                    const synced = syncCurrentExplorerProjection(core);
-                    return {
-                        ...synced,
-                        recommendedAction: resolveRecommendedAction(synced),
-                        activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                    };
+                    return finalizeRecentRollReroll();
                 }
                 const previousEffect = recentRoll.branchThresholds.find((branch) => branch.label === recentRoll.latestLabel)?.effect;
                 if (previousEffect) {
@@ -16487,12 +19902,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     return dustCompleted;
                 }
             }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
-                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-            };
+            return finalizeRecentRollReroll();
         }
         case EVENTS.POSSESSION_USED: {
             if (event.payload.effect.mode === 'move') {
@@ -16503,6 +19913,17 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     playerId: event.payload.playerId,
                     sourceCardId: event.payload.cardId,
                     replacementTrait: event.payload.effect.replacementTrait,
+                };
+            } else if (event.payload.effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
+                const usedCard = core.currentExplorer.inventory.find((item) => item.id === event.payload.cardId);
+                if (event.payload.effect.consumeOnUse) {
+                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
+                }
+                core.nextNonCombatTraitRollTotalReplacement = {
+                    playerId: event.payload.playerId,
+                    sourceCardId: event.payload.cardId,
+                    sourceCardName: usedCard?.name ?? '天使之羽',
+                    selectedTotal: event.payload.replacementRollTotal ?? event.payload.effect.minTotal,
                 };
             } else if (event.payload.effect.mode === 'healTraits') {
                 const target = event.payload.targetPlayerId && event.payload.targetPlayerId !== core.currentExplorer.playerId
@@ -16522,6 +19943,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 if (event.payload.effect.consumeOnUse) {
                     core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
                 }
+            } else if (event.payload.effect.mode === 'extraTurnAfterTurnEnd') {
+                const usedCard = core.currentExplorer.inventory.find((item) => item.id === event.payload.cardId);
+                if (event.payload.effect.consumeOnUse) {
+                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
+                }
+                core.pendingExtraTurnAfterCurrentTurn = {
+                    playerId: event.payload.playerId,
+                    sourceCardId: event.payload.cardId,
+                    sourceCardName: usedCard?.name ?? '神秘秒表',
+                };
             } else if (event.payload.effect.mode === 'moveOthersInRoom') {
                 const targetRoomIdsByTokenId = event.payload.targetRoomIdsByTokenId ?? {};
                 core.otherExplorers = core.otherExplorers.map((explorer) => {
@@ -16711,9 +20142,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 applyDustSicknessSwap(dust, event.payload.swap);
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'search-for-cure'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-dust-search-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -16743,9 +20172,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return core;
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'cure-the-dust'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-dust-cure-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -16846,9 +20273,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return core;
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'take-photo'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-take-photo-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -16883,9 +20308,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return core;
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'smash-magic-camera'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-smash-magic-camera-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -16955,9 +20378,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 return core;
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'play-peekaboo'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-play-peekaboo-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -17010,6 +20431,55 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 activityLog: appendActivity(synced, event.payload.logText, 'warning'),
             };
         }
+        case EVENTS.TOOTH_NECKLACE_CHOICE_STARTED: {
+            const synced = syncCurrentExplorerProjection(core);
+            return {
+                ...synced,
+                pendingEventChoice: {
+                    id: `tooth-necklace-${event.payload.playerId}-${event.timestamp}`,
+                    playerId: event.payload.playerId,
+                    sourceTitle: event.payload.cardName,
+                    acceptLabel: '获得属性',
+                    declineLabel: '跳过',
+                    sourceKind: 'item',
+                    itemResolution: 'tooth-necklace-end-turn',
+                    itemCardId: event.payload.cardId,
+                    deferredTurnEnd: cloneTurnEndedPayload(event.payload.deferredTurnEnd),
+                    effect: {
+                        mode: 'chosenTrait',
+                        amount: 1,
+                        allowedTraits: [...event.payload.allowedTraits],
+                        recommendedAction: 'endTurn',
+                    },
+                },
+                activePlayerId: event.payload.playerId,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+            };
+        }
+        case EVENTS.TOOTH_NECKLACE_TRAIT_GAINED: {
+            const actor = findExplorerByPlayerId(core, event.payload.playerId);
+            if (actor && event.payload.accepted && event.payload.trait) {
+                moveExplorerTraitSteps(actor, event.payload.trait, 1);
+            }
+            core.pendingEventChoice = null;
+            const synced = syncCurrentExplorerProjection(core);
+            const loggedCore: BetrayalCore = {
+                ...synced,
+                pendingEventChoice: null,
+                activePlayerId: null,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(
+                    synced,
+                    event.payload.logText,
+                    event.payload.accepted ? 'accent' : 'neutral',
+                ),
+            };
+            return reduceEvent(
+                loggedCore,
+                nowEvent(EVENTS.TURN_ENDED, cloneTurnEndedPayload(event.payload.deferredTurnEnd), event.timestamp),
+            );
+        }
         case EVENTS.TURN_ENDED: {
             let roomEffectCore = core;
             let pendingRoomDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
@@ -17037,6 +20507,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                             monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
                             turnLogText: event.payload.turnLogText,
                             helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
+                            skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
                         });
                     } else if (!shouldDeferRoomEndTurnDamage) {
                         applyPhysicalDamage(roomEffectCore.currentExplorer, event.payload.roomEndTurnEffect.physicalDamage);
@@ -17063,6 +20534,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
                         turnLogText: event.payload.turnLogText,
                         helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
+                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
                     });
                 }
                 roomEffectCore = syncCurrentExplorerProjection(roomEffectCore);
@@ -17149,6 +20621,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
                         turnLogText: event.payload.turnLogText,
                         helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
+                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
                     },
                     consumedRabbitFootCardIds: [],
                 };
@@ -17202,6 +20675,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         previousPhysicalDamage: event.payload.roomEndTurnEffect.physicalDamage ?? 0,
                         previousDestinationRoomId: event.payload.roomEndTurnEffect.destinationRoomId,
                         helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
+                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
                     },
                     consumedRabbitFootCardIds: [],
                 }
@@ -17259,6 +20733,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     [event.payload.previousPlayerId]: [],
                 },
                 nextNonCombatTraitReplacement: null,
+                nextNonCombatTraitRollTotalReplacement: null,
+                pendingExtraTurnAfterCurrentTurn: clearPendingExtraTurnAfterCurrentTurn(nextCore, event.payload.previousPlayerId),
                 turnEndedByDiscovery: false,
                 turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
                 scenarioRuntime: resetScenarioRuntime,
@@ -17280,11 +20756,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     )
                     : appendActivity(nextCore, event.payload.logText, 'accent'),
             };
-            return startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
-                advancedCore,
-                event.payload.previousPlayerId,
-                event.timestamp,
-            );
+            const withBloodFromStone = event.payload.skipBloodFromStoneMonsterTurnStart
+                ? advancedCore
+                : startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
+                    advancedCore,
+                    event.payload.previousPlayerId,
+                    event.timestamp,
+                );
+            return event.payload.deferredHelpingHandsMonsterTurnStart
+                ? reduceEvent(withBloodFromStone, nowEvent(
+                    EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED,
+                    {
+                        ...event.payload.deferredHelpingHandsMonsterTurnStart,
+                        moveDice: [...event.payload.deferredHelpingHandsMonsterTurnStart.moveDice],
+                    },
+                    event.timestamp,
+                ))
+                : withBloodFromStone;
         }
         case EVENTS.DAMAGE_ALLOCATION_RESOLVED: {
             const pending = core.pendingDamageAllocation;
@@ -17294,7 +20782,10 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             }
             const deathPreventionScenarioRuntimeBeforeDefeat = cloneScenarioRuntimeStatus(core.scenarioRuntime);
             const deathPreventionMonstersBeforeDefeat = core.monsters.map(cloneMonster);
-            applyGeneralDamage(target, event.payload.amount, event.payload.traits, { allowSkull: pending.allowSkull });
+            const appliedDamage = applyGeneralDamage(target, event.payload.amount, event.payload.traits, { allowSkull: pending.allowSkull });
+            if (event.payload.damageKind === 'physical' && appliedDamage > 0) {
+                applyStrangeAmuletPhysicalDamageBonus(target);
+            }
             const targetReachedDeath = pending.allowSkull && isExplorerDead(target);
             if (targetReachedDeath && event.payload.deathPrevention?.prevented) {
                 setExplorerTraitsToDeathsDoor(target);
@@ -17368,7 +20859,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             }
             if (
                 targetDefeated
-                && pending.sourceTitle === '攻击'
+                && (pending.sourceTitle === '攻击' || pending.sourceTitle === '木乃伊攻击')
                 && target.playerId !== core.scenarioRuntime.traitorPlayerId
             ) {
                 const livingHeroes = getAllExplorers(core).filter((explorer) => (
@@ -17378,21 +20869,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 if (livingHeroes.length === 0) {
                     const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
                     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                        result: {
-                            hauntId: 'crimson-jack-returns',
-                            hauntTitle: scenarioConfigById(core.scenarioId).hauntTitle,
-                            outcome: 'traitor',
-                            winners: [traitor.playerId],
-                            traitorPlayerId: traitor.playerId,
-                            survivorsEscaped: [],
-                            reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
-                            stats: {
-                                roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                                omensDrawn: countDrawnCards(core, 'omen'),
-                                itemsDrawn: countDrawnCards(core, 'item'),
-                                eventsDrawn: countDrawnCards(core, 'event'),
+                        result: isMummyHaunt(core)
+                            ? createMummyEndgameResult(core, 'traitor')
+                            : {
+                                hauntId: 'crimson-jack-returns',
+                                hauntTitle: resolveCrimsonJackHauntTitle(),
+                                outcome: 'traitor',
+                                winners: [traitor.playerId],
+                                traitorPlayerId: traitor.playerId,
+                                survivorsEscaped: [],
+                                reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
+                                stats: {
+                                    roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
+                                    omensDrawn: countDrawnCards(core, 'omen'),
+                                    itemsDrawn: countDrawnCards(core, 'item'),
+                                    eventsDrawn: countDrawnCards(core, 'event'),
+                                },
                             },
-                        },
                     }, event.timestamp));
                 }
             }
@@ -17440,6 +20933,18 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 activityLog: appendActivity(synced, event.payload.logText, 'warning'),
             };
         }
+        case EVENTS.RECENT_ROLL_ACKNOWLEDGED: {
+            if (core.recentRoll?.id !== event.payload.rollId) {
+                return core;
+            }
+            core.recentRoll = null;
+            const synced = syncCurrentExplorerProjection(core);
+            return {
+                ...synced,
+                recommendedAction: resolveRecommendedAction(synced),
+                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+            };
+        }
         case EVENTS.TURN_END_ROLL_ACKNOWLEDGED: {
             const pendingDeathPreventionRecentRoll = core.recentRoll?.kind === 'deathPrevention'
                 ? core.recentRoll
@@ -17468,6 +20973,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
                     turnLogText: event.payload.logText,
                     helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
+                    skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
                 })
                 : null;
             if (pendingRoomEndTurnDamageAllocation) {
@@ -17529,6 +21035,20 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     ? cloneMagicCameraRuntimeState(nextCore.scenarioRuntime.magicCamera)
                     : undefined,
             };
+            const recentMonsterMoveRoll = monsterMovementRoll
+                ? {
+                    id: `monster-move-${monsterMovementRoll.monsterId}-${event.timestamp}`,
+                    kind: 'monsterMoveRoll' as const,
+                    playerId: monsterMovementRoll.playerId,
+                    sourceTitle: `${monsterMovementRoll.monsterName}移动`,
+                    trait: 'speed' as const,
+                    rollLabel: `速度 ${monsterMovementRoll.speed}`,
+                    dice: [...monsterMovementRoll.dice],
+                    passiveBonus: 0,
+                    latestLabel: `可移动 ${monsterMovementRoll.moveAllowance} 间`,
+                    consumedRabbitFootCardIds: [],
+                }
+                : null;
             const activityCore = {
                 ...nextCore,
                 scenarioRuntime: resetScenarioRuntime,
@@ -17545,6 +21065,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     [event.payload.previousPlayerId]: [],
                 },
                 nextNonCombatTraitReplacement: null,
+                nextNonCombatTraitRollTotalReplacement: null,
+                pendingExtraTurnAfterCurrentTurn: clearPendingExtraTurnAfterCurrentTurn(nextCore, event.payload.previousPlayerId),
                 turnEndedByDiscovery: false,
                 turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
                 scenarioRuntime: resetScenarioRuntime,
@@ -17553,7 +21075,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 highlightedDeckKind: null,
                 pendingTradeAgreement: null,
                 activePlayerId: null,
-                recentRoll: null,
+                recentRoll: recentMonsterMoveRoll,
                 activityLog: revived.revived
                     ? appendActivity(
                         {
@@ -17615,6 +21137,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.scenarioRuntime.magicCamera = undefined;
             core.scenarioRuntime.helpingHands = undefined;
             core.scenarioRuntime.bloodFromStone = undefined;
+            core.scenarioRuntime.mummy = undefined;
+            core.scenarioRuntime.uponReflection = hauntCardNumber === 7
+                ? cloneUponReflectionRuntimeState(
+                    event.payload.uponReflectionSetup
+                        ?? createUponReflectionRuntimeState(core, hauntRevealerPlayerId, DEFAULT_BETRAYAL_RANDOM),
+                )
+                : undefined;
+            if (hauntCardNumber === 1 && core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage') {
+                core.scenarioRuntime.mummy = cloneMummyRuntimeState(setupMummyHaunt(core, traitorPlayerId));
+            }
             if (hauntCardNumber === 12) {
                 core.scenarioRuntime.helpingHands = cloneHelpingHandsRuntimeState(
                     event.payload.helpingHandsSetup
@@ -17630,7 +21162,17 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (hauntCardNumber === 5) {
                 setupBloodFromStoneHaunt(core);
             }
+            if (hauntCardNumber === 7) {
+                setupUponReflectionHaunt(core);
+            }
             core.scenarioRuntime.hauntSetupQueue = resolveBetrayalHauntSetupQueue(core);
+            if (hauntCardNumber === 7) {
+                core.scenarioRuntime.hauntSetupQueue = resolveHauntSetupQueueWithEntryStatus(
+                    core,
+                    'deal-secret-mirror-combination',
+                    'resolved',
+                );
+            }
             core.scenarioRuntime.monsterTurn = createInitialMonsterTurnRuntimeState();
             core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId =
                 createBloodFromStoneTurnStartVisibility(core);
@@ -17644,11 +21186,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ...(traitorPlayerId ? { [traitorPlayerId]: [] } : {}),
             };
             core.nextNonCombatTraitReplacement = null;
+            core.nextNonCombatTraitRollTotalReplacement = null;
             core.turnEndedByDiscovery = false;
             const traitor = traitorPlayerId
                 ? findExplorerByPlayerId(core, traitorPlayerId)
                 : null;
-            if (traitor && (hauntCardNumber ?? 1) === 1) {
+            if (
+                traitor
+                && (hauntCardNumber ?? 1) === 1
+                && core.scenarioRuntime.hauntScenarioCardId !== 'mummy-rampage'
+            ) {
                 healTraitorForHaunt(traitor, core.playerIds.length);
             }
             const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
@@ -17756,17 +21303,30 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 core.scenarioRuntime.jackSpiritRoomId = event.payload.toRoomId;
                 core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
             }
+            if (event.payload.teleportMove) {
+                monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
+                    ...monsterTurn.movedMonsterIdsThisTurn,
+                    event.payload.monsterId,
+                ]));
+            }
             monsterTurn.moveRemainingById = {
                 ...monsterTurn.moveRemainingById,
                 [event.payload.monsterId]: event.payload.moveRemaining,
             };
             core.scenarioRuntime.monsterTurn = monsterTurn;
+            const mummyGirlPickedUp = collectMummyGirlByMummyIfPresent(
+                core,
+                event.payload.monsterId,
+                event.payload.toRoomId,
+            );
+            const mummyGirlPickupLog = mummyGirlPickedUp ? '；木乃伊拾起女孩' : '';
             const syncedCore = syncCurrentExplorerProjection(core);
-            return {
+            const movedCore = {
                 ...syncedCore,
                 recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
+                activityLog: appendActivity(syncedCore, `${event.payload.logText}${mummyGirlPickupLog}`, 'accent'),
             };
+            return completeMummyTraitorVictoryIfNeeded(movedCore, event.timestamp) ?? movedCore;
         }
         case EVENTS.MONSTER_ATTACK_HERO_RESOLVED: {
             const monsterTurn = cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
@@ -17779,14 +21339,41 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (event.payload.monsterDamageOutcome) {
                 applyBetrayalMonsterDamageOutcome(core, event.payload.monsterDamageOutcome);
             }
-            const pendingMonsterAttackDamageAllocation = defender && event.payload.damageToHero
+            const mummyStealableCards = defender && event.payload.damageToHero && event.payload.damageToHero >= 2
+                ? resolveMummyStealableCards(core, defender.playerId)
+                : [];
+            const pendingMummyAttackReward = defender
+                && isMummyMonster(core, event.payload.monsterId)
+                && event.payload.damageToHero
+                && event.payload.damageToHero >= 2
+                && mummyStealableCards.length > 0
+                && core.scenarioRuntime.mummy
+                ? {
+                    id: `mummy-attack-reward-${event.payload.monsterId}-${defender.playerId}-${event.timestamp}`,
+                    controllerPlayerId: event.payload.playerId,
+                    monsterId: event.payload.monsterId,
+                    monsterName: event.payload.monsterName,
+                    defenderPlayerId: defender.playerId,
+                    damageToHero: event.payload.damageToHero,
+                    defenderTraitsBeforeDamage: { ...event.payload.defenderTraitsBeforeDamage },
+                    stealableCardIds: mummyStealableCards.map((card) => card.id),
+                }
+                : undefined;
+            if (pendingMummyAttackReward && core.scenarioRuntime.mummy) {
+                core.scenarioRuntime.mummy.pendingAttackReward = pendingMummyAttackReward;
+            }
+            const damageKind = event.payload.damageKind ?? 'physical';
+            const pendingMonsterAttackDamageAllocation = defender && event.payload.damageToHero && !pendingMummyAttackReward
                 ? createPendingDamageAllocation({
                     id: `monster-attack-damage-${defender.playerId}-${event.timestamp}`,
                     explorer: defender,
                     sourceTitle: '攻击',
-                    damageKind: 'physical',
+                    damageKind,
                     amount: event.payload.damageToHero,
                     allowSkull: true,
+                    forcedTraitSequence: isMummyMonster(core, event.payload.monsterId)
+                        ? resolveMummyForcedDamageTraits(defender, event.payload.damageToHero, { allowSkull: true })
+                        : undefined,
                 })
                 : null;
             const monsterTraits = core.monsters.find((monster) => monster.id === event.payload.monsterId);
@@ -17794,7 +21381,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return {
                 ...syncedCore,
                 pendingDamageAllocation: pendingMonsterAttackDamageAllocation,
-                activePlayerId: pendingMonsterAttackDamageAllocation?.playerId ?? null,
+                activePlayerId: pendingMonsterAttackDamageAllocation?.playerId
+                    ?? pendingMummyAttackReward?.controllerPlayerId
+                    ?? null,
                 recentRoll: {
                     id: `${event.payload.monsterId}-normal-attack-${event.timestamp}`,
                     kind: 'attackRoll' as const,
@@ -17805,15 +21394,20 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     latestLabel: event.payload.monsterRoll === event.payload.heroRoll
                         ? '平手无伤害'
                         : event.payload.damageToHero
-                            ? `造成 ${event.payload.damageToHero} 点伤害`
+                            ? pendingMummyAttackReward
+                                ? `可造成 ${event.payload.damageToHero} 点伤害或偷取`
+                                : `造成 ${event.payload.damageToHero} 点伤害`
                             : (event.payload.monsterDamageOutcome?.logLabel ?? '怪物受伤'),
                     attack: {
                         target: 'hero',
                         defenderPlayerId: event.payload.targetPlayerId,
-                        damageKind: 'physical',
+                        damageKind,
                         previousDamageToAttacker: event.payload.monsterDamageOutcome?.damageAmount ?? 0,
                         previousDamageToDefender: event.payload.damageToHero ?? 0,
                         defenderRoll: event.payload.heroRoll,
+                        defenderDefenseExtraDice: defender
+                            ? resolveDefenseExtraDiceWhenAttacked(defender)
+                            : 0,
                         attackerTraitsBeforeDamage: {
                             might: monsterTraits?.might ?? 0,
                             speed: monsterTraits?.speed ?? 0,
@@ -17825,7 +21419,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     },
                     consumedRabbitFootCardIds: [],
                 },
-                recommendedAction: pendingMonsterAttackDamageAllocation
+                recommendedAction: pendingMonsterAttackDamageAllocation || pendingMummyAttackReward
                     ? 'endTurn'
                     : resolveRecommendedAction(syncedCore),
                 activityLog: appendActivity(
@@ -17890,6 +21484,59 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
             };
         }
+        case EVENTS.DYNAMITE_ATTACK_RESOLVED: {
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'haunt-attack',
+                event.payload.cardId,
+            ]));
+            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
+            if (attacker) {
+                attacker.inventory = attacker.inventory.filter((card) => card.id !== event.payload.cardId);
+            }
+            buryPossessionCardToBottom(core, 'item', event.payload.cardId);
+            for (const monsterRoll of event.payload.monsterRolls) {
+                if (monsterRoll.monsterDamageOutcome) {
+                    applyBetrayalMonsterDamageOutcome(core, monsterRoll.monsterDamageOutcome);
+                }
+            }
+            const damageAllocations = event.payload.explorerRolls
+                .filter((roll) => !roll.passed)
+                .map((roll) => {
+                    const explorer = findExplorerByPlayerId(core, roll.playerId);
+                    return explorer
+                        ? createPendingDamageAllocation({
+                            id: `dynamite-damage-${roll.playerId}-${event.timestamp}`,
+                            explorer,
+                            sourceTitle: event.payload.cardName,
+                            damageKind: 'physical',
+                            amount: 4,
+                            allowSkull: true,
+                        })
+                        : null;
+                })
+                .filter((allocation): allocation is BetrayalPendingDamageAllocationState => Boolean(allocation));
+            const pendingDynamiteDamageAllocation = chainPendingDamageAllocations(damageAllocations);
+            const syncedCore = syncCurrentExplorerProjection(core);
+            if (pendingDynamiteDamageAllocation) {
+                return {
+                    ...syncedCore,
+                    pendingDamageAllocation: pendingDynamiteDamageAllocation,
+                    activePlayerId: pendingDynamiteDamageAllocation.playerId,
+                    recommendedAction: 'endTurn',
+                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
+                };
+            }
+            return {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(
+                    syncedCore,
+                    event.payload.logText,
+                    event.payload.monsterRolls.some((roll) => !roll.passed) ? 'warning' : 'accent',
+                ),
+            };
+        }
         case EVENTS.HAUNT_ATTACK_RESOLVED: {
             core.usedCardIdsThisTurn = Array.from(new Set([
                 ...core.usedCardIdsThisTurn,
@@ -17951,6 +21598,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         previousDamageToAttacker: event.payload.damageToAttacker ?? 0,
                         previousDamageToDefender: event.payload.damageToDefender ?? 0,
                         defenderRoll: event.payload.defenderRoll ?? 0,
+                        defenderDefenseExtraDice: defender
+                            ? resolveDefenseExtraDiceWhenAttacked(defender)
+                            : 0,
                         attackerTraitsBeforeDamage: { ...event.payload.attackRoll.attackerTraitsBeforeDamage },
                         defenderTraitsBeforeDamage: event.payload.attackRoll.defenderTraitsBeforeDamage
                             ? { ...event.payload.attackRoll.defenderTraitsBeforeDamage }
@@ -18095,7 +21745,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     activityLog: appendActivity(nextCore, event.payload.logText, tone),
                 };
             }
-            if (event.payload.outcome === 'traitor-defeated' && event.payload.defeatedPlayerId) {
+            if (
+                event.payload.outcome === 'traitor-defeated'
+                && event.payload.defeatedPlayerId
+                && !isMummyHaunt(core)
+            ) {
                 core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
                     ...core.scenarioRuntime.deadExplorerPlayerIds,
                     event.payload.defeatedPlayerId,
@@ -18122,23 +21776,24 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                 ));
                 if (livingHeroes.length === 0) {
-                    const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
                     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                        result: {
-                            hauntId: 'crimson-jack-returns',
-                            hauntTitle: scenarioConfigById(core.scenarioId).hauntTitle,
-                            outcome: 'traitor',
-                            winners: [traitor.playerId],
-                            traitorPlayerId: traitor.playerId,
-                            survivorsEscaped: [],
-                            reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
-                            stats: {
-                                roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                                omensDrawn: countDrawnCards(core, 'omen'),
-                                itemsDrawn: countDrawnCards(core, 'item'),
-                                eventsDrawn: countDrawnCards(core, 'event'),
+                        result: isMummyHaunt(core)
+                            ? createMummyEndgameResult(core, 'traitor')
+                            : {
+                                hauntId: 'crimson-jack-returns',
+                                hauntTitle: resolveCrimsonJackHauntTitle(),
+                                outcome: 'traitor',
+                                winners: [findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer)?.playerId ?? core.currentExplorer.playerId],
+                                traitorPlayerId: findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer)?.playerId ?? core.currentExplorer.playerId,
+                                survivorsEscaped: [],
+                                reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
+                                stats: {
+                                    roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
+                                    omensDrawn: countDrawnCards(core, 'omen'),
+                                    itemsDrawn: countDrawnCards(core, 'item'),
+                                    eventsDrawn: countDrawnCards(core, 'event'),
+                                },
                             },
-                        },
                     }, event.timestamp));
                 }
             }
@@ -18251,6 +21906,75 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 recommendedAction: resolveRecommendedAction(syncedCore),
                 activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
             };
+        }
+        case EVENTS.MUMMY_ATTACK_REWARD_RESOLVED: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!mummy) {
+                return core;
+            }
+            const defender = findExplorerByPlayerId(core, event.payload.defenderPlayerId);
+            mummy.pendingAttackReward = undefined;
+            if (event.payload.choice === 'steal' && defender && event.payload.stolenCardId) {
+                if (
+                    event.payload.stolenCardId === MUMMY_GIRL_STEAL_CARD_ID
+                    && mummy.girlHolderPlayerId === defender.playerId
+                ) {
+                    mummy.girlRoomId = null;
+                    mummy.girlHolderPlayerId = null;
+                    mummy.girlHeldByMummy = true;
+                } else {
+                    const stolenCard = defender.inventory.find((card) => card.id === event.payload.stolenCardId);
+                    if (stolenCard) {
+                        defender.inventory = defender.inventory.filter((card) => card.id !== stolenCard.id);
+                        mummy.mummyCarriedCards = [
+                            ...mummy.mummyCarriedCards.filter((card) => card.id !== stolenCard.id),
+                            cloneInventoryCard(stolenCard),
+                        ];
+                        if (stolenCard.kind === 'omen') {
+                            mummy.mummyCarriedOmenIds = Array.from(new Set([
+                                ...mummy.mummyCarriedOmenIds,
+                                stolenCard.id,
+                            ]));
+                        }
+                    }
+                }
+            }
+            const pendingMummyDamageAllocation = defender && event.payload.choice === 'damage' && event.payload.damageToHero
+                ? createPendingDamageAllocation({
+                    id: `mummy-attack-damage-${event.payload.defenderPlayerId}-${event.timestamp}`,
+                    explorer: defender,
+                    sourceTitle: '木乃伊攻击',
+                    damageKind: 'physical',
+                    amount: event.payload.damageToHero,
+                    allowSkull: true,
+                    forcedTraitSequence: resolveMummyForcedDamageTraits(
+                        defender,
+                        event.payload.damageToHero,
+                        { allowSkull: true },
+                    ),
+                })
+                : null;
+            const syncedCore = syncCurrentExplorerProjection(core);
+            if (pendingMummyDamageAllocation) {
+                return {
+                    ...syncedCore,
+                    pendingDamageAllocation: pendingMummyDamageAllocation,
+                    activePlayerId: pendingMummyDamageAllocation.playerId,
+                    recommendedAction: 'endTurn',
+                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
+                };
+            }
+            const loggedCore = {
+                ...syncedCore,
+                activePlayerId: null,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(
+                    syncedCore,
+                    event.payload.logText,
+                    event.payload.choice === 'damage' ? 'warning' : 'accent',
+                ),
+            };
+            return completeMummyTraitorVictoryIfNeeded(loggedCore, event.timestamp) ?? loggedCore;
         }
         case EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED: {
             const helpingHands = core.scenarioRuntime.helpingHands;
@@ -18423,9 +22147,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ]));
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'learn-about-jack'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             const syncedCore = syncCurrentExplorerProjection(core);
             return {
                 ...syncedCore,
@@ -18446,9 +22168,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 }
             }
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'study-exorcism'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             const syncedCore = syncCurrentExplorerProjection(core);
             return {
                 ...syncedCore,
@@ -18458,9 +22178,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
         }
         case EVENTS.JACK_EXORCISED:
             core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'exorcise-jack'];
-            core.nextNonCombatTraitReplacement = core.nextNonCombatTraitReplacement?.playerId === event.payload.playerId
-                ? null
-                : core.nextNonCombatTraitReplacement;
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
             core.recentRoll = {
                 id: `${event.payload.playerId}-exorcise-jack-${event.timestamp}`,
                 kind: 'hauntActionTraitCheck',
@@ -18492,7 +22210,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
                         result: {
                             hauntId: 'crimson-jack-returns',
-                            hauntTitle: scenarioConfigById(core.scenarioId).hauntTitle,
+                            hauntTitle: resolveCrimsonJackHauntTitle(),
                             outcome: 'traitor',
                             winners: [traitor.playerId],
                             traitorPlayerId: traitor.playerId,
@@ -18517,7 +22235,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
                 result: {
                     hauntId: 'crimson-jack-returns',
-                    hauntTitle: scenarioConfigById(core.scenarioId).hauntTitle,
+                    hauntTitle: resolveCrimsonJackHauntTitle(),
                     outcome: 'survivors',
                     winners: getAllExplorers(core)
                         .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
@@ -18541,6 +22259,240 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     },
                 },
             }, event.timestamp));
+        case EVENTS.MUMMY_NAME_STUDIED: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!mummy) {
+                return core;
+            }
+            if (event.payload.success) {
+                mummy.knowledgeTokenCount = Math.max(mummy.knowledgeTokenCount, 1);
+                mummy.trueNameFound = true;
+            }
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'study-mummy-name',
+            ]));
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
+            core.recentRoll = {
+                id: `${event.payload.playerId}-study-mummy-name-${event.timestamp}`,
+                kind: 'hauntActionTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: '寻找木乃伊真名',
+                trait: 'knowledge',
+                rollLabel: '知识检定',
+                dice: [...event.payload.dice],
+                passiveBonus: event.payload.passiveBonus,
+                latestLabel: event.payload.success ? '取得第 1 枚知识标记' : '未取得知识标记',
+                consumedRabbitFootCardIds: [],
+            };
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
+            };
+        }
+        case EVENTS.MUMMY_BANISHMENT_LEARNED: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!mummy) {
+                return core;
+            }
+            if (event.payload.success) {
+                mummy.knowledgeTokenCount = Math.max(mummy.knowledgeTokenCount, 2);
+                mummy.banishmentSpellLearned = true;
+            }
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'learn-mummy-banishment',
+            ]));
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
+            core.recentRoll = {
+                id: `${event.payload.playerId}-learn-mummy-banishment-${event.timestamp}`,
+                kind: 'hauntActionTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: '学习驱逐法术',
+                trait: 'knowledge',
+                rollLabel: '知识检定',
+                dice: [...event.payload.dice],
+                passiveBonus: event.payload.passiveBonus,
+                latestLabel: event.payload.success ? '取得第 2 枚知识标记' : '未学会驱逐法术',
+                consumedRabbitFootCardIds: [],
+            };
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
+            };
+        }
+        case EVENTS.MUMMY_BANISHED: {
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'banish-mummy',
+            ]));
+            core.recentRoll = {
+                id: `${event.payload.playerId}-banish-mummy-${event.timestamp}`,
+                kind: 'hauntActionTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: '驱逐木乃伊',
+                trait: 'sanity',
+                rollLabel: '神志对抗',
+                dice: [...event.payload.heroDice],
+                passiveBonus: event.payload.passiveBonus,
+                latestLabel: event.payload.success
+                    ? `驱逐成功：英雄 ${event.payload.heroRoll} / 木乃伊 ${event.payload.mummyRoll}`
+                    : `驱逐失败：英雄 ${event.payload.heroRoll} / 木乃伊 ${event.payload.mummyRoll}`,
+                consumedRabbitFootCardIds: [],
+            };
+            if (event.payload.success) {
+                return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+                    result: createMummyEndgameResult(core, 'survivors'),
+                }, event.timestamp));
+            }
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
+            };
+        }
+        case EVENTS.MUMMY_GIRL_PICKED_UP: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!mummy) {
+                return core;
+            }
+            mummy.girlRoomId = null;
+            mummy.girlHolderPlayerId = event.payload.playerId;
+            mummy.girlHeldByMummy = false;
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
+            };
+        }
+        case EVENTS.MUMMY_GIRL_GIVEN: {
+            const mummy = core.scenarioRuntime.mummy;
+            if (!mummy) {
+                return core;
+            }
+            mummy.girlRoomId = null;
+            mummy.girlHolderPlayerId = null;
+            mummy.girlHeldByMummy = true;
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
+            };
+        }
+        case EVENTS.MUMMY_OMEN_GIVEN: {
+            const mummy = core.scenarioRuntime.mummy;
+            const actor = findExplorerByPlayerId(core, event.payload.playerId);
+            if (!mummy || !actor) {
+                return core;
+            }
+            actor.inventory = actor.inventory.filter((card) => card.id !== event.payload.cardId);
+            mummy.mummyCarriedOmenIds = Array.from(new Set([
+                ...mummy.mummyCarriedOmenIds,
+                event.payload.cardId,
+            ]));
+            const syncedCore = syncCurrentExplorerProjection(core);
+            const loggedCore = {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
+            };
+            return completeMummyTraitorVictoryIfNeeded(loggedCore, event.timestamp) ?? loggedCore;
+        }
+        case EVENTS.UPON_REFLECTION_EVENT_HINT_GIVEN: {
+            const uponReflection = core.scenarioRuntime.uponReflection;
+            if (!uponReflection) {
+                return core;
+            }
+            removeEventCardForUponReflectionHint(core, event.payload.eventName);
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'give-mirror-hint',
+            ]));
+            core.pendingEventChoice = null;
+            core.recentRoll = null;
+            uponReflection.hintedEvents = [
+                ...uponReflection.hintedEvents,
+                {
+                    revealerPlayerId: event.payload.revealerPlayerId,
+                    targetPlayerId: event.payload.targetPlayerId,
+                    eventName: event.payload.eventName,
+                    eventText: event.payload.eventText,
+                    turnNumber: event.payload.turnNumber,
+                },
+            ];
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: 'endTurn',
+                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
+            };
+        }
+        case EVENTS.UPON_REFLECTION_CURSE_BREAK_ATTEMPTED: {
+            const uponReflection = core.scenarioRuntime.uponReflection;
+            if (!uponReflection) {
+                return core;
+            }
+            core.usedCardIdsThisTurn = Array.from(new Set([
+                ...core.usedCardIdsThisTurn,
+                'break-mirror-curse',
+            ]));
+            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
+            uponReflection.breakAttempts = [
+                ...uponReflection.breakAttempts,
+                {
+                    playerId: event.payload.playerId,
+                    roomId: event.payload.roomId,
+                    roomName: event.payload.roomName,
+                    trait: event.payload.trait,
+                    omenId: event.payload.omenId,
+                    omenName: event.payload.omenName,
+                    rollTotal: event.payload.rollTotal,
+                    dice: [...event.payload.dice],
+                    passiveBonus: event.payload.passiveBonus,
+                    successRoll: event.payload.successRoll,
+                    combinationCorrect: event.payload.combinationCorrect,
+                },
+            ];
+            core.recentRoll = {
+                id: `${event.payload.playerId}-break-mirror-curse-${event.timestamp}`,
+                kind: 'hauntActionTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: '破咒',
+                trait: event.payload.trait,
+                rollLabel: `${TRAIT_LABEL[event.payload.trait]}检定`,
+                dice: [...event.payload.dice],
+                passiveBonus: event.payload.passiveBonus,
+                latestLabel: event.payload.combinationCorrect
+                    ? '破咒成功'
+                    : event.payload.successRoll
+                        ? '组合不正确'
+                        : '无反馈',
+                consumedRabbitFootCardIds: [],
+            };
+            const syncedCore = syncCurrentExplorerProjection(core);
+            const loggedCore = {
+                ...syncedCore,
+                recommendedAction: 'endTurn' as const,
+                activityLog: appendActivity(
+                    syncedCore,
+                    event.payload.logText,
+                    event.payload.combinationCorrect ? 'accent' : 'warning',
+                ),
+            };
+            if (event.payload.combinationCorrect) {
+                return reduceEvent(loggedCore, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+                    result: createUponReflectionEndgameResult(loggedCore, 'survivors'),
+                }, event.timestamp));
+            }
+            return loggedCore;
+        }
         case EVENTS.SCENARIO_COMPLETED:
             return {
                 ...core,
@@ -18553,7 +22505,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     reward: { ...event.payload.result.reward },
                     stats: { ...event.payload.result.stats },
                 },
-                activityLog: appendActivity(core, scenarioConfigById(core.scenarioId).logs.scenarioCompleted, 'accent'),
+                activityLog: appendActivity(core, resolveScenarioCompletedLog(core, event.payload.result), 'accent'),
             };
         default:
             return core;

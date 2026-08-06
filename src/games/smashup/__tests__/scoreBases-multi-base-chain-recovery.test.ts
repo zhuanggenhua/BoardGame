@@ -321,23 +321,22 @@ function assertPirateKingFirstMateChainResult(
     expect(finalState.sys.phase).toBe('playCards');
     expect(finalState.core.currentPlayerIndex).toBe(1);
 
-    // 当前实现下，该链路会完整走完“托尔图加计分 -> 大副移动 -> 丛林补计分”的链路：
+    // 当前实时计分链下，该链路会完整走完“托尔图加计分 -> 大副移动 -> 重新检查剩余基地”：
     // - base_tortuga 计分：P0=4, P1=3
-    // - pirate_king 从丛林移走后，已在 scoreBases 进入时锁定的丛林仍会补计分：P0 再得 2
-    expect(finalState.core.players['0'].vp).toBe(6);
+    // - pirate_king 从丛林移走后，丛林实时不再达标，因此不会补计分
+    expect(finalState.core.players['0'].vp).toBe(4);
     expect(finalState.core.players['1'].vp).toBe(3);
     const baseIds = finalState.core.bases.map(base => base.defId);
     expect(baseIds[0]).toBe('base_central_brain');
-    expect(baseIds[1]).toBe('base_cave_of_shinies');
+    expect(baseIds[1]).toBe('base_the_jungle');
     expect(baseIds[2]).toBe('base_secret_garden');
     expect(finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['reserve-p1']);
-    expect(finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual([]);
+    expect(finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['jungle-p0']);
     // 大副交互在该链中固定选择 baseIndex=2（secret_garden）。
     const base2Uids = finalState.core.bases[2].minions.map(minion => minion.uid);
     expect(base2Uids).toContain('mate-0');
     const remainingMinionUids = finalState.core.bases.flatMap(base => base.minions.map(minion => minion.uid));
     expect(remainingMinionUids).not.toContain('king-0');
-    expect(remainingMinionUids).not.toContain('jungle-p0');
     expect(remainingMinionUids).not.toContain('tortuga-p0');
 }
 
@@ -649,8 +648,8 @@ describe('scoreBases 多基地计分链恢复', () => {
             'su:before_scoring_cleared',
             'su:when_scoring_cleared',
             'su:after_scoring_cleared',
-            'su:scoring_eligible_bases_locked',
             'SYS_INTERACTION_RESOLVED',
+            'su:scoring_eligible_bases_locked',
             'su:before_scoring_triggered',
             'su:when_scoring_triggered',
             'su:base_scored',

@@ -1084,6 +1084,15 @@
         }
       }
     },
+    "monsters/compressed/mummy": {
+      "variants": {
+        "webp": {
+          "sha256": "c60233f6df1ac0979aca3a458ef27b8c8b39c3ad9733b6fb0a15ca38e721745a",
+          "bytes": 28934,
+          "mime": "image/webp"
+        }
+      }
+    },
     "monsters/compressed/spirit": {
       "variants": {
         "webp": {
@@ -1099,6 +1108,15 @@
           "sha256": "5bd1e6f454ab1d77ed19c786fb2f0c623b67161a0b13b4780625b8b8cc97176a",
           "bytes": 146500,
           "mime": "image/webp"
+        }
+      }
+    },
+    "monsters/mummy": {
+      "variants": {
+        "png": {
+          "sha256": "85b1603042f2eb272cac36eda93585e313afc229413abe2b03a6f15cd6b7a003",
+          "bytes": 110469,
+          "mime": "image/png"
         }
       }
     },
@@ -1309,6 +1327,15 @@
         }
       }
     },
+    "tokens/explorers/compressed/michelle-monroe": {
+      "variants": {
+        "webp": {
+          "sha256": "0dbacb2b5643facbac23274f6a3b6b6621c7bd0aa117d067fdb7c7ca9ed7c464",
+          "bytes": 30890,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/explorers/compressed/rebecca-allen": {
       "variants": {
         "webp": {
@@ -1318,11 +1345,20 @@
         }
       }
     },
+    "tokens/explorers/compressed/stephanie-richter": {
+      "variants": {
+        "webp": {
+          "sha256": "fa5e92f43cb9b3461cf955d347dde9b3f0e8e4a5e6fe57346c689814d688d707",
+          "bytes": 42232,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/explorers/darryl-highla": {
       "variants": {
         "png": {
-          "sha256": "37ad637078bca7971f97b30b502445f0482cc6d22943cadc297bb3109de8255c",
-          "bytes": 219060,
+          "sha256": "603fc76b59557ab908fe427b2b37da891eee5e528d32973e4e05e19879915f6a",
+          "bytes": 142634,
           "mime": "image/png"
         }
       }
@@ -1345,12 +1381,156 @@
         }
       }
     },
+    "tokens/explorers/michelle-monroe": {
+      "variants": {
+        "png": {
+          "sha256": "603fc76b59557ab908fe427b2b37da891eee5e528d32973e4e05e19879915f6a",
+          "bytes": 142634,
+          "mime": "image/png"
+        }
+      }
+    },
     "tokens/explorers/rebecca-allen": {
       "variants": {
         "png": {
-          "sha256": "5254dadcb370a3a19e2b614a9a06386f16540ee0c1692d5ee8a164b5cb76cd16",
-          "bytes": 228823,
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
           "mime": "image/png"
+        }
+      }
+    },
+    "tokens/explorers/stephanie-richter": {
+      "variants": {
+        "png": {
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/bakeneko": {
+      "variants": {
+        "png": {
+          "sha256": "37ad637078bca7971f97b30b502445f0482cc6d22943cadc297bb3109de8255c",
+          "bytes": 219060,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/bakeneko-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "55f95c83b960c981febe67d93497c8f232510c38403d0384ce5d98e5c8d314c7",
+          "bytes": 224231,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/compressed/bakeneko": {
+      "variants": {
+        "webp": {
+          "sha256": "ac260cf5fd8c44dc51e906a6e95714e0a1b34cea27ecde2f00348887426c9918",
+          "bytes": 51458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/bakeneko-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "55439f05f29b70833e7647436eab0ed16ecb8902a4b91df4ec8f1e7e8b69a4b6",
+          "bytes": 54538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/construct": {
+      "variants": {
+        "webp": {
+          "sha256": "c90626466196e3e29a1fd39569f59535a3d681a86a74751ed3647d32f3e46285",
+          "bytes": 46212,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/construct-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "eb0347aa4620c1239bbeda7c300189baca320836eddbc773e453c5913ae707e9",
+          "bytes": 55530,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/dark-queen": {
+      "variants": {
+        "webp": {
+          "sha256": "e37397be2d0c94c19594f6a2cf65a9473cf0f6803f069683e940e6fd67694a40",
+          "bytes": 40944,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/dark-queen-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fbb38b91fddf03d8ff23061b601a1b52e8532775e8cf8fae202c43022d693b0d",
+          "bytes": 49218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/demon": {
+      "variants": {
+        "webp": {
+          "sha256": "78125e008768c42f7d4b757b704917833d57bfe77b6d8c54640c6b851db4b19d",
+          "bytes": 48762,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/demon-dog": {
+      "variants": {
+        "webp": {
+          "sha256": "2bda6669d03d7778b1cf3a1778f101c24d45cce9235acf022531768a53032186",
+          "bytes": 46982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/demon-dog-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "667686a0f9a2aec17a73093ca66468cfbb1ad1535cbf65fda42432665f64e05e",
+          "bytes": 43854,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/demon-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "86ff59d6acfa169478535ae84c78cbcdd3481211d876413e45292e2a043e58d8",
+          "bytes": 44218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/faceless-man": {
+      "variants": {
+        "webp": {
+          "sha256": "b6415c3446f5aa188564999979b822f3beb9cf01a4a737276ccaa4a9609a2dc0",
+          "bytes": 48094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/faceless-man-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "b4bf593749bf152421eb5f0408fc61b1fbe4acadff873e3dce83ce9edbdd5f48",
+          "bytes": 48346,
+          "mime": "image/webp"
         }
       }
     },
@@ -1359,6 +1539,114 @@
         "webp": {
           "sha256": "0c287281adb0d5726b1a32bcdcee49781cd7e300ce6ae1aaf0a3b234ffb25fd1",
           "bytes": 25274,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/ghost-shark": {
+      "variants": {
+        "webp": {
+          "sha256": "4ec8f0dd82bfc5d9c6736091b9bdb60f663d18650d1b8c07b1042694aa1c8380",
+          "bytes": 42248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/ghost-shark-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "8e34e432b101bf31e288658ae027755b16526e5fe3cd2073983bb3b20d69b108",
+          "bytes": 49160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/ghost-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "287b01469efed7e01e1b4ddd6fe0b276aba714114e64e57fe86b3186cbc7017d",
+          "bytes": 54652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/giant-hair-monster": {
+      "variants": {
+        "webp": {
+          "sha256": "a7b97a1bbce24a7d42b51640f6f254cf506f06cdef1e5e55a9307a283da0ecea",
+          "bytes": 48850,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/giant-hair-monster-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "251948a5e87a3f69b0abb4b41fc9d357db26b24ccdc6c17ed5a8c0cf66cbc69c",
+          "bytes": 47846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/giant-wasp": {
+      "variants": {
+        "webp": {
+          "sha256": "b4d3dd7df1f50939df18a864c16c5616a4fbf89e1323db69dc191849816b6401",
+          "bytes": 47272,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/giant-wasp-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "cfe3b2d617fcffbeeb083d4a341e4cb3b9a2c219d2a563d6b0a880920cadc92b",
+          "bytes": 54334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/head-of-the-house": {
+      "variants": {
+        "webp": {
+          "sha256": "eee502b30c09d1fa4445ece19a424d022a2e71ea7694b1f9ed95d5c0f08f450d",
+          "bytes": 46520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/head-of-the-house-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "a8c0918e55652c76789b5a318c47d8d6d202067407b783c2c44cc3b15adb9593",
+          "bytes": 54042,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/jacks-spirit": {
+      "variants": {
+        "webp": {
+          "sha256": "f27e568fd20274af2b3b8b34d7c835750aa48f080a0be648f696f8efb919a6c0",
+          "bytes": 47384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/jacks-spirit-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fae7b18fe0678487fa7d7c6b45b1fb6bf33b4d6ef90cc1bd1a8acb7139bf7cb8",
+          "bytes": 44326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/large-monster-front": {
+      "variants": {
+        "webp": {
+          "sha256": "d8ef1df79d88e1926134b01ac5a5cd983e963dab0326a135330ab97f5be233d3",
+          "bytes": 10764,
           "mime": "image/webp"
         }
       }
@@ -1471,6 +1759,51 @@
         }
       }
     },
+    "tokens/monsters/compressed/troll-left-hand": {
+      "variants": {
+        "webp": {
+          "sha256": "6ea2bbb0060de715492057f067c3c6aee3c845287fe0935a7b73b6aebee90ba6",
+          "bytes": 51532,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/troll-right-hand": {
+      "variants": {
+        "webp": {
+          "sha256": "0e5a3c83c63e6636657e5d87a1a11f4a8d9f56f1fd7ef6575a12fe9d8945d436",
+          "bytes": 51482,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/troll-right-hand-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "c892ad1f9aad4097e41366c83e2d2697ecf576b38ac3e407e675cb77786672f8",
+          "bytes": 53994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/vampire": {
+      "variants": {
+        "webp": {
+          "sha256": "1055127b580e15732a0101f9ee4a4d84733060e5540adaa55b95604a64a03af7",
+          "bytes": 42760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/vampire-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "fc5f8ca49d18a622d86f20b0e2a54d599d337d5c301b0930119503722a301bc4",
+          "bytes": 44962,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/monsters/compressed/werewolf": {
       "variants": {
         "webp": {
@@ -1480,11 +1813,218 @@
         }
       }
     },
+    "tokens/monsters/compressed/werewolf-stunned": {
+      "variants": {
+        "webp": {
+          "sha256": "c428efe03bedf4922315ff85899053e5f7f25c66ca1b661fd7331a77efb7186f",
+          "bytes": 53364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/construct": {
+      "variants": {
+        "png": {
+          "sha256": "1585cb8e728920bccddfe8a618c75172d449d104cfe2452a0ddaedad4b2e617e",
+          "bytes": 197241,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/construct-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "5254dadcb370a3a19e2b614a9a06386f16540ee0c1692d5ee8a164b5cb76cd16",
+          "bytes": 228823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/dark-queen": {
+      "variants": {
+        "png": {
+          "sha256": "2600bcdcf4eec539653105261641b8ddc441bf530775ef7aecf2003beda4e5cf",
+          "bytes": 185746,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/dark-queen-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "cb0477ce7e5c08b0f52485519e7102b5d3a47b98d9e252f64f5996ecaee352ec",
+          "bytes": 209726,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/demon": {
+      "variants": {
+        "png": {
+          "sha256": "c8a15ef410553c6fa6e833cd0e5a84e3c8dcca2fdb36cd5c29e4f3590c4883a7",
+          "bytes": 212291,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/demon-dog": {
+      "variants": {
+        "png": {
+          "sha256": "2c21c444e5b8ad9e16cdd9f83d6e9e423b610fcf16d2caf169a590346e9a1231",
+          "bytes": 203729,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/demon-dog-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "9c4f1ca1ea84dec4207b24a444bbc01a1dec274a13408e26fb58d88ef956ea11",
+          "bytes": 195765,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/demon-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "a332601ba35da7661739e819a539d5ed3dba9edc18fea83a946a18b12004107c",
+          "bytes": 195656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/faceless-man": {
+      "variants": {
+        "png": {
+          "sha256": "6b37560b9753fc266f398d3a1adb02fe3fea87e0cab962a6cd43ed24cdfd165c",
+          "bytes": 203879,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/faceless-man-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "59e4b993dbc0ee7ed1d41f398bb3b8abb294a91603cec6dc29358a5db755ca9b",
+          "bytes": 208835,
+          "mime": "image/png"
+        }
+      }
+    },
     "tokens/monsters/ghost": {
       "variants": {
         "png": {
           "sha256": "8068a1acfe6e6d21c231b9ad04bada3cc9e368a0faf2fcd18276f7ade2ee0629",
           "bytes": 197927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/ghost-shark": {
+      "variants": {
+        "png": {
+          "sha256": "aabda129407219b945b460c9222e410a41f202c29a827fea420bce3168dde52d",
+          "bytes": 188623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/ghost-shark-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "a976287e51c1d5fb867be495d2f6abcb936952c6607569c5159a176ec9175d34",
+          "bytes": 209412,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/ghost-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "7546c0a3d8e5a2296b1138160597923526a913a07e7034e6229087ee617ff489",
+          "bytes": 225791,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/giant-hair-monster": {
+      "variants": {
+        "png": {
+          "sha256": "fedd6c7a8cb97668bb172dacca7d58a5e5de7578fee5bdafe1d0563e1373f685",
+          "bytes": 206330,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/giant-hair-monster-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "ad9f1b0f4db387fb3bb5539cd5ff11ff15c982e819f41fb3c43c184741f7566d",
+          "bytes": 207766,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/giant-wasp": {
+      "variants": {
+        "png": {
+          "sha256": "541e7bf78223d16b6bc2e6eb97e8023982f46ab37f494ae72ccbe337e62f2383",
+          "bytes": 198601,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/giant-wasp-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "9128ee144ec757d0fc7313530fa510cbaf7750e92687a78668c52150a476a3da",
+          "bytes": 223189,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/head-of-the-house": {
+      "variants": {
+        "png": {
+          "sha256": "17b8e51a4105f9ae777c3fa07b6fd85aed499160d5f8346fba8a68d20c97983a",
+          "bytes": 201202,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/head-of-the-house-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "892ef0ed1bb1a4d15cd06c0035b871b99fd79f950f41790678fc004a7c40b8e1",
+          "bytes": 224914,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/jacks-spirit": {
+      "variants": {
+        "png": {
+          "sha256": "caae6aee3a2c4301499281ffdfd8c38d2d23ed7c16e6e53998c90999278fdb17",
+          "bytes": 205716,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/jacks-spirit-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "0cd2091477266ca049f4974840c4b289e4daca36473a0ba9ddbc393bfa27b4de",
+          "bytes": 194640,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/large-monster-front": {
+      "variants": {
+        "png": {
+          "sha256": "48154dc5133290d8e2d134af67616b3795456a5f8cf3a3095a40ebd041424ac9",
+          "bytes": 23677,
           "mime": "image/png"
         }
       }
@@ -1597,11 +2137,65 @@
         }
       }
     },
+    "tokens/monsters/troll-left-hand": {
+      "variants": {
+        "png": {
+          "sha256": "93de0a4bcc51128d967dbff2547d68f1838fa958358e58460b7539592b8195ad",
+          "bytes": 222178,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/troll-right-hand": {
+      "variants": {
+        "png": {
+          "sha256": "b8029f74a1051784fe804da85e58a732b833205108351011b5d8cdacb0674e23",
+          "bytes": 222039,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/troll-right-hand-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "7a5c4510db9b200d02380faf74ed7697562a6beed48337171ef8e86e4e22908c",
+          "bytes": 223839,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/vampire": {
+      "variants": {
+        "png": {
+          "sha256": "f431b3a29aa4f0207f675851fb77dd9f618472295e6418fe07a26f5e1ba31afb",
+          "bytes": 190101,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/vampire-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "92fb550ad23697924ca54190136af285716cceb24a80978ecc15ed5e66fab843",
+          "bytes": 196720,
+          "mime": "image/png"
+        }
+      }
+    },
     "tokens/monsters/werewolf": {
       "variants": {
         "png": {
           "sha256": "e82e8e9ffb72b279f1972835a701da81aea6ef9cacff89a2950915f30e45bbf4",
           "bytes": 193203,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/werewolf-stunned": {
+      "variants": {
+        "png": {
+          "sha256": "6b3a30adea1b9a4c587aaa822e0f2bf28d18f7fa3d8c4249badd29153d31e240",
+          "bytes": 223203,
           "mime": "image/png"
         }
       }

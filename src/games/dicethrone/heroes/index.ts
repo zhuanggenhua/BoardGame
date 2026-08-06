@@ -24,6 +24,8 @@ import { CURSED_PIRATE_CARDS, getCursedPirateStartingDeck } from './cursed_pirat
 import { CURSED_PIRATE_ABILITIES, getCursedPirateAbilitiesForFace } from './cursed_pirate/abilities';
 import { ARTIFICER_CARDS, getArtificerStartingDeck } from './artificer/cards';
 import { ARTIFICER_ABILITIES } from './artificer/abilities';
+import { TIANSHI_CARDS, getTianshiStartingDeck } from './tianshi/cards';
+import { TIANSHI_ABILITIES } from './tianshi/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { HeroState } from '../domain/types';
@@ -102,6 +104,11 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: ARTIFICER_CARDS,
         abilities: ARTIFICER_ABILITIES,
         getStartingDeck: getArtificerStartingDeck,
+    },
+    tianshi: {
+        cards: TIANSHI_CARDS,
+        abilities: TIANSHI_ABILITIES,
+        getStartingDeck: getTianshiStartingDeck,
     },
 };
 

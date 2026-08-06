@@ -18,10 +18,10 @@ const CHARACTER_DETAIL_SCROLLED_SCREENSHOT = `${EVIDENCE_DIR}/01b-山屋惊魂-�
 const SCENARIO_SELECT_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/02a-山屋惊魂-基本流程-剧本弹窗入口.png`;
 const SCENARIO_SELECT_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/02b-山屋惊魂-基本流程-书本式剧本阅读首页.png`;
 const SCENARIO_SELECT_DETAIL_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/02c-山屋惊魂-基本流程-书本式剧本翻页中.png`;
-const SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02d-山屋惊魂-基本流程-书本式剧本阅读末页.png`;
+const SCENARIO_SELECT_DETAIL_NEXT_BODY_SCREENSHOT = `${EVIDENCE_DIR}/02d-山屋惊魂-基本流程-书本式剧本下一正文页.png`;
+const SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02e-山屋惊魂-基本流程-书本式剧本阅读末页.png`;
+const START_SCENARIO_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/03a-山屋惊魂-开始剧本后开局过场.png`;
 const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-基本流程-运行时.png`;
-const INVENTORY_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-基本流程-持有物放大.png`;
-const USE_ITEM_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-基本流程-使用物品.png`;
 const MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-基本流程-移动选目标.png`;
 const MOVE_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-基本流程-移动后.png`;
 const MOVE_CONTINUED_SCREENSHOT = `${EVIDENCE_DIR}/07b-山屋惊魂-基本流程-不取消连续移动到大阶梯.png`;
@@ -82,7 +82,7 @@ test.describe("山屋惊魂基本流程", () => {
       .toBeGreaterThan(0);
     await expect(abilitySummary).toBeInViewport();
     await expect(abilitySummary).toContainText("特性");
-    await expect(abilitySummary).toContainText(/大胆|攻击投掷/);
+    await expect(abilitySummary).toContainText("无特殊能力");
     await saveScreenshot(page, CHARACTER_DETAIL_SCROLLED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
@@ -119,20 +119,23 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(
       page.getByTestId("betrayal-character-scenario-button"),
-    ).toContainText("赤红杰克归来");
+    ).toContainText("木乃伊横行");
     await page.getByTestId("betrayal-character-scenario-button").click();
     await expect(
       page.getByTestId("betrayal-scenario-select-dialog"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-scenario-candidate-list").locator("button"),
-    ).toHaveCount(5);
+    ).toHaveCount(7);
+    await expect(
+      page.getByTestId("betrayal-scenario-option-mummy-rampage"),
+    ).toContainText("木乃伊横行");
     await expect(
       page.getByTestId("betrayal-scenario-option-crimson-jack-returns"),
-    ).toContainText("赤红杰克归来");
+    ).toContainText("暂不可选");
     await expect(
       page.getByTestId("betrayal-scenario-option-friends-forever"),
-    ).toContainText("待接入");
+    ).toContainText("暂不可选");
     await expect(
       page.getByTestId("betrayal-scenario-detail-toggle"),
     ).toContainText("阅读完整剧本");
@@ -146,33 +149,30 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-scenario-detail-panel"),
     ).not.toContainText("作祟档案");
     await expect(
-      scenarioReaderDialog.getByTestId("betrayal-scenario-book"),
-    ).toBeVisible();
+      scenarioReaderDialog.getByTestId("betrayal-scenario-opening-stage"),
+    ).toHaveCount(0);
+    await expect(scenarioReaderDialog.getByTestId("betrayal-scenario-book")).toBeVisible();
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-1",
       ),
-    ).toContainText("山屋异象");
+    ).toContainText("敌方情报 / 胜利条件");
+    await expect(scenarioReaderDialog).not.toContainText("本地规则源正文");
+    await expect(scenarioReaderDialog).not.toContainText("正式中文转写");
+    const scenarioReaderNextZone = scenarioReaderDialog.getByTestId(
+      "betrayal-scenario-reader-next-zone",
+    );
+    await expect(scenarioReaderNextZone).toBeEnabled();
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-2",
       ),
-    ).not.toContainText("开局记录");
+    ).toContainText("驱逐木乃伊");
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-2",
       ),
-    ).toContainText("英雄手册");
-    await expect(
-      scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
-      ),
-    ).toContainText("驱魔法阵");
-    await expect(
-      scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
-      ),
-    ).toContainText("叛徒手册");
+    ).toContainText("查看书本");
     await expect(
       scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-setup"),
     ).toHaveCount(0);
@@ -184,9 +184,6 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       scenarioReaderDialog.getByTestId("betrayal-scenario-reader-prev-zone"),
     ).toBeDisabled();
-    const scenarioReaderNextZone = scenarioReaderDialog.getByTestId(
-      "betrayal-scenario-reader-next-zone",
-    );
     await expect(scenarioReaderNextZone).toBeEnabled();
     await expect(
       scenarioReaderDialog.getByRole("button", { name: "上一页" }),
@@ -201,9 +198,17 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(turningSheet).toBeVisible();
     await expect(turningSheet).toHaveAttribute(
-      "data-turn-direction",
+      "data-flip-direction",
       "forward",
     );
+    await expect(turningSheet).toHaveAttribute(
+      "data-flip-implementation",
+      "home-v2-real-frame-sequence",
+    );
+    await expect(
+      turningSheet.getByTestId("betrayal-scenario-book-real-flip-stage"),
+    ).toBeVisible();
+    await page.waitForTimeout(60);
     await saveScreenshot(page, SCENARIO_SELECT_DETAIL_TURNING_SCREENSHOT);
     await expect(turningSheet).toHaveCount(0, { timeout: 2000 });
     await expect(
@@ -214,56 +219,78 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(scenarioReaderNextZone).toBeDisabled();
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-3",
+        "betrayal-scenario-book-page-mummyRampage-dossier-3",
       ),
-    ).toContainText("杰克之灵");
+    ).toContainText("他们妄图将木乃伊驱逐回亡者之国");
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-4",
+        "betrayal-scenario-book-page-mummyRampage-dossier-4",
       ),
-    ).toContainText("胜负判定");
+    ).toContainText("速度3、力量8、神志5");
     await expect(
-      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-ending"),
-    ).toContainText("胜负判定");
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-endingHeroes"),
+    ).toHaveCount(0);
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-endingTraitor"),
+    ).toHaveCount(0);
+    await saveScreenshot(page, SCENARIO_SELECT_DETAIL_NEXT_BODY_SCREENSHOT);
+
+    await expect(
+      scenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-page-mummyRampage-dossier-3",
+      ),
+    ).toContainText("他们妄图将木乃伊驱逐回亡者之国");
+    await expect(
+      scenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-page-mummyRampage-dossier-4",
+      ),
+    ).toContainText("速度3、力量8、神志5");
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-endingHeroes"),
+    ).toHaveCount(0);
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-endingTraitor"),
+    ).toHaveCount(0);
     await saveScreenshot(page, SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT);
-    await page.waitForTimeout(400);
-    await page.mouse.click(12, 12);
+    await scenarioReaderDialog
+      .getByTestId("betrayal-scenario-reader-close")
+      .click();
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
     ).toBeHidden();
     const scenarioSelectDialog = page.getByTestId(
       "betrayal-scenario-select-dialog",
     );
-    const scenarioSelectStillOpen = await scenarioSelectDialog
-      .isVisible({ timeout: 800 })
+    await expect(scenarioSelectDialog).toBeVisible();
+    await scenarioSelectDialog.getByTestId("betrayal-scenario-dialog-close").click();
+    await expect(scenarioSelectDialog).toBeHidden({ timeout: 5000 });
+    const characterConfirm = page.getByTestId("betrayal-character-confirm");
+    await expect(characterConfirm).toBeVisible({ timeout: 10000 });
+    await expect(characterConfirm).toHaveText(/确认此剧本卡/);
+    await characterConfirm.click();
+
+    const startScenarioOpeningStage = page.getByTestId(
+      "betrayal-start-scenario-opening-stage",
+    );
+    const startedAfterScenarioConfirmation = await startScenarioOpeningStage
+      .isVisible({ timeout: 2000 })
       .catch(() => false);
-    if (scenarioSelectStillOpen) {
-      await Promise.race([
-        scenarioSelectDialog
-          .waitFor({ state: "hidden", timeout: 3000 })
-          .catch(() => null),
-        page
-          .getByTestId("betrayal-scenario-select-current")
-          .click({ timeout: 3000 })
-          .catch(() => null),
-      ]);
-      await expect(scenarioSelectDialog).toBeHidden({ timeout: 5000 });
+    if (!startedAfterScenarioConfirmation) {
+      await expect(characterConfirm).toHaveText(/开始剧本/);
+      await characterConfirm.click();
     }
-    const boardOrConfirm = await Promise.race([
-      page
-        .getByTestId("betrayal-board")
-        .waitFor({ state: "visible", timeout: 5000 })
-        .then(() => "board" as const)
-        .catch(() => null),
-      page
-        .getByTestId("betrayal-character-confirm")
-        .waitFor({ state: "visible", timeout: 5000 })
-        .then(() => "confirm" as const)
-        .catch(() => null),
-    ]);
-    if (boardOrConfirm === "confirm") {
-      await page.getByTestId("betrayal-character-confirm").click();
-    }
+    await expect(startScenarioOpeningStage).toBeVisible({ timeout: 30000 });
+    await expect(
+      page.getByTestId("betrayal-start-scenario-opening-cinematic"),
+    ).toContainText("木乃伊横行");
+    await expect(
+      page.getByTestId("betrayal-start-scenario-opening-source-status"),
+    ).toHaveCount(0);
+    await expect(startScenarioOpeningStage).not.toContainText("本地规则源正文");
+    await expect(startScenarioOpeningStage).not.toContainText("正式中文转写");
+    await saveScreenshot(page, START_SCENARIO_OPENING_SCREENSHOT);
+    await page.getByTestId("betrayal-start-scenario-opening-continue").click();
+    await expect(startScenarioOpeningStage).toHaveCount(0);
 
     await expect(page.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,
@@ -275,28 +302,21 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(page.getByTestId("betrayal-current-ability")).toContainText(
       "特性",
     );
+    const startingInventory = await page.evaluate(() => {
+      const harness = (
+        window as Window & {
+          __BG_TEST_HARNESS__?: {
+            state?: { get?: () => { core?: { currentExplorer?: { inventory?: unknown[] } } } };
+          };
+        }
+      ).__BG_TEST_HARNESS__;
+      return harness?.state?.get?.().core?.currentExplorer?.inventory ?? null;
+    });
+    expect(startingInventory).toEqual([]);
+    await expect(
+      page.getByTestId("betrayal-inventory-omen-book"),
+    ).toHaveCount(0);
     await saveScreenshot(page, RUNTIME_SCREENSHOT);
-
-    await page.getByTestId("betrayal-inventory-omen-book-magnify").click();
-    await expect(
-      page.getByTestId("betrayal-inventory-preview-overlay"),
-    ).toBeVisible();
-    await saveScreenshot(page, INVENTORY_PREVIEW_SCREENSHOT);
-    await page.mouse.click(24, 24);
-    await expect(
-      page.getByTestId("betrayal-inventory-preview-overlay"),
-    ).toBeHidden();
-    await page.getByTestId("betrayal-inventory-omen-book").click();
-    await expect(page.getByTestId("betrayal-action-use")).toBeEnabled();
-    await page.getByTestId("betrayal-action-use").click();
-    await expect(page.getByTestId("betrayal-use-status")).toContainText(
-      "本回合已用",
-    );
-    await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("书本");
-    await expect(page.getByTestId("betrayal-action-use")).toBeDisabled();
-    await saveScreenshot(page, USE_ITEM_SCREENSHOT);
 
     await page.getByTestId("betrayal-action-move").click();
     await expect(page.getByTestId("betrayal-action-move")).toContainText(
@@ -417,18 +437,18 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(mobileGrid).toBeVisible();
     await expect(mobileGrid).toHaveClass(/grid-cols-3/);
     await expect(
-      mobileGrid.getByTestId("betrayal-character-card-jaden-jones"),
+      mobileGrid.getByTestId("betrayal-character-card-isa-valencia"),
     ).toBeVisible();
     await expect(
-      mobileGrid.getByTestId("betrayal-character-card-jaden-jones"),
+      mobileGrid.getByTestId("betrayal-character-card-isa-valencia"),
     ).toHaveAttribute("aria-label", /已选择/);
     for (const explorerId of [
-      "jaden-jones",
-      "rebecca-allen",
-      "darryl-highla",
-      "oliver-swift",
-      "lia-valencia",
-      "sam-yin",
+      "isa-valencia",
+      "anita-hernandez",
+      "father-warren-leung",
+      "dan-nguyen-md",
+      "michelle-monroe",
+      "beat-box-bowen",
     ]) {
       await expect(
         mobileGrid.getByTestId(`betrayal-character-card-${explorerId}`),
@@ -453,7 +473,7 @@ test.describe("山屋惊魂基本流程", () => {
     ).toContainText("特性");
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
-    ).toContainText(/大胆|攻击投掷/);
+    ).toContainText("无特殊能力");
     await expect(
       page.getByTestId("betrayal-character-ability-summary"),
     ).not.toContainText(/Bold|Attack/i);
@@ -471,17 +491,20 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(
       page.getByTestId("betrayal-character-scenario-button"),
-    ).toContainText("赤红杰克归来");
+    ).toContainText("木乃伊横行");
     await page.getByTestId("betrayal-character-scenario-button").click();
     await expect(
       page.getByTestId("betrayal-scenario-select-dialog"),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-scenario-candidate-list").locator("button"),
-    ).toHaveCount(5);
+    ).toHaveCount(7);
+    await expect(
+      page.getByTestId("betrayal-scenario-option-mummy-rampage"),
+    ).toContainText("木乃伊横行");
     await expect(
       page.getByTestId("betrayal-scenario-option-crimson-jack-returns"),
-    ).toContainText("赤红杰克归来");
+    ).toContainText("暂不可选");
     await expect(
       page.getByTestId("betrayal-scenario-detail-toggle"),
     ).toContainText("阅读完整剧本");
@@ -507,33 +530,28 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-scenario-detail-panel"),
     ).not.toContainText("作祟档案");
     await expect(
+      mobileScenarioReaderDialog.getByTestId("betrayal-scenario-opening-stage"),
+    ).toHaveCount(0);
+    await expect(mobileScenarioReaderDialog).not.toContainText("本地规则源正文");
+    await expect(mobileScenarioReaderDialog).not.toContainText("正式中文转写");
+    await expect(
       mobileScenarioReaderDialog.getByTestId("betrayal-scenario-book"),
     ).toBeVisible();
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-1",
       ),
-    ).toContainText("山屋异象");
+    ).toContainText("敌方情报 / 胜利条件");
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-2",
       ),
-    ).not.toContainText("开局记录");
+    ).toContainText("驱逐木乃伊");
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-1",
+        "betrayal-scenario-book-page-mummyRampage-dossier-2",
       ),
-    ).toContainText("英雄手册");
-    await expect(
-      mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
-      ),
-    ).toContainText("驱魔法阵");
-    await expect(
-      mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
-      ),
-    ).toContainText("叛徒手册");
+    ).toContainText("查看书本");
     await expect(
       mobileScenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-section-setup",
@@ -575,7 +593,7 @@ test.describe("山屋惊魂基本流程", () => {
         `${label}触控高度不能小于44px`,
       ).toBeGreaterThanOrEqual(44);
     }
-    const expectMobileBookFits = async (label: string) => {
+    const expectMobileBookContentReachable = async (label: string) => {
       const scrollers = mobileScenarioReaderDialog
         .getByTestId("betrayal-scenario-book")
         .locator(".overflow-y-auto");
@@ -588,12 +606,28 @@ test.describe("山屋惊魂基本流程", () => {
       );
       for (const [index, size] of pageSizes.entries()) {
         expect(
+          size.clientHeight,
+          `${label}第${index + 1}页正文区域必须有可读高度`,
+        ).toBeGreaterThan(120);
+        expect(
           size.scrollHeight,
-          `${label}第${index + 1}页正文不能被隐藏滚动裁切`,
-        ).toBeLessThanOrEqual(size.clientHeight + 2);
+          `${label}第${index + 1}页正文高度必须至少覆盖可视区域`,
+        ).toBeGreaterThanOrEqual(size.clientHeight);
+        if (size.scrollHeight > size.clientHeight + 2) {
+          const scroller = scrollers.nth(index);
+          await scroller.evaluate((element) => {
+            element.scrollTop = element.scrollHeight;
+          });
+          await expect
+            .poll(async () => scroller.evaluate((element) => element.scrollTop))
+            .toBeGreaterThan(0);
+          await scroller.evaluate((element) => {
+            element.scrollTop = 0;
+          });
+        }
       }
     };
-    await expectMobileBookFits("剧本首页");
+    await expectMobileBookContentReachable("剧本首页");
     await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_SCREENSHOT);
     await mobileScenarioReaderNextZone.click();
     const mobileTurningSheet = mobileScenarioReaderDialog.getByTestId(
@@ -601,7 +635,7 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(mobileTurningSheet).toBeVisible();
     await expect(mobileTurningSheet).toHaveAttribute(
-      "data-turn-direction",
+      "data-flip-direction",
       "forward",
     );
     await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_TURNING_SCREENSHOT);
@@ -619,15 +653,25 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(mobileScenarioReaderNextZone).toBeDisabled();
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-3",
+        "betrayal-scenario-book-page-mummyRampage-dossier-3",
       ),
-    ).toContainText("杰克之灵");
+    ).toContainText("他们妄图将木乃伊驱逐回亡者之国");
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-section-ending",
+        "betrayal-scenario-book-page-mummyRampage-dossier-4",
       ),
-    ).toContainText("胜负判定");
-    await expectMobileBookFits("剧本末页");
+    ).toContainText("速度3、力量8、神志5");
+    await expect(
+      mobileScenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-section-endingHeroes",
+      ),
+    ).toHaveCount(0);
+    await expect(
+      mobileScenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-section-endingTraitor",
+      ),
+    ).toHaveCount(0);
+    await expectMobileBookContentReachable("剧本末页");
     await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT);
     await mobileScenarioReaderClose.click();
     await expect(mobileScenarioReaderDialog).toBeHidden();
@@ -695,38 +739,57 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-room-floor-ground"),
     ).toHaveAttribute("aria-pressed", "true");
 
-    const teammatePanel = page.getByTestId("betrayal-bottom-teammate-1");
-    const teammatePanelToken = page.getByTestId(
-      "betrayal-bottom-teammate-token-1",
-    );
-    await expect(teammatePanel).toBeVisible();
-    await expect(teammatePanelToken).toBeVisible();
-    const panelAsset = await teammatePanel.getAttribute("data-token-asset");
-    await expect(teammatePanelToken).toHaveAttribute(
-      "data-token-asset",
-      panelAsset ?? "",
-    );
+      const teammatePanel = page.getByTestId("betrayal-bottom-teammate-1");
+      await expect(teammatePanel).toBeVisible();
+      await expect(teammatePanel).not.toHaveAttribute("data-token-asset");
+      const expectedTeammateTokenAsset =
+        teammateOne.tokenAsset ?? teammateOne.portraitAsset;
+      const desktopTeammatePanel = page.getByTestId(
+        "betrayal-teammate-panel-1",
+      );
+      await expect(desktopTeammatePanel).not.toHaveAttribute("data-token-asset");
+      await expect(
+        page.getByTestId("betrayal-teammate-panel-token-1"),
+      ).toHaveCount(0);
 
-    await teammatePanel.click();
+      await teammatePanel.click();
+      await expect(teammatePanel).toHaveAttribute("data-observed-player", "true");
+      await expect(
+        page.getByTestId("betrayal-bottom-teammate-observed-1"),
+      ).toBeVisible();
+      await expect(
+        page.getByTestId("betrayal-bottom-teammate-token-1"),
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId("betrayal-explorer-detail-dialog-1"),
+      ).toHaveCount(0);
+
+    const mapTeammateToken = page.getByTestId(
+      "betrayal-room-occupant-basement-landing-1",
+    );
+    await expect(mapTeammateToken).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-room-floor-basement"),
+    ).toHaveAttribute("aria-pressed", "true");
+    await mapTeammateToken.click();
     const panelDetail = page.getByTestId("betrayal-explorer-detail-dialog-1");
     await expect(panelDetail).toBeVisible();
     await expect(panelDetail).toHaveAttribute(
       "data-token-asset",
-      panelAsset ?? "",
+      expectedTeammateTokenAsset,
     );
     await expect(
       page.getByTestId("betrayal-explorer-detail-token-1"),
-    ).toHaveAttribute("data-token-asset", panelAsset ?? "");
-    await expect(
-      page.getByTestId("betrayal-room-floor-ground"),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByTestId("betrayal-room-shell-basement-landing"),
-    ).toHaveCount(0);
+    ).toHaveAttribute("data-token-asset", expectedTeammateTokenAsset);
     await saveScreenshot(page, TOKEN_DETAIL_PANEL_SCREENSHOT);
     await page.getByTestId("betrayal-explorer-detail-close").click();
     await expect(panelDetail).toBeHidden();
 
+    await page.getByTestId("betrayal-room-floor-up").click();
+    await expect(page.getByTestId("betrayal-room-floor-ground")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await page.getByTestId("betrayal-room-floor-up").click();
     await expect(page.getByTestId("betrayal-room-floor-upper")).toHaveAttribute(
       "aria-pressed",

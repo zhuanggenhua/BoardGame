@@ -294,6 +294,18 @@ const UNRESOLVED_COMPLETION_MARKERS = [
   /不能宣称/,
 ];
 
+const NON_DEFAULT_RESIDUAL_POOL_TERMS = [
+  /非默认残余池/,
+  /可回顾残余池/,
+];
+
+const P0_SCREENING_BEFORE_RESIDUAL_EVIDENCE = [
+  /P1\/P2 入池前置筛查/,
+  /已完成 P0 .*筛查/,
+  /P0 实现正确性筛查/,
+  /未经 P0 筛查/,
+];
+
 const SELF_CHECK_HEADING_PATTERN = /^##\s+.*全面审计自检表.*$/m;
 
 const SELF_CHECK_REQUIRED_ITEMS = [
@@ -673,6 +685,17 @@ function checkResidualDoc(file, content) {
   return errors;
 }
 
+function checkNonDefaultResidualPoolDoc(file, content) {
+  const errors = [];
+  if (!hasAny(content, NON_DEFAULT_RESIDUAL_POOL_TERMS)) return errors;
+
+  if (!hasAny(content, P0_SCREENING_BEFORE_RESIDUAL_EVIDENCE)) {
+    errors.push(`${file}: 使用“非默认/可回顾残余池”口径，但没有写清 P1/P2 入池前必须已完成 P0 实现正确性筛查。`);
+  }
+
+  return errors;
+}
+
 function checkFile(file) {
   const absolutePath = path.resolve(repoRoot, file);
   if (!existsSync(absolutePath)) {
@@ -696,6 +719,7 @@ function checkFile(file) {
   errors.push(...checkTestCoverageClaimDoc(file, content));
   errors.push(...checkBugCloseoutDoc(file, content));
   errors.push(...checkResidualDoc(file, content));
+  errors.push(...checkNonDefaultResidualPoolDoc(file, content));
 
   return { file, skipped: false, errors };
 }

@@ -272,9 +272,9 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // soul-burn-2-fm: 获得 2×火魂骰面数量 FM（燃烧之灵 II 专用）
+    // soul-burn-2-fm: 获得 2×火魂骰面数量 FM（燃烧之灵基础版与 II 级共用）
     // ========================================================================
-    describe('soul-burn-2-fm (燃烧之灵 II FM获取)', () => {
+    describe('soul-burn-2-fm (燃烧之灵 FM 获取)', () => {
         it('2个火魂面时获得4FM（2×2）', () => {
             // 骰子: fire,fire,fire,fiery_soul,fiery_soul → 2个fiery_soul
             const dice = [1, 2, 3, 5, 5].map(v => createPyroDie(v));
@@ -544,9 +544,9 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // ignite-heat-of-soul-resolve: 点燃 II 下半段炎热之魂
+    // ignite-heat-of-soul-resolve: 点燃 II 下半段炙热之魂
     // ========================================================================
-    describe('ignite-heat-of-soul-resolve (炎热之魂)', () => {
+    describe('ignite-heat-of-soul-resolve (炙热之魂)', () => {
         it('提升FM上限、获得5FM并给对手施加燃烧', () => {
             const state = createState({ attackerFM: 2, fmLimit: 5 });
             const handler = getCustomActionHandler('ignite-heat-of-soul-resolve')!;

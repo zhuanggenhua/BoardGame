@@ -9,7 +9,7 @@ import {
 } from './chips';
 import { normalizeRulesConfig } from './expansions';
 import { getChipValues } from './setup';
-import { THE_GANG_COMMANDS, type TakeChipCommand, type TakeExitChipCommand, type TheGangCommand, type TheGangCore } from './types';
+import { THE_GANG_COMMANDS, type ReturnChipCommand, type TakeChipCommand, type TakeExitChipCommand, type TheGangCommand, type TheGangCore } from './types';
 
 const success = (): ValidationResult => ({ valid: true });
 const failure = (error: string): ValidationResult => ({ valid: false, error });
@@ -31,6 +31,8 @@ export function validate(
             return validateRedealHeist(core, command.playerId);
         case THE_GANG_COMMANDS.TAKE_CHIP:
             return validateTakeChip(core, command.playerId, command.payload);
+        case THE_GANG_COMMANDS.RETURN_CHIP:
+            return validateReturnChip(core, command.playerId, command.payload);
         case THE_GANG_COMMANDS.TAKE_EXIT_CHIP:
             return validateTakeExitChip(core, command.playerId, command.payload);
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
@@ -101,6 +103,23 @@ function validateTakeChip(core: TheGangCore, playerId: string, payload: TakeChip
     return success();
 }
 
+function validateReturnChip(
+    core: TheGangCore,
+    playerId: string,
+    payload: ReturnChipCommand['payload'],
+): ValidationResult {
+    if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (!core.heistStarted) return failure('heistNotStarted');
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    if (core.rules.config.twoHand && payload.handSlot !== 'top' && payload.handSlot !== 'bottom') {
+        return failure('missingHandSlot');
+    }
+
+    const ownerKey = resolveChipOwnerKey(core, playerId, payload.handSlot);
+    if (core.currentRoundChips[ownerKey] === undefined) return failure('missingChips');
+    return success();
+}
+
 function validateTakeExitChip(
     core: TheGangCore,
     playerId: string,
@@ -127,8 +146,6 @@ function validateSetRulesConfig(
     config: Partial<TheGangCore['rules']['config']>,
 ): ValidationResult {
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
-    if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
-    if (core.heistStarted || Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
     if (normalizeRulesConfig(config).twoHand && core.playerIds.length > 5) return failure('twoHandPlayerLimit');
     return success();
 }
@@ -205,15 +222,9 @@ function validateConfirmHandSwap(
 ): ValidationResult {
     const playerValidation = validateProgressPlayer(core, playerId);
     if (!playerValidation.valid) return playerValidation;
-    if (core.phase !== 'hand-swap') return failure('notHandSwap');
     if (!core.rules.config.twoHand) return failure('handSwapDisabled');
-    if (core.pendingProgress?.kind === 'hand-swap' && core.pendingProgress.approvals.includes(playerId)) {
-        return failure('handSwapAlreadyConfirmed');
-    }
-    const selectedNeither = topIndex === undefined && bottomIndex === undefined;
-    const selectedBoth = typeof topIndex === 'number' && typeof bottomIndex === 'number';
-    if (!selectedNeither && !selectedBoth) return failure('invalidHandSwapSelection');
-    if (selectedNeither) return success();
+    if (core.phase !== 'chip-selection') return failure('notHandSwap');
+    if (typeof topIndex !== 'number' || typeof bottomIndex !== 'number') return failure('invalidHandSwapSelection');
 
     const player = core.players[playerId];
     const secondaryCards = player.secondaryPocketCards ?? [];

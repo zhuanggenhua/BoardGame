@@ -246,8 +246,10 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         }
         return t('debug.ai.human');
     }, [t]);
+    const shouldAutoSwitchPlayer = autoSwitch && gameMode?.mode !== 'tutorial';
+
     useEffect(() => {
-        if (!autoSwitch) return;
+        if (!shouldAutoSwitchPlayer) return;
         if (activePlayer && activePlayer !== playerID) {
             // 延迟切换，让用户看到上一步的结果
             const timer = setTimeout(() => {
@@ -255,7 +257,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [activePlayer, setPlayerID, playerID, autoSwitch]);
+    }, [activePlayer, setPlayerID, playerID, shouldAutoSwitchPlayer]);
 
     // 早期返回必须在所有 hooks 之后
     const isE2EDebug = typeof window !== 'undefined'

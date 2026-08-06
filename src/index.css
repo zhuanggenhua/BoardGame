@@ -735,6 +735,91 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     pointer-events: auto;
 }
 
+@keyframes the-gang-chip-transfer-line {
+    0% {
+        clip-path: inset(0 100% 0 0);
+        filter: blur(0.08rem);
+        opacity: 0;
+    }
+
+    18% {
+        clip-path: inset(0 0 0 0);
+        filter: blur(0);
+        opacity: 0.92;
+    }
+
+    64% {
+        clip-path: inset(0 0 0 0);
+        opacity: 0.7;
+    }
+
+    100% {
+        clip-path: inset(0 0 0 100%);
+        filter: blur(0.12rem);
+        opacity: 0;
+    }
+}
+
+.the-gang-chip-transfer-line {
+    pointer-events: none;
+    position: fixed;
+    height: 0.18rem;
+    border-radius: 9999px;
+    transform-origin: left center;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.98) 18%, rgba(255, 255, 255, 0.86) 58%, transparent 100%);
+    box-shadow:
+        0 0 0.35rem rgba(255, 255, 255, 0.82),
+        0 0 0.9rem rgba(251, 191, 36, 0.5);
+    animation-name: the-gang-chip-transfer-line;
+    animation-timing-function: cubic-bezier(0.18, 0.86, 0.22, 1);
+    animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .the-gang-chip-transfer-line {
+        animation: none;
+        opacity: 0.45;
+    }
+}
+
+.the-gang-open-drop-target {
+    --the-gang-drop-line: rgba(110, 231, 183, 0.66);
+    --the-gang-drop-line-soft: rgba(110, 231, 183, 0.20);
+    --the-gang-drop-fill: rgba(16, 185, 129, 0.10);
+    --the-gang-drop-fill-soft: rgba(16, 185, 129, 0.035);
+    --the-gang-drop-glow: rgba(16, 185, 129, 0.36);
+    --the-gang-drop-open-stop: 78%;
+    position: relative;
+    border-right: 0 !important;
+    outline: none !important;
+    box-shadow: none;
+}
+
+.the-gang-open-drop-target--active {
+    --the-gang-drop-line: rgba(254, 243, 199, 0.94);
+    --the-gang-drop-line-soft: rgba(251, 191, 36, 0.32);
+    --the-gang-drop-fill: rgba(251, 191, 36, 0.16);
+    --the-gang-drop-fill-soft: rgba(251, 191, 36, 0.045);
+    --the-gang-drop-glow: rgba(251, 191, 36, 0.72);
+}
+
+.the-gang-open-drop-target::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    z-index: 8;
+    inset: -0.3rem 0 -0.3rem -0.35rem;
+    border-left: 0.18rem solid var(--the-gang-drop-line);
+    border-radius: 1rem 0 0 1rem;
+    background:
+        linear-gradient(90deg, var(--the-gang-drop-glow), transparent 1.35rem) left center / 1.45rem 100% no-repeat,
+        linear-gradient(90deg, var(--the-gang-drop-fill), var(--the-gang-drop-fill-soft) 48%, transparent var(--the-gang-drop-open-stop)) left center / 100% 100% no-repeat,
+        linear-gradient(90deg, var(--the-gang-drop-line), var(--the-gang-drop-line-soft) 52%, transparent var(--the-gang-drop-open-stop)) top left / 100% 0.16rem no-repeat,
+        linear-gradient(90deg, var(--the-gang-drop-line), var(--the-gang-drop-line-soft) 52%, transparent var(--the-gang-drop-open-stop)) bottom left / 100% 0.16rem no-repeat;
+    box-shadow: none;
+}
+
 @media (max-width: 1023px) {
     [data-game-page][data-mobile-layout-preset="board-shell"] .mobile-board-shell {
         padding:
@@ -788,6 +873,53 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 
     html[data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"] [data-testid="fab-menu"] {
         display: none !important;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--table,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--showdown {
+        width: 5rem;
+        height: 7rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--river,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--hand {
+        width: 7rem;
+        height: 10rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--handDense {
+        width: 4.25rem;
+        height: 6rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--riverCompact,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--handCompact {
+        width: 3.5rem;
+        height: 5rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-chip-disc--xs {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-chip-disc--sm {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-chip-disc--md {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-chip-disc--lg {
+        width: 4rem;
+        height: 4rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] {
+        --the-gang-twohand-chip-selection-river-offset: -0.5rem;
     }
 
     html[data-game-id="betrayal"][data-betrayal-blocking-roll="true"] [data-testid="fab-menu"] {

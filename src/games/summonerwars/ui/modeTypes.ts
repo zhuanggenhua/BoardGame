@@ -46,6 +46,13 @@ export interface MoguReleaseSporesModeState {
   selectedTargets: CellCoord[];
 }
 
+/** 暗影脉冲任意数量目标选择模式 */
+export interface ShadowPulseModeState {
+  cardId: string;
+  validTargets: CellCoord[];
+  selectedTargets: CellCoord[];
+}
+
 /** 撤退模式：选费用→选目标位置 */
 export interface WithdrawModeState {
   sourceUnitId: string;

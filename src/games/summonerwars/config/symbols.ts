@@ -88,4 +88,5 @@ export const FACTION_ICONS = {
   HUIJIN: 'phoenix',        // 凤凰 - 灰烬
   SHOUREN: 'tundra',        // 冰苔 - 冰苔兽人
   YONGHENG: 'council',      // 议会 - 永恒议会
+  SHADOW: 'shadow',         // 暗影 - 暗影精灵
 } as const;

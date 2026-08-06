@@ -25,6 +25,7 @@ import type { AbilityContext } from '../abilityResolver';
 import { reduceEvent } from '../reduce';
 import { abilityRegistry } from '../abilities';
 import { getBaseCardId, CARD_IDS } from '../ids';
+import { getSummoner, getUnitAbilities, manhattanDistance } from '../helpers';
 
 // ============================================================================
 // 棋盘查询
@@ -146,6 +147,44 @@ export function applyHuijinPhoenixSoulBonus(
       },
     };
   }
+}
+
+/**
+ * 暗影精灵“鲜血魔法”：当前玩家回合内，召唤师 3 格内的友方卡牌每次受到伤害时充能。
+ *
+ * 这里按实际 UNIT_DAMAGED 事件计数，兼容单位、传送门和其它建筑；不把敌方卡牌
+ * 受到的伤害、零伤害通知或非当前玩家回合的伤害误算进去。
+ */
+export function getShadowBloodMagicChargeEvents(
+  events: GameEvent[],
+  core: SummonerWarsCore,
+  timestamp: number,
+): GameEvent[] {
+  const charges: GameEvent[] = [];
+  for (const event of events) {
+    if (event.type !== SW_EVENTS.UNIT_DAMAGED) continue;
+    const payload = event.payload as { position?: CellCoord; damage?: number };
+    if (!payload.position || typeof payload.damage !== 'number' || payload.damage <= 0) continue;
+
+    const targetCell = core.board[payload.position.row]?.[payload.position.col];
+    const targetOwner = targetCell?.unit?.owner ?? targetCell?.structure?.owner;
+    if (!targetOwner || targetOwner !== core.currentPlayer) continue;
+
+    const summoner = getSummoner(core, targetOwner);
+    if (!summoner || !getUnitAbilities(summoner, core).includes('shadow_blood_magic')) continue;
+    if (manhattanDistance(summoner.position, payload.position) > 3) continue;
+
+    charges.push({
+      type: SW_EVENTS.UNIT_CHARGED,
+      payload: {
+        position: summoner.position,
+        delta: 1,
+        sourceAbilityId: 'shadow_blood_magic',
+      },
+      timestamp,
+    });
+  }
+  return charges;
 }
 // ============================================================================
 // 销毁 + 触发链

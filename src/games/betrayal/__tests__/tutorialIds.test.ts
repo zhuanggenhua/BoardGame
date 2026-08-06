@@ -10,6 +10,9 @@ const REQUIRED_LITERAL_IDS = [
     'betrayal-moves-remaining',
     'betrayal-inventory-zone',
     'betrayal-room-board',
+    'betrayal-haunt-risk-status',
+    'betrayal-focus-self-room',
+    'betrayal-open-scenario',
     'betrayal-reference-entry',
     'betrayal-latest-discovery',
     'betrayal-endgame-screen',
@@ -32,6 +35,10 @@ describe('Betrayal Board data-tutorial-id 属性', () => {
 
     it('底部动作按钮会把真实动作 id 暴露给教程系统', () => {
         expect(boardSource).toContain('data-tutorial-id={`betrayal-action-${action.id}`}');
+    });
+
+    it('底部队友面板会把观察视角入口暴露给教程系统', () => {
+        expect(boardSource).toContain('data-tutorial-id={`betrayal-bottom-teammate-${explorer.playerId}`}');
     });
 
     it('房间移动目标用整张房间牌暴露对应教程锚点', () => {

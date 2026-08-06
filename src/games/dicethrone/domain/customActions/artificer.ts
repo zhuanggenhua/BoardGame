@@ -9,7 +9,6 @@ import { updatePendingAttackSettlementStage } from '../utils';
 import type {
     BonusDieRolledEvent,
     ChoiceRequestedEvent,
-    DamageDealtEvent,
     DiceThroneEvent,
     HealAppliedEvent,
     InteractionRequestedEvent,
@@ -17,10 +16,20 @@ import type {
     StatusRemovedEvent,
     TokenGrantedEvent,
     TokenLimitChangedEvent,
+    TokenUsedEvent,
 } from '../events';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
+import {
+    ADVANCED_ARTIFICER_BOT_LIMIT as ADVANCED_ROBOT_LIMIT,
+    ARTIFICER_BOT_IDS as ARTIFICER_ROBOT_IDS,
+    buildArtificerBotStatePatch,
+    getArtificerBotState,
+    getRemainingArtificerBotActivations,
+    isArtificerBotBuilt,
+    isArtificerBotUpgraded,
+    type ArtificerBotTokenId as ArtificerRobotTokenId,
+} from '../artificerBots';
 
-const ADVANCED_ROBOT_LIMIT = 2;
 const ARC_SHIELD_PREVENT_2_CHOICE_ID = 'artificer-arc-shield-prevent-2';
 const ARC_SHIELD_PREVENT_3_CHOICE_ID = 'artificer-arc-shield-prevent-3';
 const WRENCH_STRIKE_ROLL_CHOICE_ID = 'artificer-wrench-strike-roll';
@@ -37,8 +46,6 @@ const BUILD_ADVANCED_HEAL_BOT = 3;
 const UPGRADE_NANOBOT = 4;
 const UPGRADE_SHOCK_BOT = 5;
 const UPGRADE_HEAL_BOT = 6;
-const ARTIFICER_ROBOT_IDS = [TOKEN_IDS.NANOBOT, TOKEN_IDS.SHOCK_BOT, TOKEN_IDS.HEAL_BOT] as const;
-type ArtificerRobotTokenId = typeof ARTIFICER_ROBOT_IDS[number];
 const ACTIVATE_BOT_CODE_BY_TOKEN_ID: Record<ArtificerRobotTokenId, number> = {
     [TOKEN_IDS.NANOBOT]: 1,
     [TOKEN_IDS.SHOCK_BOT]: 2,
@@ -54,66 +61,11 @@ const ACTIVATE_BOT_MASK_BY_TOKEN_ID: Record<ArtificerRobotTokenId, number> = {
     [TOKEN_IDS.SHOCK_BOT]: 2,
     [TOKEN_IDS.HEAL_BOT]: 4,
 };
-const ACTIVATE_BOT_LABEL_KEY_BY_TOKEN_ID: Record<ArtificerRobotTokenId, string> = {
-    [TOKEN_IDS.NANOBOT]: 'choices.artificerBotActivation.activateNanobot',
-    [TOKEN_IDS.SHOCK_BOT]: 'choices.artificerBotActivation.activateShockBot',
-    [TOKEN_IDS.HEAL_BOT]: 'choices.artificerBotActivation.activateHealBot',
-};
 const ACTIVATE_BOT_FREE_LABEL_KEY_BY_TOKEN_ID: Record<ArtificerRobotTokenId, string> = {
     [TOKEN_IDS.NANOBOT]: 'choices.artificerBotActivation.activateNanobotFree',
     [TOKEN_IDS.SHOCK_BOT]: 'choices.artificerBotActivation.activateShockBotFree',
     [TOKEN_IDS.HEAL_BOT]: 'choices.artificerBotActivation.activateHealBotFree',
 };
-const ROBOT_ACTIVATION_LIMIT_BY_TOKEN_ID: Record<ArtificerRobotTokenId, number> = {
-    [TOKEN_IDS.NANOBOT]: 1,
-    [TOKEN_IDS.SHOCK_BOT]: 1,
-    [TOKEN_IDS.HEAL_BOT]: 2,
-};
-
-function getArtificerBotState(state: DiceThroneCore, playerId: string, tokenId: ArtificerRobotTokenId) {
-    const player = state.players[playerId];
-    const stored = player?.artificerBotState?.[tokenId];
-    if (stored) return stored;
-    const tokenAmount = player?.tokens[tokenId] ?? 0;
-    const tokenLimit = getTokenStackLimit(state, playerId, tokenId);
-    return {
-        built: tokenAmount > 0,
-        upgraded: tokenLimit >= ADVANCED_ROBOT_LIMIT || tokenAmount >= ADVANCED_ROBOT_LIMIT,
-        activationsUsedThisTurn: 0,
-    };
-}
-
-function isArtificerBotBuilt(state: DiceThroneCore, playerId: string, tokenId: ArtificerRobotTokenId): boolean {
-    return getArtificerBotState(state, playerId, tokenId).built;
-}
-
-function isArtificerBotUpgraded(state: DiceThroneCore, playerId: string, tokenId: ArtificerRobotTokenId): boolean {
-    return getArtificerBotState(state, playerId, tokenId).upgraded;
-}
-
-function getRemainingArtificerBotActivations(state: DiceThroneCore, playerId: string, tokenId: ArtificerRobotTokenId): number {
-    const botState = getArtificerBotState(state, playerId, tokenId);
-    if (!botState.built) return 0;
-    return Math.max(0, ROBOT_ACTIVATION_LIMIT_BY_TOKEN_ID[tokenId] - (botState.activationsUsedThisTurn ?? 0));
-}
-
-function buildArtificerBotStatePatch(
-    state: DiceThroneCore,
-    playerId: string,
-    tokenId: ArtificerRobotTokenId,
-    patch: Partial<{ built: boolean; upgraded: boolean; activationsUsedThisTurn: number }>,
-) {
-    const player = state.players[playerId];
-    if (!player) return undefined;
-    return {
-        ...player.artificerBotState,
-        [tokenId]: {
-            ...getArtificerBotState(state, playerId, tokenId),
-            ...patch,
-        },
-    };
-}
-
 function isWrenchStrikeAbilityId(sourceAbilityId?: string): boolean {
     return typeof sourceAbilityId === 'string'
         && (sourceAbilityId === 'wrench-strike' || sourceAbilityId.startsWith('wrench-strike-'));
@@ -200,65 +152,12 @@ function decodeActivateBotChoiceValue(value: number): {
     };
 }
 
-function getArtificerBotActivationSynthCost(
-    state: DiceThroneCore,
-    playerId: string,
-    tokenId: ArtificerRobotTokenId,
-): number {
-    return isArtificerBotUpgraded(state, playerId, tokenId) ? 1 : 2;
-}
-
-function ignoresNormalBotActivationConditions(sourceAbilityId?: string): boolean {
-    if (!sourceAbilityId) return false;
-    return sourceAbilityId === 'overclock'
-        || sourceAbilityId === 'overclock-2'
-        || sourceAbilityId === 'shock-bot'
-        || sourceAbilityId === 'shock-bot-3'
-        || sourceAbilityId === 'maximum-power';
-}
-
-function buildStateAfterArtificerBotResourceSpend(
-    state: DiceThroneCore,
-    playerId: string,
-    tokenId: ArtificerRobotTokenId,
-    options?: { freeActivation?: boolean },
-): DiceThroneCore {
-    const player = state.players[playerId];
-    if (!player) return state;
-
-    const synthCost = options?.freeActivation ? 0 : getArtificerBotActivationSynthCost(state, playerId, tokenId);
-    const botState = getArtificerBotState(state, playerId, tokenId);
-    return {
-        ...state,
-        players: {
-            ...state.players,
-            [playerId]: {
-                ...player,
-                tokens: {
-                    ...player.tokens,
-                    [TOKEN_IDS.SYNTH]: Math.max(0, (player.tokens[TOKEN_IDS.SYNTH] ?? 0) - synthCost),
-                },
-                artificerBotState: {
-                    ...player.artificerBotState,
-                    [tokenId]: {
-                        ...botState,
-                        built: true,
-                        upgraded: botState.upgraded,
-                        activationsUsedThisTurn: (botState.activationsUsedThisTurn ?? 0) + 1,
-                    },
-                },
-            },
-        },
-    };
-}
-
 function buildArtificerBotActivationOptions(
     state: DiceThroneCore,
     playerId: string,
     remainingActivations: number,
     usedMask: number,
     allowSkip: boolean,
-    activationOptions?: { freeActivation?: boolean },
 ): ChoiceRequestedEvent['payload']['options'] {
     const player = state.players[playerId];
     if (!player || remainingActivations <= 0) return [];
@@ -270,9 +169,6 @@ function buildArtificerBotActivationOptions(
         if (!isArtificerBotBuilt(state, playerId, tokenId)) continue;
         if (getRemainingArtificerBotActivations(state, playerId, tokenId) <= 0) continue;
 
-        const synthCost = activationOptions?.freeActivation ? 0 : getArtificerBotActivationSynthCost(state, playerId, tokenId);
-        if (!activationOptions?.freeActivation && (player.tokens[TOKEN_IDS.SYNTH] ?? 0) < synthCost) continue;
-
         options.push({
             customId: ACTIVATE_BOT_CHOICE_ID,
             value: encodeActivateBotChoiceValue(
@@ -280,10 +176,8 @@ function buildArtificerBotActivationOptions(
                 remainingActivations - 1,
                 usedMask | tokenMask,
             ),
-            labelKey: activationOptions?.freeActivation
-                ? ACTIVATE_BOT_FREE_LABEL_KEY_BY_TOKEN_ID[tokenId]
-                : ACTIVATE_BOT_LABEL_KEY_BY_TOKEN_ID[tokenId],
-            ...(activationOptions?.freeActivation ? {} : { labelParams: { synth: synthCost } }),
+            labelKey: ACTIVATE_BOT_FREE_LABEL_KEY_BY_TOKEN_ID[tokenId],
+            labelParams: undefined,
         });
     }
 
@@ -307,14 +201,12 @@ function buildArtificerBotActivationChoiceRequest(
     timestamp: number,
 ): ChoiceRequestedEvent | undefined {
     const allowSkip = true;
-    const freeActivation = ignoresNormalBotActivationConditions(sourceAbilityId);
     const options = buildArtificerBotActivationOptions(
         state,
         playerId,
         remainingActivations,
         usedMask,
         allowSkip,
-        { freeActivation },
     );
     if (options.length <= 0) return undefined;
 
@@ -1055,11 +947,27 @@ registerChoiceResolvedEventHandler(ACTIVATE_BOT_CHOICE_ID, ({
         usedMaskAfter,
     } = decodeActivateBotChoiceValue(value);
     if (!selectedTokenId) return [];
+    if (
+        !isArtificerBotBuilt(state, playerId, selectedTokenId)
+        || getRemainingArtificerBotActivations(state, playerId, selectedTokenId) <= 0
+    ) {
+        return [];
+    }
 
-    const nextState = buildStateAfterArtificerBotResourceSpend(state, playerId, selectedTokenId, {
-        freeActivation: ignoresNormalBotActivationConditions(sourceAbilityId),
-    });
-    const events: DiceThroneEvent[] = [];
+    const nextState = state;
+    const isShockBot = selectedTokenId === TOKEN_IDS.SHOCK_BOT;
+    const events: DiceThroneEvent[] = [{
+        type: 'TOKEN_USED',
+        payload: {
+            playerId,
+            tokenId: selectedTokenId,
+            amount: 1,
+            effectType: isShockBot ? 'damageBoost' : 'botActivation',
+            ...(isShockBot ? { damageModifier: 3, appliesToCurrentAttack: true } : {}),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as TokenUsedEvent];
     let nextTimestamp = timestamp;
 
     if (selectedTokenId === TOKEN_IDS.NANOBOT) {
@@ -1081,30 +989,6 @@ registerChoiceResolvedEventHandler(ACTIVATE_BOT_CHOICE_ID, ({
             },
         }));
         nextTimestamp += 0.01;
-    } else if (selectedTokenId === TOKEN_IDS.SHOCK_BOT) {
-        const targetId = nextState.pendingAttack?.defenderId;
-        if (targetId && nextState.players[targetId]) {
-            const calc = createDamageCalculation({
-                source: { playerId, abilityId: sourceAbilityId },
-                target: { playerId: targetId },
-                baseDamage: 3,
-                damageScope: 'attack',
-                state: nextState,
-                timestamp: nextTimestamp,
-            });
-            events.push(...calc.toEvents().map(event => (event.type === 'DAMAGE_DEALT'
-                ? {
-                    ...event,
-                    payload: {
-                        ...event.payload,
-                        sourceAbilityId,
-                        sourcePlayerId: playerId,
-                        damageScope: 'attack',
-                    },
-                } as DamageDealtEvent
-                : event)));
-            nextTimestamp += 0.01;
-        }
     } else if (selectedTokenId === TOKEN_IDS.HEAL_BOT) {
         events.push(...handleHealBotUse({
             state: nextState,
@@ -1234,37 +1118,6 @@ registerChoiceEffectHandler(BUILD_FROM_SCRATCH_CHOICE_ID, ({ state, playerId, so
             }
             : state.pendingAttack,
     };
-});
-
-registerChoiceEffectHandler(ACTIVATE_BOT_CHOICE_ID, ({ state, playerId, sourceAbilityId, value }) => {
-    if (!sourceAbilityId || typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-
-    const {
-        selectedCode,
-        selectedTokenId,
-        remainingAfter,
-        usedMaskAfter,
-    } = decodeActivateBotChoiceValue(value);
-    const nextState = selectedTokenId
-        ? buildStateAfterArtificerBotResourceSpend(state, playerId, selectedTokenId)
-        : state;
-    const shouldClose = selectedCode === 0
-        || remainingAfter <= 0
-        || !selectedTokenId
-        || !buildArtificerBotActivationChoiceRequest(nextState, playerId, sourceAbilityId, remainingAfter, usedMaskAfter, 0);
-
-    const result: Partial<DiceThroneCore> = selectedTokenId
-        ? { players: nextState.players }
-        : {};
-
-    if (shouldClose && nextState.pendingAttack?.sourceAbilityId === sourceAbilityId) {
-        result.pendingAttack = {
-            ...updatePendingAttackSettlementStage(nextState.pendingAttack, 'readyToResolve')!,
-            postDamageFollowUpResolved: true,
-        };
-    }
-
-    return Object.keys(result).length > 0 ? result : undefined;
 });
 
 export function registerArtificerCustomActions(): void {

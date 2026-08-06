@@ -199,6 +199,7 @@
     "singleDevice": "Single Device",
     "playAi": "Play AI",
     "tutorial": "Tutorial",
+    "configReview": "Config Table",
     "createRoom": "Create Room",
     "backToDirectory": "Back to Directory",
     "confirm": "Confirm",
@@ -2086,6 +2087,21 @@
               "description": "Ongoing: your minions have +1 power",
               "effect": "Buff",
               "result": "+1 power"
+            },
+            "buff_power": {
+              "label": "+1 Power"
+            },
+            "move_minion": {
+              "label": "Move"
+            },
+            "return_to_hand": {
+              "label": "Return"
+            },
+            "discard_card": {
+              "label": "Discard"
+            },
+            "chain_trigger": {
+              "label": "Chain"
             }
           },
           "preview": {
@@ -2098,7 +2114,15 @@
             },
             "effect_label": "Effect",
             "minions_hint": "Mock minions on the base",
-            "idle_hint": "Click a card name to preview"
+            "idle_hint": "Click a card name to preview",
+            "zones": {
+              "second_base": "Second Base",
+              "empty_slot": "Open Slot",
+              "deck": "Deck",
+              "hand": "Hand",
+              "discard": "Discard",
+              "score": "VP"
+            }
           }
         }
       },

@@ -196,8 +196,9 @@ async function joinGuest(page: Page, matchId: string) {
 }
 
 async function triggerAttack(page: Page, attacker: CellCoord, target: CellCoord, diceValues: number[]) {
-  await setHarnessDiceValues(page, diceValues);
   await clickBoardElement(page, `[data-testid="sw-unit-${attacker.row}-${attacker.col}"][data-owner="0"]`);
+  await page.waitForTimeout(150);
+  await setHarnessDiceValues(page, diceValues);
   await clickBoardElement(page, `[data-testid="sw-unit-${target.row}-${target.col}"][data-owner="1"]`);
 }
 
@@ -460,6 +461,88 @@ test.describe('召唤师战争冰苔兽人真实入口与关键交互 E2E', () =
     }
   });
 
+  test('狂暴额外攻击：激励选择保留后应立即显示伤害并消耗额外攻击', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const match = await setupSWOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined, 'shouren', 'necromancer');
+    if (!match) { test.skip(true, 'Game server unavailable or room creation failed'); return; }
+    const { hostPage, hostContext, guestContext, matchId } = match;
+    const hostGame = new GameTestContext(hostPage);
+    const attackerPos = { row: 4, col: 1 };
+    const targetPos = { row: 4, col: 0 };
+
+    try {
+      const core = await readCoreState(hostPage) as SummonerWarsCore;
+      resetCore(core, 'attack');
+      const summoner = addRequiredSummoners(core, { row: 3, col: 1 });
+      summoner.boosts = 1;
+      placeUnit(core, attackerPos, makeUnit(tundraFighter, 'shouren-berserk-extra-keep-attacker'), '0', {
+        instanceId: 'shouren-berserk-extra-keep-attacker-instance',
+        extraAttacks: 1,
+      });
+      addEnemy(core, targetPos, 'shouren-berserk-extra-keep-target');
+      await applyCoreState(hostPage, core);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+
+      await triggerAttack(hostPage, attackerPos, targetPos, Array.from({ length: 12 }, () => 6));
+      const overlay = hostPage.getByTestId('sw-dice-result-overlay');
+      await expect(overlay.getByRole('button', { name: /保留|Keep/i })).toBeVisible({ timeout: 8000 });
+      const pendingBeforeKeep = (await readCoreState(hostPage) as SummonerWarsCore).pendingAttackRoll;
+      if (!pendingBeforeKeep) throw new Error('额外攻击未产生待保留的攻击骰面');
+      const expectedDamage = pendingBeforeKeep.diceResults
+        .flatMap((result) => result.marks)
+        .filter((mark) => mark === 'melee').length;
+      expect(expectedDamage).toBeGreaterThan(0);
+      await expect(hostPage.getByTestId(`sw-unit-life-${targetPos.row}-${targetPos.col}`)).toContainText('20/20');
+      await hostGame.screenshot('09a-狂暴额外攻击激励保留前', testInfo);
+      await overlay.getByRole('button', { name: /保留|Keep/i }).click();
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        return {
+          damage: state.board[targetPos.row][targetPos.col].unit?.damage ?? 0,
+          extraAttacks: state.board[attackerPos.row][attackerPos.col].unit?.extraAttacks ?? 0,
+        };
+      }, { timeout: 10000 }).toEqual({ damage: expectedDamage, extraAttacks: 0 });
+
+      const afterKeep = await readCoreState(hostPage) as SummonerWarsCore;
+      if (afterKeep.pendingAttackRoll?.kind === 'ability') {
+        await waitForSwInteraction(hostPage, matchId, 'shouren_encourage');
+        const abilityOverlay = hostPage.getByTestId('sw-dice-result-overlay');
+        await expect(abilityOverlay.getByRole('button', { name: /保留|Keep/i })).toBeVisible({ timeout: 8000 });
+        await abilityOverlay.getByRole('button', { name: /保留|Keep/i }).click();
+      }
+      await expect.poll(async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          sys?: { interaction?: { current?: { data?: { sw?: { type?: string } } } } };
+        };
+        return state.sys?.interaction?.current?.data?.sw?.type ?? 'none';
+      }, { timeout: 10000 }).toMatch(/^(after_attack_shouren_berserk|none)$/);
+      const followUpState = await getMatchState(matchId, hostPage) as {
+        sys?: { interaction?: { current?: { data?: { sw?: { type?: string } } } } };
+      };
+      if (followUpState.sys?.interaction?.current?.data?.sw?.type === 'after_attack_shouren_berserk') {
+        await hostPage.getByRole('button', { name: /^跳过$|^Skip$/i }).click();
+      }
+      await waitForNoInteraction(hostPage, matchId);
+      await dismissDiceResultOverlay(hostPage);
+
+      await expect.poll(async () => {
+        const lifeText = await hostPage.getByTestId(`sw-unit-life-${targetPos.row}-${targetPos.col}`).textContent();
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        return {
+          lifeText: lifeText?.trim() ?? '',
+          damage: state.board[targetPos.row][targetPos.col].unit?.damage ?? 0,
+          extraAttacks: state.board[attackerPos.row][attackerPos.col].unit?.extraAttacks ?? 0,
+        };
+      }, { timeout: 5000 }).toEqual({ lifeText: `${20 - expectedDamage}/20`, damage: expectedDamage, extraAttacks: 0 });
+      await dismissDiceResultOverlay(hostPage);
+      await hostGame.screenshot('09b-狂暴额外攻击保留后伤害已显示', testInfo);
+    } finally {
+      await hostContext.close().catch(() => {});
+      await guestContext.close().catch(() => {});
+    }
+  });
+
   test('蛮力冲击：造成伤害后可以把目标推远一格，也可以跳过', async ({ browser }, testInfo) => {
     test.setTimeout(180000);
     const match = await setupSWOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined, 'shouren', 'necromancer');
@@ -544,6 +627,69 @@ test.describe('召唤师战争冰苔兽人真实入口与关键交互 E2E', () =
         const unit = (await readCoreState(hostPage) as SummonerWarsCore).board[4][2].unit;
         return { name: unit?.card.name ?? null, extraAttacks: unit?.extraAttacks ?? 0 };
       }).toEqual({ name: '格鲁纳克', extraAttacks: 0 });
+    } finally {
+      await hostContext.close().catch(() => {});
+      await guestContext.close().catch(() => {});
+    }
+  });
+
+  test('原始狂怒组合：激励保留或重摇后仍可进入位移并获得额外攻击', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const match = await setupSWOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined, 'shouren', 'necromancer');
+    if (!match) { test.skip(true, 'Game server unavailable or room creation failed'); return; }
+    const { hostPage, hostContext, guestContext, matchId } = match;
+    const hostGame = new GameTestContext(hostPage);
+    const summonerPos = { row: 4, col: 2 };
+    const targetPos = { row: 4, col: 3 };
+    const movePos = { row: 4, col: 1 };
+
+    const prepare = async (id: string, initialDice: number[]) => {
+      const core = await readCoreState(hostPage) as SummonerWarsCore;
+      resetCore(core, 'attack');
+      const summoner = addRequiredSummoners(core, summonerPos);
+      summoner.boosts = 1;
+      core.players['0'].activeEvents = [makeEvent(primalFuryEvent, `shouren-primal-fury-${id}`)];
+      addEnemy(core, targetPos, `${id}-target`);
+      await applyCoreState(hostPage, core);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await triggerAttack(hostPage, summonerPos, targetPos, initialDice);
+      const overlay = hostPage.getByTestId('sw-dice-result-overlay');
+      await expect(overlay.getByRole('button', { name: /保留|Keep/i })).toBeVisible({ timeout: 8000 });
+      return overlay;
+    };
+
+    try {
+      const keepOverlay = await prepare('0-1', [1, 1, 1, 1]);
+      await keepOverlay.getByRole('button', { name: /保留|Keep/i }).click();
+      await waitForSwInteraction(hostPage, matchId, 'after_attack_shouren_primal_fury');
+      await dismissDiceResultOverlay(hostPage);
+      await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
+        .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostPage.mouse.move(20, 20);
+      await hostGame.screenshot('12-激励保留后原始狂怒位移入口', testInfo);
+      await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        const unit = state.board[movePos.row][movePos.col].unit;
+        return { extraAttacks: unit?.extraAttacks ?? 0, boosts: unit?.boosts ?? 0 };
+      }, { timeout: 10000 }).toEqual({ extraAttacks: 1, boosts: 1 });
+
+      const rerollOverlay = await prepare('0-2', [5, 5, 5, 5]);
+      await setHarnessDiceValues(hostPage, [1, 1, 1, 1]);
+      await rerollOverlay.getByRole('button', { name: /重掷|Reroll/i }).click();
+      await waitForSwInteraction(hostPage, matchId, 'after_attack_shouren_primal_fury');
+      await dismissDiceResultOverlay(hostPage);
+      await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
+        .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostPage.mouse.move(20, 20);
+      await hostGame.screenshot('13-激励重摇后原始狂怒位移入口', testInfo);
+      await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        const unit = state.board[movePos.row][movePos.col].unit;
+        return { extraAttacks: unit?.extraAttacks ?? 0, boosts: unit?.boosts ?? 0 };
+      }, { timeout: 10000 }).toEqual({ extraAttacks: 1, boosts: 0 });
     } finally {
       await hostContext.close().catch(() => {});
       await guestContext.close().catch(() => {});

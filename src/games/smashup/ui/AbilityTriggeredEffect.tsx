@@ -2,7 +2,7 @@
 // Canvas split effect uses AssetLoader/CardPreview-resolved URLs, then draws a transient card snapshot.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Sparkles, Trophy, Zap } from 'lucide-react';
+import { ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import i18next from 'i18next';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardAtlasSource, getLazyRegistration } from '../../../components/common/media/cardAtlasRegistry';
@@ -19,8 +19,31 @@ import { computeSpriteStyle, type SpriteAtlasConfig, type SpriteAtlasFrame } fro
 import { getCardDef, resolveCardName } from '../data/cards';
 
 type ScreenPoint = { left: number; top: number };
-export type AbilityHighlightTone = 'info' | 'danger' | 'buff' | 'score';
-type AbilityActionKind = 'destroy' | 'buff' | 'score' | 'info';
+export type AbilityHighlightTone = 'info' | 'danger' | 'buff' | 'score' | 'protect';
+type AbilityActionKind =
+  | 'destroy'
+  | 'buff'
+  | 'score'
+  | 'draw'
+  | 'move'
+  | 'return'
+  | 'discard'
+  | 'protect'
+  | 'summon'
+  | 'info';
+
+const ABILITY_ACTION_KINDS: AbilityActionKind[] = [
+  'destroy',
+  'buff',
+  'score',
+  'draw',
+  'move',
+  'return',
+  'discard',
+  'protect',
+  'summon',
+  'info',
+];
 
 function useStableComplete(onComplete: () => void): () => void {
   const ref = useRef(onComplete);
@@ -46,18 +69,24 @@ function resolveActionKind(
   tone: AbilityHighlightTone | undefined,
   effectLabel: string | undefined,
 ): AbilityActionKind {
-  if (explicit === 'destroy' || explicit === 'buff' || explicit === 'score' || explicit === 'info') {
+  if (ABILITY_ACTION_KINDS.includes(explicit as AbilityActionKind)) {
     return explicit;
   }
   const label = effectLabel ?? '';
   if (tone === 'danger' || /消灭|摧毁|陷阱|暗杀|discard|destroy/i.test(label)) return 'destroy';
   if (tone === 'buff' || /\+|加成|力量|power|buff/i.test(label)) return 'buff';
   if (tone === 'score' || /vp|分|得分|score/i.test(label)) return 'score';
+  if (/抽|摸|抓|draw/i.test(label)) return 'draw';
+  if (/移动|move/i.test(label)) return 'move';
+  if (/返回|收入手牌|return|hand/i.test(label)) return 'return';
+  if (/弃|discard/i.test(label)) return 'discard';
+  if (/保护|护盾|protect|shield/i.test(label)) return 'protect';
+  if (/召唤|打出|加入|summon|play/i.test(label)) return 'summon';
   return 'info';
 }
 
 function resolveAbilityTone(tone: AbilityHighlightTone | undefined, actionKind: AbilityActionKind) {
-  if (actionKind === 'destroy' || tone === 'danger') {
+  if (actionKind === 'destroy' || actionKind === 'discard' || tone === 'danger') {
     return {
       accent: '#fb7185',
       accentSoft: 'rgba(251,113,133,0.22)',
@@ -85,6 +114,16 @@ function resolveAbilityTone(tone: AbilityHighlightTone | undefined, actionKind: 
       cardRing: 'shadow-[0_0_42px_rgba(250,204,21,0.56)]',
       orb: 'from-yellow-100 via-amber-300 to-orange-300',
       targetTint: 'rgba(113,63,18,0.38)',
+    };
+  }
+  if (actionKind === 'protect') {
+    return {
+      accent: '#93c5fd',
+      accentSoft: 'rgba(147,197,253,0.20)',
+      glow: 'rgba(147,197,253,0.38)',
+      cardRing: 'shadow-[0_0_42px_rgba(147,197,253,0.46)]',
+      orb: 'from-white via-blue-200 to-sky-300',
+      targetTint: 'rgba(30,64,175,0.28)',
     };
   }
   return {
@@ -272,42 +311,14 @@ function AbilityArcCanvas({
       if (lineReveal > 0 && lineFade > 0) {
         const head = clamp01(lineReveal);
         const alpha = lineFade * (0.68 + 0.32 * head);
-        const selectionColor = SELECTION_LINE_COLOR;
-        const lineEndPoint = linePoint(pathSourcePoint, targetPoint, head);
-        const gradient = ctx.createLinearGradient(pathSourcePoint.left, pathSourcePoint.top, targetPoint.left, targetPoint.top);
-        gradient.addColorStop(0, rgba(selectionColor, 0));
-        gradient.addColorStop(0.12, rgba(selectionColor, 0.78 * alpha));
-        gradient.addColorStop(0.54, `rgba(255,255,255,${0.88 * alpha})`);
-        gradient.addColorStop(1, rgba(selectionColor, 0.95 * alpha));
-
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.beginPath();
-        drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
-        ctx.strokeStyle = rgba(selectionColor, 0.34 * alpha);
-        ctx.lineWidth = 8;
-        ctx.stroke();
-
-        ctx.beginPath();
-        drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 3.4;
-        ctx.stroke();
-
         ctx.globalCompositeOperation = 'source-over';
-        ctx.setLineDash([7, 10]);
-        ctx.lineDashOffset = -elapsedMs / 48;
         ctx.beginPath();
         drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
-        ctx.strokeStyle = `rgba(255,255,255,${0.58 * alpha})`;
-        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = rgba(SELECTION_LINE_COLOR, 0.72 * alpha);
+        ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.setLineDash([]);
-
-        drawGlowOrb(ctx, lineEndPoint.left, lineEndPoint.top, 14, selectionColor, 0.26 * alpha);
-        drawGlowOrb(ctx, lineEndPoint.left, lineEndPoint.top, 4.6, '#ffffff', 0.34 * alpha);
-        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 23 + 6 * head, selectionColor, 0.14 * alpha);
       }
 
       ctx.globalCompositeOperation = 'source-over';
@@ -332,34 +343,6 @@ function AbilityArcCanvas({
       style={{ zIndex: UI_Z_INDEX.overlayRaised + 1, mixBlendMode: 'screen' }}
       data-testid="smashup-triggered-fx-canvas"
     />
-  );
-}
-
-function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityActionKind; accent: string; delayS: number }) {
-  const common = { size: 42, strokeWidth: 2.6 };
-  const icon = actionKind === 'buff'
-      ? <Plus {...common} />
-      : actionKind === 'score'
-        ? <Trophy {...common} />
-        : <Sparkles {...common} />;
-
-  return (
-    <motion.div
-      className="absolute flex h-20 w-20 items-center justify-center rounded-[22px] bg-slate-950/78 text-white shadow-2xl"
-      style={{
-        left: '50%',
-        top: '50%',
-        marginLeft: -40,
-        marginTop: -40,
-        boxShadow: `0 0 34px ${accent}, inset 0 0 18px ${accent}`,
-      }}
-      initial={{ opacity: 0, scale: 0.35, rotate: -18 }}
-      animate={{ opacity: [0, 1, 1, 0.88, 0], scale: [0.35, 1.22, 1, 1.08, 1.34], rotate: [-18, 7, 0, 0, 18] }}
-      transition={{ duration: 2.2, times: [0, 0.14, 0.42, 0.78, 1], delay: delayS, ease: 'easeOut' }}
-      data-testid="smashup-triggered-fx-action-glyph"
-    >
-      {icon}
-    </motion.div>
   );
 }
 
@@ -692,18 +675,18 @@ function CardSplitEffect({
         const visibleProgress = TWO_PIECE_INITIAL_SPLIT_PROGRESS
           + (1 - TWO_PIECE_INITIAL_SPLIT_PROGRESS) * progress;
         const splitProgress = easeOutCubic(clamp01(visibleProgress));
-        const fade = 1 - easeOutCubic(clamp01((progress - 0.74) / 0.26)) * 0.55;
-        const topX = -72 * splitProgress;
-        const bottomX = 78 * splitProgress;
-        const topY = -64 * splitProgress;
-        const bottomY = 82 * splitProgress;
+        const fade = 1 - easeOutCubic(clamp01((progress - 0.68) / 0.32)) * 0.74;
+        const topX = -28 * splitProgress;
+        const bottomX = 30 * splitProgress;
+        const topY = -30 * splitProgress;
+        const bottomY = 32 * splitProgress;
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, canvasW, canvasH);
         ctx.save();
         ctx.translate(overflow, overflow);
-        drawSplitPiece(ctx, snapshot, topPiece, [[parentW, splitRightY], [0, splitLeftY]], parentW, parentH, topX, topY, -0.18 * splitProgress, fade);
-        drawSplitPiece(ctx, snapshot, bottomPiece, [[0, splitLeftY], [parentW, splitRightY]], parentW, parentH, bottomX, bottomY, 0.2 * splitProgress, fade);
+        drawSplitPiece(ctx, snapshot, topPiece, [[parentW, splitRightY], [0, splitLeftY]], parentW, parentH, topX, topY, -0.08 * splitProgress, fade);
+        drawSplitPiece(ctx, snapshot, bottomPiece, [[0, splitLeftY], [parentW, splitRightY]], parentW, parentH, bottomX, bottomY, 0.09 * splitProgress, fade);
         ctx.restore();
       };
 
@@ -746,9 +729,187 @@ function CardSplitEffect({
   );
 }
 
+function MiniResultCard({
+  previewRef,
+  label,
+  cardBack = false,
+  large = false,
+}: {
+  previewRef: CardPreviewRef | undefined;
+  label: string | undefined;
+  cardBack?: boolean;
+  large?: boolean;
+}) {
+  return (
+    <div className={`${large ? 'h-[136px] w-[96px] rounded-lg' : 'h-[72px] w-[52px] rounded-md'} overflow-hidden border border-white/55 bg-slate-900 shadow-[0_12px_30px_rgba(0,0,0,0.55)]`}>
+      {cardBack || !previewRef ? (
+        <div className="relative h-full w-full bg-[linear-gradient(135deg,#78350f,#f59e0b_46%,#fde68a)]">
+          <div className="absolute inset-[7px] rounded border border-amber-100/75" />
+          <div className="absolute inset-[15px] rounded bg-slate-950/20" />
+        </div>
+      ) : (
+        <CardPreview previewRef={previewRef} className="h-full w-full object-cover" title={label} />
+      )}
+    </div>
+  );
+}
+
+function DestinationPulse({
+  actionKind,
+  tone,
+  resultPosition,
+  targetPosition,
+}: {
+  actionKind: AbilityActionKind;
+  tone: ReturnType<typeof resolveAbilityTone>;
+  resultPosition: ScreenPoint | undefined;
+  targetPosition: ScreenPoint;
+}) {
+  if (!resultPosition || !['move', 'return', 'discard'].includes(actionKind)) return null;
+  const dx = resultPosition.left - targetPosition.left;
+  const dy = resultPosition.top - targetPosition.top;
+  return (
+    <motion.div
+      className="absolute left-1/2 top-1/2 h-14 w-14 rounded-full"
+      style={{
+        marginLeft: -28,
+        marginTop: -28,
+        x: dx,
+        y: dy,
+        background: `radial-gradient(circle, ${tone.glow} 0%, rgba(255,255,255,0.16) 34%, rgba(0,0,0,0) 72%)`,
+      }}
+      initial={{ opacity: 0, scale: 0.25 }}
+      animate={{ opacity: [0, 0.85, 0], scale: [0.25, 1.3, 2.2] }}
+      transition={{ duration: 1.1, delay: 1.02, ease: 'easeOut' }}
+      data-testid={`smashup-triggered-fx-${actionKind}-destination`}
+    />
+  );
+}
+
+function ResultMarker({
+  actionKind,
+  tone,
+  targetPosition,
+  resultPosition,
+  targetCardPreview,
+  resolvedTargetName,
+}: {
+  actionKind: AbilityActionKind;
+  tone: ReturnType<typeof resolveAbilityTone>;
+  targetPosition: ScreenPoint;
+  resultPosition: ScreenPoint | undefined;
+  targetCardPreview: CardPreviewRef | undefined;
+  resolvedTargetName: string | undefined;
+}) {
+  if (actionKind === 'destroy' || actionKind === 'info') return null;
+
+  if (actionKind === 'protect') {
+    return (
+      <motion.div
+        className="absolute inset-[26px] flex items-center justify-center rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,255,255,0.36) 0%, rgba(147,197,253,0.24) 44%, rgba(147,197,253,0) 72%)',
+          boxShadow: `0 0 34px ${tone.glow}, inset 0 0 24px rgba(255,255,255,0.22)`,
+        }}
+        initial={{ opacity: 0, scale: 0.45 }}
+        animate={{ opacity: [0, 1, 0.86, 0], scale: [0.45, 1.14, 1.02, 1.32] }}
+        transition={{ duration: 1.85, delay: 0.72, times: [0, 0.22, 0.72, 1], ease: 'easeOut' }}
+        data-testid="smashup-triggered-fx-protect-shield"
+      >
+        <ShieldCheck size={38} className="text-white drop-shadow-[0_0_10px_rgba(147,197,253,0.95)]" strokeWidth={2.4} />
+      </motion.div>
+    );
+  }
+
+  const dx = resultPosition ? resultPosition.left - targetPosition.left : 118;
+  const dy = resultPosition ? resultPosition.top - targetPosition.top : -74;
+
+  if (actionKind === 'score') {
+    return (
+      <motion.div
+        className="absolute left-1/2 top-1/2 flex h-12 w-12 items-center justify-center rounded-full border-2 border-yellow-100 bg-yellow-300 text-base font-black text-slate-950 shadow-[0_0_28px_rgba(250,204,21,0.72)]"
+        style={{ marginLeft: -24, marginTop: -24 }}
+        initial={{ opacity: 0, scale: 0.3, x: -10, y: 14 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.18, 1, 0.76], x: [-10, 0, dx * 0.58, dx], y: [14, -8, dy * 0.52, dy] }}
+        transition={{ duration: 1.55, delay: 0.86, ease: 'easeOut' }}
+        data-testid="smashup-triggered-fx-score-token"
+      >
+        VP
+      </motion.div>
+    );
+  }
+
+  if (actionKind === 'draw' || actionKind === 'summon') {
+    const fromResultToTarget = actionKind === 'summon';
+    return (
+      <motion.div
+        className="absolute left-1/2 top-1/2"
+        style={{ marginLeft: -26, marginTop: -36 }}
+        initial={fromResultToTarget
+          ? { opacity: 0, scale: 0.72, x: dx, y: dy, rotate: -9 }
+          : { opacity: 0, scale: 0.72, x: 0, y: 0, rotate: -9 }}
+        animate={fromResultToTarget
+          ? { opacity: [0, 1, 1, 0], scale: [0.72, 1, 0.96, 0.9], x: [dx, dx * 0.48, 0, 0], y: [dy, dy * 0.42, 0, 0], rotate: [-9, 2, 0, 0] }
+          : { opacity: [0, 1, 1, 0], scale: [0.72, 1, 0.96, 0.9], x: [0, dx * 0.46, dx, dx], y: [0, dy * 0.36, dy, dy], rotate: [-9, 3, 0, 0] }}
+        transition={{ duration: 1.55, delay: 0.82, ease: 'easeOut' }}
+        data-testid={`smashup-triggered-fx-${actionKind}-card`}
+      >
+        <MiniResultCard
+          previewRef={fromResultToTarget ? targetCardPreview : undefined}
+          label={resolvedTargetName}
+          cardBack={!fromResultToTarget}
+        />
+      </motion.div>
+    );
+  }
+
+  if (['move', 'return', 'discard'].includes(actionKind) && resultPosition && targetCardPreview) {
+    const settleOpacity = actionKind === 'move' ? 0.92 : 0;
+    const settleScale = actionKind === 'move' ? 0.96 : 0.76;
+    const settleFilter = actionKind === 'discard'
+      ? 'grayscale(0.8) brightness(0.7)'
+      : 'brightness(1)';
+    return (
+      <>
+        <DestinationPulse
+          actionKind={actionKind}
+          tone={tone}
+          resultPosition={resultPosition}
+          targetPosition={targetPosition}
+        />
+        <motion.div
+          className="absolute left-1/2 top-1/2"
+          style={{ marginLeft: -48, marginTop: -68 }}
+          initial={{ opacity: 0, scale: 0.92, x: 0, y: 0, rotate: 0, filter: 'brightness(1)' }}
+          animate={{
+            opacity: [0, 1, 1, settleOpacity],
+            scale: [0.92, 1.06, 1, settleScale],
+            x: [0, dx * 0.34, dx * 0.78, dx],
+            y: [0, dy * 0.28 - 12, dy * 0.72 - 10, dy],
+            rotate: [0, actionKind === 'discard' ? 4 : -3, actionKind === 'move' ? 1 : 6, actionKind === 'move' ? 0 : 10],
+            filter: ['brightness(1)', 'brightness(1.16)', 'brightness(1.05)', settleFilter],
+          }}
+          transition={{ duration: 1.55, delay: 0.72, times: [0, 0.18, 0.68, 1], ease: 'easeInOut' }}
+          data-testid={`smashup-triggered-fx-${actionKind}-card-transfer`}
+        >
+          <MiniResultCard
+            previewRef={targetCardPreview}
+            label={resolvedTargetName}
+            large
+          />
+        </motion.div>
+      </>
+    );
+  }
+
+  return <DestinationPulse actionKind={actionKind} tone={tone} resultPosition={resultPosition} targetPosition={targetPosition} />;
+}
+
 function TargetImpact({
   actionKind,
   tone,
+  targetPosition,
+  resultPosition,
   targetCardPreview,
   resolvedTargetName,
   renderCardBody,
@@ -757,6 +918,8 @@ function TargetImpact({
 }: {
   actionKind: AbilityActionKind;
   tone: ReturnType<typeof resolveAbilityTone>;
+  targetPosition: ScreenPoint;
+  resultPosition: ScreenPoint | undefined;
   targetCardPreview: CardPreviewRef | undefined;
   resolvedTargetName: string | undefined;
   renderCardBody: boolean;
@@ -850,21 +1013,20 @@ function TargetImpact({
           initial={{ opacity: 0, scale: 0.3, y: 14 }}
           animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.28, 1, 1.16], y: [14, -8, -18, -34] }}
           transition={{ duration: 1.4, delay: 0.86, ease: 'easeOut' }}
+          data-testid="smashup-triggered-fx-buff-marker"
         >
           +1
         </motion.div>
       )}
 
-      {actionKind === 'score' && (
-        <motion.div
-          className="absolute -right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-yellow-100 bg-yellow-300 text-base font-black text-slate-950 shadow-[0_0_28px_rgba(250,204,21,0.72)]"
-          initial={{ opacity: 0, scale: 0.3, x: -16, y: 20 }}
-          animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.18, 1, 1], x: [-16, 0, 56, 120], y: [20, -8, -40, -72] }}
-          transition={{ duration: 1.5, delay: 0.86, ease: 'easeOut' }}
-        >
-          VP
-        </motion.div>
-      )}
+      <ResultMarker
+        actionKind={actionKind}
+        tone={tone}
+        targetPosition={targetPosition}
+        resultPosition={resultPosition}
+        targetCardPreview={targetCardPreview}
+        resolvedTargetName={resolvedTargetName}
+      />
     </motion.div>
   );
 }
@@ -880,6 +1042,7 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const sourceDefId = event.params?.sourceDefId as string | undefined;
   const sourcePosition = readScreenPoint(event.params?.sourcePosition);
   const explicitTargetPosition = readScreenPoint(event.params?.targetPosition) ?? readScreenPoint(event.params?.position);
+  const resultPosition = readScreenPoint(event.params?.resultPosition);
   const targetDefId = event.params?.targetDefId as string | undefined;
   const sourcePreviewRef = event.params?.sourcePreviewRef as CardPreviewRef | undefined;
   const targetPreviewRef = event.params?.targetPreviewRef as CardPreviewRef | undefined;
@@ -946,9 +1109,6 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const renderTargetCardBody = !explicitTargetPosition || actionKind === 'destroy';
   const renderTargetLabel = !explicitTargetPosition;
   const compactTargetCardBody = !!explicitTargetPosition;
-  const impactDelayS = actionKind === 'destroy'
-    ? Math.min(0.96, totalDurationS * 0.36)
-    : Math.min(1.35, totalDurationS * 0.42);
 
   return (
     <>
@@ -976,9 +1136,12 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
           transition={{ duration: totalDurationS, times: [0, 0.18, 0.72, 1], ease: 'easeOut' }}
         >
           <motion.div
-            className={renderSourceCardBody ? 'absolute inset-[-16px] rounded-2xl' : 'absolute inset-[-42px] rounded-[34px]'}
+            className={renderSourceCardBody ? 'absolute inset-[-16px] rounded-2xl' : 'absolute inset-[-22px] rounded-[28px]'}
             style={{ background: `radial-gradient(circle, ${tone.glow} 0%, rgba(0,0,0,0) 70%)` }}
-            animate={{ opacity: [0, 0.55, 0.45, 0], scale: [0.7, 1.18, 1.05, 1.42] }}
+            animate={{
+              opacity: renderSourceCardBody ? [0, 0.55, 0.45, 0] : [0, 0.2, 0.12, 0],
+              scale: renderSourceCardBody ? [0.7, 1.18, 1.05, 1.42] : [0.75, 1.02, 1, 1.12],
+            }}
             transition={{ duration: totalDurationS * 0.76, times: [0, 0.18, 0.66, 1], ease: 'easeOut' }}
           />
           <div className={renderSourceCardBody
@@ -1031,15 +1194,14 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
         <TargetImpact
           actionKind={actionKind}
           tone={tone}
+          targetPosition={targetPos}
+          resultPosition={resultPosition}
           targetCardPreview={targetCardPreview}
           resolvedTargetName={resolvedTargetName}
           renderCardBody={renderTargetCardBody}
           compactCardBody={compactTargetCardBody}
           shatterImageSource={targetShatterSource}
         />
-        {actionKind !== 'destroy' && (
-          <ActionGlyph actionKind={actionKind} accent={tone.accent} delayS={impactDelayS} />
-        )}
         {resolvedTargetName && renderTargetLabel && (
           <motion.div
             className="mx-auto mt-2 max-w-[150px] truncate rounded-md border border-white/18 bg-slate-950/70 px-2 py-0.5 text-center text-[13px] font-black leading-none text-white/90 shadow-lg"

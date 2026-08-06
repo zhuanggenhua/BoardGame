@@ -24,6 +24,7 @@ import type {
     ValidationResult,
 } from './types';
 import { DEFAULT_TUTORIAL_STATE } from './types';
+import { refreshInteractionOptions } from './systems/InteractionSystem';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
 
 function sortSystems<TCore>(systems: EngineSystem<TCore>[]): EngineSystem<TCore>[] {
@@ -411,6 +412,11 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             } else {
                 ctx.events = [];
             }
+
+            // afterEvents 可以先创建动态交互，再由同轮领域事件改变手牌/场面。
+            // 需要用归约后的 core 刷新一次，避免玩家看到旧候选集。
+            currentState = refreshInteractionOptions(currentState);
+            ctx.state = currentState;
         } else {
             // 本轮无事件需要 reduce（如 PPSE 压制了所有领域事件），
             // 必须清空 ctx.events 防止下一轮系统重复处理上一轮的事件
@@ -587,11 +593,39 @@ export function executePipeline<
             // 无错误：命令被系统消费。此时需要：
             // 1) 将系统产生的非 SYS_ 事件写入 core（含事件拦截/替换）
             // 2) 仍然执行 afterEvents hooks（例如：打开响应窗口、记录日志）
-            const reduced = reduceEventsToCore(domain, currentState.core, preCommandEvents);
+            let preCommandEventsToReduce = preCommandEvents;
+            if (domain.postProcessSystemEvents && preCommandEvents.length > 0) {
+                const validEvents = preCommandEvents.filter((e) => e && e.type);
+                const domainEvents = validEvents.filter((e) => !e.type.startsWith('SYS_'));
+                if (domainEvents.length > 0) {
+                    const processResult = domain.postProcessSystemEvents(
+                        currentState.core,
+                        domainEvents as unknown as TEvent[],
+                        effectiveRandom,
+                        currentState,
+                    );
+                    const processed = Array.isArray(processResult)
+                        ? processResult as unknown as GameEvent[]
+                        : processResult.events as unknown as GameEvent[];
+                    const newMatchState = !Array.isArray(processResult) ? processResult.matchState : undefined;
+                    const sysOnlyEvents = validEvents.filter((e) => e.type.startsWith('SYS_'));
+                    preCommandEventsToReduce = [...sysOnlyEvents, ...processed];
+                    if (newMatchState) {
+                        currentState = { ...currentState, sys: newMatchState.sys };
+                        ctx.state = currentState;
+                    }
+                }
+            }
+
+            const reduced = reduceEventsToCore(domain, currentState.core, preCommandEventsToReduce);
             if (reduced.core !== currentState.core) {
                 currentState = { ...currentState, core: reduced.core };
                 ctx.state = currentState;
             }
+            // 交互系统消费命令时，领域后处理可能先创建下一段动态交互，
+            // 再由本分支归约事件改变手牌/场面；这里用归约后的 core 刷新一次可见选项。
+            currentState = refreshInteractionOptions(currentState);
+            ctx.state = currentState;
             allEvents.length = 0;
             allEvents.push(...reduced.appliedEvents);
 

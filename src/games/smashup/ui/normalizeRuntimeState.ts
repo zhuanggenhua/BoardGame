@@ -3,6 +3,7 @@ import type {
     BuriedCardOnBase,
     CardInstance,
     MinionOnBase,
+    MonsterOnBase,
     OngoingActionOnBase,
     PlayerState,
     SmashUpCore,
@@ -174,6 +175,15 @@ function normalizeBuriedCards(
     return asObjectArray<BuriedCardOnBase>(value, path, anomalies);
 }
 
+function normalizeMonsters(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): MonsterOnBase[] | undefined {
+    if (value === undefined) return undefined;
+    return asObjectArray<MonsterOnBase>(value, path, anomalies);
+}
+
 function normalizePlayers(
     players: SmashUpCore['players'] | null | undefined,
     anomalies: SmashUpRuntimeStateAnomaly[],
@@ -233,6 +243,7 @@ function normalizeBases(
         ...base,
         minions: normalizeMinions(base.minions, `bases[${index}].minions`, anomalies),
         ongoingActions: normalizeOngoingActions(base.ongoingActions, `bases[${index}].ongoingActions`, anomalies),
+        monsters: normalizeMonsters(base.monsters, `bases[${index}].monsters`, anomalies),
         buriedCards: normalizeBuriedCards(base.buriedCards, `bases[${index}].buriedCards`, anomalies),
     }));
 }
@@ -262,6 +273,15 @@ export function normalizeSmashUpCoreForUi(core: SmashUpCore | null | undefined):
         madnessDeck: core.madnessDeck === undefined
             ? undefined
             : normalizeMadnessDeck(core.madnessDeck, 'madnessDeck', anomalies),
+        monsterDeck: core.monsterDeck === undefined
+            ? undefined
+            : normalizeMadnessDeck(core.monsterDeck, 'monsterDeck', anomalies),
+        treasureDeck: core.treasureDeck === undefined
+            ? undefined
+            : normalizeMadnessDeck(core.treasureDeck, 'treasureDeck', anomalies),
+        treasureDiscard: core.treasureDiscard === undefined
+            ? undefined
+            : normalizeMadnessDeck(core.treasureDiscard, 'treasureDiscard', anomalies),
     };
 
     if (core.turnOrder !== undefined && !Array.isArray(core.turnOrder)) {

@@ -16,68 +16,85 @@ export function useLocalProviderViewModel(args: {
     followCurrentTurnPlayer: boolean;
     localPlayerId: string | null;
 }): GameClientContextValue {
+    const {
+        state,
+        dispatch: dispatchCommand,
+        reset,
+        playerIds,
+        seatControllers,
+        playerNames,
+        localPregameControlledPlayerId,
+        followCurrentTurnPlayer,
+        localPlayerId,
+    } = args;
+
     const matchPlayers = useMemo(() => (
-        args.playerIds.map((id) => ({
+        playerIds.map((id) => ({
             id: Number(id),
             name: resolveSeatPlayerDisplayName({
                 playerId: id,
-                name: args.playerNames?.[id],
-                seatControllers: args.seatControllers,
+                name: playerNames?.[id],
+                seatControllers,
             }),
             isConnected: true,
         }))
-    ), [args.playerIds, args.playerNames, args.seatControllers]);
+    ), [playerIds, playerNames, seatControllers]);
 
     const localBoardPlayerId = useMemo(() => {
-        if (args.localPregameControlledPlayerId) {
-            return args.localPregameControlledPlayerId;
+        if (localPregameControlledPlayerId) {
+            return localPregameControlledPlayerId;
         }
-        if (args.followCurrentTurnPlayer) {
-            const currentTurnPlayerId = resolveFollowCurrentTurnPlayerId(args.state.core);
+        if (followCurrentTurnPlayer) {
+            const currentTurnPlayerId = resolveFollowCurrentTurnPlayerId(state.core);
             if (currentTurnPlayerId) {
                 return currentTurnPlayerId;
             }
         }
-        return args.localPlayerId ?? null;
+        return localPlayerId ?? null;
     }, [
-        args.followCurrentTurnPlayer,
-        args.localPlayerId,
-        args.localPregameControlledPlayerId,
-        args.state.core,
+        followCurrentTurnPlayer,
+        localPlayerId,
+        localPregameControlledPlayerId,
+        state.core,
     ]);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
         if (!localBoardPlayerId) {
-            args.dispatch(type, payload);
+            dispatchCommand(type, payload);
             return;
         }
 
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-            args.dispatch(type, payload);
+            dispatchCommand(type, payload);
             return;
         }
 
         const payloadRecord = payload as Record<string, unknown>;
         if (typeof payloadRecord.__internalPlayerId === 'string') {
-            args.dispatch(type, payload);
+            dispatchCommand(type, payload);
             return;
         }
 
         // 仅本地 Provider 用它表达“当前本地视角玩家”，不能当成跨 transport 的业务执行者真相。
-        args.dispatch(type, {
+        dispatchCommand(type, {
             ...payloadRecord,
             __internalPlayerId: localBoardPlayerId,
         });
-    }, [args.dispatch, localBoardPlayerId]);
+    }, [dispatchCommand, localBoardPlayerId]);
+
+    const sendUiEvent = useCallback(() => undefined, []);
+    const subscribeUiEvent = useCallback(() => () => undefined, []);
 
     return useMemo<GameClientContextValue>(() => ({
-        state: args.state,
+        state,
         dispatch,
         playerId: localBoardPlayerId,
         matchPlayers,
-        seatControllers: args.seatControllers,
+        seatControllers,
         isConnected: true,
         isMultiplayer: false,
-        reset: args.reset,
-    }), [args.reset, args.state, dispatch, localBoardPlayerId, matchPlayers]);
+        reset,
+        sendUiEvent,
+        subscribeUiEvent,
+    }), [dispatch, localBoardPlayerId, matchPlayers, reset, seatControllers, sendUiEvent, state, subscribeUiEvent]);
 }

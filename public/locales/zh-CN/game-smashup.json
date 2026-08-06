@@ -42,7 +42,10 @@
     "extra_minion_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次随从打出机会。",
     "extra_action_granted": "你额外获得了 {{count}} 次战术打出机会。",
     "extra_action_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次战术打出机会。",
+    "penguins_wish_play_titan_option": "打出企鹅帝皇到这里",
+    "penguins_wish_buff_option": "这里你的所有随从本回合 +1 力量",
     "select_minion_hint": "请选择一个随从来附着此卡",
+    "select_target_minion_hint": "请选择一个目标随从",
     "your_turn": "轮到你了！",
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
     "me_first_waiting": "等待 {{player}} 响应…",
@@ -1190,6 +1193,120 @@
     "avengers_black_widow_title": "黑寡妇：你可以摧毁这里一个力量5或更少的角色",
     "avengers_assemble_title": "复仇者集结：选择至多两名弃牌堆角色洗回牌库",
     "avengers_repulsor_boots_move_title": "斥力靴：选择目标基地",
+    "beauty_and_the_beast_belle_talent_draw": "摸 1 张牌",
+    "beauty_and_the_beast_belle_talent_title": "贝儿：选择摸 1 张牌或弃 1 张牌",
+    "beauty_and_the_beast_petals_keep": "保持当前顺序",
+    "beauty_and_the_beast_petals_swap": "交换前两张",
+    "beauty_and_the_beast_petals_title": "玫瑰花瓣：查看并重排牌库顶",
+    "munchkin_halflings_last_call_choose_minion_title": "最后通牒：选择要打到当前基地的随从",
+    "munchkin_halflings_shire_marshal_choose_base_title": "夏尔首领：选择另一玩家力量更大的基地",
+    "munchkin_halflings_spoiled_brats_choose_minions_title": "被宠坏的小家伙：选择要放到牌库顶的弃牌堆随从",
+    "munchkin_halflings_unexpected_party_choose_base_title": "意外的派对：选择没有己方随从的基地",
+    "munchkin_crossbow_choose_faction_title": "十字弓：选择派系",
+    "munchkin_dungeon_rulebook_destroy_title": "地牢规则书：选择要摧毁的行动",
+    "munchkin_anything_for_money_discard_title": "为了钱什么都可以：选择任意数量手牌弃掉",
+    "munchkin_cash_out_choose_treasures_title": "套现：选择至多三张宝藏牌打出",
+    "munchkin_cat_burglar_choose_treasures_title": "猫咪窃贼：选择要展示的宝藏牌",
+    "munchkin_thieves_fence_choose_treasures_title": "销赃犯：选择两张宝藏牌弃掉",
+    "munchkin_thieves_backstab_choose_treasure_title": "背刺：选择一张宝藏牌弃掉",
+    "munchkin_thieves_backstab_choose_minion_title": "背刺：选择力量3或更少的仆从",
+    "munchkin_thieves_potion_bandolier_choose_treasure_title": "药水腰带：选择一张宝藏牌弃掉",
+    "munchkin_thieves_smuggling_choose_treasures_title": "走私：选择两张宝藏牌弃掉",
+    "munchkin_thieves_mugging_choose_action_title": "打劫：选择打出到仆从身上的行动",
+    "munchkin_thieves_strip_bare_choose_treasure_title": "剥光：选择场上的宝藏牌",
+    "munchkin_gold_digger_choose_treasure_title": "黄金挖掘者：选择宝藏弃牌",
+    "munchkin_greed_is_good_choose_treasure_title": "贪婪是好的：选择抽宝藏或回收宝藏弃牌",
+    "munchkin_greed_is_good_draw_treasure_option": "抽一张宝藏牌",
+    "munchkin_mine_choose_treasure_title": "我的！：选择宝藏和宿主",
+    "munchkin_salvage_choose_treasure_title": "打捞：选择宝藏和当前基地宿主",
+    "munchkin_halitosis_choose_player_title": "口臭药水：选择玩家",
+    "munchkin_halitosis_move_title": "口臭药水：移动你的仆从",
+    "munchkin_potion_of_duplication_choose_talent_title": "复制药水：选择另一个仆从的天赋",
+    "munchkin_magic_missile_destroy_title": "魔法导弹：选择目标仆从",
+    "munchkin_straight_line_running_away_choose_treasure_title": "直线跑路药水：选择已展示的宝藏",
+    "munchkin_rocket_boots_move_title": "火箭靴：选择目标基地",
+    "munchkin_mages_blaster_master_discard_title": "爆破大师：选择一张手牌作为弃牌成本",
+    "munchkin_mages_blaster_master_target_title": "爆破大师：选择力量2或更少的仆从",
+    "munchkin_mages_happy_zapper_discard_title": "快乐小法师：选择一张手牌作为弃牌成本",
+    "munchkin_mages_scroll_shuffler_discard_title": "勤读者：选择一张手牌作为弃牌成本",
+    "munchkin_mages_speed_reading_discard_title": "快速阅读：选择一张手牌作为弃牌成本",
+    "munchkin_mages_zzzzzap_discard_title": "快速攻击！：选择一张手牌作为弃牌成本",
+    "munchkin_mages_zzzzzap_target_title": "快速攻击！：选择力量3或更少的仆从",
+    "munchkin_mages_wand_whiz_discard_title": "魔杖天才：选择一张手牌作为弃牌成本",
+    "munchkin_mages_wand_whiz_mode_title": "魔杖天才：选择额外出牌类型",
+    "munchkin_mages_charm_target_title": "魅力：选择一个怪物",
+    "munchkin_mages_embiggen_target_title": "大上一倍：选择一个仆从",
+    "munchkin_mages_embiggen_discard_title": "大上一倍：选择任意数量的手牌弃掉",
+    "munchkin_mages_portal_to_beyond_discard_title": "通往次元之门：选择一张手牌作为弃牌成本",
+    "munchkin_mages_some_enchanted_evening_discard_title": "神奇的夜晚：选择任意数量的手牌弃掉",
+    "munchkin_mages_base_dimension_doors_title": "次元之门：弃一张牌来额外打出一个随从",
+    "munchkin_mages_base_dimension_doors_skip": "次元之门：不额外打出",
+    "munchkin_mages_base_mages_tower_title": "法师之塔：是否抽一张牌",
+    "munchkin_mages_base_mages_tower_draw_option": "抽一张牌",
+    "munchkin_mages_base_mages_tower_skip": "法师之塔：不抽牌",
+    "munchkin_mages_wand_whiz_minion_option": "额外随从",
+    "munchkin_mages_wand_whiz_action_option": "额外行动",
+    "munchkin_elves_fae_fighter_title": "精灵斗士：选择一个己方随从放置力量指示物",
+    "munchkin_elves_lord_of_the_prance_title": "优雅贵族：选择另一位玩家抽一张牌",
+    "munchkin_elves_flower_child_player_title": "花之子：选择另一位玩家交换控制权",
+    "munchkin_elves_pumping_iron_player_title": "力量训练：选择另一位玩家",
+    "munchkin_elves_run_away_own_title": "逃跑吧：选择一个己方随从",
+    "munchkin_elves_run_away_more_destination_title": "赶紧逃跑吧：选择另一个基地",
+    "munchkin_elves_run_away_destination_title": "逃跑吧：选择目标基地",
+    "munchkin_elves_run_away_more_minions_title": "赶紧逃跑吧：选择任意数量己方随从",
+    "munchkin_elves_trade_title": "贸易：选择一位有手牌的玩家交换一张手牌",
+    "munchkin_elves_traveling_elf_title": "旅行精灵：选择目标基地",
+    "munchkin_elves_helping_hands_player_title": "援手：选择另一位玩家",
+    "munchkin_elves_helping_hands_vp_title": "援手：选择是否获得 1 VP",
+    "munchkin_elves_helping_hands_vp_take_option": "获得 1 VP",
+    "munchkin_elves_flower_child_minion_title": "花之子：选择对方力量 3 或更少的随从",
+    "munchkin_elves_pumping_iron_other_minion_title": "力量训练：选择一个己方随从获得 +2",
+    "munchkin_elves_pumping_iron_self_minion_title": "力量训练：选择一个己方随从获得 +3",
+    "munchkin_elves_run_away_other_minion_title": "逃跑吧：选择另一位玩家的随从",
+    "munchkin_elves_helping_hands_minion_title": "援手：选择一个己方随从获得 -2（最低为 0）",
+    "munchkin_clerics_deep_friar_minion_title": "资深修士：选择另一个己方仆从，或跳过",
+    "munchkin_clerics_deep_friar_base_title": "资深修士：选择要移动到的其他基地",
+    "munchkin_clerics_deep_friar_skip": "不移动",
+    "munchkin_clerics_turner_mode_title": "特纳：选择要发动的效果",
+    "munchkin_clerics_turner_monster_title": "特纳：选择要摧毁的亡灵怪物",
+    "munchkin_clerics_turner_destroy_undead_option": "摧毁这里的亡灵怪物",
+    "munchkin_clerics_turner_recover_minion_option": "将弃牌堆随机随从重洗进牌库",
+    "munchkin_clerics_holy_roller_mode_title": "圣临者：是否重洗弃牌堆随机牌？",
+    "munchkin_clerics_holy_roller_shuffle_option": "重洗一张",
+    "munchkin_clerics_holy_roller_skip": "跳过",
+    "munchkin_clerics_bin_and_gone_title": "垃圾处理：选择要移动的随从，或跳过",
+    "munchkin_clerics_bin_and_gone_skip": "不移动",
+    "munchkin_clerics_remove_curse_title": "解除诅咒：选择要摧毁的附着行动",
+    "munchkin_clerics_word_of_recall_title": "回忆祷词：选择一张行动作为额外行动打出，或不打出",
+    "munchkin_clerics_word_of_recall_skip": "不打出",
+    "munchkin_clerics_hotel_of_holiness_title": "圣洁酒店：选择下一张放到牌库顶的随从",
+    "munchkin_orcs_hammer_slammer_target_title": "重击者：选择要摧毁的力量 2 或更少的仆从",
+    "munchkin_orcs_crush_base_title": "挤碎：选择基地",
+    "munchkin_orcs_crush_player_title": "挤碎：选择仆从更少的玩家",
+    "munchkin_orcs_crush_minion_title": "挤碎：选择要摧毁的仆从",
+    "munchkin_orcs_death_breath_target_title": "死亡之息：选择力量 4 或更少的仆从",
+    "munchkin_orcs_dogpile_minion_title": "狗堆：选择要移动的己方仆从",
+    "munchkin_orcs_dogpile_base_title": "狗堆：选择目标基地",
+    "munchkin_orcs_gimme_action_title": "给我！：选择要转移的附着行动",
+    "munchkin_orcs_gimme_minion_title": "给我！：选择你的新宿主随从",
+    "munchkin_orcs_stalling_minion_title": "洗手间：选择不受这张牌影响的己方仆从",
+    "munchkin_orcs_stalling_skip": "不保护",
+    "munchkin_warriors_big_hero_mode_title": "大英雄：选择天赋效果",
+    "munchkin_warriors_big_hero_monster_title": "大英雄：选择要摧毁的怪物",
+    "munchkin_warriors_berserker_monster_title": "狂战士：选择力量不高于自身的怪物",
+    "munchkin_warriors_taunter_mode_title": "嘲讽者：选择是否打出怪物",
+    "munchkin_warriors_dungeon_bait_mode_title": "地牢诱饵：选择效果",
+    "munchkin_warriors_dungeon_bait_base_title": "地牢诱饵：选择打出怪物的基地",
+    "munchkin_warriors_dungeon_bait_minion_title": "地牢诱饵：选择力量 2 或更少的仆从",
+    "munchkin_warriors_cleave_monster_title": "斩杀：选择一个未被控制的怪物",
+    "munchkin_warriors_ruckus_base_title": "骚乱：选择基地",
+    "munchkin_warriors_ruckus_mode_title": "骚乱：选择效果",
+    "munchkin_warriors_war_cry_monster_title": "战争怒吼：选择一个怪物",
+    "munchkin_warriors_war_cry_minion_title": "战争怒吼：选择该基地上的一个仆从",
+    "base_treehouse_player_title": "树屋：选择另一位玩家",
+    "base_treehouse_draw_title": "树屋：选择是否抽一张牌",
+    "base_treehouse_draw_option": "抽一张牌",
+    "munchkin_no_my_precious_destroy_title": "不！我的宝贝！：选择仆从身上的行动",
     "avengers_repulsor_boots_source_special_title": "斥力靴：选择要移动的钢铁侠",
     "avengers_repulsor_boots_source_title": "斥力靴：选择要移动的你的角色",
     "avengers_iron_man_destination_title": "钢铁侠：选择要移动到的基地",
@@ -1394,7 +1511,40 @@
     "backtimers_zany_prof_title": "疯狂博士：调整一张停滞牌的停滞指示物",
     "backtimers_zany_prof_skip_option": "跳过（不调整停滞指示物）",
     "backtimers_alex_p_mcglide_store_title": "亚历克斯：选择一张手牌置入停滞",
-    "backtimers_alex_p_mcglide_counter_title": "亚历克斯：选择一个己方随从放置 +1 力量指示物"
+    "backtimers_alex_p_mcglide_counter_title": "亚历克斯：选择一个己方随从放置 +1 力量指示物",
+    "half_the_battle_move_destination_title": "选择移动目标基地",
+    "rulers_cosmos_guy_man_copy_talent_title": "希曼：选择要复制天赋的另一个己方随从",
+    "geckos_kandinsky_temp_option": "本随从 +2 到回合结束",
+    "geckos_kandinsky_move_option": "移动另一个己方随从到这里",
+    "geckos_gecko_power_move_option": "移动此随从",
+    "geckos_gecko_power_counter_option": "放置 +1 标记",
+    "geckos_gecko_power_temp_option": "本随从 +2 到回合结束",
+    "gi_gerald_can_do_minion_option": "额外打出战力≤2随从",
+    "gi_gerald_can_do_action_option": "额外打出一张战术",
+    "half_the_battle_counter_option": "放置 +1 标记",
+    "half_the_battle_temp_power_option": "直到回合结束 +2 战力",
+    "half_the_battle_move_to_trigger_base_option": "移动到触发基地",
+    "pearl_images_pearl_draw_option": "抓牌库顶战力≤2随从",
+    "pearl_images_pearl_temp_option": "这里一个随从 +1",
+    "pearl_images_alls_right_all_option": "这里所有随从 +1",
+    "pearl_images_alls_right_per_player_option": "按玩家选择 +2",
+    "rulers_cosmos_magic_weapon_power_option": "按在场玩家数加战力",
+    "rulers_cosmos_magic_weapon_draw_option": "若仅一张战术则抓牌",
+    "rulers_cosmos_powerful_sword_protect_option": "直到下回合开始不受其他玩家卡牌影响",
+    "rulers_cosmos_powerful_sword_transfer_option": "转移此随从上的另一张战术",
+    "half_the_battle_apply_option": "执行效果",
+    "pearl_images_crystal_other_counter_title": "水晶：选择另一位玩家的一个随从放置 +1 标记",
+    "pearl_images_crystal_own_counter_title": "水晶：选择同基地你的一个随从放置 +1 标记",
+    "pearl_images_jam_all_night_long_reward_title": "玩乐一整夜：你可以抓一张牌，或在这里一个随从上放置 +1 标记",
+    "pearl_images_jam_all_night_long_draw_option": "抓一张牌",
+    "pearl_images_jam_all_night_long_minion_title": "玩乐一整夜：打出一个战力≤2的额外随从到这里",
+    "pearl_images_jam_all_night_long_player_title": "玩乐一整夜：选择一名玩家",
+    "pearl_images_now_you_know_bike_safety_first_title": "现在你知道：自行车安全：选择你的一个随从",
+    "pearl_images_now_you_know_bike_safety_second_title": "现在你知道：自行车安全：选择同基地另一位玩家的随从",
+    "pearl_images_now_you_know_bike_safety_destination_title": "现在你知道：自行车安全：选择目标基地",
+    "pearl_images_truly_outstanding_first_title": "杰出表彰：选择任意数量的其他玩家随从放置 +1 标记",
+    "pearl_images_truly_outstanding_second_title": "杰出表彰：选择你的随从放置对应数量 +1 标记",
+    "munchkin_thieves_mugging_choose_minion_title": "打劫：选择你的一个仆从"
   },
   "mechanics": {
     "madness": {
@@ -1429,7 +1579,9 @@
     "all_protected": "所有目标都受到保护",
     "ability_not_implemented": "功能尚未实现",
     "base_deck_empty": "基地牌库为空",
-    "no_minion_cards_in_hand": "手牌中没有随从卡"
+    "no_minion_cards_in_hand": "手牌中没有随从卡",
+    "goblins_make_your_own_luck_changed": "自己制造好运已改变硬币结果。",
+    "goblins_make_your_own_luck_ready": "自己制造好运已准备好改变硬币结果。"
   },
   "actionLog": {
     "playerLabel": "玩家{{playerId}}",
@@ -1551,6 +1703,10 @@
       "name": "熊骑兵",
       "description": "强迫移动对手，无情碾压。"
     },
+    "penguins": {
+      "name": "企鹅",
+      "description": "从牌库顶翻出随从并额外打出，用滑稽又危险的连锁节奏铺满基地。"
+    },
     "minions_of_cthulhu": {
       "name": "克苏鲁仆从",
       "description": "利用疯狂牌，献祭随从。注意：每2张疯狂牌终局扣1 VP。"
@@ -1566,6 +1722,38 @@
     "miskatonic_university": {
       "name": "米斯卡塔尼克",
       "description": "利用疯狂牌获得优势，研究知识。注意：每2张疯狂牌终局扣1 VP。"
+    },
+    "munchkin_dwarves": {
+      "name": "矮人",
+      "description": "来自萌奇金扩展，擅长装备、宝物和稳固战力。"
+    },
+    "munchkin_halflings": {
+      "name": "半身人",
+      "description": "来自萌奇金扩展，依靠灵活小随从和战术配合抢占基地。"
+    },
+    "munchkin_thieves": {
+      "name": "盗贼",
+      "description": "来自萌奇金扩展，擅长偷取资源、干扰对手和制造节奏差。"
+    },
+    "munchkin_mages": {
+      "name": "法师",
+      "description": "来自萌奇金扩展，使用法术效果改变战局。"
+    },
+    "munchkin_elves": {
+      "name": "木精灵",
+      "description": "来自萌奇金扩展，善于支援盟友并创造额外得分机会。"
+    },
+    "munchkin_clerics": {
+      "name": "牧师",
+      "description": "来自萌奇金扩展，偏向恢复、保护和持续支援。"
+    },
+    "munchkin_orcs": {
+      "name": "兽人",
+      "description": "来自萌奇金扩展，以直接进攻和高压力量推进基地。"
+    },
+    "munchkin_warriors": {
+      "name": "勇士",
+      "description": "来自萌奇金扩展，依靠正面战斗和稳定力量争夺基地。"
     },
     "frankenstein": {
       "name": "科学怪人",
@@ -2082,6 +2270,34 @@
     "wraithrustlers": {
       "name": "怨灵捕手",
       "description": "以怨灵行动附着基地、摧毁行动和转移行动制造节奏。"
+    },
+    "polynesian_voyagers": {
+      "name": "波利尼西亚航海者",
+      "description": "用纹身、航路和新基地扩张版图，在无人驻守的基地之间移动并堆叠力量指示物。"
+    },
+    "round_table_knights": {
+      "name": "圆桌骑士",
+      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力已按官方资料与 POD 勘误实现。"
+    },
+    "goblins": {
+      "name": "哥布林",
+      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力已按官方资料与 POD 勘误实现。"
+    },
+    "adolescent_epic_geckos": {
+      "name": "忍者神龟",
+      "description": "围绕本回合第几张战术展开；第一张战术常给额外战术，后续战术会变得更强。"
+    },
+    "gi_gerald": {
+      "name": "特种部队杰拉尔德",
+      "description": "大量融合卡提供随从面与战术面选择，可在同一张牌里切换火力与战场调度。"
+    },
+    "rulers_of_the_cosmos": {
+      "name": "宇宙的巨人希曼",
+      "description": "把战术打在随从上，为随从授予天赋并在天赋之间复制、转移与强化。"
+    },
+    "pearl_and_the_images": {
+      "name": "珍珠和幻像",
+      "description": "提高其他玩家随从的战力，再把这些提升转化为自己的标记、移动和得分优势。"
     }
   },
   "tutorial": {
@@ -4764,6 +4980,66 @@
     "penguins_emperor_penguin": {
       "name": "企鹅帝皇",
       "effectText": "特殊：在你的回合开始时，若你在一个基地有 3 个或更多随从，你可以将此泰坦打出到那里。持续：你可以从牌库顶打出随从到这里，以代替打出通常随从。天赋：展示你手牌或弃牌堆中一个力量 3 或更低的随从，并将其洗回牌库，以为此泰坦放置一枚 +1 力量指示物。"
+    },
+    "penguins_surfing_penguin": {
+      "name": "冲浪企鹅",
+      "abilityText": "你可以移动一个随从从这里到另一个基地。"
+    },
+    "penguins_dancing_penguin": {
+      "name": "跳舞企鹅",
+      "abilityText": "特殊：当你打出其他随从时，你可以打出这个随从到相同的基地代替。放置那个随从到拥有者的牌库底，他没有效果。"
+    },
+    "penguins_snazzy_penguin": {
+      "name": "时髦企鹅",
+      "abilityText": "如果这个随从是从牌库顶打出的，抽两张牌。"
+    },
+    "penguins_command_penguin": {
+      "name": "企鹅司令",
+      "abilityText": "打出一个你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_disguise_penguin": {
+      "name": "乔装企鹅",
+      "abilityText": "天赋：放置这个随从到你的牌库底来在这里打出一个你的牌库顶的随从作为额外的随从。乔装企鹅的能力每回合只能使用一次。"
+    },
+    "penguins_secret_mission": {
+      "name": "秘密任务",
+      "effectText": "放置任意数量的牌从你的手上到你的牌库底。抽等量的牌，然后重洗你的牌库。"
+    },
+    "penguins_the_hatching": {
+      "name": "破壳而出",
+      "effectText": "打出一个你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_regurgitating_penguin": {
+      "name": "反刍企鹅",
+      "abilityText": "展示你牌库顶的三张牌。你可以放置其中的一张行动到你的手上。其余的按任意顺序放回牌库顶。"
+    },
+    "penguins_baby_penguin": {
+      "name": "企鹅宝宝",
+      "abilityText": "如果这个随从是从牌库顶打出的，你可以在这里打出一个力量 3 或更少的随从作为额外的随从。"
+    },
+    "penguins_a_wish_for_wings_that_work": {
+      "name": "渴望飞翔的工作",
+      "effectText": "选择一个基地。打出企鹅帝皇到那里，或者所有你在那里的随从获得 +1 力量直到回合结束。"
+    },
+    "penguins_leaping_aboard": {
+      "name": "跳上船",
+      "effectText": "打出到基地上。特殊：这个基地计分后，打出一个你的牌库顶的随从作为额外的随从到替换的基地上。"
+    },
+    "penguins_i_cant_tell_them_apart": {
+      "name": "我不能区分他们",
+      "effectText": "把一个基地上任意数量的你的随从洗回你的牌库。在那个基地打出相同数量的你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_pebble_gift": {
+      "name": "水晶礼品",
+      "effectText": "打出到基地上。持续：每当你从你的牌库顶打出一个随从到这里后，抽一张牌。"
+    },
+    "penguins_under_the_ice": {
+      "name": "在冰下",
+      "effectText": "展示你的牌库顶的 5 张牌。打出它们中的一个随机随从作为额外随从。以任意顺序放置剩下的牌到拥有者的牌库底。"
+    },
+    "penguins_ice_slide": {
+      "name": "冰滑道",
+      "effectText": "打出到基地上。特殊：这个基地计分后，为从这里进入弃牌堆的每个你的随从抽一张牌。"
     },
     "sharks_helicoprion": {
       "name": "旋齿鲨",
@@ -10837,6 +11113,988 @@
     "base_wraithrustlers_hq": {
       "name": "怨灵捕手总部",
       "abilityText": "临界点 20 - VP：4/2/1 - 获胜者在其下个回合可以打出 1 张额外行动或 1 个额外佣兵。"
+    },
+    "polynesian_voyagers_growth_of_the_tribes": {
+      "name": "部落的成长",
+      "effectText": "选择一个你没有随从的基地。你可以在那里额外打出一个随从，或将你的一个随从移动到那里。"
+    },
+    "polynesian_voyagers_knowledge_of_the_tribes": {
+      "name": "部落的知识",
+      "effectText": "你在每个有你随从的基地各抽一张牌。"
+    },
+    "polynesian_voyagers_moai": {
+      "name": "莫艾",
+      "abilityText": "持续：其他玩家不能将他们的随从移动到这个基地，也不能将此随从移动到其他基地。"
+    },
+    "polynesian_voyagers_tiki": {
+      "name": "蒂基",
+      "abilityText": "持续：若此随从上有行动，此随从获得 +2 力量。"
+    },
+    "polynesian_voyagers_wayfinder": {
+      "name": "寻路者",
+      "abilityText": "天赋：将此随从移动到一个你没有随从的基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_maui": {
+      "name": "毛伊人",
+      "abilityText": "将基地牌库顶至多两张牌打出。天赋：将你的一个随从移动到一个你没有随从的基地。"
+    },
+    "polynesian_voyagers_ocean_tattoo": {
+      "name": "海洋纹身",
+      "effectText": "打在一个没有其他玩家随从的基地上你的随从身上。天赋：将此随从移动到另一个基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_tattoo_artist": {
+      "name": "纹身艺术家",
+      "effectText": "从你的牌库和/或弃牌堆寻找一张可以打在随从上的行动，将其加入手牌，或作为额外行动打出。"
+    },
+    "polynesian_voyagers_unity_of_the_tribes": {
+      "name": "部落的统一",
+      "effectText": "选择一个有你随从的基地。每个有你至少一个随从的基地上，你的每个随从直到回合结束获得 +2 力量。"
+    },
+    "polynesian_voyagers_volcanic_uprising": {
+      "name": "火山爆发",
+      "effectText": "打出基地牌库顶牌。然后你可以将你的一个随从移动到那里。或者，摧毁一个没有玩家随从的基地，然后以两个基地取代它。"
+    },
+    "polynesian_voyagers_shark_tattoo": {
+      "name": "鲨鱼纹身",
+      "effectText": "打在你的一个随从身上。在其上放置一个 +1 力量指示物。持续：你的回合开始时，若这里只存在你一个随从，在此随从上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_sun_tattoo": {
+      "name": "太阳纹身",
+      "effectText": "打在你的一个随从身上。持续：此随从获得 +2 力量。特殊：基地计分后，你可以将此牌打在该基地上一个没有行动的你的随从身上，并将该随从移动到另一个基地，而不是放入弃牌堆。"
+    },
+    "base_island_chain": {
+      "name": "岛链",
+      "abilityText": "此基地计分后，打出基地牌库顶牌作为一个额外基地。"
+    },
+    "base_island_peak": {
+      "name": "岛峰",
+      "abilityText": "你的回合开始时，若你在这里正好有一个随从，在其上放置一个 +1 力量指示物。"
+    },
+    "base_tropical_paradise": {
+      "name": "热带天堂",
+      "abilityText": "若每位玩家在这里都有一个或更多随从，此基地的起始断点为 0。"
+    },
+    "base_ice_floe": {
+      "name": "浮冰",
+      "abilityText": "在你回合开始的时候，你可以放置这里的一个你的随从到你的牌库底来打出一个你的牌库顶的随从作为额外随从。"
+    },
+    "base_the_colony": {
+      "name": "殖民地",
+      "abilityText": "你的回合第一次你打出随从到这里后，你可以打出一个你的牌库顶的随从作为额外随从到这里。"
+    },
+    "round_table_knights_king_arthur": {
+      "name": "亚瑟王",
+      "abilityText": "天赋：将你在另一个基地的一个随从移动到这里。如果你这么做，且你在这个基地有行动，在该随从上放置 1 枚 +1 力量指示物。"
+    },
+    "round_table_knights_galahad": {
+      "name": "加拉哈德",
+      "abilityText": "搜索你的牌库来寻找一张打出在基地上的行动然后放置它到你的牌库顶。特殊：这个基地计分前，你可以转移你在这里的一张行动到其他基地。"
+    },
+    "round_table_knights_gawain": {
+      "name": "加文",
+      "abilityText": "持续：你在这里每有一个其他战力 4 或更高的随从，此随从 +1 战力。"
+    },
+    "round_table_knights_guinevere": {
+      "name": "格尼薇儿",
+      "abilityText": "天赋：移动另一个你的仆从从这里到另一个基地。持续：你在基地上的行动不能被其他玩家的能力摧毁。"
+    },
+    "round_table_knights_lancelot": {
+      "name": "兰斯洛特",
+      "abilityText": "持续：这个仆从移动到你有一或更多个行动的基地后，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "round_table_knights_merlin": {
+      "name": "梅林",
+      "abilityText": "天赋：展示你牌库顶的牌。如果它是行动，抽取它或打出它作为额外的行动，否则返回它。"
+    },
+    "round_table_knights_percival": {
+      "name": "帕西瓦尔",
+      "abilityText": "天赋：移动这个仆从到你有一或更多个行动的其他基地。"
+    },
+    "round_table_knights_a_questing": {
+      "name": "踏上征途",
+      "effectText": "打出到一个你的仆从身上。你可以移动这个仆从。持续：当这个仆从将要进入弃牌堆时，放置它到你的牌库顶代替。"
+    },
+    "round_table_knights_excalibur": {
+      "name": "圣剑",
+      "effectText": "打出到一个你的仆从身上。持续：这个仆从获得+2力量且不能被其他玩家的牌摧毁。特殊：当这个基地计分时，如果这个仆从是亚瑟王，获得1VP。"
+    },
+    "round_table_knights_good_deed": {
+      "name": "善行",
+      "effectText": "打出到一个基地上。抽一张牌。持续：一个你的仆从移动到这里后，你可以转移这张牌到另一个基地然后抽一张牌。做好事的能力每回合只能使用一次。"
+    },
+    "round_table_knights_merlins_library": {
+      "name": "梅林藏书馆",
+      "effectText": "打出到一个基地上。天赋：打出一个额外的仆从到这里 OR 移动一个你的仆从到这里 OR 转移这张牌到另一个基地。"
+    },
+    "round_table_knights_noble_steed": {
+      "name": "高贵坐骑",
+      "effectText": "打出到一个你的仆从身上。天赋：移动这个仆从到另一个基地。"
+    },
+    "round_table_knights_the_fisher_king": {
+      "name": "渔夫王",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，抽一张牌。然后如果你的手上有八或更多张牌，摧毁这张牌来获得1VP。"
+    },
+    "round_table_knights_the_grail": {
+      "name": "圣杯",
+      "effectText": "打出到没有你的行动的基地上。持续：一个你的仆从移动到这里后，如果你有三或更多个力量4或更多的仆从在这里，放置这张牌到盒子里来获得2VP。"
+    },
+    "round_table_knights_the_green_knight": {
+      "name": "绿衣骑士",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上。然后如果那个仆从拥有力量7或更多，摧毁这张牌来获得1VP。"
+    },
+    "round_table_knights_the_lady_of_the_lake": {
+      "name": "湖中女神",
+      "effectText": "搜索你的牌库和/或弃牌堆来寻找一张打出到仆从身上的行动。抽取它或打出它作为额外的行动。"
+    },
+    "round_table_knights_the_mists_of_avalon": {
+      "name": "阿瓦隆迷雾",
+      "effectText": "从你的弃牌堆重洗至多三个仆从到你的牌库。"
+    },
+    "round_table_knights_the_questing_beast": {
+      "name": "追踪野兽",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上然后转移这张牌到另一个基地。"
+    },
+    "base_camelot": {
+      "name": "卡美洛",
+      "abilityText": "这里印刷力量4或更多的仆从不能被其他玩家的卡牌影响。轮到你时，你可以移动一个你的仆从从这里到另一个基地。"
+    },
+    "base_round_table": {
+      "name": "圆桌会议",
+      "abilityText": "你在这里每个与另一个你的随从拥有相同印刷战力的随从 +1 战力。"
+    },
+    "goblins_chaos_lord": {
+      "name": "混沌领主",
+      "abilityText": "持续：你投掷一枚硬币后，如果是正面，放置一枚+1力量指示器到你的一个仆从身上；如果是反面，抽一张牌然后丢弃一张牌。"
+    },
+    "goblins_diviner": {
+      "name": "占卜师",
+      "abilityText": "持续：每回合一次，你投掷一枚硬币后，你可以立即丢弃一张牌来改变投掷结果。每回合你第一次投掷一枚硬币后，抽一张牌。"
+    },
+    "goblins_blaster": {
+      "name": "爆破手",
+      "abilityText": "特殊：这个基地计分前，投掷一枚硬币。如果是正面，你可以让这个仆从获得+2力量直到回合结束。如果是反面，你可以移动这个仆从到另一个基地。"
+    },
+    "goblins_gobbo": {
+      "name": "哥布林",
+      "abilityText": "为场上每个哥布林（包括这个）各投一枚硬币。每有一个正面，在这个随从上放置 1 枚 +1 力量指示物。"
+    },
+    "goblins_magic_helmet": {
+      "name": "“魔法”头盔",
+      "effectText": "打出到你的仆从身上。持续：这个仆从获得+4的力量。这个基地计分前，投掷一枚硬币。如果是反面，摧毁这个仆从。"
+    },
+    "goblins_a_little_help": {
+      "name": "一点帮助",
+      "effectText": "投掷一枚硬币。如果是正面，你可以打出一个额外的仆从。如果是反面，你可以打出两个额外的行动。"
+    },
+    "goblins_bushwhacking": {
+      "name": "伏击",
+      "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，摧毁这个仆从。如果是反面，移动它到另一个基地。"
+    },
+    "goblins_demolition": {
+      "name": "爆破",
+      "effectText": "投掷三枚硬币。每投掷一个正面，放置一枚+1力量指示器到你的一个仆从身上。每投掷一个反面，你可以摧毁基地或仆从身上的一个行动。"
+    },
+    "goblins_recruiters": {
+      "name": "哥布林招募员",
+      "effectText": "打出到一个基地上。持续：你投掷一枚硬币后，如果是正面，抽一张牌；如果是反面，你可以从你的弃牌堆重洗一张牌到你的牌库。"
+    },
+    "goblins_he_who_smelt_it": {
+      "name": "谁放的屁",
+      "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上然后你可以选择另一个仆从然后再次投掷硬币。如果是反面，你可以打出一个额外的行动。"
+    },
+    "goblins_make_your_own_luck": {
+      "name": "自己制造好运",
+      "effectText": "特殊：你投掷一枚硬币后立即打出。改变投掷结果。"
+    },
+    "goblins_revving_up": {
+      "name": "加足马力",
+      "effectText": "选择一个基地。为每个你在那里的仆从投掷一枚硬币。每投掷一个正面，在那个仆从身上放置一枚+1力量指示器。每投掷一个反面，那个仆从获得+2力量直到回合结束。"
+    },
+    "base_goblin_caves": {
+      "name": "哥布林洞穴",
+      "abilityText": "这个基地计分后，每个有仆从在那里的玩家可以投掷一枚硬币。如果是正面，他们获得1VP。如果是反面，他们丢弃两张牌。"
+    },
+    "base_goblin_town": {
+      "name": "哥布林镇",
+      "abilityText": "你打出一个仆从到这里后，投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上。"
+    },
+    "geckos_hokusai": {
+      "name": "北斋",
+      "abilityText": "你可以在你的一个随从上放置 1 枚 +1 战力标记。天赋：如果你本回合已打出至少两张战术，每个基地各选择一个随从，在其上放置 1 枚 +1 战力标记。"
+    },
+    "geckos_kandinsky": {
+      "name": "康定斯基",
+      "abilityText": "此随从直到回合结束 +1 战力。天赋：如果你本回合已打出至少两张战术，使此随从直到回合结束 +2 战力，或将你的另一个随从移动到这里。"
+    },
+    "geckos_monet": {
+      "name": "莫奈",
+      "abilityText": "抓 1 张牌。持续：任何你可以打出战术的时候，你可以改为抓 1 张牌，并像你打出了一张战术一样触发所有能力。"
+    },
+    "geckos_van_gogh": {
+      "name": "梵高",
+      "abilityText": "你可以将你弃牌堆中的一张标准战术洗入牌库。持续：你打出标准战术后，可以将其存放在此牌下。你的回合开始时或你赢得此基地后，将此牌下所有牌洗入你的牌库。"
+    },
+    "geckos_june": {
+      "name": "爱普莉尔·奥尼尔",
+      "abilityText": "如果你有一张印刷战力为 4 的随从在场，你可以将它与你手牌或牌库中一张不同名称的随从交换；否则，你可以抓你牌库顶一张牌。"
+    },
+    "geckos_breaking_news": {
+      "name": "爆炸新闻",
+      "effectText": "查看你牌库顶 4 张牌。抓其中 1 张，并将其余牌以任意顺序放回。如果这是你本回合打出的第一张战术，额外打出一张战术。"
+    },
+    "geckos_flip_kick": {
+      "name": "回旋踢",
+      "effectText": "抓 1 张牌。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，再多抓 2 张牌。"
+    },
+    "geckos_gecko_blimp": {
+      "name": "壁虎飞艇",
+      "effectText": "如果这是你本回合打出的第一张战术，移动你的一个随从并额外打出一张战术；否则，移动任意一个随从。"
+    },
+    "geckos_gecko_power": {
+      "name": "壁虎力量",
+      "effectText": "打在一个随从上。天赋：如果你本回合已打出至少两张其他战术，移动此随从，或在其上放置 1 枚 +1 战力标记，或使其直到回合结束 +2 战力。"
+    },
+    "geckos_gecko_rap": {
+      "name": "壁虎说唱",
+      "effectText": "将你的一个在场随从与你手牌、牌库或弃牌堆中一张不同名称且战力等于或低于它的随从交换。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，在新随从上放置 1 枚 +1 战力标记。"
+    },
+    "geckos_lasagna_party": {
+      "name": "千层饼派对",
+      "effectText": "额外打出一个战力 2 或以下的随从。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，在该基地的一个随从上放置 2 枚 +1 战力标记。"
+    },
+    "geckos_now_you_know_bullying": {
+      "name": "现在你知道：校园暴力",
+      "effectText": "移动你的一个随从。特殊：一个你没有获胜的基地计分后，你可以打出此牌，改为将你在那里一个随从返回手牌。"
+    },
+    "geckos_masters_teachings": {
+      "name": "大师的教学",
+      "effectText": "在你的一个随从上放置 2 枚 +1 战力标记。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，你可以使该随从直到回合结束 +2 战力。"
+    },
+    "geckos_kc_smith": {
+      "name": "凯西·琼斯",
+      "abilityText": "随从：额外打出一张战术。|战术：额外打出一个随从。"
+    },
+    "gi_gerald_viscount": {
+      "name": "子爵",
+      "abilityText": "持续：每回合一次，在你打出一张融合卡并使用其战术能力后，你可以使此随从直到回合结束 +2 战力，或在其上放置 1 枚 +1 战力标记。"
+    },
+    "gi_gerald_go_gerald": {
+      "name": "出发，杰拉尔德！",
+      "effectText": "选择一个基地。使你本回合在那里打出的每个随从直到回合结束 +2 战力。"
+    },
+    "gi_gerald_now_you_know_home_safety": {
+      "name": "现在你知道：家庭安全",
+      "effectText": "额外打出一个战力 2 或以下的随从。如果它是融合卡，你还可以使用它的战术能力。特殊：你可以在基地计分前打出此牌，改为复制那里你的一个融合卡的战术能力。"
+    },
+    "gi_gerald_mowat": {
+      "name": "卡车式火炮",
+      "abilityText": "随从：你可以使另一个随从直到回合结束 +1 战力。|战术：使一个随从直到回合结束 +3 战力。"
+    },
+    "gi_gerald_obstruction": {
+      "name": "路霸",
+      "abilityText": "随从：你在这里的每个随从直到回合结束 +1 战力。|战术：将一个战力 3 或以下的随从置于其拥有者牌库底。"
+    },
+    "gi_gerald_sawbones": {
+      "name": "外科医生",
+      "abilityText": "随从：将你弃牌堆中的一张战术洗入你的牌库。|战术：将你弃牌堆中的一个随从洗入你的牌库。"
+    },
+    "gi_gerald_ski_lift": {
+      "name": "滑雪缆车",
+      "abilityText": "随从：你可以将你的一个随从从另一个基地移动到这里。|战术：移动一个随从。"
+    },
+    "gi_gerald_can_do": {
+      "name": "偏激者",
+      "abilityText": "随从：你可以在这里额外打出一个战力 2 或以下的随从，或额外打出一张战术。|战术：你可以额外打出一个战力 2 或以下的随从，并额外打出一张战术。"
+    },
+    "gi_gerald_mabel_lean": {
+      "name": "封面女郎",
+      "abilityText": "随从：如果这是你在这里唯一的随从，你可以在其上放置 1 枚 +1 战力标记。|战术：额外打出一个战力 2 或以下的随从。"
+    },
+    "gi_gerald_shellback": {
+      "name": "老水手",
+      "abilityText": "随从：你可以将你的一个非“老水手”融合卡返回手牌。|战术：复制你场上另一个融合卡的战术能力。"
+    },
+    "gi_gerald_dice_ninja": {
+      "name": "骰子忍者",
+      "abilityText": "随从：抓 1 张牌。|战术：抓 2 张牌。"
+    },
+    "gi_gerald_rosie": {
+      "name": "罗西",
+      "abilityText": "随从：你可以在这里另一个随从上放置 1 枚 +1 战力标记。|战术：在你的随从上合计放置 2 枚 +1 战力标记。"
+    },
+    "rulers_cosmos_gal_woman": {
+      "name": "希瑞",
+      "abilityText": "天赋：从任意玩家弃牌堆中额外打出一张打在随从上的战术。回合结束时，或当它离场时，将其置于拥有者牌库底。"
+    },
+    "rulers_cosmos_guy_man": {
+      "name": "希曼",
+      "abilityText": "天赋：复制你的另一个随从的天赋。"
+    },
+    "rulers_cosmos_andko": {
+      "name": "奥克",
+      "abilityText": "天赋：在一个没有战术附着的随从上额外打出一张战术。"
+    },
+    "rulers_cosmos_man_with_arms": {
+      "name": "邓肯武士",
+      "abilityText": "天赋：如果此随从上有战术，它直到你下回合开始 +2 战力。持续：每回合一次，当此随从将要使用由战术给予的天赋时，它可以改为额外使用它的另一个天赋一次。"
+    },
+    "rulers_cosmos_frogga": {
+      "name": "蛙人",
+      "abilityText": "从你的牌库顶抓一张打在随从上的战术。持续：当此随从离场时，你可以将它身上的一张战术洗入你的牌库。"
+    },
+    "rulers_cosmos_young_noble": {
+      "name": "年轻的贵族",
+      "abilityText": "天赋：如果此随从上有一张“剑”牌，将此随从与你手牌、牌库或弃牌堆中一个战力 5 或以上的随从交换。"
+    },
+    "rulers_cosmos_armor_of_battle": {
+      "name": "战斗盔甲",
+      "effectText": "打在一个随从上。持续：此随从获得能力：“天赋：此基地每有一个你控制且附着有战术的随从，将此基地的摧毁点提高 2，直到你下回合开始。”"
+    },
+    "rulers_cosmos_dolts_halfwits_fools_morons": {
+      "name": "傻瓜们！",
+      "effectText": "将你的随从上的任意数量战术转移到你的其他随从上。每个被转入战术的你的随从各放置 1 枚 +1 战力标记。"
+    },
+    "rulers_cosmos_fearless_friend": {
+      "name": "无畏的伙伴",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：移动此随从。”"
+    },
+    "rulers_cosmos_magic_weapon": {
+      "name": "魔法武器",
+      "effectText": "打在一个随从上。持续：此随从获得能力：“天赋：此基地每有一位玩家有随从在这里，此随从直到你下回合开始 +1 战力；或如果此随从上只有一张战术，抓 1 张牌。”"
+    },
+    "rulers_cosmos_myaaah": {
+      "name": "玛雅!",
+      "effectText": "将你的一个随从上或你弃牌堆中的一张打在随从上的战术返回其拥有者手牌。将其作为额外战术打出。"
+    },
+    "rulers_cosmos_mystic_transference": {
+      "name": "神秘转移",
+      "effectText": "打在你的一个随从上。持续：在每位其他玩家回合开始时，选择你场上一张给予天赋的战术。此随从可以立即复制该天赋。天赋：在此随从和你的另一个随从之间转移你的一个战术。"
+    },
+    "rulers_cosmos_now_you_know_toxic_waste": {
+      "name": "现在你知道：有毒废弃物",
+      "effectText": "从你的牌库中抓一张打在随从上的战术。特殊：你可以在基地计分前打出此牌，改为将你的一个随从上的战术转移到另一个随从上；然后你可以使用被转入战术的那个随从上的一个天赋。"
+    },
+    "rulers_cosmos_powerful_sword": {
+      "name": "魔法之剑",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：此随从直到你下回合开始不受其他玩家卡牌影响。” 天赋：将此随从上的另一张战术转移到你的另一个随从上。"
+    },
+    "rulers_cosmos_sword_thats_powerful": {
+      "name": "力量之剑",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：在此随从上放置 1 枚 +1 战力标记。” 如果此随从的印刷战力为 5 或以上，它 +2 战力。"
+    },
+    "pearl_images_pearl": {
+      "name": "珍珠",
+      "abilityText": "天赋：从你的牌库顶抓一个战力 2 或以下的随从，或使这里的一个随从直到回合结束 +1 战力。"
+    },
+    "pearl_images_crystal": {
+      "name": "水晶",
+      "abilityText": "天赋：在另一位玩家的一个随从上放置 1 枚 +1 战力标记，以在同一基地你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_ruby": {
+      "name": "红宝石",
+      "abilityText": "你可以使这里所有玩家的随从直到回合结束 +1 战力。"
+    },
+    "pearl_images_topaz": {
+      "name": "黄玉",
+      "abilityText": "持续：每回合一次，在另一位玩家一个随从的战力增加后，你可以在此随从上放置 1 枚 +1 战力标记；或如果你在那里有随从，你可以将此随从移动到那里。"
+    },
+    "pearl_images_alls_right_with_the_world": {
+      "name": "世界一切安好",
+      "effectText": "打在一个基地上。天赋：使这里所有玩家的随从直到回合结束 +1 战力；或每位玩家各选择其一个在这里的随从，使其直到回合结束 +2 战力。"
+    },
+    "pearl_images_dressing_room": {
+      "name": "化妆间",
+      "effectText": "每位玩家可以抓 1 张牌。每有一位玩家如此做，你抓 1 张牌，包括你自己。"
+    },
+    "pearl_images_jam_all_night_long": {
+      "name": "玩乐一整夜",
+      "effectText": "打在一个基地上。天赋：选择一位玩家，使其在这里额外打出一个战力 2 或以下的随从，或展示一手没有此类随从的手牌。然后，如果你选择的是另一位玩家且其打出了随从，你可以抓 1 张牌或在这里一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_love_unites_us": {
+      "name": "爱联结我们",
+      "effectText": "所有玩家将其弃牌堆中所有战力 2 或以下的随从洗入其牌库。"
+    },
+    "pearl_images_now_you_know_bike_safety": {
+      "name": "现在你知道：自行车安全",
+      "effectText": "选择基地上你的一个随从。将该随从和那里另一位玩家的一个随从移动到另一个基地。特殊：你可以在基地计分前打出此牌；将所选择的随从移动到正在计分的基地。"
+    },
+    "pearl_images_shes_got_the_power": {
+      "name": "她得到的力量",
+      "effectText": "打在一个随从上。持续：每回合一次，在这里另一位玩家一个随从的战力增加后，你可以使此随从直到回合结束 +3 战力。"
+    },
+    "pearl_images_truly_outstanding": {
+      "name": "杰出表彰",
+      "effectText": "在任意数量的其他玩家随从上各放置 1 枚 +1 战力标记。每放置一枚，你可以在你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_were_up_youre_down": {
+      "name": "我们上，你们下",
+      "effectText": "选择一个基地。直到你下回合开始，其他玩家在那里的随从只将其印刷战力计入其控制者在那里的总战力。特殊：你可以在一个你拥有最多随从的基地计分前打出此牌。你必须选择该基地。"
+    },
+    "base_sewer_hideout": {
+      "name": "下水道隐蔽处",
+      "abilityText": "你一回合中的第二张战术打出后，你可以在这里一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "base_technoball": {
+      "name": "科技球",
+      "abilityText": "每回合你第一次在这里打出随从后，你可以额外打出一张战术。"
+    },
+    "base_gi_geralds_base": {
+      "name": "杰拉尔德基地",
+      "abilityText": "每回合一次，在你在这里打出随从后，你可以抓 1 张牌，并将你手牌中的 1 张牌置于牌库底。"
+    },
+    "base_uss_banner": {
+      "name": "美国海军旗帜号",
+      "abilityText": "在你的回合，你可以在这里额外打出一个战力 2 或以下的随从。如果回合结束时你控制它，将其置于你的牌库顶。"
+    },
+    "base_power_castle": {
+      "name": "力量城堡",
+      "abilityText": "每回合一次，在有战术打在或转移到这里一个随从上后，你可以在该随从上放置 1 枚 +1 战力标记。"
+    },
+    "base_slime_pool": {
+      "name": "粘液池",
+      "abilityText": "你可以不打出你的常规战术，改为从你的牌库顶将一张打在随从上的战术打到这里的一个随从上。"
+    },
+    "base_concert_venue": {
+      "name": "音乐会场地",
+      "abilityText": "每回合你第一次在这里打出随从后，你可以在其上放置 1 枚 +1 战力标记。"
+    },
+    "base_recording_studio": {
+      "name": "录音室",
+      "abilityText": "每回合开始时，这里所有玩家的随从直到回合结束 +1 战力。"
+    },
+    "munchkin_dwarves_dwarf_king": {
+      "name": "矮人王",
+      "abilityText": "持续：当一个你的仆从身上的宝藏牌进入弃牌堆时，放置它到你的手上代替。"
+    },
+    "munchkin_dwarves_loot_lover": {
+      "name": "宝藏爱好者",
+      "abilityText": "持续：这个仆从身上每有一张宝藏牌，它获得 +2 力量。"
+    },
+    "munchkin_dwarves_gold_digger": {
+      "name": "黄金挖掘者",
+      "abilityText": "天赋：从弃牌堆放置一张宝藏牌到你的手上。"
+    },
+    "munchkin_dwarves_gem_grabber": {
+      "name": "宝石抓取者",
+      "abilityText": "持续：如果这个仆从身上拥有一张宝藏牌，它获得 +2 力量。"
+    },
+    "munchkin_halflings_shire_marshal": {
+      "name": "夏尔首领",
+      "abilityText": "天赋：在另一个玩家力量大于你的基地上打出一个额外的仆从。"
+    },
+    "munchkin_halflings_pestling": {
+      "name": "调皮鬼",
+      "abilityText": "你可以在这里打出一个额外的仆从。"
+    },
+    "munchkin_halflings_bardling": {
+      "name": "吟游诗人",
+      "abilityText": "如果另一位玩家在这里的力量大于你，你可以在这里打出一个额外的仆从。"
+    },
+    "munchkin_halflings_quarterling": {
+      "name": "半身人",
+      "abilityText": "如果这是你在这里的唯一仆从，你可以在这里打出一个额外的仆从。"
+    },
+    "munchkin_thieves_master_thief": {
+      "name": "盗贼大师",
+      "abilityText": "天赋：抽一张宝藏牌。"
+    },
+    "munchkin_thieves_fence": {
+      "name": "销赃犯",
+      "abilityText": "你可以丢弃两张宝藏牌来获得 1 VP。"
+    },
+    "munchkin_thieves_cat_burglar": {
+      "name": "猫咪窃贼",
+      "abilityText": "从你的手上展示任意数量的宝藏牌。每展示一张，放置一枚 +1 力量指示器到这个仆从身上。"
+    },
+    "munchkin_thieves_pickpocket": {
+      "name": "扒手",
+      "abilityText": "如果这里有另一个扒手，抽一张宝藏牌。"
+    },
+    "munchkin_mages_blaster_master": {
+      "name": "爆破大师",
+      "abilityText": "天赋：丢弃一张牌来摧毁一个力量 2 或更少的仆从。"
+    },
+    "munchkin_mages_happy_zapper": {
+      "name": "快乐小法师",
+      "abilityText": "天赋：丢弃一张牌来让这个仆从获得 +2 力量直到回合结束。特殊：这个基地计分前，你可以使用这个仆从的天赋。"
+    },
+    "munchkin_mages_wand_whiz": {
+      "name": "魔杖天才",
+      "abilityText": "你可以丢弃一张牌来打出一个额外的仆从或打出一个额外的行动。"
+    },
+    "munchkin_mages_scroll_shuffler": {
+      "name": "勤读者",
+      "abilityText": "丢弃一张牌。抽一张牌。"
+    },
+    "munchkin_elves_fae_fighter": {
+      "name": "精灵斗士",
+      "abilityText": "持续：另一个玩家打出一个仆从后，你可以在该仆从上放置一枚 +1 力量指示物，以在你这里的一个仆从上放置一枚 +1 力量指示物。"
+    },
+    "munchkin_elves_lord_of_the_prance": {
+      "name": "优雅贵族",
+      "abilityText": "天赋：你选择另一个玩家抽一张牌。你抽一张牌。"
+    },
+    "munchkin_elves_flower_child": {
+      "name": "花之子",
+      "abilityText": "你可以将这个仆从的控制权交给另一个玩家直到它离开游戏，来控制那个玩家的一个力量 3 或更少的仆从直到它离开游戏。"
+    },
+    "munchkin_elves_elf_help_guru": {
+      "name": "精灵帮助大师",
+      "abilityText": "天赋：所有其他玩家在这里的仆从获得 +1 力量直到回合结束。"
+    },
+    "munchkin_clerics_cardinal": {
+      "name": "红衣主教",
+      "abilityText": "天赋：如果你的弃牌堆有至少五张牌，随机放置其中两张到你的手上。"
+    },
+    "munchkin_clerics_deep_friar": {
+      "name": "资深修士",
+      "abilityText": "特殊：这个基地计分后，你可以移动这里的另一个你的仆从到另一个基地，代替进入弃牌堆。"
+    },
+    "munchkin_clerics_turner": {
+      "name": "特纳",
+      "abilityText": "摧毁这里的一个亡灵怪物；或从你的弃牌堆重洗一个随机的仆从到你的牌库。"
+    },
+    "munchkin_clerics_holy_roller": {
+      "name": "圣临者",
+      "abilityText": "你可以从你的弃牌堆重洗一张随机的牌到你的牌库。"
+    },
+    "munchkin_orcs_sword_lord": {
+      "name": "剑王",
+      "abilityText": "持续：每个你的其他仆从获得 +1 力量。"
+    },
+    "munchkin_orcs_topper_chopper": {
+      "name": "粉碎者",
+      "abilityText": "天赋：什么都不做。"
+    },
+    "munchkin_orcs_hammer_slammer": {
+      "name": "重击者",
+      "abilityText": "摧毁一个力量 2 或更少的仆从。"
+    },
+    "munchkin_orcs_dork_orc": {
+      "name": "呆瓜兽人",
+      "abilityText": "持续：这个仆从不受其他玩家的行动影响。"
+    },
+    "munchkin_warriors_big_hero": {
+      "name": "大英雄",
+      "abilityText": "天赋：摧毁这里一个怪物 OR 在这里打出一个怪物。"
+    },
+    "munchkin_warriors_star_player": {
+      "name": "明星勇士",
+      "abilityText": "持续：一个怪物在这里被摧毁后，放置一枚 +1 力量指示器到这个仆从身上。"
+    },
+    "munchkin_warriors_berserker": {
+      "name": "狂战士",
+      "abilityText": "摧毁这里一个力量小于或等于这个仆从的怪物来放置一枚 +1 力量指示器到这个仆从身上。"
+    },
+    "munchkin_warriors_taunter": {
+      "name": "嘲讽者",
+      "abilityText": "你可以在这里打出一个怪物。"
+    },
+    "munchkin_dwarves_anything_for_money": {
+      "name": "为了钱什么都可以",
+      "effectText": "丢弃任意数量的牌。每丢弃一张牌，抽一张宝藏牌。"
+    },
+    "munchkin_dwarves_cash_out": {
+      "name": "套现",
+      "effectText": "从你的手上打出至多三张宝藏牌作为额外的牌。"
+    },
+    "munchkin_dwarves_cunning_plan": {
+      "name": "狡猾计划",
+      "effectText": "特殊：一个基地计分前打出。抽一张宝藏牌。你可以打出它。"
+    },
+    "munchkin_dwarves_greed_is_good": {
+      "name": "贪婪是好的",
+      "effectText": "抽一张宝藏牌 OR 从弃牌堆放置一张宝藏牌到你的手上。你可以打出一个额外的行动。"
+    },
+    "munchkin_dwarves_hidden_assets": {
+      "name": "隐藏资产",
+      "effectText": "放置宝藏牌库顶的三张牌到弃牌堆。抽一张牌。你可以打出一个额外的行动。"
+    },
+    "munchkin_dwarves_mine": {
+      "name": "我的！",
+      "effectText": "搜索宝藏牌库来寻找一张可以打出在仆从身上的牌。打出它到你的一个仆从身上作为额外的行动。重洗宝藏牌库。"
+    },
+    "munchkin_dwarves_no_my_precious": {
+      "name": "不！我的宝贝！",
+      "effectText": "摧毁一个打出在仆从身上的行动。如果它是宝藏牌，你可以打出一个额外的行动。"
+    },
+    "munchkin_dwarves_salvage": {
+      "name": "打捞",
+      "effectText": "特殊：一个基地计分前打出。从弃牌堆打出一张宝藏牌到你在那里的一个仆从身上。"
+    },
+    "munchkin_treasure_dwarf_hireling": {
+      "name": "矮人雇佣兵"
+    },
+    "munchkin_treasure_halfling_hireling": {
+      "name": "半身人雇佣兵",
+      "abilityText": "当打出此仆从后，本回合你可以额外打出一个仆从。该额外仆从可以是一张宝藏仆从。"
+    },
+    "munchkin_treasure_tiger_steed": {
+      "name": "虎骑士"
+    },
+    "munchkin_treasure_bag_of_caltrops": {
+      "name": "一袋铁蒺藜",
+      "effectText": "打在一个基地上。持续：在另一个玩家将力量 3 或更少的仆从打到这里后，摧毁该仆从，并摧毁此牌。"
+    },
+    "munchkin_treasure_spiky_boots": {
+      "name": "尖刺靴",
+      "effectText": "打在一个仆从上。持续：此仆从获得 +1 力量。"
+    },
+    "munchkin_treasure_rocket_boots": {
+      "name": "火箭靴",
+      "effectText": "打在一个仆从上。天赋：移动此仆从到另一个基地。此牌保留在其身上。"
+    },
+    "munchkin_treasure_buckler_of_swashing": {
+      "name": "摆动的盾牌",
+      "effectText": "打在一个仆从上。持续：此仆从不能被摧毁。"
+    },
+    "munchkin_treasure_bloody_dismemberment_chainsaw": {
+      "name": "血腥肢解电锯",
+      "effectText": "打在一个仆从上。持续：此仆从获得 +2 力量。"
+    },
+    "munchkin_treasure_loads_of_treasure": {
+      "name": "大量宝藏",
+      "effectText": "打在一个仆从上。持续：此仆从身上每有一张宝藏牌，它获得 +1 力量。"
+    },
+    "munchkin_treasure_crossbow": {
+      "name": "十字弓",
+      "effectText": "选择一个基地和一个派系。直到回合结束，那里该派系的所有仆从获得 +2 力量。"
+    },
+    "munchkin_treasure_dungeon_rulebook": {
+      "name": "地牢规则书",
+      "effectText": "摧毁一个打出在仆从身上或基地上的行动。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "munchkin_treasure_temporal_displacement_jetpack": {
+      "name": "时间错乱的喷气背包",
+      "effectText": "打在一个仆从上。持续：当此仆从将从基地进入弃牌堆时，将其放置到你的手上代替。然后将此牌放置到弃牌堆。"
+    },
+    "munchkin_treasure_kneepads_of_allure": {
+      "name": "诱惑护膝",
+      "effectText": "打在一个仆从上。持续：这里每个仆从获得 +1 力量。"
+    },
+    "munchkin_treasure_magic_missile": {
+      "name": "魔法导弹",
+      "effectText": "打在一个仆从上。天赋：摧毁这里一个力量 3 或更少的仆从。将此牌放置到宝藏牌库底。"
+    },
+    "munchkin_treasure_potion_of_cowardice": {
+      "name": "怯懦药水",
+      "effectText": "打在一个仆从上。持续：此仆从获得 -2 力量，并失去所有能力。"
+    },
+    "munchkin_treasure_potion_of_halitosis": {
+      "name": "口臭药水",
+      "effectText": "选择一个基地和一个玩家。该玩家必须将他在那里一个仆从移动到另一个基地。特殊：你可以在一个基地计分前打出此牌；你必须选择正在计分的基地。"
+    },
+    "munchkin_treasure_potion_of_idiotic_bravery": {
+      "name": "愚蠢勇气药水",
+      "effectText": "选择一个仆从。该仆从直到回合结束获得 +3 力量。"
+    },
+    "munchkin_treasure_potion_of_straight_line_running_away": {
+      "name": "直线跑路药水",
+      "effectText": "特殊：在一个基地计分后打出此牌。从已展示但尚未分发的宝藏牌中选择一张放置到你的手上。"
+    },
+    "munchkin_treasure_potion_of_paralysis": {
+      "name": "麻痹药水",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。直到回合结束，取消正在计分基地上所有牌和仆从的能力。"
+    },
+    "munchkin_treasure_potion_of_duplication": {
+      "name": "复制药水",
+      "effectText": "打在一个仆从上。天赋：选择另一个有天赋的仆从。此仆从使用该天赋，并支付该天赋的任何成本。"
+    },
+    "munchkin_treasure_treasure_finder": {
+      "name": "探宝棒",
+      "effectText": "抽两张宝藏牌。将此牌和宝藏弃牌堆洗入宝藏牌库。"
+    },
+    "munchkin_treasure_wishing_ring": {
+      "name": "许愿指环",
+      "effectText": "获得 1 VP。将此牌放置到宝藏牌库底。"
+    },
+    "munchkin_halflings_last_call": {
+      "name": "最后通牒",
+      "effectText": "特殊：一个基地计分前打出。打出一个仆从到那里。取消这个仆从的能力直到回合结束。"
+    },
+    "munchkin_halflings_lunch_run": {
+      "name": "午餐散步",
+      "effectText": "打出到一个基地上。持续：你每次在这里打出一个仆从后，抽一张牌。"
+    },
+    "munchkin_halflings_out_of_nowhere": {
+      "name": "偷袭",
+      "effectText": "展示你的牌库顶的牌直到展示出两个仆从。放置这些仆从到你的手上。重洗剩下的牌到你的牌库。"
+    },
+    "munchkin_halflings_rude_awakening": {
+      "name": "惊醒",
+      "effectText": "选择一个基地。展示你的手牌然后打出所有仆从到那个基地作为额外的仆从；取消它们的能力直到回合结束。"
+    },
+    "munchkin_halflings_small_but_tough": {
+      "name": "小而坚韧",
+      "effectText": "打出到一个仆从身上。持续：当这个仆从进入弃牌堆时，放置它到你的牌库顶代替。"
+    },
+    "munchkin_halflings_sneaksy": {
+      "name": "偷偷摸摸",
+      "effectText": "打出到一个基地上。持续：你这里的仆从不会受到其他玩家的行动影响。"
+    },
+    "munchkin_halflings_spoiled_brats": {
+      "name": "被宠坏的小家伙",
+      "effectText": "从你的弃牌堆选择任意数量的仆从，重洗它们，然后放置它们到你的牌库顶。"
+    },
+    "munchkin_halflings_unexpected_party": {
+      "name": "意外的派对",
+      "effectText": "在你没有仆从的基地上打出一个额外的仆从。"
+    },
+    "munchkin_thieves_backstab": {
+      "name": "背刺",
+      "effectText": "丢弃一张宝藏牌来摧毁一个力量 3 或更少的仆从。"
+    },
+    "munchkin_thieves_clever_distraction": {
+      "name": "转移注意力",
+      "effectText": "特殊：一个基地计分后打出，如果你有一个仆从在那里。赢家失去 1 VP，然后你获得 1 VP。"
+    },
+    "munchkin_thieves_mugging": {
+      "name": "打劫",
+      "effectText": "转移一个打出到仆从身上的行动到一个你的仆从身上。"
+    },
+    "munchkin_thieves_potion_bandolier": {
+      "name": "药水腰带",
+      "effectText": "选择一个仆从。丢弃一张宝藏牌来让这个仆从获得 +3 力量直到回合结束。"
+    },
+    "munchkin_thieves_secret_stash": {
+      "name": "秘密藏匿处",
+      "effectText": "打出到一个基地上。持续：当这个基地计分时，添加两张宝藏牌到奖励里。"
+    },
+    "munchkin_thieves_smuggling": {
+      "name": "走私",
+      "effectText": "丢弃两张宝藏牌来获得 1 VP。重洗你的弃牌堆到你的牌库。放置这张牌到你的牌库底。"
+    },
+    "munchkin_thieves_strip_bare": {
+      "name": "剥光",
+      "effectText": "选择游戏中的一张宝藏牌。放置它到你的手上。"
+    },
+    "munchkin_thieves_swipe": {
+      "name": "顺手拿走",
+      "effectText": "抽一张宝藏牌。"
+    },
+    "munchkin_mages_charm": {
+      "name": "魅力",
+      "effectText": "控制一个怪物然后将它视为你的仆从直到回合结束。"
+    },
+    "munchkin_mages_embiggen": {
+      "name": "大上一倍",
+      "effectText": "选择一个仆从。丢弃任意数量的牌。每丢弃一张牌，这个仆从获得 +1 力量直到回合结束。"
+    },
+    "munchkin_mages_mass_summoning": {
+      "name": "大召唤",
+      "effectText": "在每个基地上打出一个怪物。"
+    },
+    "munchkin_mages_portal_to_beyond": {
+      "name": "通往次元之门",
+      "effectText": "打出到一个基地上。天赋：丢弃一张牌来在这里打出一个怪物。"
+    },
+    "munchkin_mages_recover_arcane_wisdom": {
+      "name": "恢复奥术智慧",
+      "effectText": "抽牌直到你的手上有五张牌。"
+    },
+    "munchkin_mages_some_enchanted_evening": {
+      "name": "神奇的夜晚",
+      "effectText": "丢弃任意数量的牌。每丢弃一张牌，你可以打出一个力量 3 或更少的仆从作为额外仆从。"
+    },
+    "munchkin_mages_speed_reading": {
+      "name": "快速阅读",
+      "effectText": "丢弃一张牌。抽三张牌。"
+    },
+    "munchkin_mages_zzzzzap": {
+      "name": "快速攻击！",
+      "effectText": "丢弃一张牌来摧毁一个力量 3 或更少的仆从。"
+    },
+    "munchkin_elves_after_you": {
+      "name": "在你之后",
+      "effectText": "每个其他玩家抽一张牌。每有一个玩家在游戏中，抽一张牌，包括你自己。"
+    },
+    "munchkin_elves_dancing_root": {
+      "name": "舞动之根",
+      "effectText": "所有玩家重洗他们的弃牌堆到他们的牌库。抽一张牌。"
+    },
+    "munchkin_elves_helping_hands": {
+      "name": "援手",
+      "effectText": "特殊：你可以在有你的仆从在那里的基地计分前打出此牌。选择另一个玩家。那个玩家总计获得 +2 力量；你的一个仆从获得 -2 力量（最低为 0）。如果那个玩家是赢家，你可以获得那个玩家的一点 VP。"
+    },
+    "munchkin_elves_pumping_iron": {
+      "name": "力量训练",
+      "effectText": "选择另一个玩家。那个玩家选择一个仆从获得 +2 力量直到回合结束。你选择一个仆从获得 +3 力量直到回合结束。"
+    },
+    "munchkin_elves_run_away": {
+      "name": "逃跑吧！",
+      "effectText": "特殊：你可以在有你的仆从在那里的基地计分前打出此牌。移动一个你的仆从和另一个玩家的仆从从那里到另一个基地。"
+    },
+    "munchkin_elves_run_away_more": {
+      "name": "赶紧逃跑吧！",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。移动任意数量你的仆从从那里到另一个基地。"
+    },
+    "munchkin_elves_trade": {
+      "name": "贸易",
+      "effectText": "从另一位玩家的手上随机抽一张牌然后放置到你的手上，然后放置这张牌到那个玩家的手上。本回合你可以打出一个额外的行动。"
+    },
+    "munchkin_elves_traveling_elf": {
+      "name": "旅行精灵",
+      "effectText": "打出到一个你的仆从身上。天赋：移动这个仆从到另一个基地。"
+    },
+    "munchkin_clerics_bin_and_gone": {
+      "name": "垃圾处理",
+      "effectText": "打出到一个基地上。持续：另一个基地计分后，你可以移动那里一个你的仆从到这里，代替进入弃牌堆。"
+    },
+    "munchkin_clerics_collection_plate": {
+      "name": "光盘",
+      "effectText": "从你的弃牌堆放置两张随机的牌到你的手上。"
+    },
+    "munchkin_clerics_curse_of_imprisonment": {
+      "name": "监禁诅咒",
+      "effectText": "打出到一个仆从身上。持续：这个仆从失去它的能力。"
+    },
+    "munchkin_clerics_curse_of_uselessness": {
+      "name": "无用诅咒",
+      "effectText": "打出到一个仆从身上。持续：这个仆从不会将它的力量添加到这个基地。"
+    },
+    "munchkin_clerics_good_habits": {
+      "name": "好习惯",
+      "effectText": "所有仆从获得 +1 力量直到回合结束。"
+    },
+    "munchkin_clerics_join_the_club": {
+      "name": "加入团队",
+      "effectText": "选择一个基地。所有那里的仆从获得 +1 力量直到回合结束。"
+    },
+    "munchkin_clerics_remove_curse": {
+      "name": "解除诅咒",
+      "effectText": "摧毁一个基地或仆从身上的行动。"
+    },
+    "munchkin_clerics_word_of_recall": {
+      "name": "回忆祷词",
+      "effectText": "从每个其他玩家的弃牌堆随机选择一个行动。你可以打出它们中的一个作为额外的行动。返回剩下的。"
+    },
+    "munchkin_orcs_and_stay_down": {
+      "name": "躺下！",
+      "effectText": "特殊：在一个基地计分前打出此牌。如果你在这里有总计最高力量，其他玩家不能打出或使用特殊能力。"
+    },
+    "munchkin_orcs_angry_pillagers": {
+      "name": "愤怒的掠夺者",
+      "effectText": "特殊：当一个基地计分时打出此牌。如果你比第二名多至少 3 力量，获得 1 VP。"
+    },
+    "munchkin_orcs_crush": {
+      "name": "挤碎",
+      "effectText": "选择一个基地和一个在那里拥有比你更少仆从的玩家。摧毁那个玩家那里一个仆从。"
+    },
+    "munchkin_orcs_death_breath": {
+      "name": "死亡之息",
+      "effectText": "放置一个力量 4 或更少的仆从到它拥有者的牌库底。"
+    },
+    "munchkin_orcs_dogpile": {
+      "name": "狗堆",
+      "effectText": "移动一个你的仆从到一个你至少有两个仆从的基地。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "munchkin_orcs_gimme": {
+      "name": "给我！",
+      "effectText": "选择一个仆从身上的行动。摧毁那个仆从，然后转移那个行动到你的一个仆从身上。"
+    },
+    "munchkin_orcs_stalling": {
+      "name": "洗手间",
+      "effectText": "打出到一个基地上。持续：每当另一个玩家打出一张牌时，你可以选择你在这里的仆从不受它的影响。"
+    },
+    "munchkin_orcs_too_tough": {
+      "name": "太难了",
+      "effectText": "打出到一个仆从身上。持续：这个仆从不受其他玩家的行动影响。"
+    },
+    "munchkin_warriors_campaign": {
+      "name": "领导运动",
+      "effectText": "每个有怪物的基地上的你的仆从获得 +2 力量直到回合结束。"
+    },
+    "munchkin_warriors_cleave": {
+      "name": "斩杀",
+      "effectText": "摧毁一个怪物。你可以打出摧毁它获得的任意数量的宝藏牌作为额外的牌。"
+    },
+    "munchkin_warriors_dumbbells": {
+      "name": "哑铃",
+      "effectText": "打出到一个仆从身上。持续：这个仆从获得 +3 力量。"
+    },
+    "munchkin_warriors_dungeon_bait": {
+      "name": "地牢诱饵",
+      "effectText": "在一个基地打出一个怪物 OR 摧毁一个力量 2 或更少的仆从。"
+    },
+    "munchkin_warriors_eternal_hero": {
+      "name": "永恒的英雄",
+      "effectText": "打出到一个你的仆从身上。持续：当这个仆从进入弃牌堆时，放置它和这个行动到你的手上代替。"
+    },
+    "munchkin_warriors_ruckus": {
+      "name": "骚乱",
+      "effectText": "选择一个基地。在那里打出两个怪物 OR 摧毁那里的所有怪物但不获得任何宝藏牌。"
+    },
+    "munchkin_warriors_shield_of_ubiquity": {
+      "name": "无处不在之盾",
+      "effectText": "打出到一个仆从身上。持续：这个仆从每有一个怪物在这里就获得 +2 力量。"
+    },
+    "munchkin_warriors_war_cry": {
+      "name": "战争怒吼",
+      "effectText": "摧毁一个怪物来添加它的力量到那个基地上的一个仆从身上直到回合结束。"
+    },
+    "base_the_mines": {
+      "name": "矿洞",
+      "abilityText": "每有一个宝藏在身上，那个仆从在这里就获得 +1 力量。"
+    },
+    "base_treasure_bath": {
+      "name": "宝藏池",
+      "abilityText": "每回合第一次你在这里打出一个仆从后，抽一张宝藏牌。"
+    },
+    "base_birthday_party": {
+      "name": "生日派对",
+      "abilityText": "1 怪物。如果你没有仆从在这里，你不能在另一个基地打出仆从。"
+    },
+    "base_subterranean_lair": {
+      "name": "地下矮屋",
+      "abilityText": "1 怪物。轮到你时，如果你在这个基地没有仆从，你可以在这里打出一个额外的仆从。"
+    },
+    "base_the_coffers": {
+      "name": "金库",
+      "abilityText": "2 怪物。当这个基地计分时，每个有仆从在这里的玩家抽一张宝藏牌。"
+    },
+    "base_thieves_guild": {
+      "name": "盗贼公会",
+      "abilityText": "1 怪物。你打出一张宝藏牌到这个基地或基地上的仆从身上后，抽一张牌。"
+    },
+    "base_dimension_doors": {
+      "name": "次元之门",
+      "abilityText": "1 怪物。每个回合第一次你打出一个仆从到这里后，你可以丢弃一张牌来在这里打出一个额外的仆从。"
+    },
+    "base_mages_tower": {
+      "name": "法师之塔",
+      "abilityText": "1 怪物。你打出一个仆从到这里后，你可以抽一张牌。"
+    },
+    "base_helpers_hollow": {
+      "name": "援助山谷",
+      "abilityText": "2 怪物。每个玩家的回合期间，其他玩家在这里的仆从获得 +1 力量。"
+    },
+    "base_treehouse": {
+      "name": "树屋",
+      "abilityText": "2 怪物。你打出一个仆从到这里后，选择另一个玩家。那个玩家可以抽一张牌。"
+    },
+    "base_hotel_of_holiness": {
+      "name": "圣洁酒店",
+      "abilityText": "2 怪物。这个基地计分后，以任意顺序放置这里的仆从到它拥有者的牌库顶，代替进入弃牌堆。"
+    },
+    "base_whack_a_ghoul": {
+      "name": "抓鬼",
+      "abilityText": "3 怪物。一个不死怪物打出到这里后，放置它到怪物牌库底。"
+    },
+    "base_garrison": {
+      "name": "要塞",
+      "abilityText": "当这个基地计分时，如果所有玩家在这里的总力量为 22 或更多，力量最高的三个玩家各自获得 1 VP。"
+    },
+    "base_the_pits": {
+      "name": "坑洞",
+      "abilityText": "这里的仆从不会受到其他玩家的行动影响。"
+    },
+    "base_bastion": {
+      "name": "堡垒",
+      "abilityText": "你在这里摧毁一个怪物后，抽一张宝藏牌。"
+    },
+    "base_the_gauntlet": {
+      "name": "锦标赛",
+      "abilityText": "一个怪物在这里被摧毁后，在这里打出一个怪物。"
     }
   },
   "debug": {

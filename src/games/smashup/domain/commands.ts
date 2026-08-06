@@ -33,6 +33,7 @@ import {
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { getCardActivatableAbilities, hasCardActivatableAbility } from './activationMetadata';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import {
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindowForMatchState,
@@ -178,7 +179,7 @@ function resolveTitanAbilityLabel(kind: TitanAbilityKind): string {
 
 function validateTitanAbility(
     state: MatchState<SmashUpCore>,
-    command: { playerId: string; payload: { titanUid?: string; baseIndex: number } },
+    command: { playerId: string; payload: { titanUid?: string; baseIndex: number; targetBaseIndex?: number; targetMinionUid?: string } },
     kind: TitanAbilityKind,
 ): ValidationResult {
     const core = state.core;
@@ -246,6 +247,8 @@ function validateTitanAbility(
             cardUid: titan.uid,
             defId: titan.defId,
             baseIndex,
+            targetBaseIndex: command.payload.targetBaseIndex,
+            targetMinionUid: command.payload.targetMinionUid,
             random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
             now: core.turnNumber ?? 0,
         });
@@ -258,6 +261,8 @@ function validateTitanAbility(
             cardUid: titan.uid,
             defId: titan.defId,
             baseIndex,
+            targetBaseIndex: command.payload.targetBaseIndex,
+            targetMinionUid: command.payload.targetMinionUid,
             random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
             now: core.turnNumber ?? 0,
         });
@@ -670,12 +675,14 @@ export function validate(
                 }
 
                 const targetBase = command.payload.targetBaseIndex;
+                const targetMinionUid = command.payload.targetMinionUid;
 
+                const targetMode = getActionPlayTargetMode(rDef);
                 const needsBase = actionLikeNeedsResponseWindowBase(rDef);
                 if (!canCardBePlayedInResponseWindowForMatchState(state, rCard, reactionWindow.windowType)) {
                     return { valid: false, error: '该行动卡当前没有可执行的响应目标' };
                 }
-                if (needsBase) {
+                if (needsBase || targetMode === 'minion') {
                     if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
                         return { valid: false, error: '该行动卡需要选择一个达标基地' };
                     }
@@ -708,6 +715,24 @@ export function validate(
                     }
                 } else if (targetBase !== undefined) {
                     return { valid: false, error: '该行动卡不需要基地目标' };
+                }
+
+                if (targetMode === 'minion') {
+                    if (!targetMinionUid) {
+                        return { valid: false, error: '该行动卡需要选择目标随从' };
+                    }
+                    const targetBaseIndex = targetBase as number;
+                    const semanticsValidation = validateActionPlaySemantics(core, command.playerId, {
+                        defId: rCard.defId,
+                        targetBaseIndex,
+                        targetMinionUid,
+                        effectiveHandSize: rPlayer.hand.length,
+                    });
+                    if (!semanticsValidation.valid) {
+                        return semanticsValidation;
+                    }
+                } else if (targetMinionUid !== undefined) {
+                    return { valid: false, error: '该行动卡不需要选择随从目标' };
                 }
 
                 return { valid: true };
@@ -877,7 +902,7 @@ export function validate(
             if (command.playerId !== currentPlayerId) {
                 return { valid: false, error: 'player_mismatch' };
             }
-            const { baseIndex } = command.payload;
+            const { baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             if (!base) return { valid: false, error: '无效的基地索引' };
 
@@ -899,6 +924,8 @@ export function validate(
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
+                targetBaseIndex,
+                targetMinionUid,
                 now: core.turnNumber ?? 0,
             };
             const canUse = canUseActiveBaseAbility(base.defId, baseAbilityContext);
@@ -916,7 +943,7 @@ export function validate(
             if (command.playerId !== currentPlayerId) {
                 return { valid: false, error: 'player_mismatch' };
             }
-            const { minionUid, ongoingCardUid, titanUid, baseIndex } = command.payload;
+            const { minionUid, ongoingCardUid, titanUid, baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const targetCount = [minionUid, ongoingCardUid, titanUid].filter(Boolean).length;
             if (targetCount !== 1) {
                 return { valid: false, error: '蹇呴』涓旀墜鑳藉彧鑳芥寚瀹氫竴绉嶅ぉ璧嬬洰鏍?' };
@@ -976,6 +1003,8 @@ export function validate(
                     cardUid: ongoingCardUid,
                     defId: ongoing.defId,
                     baseIndex,
+                    targetBaseIndex,
+                    targetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
                 });
@@ -1027,6 +1056,8 @@ export function validate(
                 cardUid: minionUid,
                 defId: targetMinion.defId,
                 baseIndex,
+                targetBaseIndex,
+                targetMinionUid,
                 random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                 now: core.turnNumber ?? 0,
             });
@@ -1054,6 +1085,7 @@ export function validate(
                 discardCardUid: spDiscardCardUid,
                 handCardUid: spHandCardUid,
                 baseIndex: spBaseIndex,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const targetCount = [spMinionUid, spTitanUid, spDiscardCardUid, spHandCardUid].filter(Boolean).length;
@@ -1097,6 +1129,8 @@ export function validate(
                     cardUid: spHandCardUid,
                     defId: handCard.defId,
                     baseIndex: spBaseIndex,
+                    targetBaseIndex: spTargetBaseIndex,
+                    targetMinionUid: spTargetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
                 });
@@ -1142,6 +1176,7 @@ export function validate(
                     cardUid: spDiscardCardUid,
                     defId: discardCard.defId,
                     baseIndex: spBaseIndex,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
@@ -1154,7 +1189,7 @@ export function validate(
             if (spTitanUid) {
                 const titanValidation = validateTitanAbility(
                     state,
-                    { playerId: command.playerId, payload: { titanUid: spTitanUid, baseIndex: spBaseIndex } },
+                    { playerId: command.playerId, payload: { titanUid: spTitanUid, baseIndex: spBaseIndex, targetBaseIndex: spTargetBaseIndex, targetMinionUid: spTargetMinionUid } },
                     'special',
                 );
                 if (!titanValidation.valid) {
@@ -1209,6 +1244,8 @@ export function validate(
                 cardUid: spMinionUid,
                 defId: spMinion.defId,
                 baseIndex: spBaseIndex,
+                targetBaseIndex: spTargetBaseIndex,
+                targetMinionUid: spTargetMinionUid,
                 random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                 now: core.turnNumber ?? 0,
             });
@@ -1226,6 +1263,42 @@ export function validate(
                 return { valid: false, error: 'player_mismatch' };
             }
             return validateTitanAbility(state, command, 'ongoing');
+        }
+
+        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
+            if (phase !== 'playCards') {
+                return { valid: false, error: '只能在出牌阶段击败怪物' };
+            }
+            if (command.playerId !== currentPlayerId) {
+                return { valid: false, error: 'player_mismatch' };
+            }
+
+            const { baseIndex, monsterUid } = command.payload;
+            const base = core.bases[baseIndex];
+            if (!base) {
+                return { valid: false, error: '无效的基地索引' };
+            }
+
+            const monster = base.monsters?.find(candidate => candidate.uid === monsterUid);
+            if (!monster) {
+                return { valid: false, error: '该基地没有这个怪物' };
+            }
+            if (monster.controllerId !== undefined) {
+                return { valid: false, error: '已受控怪物不能被击败' };
+            }
+
+            const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
+            if (descriptor?.kind !== 'monster') {
+                return { valid: false, error: '该对象不是怪物' };
+            }
+
+            const monsterPower = descriptor.power ?? 0;
+            const playerPower = getPlayerEffectivePowerOnBase(core, base, baseIndex, command.playerId);
+            if (playerPower < monsterPower) {
+                return { valid: false, error: `你在该基地的力量不足以击败这个怪物（需要${monsterPower}）` };
+            }
+
+            return { valid: true };
         }
 
         default:

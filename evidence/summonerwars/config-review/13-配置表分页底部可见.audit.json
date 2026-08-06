@@ -1,0 +1,27 @@
+{
+  "port": "4293",
+  "url": "http://127.0.0.1:4293/games/summonerwars/config",
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\summonerwars\\config-review\\13-配置表分页底部可见.png",
+  "audit": {
+    "titleText": "召唤师战争配置表",
+    "visibleRange": "显示 1-25 / 共 160 行",
+    "pageStatus": "第 1 / 7 页",
+    "rows": 25,
+    "loadedVisibleCards": 16,
+    "headerContainsPagination": false,
+    "mainHeight": 1080,
+    "headerBottom": 354,
+    "tableBottom": 980,
+    "paginationTop": 992,
+    "paginationBottom": 1040,
+    "viewportHeight": 1080,
+    "bodyScrollHeight": 1080,
+    "tableOverflowX": "scroll",
+    "tableOverflowY": "auto",
+    "paginationBelowHeader": true,
+    "paginationBelowTable": true,
+    "paginationVisibleInViewport": true,
+    "pageDoesNotVerticallyScroll": true
+  },
+  "events": []
+}

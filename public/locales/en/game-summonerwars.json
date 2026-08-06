@@ -38,7 +38,207 @@
     "mogu": "Mogu",
     "huijin": "Ashen Phoenix",
     "shouren": "Tundra Orcs",
-    "yongheng": "Eternal Council"
+    "yongheng": "Eternal Council",
+    "shadow": "Shadow Elves"
+  },
+  "configReview": {
+    "eyebrow": "Config review table",
+    "title": "Summoner Wars Config Table",
+    "subtitle": "This table is generated from the existing Summoner Wars TypeScript config, faction deck builder, and real card atlas. Faction ownership, deck symbols, stats, effects, assets, and setup placement are shown from the current config source. Players can double-click cells, stage edits, then submit one AI-review proposal batch.",
+    "actions": {
+      "back": "Back to Directory",
+      "closePreview": "Close Image",
+      "magnify": "Magnify {{name}}",
+      "clearEdits": "Clear Edits",
+      "submitBatch": "Submit {{count}} Edits",
+      "previousPage": "Previous Page",
+      "nextPage": "Next Page"
+    },
+    "filters": {
+      "searchPlaceholder": "Search name, faction, ability, or field value",
+      "allFactions": "All Factions"
+    },
+    "tableScroll": {
+      "primaryHint": "Scroll sideways to see more fields",
+      "secondaryHint": "Mouse wheel moves up and down; drag the bottom bar or use a trackpad to move sideways"
+    },
+    "columns": {
+      "image": "Card",
+      "id": "Config Object",
+      "name": "Name",
+      "faction": "Owner Faction",
+      "deckSymbols": "Deck Symbols",
+      "cardType": "Card Type",
+      "unitClass": "Unit Class",
+      "quantity": "Qty",
+      "setupPositions": "Setup Position",
+      "attack": "Attack",
+      "life": "Life",
+      "cost": "Cost",
+      "attackType": "Attack Type",
+      "attackRange": "Range",
+      "playPhase": "Play Phase",
+      "eventType": "Event Type",
+      "isActive": "Active",
+      "charges": "Charges",
+      "targetUnitId": "Target Unit",
+      "entanglementTargets": "Entangle Targets",
+      "abilities": "Abilities",
+      "effect": "Effect Text",
+      "isGate": "Gate",
+      "isStartingGate": "Starting Gate",
+      "spriteAtlas": "Card Atlas",
+      "spriteIndex": "Card Index",
+      "sourceContexts": "Config Source"
+    },
+    "fields": {
+      "id": "Config Object",
+      "name": "Name",
+      "faction": "owner faction",
+      "deckSymbols": "deck symbols",
+      "cardType": "card type",
+      "unitClass": "unit class",
+      "quantity": "quantity",
+      "setupPositions": "setup position",
+      "attack": "attack",
+      "life": "life",
+      "cost": "cost",
+      "attackType": "attack type",
+      "attackRange": "range",
+      "playPhase": "play phase",
+      "eventType": "event type",
+      "isActive": "active-event flag",
+      "charges": "charges",
+      "targetUnitId": "target unit",
+      "entanglementTargets": "entanglement targets",
+      "abilities": "abilities",
+      "effect": "effect text",
+      "isGate": "gate flag",
+      "isStartingGate": "starting-gate flag",
+      "spriteAtlas": "card atlas",
+      "spriteIndex": "card index",
+      "sourceContexts": "config source"
+    },
+    "types": {
+      "all": "All Types",
+      "summoner": "Summoner",
+      "champion": "Champion",
+      "common": "Common",
+      "event": "Event",
+      "gate": "Gate",
+      "structure": "Structure"
+    },
+    "stats": {
+      "version": "Config Version",
+      "totalRows": "Total Rows",
+      "visibleRows": "Filtered Rows",
+      "pageRows": "Current Page",
+      "compactStatus": "{{version}} · {{visible}} / {{total}} rows · {{pageRows}} on page",
+      "attack": "Attack",
+      "life": "Life",
+      "cost": "Cost",
+      "range": "Range",
+      "melee": "Melee",
+      "ranged": "Ranged"
+    },
+    "pagination": {
+      "pageSize": "Rows per page",
+      "pageStatus": "Page {{page}} / {{total}}",
+      "visibleRange": "Showing {{start}}-{{end}} / {{total}} rows"
+    },
+    "material": {
+      "ready": "Card image wired",
+      "missing-sprite": "Missing card image"
+    },
+    "values": {
+      "configVersion": {
+        "legacy-ts-config-v1": "Legacy code config v1"
+      },
+      "boolean": {
+        "true": "Yes",
+        "false": "No"
+      },
+      "cardType": {
+        "unit": "Unit",
+        "event": "Event",
+        "structure": "Structure"
+      },
+      "unitClass": {
+        "summoner": "Summoner",
+        "champion": "Champion",
+        "common": "Common Unit"
+      },
+      "attackType": {
+        "melee": "Melee",
+        "ranged": "Ranged"
+      },
+      "playPhase": {
+        "factionSelect": "Faction Select Phase",
+        "summon": "Summon Phase",
+        "move": "Move Phase",
+        "build": "Build Phase",
+        "attack": "Attack Phase",
+        "magic": "Magic Phase",
+        "draw": "Draw Phase",
+        "any": "Any Phase"
+      },
+      "eventType": {
+        "legendary": "Legendary Event",
+        "common": "Common Event"
+      },
+      "spriteAtlas": {
+        "hero": "Summoner Atlas",
+        "cards": "Card Atlas",
+        "portal": "Gate Atlas"
+      },
+      "deckSymbols": {
+        "double_axe": "Double Axe",
+        "flame": "Flame",
+        "moon": "Crescent Moon",
+        "eye": "Eye",
+        "wave": "Wave",
+        "shield": "Shield",
+        "diamond": "Diamond",
+        "claw": "Claw",
+        "mask": "Mask",
+        "snowflake": "Snowflake",
+        "droplet": "Droplet",
+        "star": "Star",
+        "rhombus": "Rhombus",
+        "spore": "Spore",
+        "mycelium": "Mycelium",
+        "ember": "Ember",
+        "phoenix": "Phoenix",
+        "tundra": "Tundra",
+        "council": "Council"
+      },
+      "sourceContexts": {
+        "summoner": "Summoner",
+        "startingGate": "Starting Gate",
+        "startingUnit": "Starting Unit",
+        "deck": "Draw Deck",
+        "startingGatePosition": "Starting Gate: row {{row}}, column {{col}}",
+        "startingUnitPosition": "Starting Unit: card {{index}}, row {{row}}, column {{col}}"
+      },
+      "setupPositions": {
+        "summoner": "Summoner: row {{row}}, column {{col}}",
+        "startingGate": "Starting Gate: row {{row}}, column {{col}}",
+        "startingUnit": "Starting Unit: card {{index}}, row {{row}}, column {{col}}"
+      },
+      "referenceFallback": "Unknown object"
+    },
+    "feedback": {
+      "cellEditHint": "Double-click to edit; Enter saves; Esc cancels",
+      "editHint": "Double-click a cell to edit. Changes are staged on this page and submitted together.",
+      "emptyCell": "—",
+      "emptyValue": "empty",
+      "rawValueLabel": "Current value",
+      "pendingCount": "{{count}} staged edit(s)",
+      "invalidCount": "{{count}} invalid edit(s)",
+      "invalidNumber": "Enter a number",
+      "invalidBoolean": "Enter true/false, yes/no, or 1/0",
+      "initialBatchContent": "I suggest reviewing these {{count}} configuration field corrections:"
+    }
   },
   "actions": {
     "closePreview": "Close Preview",
@@ -61,6 +261,7 @@
     "continue": "Continue",
     "finish": "Finish",
     "skip": "Skip",
+    "shadowLightningStepReplace": "Use Swift Step",
     "skipPush": "Skip Push",
     "push": "Push",
     "pull": "Pull",
@@ -429,6 +630,7 @@
     "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
     "infection": "Infection: Select a plague zombie from the discard pile",
     "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
+    "shadowMarlGrimoire": "Marl Grimoire: Select a card from the discard pile",
     "default": "Select a card",
     "empty": "No eligible cards"
   },
@@ -478,7 +680,10 @@
     "insufficientMagic": "Insufficient magic",
     "insufficientCharge": "Requires at least 1 charge",
     "eventTarget": {
-      "message": "Choose an event target"
+      "message": "{{cardName}}: choose a target"
+    },
+    "shadowPulse": {
+      "message": "Shadow Pulse: Select targets ({{count}} selected)"
     },
     "magicEventChoice": {
       "message": "Choose: Play event card or discard for magic"
@@ -526,7 +731,14 @@
       "vanish": "Vanish: Select a 0-cost friendly unit to swap positions",
       "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces",
       "moguTransmission": "Fungal Transmission: Choose charge transfer mode",
-      "moguFanaticalFungus": "Fanatical Fungus: choose no push/pull or a destination"
+      "moguFanaticalFungus": "Fanatical Fungus: choose no push/pull or a destination",
+      "shadowReturnToShadow": "Return to Shadow: Select a friendly unit within 3 spaces",
+      "shadowJudgment": "Judgment: Select a target and the charges to spend",
+      "shadowTearTheVeil": "Tear the Veil: Select a friendly soldier and a gate-adjacent space",
+      "shadowForbiddenKnowledge": "Forbidden Knowledge: Hurt this unit or an adjacent gate",
+      "shadowFeint": "Feint: Select a position to push or pull this unit",
+      "shadowSummon": "Shadow Summon: Select a target and placement space",
+      "shadowSuddenAssault": "Sudden Assault: Select a position to push or pull this unit"
     },
     "beforeAttack": {
       "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",
@@ -669,6 +881,7 @@
       "mindCapture": "Mind Capture: choose control or damage",
       "iceShards": "Ice Shards: resolves automatically at Attack phase start",
       "feedBeast": "Feed Beast: choose a victim or self-destruct",
+      "moguDecayTarget": "Decay: choose an adjacent friendly unit",
       "moguParasite": "Parasite: choose charge spending or damage",
       "huijinCallGuardsTarget": "Call Guards: choose a friendly common unit on the board",
       "huijinCallGuardsPosition": "Call Guards: choose an adjacent space",
@@ -691,7 +904,29 @@
       "yonghengApplicationCard": "Application: choose a hand card to place on the bottom of your deck",
       "yonghengApplicationTarget": "Application: choose an adjacent unit to deal 1 damage",
       "yonghengForcedDiscard": "Eternal Council: choose a hand card to discard",
-      "yonghengContinuance": "Continuance: spend 2 charges to keep this continuous event"
+      "yonghengContinuance": "Continuance: spend 2 charges to keep this continuous event",
+      "shadowLightningStep": "Lightning Step: replace the unit that left play?",
+      "shadowReturnToShadow": "Return to Shadow: Select a friendly unit within 3 spaces",
+      "shadowJudgment": "Judgment: Select a target and the charges to spend",
+      "shadowJudgmentTarget": "Judgment: Select an adjacent target",
+      "shadowJudgmentAmount": "Judgment: Select the charges to spend",
+      "shadowTearTheVeil": "Tear the Veil: Select a friendly soldier and a gate-adjacent space",
+      "shadowTearTheVeilUnit": "Tear the Veil: Select a friendly common soldier",
+      "shadowTearTheVeilGate": "Tear the Veil: Select a damaged enemy gate",
+      "shadowTearTheVeilPosition": "Tear the Veil: Select an empty space adjacent to the gate",
+      "shadowForbiddenKnowledge": "Forbidden Knowledge: Hurt this unit or an adjacent gate",
+      "shadowForbiddenKnowledgeTarget": "Forbidden Knowledge: Select this unit or an adjacent gate",
+      "shadowFeint": "Feint: Select a position to push or pull this unit",
+      "shadowFeintPosition": "Feint: Select this unit's push/pull destination",
+      "shadowSummon": "Shadow Summon: Select a target and placement space",
+      "shadowSummonTarget": "Shadow Summon: Select a friendly unit or building",
+      "shadowSummonPosition": "Shadow Summon: Select an empty space adjacent to the target",
+      "shadowSuddenAssault": "Sudden Assault: Select a position to push or pull this unit",
+      "shadowSuddenAssaultPosition": "Sudden Assault: Select this unit's push/pull destination",
+      "shadowMarlGrimoireCard": "Marl Grimoire: Select a card from the discard pile",
+      "shadowMarlGrimoireDamage": "Marl Grimoire: Select a friendly unit to take 1 damage",
+      "shadowLightningStep": "Lightning Step: replace the unit that left play?",
+      "shadowPulse": "Shadow Pulse: Select targets ({{count}} selected)"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
@@ -1179,6 +1414,58 @@
     "yongheng_application": {
       "name": "Application",
       "description": "After this unit attacks an enemy unit, you may choose a card from your hand and place it on the bottom of your deck to target an adjacent unit. Deal 1 damage to that target."
+    },
+    "shadow_blood_magic": {
+      "name": "Blood Magic",
+      "description": "During your turn, whenever a friendly card within 3 spaces of this unit is dealt 1 or more damage, charge this unit."
+    },
+    "shadow_return_to_shadow": {
+      "name": "Return to Shadow",
+      "description": "During your turn, you may spend 2 charges to target a friendly unit within 3 spaces of this unit. Return the target to its owner's hand."
+    },
+    "shadow_dark_prophecy": {
+      "name": "Dark Prophecy",
+      "description": "Whenever a friendly unit leaves play, charge this unit."
+    },
+    "shadow_judgment": {
+      "name": "Judgment",
+      "description": "After this unit moves, you may spend any number of charges to deal that much damage to an adjacent soldier or champion."
+    },
+    "shadow_tear_the_veil": {
+      "name": "Tear the Veil",
+      "description": "Once per turn, after this unit moves, if it is adjacent to a wounded enemy gate, you may place a friendly soldier adjacent to that gate."
+    },
+    "shadow_inescapable_doom": {
+      "name": "Inescapable Doom",
+      "description": "At the end of your Attack phase, if this unit destroyed an enemy unit this turn, deal 1 damage to the enemy Summoner; otherwise, deal 1 damage to your Summoner."
+    },
+    "shadow_forbidden_knowledge": {
+      "name": "Forbidden Knowledge",
+      "description": "After this unit moves, you may deal 1 damage to this unit or an adjacent gate to draw a card."
+    },
+    "shadow_fierce_assault": {
+      "name": "Fierce Assault",
+      "description": "This unit gains +2 strength during the turn it is summoned."
+    },
+    "shadow_feint": {
+      "name": "Feint",
+      "description": "After this unit attacks, you may push or pull it up to 2 spaces."
+    },
+    "shadow_shadow_summon": {
+      "name": "Shadow Summon",
+      "description": "When summoning this unit, target a friendly card without Shadow Summon. Place this unit adjacent to the target and deal 1 damage to the target."
+    },
+    "shadow_death_pact": {
+      "name": "Death Pact",
+      "description": "After this unit is destroyed, deal 1 damage to your Summoner."
+    },
+    "shadow_piercing_light": {
+      "name": "Piercing Light",
+      "description": "During the turn it is summoned, this unit's attacks may pass through units."
+    },
+    "shadow_sudden_assault": {
+      "name": "Sudden Assault",
+      "description": "After summoning this unit, you may push or pull it 1 space."
     }
   },
   "buffs": {

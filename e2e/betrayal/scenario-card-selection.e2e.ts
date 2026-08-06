@@ -11,12 +11,12 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/scenario-card-selection';
-const CANDIDATES_SCREENSHOT = `${EVIDENCE_DIR}/01-五张剧本卡候选.jpg`;
+const CANDIDATES_SCREENSHOT = `${EVIDENCE_DIR}/01-七张剧本卡候选.jpg`;
 const PENDING_BLOCKED_SCREENSHOT = `${EVIDENCE_DIR}/02-待接入剧本卡不能开始.jpg`;
-const STARTED_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-确认赤红杰克后进入牌桌.jpg`;
+const STARTED_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-确认木乃伊横行后进入牌桌.jpg`;
 
 test.describe('山屋惊魂剧本卡候选选择', () => {
-    test('真实入口必须先从五张剧本卡候选中确认可运行剧本', async ({ page, context }) => {
+    test('真实入口必须先从七张剧本卡候选中确认可运行木乃伊横行', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-scenario-card-selection');
@@ -32,27 +32,31 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
             .getByTestId('betrayal-character-card-jaden-jones')
             .click();
         await page.getByTestId('betrayal-character-confirm').click();
+        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('木乃伊横行');
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/确认此剧本卡/);
         await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 0\/1/);
 
         await page.getByTestId('betrayal-character-scenario-button').click();
         await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeVisible();
-        await expect(page.getByTestId('betrayal-scenario-candidate-count')).toHaveText(/5 张候选/);
+        await expect(page.getByTestId('betrayal-scenario-candidate-count')).toHaveText(/7 张候选/);
         await expect(page.getByTestId('betrayal-scenario-dialog-confirmation-count')).toHaveText(/剧本确认 0\/1/);
-        await expect(page.getByTestId('betrayal-scenario-candidate-list').locator('button')).toHaveCount(5);
+        await expect(page.getByTestId('betrayal-scenario-candidate-list').locator('button')).toHaveCount(7);
+        await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toContainText('木乃伊横行');
+        await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toContainText('当前提议');
+        await expect(page.getByTestId('betrayal-scenario-option-mummy-rampage')).toHaveAttribute('data-scenario-card-status', 'implemented');
         await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('赤红杰克归来');
-        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('当前提议');
-        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toHaveAttribute('data-scenario-card-status', 'implemented');
+        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('待接入');
+        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toHaveAttribute('data-scenario-card-status', 'contract-pending');
         await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('永远的朋友');
         await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('待接入');
         await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toHaveAttribute('data-scenario-card-status', 'contract-pending');
         await saveScreenshot(page, CANDIDATES_SCREENSHOT);
 
-        await page.getByTestId('betrayal-scenario-option-friends-forever').click();
-        await expect(page.getByTestId('betrayal-scenario-option-friends-forever')).toContainText('当前提议');
+        await page.getByTestId('betrayal-scenario-option-crimson-jack-returns').click();
+        await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('当前提议');
         await page.getByTestId('betrayal-scenario-select-current').click();
         await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
-        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('永远的朋友');
+        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('赤红杰克归来');
         await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('已确认');
         await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 1\/1/);
         await expect(page.getByTestId('betrayal-character-confirm')).toBeDisabled();
@@ -60,9 +64,9 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
         await saveScreenshot(page, PENDING_BLOCKED_SCREENSHOT);
 
         await page.getByTestId('betrayal-character-scenario-button').click();
-        await page.getByTestId('betrayal-scenario-option-crimson-jack-returns').click();
+        await page.getByTestId('betrayal-scenario-option-mummy-rampage').click();
         await page.getByTestId('betrayal-scenario-select-current').click();
-        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('赤红杰克归来');
+        await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('木乃伊横行');
         await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 1\/1/);
         await expect(page.getByTestId('betrayal-character-confirm')).toBeEnabled();
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/开始剧本/);

@@ -69,6 +69,29 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     cthulhu_madness_unleashed: { targetType: 'hand' },
     cthulhu_chosen_confirm: { targetType: 'generic' },
     cthulhu_star_spawn: { targetType: 'generic' },
+    munchkin_treasure_crossbow_choose_faction: { targetType: 'button', responseValidationMode: 'live' },
+    munchkin_treasure_dungeon_rulebook_destroy: { targetType: 'ongoing', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_potion_of_halitosis_choose_player: { targetType: 'player', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_potion_of_halitosis_move: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_potion_of_duplication_choose_talent: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_potion_of_straight_line_running_away_choose_treasure: { targetType: 'card', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_magic_missile_destroy: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_treasure_rocket_boots_move: { targetType: 'base', responseValidationMode: 'live' },
+    munchkin_dwarves_anything_for_money_discard: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_dwarves_cash_out_choose_treasures: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_dwarves_gold_digger_choose_treasure: { targetType: 'card', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_dwarves_greed_is_good_choose_treasure: { targetType: 'card', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_dwarves_mine_choose_treasure: { targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
+    munchkin_dwarves_no_my_precious_destroy: { targetType: 'ongoing', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_dwarves_salvage_choose_treasure: { targetType: 'generic', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_thieves_fence_choose_treasures: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_thieves_backstab_choose_treasure: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_thieves_backstab_choose_minion: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_thieves_potion_bandolier_choose_treasure: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_thieves_smuggling_choose_treasures: { targetType: 'hand', autoRefresh: 'hand', responseValidationMode: 'live' },
+    munchkin_thieves_mugging_choose_action: { targetType: 'ongoing', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_thieves_mugging_choose_minion: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
+    munchkin_thieves_strip_bare_choose_treasure: { targetType: 'board', autoRefresh: 'field', responseValidationMode: 'live' },
     cthulhu_servitor: { targetType: 'generic' },
     special_madness: { targetType: 'button' },
     elder_thing_begin_the_summoning: { targetType: 'generic' },
@@ -192,6 +215,8 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     mega_troopers_plan_for_more_order: '揭示牌库顶后的剩余牌排序交互，候选来源是 deck reveal 快照，不是当前手牌或棋盘实体。',
     miskatonic_book_of_iter_the_unseen: '候选项来自特殊卡牌池/效果分支，不是棋盘实体直选。',
     miskatonic_jinkies_pod: 'POD 版同样从手牌/弃牌堆疯狂卡池中做效果分支选择，不是棋盘实体直选。',
+    munchkin_dwarves_mine_choose_treasure: '我的！从公共宝藏牌库检索可附着宝藏并同时绑定己方宿主，候选来自 deck 卡面且不是手牌/棋盘单实体直点。',
+    munchkin_dwarves_salvage_choose_treasure: '打捞从公共宝藏弃牌堆选择可附着宝藏并同时绑定当前计分基地上的己方宿主，选项复合 discard 卡面与棋盘宿主上下文。',
     mounties_northern_mover_mode: '北方搬运者先在移动与加力量间选模式，分支依赖已选随从上下文而非直点实体。',
     pirate_sea_dogs_choose_faction: '选择的是派系标识，而不是棋盘或手牌实体。',
     princesses_direct_to_dvd_sequel: '从弃牌堆静态卡面中选择随从洗回牌库并抽牌，来源为 discard 卡面。',
@@ -948,6 +973,34 @@ describe('SmashUp Interaction targetType 审计', () => {
             targetType: 'hand',
         })).toBe('direct');
 
+        expect(resolveSmashUpHandPromptUiMode({
+            currentPrompt: {
+                playerId: '0',
+                multi: undefined,
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'mind-bananas-hand' }],
+        })).toBe('direct');
+
+        expect(resolveSmashUpHandPromptUiMode({
+            currentPrompt: {
+                playerId: '0',
+                multi: undefined,
+                sourceId: 'all_stars_prepare_for_battle',
+                options: [
+                    { id: 'deck-top-1', label: '狄俄尼索斯的青睐', value: { cardUid: 'deck-top-1', defId: 'all_stars_favor_of_dionysus' }, displayMode: 'card' },
+                    { id: 'deck-top-2', label: '霸王龙国王', value: { cardUid: 'deck-top-2', defId: 'all_stars_king_rex' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'actual-hand-card' }],
+        })).toBe('overlay');
+
         expect(isSmashUpPromptOwnedByPlayer({
             currentPrompt: { playerId: 0, multi: undefined } as any,
             playerID: '0',
@@ -992,7 +1045,22 @@ describe('SmashUp Interaction targetType 审计', () => {
             },
             playerID: '0',
             targetType: 'hand',
+            hand: [{ uid: 'mind-bananas-hand' }],
         })).toBe(true);
+
+        expect(hasSmashUpDirectHandPromptPlayableOptions({
+            currentPrompt: {
+                playerId: '0',
+                sourceId: 'all_stars_prepare_for_battle',
+                options: [
+                    { id: 'deck-top-1', label: '狄俄尼索斯的青睐', value: { cardUid: 'deck-top-1', defId: 'all_stars_favor_of_dionysus' }, displayMode: 'card' },
+                    { id: 'deck-top-2', label: '霸王龙国王', value: { cardUid: 'deck-top-2', defId: 'all_stars_king_rex' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'actual-hand-card' }],
+        })).toBe(false);
 
         expect(shouldRenderSmashUpHandArea({
             currentPrompt: {

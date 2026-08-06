@@ -12,6 +12,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
@@ -1096,11 +1097,12 @@ export function getOngoingPowerModifierDetails(
         );
         const value = entry.modifier(ctx);
         if (value !== 0) {
-            // 通过 getCardDef 获取 i18n 名称，fallback 到 defId
+            // 修正来源可能是卡牌或基地；tooltip 里不要暴露内部 defId。
             const cardDef = getCardDef(entry.sourceDefId);
+            const baseDef = getBaseDef(entry.sourceDefId);
             details.push({
                 sourceDefId: entry.sourceDefId,
-                sourceName: cardDef?.name ?? entry.sourceDefId,
+                sourceName: cardDef?.name ?? baseDef?.name ?? entry.sourceDefId,
                 value,
             });
         }
@@ -1194,7 +1196,8 @@ export function getEffectivePower(
 
 function isMinionPowerContributionCancelled(state: SmashUpCore, minion: MinionOnBase): boolean {
     return minion.attachedActions.some(action => (
-        normalizeDefId(action.defId) === 'luchadors_pin'
+        (normalizeDefId(action.defId) === 'luchadors_pin'
+            || normalizeDefId(action.defId) === 'munchkin_clerics_curse_of_uselessness')
         && !isCardSuppressed(state, action.uid)
     ));
 }
@@ -1274,17 +1277,34 @@ export function getPlayerEffectivePowerOnBase(
             && !isCardSuppressed(state, action.uid),
     );
     const personalPenalty = opposingSirens + reefPenaltyPerMinion;
+    const wereUpYoureDown = base.metadata?.halfTheBattleWereUpYoureDown as {
+        sourcePlayerId?: PlayerId;
+        expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
+    } | undefined;
+    const wereUpYoureDownActive = Boolean(
+        wereUpYoureDown?.sourcePlayerId
+        && wereUpYoureDown.sourcePlayerId !== playerId
+        && (
+            typeof wereUpYoureDown.expiresOnTurnNumber !== 'number'
+            || state.turnNumber < wereUpYoureDown.expiresOnTurnNumber
+            || (
+                wereUpYoureDown.expiresOnPlayerId !== undefined
+                && currentPlayerId !== wereUpYoureDown.expiresOnPlayerId
+            )
+        ),
+    );
     const minionPower = base.minions
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => {
-            const effectivePower = getEffectivePower(state, m, baseIndex);
+            const effectivePower = wereUpYoureDownActive ? m.basePower : getEffectivePower(state, m, baseIndex);
             let contribution = isMinionPowerContributionCancelled(state, m) ? 0 : effectivePower;
 
             const charmedTurn = Number(m.metadata?.mermaidsCharmedSuppressedTurn ?? -1);
             const charmedActive = charmedTurn === state.turnNumber;
             if (charmedActive || desertIslandActive) {
                 contribution = 0;
-            } else if (personalPenalty > 0) {
+            } else if (!wereUpYoureDownActive && personalPenalty > 0) {
                 contribution = Math.max(0, contribution - personalPenalty);
             }
 
@@ -1292,9 +1312,10 @@ export function getPlayerEffectivePowerOnBase(
         }, 0);
     const ongoingCardPower = getOngoingCardPowerContribution(base, playerId);
     const titanPower = getTitanPowerContribution(state, baseIndex, playerId);
+    const controlledMonsterPower = getControlledMonsterPowerOnBase(state, baseIndex, playerId);
     const basePowerBonus = getBasePowerModifiers(state, baseIndex, playerId);
     const tempBasePower = getTempBasePowerModifier(state, baseIndex, playerId);
-    return minionPower + ongoingCardPower + titanPower + basePowerBonus + tempBasePower;
+    return minionPower + controlledMonsterPower + ongoingCardPower + titanPower + basePowerBonus + tempBasePower;
 }
 
 /**
@@ -1311,6 +1332,9 @@ export function getTotalEffectivePowerOnBase(
                 ? sum
                 : sum + getEffectivePower(state, m, baseIndex)
         ), 0);
+    const controlledMonsterPower = (base.monsters ?? []).reduce((sum, monster) => (
+        monster.controllerId ? sum + getMunchkinMonsterPrintedPower(monster.defId) : sum
+    ), 0);
     // 累加所有玩家的 ongoing 卡力量贡献（不限于有随从的玩家）
     // 修复 Bug：只有 ongoing 卡但没有随从的玩家，其力量贡献也应该计入总力量
     let ongoingBonus = 0;
@@ -1322,7 +1346,7 @@ export function getTotalEffectivePowerOnBase(
         basePowerBonus += getBasePowerModifiers(state, baseIndex, pid);
         basePowerBonus += getTempBasePowerModifier(state, baseIndex, pid);
     }
-    return minionPower + ongoingBonus + titanBonus + basePowerBonus;
+    return minionPower + controlledMonsterPower + ongoingBonus + titanBonus + basePowerBonus;
 }
 
 /**
@@ -1357,23 +1381,39 @@ export function getEffectiveBreakpoint(
     const tempDelta = (baseInstanceId ? state.tempBreakpointModifiersByBaseId?.[baseInstanceId] : undefined)
         ?? state.tempBreakpointModifiers?.[baseIndex]
         ?? 0;
-    return Math.max(0, baseDef.breakpoint + total + tempDelta);
+    return Math.max(0, baseDef.breakpoint + getMonsterPowerOnBase(state, baseIndex) + total + tempDelta);
 }
 
-/**
- * 获取当前计分阶段中 eligible 的基地索引列表（单一查询入口）。
- *
- * 规则（Wiki Phase 3 Step 4）：一旦基地在进入 scoreBases 阶段时达到 breakpoint，
- * 即使 Me First! 响应窗口中力量被降低到 breakpoint 以下，该基地仍然必定计分。
- *
- * - 如果 `core.scoringEligibleBaseIndices` 存在（进入阶段时锁定），直接返回。
- * - 否则实时计算（正常流程不应走到这里，仅作为安全回退）。
- */
-export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
-    if (Array.isArray(state.scoringEligibleBaseIndices)) {
-        return normalizeScoringEligibleBaseIndices(state.scoringEligibleBaseIndices);
-    }
-    // 回退：实时计算
+export function getMonsterPowerOnBase(state: SmashUpCore, baseIndex: number): number {
+    const base = state.bases[baseIndex];
+    if (!base?.monsters?.length) return 0;
+    return base.monsters.reduce((sum, monster) => {
+        if (monster.controllerId) return sum;
+        return sum + getMunchkinMonsterPrintedPower(monster.defId);
+    }, 0);
+}
+
+export function getControlledMonsterPowerOnBase(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): number {
+    const base = state.bases[baseIndex];
+    if (!base?.monsters?.length) return 0;
+    return base.monsters.reduce((sum, monster) => (
+        monster.controllerId === playerId
+            ? sum + getMunchkinMonsterPrintedPower(monster.defId)
+            : sum
+    ), 0);
+}
+
+function getMunchkinMonsterPrintedPower(defId: string): number {
+    const descriptor = getMunchkinSpecialCardDescriptor(defId);
+    if (descriptor?.kind !== 'monster') return 0;
+    return descriptor.power ?? 0;
+}
+
+export function getRealtimeScoringEligibleBaseIndices(state: SmashUpCore): number[] {
     const indices: number[] = [];
     for (let i = 0; i < state.bases.length; i++) {
         const base = state.bases[i];
@@ -1386,6 +1426,19 @@ export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
         }
     }
     return normalizeScoringEligibleBaseIndices(indices);
+}
+
+/**
+ * 获取当前可计分基地索引。
+ *
+ * `scoringEligibleBaseIndices` 只用于当前已选择基地/旧快照兼容；正常计分链应使用
+ * getRealtimeScoringEligibleBaseIndices 重新检查桌面，而不是锁定阶段开始时的全部基地。
+ */
+export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
+    if (Array.isArray(state.scoringEligibleBaseIndices)) {
+        return normalizeScoringEligibleBaseIndices(state.scoringEligibleBaseIndices);
+    }
+    return getRealtimeScoringEligibleBaseIndices(state);
 }
 
 export function normalizeScoringEligibleBaseIndices(indices: readonly number[]): number[] {

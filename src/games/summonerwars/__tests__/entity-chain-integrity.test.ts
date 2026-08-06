@@ -12,6 +12,10 @@
  */
 
 import { abilityRegistry } from '../domain/abilities';
+import { MOGU_ABILITIES } from '../domain/abilities-mogu';
+import { HUIJIN_ABILITIES } from '../domain/abilities-huijin';
+import { YONGHENG_ABILITIES } from '../domain/abilities-yongheng';
+import { SHADOW_ABILITIES } from '../domain/abilities-shadow';
 import { swCustomActionRegistry } from '../domain/customActionHandlers';
 import { abilityExecutorRegistry } from '../domain/executors';
 import type { AbilityDef, AbilityEffect } from '../domain/abilities';
@@ -74,6 +78,13 @@ const HANDLED_BY_INTERACTION_SYSTEM = new Set([
     'yongheng_warning_move_summoner',  // InteractionSystem → 弃牌并移动召唤师
     'yongheng_application_discard_damage', // InteractionSystem → 弃牌并选择相邻单位造成伤害
     'yongheng_arouse_fear_discard',    // InteractionSystem → 对方弃牌
+    // 暗影精灵：ABILITY_TRIGGERED → InteractionSystem 创建具体选择交互
+    'shadow_judgment_request',          // 审判：选择相邻目标与伤害充能
+    'shadow_tear_the_veil_request',     // 撕裂帷幕：选择友方单位与传送位置
+    'shadow_forbidden_knowledge_request', // 禁忌学识：选择传送门并执行自伤/抓牌
+    'shadow_feint_request',             // 佯攻：选择撤退位置
+    'shadow_shadow_summon_request',     // 暗影召唤：选择友方单位/建筑与替换位置
+    'shadow_sudden_assault_request',    // 急袭：选择相邻友方单位的突袭位置
 ]);
 
 /**
@@ -102,6 +113,8 @@ const HANDLED_BY_EXECUTORS = new Set([
     'ancestral_bond_transfer',  // → executors/barbaric 'ancestral_bond'
     'withdraw_push_pull',       // → executors/barbaric 'withdraw'
     'spirit_bond_action',       // → executors/barbaric 'spirit_bond'
+    // 暗影精灵
+    'shadow_return_to_shadow',   // → executors/shadow：选择友方单位后回手并返还行动点
 ]);
 
 /**
@@ -117,7 +130,6 @@ const HANDLED_BY_COMMAND_FLOW = new Set([
     'speed_up_extra_move',    // → execute/helpers 移动增强
     'mogu_blood_bloom_charge', // → execute postProcessDeathChecks 后处理友方单位死亡
     'mogu_final_form_replace', // → execute SUMMON_UNIT 替换高充能菌化野兽
-    'mogu_decay',             // → execute END_PHASE 移动阶段结束处理
     'mogu_parasite',          // → execute END_PHASE 攻击阶段结束处理
     'shouren_blood_bond',     // → execute DECLARE_ATTACK afterAttack 按 special 数给召唤师充能
 ]);
@@ -147,6 +159,122 @@ const PASSIVE_EVIDENCE = new Map<string, { abilityId: string; consumedBy: string
 ]);
 
 const HANDLED_BY_PASSIVE = new Set(PASSIVE_EVIDENCE.keys());
+
+type EmptyEffectStatus = 'implemented-passthrough' | 'intentional-placeholder' | 'passive-static';
+
+interface EmptyEffectEvidence {
+    faction: '莫古' | '灰烬' | '永恒议会' | '暗影精灵';
+    status: EmptyEffectStatus;
+    consumedBy: string;
+    evidence: string;
+}
+
+const SHADOW_IMPLEMENTED_EMPTY_EFFECT_IDS = new Set([
+    'shadow_blood_magic',
+    'shadow_fierce_assault',
+    'shadow_piercing_light',
+]);
+
+const UNDER_CONSTRUCTION_ABILITY_GROUPS = [
+    { faction: '莫古' as const, abilities: MOGU_ABILITIES },
+    { faction: '灰烬' as const, abilities: HUIJIN_ABILITIES },
+    { faction: '永恒议会' as const, abilities: YONGHENG_ABILITIES },
+    { faction: '暗影精灵' as const, abilities: SHADOW_ABILITIES },
+];
+
+/**
+ * 实施中派系 effects: [] 能力的审计证据分类。
+ *
+ * D3/D33 规则：空 effects 只能说明 AbilityDef 声明层没有内联效果，
+ * 不能自动判定为未实现，也不能自动判定为完整闭环。
+ * 每个空 effects 能力必须显式登记运行时消费者或占位原因。
+ */
+const EMPTY_EFFECT_EVIDENCE = new Map<string, EmptyEffectEvidence>([
+    ['shadow_blood_magic', {
+        faction: '暗影精灵',
+        status: 'implemented-passthrough',
+        consumedBy: 'execute/helpers.getShadowBloodMagicChargeEvents',
+        evidence: 'evidence/summonerwars/shadow-faction-intake.md',
+    }],
+    ['shadow_fierce_assault', {
+        faction: '暗影精灵',
+        status: 'implemented-passthrough',
+        consumedBy: 'abilityResolver.calculateEffectiveStrength',
+        evidence: 'evidence/summonerwars/shadow-faction-intake.md',
+    }],
+    ['shadow_piercing_light', {
+        faction: '暗影精灵',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.canAttack + helpers.canAttackEnhanced',
+        evidence: 'evidence/summonerwars/shadow-faction-intake.md',
+    }],
+    ['huijin_ember_summon', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_ignite', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'abilityResolver.calculateEffectiveStrength',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_guard_master', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_flame_breath', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.canAttackEnhanced + execute DECLARE_ATTACK',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_counterattack', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'execute DECLARE_ATTACK after-attack damage handling',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_shelter', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'execute DECLARE_ATTACK first-attack damage cap',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_born_of_flame', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['yongheng_continuance', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'yonghengMechanics.interceptYonghengContinuanceEvent + systems interaction resolution',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+    ['yongheng_punish', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'yonghengMechanics.getYonghengPostProcessEvents + systems discard interaction',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+    ['yongheng_scheme', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'abilityResolver.calculateEffectiveStrength',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+    ...SHADOW_ABILITIES.filter((ability) => ability.effects.length === 0 && !SHADOW_IMPLEMENTED_EMPTY_EFFECT_IDS.has(ability.id)).map((ability) => [ability.id, {
+        faction: '暗影精灵' as const,
+        status: 'intentional-placeholder' as const,
+        consumedBy: 'shadow-faction-intake：规则已录入，运行时能力链尚未闭合',
+        evidence: 'evidence/summonerwars/shadow-faction-intake.md',
+    }] as const),
+]);
 
 // ============================================================================
 // 辅助：从 AbilityDef 提取 custom actionId 引用
@@ -233,14 +361,14 @@ const ACTIVATED_UI_CONFIRMED = new Map<string, string>([
     ['telekinesis_instead', 'button:attack — 攻击阶段按钮代替攻击推拉 + cell interaction 选目标 + telekinesis 方向选择'],
     ['mogu_blood_infusion', 'button:move — 移动阶段主动技能按钮 + system interaction 选择 2 格内友方单位'],
     ['mogu_fanatical_fungus', 'eventCard:afterMove — 持续事件在单位移动后创建 system interaction + StatusBanners 推拉选择'],
+    ['shadow_return_to_shadow', 'button:move — 回归暗影按钮 + system interaction 选择 3 格内友方单位回手'],
 ]);
 
 /**
  * 已知 UI 缺失的 activated 技能（TODO 待实装）
  * 此集合中的技能不会导致测试失败，但会在测试输出中打印警告
  */
-const ACTIVATED_UI_TODO = new Map<string, string>([
-]);
+const ACTIVATED_UI_TODO = new Map<string, string>([]);
 
 /**
  * CONFIRMED 技能中已知未完成的分支（粒度更细的缺口追踪）
@@ -443,6 +571,70 @@ createEffectContractSuite<AbilityDef, AbilityEffect>({
             describeViolation: (e) => `reduceDamage value 不合法: ${JSON.stringify(e)}`,
         },
     ],
+});
+
+describe('实施中派系空 effects 能力证据分类', () => {
+    it('实施中派系 effects 为空的能力必须显式分类', () => {
+        const missing: string[] = [];
+        for (const group of UNDER_CONSTRUCTION_ABILITY_GROUPS) {
+            for (const def of group.abilities) {
+                if (def.effects.length > 0) continue;
+                if (!EMPTY_EFFECT_EVIDENCE.has(def.id)) {
+                    missing.push(`${group.faction}:${def.id}`);
+                }
+            }
+        }
+        expect(missing).toEqual([]);
+    });
+
+    it('空 effects 分类映射不能指向不存在或非空 effects 的能力', () => {
+        const defs = new Map<string, AbilityDef>();
+        for (const group of UNDER_CONSTRUCTION_ABILITY_GROUPS) {
+            for (const def of group.abilities) defs.set(def.id, def);
+        }
+
+        const violations: string[] = [];
+        for (const [abilityId, evidence] of EMPTY_EFFECT_EVIDENCE) {
+            const def = defs.get(abilityId);
+            if (!def) {
+                violations.push(`[${abilityId}] ${evidence.faction} 分类映射没有对应实施中能力定义`);
+                continue;
+            }
+            if (def.effects.length !== 0) {
+                violations.push(`[${abilityId}] ${evidence.faction} 已不是空 effects，应改走普通 effects/custom action 链审计`);
+            }
+            if (!evidence.consumedBy.trim()) {
+                violations.push(`[${abilityId}] 缺少运行时消费者说明`);
+            }
+            if (!evidence.evidence.trim()) {
+                violations.push(`[${abilityId}] 缺少 evidence 入口`);
+            }
+        }
+        expect(violations).toEqual([]);
+    });
+
+    it('已实现旁路消费能力不得被误分类为未实现占位', () => {
+        const implemented = [...EMPTY_EFFECT_EVIDENCE]
+            .filter(([, evidence]) => evidence.status === 'implemented-passthrough')
+            .map(([abilityId]) => abilityId)
+            .sort();
+
+        expect(implemented).toEqual([
+            'huijin_born_of_flame',
+            'huijin_counterattack',
+            'huijin_ember_summon',
+            'huijin_flame_breath',
+            'huijin_guard_master',
+            'huijin_ignite',
+            'huijin_shelter',
+            'shadow_blood_magic',
+            'shadow_fierce_assault',
+            'shadow_piercing_light',
+            'yongheng_continuance',
+            'yongheng_punish',
+            'yongheng_scheme',
+        ].sort());
+    });
 });
 
 

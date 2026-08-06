@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility } from '../../domain/baseAbilities';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     applyEvents,
     expectRegisteredAbilityContract,
+    getPromptOptions,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
+    getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
@@ -13,8 +17,11 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
+    respondToPromptOption,
     triggerBaseAbilityWithMS,
 } from '../helpers';
+import { runCommand } from '../testRunner';
 
 const FIXED_RANDOM = {
     random: () => 0,
@@ -120,6 +127,60 @@ describe('迪士尼四派系代表性玩法行为', () => {
         });
         const afterAllowed = applyEvents(core, allowed.events);
         expect(afterAllowed.players['0'].hand.map(card => card.uid)).toEqual(['draw-card']);
+    });
+
+    it('贝儿：天赋让玩家选择摸 1 张牌或弃 1 张手牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('discard-a', 'aladdin_wish', 'action', '0'),
+                        makeCard('discard-b', 'beauty_and_the_beast_discover_the_library', 'action', '0'),
+                    ],
+                    deck: [makeCard('draw-card', 'beauty_and_the_beast_beast', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('belle', 'beauty_and_the_beast_belle', '0', 4),
+            ])],
+        });
+
+        const drawPromptResult = invokeRegisteredAbilityContract('beauty_and_the_beast_belle', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'belle',
+            defId: 'beauty_and_the_beast_belle',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 22,
+        });
+        const drawPrompt = getSimpleChoicePrompt(drawPromptResult.matchState!, 'beauty_and_the_beast_belle_talent');
+        expect(getPromptOptions(drawPrompt).map(option => option.id)).toEqual(['draw', 'discard:discard-a', 'discard:discard-b']);
+        const drawn = respondToPrompt(drawPromptResult.matchState!, 'draw', '0', FIXED_RANDOM);
+        expect(drawn.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['discard-a', 'discard-b', 'draw-card']);
+
+        const discardPromptResult = invokeRegisteredAbilityContract('beauty_and_the_beast_belle', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'belle',
+            defId: 'beauty_and_the_beast_belle',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 23,
+        });
+        const discarded = respondToPromptOption(
+            discardPromptResult.matchState!,
+            option => option.value?.cardUid === 'discard-a',
+            '贝儿弃掉指定手牌',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(discarded.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['discard-b']);
+        expect(discarded.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['discard-a']);
+        expect(discarded.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
     });
 
     it('加斯顿提升基地爆破点，并可弃两张牌后离场', () => {
@@ -258,6 +319,40 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(afterSpiral.players['0'].discard).toEqual([]);
     });
 
+    it('“冬季惊喜”从弃牌堆取回角色修正牌后给出额外行动并回牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('winter-surprise', 'nightmare_before_christmas_winter_surprise', 'action', '0')],
+                    deck: [makeCard('deck-a', 'aladdin_wish', 'action', '0')],
+                    discard: [makeCard('discard-mod', 'nightmare_before_christmas_monster_garland', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('nightmare_before_christmas_winter_surprise', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'winter-surprise',
+            defId: 'nightmare_before_christmas_winter_surprise',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 45,
+        });
+
+        expect(result.events.map(event => event.type)).toEqual([
+            SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            SU_EVENTS.LIMIT_MODIFIED,
+            SU_EVENTS.CARD_TO_DECK_BOTTOM,
+        ]);
+        const after = applyEvents(core, result.events);
+        expect(after.players['0'].hand.map(card => card.uid).sort()).toEqual(['discard-mod']);
+        expect(after.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'winter-surprise']);
+        expect(after.players['0'].discard).toEqual([]);
+    });
+
     it('“不断的惊喜”把最多两张角色牌从弃牌堆洗入牌库', () => {
         const core = makeState({
             players: {
@@ -286,6 +381,60 @@ describe('迪士尼四派系代表性玩法行为', () => {
         const after = applyEvents(core, result.events);
         expect(after.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'minion-a', 'minion-b']);
         expect(after.players['0'].discard.map(card => card.uid)).toEqual(['left']);
+    });
+
+    it('玫瑰花瓣：从手牌弃掉后查看牌库顶并可交换前两张顺序', () => {
+        const fillerHand = Array.from({ length: 10 }, (_, index) =>
+            makeCard(`filler-${index}`, 'aladdin_wish', 'action', '0'));
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('petals', 'beauty_and_the_beast_petals_of_the_rose', 'action', '0'),
+                        ...fillerHand,
+                    ],
+                    deck: [
+                        makeCard('top-a', 'beauty_and_the_beast_belle', 'minion', '0'),
+                        makeCard('top-b', 'beauty_and_the_beast_beast', 'minion', '0'),
+                        makeCard('tail', 'aladdin_abu', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'draw';
+
+        const discarded = runCommand(matchState, {
+            type: SU_COMMANDS.DISCARD_TO_LIMIT,
+            playerId: '0',
+            payload: { cardUids: ['petals'] },
+        }, FIXED_RANDOM);
+        expect(discarded.success).toBe(true);
+        expect(discarded.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['petals']);
+
+        const reactionPrompt = getReactionPrompt(discarded.finalState);
+        const petalsOption = getReactionPromptOptionBySourceDefId(discarded.finalState, reactionPrompt, 'beauty_and_the_beast_petals_of_the_rose');
+        const openedPetalsPrompt = respondToPrompt(discarded.finalState, petalsOption.id, '0', FIXED_RANDOM);
+        const petalsPrompt = getSimpleChoicePrompt(openedPetalsPrompt.finalState, 'beauty_and_the_beast_petals_of_the_rose');
+        const swapped = respondToPromptOption(
+            openedPetalsPrompt.finalState,
+            option => option.value?.mode === 'swap',
+            '玫瑰花瓣交换前两张',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(swapped.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-b', 'top-a', 'tail']);
+        expect(swapped.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_INSPECTED,
+            payload: expect.objectContaining({ targetPlayerId: '0', inspectorPlayerId: '0', count: 2 }),
+        }));
+        expect(swapped.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({ playerId: '0', deckUids: ['top-b', 'top-a', 'tail'] }),
+        }));
+        expect(petalsPrompt).toBeTruthy();
     });
 
     it('阿格拉巴集市弃行动并给己方角色两个 +1 指示物，苏丹皇宫只在首个角色入场时抽牌', () => {

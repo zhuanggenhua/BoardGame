@@ -6,6 +6,8 @@ export interface FrameSequenceDefinition {
     loop?: boolean;
     holdLastFrame?: boolean;
     reducedMotionBehavior?: FrameSequenceReducedMotionBehavior;
+    /** 资源已经随当前应用发布时，跳过远端资源域名解析，直接走本地 /assets。 */
+    assetSource?: 'default' | 'local';
 }
 
 export const createNumberedFramePaths = (
@@ -24,4 +26,5 @@ export const createFrameSequence = (
     loop: options?.loop,
     holdLastFrame: options?.holdLastFrame,
     reducedMotionBehavior: options?.reducedMotionBehavior,
+    assetSource: options?.assetSource,
 });

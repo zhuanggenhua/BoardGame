@@ -106,6 +106,8 @@ interface BoardGridProps {
   moguSymbioticSelfHealingSelectedTargets: CellCoord[];
   moguReleaseSporesHighlights: CellCoord[];
   moguReleaseSporesSelectedTargets: CellCoord[];
+  shadowPulseHighlights: CellCoord[];
+  shadowPulseSelectedTargets: CellCoord[];
   // 潜行高亮
   sneakHighlights: CellCoord[];
   // 冰川位移高亮
@@ -240,6 +242,11 @@ function getCardTargetHighlight(row: number, col: number, props: BoardGridProps)
   if (isMoguReleaseSporesSelected) return 'ring-2 ring-lime-300 shadow-[0_0_12px_rgba(190,242,100,0.75)]';
   if (isMoguReleaseSporesTarget) return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.65)] animate-pulse';
 
+  const isShadowPulseSelected = props.shadowPulseSelectedTargets.some(p => p.row === row && p.col === col);
+  const isShadowPulseTarget = props.shadowPulseHighlights.some(p => p.row === row && p.col === col);
+  if (isShadowPulseSelected) return 'ring-2 ring-violet-300 shadow-[0_0_12px_rgba(196,181,253,0.75)]';
+  if (isShadowPulseTarget) return 'ring-2 ring-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.65)] animate-pulse';
+
   if (props.sneakHighlights.some(p => p.row === row && p.col === col))
     return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.6)] animate-pulse';
   if (props.glacialShiftHighlights.some(p => p.row === row && p.col === col))
@@ -308,6 +315,8 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   const isMoguSelfHealingTarget = props.moguSymbioticSelfHealingHighlights.some(p => p.row === row && p.col === col);
   const isMoguReleaseSporesSelected = props.moguReleaseSporesSelectedTargets.some(p => p.row === row && p.col === col);
   const isMoguReleaseSporesTarget = props.moguReleaseSporesHighlights.some(p => p.row === row && p.col === col);
+  const isShadowPulseSelected = props.shadowPulseSelectedTargets.some(p => p.row === row && p.col === col);
+  const isShadowPulseTarget = props.shadowPulseHighlights.some(p => p.row === row && p.col === col);
   const isSneakTarget = props.sneakHighlights.some(p => p.row === row && p.col === col);
   const isGlacialShiftTarget = props.glacialShiftHighlights.some(p => p.row === row && p.col === col);
   const isWithdrawTarget = props.withdrawHighlights.some(p => p.row === row && p.col === col);
@@ -326,6 +335,8 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isMoguSelfHealingTarget) return baseCellVisualStyle('rgba(232,121,249,1)', 'rgba(232,121,249,0.3)', 'animate-pulse');
   if (isMoguReleaseSporesSelected) return baseCellVisualStyle('rgba(190,242,100,1)', 'rgba(190,242,100,0.5)', 'ring-2 ring-lime-200');
   if (isMoguReleaseSporesTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
+  if (isShadowPulseSelected) return baseCellVisualStyle('rgba(196,181,253,1)', 'rgba(196,181,253,0.5)', 'ring-2 ring-violet-200');
+  if (isShadowPulseTarget) return baseCellVisualStyle('rgba(167,139,250,1)', 'rgba(167,139,250,0.3)', 'animate-pulse');
   if (isSneakTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
   if (isGlacialShiftTarget) return baseCellVisualStyle('rgba(56,189,248,1)', 'rgba(56,189,248,0.3)', 'animate-pulse');
   if (isWithdrawTarget) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.3)', 'animate-pulse');

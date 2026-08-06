@@ -132,13 +132,20 @@ export const gameLogger = {
   /**
    * 命令执行失败
    */
-  commandFailed(matchId: string, command: string, playerId: string, error: Error) {
+  commandFailed(
+    matchId: string,
+    command: string,
+    playerId: string,
+    error: Error,
+    context?: Record<string, unknown>,
+  ) {
     logger.error('command_failed', {
       matchId,
       command,
       playerId,
       error: error.message,
       stack: error.stack,
+      ...context,
     });
   },
 

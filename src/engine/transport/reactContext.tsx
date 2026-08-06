@@ -5,7 +5,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { MatchState } from '../types';
-import type { MatchPlayerInfo, GameBoardProps } from './protocol';
+import type { MatchPlayerInfo, GameBoardProps, MatchUiEvent } from './protocol';
 import type { AiSeatController } from '../ai/types';
 
 export interface GameClientContextValue {
@@ -25,6 +25,10 @@ export interface GameClientContextValue {
     isMultiplayer: boolean;
     /** 重置游戏（本地模式用） */
     reset?: () => void;
+    /** 发送临时 UI 事件；仅在线模式实际转发 */
+    sendUiEvent?: (type: string, payload: unknown) => void;
+    /** 订阅同局其它客户端发来的临时 UI 事件 */
+    subscribeUiEvent?: (listener: (event: MatchUiEvent) => void) => () => void;
 }
 
 export const GameClientContext = createContext<GameClientContextValue | null>(null);
@@ -51,6 +55,8 @@ export function useGameClient<
         isConnected: boolean;
         isMultiplayer: boolean;
         reset?: () => void;
+        sendUiEvent?: (type: string, payload: unknown) => void;
+        subscribeUiEvent?: (listener: (event: MatchUiEvent) => void) => () => void;
     };
 }
 
@@ -92,7 +98,18 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
 
     if (!ctx || !ctx.state) return null;
 
-    const { state, dispatch, playerId, matchPlayers, seatControllers, isConnected, isMultiplayer, reset } = ctx;
+    const {
+        state,
+        dispatch,
+        playerId,
+        matchPlayers,
+        seatControllers,
+        isConnected,
+        isMultiplayer,
+        reset,
+        sendUiEvent,
+        subscribeUiEvent,
+    } = ctx;
 
     return {
         G: state as MatchState<TCore>,
@@ -103,5 +120,7 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
         isConnected,
         isMultiplayer,
         reset,
+        sendUiEvent,
+        subscribeUiEvent,
     };
 }

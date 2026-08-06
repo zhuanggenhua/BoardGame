@@ -12,6 +12,7 @@ import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST } from '../../games/manifest.generated';
 import { buildFeedbackClientContext } from '../../lib/feedback/clientFeedbackContext';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
+import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
 const FEEDBACK_MODAL_DEBUG = true;
@@ -52,11 +53,17 @@ interface FeedbackRuntimeContext {
 
 interface FeedbackModalProps {
     onClose: () => void;
+    onSubmitted?: () => void;
     /** 游戏内操作日志（纯文本，由 GameHUD 传入） */
     actionLogText?: string;
     /** 完整游戏状态 JSON（用于精确复现问题） */
     stateSnapshot?: string;
     runtimeContext?: FeedbackRuntimeContext;
+    /** 配置审查表字段级修正提案；reason 使用用户填写的反馈正文 */
+    configProposal?: FeedbackConfigProposalDraft;
+    /** 配置审查表字段级修正提案批量提交；reason 使用用户填写的反馈正文 */
+    configProposals?: FeedbackConfigProposalDraft[];
+    initialContent?: string;
 }
 
 const FeedbackType = {
@@ -110,6 +117,44 @@ const isFeedbackSeverity = (value: unknown): value is FeedbackSeverity => (
     || value === FeedbackSeverity.HIGH
     || value === FeedbackSeverity.CRITICAL
 );
+
+const formatConfigProposalValue = (value: unknown): string => {
+    if (value === undefined || value === null) return '—';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value);
+        } catch {
+            return String(value);
+        }
+    }
+    return String(value);
+};
+
+const getConfigProposalObjectLabel = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.objectDisplayName || proposal.objectId
+);
+
+const getConfigProposalFieldLabel = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.fieldDisplayName || proposal.fieldPath
+);
+
+const getConfigProposalCurrentDisplayValue = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.currentDisplayValue ?? formatConfigProposalValue(proposal.currentValue)
+);
+
+const getConfigProposalUpdatedDisplayValue = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.updatedDisplayValue ?? formatConfigProposalValue(proposal.suggestedValue)
+);
+
+const hashConfigProposalDraftKey = (value: string): string => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(index);
+        hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+};
 
 const buildFeedbackDraftStorageKey = (params: {
     gameId?: string;
@@ -169,7 +214,16 @@ const clearFeedbackDraft = (storageKey: string) => {
     }
 };
 
-export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeContext }: FeedbackModalProps) => {
+export const FeedbackModal = ({
+    onClose,
+    onSubmitted,
+    actionLogText,
+    stateSnapshot,
+    runtimeContext,
+    configProposal,
+    configProposals,
+    initialContent,
+}: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
     const { user, token, addFeedbackPoints } = useAuth();
     const { success, error } = useToast();
@@ -184,15 +238,42 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
 
     const isInGame = location.pathname.startsWith('/play/');
     const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
-    const draftStorageKey = useMemo(() => buildFeedbackDraftStorageKey({
+    const baseDraftStorageKey = useMemo(() => buildFeedbackDraftStorageKey({
         gameId: (runtimeContext?.gameId ?? autoGameId) || undefined,
         matchId: runtimeContext?.matchId,
         mode: runtimeContext?.mode,
     }), [autoGameId, runtimeContext?.gameId, runtimeContext?.matchId, runtimeContext?.mode]);
+    const configProposalList = useMemo(() => {
+        if (configProposals?.length) return configProposals;
+        return configProposal ? [configProposal] : [];
+    }, [configProposal, configProposals]);
+    const hasConfigProposal = configProposalList.length > 0;
+    const draftStorageKey = useMemo(() => {
+        if (configProposalList.length === 0) return baseDraftStorageKey;
+        if (configProposalList.length > 1) {
+            const batchSignature = configProposalList
+                .map((proposal) => `${proposal.gameId}:${proposal.objectId}:${proposal.fieldPath}`)
+                .join('|');
+            return [
+                baseDraftStorageKey,
+                'config-proposals',
+                configProposalList.length,
+                hashConfigProposalDraftKey(batchSignature),
+            ].join(':');
+        }
+        const [singleProposal] = configProposalList;
+        return [
+            baseDraftStorageKey,
+            'config-proposal',
+            singleProposal.gameId,
+            singleProposal.objectId,
+            singleProposal.fieldPath,
+        ].join(':');
+    }, [baseDraftStorageKey, configProposalList]);
     const initialDraft = useMemo(() => readFeedbackDraft(draftStorageKey), [draftStorageKey]);
 
-    const [content, setContent] = useState(() => initialDraft?.content ?? '');
-    const [type, setType] = useState<FeedbackType>(() => initialDraft?.type ?? FeedbackType.BUG);
+    const [content, setContent] = useState(() => initialDraft?.content ?? initialContent ?? '');
+    const [type, setType] = useState<FeedbackType>(() => initialDraft?.type ?? (hasConfigProposal ? FeedbackType.SUGGESTION : FeedbackType.BUG));
     const [severity, setSeverity] = useState<FeedbackSeverity>(() => initialDraft?.severity ?? FeedbackSeverity.LOW);
     const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
@@ -200,8 +281,12 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
     const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!actionLogText);
     const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!stateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
-    const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? autoGameId);
+    const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? runtimeContext?.gameId ?? autoGameId);
     const shouldShowGameSelector = !runtimeContext?.gameId;
+    const requiresTextContent = hasConfigProposal;
+    const canSubmit = !submitting
+        && !IS_DEV_API_DISABLED
+        && (requiresTextContent ? Boolean(content.trim()) : Boolean(content.trim() || pastedImage));
     const fieldLabelClassName = cn(
         'font-bold text-parchment-light-text uppercase tracking-wider',
         isCompactLandscape ? 'text-[11px]' : 'text-xs',
@@ -322,7 +407,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!content.trim() && !pastedImage) return;
+        if (requiresTextContent ? !content.trim() : (!content.trim() && !pastedImage)) return;
 
         if (IS_DEV_API_DISABLED) {
             return;
@@ -358,16 +443,33 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 }
                 : undefined;
 
+            const normalizedConfigProposals = configProposalList.length > 0
+                ? configProposalList.map((proposal) => ({
+                    ...proposal,
+                    reason: content.trim(),
+                    evidence: proposal.evidence,
+                    status: proposal.status ?? 'pending_ai_review',
+                }))
+                : undefined;
+            const normalizedConfigProposal = normalizedConfigProposals?.length === 1
+                ? normalizedConfigProposals[0]
+                : undefined;
+
             const requestBody = JSON.stringify({
                 content: finalContent,
                 type,
                 severity,
                 gameName: gameName || undefined,
+                source: hasConfigProposal ? 'config-review' : undefined,
                 contactInfo: contactInfo || undefined,
                 actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
                 stateSnapshot: (attachState && stateSnapshot) ? stateSnapshot : undefined,
                 clientContext,
                 errorContext,
+                configProposal: normalizedConfigProposal,
+                configProposals: normalizedConfigProposals && normalizedConfigProposals.length > 1
+                    ? normalizedConfigProposals
+                    : undefined,
             });
 
             const buildHeaders = (includeAuth: boolean): Record<string, string> => ({
@@ -411,6 +513,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
             } else {
                 success(t('hud.feedback.success'));
             }
+            onSubmitted?.();
             onClose();
         } catch (err) {
             console.error(err);
@@ -511,6 +614,71 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                         </div>
                     )}
 
+                    {hasConfigProposal ? (
+                        <div
+                            className="rounded-lg border border-parchment-gold/35 bg-parchment-gold/10 px-3 py-2 text-xs leading-5 text-parchment-base-text"
+                            data-testid="feedback-config-proposal-context"
+                        >
+                            <div className="font-bold text-parchment-brown">
+                                {configProposalList.length > 1
+                                    ? t('hud.feedback.configProposal.batchTitle')
+                                    : t('hud.feedback.configProposal.title')}
+                            </div>
+                            {configProposalList.length > 1 ? (
+                                <div className="mt-1 space-y-1.5">
+                                    <div className="break-words text-parchment-light-text">
+                                        {t('hud.feedback.configProposal.batchSummary', {
+                                            count: configProposalList.length,
+                                        })}
+                                    </div>
+                                    <div className="space-y-1" data-testid="feedback-config-proposal-batch-list">
+                                        {configProposalList.slice(0, 5).map((proposal, index) => (
+                                            <div
+                                                key={`${proposal.objectId}:${proposal.fieldPath}:${index}`}
+                                                className="break-words font-semibold text-parchment-brown"
+                                            >
+                                                {t('hud.feedback.configProposal.batchItem', {
+                                                    index: index + 1,
+                                                    objectName: getConfigProposalObjectLabel(proposal),
+                                                    fieldName: getConfigProposalFieldLabel(proposal),
+                                                    currentValue: getConfigProposalCurrentDisplayValue(proposal),
+                                                    updatedValue: getConfigProposalUpdatedDisplayValue(proposal),
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {configProposalList.length > 5 ? (
+                                        <div className="text-parchment-light-text">
+                                            {t('hud.feedback.configProposal.batchMore', {
+                                                count: configProposalList.length - 5,
+                                            })}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mt-1 break-words text-parchment-light-text">
+                                        {t('hud.feedback.configProposal.target', {
+                                            objectName: getConfigProposalObjectLabel(configProposalList[0]),
+                                            fieldName: getConfigProposalFieldLabel(configProposalList[0]),
+                                        })}
+                                    </div>
+                                    {'currentValue' in configProposalList[0] || 'suggestedValue' in configProposalList[0] ? (
+                                        <div
+                                            className="mt-1 break-words font-semibold text-parchment-brown"
+                                            data-testid="feedback-config-proposal-change"
+                                        >
+                                            {t('hud.feedback.configProposal.change', {
+                                                currentValue: getConfigProposalCurrentDisplayValue(configProposalList[0]),
+                                                updatedValue: getConfigProposalUpdatedDisplayValue(configProposalList[0]),
+                                            })}
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
+                        </div>
+                    ) : null}
+
                     <div className={cn('grid grid-cols-2', isCompactLandscape ? 'gap-3' : 'gap-4')} data-testid="feedback-mobile-fields-grid">
                         {/* Type Selection */}
                         <div className={fieldGroupClassName}>
@@ -566,7 +734,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                                     isCompactLandscape ? 'p-2.5' : 'p-3',
                                 )}
                                 placeholder={t('hud.feedback.contentPlaceholder')}
-                                required={!pastedImage}
+                                required={requiresTextContent || !pastedImage}
                             ></textarea>
                             {/* Paste Hint */}
                             {!pastedImage && !content && (
@@ -663,7 +831,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                     )}>
                         <button
                             type="submit"
-                            disabled={submitting || IS_DEV_API_DISABLED || (!content.trim() && !pastedImage)}
+                            disabled={!canSubmit}
                             className="flex items-center gap-2 px-6 py-2 bg-parchment-brown hover:bg-parchment-brown/90 text-parchment-cream rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

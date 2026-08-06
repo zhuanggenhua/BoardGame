@@ -1,0 +1,5 @@
+{
+  "error": "TimeoutError: locator.waitFor: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('summonerwars-config-table') to be visible\u001b[22m\n",
+  "messages": [],
+  "pageErrors": []
+}

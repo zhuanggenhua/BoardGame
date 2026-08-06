@@ -57,6 +57,7 @@ import type {
     SpecialAfterScoringArmedEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    MunchkinMonsterDefeatedEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
@@ -486,7 +487,7 @@ function executeCommand(
         }
 
         case SU_COMMANDS.USE_BASE_ABILITY: {
-            const { baseIndex } = command.payload;
+            const { baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             if (!base) return { events: [] };
 
@@ -511,6 +512,8 @@ function executeCommand(
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
+                targetBaseIndex,
+                targetMinionUid,
                 now,
             });
             events.push(...result.events);
@@ -522,7 +525,7 @@ function executeCommand(
         }
 
         case SU_COMMANDS.USE_TALENT: {
-            const { minionUid, ongoingCardUid, titanUid, baseIndex } = command.payload;
+            const { minionUid, ongoingCardUid, titanUid, baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             const events: SmashUpEvent[] = [];
 
@@ -552,6 +555,8 @@ function executeCommand(
                         cardUid: titanUid,
                         defId: titan.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -591,6 +596,8 @@ function executeCommand(
                         cardUid: titanUid,
                         defId: titan.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -636,6 +643,8 @@ function executeCommand(
                         cardUid: ongoingCardUid,
                         defId: ongoing.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -682,6 +691,8 @@ function executeCommand(
                     cardUid: minionUid!,
                     defId: minion.defId,
                     baseIndex,
+                    targetBaseIndex,
+                    targetMinionUid,
                     random,
                     now,
                 };
@@ -702,6 +713,7 @@ function executeCommand(
                 discardCardUid: spDiscardUid,
                 handCardUid: spHandUid,
                 baseIndex: spIdx,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const spBase = core.bases[spIdx];
@@ -719,6 +731,7 @@ function executeCommand(
                     cardUid: spTitanUid,
                     defId: titan.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -744,6 +757,7 @@ function executeCommand(
                     cardUid: spDiscardUid,
                     defId: discardCard.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -769,6 +783,7 @@ function executeCommand(
                     cardUid: spHandUid,
                     defId: handCard.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -792,6 +807,7 @@ function executeCommand(
                 cardUid: spUid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
                 random,
                 now,
@@ -826,6 +842,22 @@ function executeCommand(
                 return { events: result.events, updatedState: result.matchState };
             }
             return { events: result.events };
+        }
+
+        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
+            const { baseIndex, monsterUid } = command.payload;
+            const event: MunchkinMonsterDefeatedEvent = {
+                type: SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED,
+                payload: {
+                    playerId: command.playerId,
+                    baseIndex,
+                    monsterUid,
+                    reason: command.type,
+                },
+                sourceCommandType: command.type,
+                timestamp: now,
+            };
+            return { events: [event] };
         }
 
         default:

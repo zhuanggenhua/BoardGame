@@ -9,7 +9,7 @@ import type { Command, MatchState, PlayerId } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_EXPLORER_CATALOG,
-    isImplementedBetrayalHauntCardNumber,
+    isBetrayalOptionalHauntRollRuntimeSupported,
     type BetrayalScenarioCardId,
     type BetrayalScenarioId,
     type BetrayalTraitKey,
@@ -90,6 +90,15 @@ interface BetrayalAiRecentRoll {
     consumedRabbitFootCardIds: string[];
 }
 
+interface BetrayalAiPendingDamageAllocation {
+    playerId: string;
+    damageKind: 'physical' | 'mental' | 'general';
+    amount: number;
+    allowedTraits: BetrayalTraitKey[];
+    damageReplacement?: unknown;
+    forcedTraitSequence?: BetrayalTraitKey[];
+}
+
 interface BetrayalAiRoom {
     id: string;
     name: string;
@@ -133,6 +142,15 @@ interface BetrayalAiCore {
         targetPlayerId: string;
         cardIds: string[];
     } | null;
+    pendingDamageAllocation: BetrayalAiPendingDamageAllocation | null;
+    pendingCardResolutionQueue?: Array<{
+        id: string;
+        playerId: string;
+        requiredPlayerIds?: string[];
+        acknowledgedPlayerIds?: string[];
+        cardName: string;
+        text: string;
+    }>;
     scenarioRuntime: {
         traitorPlayerId: string | null;
         hauntCardNumber?: number;
@@ -188,8 +206,10 @@ const ACTION_KINDS = {
     LOOT_CORPSE: 'loot-corpse',
     USE_RABBIT_FOOT: 'use-rabbit-foot',
     USE_ROOM_EFFECT: 'use-room-effect',
+    ACKNOWLEDGE_CARD_RESOLUTION: 'acknowledge-card-resolution',
     END_TURN: 'end-turn',
     ACKNOWLEDGE_TURN_END_ROLL: 'acknowledge-turn-end-roll',
+    RESOLVE_DAMAGE_ALLOCATION: 'resolve-damage-allocation',
     MOVE_TROLL_HAND: 'move-troll-hand',
     TROLL_HAND_ATTACK: 'troll-hand-attack',
     END_TROLL_HAND_MONSTER_TURN: 'end-troll-hand-monster-turn',
@@ -317,7 +337,7 @@ function expandEffectPayloads(
             return [...accepted, ...declined];
         }
         case 'optionalHauntRoll': {
-            const accepted = isImplementedBetrayalHauntCardNumber(effect.successHauntId)
+            const accepted = isBetrayalOptionalHauntRollRuntimeSupported(effect.successHauntId)
                 ? seeds.map((payload) => ({ ...payload, accept: true }))
                 : [];
             const declined = seeds.flatMap((payload) => (
@@ -820,6 +840,20 @@ function buildPossessionActions(
             continue;
         }
 
+        if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
+            const alreadyPrepared = core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId;
+            add({
+                card,
+                payload: { replacementRollTotal: effect.maxTotal },
+                label: `使用${card.name}`,
+                score: alreadyPrepared ? 0 : 540,
+                metadata: {
+                    replacementRollTotal: effect.maxTotal,
+                },
+            });
+            continue;
+        }
+
         if (effect.mode === 'healTraits') {
             const targets = effect.target === 'self'
                 ? [actor]
@@ -1080,6 +1114,88 @@ function buildRabbitFootActions(
             visibleStepDelayPolicy: 'visible',
         },
     })))
+        .filter((action): action is AiLegalAction => Boolean(action));
+}
+
+function buildDamageTraitPayloads(
+    allowedTraits: BetrayalTraitKey[],
+    amount: number,
+): EventChoicePayload[] {
+    const normalizedAmount = Math.max(0, Math.floor(amount));
+    if (normalizedAmount === 0 || allowedTraits.length === 0) {
+        return [{ traits: [] }];
+    }
+
+    const payloads: EventChoicePayload[] = [];
+    const maxCandidates = 4096;
+    const visit = (traits: BetrayalTraitKey[]): void => {
+        if (payloads.length >= maxCandidates) {
+            return;
+        }
+        if (traits.length === normalizedAmount) {
+            payloads.push({ traits: [...traits] });
+            return;
+        }
+        for (const trait of allowedTraits) {
+            visit([...traits, trait]);
+            if (payloads.length >= maxCandidates) {
+                return;
+            }
+        }
+    };
+    visit([]);
+    return payloads;
+}
+
+function buildDamageAllocationActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.pendingDamageAllocation;
+    if (!pending || pending.playerId !== playerId || pending.amount < 0) {
+        return [];
+    }
+
+    const candidates: Array<{ traits: BetrayalTraitKey[]; useBrooch?: boolean }> = [];
+    const addCandidates = (allowedTraits: BetrayalTraitKey[], useBrooch = false) => {
+        for (const payload of buildDamageTraitPayloads(allowedTraits, pending.amount)) {
+            candidates.push({
+                traits: payload.traits ?? [],
+                ...(useBrooch ? { useBrooch: true } : {}),
+            });
+        }
+    };
+
+    if (pending.forcedTraitSequence) {
+        candidates.push({ traits: [...pending.forcedTraitSequence] });
+    } else {
+        addCandidates(pending.allowedTraits);
+        if (pending.damageReplacement && pending.damageKind !== 'general') {
+            addCandidates(BETRAYAL_AI_TRAITS, true);
+        }
+    }
+
+    return candidates
+        .map((candidate, index) => createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            payload: candidate,
+            kind: ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,
+            label: candidate.useBrooch ? '用胸针替换并分配伤害' : '分配当前伤害',
+            idParts: [
+                candidate.useBrooch ? 'brooch' : 'damage',
+                ...candidate.traits,
+            ],
+            metadata: {
+                strategicScore: 1500 - index,
+                traits: candidate.traits,
+                useBrooch: candidate.useBrooch === true,
+                visibleStepDelayPolicy: 'visible',
+            },
+        }))
         .filter((action): action is AiLegalAction => Boolean(action));
 }
 
@@ -1392,6 +1508,37 @@ function buildTurnEndRollAcknowledgementActions(
     return action ? [action] : [];
 }
 
+function buildCardResolutionAcknowledgementActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pendingResolution = state.core.pendingCardResolutionQueue?.[0];
+    const requiredPlayerIds = pendingResolution?.requiredPlayerIds?.length
+        ? pendingResolution.requiredPlayerIds
+        : pendingResolution
+            ? [pendingResolution.playerId]
+            : [];
+    const acknowledgedPlayerIds = pendingResolution?.acknowledgedPlayerIds ?? [];
+    if (!pendingResolution || !requiredPlayerIds.includes(playerId) || acknowledgedPlayerIds.includes(playerId)) {
+        return [];
+    }
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+        payload: { resolutionId: pendingResolution.id },
+        kind: ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,
+        label: `确认翻牌结算：${pendingResolution.cardName}`,
+        metadata: {
+            strategicScore: 1180,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
 function buildBetrayalAiLegalActions(
     validate: BetrayalAiValidator,
     args: {
@@ -1408,9 +1555,19 @@ function buildBetrayalAiLegalActions(
         return buildCharacterSelectActions(validate, state, args.playerId);
     }
 
+    const damageAllocationActions = buildDamageAllocationActions(validate, state, args.playerId);
+    if (damageAllocationActions.length > 0) {
+        return damageAllocationActions;
+    }
+
     const eventChoiceActions = buildEventChoiceActions(validate, state, args.playerId);
     if (eventChoiceActions.length > 0) {
         return eventChoiceActions;
+    }
+
+    const cardResolutionAcknowledgementActions = buildCardResolutionAcknowledgementActions(validate, state, args.playerId);
+    if (cardResolutionAcknowledgementActions.length > 0) {
+        return cardResolutionAcknowledgementActions;
     }
 
     const tradeAgreementActions = buildTradeAgreementActions(validate, state, args.playerId);
@@ -1621,6 +1778,8 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 1200;
         case ACTION_KINDS.RESOLVE_EVENT_CHOICE:
             return 1150 + scoreEventChoice(core, action);
+        case ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION:
+            return strategicScore;
         case ACTION_KINDS.EXORCISE_JACK:
             return 1200;
         case ACTION_KINDS.TRAITOR_ATTACK_HERO:
@@ -1648,6 +1807,8 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
         case ACTION_KINDS.HERO_ATTACK_TRAITOR:
             return 900;
         case ACTION_KINDS.USE_RABBIT_FOOT:
+            return strategicScore;
+        case ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION:
             return strategicScore;
         case ACTION_KINDS.USE_ROOM_EFFECT:
             return Math.min(strategicScore, 820);
@@ -1727,6 +1888,8 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.RESOLVE_TRADE_AGREEMENT,
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
+                ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,
                 ACTION_KINDS.USE_ROOM_EFFECT,
                 ACTION_KINDS.MOVE_TROLL_HAND,
                 ACTION_KINDS.TROLL_HAND_ATTACK,

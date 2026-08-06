@@ -164,9 +164,18 @@
       "imageAdded": "已添加截图",
       "contactLabel": "联系方式（可选）",
       "contactPlaceholder": "邮箱或 QQ（便于跟进）",
-      "attachLog": "附带操作日志",
-      "attachState": "附带状态快照（用于精确复现）",
-      "submit": "提交反馈",
+    "attachLog": "附带操作日志",
+    "attachState": "附带状态快照（用于精确复现）",
+    "configProposal": {
+      "title": "配置修正提案",
+      "batchTitle": "配置修正提案批量提交",
+      "batchSummary": "本次将提交 {{count}} 项配置字段修正，统一进入 AI 首轮审查。",
+      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}：当前值：{{currentValue}}；修改后值：{{updatedValue}}",
+      "batchMore": "另有 {{count}} 项未在此处展开。",
+      "target": "对象：{{objectName}}；字段：{{fieldName}}",
+      "change": "当前值：{{currentValue}}；修改后值：{{updatedValue}}"
+    },
+    "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",

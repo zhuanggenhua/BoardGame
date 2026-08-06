@@ -10,7 +10,7 @@ vi.mock('react-i18next', async (importOriginal) => {
   return {
     ...actual,
     useTranslation: () => ({
-      t: (key: string) => {
+      t: (key: string, options?: Record<string, unknown>) => {
         const translations: Record<string, string> = {
           'actions.moguFanaticalFungusStay': '不推拉',
           'actions.skip': '跳过',
@@ -19,8 +19,9 @@ vi.mock('react-i18next', async (importOriginal) => {
           'interaction.sw.shourenBerserkPosition': '狂暴：可以将本单位推拉 1 格；若如此做，可额外攻击一次相邻敌方卡牌',
           'interaction.sw.shourenBruteImpact': '蛮力冲击：可以将该单位向远离本单位的方向推拉 1 格',
           'interaction.sw.shourenPrimalFuryPosition': '原始狂怒：可以将召唤师推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌',
+          'statusBanners.eventTarget.message': '{{cardName}}：选择目标',
         };
-        return translations[key] ?? key;
+        return (translations[key] ?? key).replace('{{cardName}}', String(options?.cardName ?? ''));
       },
     }),
   };
@@ -179,5 +180,22 @@ describe('StatusBanners - 冰苔兽人可选位移', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '跳过' }));
     expect(onCancelAbility).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('StatusBanners - 事件卡目标提示', () => {
+  it('应显示当前正在使用的事件卡名称，而不是泛化目标提示', () => {
+    render(
+      <StatusBanners
+        {...makeProps({
+          eventTargetMode: {
+            cardId: 'shadow-hide-in-darkness-0-99',
+            card: { name: '隐入黑暗' },
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('sw-ability-prompt')).toHaveTextContent('隐入黑暗：选择目标');
   });
 });

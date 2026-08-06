@@ -301,7 +301,7 @@ function getConflictFilesFromCommitMessage(commit) {
 }
 
 function hasMergeConflictEvidenceInCommit(commit) {
-  const changedFiles = runGit(['show', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
+  const changedFiles = runGit(['show', '-m', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
     .split(/\r?\n/)
     .map((value) => value.trim())
     .filter(Boolean);
@@ -1232,6 +1232,20 @@ function collectCommands(files, baseRef, affectsTypecheck) {
         'native',
       ],
     });
+    commands.push({
+      label: 'SmashUp ability event shape contract',
+      reason: 'SmashUp 能力/helper 改动，检查单事件 helper 不得直接用于数组展开',
+      command: process.execPath,
+      args: [
+        ...VITEST_SAFE_ENTRY,
+        'run',
+        'src/games/smashup/__tests__/abilityEventShapeContract.test.ts',
+        '--config',
+        'vitest.config.core.ts',
+        '--configLoader',
+        'native',
+      ],
+    });
   }
 
   if (isPrePushMode) {
@@ -1517,11 +1531,14 @@ async function summarizeCurrentLint(filesToCheck) {
     fatalErrorCount: 0,
   };
   const chunks = chunkValues(filesToCheck, ESLINT_WARNING_DELTA_CHUNK_SIZE);
+  // Reuse one ESLint instance across chunks. Creating a new instance for every
+  // two files retains parser/plugin state on large pre-push scopes and can push
+  // the single quality-gate process into an 8GB heap/OOM stall on Windows.
+  const eslint = new ESLint({
+    cwd: repoRoot,
+  });
 
   for (const chunk of chunks) {
-    const eslint = new ESLint({
-      cwd: repoRoot,
-    });
     const results = await eslint.lintFiles(chunk);
     const chunkSummary = summarizeEslintResults(results);
     summary.warningCount += chunkSummary.warningCount;

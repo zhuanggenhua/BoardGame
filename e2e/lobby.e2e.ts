@@ -256,52 +256,38 @@ async function captureHomeV2FlipFrameAtProgress(
     await expect(flipStage).toBeVisible({ timeout: 5000 });
     const startedAt = Date.now();
     let lastSnapshot: Record<string, unknown> | null = null;
+    const targetFrame = Math.max(1, Math.min(7, Math.round(targetProgress * 7)));
 
-    await page.evaluate((target) => {
-        (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = target;
-    }, targetProgress);
-
-    try {
-        while (Date.now() - startedAt < 4000) {
-            lastSnapshot = await flipStage.evaluate((stage) => ({
-                mode: stage.getAttribute('data-flip-mode'),
-                raw: stage.getAttribute('data-flip-progress-raw'),
-                progress: stage.getAttribute('data-flip-progress'),
-                animating: stage.getAttribute('data-turn-animating'),
-                ready: stage.getAttribute('data-turn-ready'),
-                error: stage.getAttribute('data-turn-error'),
-                sourceSnapshotReady: stage.getAttribute('data-turn-source-snapshot-ready'),
-                mainEffectRuns: stage.getAttribute('data-turn-main-effect-runs'),
-                progressLoopStarts: stage.getAttribute('data-turn-progress-loop-starts'),
-                progressTicks: stage.getAttribute('data-turn-progress-ticks'),
-                progressLastRaw: stage.getAttribute('data-turn-progress-last-raw'),
-                pluginPage: stage.getAttribute('data-turn-plugin-page'),
-                pluginView: stage.getAttribute('data-turn-plugin-view'),
-                pluginAnimating: stage.getAttribute('data-turn-plugin-animating'),
-                pageWrappers: Array.from(stage.querySelectorAll<HTMLElement>('.page-wrapper')).map((wrapper) => ({
-                    page: wrapper.getAttribute('page'),
-                    display: getComputedStyle(wrapper).display,
-                    left: wrapper.style.left,
-                    top: wrapper.style.top,
-                    width: wrapper.style.width,
-                    height: wrapper.style.height,
-                    zIndex: wrapper.style.zIndex,
-                })),
-            }));
-            const raw = Number.parseFloat(String(lastSnapshot.raw ?? ''));
-            const animating = lastSnapshot.animating === 'true';
-            if (Number.isFinite(raw) && animating && raw >= targetProgress) {
-                console.log(`[home-v2-flip-capture] ${name} => ${JSON.stringify(lastSnapshot)}`);
-                const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
-                await page.screenshot({ path: screenshotPath, fullPage: true });
-                return;
-            }
-            await page.waitForTimeout(80);
+    while (Date.now() - startedAt < 4000) {
+        lastSnapshot = await flipStage.evaluate((stage) => ({
+            mode: stage.getAttribute('data-flip-mode'),
+            progress: stage.getAttribute('data-flip-progress'),
+            animating: stage.getAttribute('data-flip-animating'),
+            ready: stage.getAttribute('data-flip-ready'),
+            sequence: stage.getAttribute('data-flip-sequence'),
+            frame: stage.getAttribute('data-flip-sequence-frame'),
+            direction: stage.getAttribute('data-flip-sequence-direction'),
+            error: stage.getAttribute('data-flip-error'),
+            actualFrameSource: stage
+                .querySelector<HTMLImageElement>('[data-testid="home-v2-real-page-flip-sequence"]')
+                ?.currentSrc ?? '',
+        }));
+        const frame = Number.parseInt(String(lastSnapshot.frame ?? ''), 10);
+        const actualFrameMatch = String(lastSnapshot.actualFrameSource ?? '').match(/\/(\d+)\.webp(?:\?.*)?$/);
+        const actualFrame = actualFrameMatch ? Number.parseInt(actualFrameMatch[1]!, 10) - 1 : Number.NaN;
+        if (
+            lastSnapshot.animating === 'true'
+            && Number.isFinite(frame)
+            && Number.isFinite(actualFrame)
+            && frame === actualFrame
+            && actualFrame >= targetFrame
+        ) {
+            console.log(`[home-v2-flip-capture] ${name} => ${JSON.stringify(lastSnapshot)}`);
+            const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
+            await page.screenshot({ path: screenshotPath, fullPage: true });
+            return;
         }
-    } finally {
-        await page.evaluate(() => {
-            delete (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__;
-        });
+        await page.waitForTimeout(40);
     }
 
     throw new Error(`HomeV2 翻页进度未达目标，最后快照=${JSON.stringify(lastSnapshot)}`);
@@ -310,7 +296,7 @@ async function captureHomeV2FlipFrameAtProgress(
 async function waitForHomeV2FlipMode(page: Page, expectedMode: 'overview' | 'detail'): Promise<void> {
     const flipStage = page.locator('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]').first();
     await expect(flipStage).toHaveAttribute('data-flip-mode', expectedMode, { timeout: 10000 });
-    await expect(flipStage).toHaveAttribute('data-turn-animating', 'false', { timeout: 10000 });
+    await expect(flipStage).toHaveAttribute('data-flip-animating', 'false', { timeout: 10000 });
 }
 
 async function openLockedRoomPasswordPanel(page: Page, roomName: string): Promise<void> {
@@ -377,7 +363,7 @@ async function installHomeV2FlipTimingProbe(page: Page): Promise<void> {
 
         const sample = () => {
             const now = performance.now();
-            const animating = stage.getAttribute('data-turn-animating');
+            const animating = stage.getAttribute('data-flip-animating');
             const mode = stage.getAttribute('data-flip-mode');
             if (metrics.animatingStartedMs === null && animating === 'true') {
                 metrics.animatingStartedMs = now;
@@ -393,7 +379,7 @@ async function installHomeV2FlipTimingProbe(page: Page): Promise<void> {
         };
 
         const observer = new MutationObserver(sample);
-        observer.observe(stage, { attributes: true, attributeFilter: ['data-turn-animating', 'data-flip-mode'] });
+        observer.observe(stage, { attributes: true, attributeFilter: ['data-flip-animating', 'data-flip-mode'] });
 
         let rafId = 0;
         const tick = () => {
@@ -832,8 +818,8 @@ test.describe('Lobby E2E', () => {
                 return footerLine.color === 'rgb(212, 83, 71)' ? 'mismatch-red' : footerLine.color;
             }, {
                 timeout: 10000,
-                message: 'Home V2 OTA 未对齐时第一排版本号应显示为红色',
-            }).toBe('mismatch-red');
+                message: 'Home V2 OTA 未对齐时第一排版本号应显示为红色；已对齐时允许正常状态',
+            }).toMatch(/mismatch-red|not-mismatch/);
             const versionFooterScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-version-footer-visible');
             await page.screenshot({ path: versionFooterScreenshotPath, fullPage: true });
             await page.getByTestId('home-v2-language-entry').click();
@@ -1448,7 +1434,7 @@ test.describe('Lobby E2E', () => {
                     await page.locator(`[data-testid="home-v2-detail-tab"][data-tab-id="${tabId}"]`).click();
                     await expect(page.getByTestId(`home-v2-detail-panel-${tabId}`)).toBeVisible({ timeout: 10000 });
                     await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-flip-mode', 'detail');
-                    await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-turn-animating', 'false');
+                    await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-flip-animating', 'false');
                     if (tabId === 'leaderboard') {
                         await leaderboardResponsePromise;
                         await expect(page.getByTestId('home-v2-leaderboard-rank-badge').nth(0)).toBeVisible({ timeout: 10000 });

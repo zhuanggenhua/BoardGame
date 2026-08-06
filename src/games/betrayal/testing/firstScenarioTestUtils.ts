@@ -2,13 +2,22 @@ import type { Command, MatchState, RandomFn } from "../../../engine/types";
 import {
   BETRAYAL_COMMANDS,
   BetrayalDomain,
+  EXPLORER_CATALOG,
   createBetrayalMonsterFromDefinition,
+  resolveBetrayalMonsterMovementGroups,
+  resolveBetrayalMonsterMoveTargetRooms,
   type BetrayalCommand,
   type BetrayalCommandMap,
   type BetrayalCore,
+  type BetrayalMonsterMovementRollGroupResult,
   type BetrayalTraitKey,
 } from "../game";
-import { BETRAYAL_DISCOVERY_POOLS } from "../scenarioConfig";
+import {
+  BETRAYAL_DISCOVERY_POOLS,
+  resolveBetrayalRoomDiscoverySymbol,
+  type BetrayalRoomFloor,
+  type BetrayalScenarioCardId,
+} from "../scenarioConfig";
 
 const BETRAYAL_TRAIT_KEYS: BetrayalTraitKey[] = [
   "might",
@@ -81,27 +90,6 @@ function traitValueAtTestTrack(
   return track.values[position] ?? track.values[track.criticalPosition] ?? 1;
 }
 
-function positionForTestTrackValue(
-  track: BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey],
-  value: number,
-): number | null {
-  if (value <= 0) {
-    return track.skullPosition;
-  }
-  const exactPositions = track.values
-    .map((trackValue, index) => ({ trackValue, index }))
-    .filter(({ trackValue }) => trackValue === value)
-    .map(({ index }) => index);
-  if (exactPositions.length === 0) {
-    return null;
-  }
-  return exactPositions.reduce((best, index) => (
-    Math.abs(index - track.startPosition) < Math.abs(best - track.startPosition)
-      ? index
-      : best
-  ), exactPositions[0]!);
-}
-
 function syncLegacyTestExplorerTraitTracks(
   explorer: BetrayalCore["currentExplorer"],
 ): void {
@@ -120,17 +108,11 @@ function syncLegacyTestExplorerTraitTracks(
         explorer.traits[trait] = traitValueAtTestTrack(track);
         continue;
       }
-      const nextPosition = positionForTestTrackValue(track, explorer.traits[trait]);
-      if (nextPosition === null) {
-        explorer.traitTracks[trait] = buildLinearTestTraitTrack(
-          `legacy-test-${explorer.explorerId}-${trait}`,
-          explorer.traits[trait],
-        );
-        explorer.traits[trait] = traitValueAtTestTrack(explorer.traitTracks[trait]);
-      } else {
-        track.position = nextPosition;
-        explorer.traits[trait] = traitValueAtTestTrack(track);
-      }
+      explorer.traitTracks[trait] = buildLinearTestTraitTrack(
+        `legacy-test-${explorer.explorerId}-${trait}`,
+        explorer.traits[trait],
+      );
+      explorer.traits[trait] = traitValueAtTestTrack(explorer.traitTracks[trait]);
     }
   }
 }
@@ -180,22 +162,46 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
 }
 
 export function acknowledgePendingCardResolutions(core: BetrayalCore): BetrayalCore {
-  let nextCore = core;
-  let safety = 0;
-  while ((nextCore.pendingCardResolutionQueue ?? []).length > 0) {
+    let nextCore = core;
+    let safety = 0;
+    while ((nextCore.pendingCardResolutionQueue ?? []).length > 0) {
     if (safety >= 20) {
       throw new Error("山屋测试夹具确认牌面队列超过安全上限");
     }
-    const pendingResolution = nextCore.pendingCardResolutionQueue[0]!;
-    nextCore = applyBetrayalCommand(
-      nextCore,
-      BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
-      pendingResolution.playerId,
-      { resolutionId: pendingResolution.id },
-    );
-    safety += 1;
-  }
+        const pendingResolution = nextCore.pendingCardResolutionQueue[0]!;
+        const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
+            ? pendingResolution.requiredPlayerIds
+            : [pendingResolution.playerId];
+        const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
+        const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
+        if (!nextPlayerId) {
+            throw new Error("山屋测试夹具发现牌确认状态无法继续推进");
+        }
+        nextCore = applyBetrayalCommand(
+            nextCore,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+            nextPlayerId,
+            { resolutionId: pendingResolution.id },
+        );
+        safety += 1;
+    }
   return nextCore;
+}
+
+export function acknowledgePendingCardResolution(
+  core: BetrayalCore,
+  playerId: string,
+): BetrayalCore {
+  const pendingResolution = core.pendingCardResolutionQueue?.[0];
+  if (!pendingResolution) {
+    throw new Error("山屋测试夹具当前没有待确认的牌面结算");
+  }
+  return applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+    playerId,
+    { resolutionId: pendingResolution.id },
+  );
 }
 
 function findFixtureExplorer(
@@ -209,6 +215,35 @@ function findFixtureExplorer(
     throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
   }
   return explorer;
+}
+
+function setFixtureTraitTrack(
+  core: BetrayalCore,
+  playerId: string,
+  trait: BetrayalTraitKey,
+  values: number[],
+  position: number,
+  startPosition = position,
+): void {
+  const explorer = findFixtureExplorer(core, playerId);
+  explorer.traitTracks[trait] = {
+    trackId: `test-${playerId}-${trait}`,
+    values: [...values],
+    position,
+    startPosition,
+    criticalPosition: 0,
+    skullPosition: -1,
+    maxPosition: values.length - 1,
+  };
+  explorer.traits[trait] = values[position] ?? 0;
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  }
+}
+
+function setFixturePhysicalDeathDoor(core: BetrayalCore, playerId: string): void {
+  setFixtureTraitTrack(core, playerId, "might", [1], 0);
+  setFixtureTraitTrack(core, playerId, "speed", [1], 0);
 }
 
 function lethalTraitsForPendingDamage(
@@ -245,6 +280,9 @@ function lethalTraitsForPendingDamage(
     traits.push(...Array.from({ length: take }, () => trait));
     remaining -= take;
   }
+  if (traits.length !== pending.amount) {
+    throw new Error(`山屋测试夹具无法为 ${pending.sourceTitle} 分配 ${pending.amount} 点伤害`);
+  }
   return traits;
 }
 
@@ -276,21 +314,23 @@ export function createStartedFirstScenarioCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
   let core = BetrayalDomain.setup(playerIds, BETRAYAL_FIXED_RANDOM);
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, "0", {
-    explorerId: "jaden-jones",
-  });
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.CONFIRM_EXPLORER,
-    "0",
-    {},
-  );
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
-    "0",
-    {},
-  );
+  for (const [index, playerId] of core.playerIds.entries()) {
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, playerId, {
+      explorerId: EXPLORER_CATALOG[index % EXPLORER_CATALOG.length]!.explorerId,
+    });
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.CONFIRM_EXPLORER,
+      playerId,
+      {},
+    );
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+      playerId,
+      {},
+    );
+  }
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, "0", {
   });
   core.eventOrder = [
@@ -310,7 +350,88 @@ function applyTutorialDiscoveryOrder(core: BetrayalCore): BetrayalCore {
     throw new Error("山屋教程缺少官方事件牌：外星几何");
   }
   core.eventOrder = [tutorialEvent];
+  core.deckCounts.event = core.eventOrder.length;
   return core;
+}
+
+function applyBasicTutorialEventRoomDiscoveryOrder(core: BetrayalCore): BetrayalCore {
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+    { floor: "upper", room: findFixtureRoomTemplate("upper", "tower") },
+    { floor: "basement", room: findFixtureRoomTemplate("basement", "chasm") },
+  ]);
+  return core;
+}
+
+function cloneFixtureRoomTemplate(
+  room: BetrayalCore["roomDiscoveryDeck"][number]["room"],
+): BetrayalCore["roomDiscoveryDeck"][number]["room"] {
+  return {
+    ...room,
+    tags: [...room.tags],
+    doorways: [...room.doorways],
+  };
+}
+
+function findFixtureRoomTemplate(
+  floor: BetrayalRoomFloor,
+  visualId: string,
+): BetrayalCore["roomDiscoveryDeck"][number]["room"] {
+  const room = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor[floor].find(
+    (candidate) => candidate.visualId === visualId,
+  );
+  if (!room) {
+    throw new Error(`山屋测试夹具缺少${floor}房间 ${visualId}`);
+  }
+  return cloneFixtureRoomTemplate(room);
+}
+
+function setFixtureRoomDiscoveryDeck(
+  core: BetrayalCore,
+  deck: BetrayalCore["roomDiscoveryDeck"],
+): void {
+  const clonedDeck = deck.map((entry) => ({
+    floor: entry.floor,
+    room: cloneFixtureRoomTemplate(entry.room),
+  }));
+  core.roomDiscoveryDeck = clonedDeck;
+  core.roomDiscoveryOrderByFloor = {
+    ground: clonedDeck
+      .filter((entry) => entry.floor === "ground")
+      .map((entry) => cloneFixtureRoomTemplate(entry.room)),
+    upper: clonedDeck
+      .filter((entry) => entry.floor === "upper")
+      .map((entry) => cloneFixtureRoomTemplate(entry.room)),
+    basement: clonedDeck
+      .filter((entry) => entry.floor === "basement")
+      .map((entry) => cloneFixtureRoomTemplate(entry.room)),
+  };
+}
+
+function setFixtureDiscoveredRoomVisual(
+  core: BetrayalCore,
+  roomId: string,
+  floor: BetrayalRoomFloor,
+  visualId: string,
+): void {
+  const template = findFixtureRoomTemplate(floor, visualId);
+  const discoverySymbol = resolveBetrayalRoomDiscoverySymbol(template);
+  core.rooms = core.rooms.map((room) => (
+    room.id === roomId
+      ? {
+          ...room,
+          name: template.name,
+          hint: template.hint,
+          tags: [...template.tags],
+          state: "discovered",
+          visualId: template.visualId,
+          discoveryReward: discoverySymbol === "none" ? null : discoverySymbol,
+          discoveryEffect: template.discoveryEffect,
+          endTurnEffect: template.endTurnEffect,
+          enterEffect: template.enterEffect,
+        }
+      : room
+  ));
 }
 
 function cloneTestExplorer(
@@ -378,23 +499,92 @@ function focusCoreOnExplorer(
 export function createStartedFirstScenarioTutorialCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
-  return applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(playerIds));
+  const core = createStartedFirstScenarioCore(playerIds);
+  setFixtureExplorerInventory(core, "0", [
+    { id: "rope", name: "兔脚", kind: "item" },
+    { id: "omen-book", name: "书本", kind: "omen" },
+  ]);
+  core.usedCardIdsThisTurn = [];
+  return applyBasicTutorialEventRoomDiscoveryOrder(
+    applyTutorialDiscoveryOrder(core),
+  );
 }
 
-export function createFirstScenarioHauntCore(
+export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
+  let core = applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(["0", "1", "2"]));
+  const dogOmen =
+    BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((omen) => omen.id === "dog") ??
+    ({ id: "dog", name: "狗", kind: "omen" } as BetrayalCore["possessionOrderByKind"]["omen"][number]);
+
+  core.drawOrder = ["omen"];
+  core.possessionOrderByKind.omen = [{ ...dogOmen }];
+  core.currentExplorer.inventory = [];
+  core.currentExplorerInventory = [];
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    inventory: [],
+  }));
+
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    "0",
+    { roomId: "ground-east" },
+    100,
+    createBetrayalScriptedRandom(1, 1, 1, 1),
+  );
+
+  if (core.phase !== "preHaunt" || core.scenarioRuntime.hauntTriggered) {
+    throw new Error("山屋教程预兆确认夹具不应进入作祟");
+  }
+  if (core.latestDiscovery?.kind !== "omen") {
+    throw new Error("山屋教程预兆确认夹具缺少预兆发现");
+  }
+  if (core.pendingCardResolutionQueue.length !== 1) {
+    throw new Error("山屋教程预兆确认夹具应只保留一次同屏确认");
+  }
+
+  return core;
+}
+
+function createScenarioHauntCore(
   playerIds: string[] = ["0", "1", "2"],
+  scenarioCardId?: BetrayalScenarioCardId,
 ): BetrayalCore {
   let core = createStartedFirstScenarioCore(playerIds);
-  core.roomDiscoveryOrderByFloor.basement = [
-    BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.find(
-      (room) => room.visualId === "chasm",
-    )!,
-  ];
+  if (scenarioCardId) {
+    core.proposedScenarioCardId = scenarioCardId;
+  }
+  setFixtureExplorerInventory(core, "0", [
+    { id: "omen-book", name: "书本", kind: "omen" },
+  ]);
+  setFixtureExplorerInventory(core, "1", [
+    { id: "ring", name: "指环", kind: "omen" },
+  ]);
+  setFixtureExplorerInventory(core, "2", [
+    { id: "mask", name: "面具", kind: "omen" },
+  ]);
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "upper", room: findFixtureRoomTemplate("upper", "library") },
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "observatory") },
+    { floor: "basement", room: findFixtureRoomTemplate("basement", "ritualRoom") },
+  ]);
   const hauntTriggerRandom = createBetrayalScriptedRandom(
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
     3,
     3,
     3,
-    3, // 第三次探索第一次真正抽到恶兆：当前全员持有 4 张恶兆，haunt roll = 8
+    3,
+    3,
+    3, // 开局已有 3 张预兆；三次探索按 4/5/6 骰检定，前两次不触发、第三次触发
   );
 
   setScenarioTestTurnMovement(core, 6);
@@ -416,6 +606,10 @@ export function createFirstScenarioHauntCore(
     hauntTriggerRandom,
   );
   core = acknowledgePendingCardResolutions(core);
+  if (core.phase === "haunt") {
+    setScenarioTestTurnMovement(core, 6);
+    return core;
+  }
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
   setScenarioTestTurnMovement(core, 6);
@@ -431,6 +625,10 @@ export function createFirstScenarioHauntCore(
     hauntTriggerRandom,
   );
   core = acknowledgePendingCardResolutions(core);
+  if (core.phase === "haunt") {
+    setScenarioTestTurnMovement(core, 6);
+    return core;
+  }
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
   setScenarioTestTurnMovement(core, 6);
@@ -454,7 +652,423 @@ export function createFirstScenarioHauntCore(
   core = acknowledgePendingCardResolutions(core);
 
   setScenarioTestTurnMovement(core, 6);
+  if (scenarioCardId === "crimson-jack-returns") {
+    setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
+    setFixtureDiscoveredRoomVisual(core, "ground-north", "ground", "kitchen");
+    setFixtureDiscoveredRoomVisual(core, "basement-east", "basement", "chasm");
+  }
   return core;
+}
+
+export function createFirstScenarioHauntCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  return createScenarioHauntCore(playerIds);
+}
+
+function placeFixtureExplorerInRoom(
+  core: BetrayalCore,
+  playerId: string,
+  roomId: string,
+): void {
+  const focusedCore = focusCoreOnExplorer(core, playerId);
+  Object.assign(core, focusedCore);
+  core.currentExplorer.roomId = roomId;
+  core.activeRoomId = roomId;
+  core.turnEndedByDiscovery = false;
+  core.pendingEventChoice = null;
+  core.pendingDamageAllocation = null;
+  core.recentRoll = null;
+}
+
+function setFixtureExplorerInventory(
+  core: BetrayalCore,
+  playerId: string,
+  inventory: BetrayalCore["currentExplorer"]["inventory"],
+): void {
+  const nextInventory = inventory.map((card) => ({ ...card }));
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorer.inventory = nextInventory;
+    core.currentExplorerInventory = nextInventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = nextInventory.map((card) => card.id);
+    return;
+  }
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === playerId
+      ? { ...explorer, inventory: nextInventory.map((card) => ({ ...card })) }
+      : explorer,
+  );
+}
+
+function clearTutorialBlockingState(core: BetrayalCore): void {
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.pendingCardResolutionQueue = [];
+  core.pendingEventChoice = null;
+  core.pendingDamageAllocation = null;
+  core.recentRoll = null;
+  core.activePlayerId = null;
+  core.usedCardIdsThisTurn = [];
+}
+
+function setFixtureExplorerTraitToMax(
+  core: BetrayalCore,
+  playerId: string,
+  trait: "might" | "speed",
+): void {
+  const updateExplorer = (
+    explorer: BetrayalCore["currentExplorer"],
+  ): BetrayalCore["currentExplorer"] => {
+    if (explorer.playerId !== playerId) {
+      return explorer;
+    }
+    const currentValue = explorer.traits[trait];
+    const values = Array.from({ length: 25 }, () => currentValue);
+    const position = 20;
+    return {
+      ...explorer,
+      traits: {
+        ...explorer.traits,
+        [trait]: currentValue,
+      },
+      traitTracks: {
+        ...explorer.traitTracks,
+        [trait]: {
+          ...explorer.traitTracks[trait],
+          values,
+          position,
+          startPosition: position,
+          criticalPosition: 0,
+          skullPosition: -1,
+          maxPosition: values.length - 1,
+        },
+      },
+    };
+  };
+
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorer = updateExplorer(core.currentExplorer);
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    return;
+  }
+  core.otherExplorers = core.otherExplorers.map(updateExplorer);
+}
+
+function completeMummyMonsterPreparationForAttackSlot(
+  core: BetrayalCore,
+  monsterId: string,
+): void {
+  const movementGroup = resolveBetrayalMonsterMovementGroups(core)
+    .find((group) => group.monsterIds.includes(monsterId));
+  if (!movementGroup) {
+    throw new Error(`木乃伊教程夹具找不到 ${monsterId} 的怪物移动骰组`);
+  }
+  const movementResult: BetrayalMonsterMovementRollGroupResult = {
+    groupId: movementGroup.groupId,
+    monsterName: movementGroup.monsterName,
+    monsterIds: [...movementGroup.monsterIds],
+    playerId: core.currentExplorer.playerId,
+    speed: movementGroup.speed,
+    diceCount: movementGroup.diceCount,
+    dice: Array.from({ length: movementGroup.diceCount }, () => 0),
+    total: 0,
+    moveAllowance: 0,
+    rollOnceForGroup: true,
+    minimumMoveAllowance: movementGroup.minimumMoveAllowance,
+  };
+  core.scenarioRuntime.monsterTurn = {
+    ...core.scenarioRuntime.monsterTurn,
+    resolvedStartMonsterIds: Array.from(new Set([
+      ...core.scenarioRuntime.monsterTurn.resolvedStartMonsterIds,
+      ...movementGroup.monsterIds,
+    ])),
+    movementRollsByGroupId: {
+      ...core.scenarioRuntime.monsterTurn.movementRollsByGroupId,
+      [movementGroup.groupId]: movementResult,
+    },
+    moveRemainingById: {
+      ...core.scenarioRuntime.monsterTurn.moveRemainingById,
+      ...Object.fromEntries(movementGroup.monsterIds.map((id) => [id, 0])),
+    },
+  };
+}
+
+export function createMummyReadyToBanishCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const heroId = "0";
+  const studyRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
+  const learnRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
+
+  placeFixtureExplorerInRoom(core, heroId, "upper-west");
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
+    heroId,
+    {},
+    100,
+    studyRandom,
+  );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
+
+  placeFixtureExplorerInRoom(core, heroId, "upper-west");
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
+    heroId,
+    {},
+    100,
+    learnRandom,
+  );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
+
+  placeFixtureExplorerInRoom(
+    core,
+    heroId,
+    core.scenarioRuntime.mummy!.sarcophagusRoomId,
+  );
+  return core;
+}
+
+export function createMummyReadyToBanishTutorialCore(): BetrayalCore {
+  return applyTutorialDiscoveryOrder(createMummyReadyToBanishCore());
+}
+
+export function createMummyTraitorVictoryReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const traitorRoomId = mummyRuntime.sarcophagusRoomId;
+  const awayRoomId =
+    core.rooms.find((room) => room.state === "discovered" && room.id !== traitorRoomId)?.id ??
+    traitorRoomId;
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: traitorRoomId,
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    roomId: explorer.playerId === traitorId ? traitorRoomId : awayRoomId,
+  }));
+  setFixtureExplorerInventory(core, traitorId, [
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyRuntime.mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: traitorRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    sarcophagusRoomId: traitorRoomId,
+    girlRoomId: traitorRoomId,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+    mummyCarriedOmenIds: [],
+    mummyCarriedCards: [],
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = traitorRoomId;
+  core.currentExplorerRoomId = traitorRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.pendingDamageAllocation = null;
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.pendingCardResolutionQueue = [];
+  core.recentRoll = null;
+  core.recommendedAction = "use";
+
+  return applyTutorialDiscoveryOrder(core);
+}
+
+export function createMummyMonsterMoveReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const mummyMonsterId = mummyRuntime.mummyMonsterId;
+  const mummyRoomId = mummyRuntime.sarcophagusRoomId;
+  const girlRoomId = mummyRuntime.girlRoomId;
+  if (!girlRoomId) {
+    throw new Error("木乃伊怪物移动教程夹具缺少女孩房间");
+  }
+  const quietRoomId =
+    core.rooms.find((room) => (
+      room.state === "discovered"
+      && room.id !== mummyRoomId
+      && room.id !== girlRoomId
+    ))?.id ?? mummyRoomId;
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: mummyRoomId,
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    roomId: quietRoomId,
+  }));
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: mummyRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    girlRoomId,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = mummyRoomId;
+  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.recommendedAction = "use";
+  clearTutorialBlockingState(core);
+
+  return applyTutorialDiscoveryOrder(core);
+}
+
+export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const mummyMonsterId = mummyRuntime.mummyMonsterId;
+  const mummyRoomId = mummyRuntime.sarcophagusRoomId;
+  const [heroTargetId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+  if (!heroTargetId || !deadHeroId) {
+    throw new Error("木乃伊攻击教程夹具缺少英雄目标");
+  }
+
+  placeFixtureExplorerInRoom(core, traitorId, mummyRoomId);
+  placeFixtureExplorerInRoom(core, heroTargetId, mummyRoomId);
+  setFixtureExplorerInventory(core, heroTargetId, [
+    { id: "map", name: "地图", kind: "item" },
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  placeFixtureExplorerInRoom(core, deadHeroId, mummyRoomId);
+  core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
+  setFixtureExplorerTraitToMax(core, heroTargetId, "speed");
+  setFixtureExplorerTraitToMax(core, heroTargetId, "might");
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: mummyRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    girlRoomId: null,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+    mummyCarriedOmenIds: [],
+    mummyCarriedCards: [],
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = mummyRoomId;
+  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.recommendedAction = "use";
+  clearTutorialBlockingState(core);
+  completeMummyMonsterPreparationForAttackSlot(core, mummyMonsterId);
+
+  return applyTutorialDiscoveryOrder(core);
+}
+
+export function playMummyScenarioToSurvivorVictory(): BetrayalCore {
+  return applyBetrayalCommand(
+    createMummyReadyToBanishCore(),
+    BETRAYAL_COMMANDS.BANISH_MUMMY,
+    "0",
+    {},
+    100,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1),
+  );
+}
+
+export function playMummyScenarioToTraitorVictory(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const sarcophagusRoomId = mummyRuntime.sarcophagusRoomId;
+  const girlRoomId = mummyRuntime.girlRoomId!;
+  const mummyMonsterId = mummyRuntime.mummyMonsterId;
+
+  placeFixtureExplorerInRoom(core, traitorId, girlRoomId);
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL,
+    traitorId,
+    {},
+  );
+
+  const stagingRoom = core.rooms.find((room) => {
+    if (room.id === sarcophagusRoomId || room.state !== "discovered") {
+      return false;
+    }
+    core.monsters = core.monsters.map((monster) =>
+      monster.id === mummyMonsterId ? { ...monster, roomId: room.id } : monster,
+    );
+    return resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId).some(
+      (targetRoom) => targetRoom.id === sarcophagusRoomId,
+    );
+  });
+  if (!stagingRoom) {
+    throw new Error("木乃伊测试夹具缺少能回到石棺的邻接房间");
+  }
+  const stagingRoomId = stagingRoom.id;
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyMonsterId
+      ? { ...monster, roomId: stagingRoomId }
+      : monster,
+  );
+
+  placeFixtureExplorerInRoom(core, traitorId, stagingRoomId);
+  setFixtureExplorerInventory(core, traitorId, [
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY,
+    traitorId,
+    {},
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY,
+    traitorId,
+    { cardId: "holy-symbol" },
+  );
+  core.scenarioRuntime.monsterTurn = {
+    ...core.scenarioRuntime.monsterTurn,
+    moveRemainingById: {
+      ...core.scenarioRuntime.monsterTurn.moveRemainingById,
+      [mummyMonsterId]: 3,
+    },
+  };
+  return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, traitorId, {
+    monsterId: mummyMonsterId,
+    roomId: sarcophagusRoomId,
+  });
+}
+
+export function createCrimsonJackHauntCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  return createScenarioHauntCore(playerIds, "crimson-jack-returns");
 }
 
 export function createFirstScenarioHauntTutorialCore(): BetrayalCore {
@@ -473,6 +1087,9 @@ export function createDustHauntCore(
   }
   core.drawOrder = ["event"];
   core.eventOrder = [dustEvent];
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+  ]);
   core.currentExplorer.inventory = [
     ...core.currentExplorer.inventory,
     { id: "omen-book", name: "书本", kind: "omen" },
@@ -490,15 +1107,21 @@ export function createDustHauntCore(
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
     roomId: "ground-north",
   });
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-    "0",
-    { accept: true },
-    100,
-    createBetrayalScriptedRandom(3, 3, 3),
-  );
-  return acknowledgePendingCardResolutions(core);
+  if (core.pendingEventChoice) {
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+      "0",
+      { accept: true },
+      100,
+      createBetrayalScriptedRandom(3, 3, 3),
+    );
+  }
+  core = acknowledgePendingCardResolutions(core);
+  if (core.phase !== "haunt" || !core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘作祟夹具未生成事件选择或 dust 运行态");
+  }
+  return core;
 }
 
 export function createDustFeverishControlReadyCore(
@@ -632,38 +1255,7 @@ export function createDustFeverishAttackReadyCore(): BetrayalCore {
 }
 
 export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
-  const hauntSuccessRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3, // 图书馆成功
-    3,
-    3,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1, // 对攻击倒叛徒：英雄 12(+2) vs 叛徒 6
-    2,
-    2,
-    2, // 杰克之灵移动到 basement-landing
-    3,
-    3,
-    3,
-    3, // 驱魔法阵成功
-    3,
-    3,
-    3,
-    3, // 第二次驱魔法阵成功
-    3,
-    3,
-    3,
-    3,
-    3,
-    3, // 最终驱魔成功
-  );
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -678,7 +1270,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     "0",
     {},
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
@@ -698,43 +1290,38 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "0",
     { target: "traitor" },
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "upper-landing",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "grand-staircase",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
-  setScenarioTestTurnMovement(core, 6);
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "basement-landing",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "grand-staircase",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-landing",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-north",
-  });
+  placeFixtureExplorerInRoom(core, "0", "basement-east");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.STUDY_EXORCISM,
     "0",
     {},
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
@@ -747,13 +1334,14 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     createBetrayalScriptedRandom(2, 2, 1),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
+  placeFixtureExplorerInRoom(core, "0", "ground-north");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.STUDY_EXORCISM,
     "0",
     {},
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
   );
   core.currentExplorer.roomId = "basement-landing";
   core.activeRoomId = "basement-landing";
@@ -763,34 +1351,23 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     "0",
     {},
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
   );
 
   return core;
 }
 
 export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const hauntProgressRandom = createBetrayalScriptedRandom(
     3,
     3,
     3,
-    3, // 图书馆成功
-    3,
-    3,
+    3, // 对攻击倒叛徒：英雄高点数
     1,
     1,
     1,
-    1,
-    1,
-    1, // 对攻击倒叛徒：英雄 12(+2) vs 叛徒 6
-    2,
-    2,
-    2, // 杰克之灵移动到 basement-landing
-    3,
-    3,
-    3,
-    3, // 第一处驱魔法阵成功
+    1, // 对攻击倒叛徒：叛徒低点数
     3,
     3,
     3,
@@ -810,7 +1387,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     "0",
     {},
     100,
-    hauntProgressRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
@@ -830,6 +1407,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -843,30 +1421,24 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "upper-landing",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "grand-staircase",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
-  setScenarioTestTurnMovement(core, 6);
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "basement-landing",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "grand-staircase",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-landing",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-north",
-  });
+  placeFixtureExplorerInRoom(core, "0", "basement-east");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.STUDY_EXORCISM,
     "0",
     {},
     100,
-    hauntProgressRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
@@ -879,6 +1451,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     createBetrayalScriptedRandom(2, 2, 1),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
+  placeFixtureExplorerInRoom(core, "0", "ground-north");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.STUDY_EXORCISM,
@@ -898,7 +1471,7 @@ export function createFirstScenarioReadyToExorciseTutorialCore(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
@@ -910,7 +1483,7 @@ export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const hauntProgressRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
 
   setScenarioTestTurnMovement(core, 6);
@@ -938,13 +1511,7 @@ export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
     createBetrayalScriptedRandom(2, 2, 1),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
-  setScenarioTestTurnMovement(core, 6);
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-landing",
-  });
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
-    roomId: "upper-north",
-  });
+  placeFixtureExplorerInRoom(core, "0", "ground-north");
 
   return core;
 }
@@ -1213,7 +1780,7 @@ export function createMaskMoveReadyCore(): BetrayalCore {
 }
 
 export function createHeroAttackTraitorReadyCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
@@ -1239,25 +1806,7 @@ export function createHeroAttackTraitorReadyTutorialCore(): BetrayalCore {
 }
 
 export function playFirstScenarioToTraitorVictory(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
-  const traitorWinRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第一次对攻击倒英雄：叛徒 8 vs 英雄 0
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第二次对攻击倒英雄
-  );
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1296,25 +1845,27 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "ground-north",
   });
+  setFixturePhysicalDeathDoor(core, "0");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "0" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  setFixturePhysicalDeathDoor(core, "1");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "1" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
@@ -1322,25 +1873,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
-  const traitorWinRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第一次对攻击倒英雄：叛徒 8 vs 英雄 0
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第二次对攻击倒英雄
-  );
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1379,13 +1912,14 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "ground-north",
   });
+  setFixturePhysicalDeathDoor(core, "0");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "0" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
@@ -1447,7 +1981,7 @@ export function createCorpseLootReadyCore(): BetrayalCore {
 }
 
 export function createJackSpiritReviveReadyCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1462,6 +1996,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -1478,9 +2013,15 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
     "1",
     {},
     100,
-    createBetrayalScriptedRandom(2, 2, 1),
+    createBetrayalScriptedRandom(3, 3, 3),
   );
   setScenarioTestTurnMovement(core, 6);
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "upper-landing",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
+    roomId: "grand-staircase",
+  });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
@@ -1494,7 +2035,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
 }
 
 export function createJackSpiritNaturalMonsterTurnBeforeRollCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1509,6 +2050,7 @@ export function createJackSpiritNaturalMonsterTurnBeforeRollCore(): BetrayalCore
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -1541,9 +2083,14 @@ export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
 
 export function createJackSpiritPostReviveAttackReadyTutorialCore(): BetrayalCore {
   const attackReadyCore = createJackSpiritMovementRollReadyCore();
+  const jackSpiritRoomId = attackReadyCore.scenarioRuntime.jackSpiritRoomId;
+  if (!jackSpiritRoomId) {
+    throw new Error("山屋杰克之灵教程夹具缺少灵体所在房间");
+  }
+  placeFixtureExplorerInRoom(attackReadyCore, "0", jackSpiritRoomId);
   return applyTutorialDiscoveryOrder(
     {
-      ...attackReadyCore,
+      ...focusCoreOnExplorer(attackReadyCore, "2"),
       recentRoll: null,
     },
   );

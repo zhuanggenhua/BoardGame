@@ -291,7 +291,7 @@ describe('The Gang local AI', () => {
             .some((action) => action.kind === 'start-next-heist')).toBe(true);
     });
 
-    test('AI 在手牌调换阶段默认确认不调换', () => {
+    test('AI 不再为废弃手牌调换阶段生成确认动作', () => {
         const state = setupStartedState();
         const handSwapState: ReturnType<typeof setupState> = {
             ...state,
@@ -310,14 +310,7 @@ describe('The Gang local AI', () => {
 
         const actions = buildTheGangAiLegalActions({ playerId: '1', state: handSwapState });
 
-        expect(actions).toHaveLength(1);
-        expect(actions[0]).toMatchObject({
-            kind: 'confirm-hand-swap',
-            commands: [{
-                type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
-                payload: {},
-            }],
-        });
+        expect(actions).toEqual([]);
     });
 
     test('两副手牌 AI 会为上手和下手分别生成选筹码动作', () => {
