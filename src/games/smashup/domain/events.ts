@@ -39,6 +39,8 @@ export const SU_EVENTS = defineEvents({
   // ========== UI 交互（本地播放）==========
   'su:faction_selected': { audio: 'ui', sound: SELECTION_KEY },
   'su:faction_deselected': 'silent',
+  'su:faction_banned': { audio: 'ui', sound: UPDATE_CHIME_KEY },
+  'su:faction_ready_confirmed': { audio: 'ui', sound: POSITIVE_SIGNAL_KEY },
   'su:seat_swapped': { audio: 'ui', sound: UPDATE_CHIME_KEY },
 
   // ========== 即时反馈（EventStream）==========
@@ -51,7 +53,6 @@ export const SU_EVENTS = defineEvents({
   'su:titan_power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:titan_power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
   'su:titan_ongoing_suppressed': 'silent',
-  'su:cards_suppressed_until_turn_end': 'silent',
   'su:titan_metadata_updated': 'silent',
   
   'su:cards_drawn': { audio: 'immediate', sound: CARD_DRAW_KEY },
@@ -76,6 +77,7 @@ export const SU_EVENTS = defineEvents({
   'su:card_stored': 'silent',
   'su:stored_card_counter_changed': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:stored_card_released': 'silent',
+  'su:wraithrustlers_hq_bonus_updated': 'silent',
   'su:hand_shuffled_into_deck': { audio: 'immediate', sound: CARD_SHUFFLE_KEY },
   
   'su:turn_started': { audio: 'immediate', sound: TURN_NOTIFY_KEY },
@@ -173,7 +175,6 @@ export const SU_EVENT_TYPES = {
   TITAN_POWER_COUNTER_ADDED: SU_EVENTS['su:titan_power_counter_added'].type,
   TITAN_POWER_COUNTER_REMOVED: SU_EVENTS['su:titan_power_counter_removed'].type,
   TITAN_ONGOING_SUPPRESSED: SU_EVENTS['su:titan_ongoing_suppressed'].type,
-  CARDS_SUPPRESSED_UNTIL_TURN_END: SU_EVENTS['su:cards_suppressed_until_turn_end'].type,
   TITAN_METADATA_UPDATED: SU_EVENTS['su:titan_metadata_updated'].type,
   BASE_SCORED: SU_EVENTS['su:base_scored'].type,
   VP_AWARDED: SU_EVENTS['su:vp_awarded'].type,
@@ -200,6 +201,8 @@ export const SU_EVENT_TYPES = {
   LIMIT_MODIFIED: SU_EVENTS['su:limit_modified'].type,
   FACTION_SELECTED: SU_EVENTS['su:faction_selected'].type,
   FACTION_DESELECTED: SU_EVENTS['su:faction_deselected'].type,
+  FACTION_BANNED: SU_EVENTS['su:faction_banned'].type,
+  FACTION_READY_CONFIRMED: SU_EVENTS['su:faction_ready_confirmed'].type,
   SEAT_SWAPPED: SU_EVENTS['su:seat_swapped'].type,
   ALL_FACTIONS_SELECTED: SU_EVENTS['su:all_factions_selected'].type,
   STARTING_HAND_MULLIGAN_USED: SU_EVENTS['su:starting_hand_mulligan_used'].type,
@@ -228,6 +231,7 @@ export const SU_EVENT_TYPES = {
   CARD_STORED: SU_EVENTS['su:card_stored'].type,
   STORED_CARD_COUNTER_CHANGED: SU_EVENTS['su:stored_card_counter_changed'].type,
   STORED_CARD_RELEASED: SU_EVENTS['su:stored_card_released'].type,
+  WRAITHRUSTLERS_HQ_BONUS_UPDATED: SU_EVENTS['su:wraithrustlers_hq_bonus_updated'].type,
   HAND_SHUFFLED_INTO_DECK: SU_EVENTS['su:hand_shuffled_into_deck'].type,
   MADNESS_DRAWN: SU_EVENTS['su:madness_drawn'].type,
   MADNESS_RETURNED: SU_EVENTS['su:madness_returned'].type,

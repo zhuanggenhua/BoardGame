@@ -854,6 +854,14 @@
     "base_mushroom_kingdom_pod_title": "蘑菇王国（POD）：选择一个随从，移动到或移出该基地",
     "base_mushroom_kingdom_pod_choose_base_title": "蘑菇王国（POD）：选择一个基地以移动该随从",
     "base_mushroom_kingdom_pod_choose_destination_title": "蘑菇王国（POD）：选择要移动到的基地",
+    "base_building_rooftop_title": "楼顶：选择是否按唯一己方佣兵的战力降低本基地临界点",
+    "base_jungle_camp_title": "丛林营地：选择是否将冠军的一个佣兵返回手牌",
+    "base_alternate_present_title": "另类现在：选择一张手牌置入停滞并放置 2 个停滞标记",
+    "base_time_traveling_car_title": "时间旅行汽车：选择冠军的一个佣兵或行动置入停滞",
+    "base_brood_hive_title": "育巢：选择是否从牌库顶额外打出一个佣兵到这里",
+    "base_wraithrustlers_hq_extra_minion_option": "额外佣兵",
+    "base_wraithrustlers_hq_extra_action_option": "额外行动",
+    "base_wraithrustlers_hq_title": "怨灵捕手总部：选择本回合的额外出牌额度",
     "bear_cavalry_polar_commando_pod_title": "选择放置 +1 力量指示物的随从",
     "bear_cavalry_superiority_pod_title": "全面优势：选择一项",
     "bear_cavalry_superiority_pod_draw_option": "摸一张牌",
@@ -12160,6 +12168,31 @@
       "label": "对局模式",
       "off": "标准自由混战",
       "2v2": "2v2 团队模式"
+    },
+    "factionParticipation": {
+      "groups": {
+        "core": "基础",
+        "awesome9000": "太棒了 9000",
+        "obligatoryCthulhu": "克苏鲁必备",
+        "scienceFictionDoubleFeature": "科幻双片",
+        "monsterSmash": "怪物大乱斗",
+        "prettyPretty": "漂亮又可爱",
+        "itsYourFault": "都是你的错",
+        "ceaseAndDesist": "停止并终止",
+        "whatWereWeThinking": "我们当时在想什么",
+        "bigInJapan": "日本大作战",
+        "that70s": "那个 70 年代",
+        "oopsYouDidItAgain": "糟糕，你又来这套",
+        "internationalIncident": "国际事件",
+        "cultureShock": "文化冲击",
+        "marvel": "漫威",
+        "disney": "迪士尼",
+        "excellentMovies": "优秀电影，伙计们！",
+        "singleFactionPacks": "单派系扩展",
+        "promos": "宣传包",
+        "custom": "自定义",
+        "halfTheBattle": "半场战争"
+      }
     }
   },
   "interactions": {}

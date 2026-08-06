@@ -17,6 +17,31 @@
       "label": "Match Mode",
       "off": "Free-for-All",
       "2v2": "2v2 Team Mode"
+    },
+    "factionParticipation": {
+      "groups": {
+        "core": "Core",
+        "awesome9000": "Awesome 9000",
+        "obligatoryCthulhu": "The Obligatory Cthulhu Set",
+        "scienceFictionDoubleFeature": "Science Fiction Double Feature",
+        "monsterSmash": "Monster Smash",
+        "prettyPretty": "Pretty Pretty Smash Up",
+        "itsYourFault": "It's Your Fault!",
+        "ceaseAndDesist": "Cease and Desist",
+        "whatWereWeThinking": "What Were We Thinking?",
+        "bigInJapan": "Big in Japan",
+        "that70s": "That '70s Expansion",
+        "oopsYouDidItAgain": "Oops, You Did It Again!",
+        "internationalIncident": "International Incident",
+        "cultureShock": "Culture Shock",
+        "marvel": "Marvel",
+        "disney": "Disney",
+        "excellentMovies": "Excellent Movies, Dudes!",
+        "singleFactionPacks": "Single-Faction Packs",
+        "promos": "Promos",
+        "custom": "Custom",
+        "halfTheBattle": "Half the Battle"
+      }
     }
   },
   "phases": {
@@ -878,6 +903,14 @@
     "base_mushroom_kingdom_pod_title": "Mushroom Kingdom (POD): choose a minion to move to or from this base",
     "base_mushroom_kingdom_pod_choose_base_title": "Mushroom Kingdom (POD): choose a base to move that minion to",
     "base_mushroom_kingdom_pod_choose_destination_title": "Mushroom Kingdom (POD): choose a destination base",
+    "base_building_rooftop_title": "The Building's Rooftop: choose whether to lower this base's breakpoint by your sole minion's power",
+    "base_jungle_camp_title": "Jungle Camp: choose whether to return one of the winner's minions here to their hand",
+    "base_alternate_present_title": "The Alternate Present: choose a card from your hand to place in the Past and add 2 counters",
+    "base_time_traveling_car_title": "Time-Traveling Car: choose one of the winner's minions or actions here to place in the Past",
+    "base_brood_hive_title": "Brood Hive: choose whether to play a minion from the top of your deck here",
+    "base_wraithrustlers_hq_extra_minion_option": "Extra minion",
+    "base_wraithrustlers_hq_extra_action_option": "Extra action",
+    "base_wraithrustlers_hq_title": "Wraithrustlers HQ: choose your extra play for this turn",
     "bear_cavalry_polar_commando_pod_title": "Choose a minion to place a +1 power counter on",
     "bear_cavalry_superiority_pod_title": "Superiority: choose one",
     "bear_cavalry_superiority_pod_draw_option": "Draw a card",

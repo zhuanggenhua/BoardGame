@@ -33,7 +33,6 @@ import {
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { getCardActivatableAbilities, hasCardActivatableAbility } from './activationMetadata';
-import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import {
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindowForMatchState,
@@ -50,24 +49,14 @@ import {
 } from './utils';
 import { isCardActionLike, isCardMinionLike } from './utils';
 import { getSmashUpReactionWindowContext, hasBlockingLegacyResponseWindow } from './reactionWindowState';
-import { isSmashUpDiyFaction } from './ids';
+import {
+    canSmashUpPlayerBanFaction,
+    canSmashUpPlayerConfirmFactionReady,
+    canSmashUpPlayerSelectFaction,
+    isSmashUpBanSelectionPhase,
+} from './pregameDraft';
 
 type TitanAbilityKind = SmashUpActivationKind;
-const POD_FACTION_SUFFIX = '_pod';
-
-function normalizeFactionSelectionId(factionId: string): string {
-    return factionId.endsWith(POD_FACTION_SUFFIX)
-        ? factionId.slice(0, -POD_FACTION_SUFFIX.length)
-        : factionId;
-}
-
-function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): Set<string> {
-    const identities = new Set<string>();
-    for (const factionId of factionIds) {
-        identities.add(normalizeFactionSelectionId(factionId));
-    }
-    return identities;
-}
 
 function getCurrentManualActivationWindow(state: MatchState<SmashUpCore>): SmashUpActivationWindow {
     if (state.sys.phase !== 'scoreBases') return 'playCards';
@@ -397,12 +386,13 @@ export function validate(
             const player = core.players[command.playerId];
             if (!player) return { valid: false, error: '玩家不存在' };
 
-            const { baseIndex, fromDiscard, fromStored, playAsAction } = command.payload;
+            const { baseIndex, fromDiscard, fromDeck, fromStored, playAsAction } = command.payload;
             if (baseIndex < 0 || baseIndex >= core.bases.length) {
                 return { valid: false, error: '无效的基地索引' };
             }
-            if (fromDiscard && fromStored) {
-                return { valid: false, error: '不能同时从弃牌堆和暂存区打出随从' };
+            const externalSourceCount = [fromDiscard, fromDeck, fromStored].filter(Boolean).length;
+            if (externalSourceCount > 1) {
+                return { valid: false, error: '不能同时从多个外部区域打出随从' };
             }
 
             // 从弃牌堆打出：通过 discardPlayability 模块验证
@@ -460,6 +450,57 @@ export function validate(
                     fromDiscard: true,
                 })) {
                     return { valid: false, error: '该基地禁止打出该随从' };
+                }
+                return { valid: true };
+            }
+
+            if (fromDeck) {
+                const deckCard = player.deck.find(c => c.uid === command.payload.cardUid);
+                if (!deckCard) return { valid: false, error: '牌库中没有该随从' };
+                if (!isCardMinionLike(deckCard)) return { valid: false, error: '该牌库牌不是随从' };
+                const deckMinionDef = getMinionDef(deckCard.defId);
+                const deckFusionDef = getFusionDef(deckCard.defId);
+                const deckBasePower = (deckMinionDef?.power ?? deckFusionDef?.minionPower) ?? 0;
+                const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
+                    && isExtraMinionPlayAttempt(
+                        core,
+                        command.playerId,
+                        baseIndex,
+                        deckCard.defId,
+                        deckBasePower,
+                        false,
+                        false,
+                    );
+                if (blockedByBearNecessitiesPod) {
+                    return { valid: false, error: '受黑熊口粮POD限制：你不能打出额外牌' };
+                }
+                const blockedByEliza = hasActivePrincessesElizaRestriction(core, command.playerId)
+                    && (player.extraCardsPlayedThisTurn ?? 0) >= 1
+                    && isExtraMinionPlayAttempt(
+                        core,
+                        command.playerId,
+                        baseIndex,
+                        deckCard.defId,
+                        deckBasePower,
+                        false,
+                        false,
+                    );
+                if (blockedByEliza) {
+                    return { valid: false, error: '受伊莱莎限制：你本回合不能再打出额外牌' };
+                }
+                if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
+                    minionDefId: deckCard.defId,
+                    basePower: deckBasePower,
+                    usesBaseLimitedMinionQuota: false,
+                    cardUid: deckCard.uid,
+                    fromDiscard: false,
+                })) {
+                    return { valid: false, error: '该基地禁止打出该随从' };
+                }
+                const deckConstraint = deckMinionDef?.playConstraint ?? deckFusionDef?.minionPlayConstraint;
+                if (deckConstraint) {
+                    const constraintError = checkPlayConstraint(deckConstraint, core, baseIndex, command.playerId);
+                    if (constraintError) return { valid: false, error: constraintError };
                 }
                 return { valid: true };
             }
@@ -829,43 +870,25 @@ export function validate(
             if (phase !== 'factionSelect') {
                 return { valid: false, error: '只能在派系选择阶段选择派系' };
             }
-            // Check turn order strictness
-            if (command.playerId !== currentPlayerId) {
-                return { valid: false, error: 'player_mismatch' };
-            }
-            const selection = core.factionSelection;
-            if (!selection) return { valid: false, error: '派系选择状态未初始化' };
-
-            const factionId = command.payload.factionId;
-            if (isSmashUpDiyFaction(factionId) && !(core.enabledExpansions ?? ['titans', 'diy']).includes('diy')) {
-                return { valid: false, error: '该 DIY 派系未开启' };
-            }
-            const factionIdentity = normalizeFactionSelectionId(factionId);
-            const takenFactionIdentities = buildFactionSelectionIdentitySet(selection.takenFactions);
-            if (takenFactionIdentities.has(factionIdentity)) {
-                return { valid: false, error: '该派系已被选择' };
-            }
-            const playerSelections = selection.playerSelections[command.playerId] || [];
-            const playerSelectionIdentities = buildFactionSelectionIdentitySet(playerSelections);
-            if (playerSelectionIdentities.has(factionIdentity)) {
-                return { valid: false, error: '该派系已被选择' };
-            }
-            if (playerSelections.length >= 2) {
-                return { valid: false, error: '你已选择了两个派系' };
-            }
-
-            return { valid: true };
+            return canSmashUpPlayerSelectFaction(core, command.playerId, command.payload.factionId);
         }
 
         case SU_COMMANDS.DESELECT_FACTION: {
             if (phase !== 'factionSelect') {
                 return { valid: false, error: '只能在派系选择阶段取消派系' };
             }
-            if (command.playerId !== currentPlayerId) {
-                return { valid: false, error: 'player_mismatch' };
-            }
             const selection = core.factionSelection;
             if (!selection) return { valid: false, error: '派系选择状态未初始化' };
+            if (isSmashUpBanSelectionPhase(selection)) {
+                return { valid: false, error: 'Ban Pick 阶段不能取消已选派系' };
+            }
+            if ((selection.lockedPlayers ?? []).includes(command.playerId)) {
+                return { valid: false, error: '你的派系选择已锁定' };
+            }
+            const mode = selection.mode ?? core.factionSelectionMode ?? 'snakeDraft';
+            if (mode !== 'freePick' && mode !== 'individualPools' && command.playerId !== currentPlayerId) {
+                return { valid: false, error: 'player_mismatch' };
+            }
 
             const factionId = command.payload.factionId;
             const playerSelections = selection.playerSelections[command.playerId] || [];
@@ -873,6 +896,20 @@ export function validate(
                 return { valid: false, error: '尚未选择该派系' };
             }
             return { valid: true };
+        }
+
+        case SU_COMMANDS.BAN_FACTION: {
+            if (phase !== 'factionSelect') {
+                return { valid: false, error: '只能在派系选择阶段 Ban 派系' };
+            }
+            return canSmashUpPlayerBanFaction(core, command.playerId, command.payload.factionId);
+        }
+
+        case SU_COMMANDS.CONFIRM_FACTION_READY: {
+            if (phase !== 'factionSelect') {
+                return { valid: false, error: '只能在派系选择阶段确认 ready' };
+            }
+            return canSmashUpPlayerConfirmFactionReady(core, command.playerId);
         }
 
         case SU_COMMANDS.SWAP_SEAT: {
@@ -1265,42 +1302,6 @@ export function validate(
             return validateTitanAbility(state, command, 'ongoing');
         }
 
-        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
-            if (phase !== 'playCards') {
-                return { valid: false, error: '只能在出牌阶段击败怪物' };
-            }
-            if (command.playerId !== currentPlayerId) {
-                return { valid: false, error: 'player_mismatch' };
-            }
-
-            const { baseIndex, monsterUid } = command.payload;
-            const base = core.bases[baseIndex];
-            if (!base) {
-                return { valid: false, error: '无效的基地索引' };
-            }
-
-            const monster = base.monsters?.find(candidate => candidate.uid === monsterUid);
-            if (!monster) {
-                return { valid: false, error: '该基地没有这个怪物' };
-            }
-            if (monster.controllerId !== undefined) {
-                return { valid: false, error: '已受控怪物不能被击败' };
-            }
-
-            const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
-            if (descriptor?.kind !== 'monster') {
-                return { valid: false, error: '该对象不是怪物' };
-            }
-
-            const monsterPower = descriptor.power ?? 0;
-            const playerPower = getPlayerEffectivePowerOnBase(core, base, baseIndex, command.playerId);
-            if (playerPower < monsterPower) {
-                return { valid: false, error: `你在该基地的力量不足以击败这个怪物（需要${monsterPower}）` };
-            }
-
-            return { valid: true };
-        }
-
         default:
             // RESPONSE_PASS 由引擎 ResponseWindowSystem 处理，领域层直接放行
             if ((command as { type: string }).type === 'RESPONSE_PASS') {
@@ -1333,6 +1334,11 @@ function checkPlayConstraint(
     if (constraint === 'onlyCardInHand') {
         const handSize = core.players[playerId]?.hand.length ?? 0;
         if (handSize !== 1) return '只能在本卡是你的唯一手牌时打出';
+        return null;
+    }
+    if (constraint === 'requireNoOwnActionsOnBase') {
+        const hasOwnAction = core.bases[baseIndex].ongoingActions.some(action => action.ownerId === playerId);
+        if (hasOwnAction) return '只能打到你没有行动牌的基地';
         return null;
     }
     if (typeof constraint === 'object' && constraint.type === 'requireOwnPower') {

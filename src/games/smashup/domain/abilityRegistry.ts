@@ -38,6 +38,14 @@ export interface AbilityContext {
     duel?: ActiveDuel;
     /** 行动卡结算时，牌离手后的手牌数。外部来源打行动时由调用方显式传入。 */
     handSizeAfterPlay?: number;
+    /** 本次卡牌是否从弃牌堆打出。 */
+    fromDiscard?: boolean;
+    /** 本次卡牌是否从牌库打出。 */
+    fromDeck?: boolean;
+    /** 本次卡牌是否从暂存/停滞区打出。 */
+    fromStored?: boolean;
+    /** 本次卡牌是否从埋葬区打出。 */
+    fromBuried?: boolean;
     random: RandomFn;
     now: number;
 }
