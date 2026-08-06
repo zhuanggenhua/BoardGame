@@ -69,7 +69,27 @@
 
 - 风险点：资源清单合并后可能存在 JSON 格式、资源键遗漏或共享键哈希回退；`Board.tsx` 与 `reduce.ts` 可能出现类型/运行时契约不一致。
 - 已执行：冲突标记扫描无命中；两个资源清单均可解析；`git diff --check` 通过。
-- 待执行：合并提交后的 `merge:audit` / `merge:audit:strict`、TypeScript、ESLint、SmashUp 定向测试和远端质量门。
+- `npx tsc --noEmit --pretty false`：通过。
+- SmashUp 定向测试 5 个文件：30 项全部通过。
+- `npx eslint src/ --ext .ts,.tsx`（`NODE_OPTIONS=--max-old-space-size=8192`）：0 errors，1423 warnings；warning 为仓库现有基线问题。
+- `npm run merge:audit -- HEAD`：混合结果 2、与两侧相同 21、完全等于父2 15、完全等于父1 0。
+- `npm run merge:audit:strict -- HEAD`：按规则对 15 个父2一致文件返回非 0，已逐项解释如下；这不是未解释的单边覆盖。
+
+### 单边覆盖审计解释
+
+严格审计中的 15 个“完全等于父2”文件均为安全的主线等价保留，不是把 PR #120 的有效内容静默删掉：
+
+- `public/assets/i18n/zh-CN/smashup/assets-manifest.json`：逐键比对确认 PR 侧没有主线缺失的独有键，DIY 资源键在双方都存在；主线版本已包含 Munchkin、哥布林、圆桌骑士和半场战争资源。
+- `public/locales/en/game-smashup.json`、`public/locales/zh-CN/game-smashup.json`：主线已经包含 DIY 杀手/小丑文案，并补充当前主线目标提示文案；没有发现 PR 侧独有的 DIY 文案被丢弃。
+- `src/games/smashup/__tests__/Board.interactionBars.test.ts`：双方断言内容等价，主线版本只是保留了相同的弃牌堆交互合同。
+- `src/games/smashup/abilities/index.ts`：主线版本同时保留 DIY 注册，并增加 Munchkin、哥布林、圆桌骑士、半场战争注册；PR 侧没有未迁移的 DIY 注册。
+- `src/games/smashup/data/cards.ts`：主线版本保留 DIY 卡牌/基地注册，并补充主线派系；已用 `DIY_*` 注册项逐项核对。
+- `src/games/smashup/domain/atlasCatalog.ts`、`src/games/smashup/domain/ids.ts`：主线版本保留 DIY 图集和 ID，同时补充主线新增派系；双方有效声明均在最终文件中。
+- `src/games/smashup/domain/commands.ts`、`src/games/smashup/domain/index.ts`、`src/games/smashup/domain/reactionSession.ts`、`src/games/smashup/domain/reducer.ts`、`src/games/smashup/domain/types.ts`：主线版本已保留弃牌堆、DIY 合同和 PR 侧类型基础，并增加 Munchkin 等主线契约；定向测试覆盖了 DIY 弃牌堆入口。
+- `src/games/smashup/domain/reduce.ts`：主线版本包含 PR 侧弃牌堆字段以及更多 Munchkin 状态事件；本次冲突块已特别保留 `discardPlaySourceId`、`consumesNormalLimit` 和 `payloadDefId` 三组字段。
+- `src/games/smashup/ui/factionMeta.ts`：主线版本保留 DIY 杀手/小丑派系元数据，并补充主线派系元数据；DIY 开关和展示信息仍存在。
+
+因此，严格审计的父2一致结果来自“主线已经等价吸收或包含 PR 内容”，而不是未审查的整份覆盖；真正存在双方不同有效内容的文件为 `public/assets/i18n/assets-manifest.json` 与 `src/games/smashup/Board.tsx`，两者均为混合结果。
 
 ## 5. 回归与行为变化登记
 
@@ -79,5 +99,5 @@
 
 ## 6. 结果
 
-- 合并提交：待合并提交生成后补记。
-- 推送目标：`deathcats4/BoardGame:codex/smashup-diy-killers-clowns-pr`
+- 合并提交：`5cb4adb1`（`合并 PR #120 DIY 杀手与小丑并保留最新主线`）。
+- 推送目标：`deathcats4/BoardGame:codex/smashup-diy-killers-clowns-pr`，待推送。
