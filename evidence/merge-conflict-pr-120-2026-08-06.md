@@ -100,4 +100,5 @@
 ## 6. 结果
 
 - 合并提交：`5cb4adb1`（`合并 PR #120 DIY 杀手与小丑并保留最新主线`）。
-- 推送目标：`deathcats4/BoardGame:codex/smashup-diy-killers-clowns-pr`，待推送。
+- fork 写权限核验：当前身份对 `deathcats4/BoardGame` 为 `push=false`，不能回写作者分支；PR 元数据中的 `maintainerCanModify=true` 不改变该事实。
+- 推送目标：`zhuanggenhua/BoardGame:main`，采用已授权的直接落主线 fallback；推送后确认并关闭原 PR #120，不删除作者分支。
