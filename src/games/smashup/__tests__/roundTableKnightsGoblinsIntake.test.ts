@@ -27,65 +27,65 @@ type FactionIntakeCase = {
     expectedBases: Record<string, { index: number; breakpoint: number; vpAwards: [number, number, number] }>;
 };
 
-const NEW_FACTIONS: FactionIntakeCase[] = [
+const FACTIONS: FactionIntakeCase[] = [
     {
-        factionId: SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS,
-        cardAtlasId: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_CARDS,
-        cardAtlasImage: 'smashup/cards/new_round_table_knights',
-        baseAtlasId: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_BASES,
-        baseAtlasImage: 'smashup/base/new_round_table_knights_bases',
+        factionId: SMASHUP_FACTION_IDS.ROUND_TABLE_KNIGHTS,
+        cardAtlasId: SMASHUP_ATLAS_IDS.ROUND_TABLE_KNIGHTS_CARDS,
+        cardAtlasImage: 'smashup/cards/round_table_knights',
+        baseAtlasId: SMASHUP_ATLAS_IDS.ROUND_TABLE_KNIGHTS_BASES,
+        baseAtlasImage: 'smashup/base/round_table_knights_bases',
         expectedCardCount: 18,
         expectedDeckCopies: 20,
         expectedCardIndexes: {
-            new_round_table_knights_king_arthur: 0,
-            new_round_table_knights_galahad: 1,
-            new_round_table_knights_gawain: 2,
-            new_round_table_knights_guinevere: 3,
-            new_round_table_knights_lancelot: 4,
-            new_round_table_knights_merlin: 5,
-            new_round_table_knights_percival: 6,
-            new_round_table_knights_quest: 7,
-            new_round_table_knights_sword_in_the_stone: 8,
-            new_round_table_knights_do_good: 9,
-            new_round_table_knights_merlins_library: 11,
-            new_round_table_knights_steed: 12,
-            new_round_table_knights_fisher_king: 14,
-            new_round_table_knights_holy_grail: 15,
-            new_round_table_knights_green_knight: 16,
-            new_round_table_knights_lady_of_the_lake: 17,
-            new_round_table_knights_mists_of_avalon: 18,
-            new_round_table_knights_questing_beast: 19,
+            round_table_knights_king_arthur: 0,
+            round_table_knights_galahad: 1,
+            round_table_knights_gawain: 2,
+            round_table_knights_guinevere: 3,
+            round_table_knights_lancelot: 4,
+            round_table_knights_merlin: 5,
+            round_table_knights_percival: 6,
+            round_table_knights_a_questing: 7,
+            round_table_knights_excalibur: 8,
+            round_table_knights_good_deed: 9,
+            round_table_knights_merlins_library: 11,
+            round_table_knights_noble_steed: 12,
+            round_table_knights_the_fisher_king: 14,
+            round_table_knights_the_grail: 15,
+            round_table_knights_the_green_knight: 16,
+            round_table_knights_the_lady_of_the_lake: 17,
+            round_table_knights_the_mists_of_avalon: 18,
+            round_table_knights_the_questing_beast: 19,
         },
         expectedBases: {
-            base_arthurs_court: { index: 0, breakpoint: 22, vpAwards: [5, 3, 2] },
+            base_camelot: { index: 0, breakpoint: 22, vpAwards: [5, 3, 2] },
             base_round_table: { index: 1, breakpoint: 21, vpAwards: [4, 2, 1] },
         },
     },
     {
-        factionId: SMASHUP_FACTION_IDS.NEW_GOBLINS,
-        cardAtlasId: SMASHUP_ATLAS_IDS.NEW_GOBLINS_CARDS,
-        cardAtlasImage: 'smashup/cards/new_goblins',
-        baseAtlasId: SMASHUP_ATLAS_IDS.NEW_GOBLINS_BASES,
-        baseAtlasImage: 'smashup/base/new_goblins_bases',
+        factionId: SMASHUP_FACTION_IDS.GOBLINS,
+        cardAtlasId: SMASHUP_ATLAS_IDS.GOBLINS_CARDS,
+        cardAtlasImage: 'smashup/cards/goblins',
+        baseAtlasId: SMASHUP_ATLAS_IDS.GOBLINS_BASES,
+        baseAtlasImage: 'smashup/base/goblins_bases',
         expectedCardCount: 12,
         expectedDeckCopies: 20,
         expectedCardIndexes: {
-            new_goblins_chaos_goblin: 0,
-            new_goblins_oracle_goblin: 1,
-            new_goblins_bomb_goblin: 3,
-            new_goblins_goblin: 6,
-            new_goblins_magic_helmet: 10,
-            new_goblins_a_little_help: 11,
-            new_goblins_ambush: 13,
-            new_goblins_blast: 14,
-            new_goblins_recruiters: 15,
-            new_goblins_who_smelted_it: 16,
-            new_goblins_make_your_own_luck: 17,
-            new_goblins_speed_boost: 19,
+            goblins_chaos_lord: 0,
+            goblins_diviner: 1,
+            goblins_blaster: 3,
+            goblins_gobbo: 6,
+            goblins_magic_helmet: 10,
+            goblins_a_little_help: 11,
+            goblins_bushwhacking: 13,
+            goblins_demolition: 14,
+            goblins_recruiters: 15,
+            goblins_he_who_smelt_it: 16,
+            goblins_make_your_own_luck: 17,
+            goblins_revving_up: 19,
         },
         expectedBases: {
             base_goblin_caves: { index: 0, breakpoint: 17, vpAwards: [3, 1, 1] },
-            base_goblin_village: { index: 1, breakpoint: 21, vpAwards: [4, 2, 1] },
+            base_goblin_town: { index: 1, breakpoint: 21, vpAwards: [4, 2, 1] },
         },
     },
 ];
@@ -131,41 +131,41 @@ function loadLocale(locale: 'zh-CN' | 'en') {
 }
 
 describe('SmashUp 圆桌骑士 / 哥布林 intake 静态合同', () => {
-    it('两个新图集的 grid 与运行时图片路径正确', () => {
+    it('图集 grid 与运行时图片路径使用去 new 后命名', () => {
         expect(SMASHUP_ATLAS_DEFINITIONS).toEqual(expect.arrayContaining([
             {
-                id: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_CARDS,
+                id: SMASHUP_ATLAS_IDS.ROUND_TABLE_KNIGHTS_CARDS,
                 kind: 'card',
-                image: 'smashup/cards/new_round_table_knights',
+                image: 'smashup/cards/round_table_knights',
                 grid: { rows: 4, cols: 5 },
             },
             {
-                id: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_BASES,
+                id: SMASHUP_ATLAS_IDS.ROUND_TABLE_KNIGHTS_BASES,
                 kind: 'base',
-                image: 'smashup/base/new_round_table_knights_bases',
+                image: 'smashup/base/round_table_knights_bases',
                 grid: { rows: 1, cols: 2 },
             },
             {
-                id: SMASHUP_ATLAS_IDS.NEW_GOBLINS_CARDS,
+                id: SMASHUP_ATLAS_IDS.GOBLINS_CARDS,
                 kind: 'card',
-                image: 'smashup/cards/new_goblins',
+                image: 'smashup/cards/goblins',
                 grid: { rows: 4, cols: 5 },
             },
             {
-                id: SMASHUP_ATLAS_IDS.NEW_GOBLINS_BASES,
+                id: SMASHUP_ATLAS_IDS.GOBLINS_BASES,
                 kind: 'base',
-                image: 'smashup/base/new_goblins_bases',
+                image: 'smashup/base/goblins_bases',
                 grid: { rows: 1, cols: 2 },
             },
         ]));
 
-        for (const fixture of NEW_FACTIONS) {
+        for (const fixture of FACTIONS) {
             expect(getSmashUpAtlasImageById(fixture.cardAtlasId)).toBe(fixture.cardAtlasImage);
             expect(getSmashUpAtlasImageById(fixture.baseAtlasId)).toBe(fixture.baseAtlasImage);
         }
     });
 
-    it.each(NEW_FACTIONS)('$factionId 卡牌数量、拷贝数与 row-major 索引正确', (fixture) => {
+    it.each(FACTIONS)('$factionId 卡牌数量、拷贝数与 row-major 索引正确', (fixture) => {
         const defs = getFactionCards(fixture.factionId);
 
         expect(defs).toHaveLength(fixture.expectedCardCount);
@@ -178,7 +178,7 @@ describe('SmashUp 圆桌骑士 / 哥布林 intake 静态合同', () => {
         }
     });
 
-    it.each(NEW_FACTIONS)('$factionId 只返回本派系两张基地', (fixture) => {
+    it.each(FACTIONS)('$factionId 只返回本派系两张基地', (fixture) => {
         const baseIds = getBaseDefIdsForFactions([fixture.factionId]).sort();
         const expectedBaseIds = Object.keys(fixture.expectedBases).sort();
 
@@ -195,41 +195,41 @@ describe('SmashUp 圆桌骑士 / 哥布林 intake 静态合同', () => {
     it('关键图片预加载会命中新卡图与基地图集', () => {
         const resolved = smashUpCriticalImageResolver(
             makePlayingState({
-                '0': [SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS, SMASHUP_FACTION_IDS.NEW_GOBLINS],
+                '0': [SMASHUP_FACTION_IDS.ROUND_TABLE_KNIGHTS, SMASHUP_FACTION_IDS.GOBLINS],
                 '1': [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.WIZARDS],
             }),
             undefined,
             '0',
         );
 
-        expect(resolved.critical).toContain('smashup/cards/new_round_table_knights');
-        expect(resolved.critical).toContain('smashup/base/new_round_table_knights_bases');
-        expect(resolved.critical).toContain('smashup/cards/new_goblins');
-        expect(resolved.critical).toContain('smashup/base/new_goblins_bases');
+        expect(resolved.critical).toContain('smashup/cards/round_table_knights');
+        expect(resolved.critical).toContain('smashup/base/round_table_knights_bases');
+        expect(resolved.critical).toContain('smashup/cards/goblins');
+        expect(resolved.critical).toContain('smashup/base/goblins_bases');
     });
 
-    it('两个正统派系不归入 DIY，并且当前显式标记为实施中', () => {
-        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS)).toBe(false);
-        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.NEW_GOBLINS)).toBe(false);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.NEW_GOBLINS)).toBe(true);
+    it('两个正统派系不归入 DIY，并且不再标记为实施中', () => {
+        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.ROUND_TABLE_KNIGHTS)).toBe(false);
+        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.GOBLINS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.ROUND_TABLE_KNIGHTS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.GOBLINS)).toBe(false);
 
         const visibleWithoutDiy = getVisibleFactionMetadata('zh-CN', ['titans'])
             .map(meta => meta.id);
-        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS);
-        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.NEW_GOBLINS);
+        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.ROUND_TABLE_KNIGHTS);
+        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.GOBLINS);
     });
 
-    it('中英文 locale 覆盖所有新增派系、卡牌与基地 key', () => {
+    it('中英文 locale 覆盖所有派系、卡牌与基地 key', () => {
         const zhCN = loadLocale('zh-CN');
         const en = loadLocale('en');
 
-        expect(zhCN.factions.new_round_table_knights?.name).toBe('圆桌骑士');
-        expect(zhCN.factions.new_goblins?.name).toBe('哥布林');
-        expect(en.factions.new_round_table_knights?.name).toBe('Round Table Knights');
-        expect(en.factions.new_goblins?.name).toBe('Goblins');
+        expect(zhCN.factions.round_table_knights?.name).toBe('圆桌骑士');
+        expect(zhCN.factions.goblins?.name).toBe('哥布林');
+        expect(en.factions.round_table_knights?.name).toBe('Round Table Knights');
+        expect(en.factions.goblins?.name).toBe('Goblins');
 
-        const expectedCardAndBaseIds = NEW_FACTIONS.flatMap(fixture => [
+        const expectedCardAndBaseIds = FACTIONS.flatMap(fixture => [
             ...Object.keys(fixture.expectedCardIndexes),
             ...Object.keys(fixture.expectedBases),
         ]);

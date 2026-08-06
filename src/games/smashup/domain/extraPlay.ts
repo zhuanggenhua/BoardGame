@@ -28,7 +28,6 @@ import {
     type ActionCardDef,
     type FusionCardDef,
     type LimitModifiedEvent,
-    type MinionOnBase,
     type SmashUpCore,
     type SmashUpEvent,
 } from './types';

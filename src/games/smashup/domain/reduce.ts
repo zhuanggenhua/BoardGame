@@ -3634,7 +3634,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.CARD_TO_DECK_BOTTOM: {
-            const { cardUid, defId, ownerId, sourcePlayerId } = (event as CardToDeckBottomEvent).payload;
+            const { cardUid, defId, ownerId, sourcePlayerId, sourceDefId } = (event as CardToDeckBottomEvent).payload;
             const owner = state.players[ownerId];
             if (!owner) return state;
             const sourceOwner = state.players[sourcePlayerId ?? ownerId];
@@ -3726,6 +3726,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 ...state,
                 bases: detached.bases,
                 players: updatedPlayers,
+                afterScoringRitualSiteDeckedMinionUids: sourceDefId === 'base_ritual_site'
+                    ? Array.from(new Set([...(state.afterScoringRitualSiteDeckedMinionUids ?? []), cardUid]))
+                    : state.afterScoringRitualSiteDeckedMinionUids,
             };
         }
 
@@ -4775,6 +4778,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 afterScoringTriggeredBases: undefined,
+                afterScoringRitualSiteDeckedMinionUids: undefined,
             };
         }
 

@@ -72,11 +72,13 @@ export interface SmashUpActivatableAbility {
  * - 'requireNoCharacters'：目标基地上不能有任何角色
  * - { type: 'requireOwnPower', minPower: N }：目标基地上己方力量必须 ≥ N
  * - 'onlyCardInHand'：本卡必须是手牌中的唯一一张
+ * - 'requireNoOwnActionsOnBase'：目标基地上不能有你的行动牌
  */
 export type PlayConstraint =
     | 'requireOwnMinion'
     | 'requireNoCharacters'
     | 'onlyCardInHand'
+    | 'requireNoOwnActionsOnBase'
     | { type: 'requireOwnPower'; minPower: number };
 
 export type PlayTargetMinionController = 'self' | 'opponent' | 'any';
@@ -981,6 +983,8 @@ export interface SmashUpCore {
     greatWolfSpiritDoubleTalentCardUids?: string[];
     /** 计分后触发的 special 延迟记录（回合开始自动清空） */
     pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];
+    /** 仪式场所把计分基地上的随从放回牌库后，仍可由大副触发恢复移动的随从 UID。 */
+    afterScoringRitualSiteDeckedMinionUids?: string[];
     /**
      * 进入 scoreBases 阶段时锁定的 eligible 基地索引列表。
      * 规则：一旦基地在进入计分阶段时达到 breakpoint，即使 Me First! 响应窗口中
@@ -1184,6 +1188,10 @@ export interface SwapSeatCommand extends Command<typeof SU_COMMANDS.SWAP_SEAT> {
 export interface UseBaseAbilityCommand extends Command<typeof SU_COMMANDS.USE_BASE_ABILITY> {
     payload: {
         baseIndex: number;
+        /** 可选目标基地，供主动基地能力透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供主动基地能力透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1196,6 +1204,10 @@ export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT>
         ongoingCardUid?: string;
         titanUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要转移/选择基地的天赋透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供需要选择随从的天赋透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1207,6 +1219,8 @@ export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIV
         discardCardUid?: string;
         handCardUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要移动/转移到另一基地的特殊能力透传给能力实现。 */
+        targetBaseIndex?: number;
         targetMinionUid?: string;
     };
 }

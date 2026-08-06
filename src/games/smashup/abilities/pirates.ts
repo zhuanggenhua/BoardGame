@@ -478,7 +478,10 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         && ownerZones
         && (ownerZones.hand.some(card => card.uid === mateUid) || ownerZones.deck.some(card => card.uid === mateUid)),
     );
-    if (!locatedMate && sourceAlreadyInHandOrDeck) return [];
+    const wasDeckedByRitualSite = Boolean(
+        mateUid && ctx.state.afterScoringRitualSiteDeckedMinionUids?.includes(mateUid),
+    );
+    if (!locatedMate && sourceAlreadyInHandOrDeck && !wasDeckedByRitualSite) return [];
     const mate = locatedMate?.minion ?? snapshotMate;
     const mateDefId = mate?.defId ?? ctx.triggerMinionDefId ?? ctx.sourceDefId;
     const mateBaseIndex = locatedMate?.baseIndex ?? ctx.sourceBaseIndex;

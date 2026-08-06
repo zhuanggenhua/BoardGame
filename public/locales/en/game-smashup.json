@@ -1596,7 +1596,9 @@
     "all_protected": "All targets are protected",
     "ability_not_implemented": "Ability not yet implemented",
     "base_deck_empty": "Base deck is empty",
-    "no_minion_cards_in_hand": "No minion cards in hand"
+    "no_minion_cards_in_hand": "No minion cards in hand",
+    "goblins_make_your_own_luck_changed": "Make Your Own Luck changed the coin result.",
+    "goblins_make_your_own_luck_ready": "Make Your Own Luck is ready to change a coin result."
   },
   "actionLog": {
     "playerLabel": "P{{playerId}}",
@@ -2290,13 +2292,13 @@
       "name": "Polynesian Voyagers",
       "description": "Expand across new bases with tattoos, wayfinding moves, and +1 power counters on isolated footholds."
     },
-    "new_round_table_knights": {
+    "round_table_knights": {
       "name": "Round Table Knights",
-      "description": "An official faction built around base actions, movement, and high-power minion synergies. Gameplay abilities are still in progress."
+      "description": "An official faction built around base actions, movement, and high-power minion synergies. Gameplay abilities are implemented with Fandom/POD errata coverage."
     },
-    "new_goblins": {
+    "goblins": {
       "name": "Goblins",
-      "description": "An official faction built around coin flips and +1 power counters. Coin-flip gameplay abilities are still in progress."
+      "description": "An official faction built around coin flips and +1 power counters. Coin-flip gameplay abilities are implemented with Fandom/POD errata coverage."
     },
     "adolescent_epic_geckos": {
       "name": "Adolescent Epic Geckos",
@@ -11197,140 +11199,140 @@
       "name": "The Colony",
       "abilityText": "The first time you play a minion here on your turn, you may play a minion from the top of your deck as an extra minion here."
     },
-    "new_round_table_knights_king_arthur": {
+    "round_table_knights_king_arthur": {
       "name": "King Arthur",
-      "abilityText": "Talent: Move one of your power 1 minions from another base to here. If you do, and you have an action here, place a +1 power counter on it."
+      "abilityText": "Talent: Move one of your minions from another base to here. If you do, place a +1 power counter on it if you have an action on this base."
     },
-    "new_round_table_knights_galahad": {
+    "round_table_knights_galahad": {
       "name": "Galahad",
       "abilityText": "Search your deck for an action played on a base and place it on top of your deck. Special: Before this base scores, you may transfer one of your actions here to another base."
     },
-    "new_round_table_knights_gawain": {
+    "round_table_knights_gawain": {
       "name": "Gawain",
-      "abilityText": "Ongoing: This minion gains +1 power for each of your minions here with power 4 or more."
+      "abilityText": "Ongoing: This minion has +1 power for each of your other minions of power 4 or more here."
     },
-    "new_round_table_knights_guinevere": {
+    "round_table_knights_guinevere": {
       "name": "Guinevere",
       "abilityText": "Talent: Move another one of your minions from here to another base. Ongoing: Your actions on bases cannot be destroyed by other players' abilities."
     },
-    "new_round_table_knights_lancelot": {
+    "round_table_knights_lancelot": {
       "name": "Lancelot",
       "abilityText": "Ongoing: After this minion moves to a base where you have one or more actions, place a +1 power counter on this minion."
     },
-    "new_round_table_knights_merlin": {
+    "round_table_knights_merlin": {
       "name": "Merlin",
       "abilityText": "Talent: Reveal the top card of your deck. If it is an action, draw it or play it as an extra action; otherwise return it."
     },
-    "new_round_table_knights_percival": {
+    "round_table_knights_percival": {
       "name": "Percival",
       "abilityText": "Talent: Move this minion to another base where you have one or more actions."
     },
-    "new_round_table_knights_quest": {
-      "name": "Quest",
+    "round_table_knights_a_questing": {
+      "name": "A Questing",
       "effectText": "Play on one of your minions. You may move this minion. Ongoing: When this minion would go to the discard pile, place it on top of your deck instead."
     },
-    "new_round_table_knights_sword_in_the_stone": {
-      "name": "Sword in the Stone",
+    "round_table_knights_excalibur": {
+      "name": "Excalibur",
       "effectText": "Play on one of your minions. Ongoing: This minion gains +2 power and cannot be destroyed by other players' cards. Special: When this base scores, if this minion is King Arthur, gain 1 VP."
     },
-    "new_round_table_knights_do_good": {
-      "name": "Do Good",
+    "round_table_knights_good_deed": {
+      "name": "Good Deed",
       "effectText": "Play on a base. Draw a card. Ongoing: After one of your minions moves here, you may transfer this card to another base, then draw a card. Do Good's ability may only be used once per turn."
     },
-    "new_round_table_knights_merlins_library": {
+    "round_table_knights_merlins_library": {
       "name": "Merlin's Library",
       "effectText": "Play on a base. Talent: Play an extra minion here OR move one of your minions here OR transfer this card to another base."
     },
-    "new_round_table_knights_steed": {
-      "name": "Steed",
+    "round_table_knights_noble_steed": {
+      "name": "Noble Steed",
       "effectText": "Play on one of your minions. Talent: Move this minion to another base."
     },
-    "new_round_table_knights_fisher_king": {
-      "name": "Fisher King",
+    "round_table_knights_the_fisher_king": {
+      "name": "The Fisher King",
       "effectText": "Play on a base. Ongoing: After one or more of your minions move here, draw a card. Then if you have eight or more cards in your hand, destroy this card to gain 1 VP."
     },
-    "new_round_table_knights_holy_grail": {
-      "name": "Holy Grail",
+    "round_table_knights_the_grail": {
+      "name": "The Grail",
       "effectText": "Play on a base with none of your actions. Ongoing: After one of your minions moves here, if you have three or more minions of power 4 or more here, place this card in the box to gain 2 VP."
     },
-    "new_round_table_knights_green_knight": {
-      "name": "Green Knight",
+    "round_table_knights_the_green_knight": {
+      "name": "The Green Knight",
       "effectText": "Play on a base. Ongoing: After one or more of your minions move here, place a +1 power counter on one of them. Then if that minion has power 7 or more, destroy this card to gain 1 VP."
     },
-    "new_round_table_knights_lady_of_the_lake": {
-      "name": "Lady of the Lake",
+    "round_table_knights_the_lady_of_the_lake": {
+      "name": "The Lady of the Lake",
       "effectText": "Search your deck and/or discard pile for an action played on a minion. Draw it or play it as an extra action."
     },
-    "new_round_table_knights_mists_of_avalon": {
-      "name": "Mists of Avalon",
+    "round_table_knights_the_mists_of_avalon": {
+      "name": "The Mists of Avalon",
       "effectText": "Shuffle up to three minions from your discard pile into your deck."
     },
-    "new_round_table_knights_questing_beast": {
-      "name": "Questing Beast",
+    "round_table_knights_the_questing_beast": {
+      "name": "The Questing Beast",
       "effectText": "Play on a base. Ongoing: After one or more of your minions move here, place a +1 power counter on one of them, then transfer this card to another base."
     },
-    "base_arthurs_court": {
-      "name": "Arthur's Court",
+    "base_camelot": {
+      "name": "Camelot",
       "abilityText": "Minions here with printed power 4 or more cannot be affected by other players' cards. On your turn, you may move one of your minions from here to another base."
     },
     "base_round_table": {
       "name": "Round Table",
-      "abilityText": "Each of your minions here gains +1 power for each of your minions here with the same printed power."
+      "abilityText": "Each of your minions here with the same printed power as another one of your minions here has +1 power."
     },
-    "new_goblins_chaos_goblin": {
-      "name": "Chaos Goblin",
+    "goblins_chaos_lord": {
+      "name": "Chaos Lord",
       "abilityText": "Ongoing: After you flip a coin, if it is heads, place a +1 power counter on one of your minions; if it is tails, draw a card, then discard a card."
     },
-    "new_goblins_oracle_goblin": {
-      "name": "Oracle Goblin",
+    "goblins_diviner": {
+      "name": "Diviner",
       "abilityText": "Ongoing: Once per turn, after you flip a coin, you may immediately discard a card to change the result. After the first time you flip a coin each turn, draw a card."
     },
-    "new_goblins_bomb_goblin": {
-      "name": "Bomb Goblin",
+    "goblins_blaster": {
+      "name": "Blaster",
       "abilityText": "Special: Before this base scores, flip a coin. If it is heads, you may give this minion +2 power until the end of the turn. If it is tails, you may move this minion to another base."
     },
-    "new_goblins_goblin": {
-      "name": "Goblin",
-      "abilityText": "Flip a coin for each Goblin in play, including this one. For each heads, place a +1 power counter on this minion."
+    "goblins_gobbo": {
+      "name": "Gobbo",
+      "abilityText": "Flip a coin for each Gobbo in play, including this one. For each heads, place a +1 power counter on this minion."
     },
-    "new_goblins_magic_helmet": {
+    "goblins_magic_helmet": {
       "name": "\"Magic\" Helmet",
       "effectText": "Play on your minion. Ongoing: This minion gains +4 power. Before this base scores, flip a coin. If it is tails, destroy this minion."
     },
-    "new_goblins_a_little_help": {
+    "goblins_a_little_help": {
       "name": "A Little Help",
       "effectText": "Flip a coin. If it is heads, you may play an extra minion. If it is tails, you may play two extra actions."
     },
-    "new_goblins_ambush": {
-      "name": "Ambush",
+    "goblins_bushwhacking": {
+      "name": "Bushwhacking",
       "effectText": "Choose a minion, then flip a coin. If it is heads, destroy this minion. If it is tails, move it to another base."
     },
-    "new_goblins_blast": {
-      "name": "Blast",
+    "goblins_demolition": {
+      "name": "Demolition",
       "effectText": "Flip three coins. For each heads, place a +1 power counter on one of your minions. For each tails, you may destroy an action on a base or minion."
     },
-    "new_goblins_recruiters": {
+    "goblins_recruiters": {
       "name": "Goblin Recruiters",
       "effectText": "Play on a base. Ongoing: After you flip a coin, if it is heads, draw a card; if it is tails, you may shuffle a card from your discard pile into your deck."
     },
-    "new_goblins_who_smelted_it": {
-      "name": "Who Smelted It?",
+    "goblins_he_who_smelt_it": {
+      "name": "He Who Smelt It",
       "effectText": "Choose a minion, then flip a coin. If it is heads, place a +1 power counter on that minion, then you may choose another minion and flip again. If it is tails, you may play an extra action."
     },
-    "new_goblins_make_your_own_luck": {
+    "goblins_make_your_own_luck": {
       "name": "Make Your Own Luck",
       "effectText": "Special: Play immediately after you flip a coin. Change the result."
     },
-    "new_goblins_speed_boost": {
-      "name": "Speed Boost",
+    "goblins_revving_up": {
+      "name": "Revving Up",
       "effectText": "Choose a base. For each of your minions there, flip a coin. For each heads, place a +1 power counter on that minion. For each tails, that minion gains +2 power until the end of the turn."
     },
     "base_goblin_caves": {
       "name": "Goblin Caves",
       "abilityText": "After this base scores, each player with a minion there may flip a coin. If it is heads, they gain 1 VP. If it is tails, they discard two cards."
     },
-    "base_goblin_village": {
-      "name": "Goblin Village",
+    "base_goblin_town": {
+      "name": "Goblin Town",
       "abilityText": "After you play a minion here, flip a coin. If it is heads, place a +1 power counter on that minion."
     },
     "geckos_hokusai": {

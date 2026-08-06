@@ -70,12 +70,6 @@ type MonsterChoice = {
 
 type ExtraPlayModeChoice = { mode?: 'minion' | 'action' };
 
-type TargetedDiscardData = CostInteractionData & {
-    costCardUid?: string;
-    targetMinionUid?: string;
-    targetBaseIndex?: number;
-};
-
 function buildHandCardOptions(state: SmashUpCore, playerId: string) {
     return (state.players[playerId]?.hand ?? []).map(card => ({
         id: `munchkin-mages-hand-${card.uid}`,

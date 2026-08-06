@@ -1579,7 +1579,9 @@
     "all_protected": "所有目标都受到保护",
     "ability_not_implemented": "功能尚未实现",
     "base_deck_empty": "基地牌库为空",
-    "no_minion_cards_in_hand": "手牌中没有随从卡"
+    "no_minion_cards_in_hand": "手牌中没有随从卡",
+    "goblins_make_your_own_luck_changed": "自己制造好运已改变硬币结果。",
+    "goblins_make_your_own_luck_ready": "自己制造好运已准备好改变硬币结果。"
   },
   "actionLog": {
     "playerLabel": "玩家{{playerId}}",
@@ -2273,13 +2275,13 @@
       "name": "波利尼西亚航海者",
       "description": "用纹身、航路和新基地扩张版图，在无人驻守的基地之间移动并堆叠力量指示物。"
     },
-    "new_round_table_knights": {
+    "round_table_knights": {
       "name": "圆桌骑士",
-      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力仍在实施中。"
+      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力已按官方资料与 POD 勘误实现。"
     },
-    "new_goblins": {
+    "goblins": {
       "name": "哥布林",
-      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力仍在实施中。"
+      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力已按官方资料与 POD 勘误实现。"
     },
     "adolescent_epic_geckos": {
       "name": "忍者神龟",
@@ -11180,140 +11182,140 @@
       "name": "殖民地",
       "abilityText": "你的回合第一次你打出随从到这里后，你可以打出一个你的牌库顶的随从作为额外随从到这里。"
     },
-    "new_round_table_knights_king_arthur": {
+    "round_table_knights_king_arthur": {
       "name": "亚瑟王",
-      "abilityText": "天赋：移动一个你的1仆从从另一个基地到这里。如果你这么做了，且你有行动在这里，放置一枚+1力量指示器到它身上。"
+      "abilityText": "天赋：将你在另一个基地的一个随从移动到这里。如果你这么做，且你在这个基地有行动，在该随从上放置 1 枚 +1 力量指示物。"
     },
-    "new_round_table_knights_galahad": {
+    "round_table_knights_galahad": {
       "name": "加拉哈德",
       "abilityText": "搜索你的牌库来寻找一张打出在基地上的行动然后放置它到你的牌库顶。特殊：这个基地计分前，你可以转移你在这里的一张行动到其他基地。"
     },
-    "new_round_table_knights_gawain": {
+    "round_table_knights_gawain": {
       "name": "加文",
-      "abilityText": "持续：每个你在这里的力量4或更多的仆从，让这个仆从获得+1力量。"
+      "abilityText": "持续：你在这里每有一个其他战力 4 或更高的随从，此随从 +1 战力。"
     },
-    "new_round_table_knights_guinevere": {
+    "round_table_knights_guinevere": {
       "name": "格尼薇儿",
       "abilityText": "天赋：移动另一个你的仆从从这里到另一个基地。持续：你在基地上的行动不能被其他玩家的能力摧毁。"
     },
-    "new_round_table_knights_lancelot": {
+    "round_table_knights_lancelot": {
       "name": "兰斯洛特",
       "abilityText": "持续：这个仆从移动到你有一或更多个行动的基地后，放置一枚+1力量指示器到这个仆从身上。"
     },
-    "new_round_table_knights_merlin": {
+    "round_table_knights_merlin": {
       "name": "梅林",
       "abilityText": "天赋：展示你牌库顶的牌。如果它是行动，抽取它或打出它作为额外的行动，否则返回它。"
     },
-    "new_round_table_knights_percival": {
+    "round_table_knights_percival": {
       "name": "帕西瓦尔",
       "abilityText": "天赋：移动这个仆从到你有一或更多个行动的其他基地。"
     },
-    "new_round_table_knights_quest": {
-      "name": "任务",
+    "round_table_knights_a_questing": {
+      "name": "踏上征途",
       "effectText": "打出到一个你的仆从身上。你可以移动这个仆从。持续：当这个仆从将要进入弃牌堆时，放置它到你的牌库顶代替。"
     },
-    "new_round_table_knights_sword_in_the_stone": {
-      "name": "石中剑",
+    "round_table_knights_excalibur": {
+      "name": "圣剑",
       "effectText": "打出到一个你的仆从身上。持续：这个仆从获得+2力量且不能被其他玩家的牌摧毁。特殊：当这个基地计分时，如果这个仆从是亚瑟王，获得1VP。"
     },
-    "new_round_table_knights_do_good": {
-      "name": "做好事",
+    "round_table_knights_good_deed": {
+      "name": "善行",
       "effectText": "打出到一个基地上。抽一张牌。持续：一个你的仆从移动到这里后，你可以转移这张牌到另一个基地然后抽一张牌。做好事的能力每回合只能使用一次。"
     },
-    "new_round_table_knights_merlins_library": {
+    "round_table_knights_merlins_library": {
       "name": "梅林藏书馆",
       "effectText": "打出到一个基地上。天赋：打出一个额外的仆从到这里 OR 移动一个你的仆从到这里 OR 转移这张牌到另一个基地。"
     },
-    "new_round_table_knights_steed": {
-      "name": "骏马",
+    "round_table_knights_noble_steed": {
+      "name": "高贵坐骑",
       "effectText": "打出到一个你的仆从身上。天赋：移动这个仆从到另一个基地。"
     },
-    "new_round_table_knights_fisher_king": {
+    "round_table_knights_the_fisher_king": {
       "name": "渔夫王",
       "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，抽一张牌。然后如果你的手上有八或更多张牌，摧毁这张牌来获得1VP。"
     },
-    "new_round_table_knights_holy_grail": {
+    "round_table_knights_the_grail": {
       "name": "圣杯",
       "effectText": "打出到没有你的行动的基地上。持续：一个你的仆从移动到这里后，如果你有三或更多个力量4或更多的仆从在这里，放置这张牌到盒子里来获得2VP。"
     },
-    "new_round_table_knights_green_knight": {
+    "round_table_knights_the_green_knight": {
       "name": "绿衣骑士",
       "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上。然后如果那个仆从拥有力量7或更多，摧毁这张牌来获得1VP。"
     },
-    "new_round_table_knights_lady_of_the_lake": {
+    "round_table_knights_the_lady_of_the_lake": {
       "name": "湖中女神",
       "effectText": "搜索你的牌库和/或弃牌堆来寻找一张打出到仆从身上的行动。抽取它或打出它作为额外的行动。"
     },
-    "new_round_table_knights_mists_of_avalon": {
-      "name": "阿瓦隆的迷雾",
+    "round_table_knights_the_mists_of_avalon": {
+      "name": "阿瓦隆迷雾",
       "effectText": "从你的弃牌堆重洗至多三个仆从到你的牌库。"
     },
-    "new_round_table_knights_questing_beast": {
+    "round_table_knights_the_questing_beast": {
       "name": "追踪野兽",
       "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上然后转移这张牌到另一个基地。"
     },
-    "base_arthurs_court": {
-      "name": "亚瑟王宫",
+    "base_camelot": {
+      "name": "卡美洛",
       "abilityText": "这里印刷力量4或更多的仆从不能被其他玩家的卡牌影响。轮到你时，你可以移动一个你的仆从从这里到另一个基地。"
     },
     "base_round_table": {
       "name": "圆桌会议",
-      "abilityText": "在这里你的每个相同印刷力量的仆从获得+1力量。"
+      "abilityText": "你在这里每个与另一个你的随从拥有相同印刷战力的随从 +1 战力。"
     },
-    "new_goblins_chaos_goblin": {
-      "name": "混沌哥布林",
+    "goblins_chaos_lord": {
+      "name": "混沌领主",
       "abilityText": "持续：你投掷一枚硬币后，如果是正面，放置一枚+1力量指示器到你的一个仆从身上；如果是反面，抽一张牌然后丢弃一张牌。"
     },
-    "new_goblins_oracle_goblin": {
-      "name": "先知哥布林",
+    "goblins_diviner": {
+      "name": "占卜师",
       "abilityText": "持续：每回合一次，你投掷一枚硬币后，你可以立即丢弃一张牌来改变投掷结果。每回合你第一次投掷一枚硬币后，抽一张牌。"
     },
-    "new_goblins_bomb_goblin": {
-      "name": "爆弹哥布林",
+    "goblins_blaster": {
+      "name": "爆破手",
       "abilityText": "特殊：这个基地计分前，投掷一枚硬币。如果是正面，你可以让这个仆从获得+2力量直到回合结束。如果是反面，你可以移动这个仆从到另一个基地。"
     },
-    "new_goblins_goblin": {
+    "goblins_gobbo": {
       "name": "哥布林",
-      "abilityText": "为游戏中的每个哥布林（包括这个）投掷一枚硬币。每投掷一个正面，放置一枚+1力量指示器到这个仆从身上。"
+      "abilityText": "为场上每个哥布林（包括这个）各投一枚硬币。每有一个正面，在这个随从上放置 1 枚 +1 力量指示物。"
     },
-    "new_goblins_magic_helmet": {
+    "goblins_magic_helmet": {
       "name": "“魔法”头盔",
       "effectText": "打出到你的仆从身上。持续：这个仆从获得+4的力量。这个基地计分前，投掷一枚硬币。如果是反面，摧毁这个仆从。"
     },
-    "new_goblins_a_little_help": {
+    "goblins_a_little_help": {
       "name": "一点帮助",
       "effectText": "投掷一枚硬币。如果是正面，你可以打出一个额外的仆从。如果是反面，你可以打出两个额外的行动。"
     },
-    "new_goblins_ambush": {
+    "goblins_bushwhacking": {
       "name": "伏击",
       "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，摧毁这个仆从。如果是反面，移动它到另一个基地。"
     },
-    "new_goblins_blast": {
+    "goblins_demolition": {
       "name": "爆破",
       "effectText": "投掷三枚硬币。每投掷一个正面，放置一枚+1力量指示器到你的一个仆从身上。每投掷一个反面，你可以摧毁基地或仆从身上的一个行动。"
     },
-    "new_goblins_recruiters": {
-      "name": "哥布林招聘人员",
+    "goblins_recruiters": {
+      "name": "哥布林招募员",
       "effectText": "打出到一个基地上。持续：你投掷一枚硬币后，如果是正面，抽一张牌；如果是反面，你可以从你的弃牌堆重洗一张牌到你的牌库。"
     },
-    "new_goblins_who_smelted_it": {
-      "name": "是谁冶炼它",
+    "goblins_he_who_smelt_it": {
+      "name": "谁放的屁",
       "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上然后你可以选择另一个仆从然后再次投掷硬币。如果是反面，你可以打出一个额外的行动。"
     },
-    "new_goblins_make_your_own_luck": {
+    "goblins_make_your_own_luck": {
       "name": "自己制造好运",
       "effectText": "特殊：你投掷一枚硬币后立即打出。改变投掷结果。"
     },
-    "new_goblins_speed_boost": {
-      "name": "速度提升",
+    "goblins_revving_up": {
+      "name": "加足马力",
       "effectText": "选择一个基地。为每个你在那里的仆从投掷一枚硬币。每投掷一个正面，在那个仆从身上放置一枚+1力量指示器。每投掷一个反面，那个仆从获得+2力量直到回合结束。"
     },
     "base_goblin_caves": {
       "name": "哥布林洞穴",
       "abilityText": "这个基地计分后，每个有仆从在那里的玩家可以投掷一枚硬币。如果是正面，他们获得1VP。如果是反面，他们丢弃两张牌。"
     },
-    "base_goblin_village": {
-      "name": "哥布林村",
+    "base_goblin_town": {
+      "name": "哥布林镇",
       "abilityText": "你打出一个仆从到这里后，投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上。"
     },
     "geckos_hokusai": {

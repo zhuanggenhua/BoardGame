@@ -1025,6 +1025,57 @@ function registerHalfTheBattleModifiers(): void {
     ]);
 }
 
+function registerGoblinsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'goblins_magic_helmet',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'goblins_magic_helmet') * 4,
+        },
+    ]);
+}
+
+function registerRoundTableKnightsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'round_table_knights_gawain',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'round_table_knights_gawain')) return 0;
+                return ctx.base.minions.filter(minion =>
+                    minion.uid !== ctx.minion.uid
+                    && minion.controller === ctx.minion.controller
+                    && (
+                        minion.basePower
+                        + (minion.powerCounters ?? 0)
+                        + (minion.powerModifier ?? 0)
+                        + (minion.tempPowerModifier ?? 0)
+                    ) >= 4
+                ).length;
+            },
+        },
+        {
+            sourceDefId: 'round_table_knights_excalibur',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'round_table_knights_excalibur') * 2,
+        },
+        {
+            sourceDefId: 'base_round_table',
+            variantPolicy: 'baseOnly',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_round_table') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                const targetPrintedPower = getCardPrintedPower(ctx.minion.defId);
+                const hasMatchingPeer = ctx.base.minions.some(minion =>
+                    minion.uid !== ctx.minion.uid
+                    && minion.controller === ctx.minion.controller
+                    && getCardPrintedPower(minion.defId) === targetPrintedPower
+                );
+                return hasMatchingPeer ? 1 : 0;
+            },
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -1063,4 +1114,6 @@ export function registerAllOngoingModifiers(): void {
     registerWhatWereWeThinkingModifiers();
     registerPolynesianVoyagersModifiers();
     registerHalfTheBattleModifiers();
+    registerGoblinsModifiers();
+    registerRoundTableKnightsModifiers();
 }
