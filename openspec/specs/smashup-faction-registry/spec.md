@@ -115,3 +115,20 @@ The Smash Up faction registry SHALL expose `VIKINGS_POD` as a standalone POD fac
 - **THEN** `VIKINGS_POD` SHALL be visible
 - **AND** base `VIKINGS` SHALL remain hidden from the English picker
 
+### Requirement: Smash Up Half the Battle Release Status
+
+The Smash Up faction registry SHALL expose the Half the Battle factions `ADOLESCENT_EPIC_GECKOS`, `GI_GERALD`, `RULERS_OF_THE_COSMOS`, and `PEARL_AND_THE_IMAGES` as normal selectable factions once their gameplay handlers, object-level behavior tests, direct E2E coverage, and release evidence are complete. Factions whose required closeout evidence is incomplete MUST remain marked as implementation-in-progress.
+
+#### Scenario: Release completed Half the Battle factions
+
+- **WHEN** the four Half the Battle factions have completed gameplay handlers, object-level behavior tests, direct E2E coverage, and release evidence
+- **THEN** the faction metadata SHALL not mark those four factions as implementation-in-progress
+- **AND** the faction IDs SHALL not be present in the implementation-in-progress set
+- **AND** the four factions SHALL be visible in the default supported faction selection locale
+
+#### Scenario: Keep incomplete factions gated
+
+- **WHEN** a faction has not completed its required gameplay or release evidence
+- **THEN** the faction SHALL remain marked as implementation-in-progress
+- **AND** it SHALL not be treated as release-ready solely because its static card or base data exists
+
