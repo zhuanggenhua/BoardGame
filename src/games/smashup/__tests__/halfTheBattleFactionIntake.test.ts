@@ -17,9 +17,13 @@ import {
     getFactionCards,
 } from '../data/cards';
 import { getSmashUpAtlasImageById } from '../domain/atlasCatalog';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    isSmashUpFactionImplementationInProgress,
+    SMASHUP_ATLAS_IDS,
+    SMASHUP_FACTION_IDS,
+} from '../domain/ids';
 import type { BaseCardDef, CardDef } from '../domain/types';
-import { isFactionImplementationInProgress } from '../ui/factionMeta';
+import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
 
 const CARD_ASSETS = [
     'half_the_battle_geckos',
@@ -214,9 +218,13 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             .toBe('smashup/base/half_the_battle_bases');
     });
 
-    it('四个派系保持实施中状态，避免把静态 intake 误报成玩法完成', () => {
+    it('四个派系不再标记实施中，并进入默认可见发布口径', () => {
+        const visibleIds = new Set(getVisibleFactionMetadata('zh-CN').map(meta => meta.id));
+
         for (const fixture of HALF_THE_BATTLE_FACTIONS) {
-            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(true);
+            expect(visibleIds.has(fixture.factionId), `${fixture.factionId} 应在 zh-CN 可见`).toBe(true);
+            expect(isSmashUpFactionImplementationInProgress(fixture.factionId)).toBe(false);
+            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(false);
         }
     });
 
