@@ -92,7 +92,7 @@ test.describe("山屋惊魂第一剧本", () => {
     );
     await expect(turningSheet).toBeVisible();
     await expect(turningSheet).toHaveAttribute(
-      "data-turn-direction",
+      "data-flip-direction",
       "forward",
     );
     await saveScreenshot(page, SCENARIO_REFERENCE_TURNING_SCREENSHOT);

@@ -1110,3 +1110,154 @@
 | 实现与领域回归 | `src/games/smashup/abilities/munchkin_orcs.ts`；`src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts` | `passed`：多步行动完成基地选择后复用现有 `onActionPlayed` 触发器，真实链路可进入洗手间保护交互；坑洞保护额外确认目标随从仍在坑洞，避免错误保护其它基地；兽人领域测试 `18/18` 通过。 |
 | 静态验证 | `npx eslint src/games/smashup/abilities/munchkin_orcs.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`npm run typecheck` | `passed`：0 errors；仅保留大型 E2E 文件和兽人能力文件已有 warning。 |
 | 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：洗手间、太难了、挤碎、死亡之息、狗堆、给我！以及计分前代表链已有当前真实入口证据；兽人剩余对象的逐卡 L2/L3/L4、两个基地完整真实入口和移动端逐对象图面仍未全部收口，因此不能升级为兽人整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：兽人挤碎、要塞 / 坑洞与计分前代表链补证
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 挤碎重复源卡修复 | `src/games/smashup/abilities/munchkin_orcs.ts`；`src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts` | `fixed_scoped`：挤碎第一步仍可显示来源行动卡；第二步“选择仆从更少的玩家”和第三步“选择要摧毁的随从”不再携带 `displayCard`，只保留结算所需的来源卡 UID。领域守卫已断言两段后续交互没有重复源卡。 |
+| 兽人领域回归 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts --configLoader native` | `passed`：19/19；覆盖 4 张随从、8 张行动、2 个基地，以及八张行动的能力标签、执行定义和交互处理器登记。OpenSpec `3.8` 仅按该领域层事实勾选，不代表真实入口总项完成。 |
+| 挤碎真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人挤碎真实入口按基地、玩家、随从三步手动选择"` | `passed`：1/1；真实手牌打出挤碎后，依次手动选择基地、仆从更少的玩家、该玩家的目标随从；单候选玩家没有自动代选，最终目标随从进入拥有者弃牌堆，交互清空。 |
+| 挤碎截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人挤碎真实入口按基地、玩家、随从三步手动选择\兽人-挤碎-第一步手动选择基地.jpg`；同目录 `兽人-挤碎-第二步手动选择仆从更少玩家.jpg`、`兽人-挤碎-第三步手动选择要摧毁随从.jpg`、`兽人-挤碎-目标随从被摧毁后.jpg` | `PASS / 92`：第一步目标基地本体高亮；第二步只显示玩家按钮和桌面上下文，没有中央重复源卡；第三步目标随从本体高亮，来源行动只在右下弃牌区保留一处。四张图中基地、记分板、公共怪物 / 宝藏小牌、手牌、弃牌区和结束回合入口均可读，无遮挡、无重复信息。 |
+| 躺下！计分前响应截图复核 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人躺下！计分前真实响应先手动选择行动并压制其他玩家特殊能力\兽人-躺下-计分前手牌与要塞.jpg`；同目录 `兽人-躺下-计分前手动选择响应.jpg`、`兽人-躺下-压制状态结算后.jpg` | `PASS / 92`：响应入口来自真实计分前窗口，手牌中的“躺下！”需要玩家手动选择；结算后压制状态成立且旧响应层退场，未出现自动代选、候选遮挡或源卡重复显示。 |
+| 愤怒的掠夺者计分前响应截图复核 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人愤怒的掠夺者计分前真实响应手动选择后获得-1-VP\兽人-愤怒的掠夺者-计分前手动选择响应.jpg`；同目录 `兽人-愤怒的掠夺者-获得-VP-后.jpg` | `PASS / 92`：响应选择必须由玩家手动触发；结算后玩家 VP 增加，桌面没有残留旧提示层或重复显示同一来源卡。 |
+| 要塞真实计分 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人要塞真实计分按玩家总力量 22 门槛给两名最高玩家额外 VP"` | `passed`：1/1；计分前要塞总力量为 22，玩家力量为 12 / 10，避免平手误读；计分后两名有力玩家在原始 3/2 分基础上各额外获得 1VP，原基地已离场并清场。 |
+| 要塞截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人要塞真实计分按玩家总力量-22-门槛给两名最高玩家额外-VP\兽人-要塞-计分前总力量达到22.jpg`；同目录 `兽人-要塞-达到22后两名玩家获得额外VP.jpg` | `PASS / 92`：计分前基地、双方力量、计分板和公共小牌堆均清楚；计分后 VP 变化和原版布局保留可读，没有因怪物 / 宝藏 UI 挤压基地、手牌或右侧操作区。 |
+| 坑洞真实计分 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人坑洞真实计分达到16后清场并保留原版计分布局"` | `passed`：1/1；计分前坑洞总力量达到 16，计分后玩家按 4/2 得分，原坑洞已离场并清场。 |
+| 坑洞截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人坑洞真实计分达到16后清场并保留原版计分布局\兽人-坑洞-计分前总力量达到16.jpg`；同目录 `兽人-坑洞-计分清场后保留原版布局.jpg` | `PASS / 92`：计分前后基地、随从、记分板、公共牌堆小牌、手牌和结束回合入口均在原版槽位内，未出现泰坦 / 行动卡 / 基地 / 玩家面板重叠。 |
+| 本轮静态验证 | `npx eslint src/games/smashup/abilities/munchkin_orcs.ts src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`npm run typecheck`；`git diff --check`；`openspec validate add-smashup-munchkin-orcs-faction --strict --no-interactive` | `passed`：ESLint 0 errors，保留 76 个 warning；typecheck 通过；diff check 无内容错误，仅有 Windows 换行提示；OpenSpec 严格校验通过。 |
+| 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：本轮补齐了挤碎重复源卡回归、要塞 / 坑洞真实计分图证、躺下！与愤怒的掠夺者响应图面复核；但真实入口总项仍不勾选为全完成，因为太难了 / 洗手间的“从手牌打出到附着位置”不是本轮新图主语，死亡之息当前真实图证主要通过太难了保护过滤场景承载，移动端逐对象图面也仍未覆盖。不能据此宣称兽人整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：兽人对象矩阵回写
+
+> 本节是当前对象矩阵，覆盖前文早期规则 intake 表中的 `blocked` 占位；历史记录保留用于追踪，不再作为当前实现状态读取。矩阵只按实际 L2 / L3 / L4 证据填写，不把代表链外推到没有证据的对象。
+
+| 对象 | L2 领域结论 | L3/L4 真实入口 | 当前状态 |
+| --- | --- | --- | --- |
+| 剑王 | 持续力量、自身排除、同控制者边界 | 真实入口显示同基地己方 `+1`，自身、对手和另一基地无加成标记 | `L2 + L3 passed` |
+| 粉碎者 | 天赋入口与使用状态 | 真实入口点击天赋，已使用标记可见 | `L2 + L3 passed` |
+| 重击者 | 力量 2 或更少筛选、摧毁、单候选不自动结算 | 真实随从本体高亮并完成摧毁 | `L2 + L3 passed` |
+| 呆瓜兽人 | 只防其他玩家行动的保护边界 | 真实入口排除受保护目标，普通随从仍可手动选择并被摧毁 | `L2 + L3 passed` |
+| 躺下！ | 最高力量门槛、特殊牌与特殊能力压制、平手边界 | 计分前真实响应手动选择，压制状态收口 | `L2 + L3/L4 passed` |
+| 愤怒的掠夺者 | 领先第二名至少 3 点才奖励 VP | 计分前真实响应手动选择，VP 结算 | `L2 + L3/L4 passed` |
+| 挤碎 | 基地→玩家→随从三段选择、摧毁和单候选手选 | 三张选择态截图与结算图 | `L2 + L3/L4 passed` |
+| 死亡之息 | 力量 4 或更少、按拥有者牌库底转移 | 真实过滤保护目标并完成牌库底转移 | `L2 + L3/L4 passed` |
+| 狗堆 | 普通 / 计分前入口、随从→基地移动 | 计分前真实响应两段手选与移动收口 | `L2 + L3/L4 passed` |
+| 给我！ | 附着行动选择、原宿主摧毁、行动保留转移 | 真实先选附着行动、再选新宿主 | `L2 + L3/L4 passed` |
+| 洗手间 | 手牌附着基地、逐次保护、可拒绝和来源玩家边界 | 手动附着基地、手动保护随从、保护后流程收口 | `L2 + L3/L4 passed` |
+| 太难了 | 手牌附着随从、保护过滤与受保护目标保留 | 手动附着随从，死亡之息真实过滤保护目标 | `L2 + L3/L4 passed` |
+| 要塞 | 22 总力量门槛、前三名额外 VP、计分清场 | 真实计分前后图与 VP 收口 | `L2 + L3/L4 passed` |
+| 坑洞 | 16 总力量计分、基地保护边界、清场恢复 | 真实入口验证坑洞保护、另一基地手动目标和计分清场 | `L2 + L3 passed` |
+
+### 聚合验证口径
+
+- 兽人真实入口对象用例聚合结果：当前整组筛选 `16/16 passed`。最初的 `11 passed / 2 failed` 只对应两条 E2E 断言问题；修正后粉碎者与给我！均单独重跑通过。
+- 兽人领域测试：`19/19`；`npm run typecheck` 通过；定向 ESLint 为 0 errors；`git diff --check` 无内容错误；OpenSpec 严格校验通过。
+- 当前不能把“兽人对象级交互收口”升级为“Munchkin 全部派系完成”；移动端逐对象和其它派系全量真实入口仍未完成。
+
+## 2026-08-05 续审记录：兽人剑王、呆瓜兽人与坑洞保护真实入口
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 剑王真实入口 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`：`兽人剑王真实入口显示同基地己方力量加成并排除自身、对手和其他基地`；当前工作区本次复跑 | `passed`：1/1；同基地己方普通随从显示 `+1`，剑王自身、对手随从和另一基地随从没有力量加成标记。 |
+| 剑王截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人剑王真实入口显示同基地己方力量加成并排除自身、对手和其他基地/兽人-剑王-同基地己方获得加成且自身对手与其他基地不加成.jpg` | `PASS / 92`：力量标记挂在真实随从本体上；两个基地、基地下方随从列、记分板、公共牌堆数量、弃牌区和结束回合入口均可读，没有重复源卡或布局重叠。 |
+| 呆瓜兽人真实入口 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`：`兽人呆瓜兽人真实入口排除对手行动目标但保留同基地普通随从`；当前工作区本次复跑 | `passed`：1/1；手动选择行动目标时，呆瓜兽人不在候选中，普通随从仍由玩家手动选择并被摧毁，结算后呆瓜兽人保留。 |
+| 呆瓜兽人截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人呆瓜兽人真实入口排除对手行动目标但保留同基地普通随从/兽人-呆瓜兽人-对手行动排除受保护随从.jpg`；同目录 `兽人-呆瓜兽人-普通随从被摧毁而呆瓜兽人保留.jpg` | `PASS / 92`：选择态只高亮合法普通随从，提示条说明当前步骤但没有中央重复源卡；结算态目标普通随从离场、呆瓜兽人仍在基地，公共 UI 没有被遮挡。 |
+| 坑洞保护真实入口 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`：`兽人坑洞真实入口只保护坑洞内随从不受对手行动`；现有四张真实入口截图与最终断言链 | `passed`：已有成功运行证据；第一张行动针对坑洞时坑洞内随从保留，第二张行动仍要求玩家手动选择另一基地的普通随从并完成摧毁，坑洞内随从继续保留。 |
+| 坑洞保护截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人坑洞真实入口只保护坑洞内随从不受对手行动/` 下的四张截图 | `PASS / 92`：两座基地并排可比较；坑洞随从排在基地下方并保留，另一基地目标高亮仍落在真实随从本体上，提示条、牌库数量、弃牌区、记分板和结束回合入口均保持可读。 |
+| 当前复核结果 | 剑王、呆瓜兽人、坑洞保护单用例本次各 `1 passed`；坑洞保护运行耗时约 34.8 秒 | 三条真实入口均在当前工作区独立运行环境通过；坑洞四张截图已按本次成功运行重新复核。 |
+| 兽人整组真实入口回归 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人"` | `passed`：16/16，约 2.9 分钟；当前整组包含剑王、呆瓜兽人、坑洞保护、两座基地计分、8 张行动和附着保护链。 |
+| 聚合结果 | 兽人真实入口对象用例当前工作区整组运行 | `16 passed`：本次整组运行直接覆盖全部 16 条兽人真实入口用例。 |
+| 当前范围裁决 | 本节与兽人 OpenSpec tasks | `representative_only / scoped_debt`：剑王、呆瓜兽人和坑洞保护的代表性真实入口证据已补齐，但移动端逐对象审计、其余派系全量真实入口与全派系收口仍未完成；不能宣称兽人整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：法师相关真实入口整组回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 法师相关整组真实入口 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "法师"` | `passed`：15/15，约 2.8 分钟；其中 14 条是法师用例，另 1 条是“牧师抓鬼从真实法师天赋入口拦截亡灵怪物并保留普通怪物”的跨派系入口。 |
+| 当前覆盖的法师流程 | 当前工作区 `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：覆盖快速攻击、大召唤、魅力、次元之门 / 法师之塔、爆破大师、快乐小法师普通与计分前特殊、魔杖天才、勤读者、大上一倍、通往次元之门、恢复奥术智慧、神奇的夜晚和快速阅读；涉及弃牌成本、低力目标、怪物选择、额外出牌、抽牌和额外随从额度的手动交互。 |
+| 代表性截图复核 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/` 下本次法师相关目录；重点核对快速攻击、魅力、三基地大召唤、次元之门 / 法师之塔、快乐小法师特殊、大上一倍、神奇的夜晚和牧师抓鬼 | `PASS / 92`：提示条与选择按钮未压住基地、随从、手牌和右侧操作区；怪物按基地下方行显示；弃牌成本、低力目标和多选手牌由真实卡面承接，没有用隐藏选项或中央重复源卡替代。 |
+| 截图产物 | 当前法师相关筛选生成 42 张 JPG 原始截图 | `verified`：截图均来自当前工作区真实入口；本条记录的图面裁决是代表性样本审计，不把样本通过扩大为每张法师卡的完整移动端视觉审计。 |
+| 当前范围裁决 | 本节与本文总账 | `representative_only / scoped_debt`：法师相关真实入口功能回归已推进到 15/15，代表性桌面图面通过；法师完整对象矩阵、所有分支 / 否定 / 清理的逐卡 L2/L3/L4、移动端逐对象审计，以及其它 Munchkin 派系仍未全部收口，不能宣称法师整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：木精灵逃跑吧与赶紧逃跑吧真实入口回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 第一条失败归因 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` 的“木精灵逃跑吧！只有己方随从时手动选择后不产生空的对手随从选择”；首次真实入口断言输出 | `root_cause_confirmed`：测试场景中的己方入侵者力量为 20，而“矿洞”突破点为 18；选择己方随从后基地按已锁定的计分规则正常清场，入侵者进入弃牌堆。失败不是空的对手随从交互残留，能力实现仍满足“必须手动选择己方随从、无合法对手目标时不排第二步”。 |
+| 第二条失败归因 | `src/games/smashup/__tests__/scoringEligibleLock.test.ts`；`src/games/smashup/domain/index.ts` 的计分会话与 `scoreOneBase` | `root_cause_confirmed`：基地进入 `scoreBases` 时会锁定已突破基地；计分前行动把力量移走后，本次已开始的计分仍继续完成。这是当前项目已有的计分规则合同，不是木精灵移动事件重复执行；因此没有修改共享计分状态机，只把 E2E 结果断言对齐到已验证规则。 |
+| E2E 验收修正 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `fixed_scoped`：第一条改为断言“逃跑吧！”进入弃牌堆、交互源为空且没有空的对手随从选择，不再要求弃牌堆只能有这一张牌；第二条改为断言选中的入侵者进入目标基地，原基地按锁定计分规则清场。未改变能力实现、交互顺序或原版布局。 |
+| 木精灵整组真实入口 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵"` | `passed`：14/14；覆盖花之子、力量训练、贸易、优雅贵族、精灵帮助大师、在你之后、舞动之根、逃跑吧！、精灵斗士、援手、旅行精灵、援助山谷、赶紧逃跑吧！和树屋。两条此前失败用例均在完整整组中通过。 |
+| 木精灵领域回归 | `npx vitest run src/games/smashup/__tests__/abilities/munchkin-elves.test.ts --reporter=dot` | `passed`：13/13；逃跑吧！无对手目标不排空第二步，赶紧逃跑吧！允许空选与单选移动均有领域断言。 |
+| 最终截图与图面审计 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵逃跑吧！只有己方随从时手动选择后不产生空的对手随从选择/` 下 2 张图；`木精灵赶紧逃跑吧先选基地再多选随从，并允许空选/` 下 7 张图 | `PASS / 92`：本次逐张核对 4 张代表图；逃跑吧！选择态只高亮真实己方随从本体，结算态没有空的第二步；赶紧逃跑吧！多选态显示真实随从、选择计数和确认按钮，结算态选中的入侵者位于目标基地。提示、基地、记分板、公共怪物 / 宝藏小牌、牌库、弃牌堆和结束回合入口均未发生遮挡或重复承载。 |
+| 静态验证 | `npm run typecheck`；`npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed`：类型检查通过，ESLint 0 errors（82 个大型 E2E 文件既有 `no-explicit-any` warnings），差异检查无内容错误，仅有 Windows 换行提示。 |
+| 当前范围裁决 | 本节与木精灵对象证据 | `representative_only / scoped_debt`：木精灵当前已有 14 条真实入口整组回归和代表性桌面图面证据；这不等于木精灵所有分支、移动端逐对象审计或 Munchkin 新派系整体完成，不能外推为整派系或全扩展完成。 |
+
+## 2026-08-05 续审记录：牧师组回归与加入团队夹具修正
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 原始失败保真描述 | 牧师筛选首次真实入口回归结果：`13 passed / 1 failed`；失败用例为“牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地” | `confirmed`：失败集中在测试场景夹具使用了受“呆瓜兽人”保护的随从定义；不是玩家没有手动选择基地，也不是“加入团队”生产能力自动选目标。 |
+| 呆瓜兽人保护边界 | `src/games/smashup/abilities/munchkin_orcs.ts`；`e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` 的“牧师好习惯”与“加入团队”场景 | `confirmed`：呆瓜兽人只阻止其他玩家的行动影响自身；“好习惯”场景因此断言临时力量为 `[1, 0, 0]`，而“加入团队”场景不应把它作为目标随从。 |
+| 夹具修正 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`：`buildMunchkinClericsJoinTheClubScene` | `fixed_scoped`：将玩家 1 牌库定义与场上目标随从统一为无保护的“剑王”；只修正测试数据，不改生产能力、交互顺序或牌桌布局。 |
+| 加入团队单条真实入口 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地"` | `passed`：1/1；两个基地先显示可选高亮，玩家实际点击第二座基地，结算后仅目标基地的“剑王”获得 `tempPowerModifier=1`，交互和响应窗口均清空。 |
+| 牧师完整真实入口回归 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师"` | `passed`：14/14，约 3.2 分钟；覆盖抓鬼、解除诅咒、红衣主教、光盘、好习惯、加入团队、两张诅咒、资深修士、特纳、圣临者、垃圾处理、圣洁酒店和回忆祷词。 |
+| 加入团队截图产物 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地/` 下 3 张 JPG | `PASS / 92`：逐张核对本次当前工作区真实入口截图；两个基地候选高亮、目标基地随从的 `+1`、手牌、弃牌堆、公共小牌和结束回合入口均清楚，没有提示层遮挡或重复源卡。本条不扩大为牧师全卡移动端图面审计。 |
+| 本轮静态检查 | `git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：无内容错误；本轮没有修改生产代码，因此未将生产领域测试或类型检查结果冒充为本次夹具修正的独立证明。 |
+| 当前范围裁决 | 本节与牧师对象矩阵 | `representative_only / scoped_debt`：牧师真实入口当前整组 14/14 通过，且“好习惯”的呆瓜兽人保护边界与“加入团队”的手动基地选择均有证据；这仍不等于牧师全部移动端逐对象图面或 Munchkin 新派系整体完成。 |
+
+## 2026-08-05 续审记录：盗贼批次手动选择重审
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 原始验收口径 | 盗贼批次所有需要玩家选择的对象，即使只有一个合法候选，也必须停在真实页面等待玩家手动点击；不得由共享交互层隐式代选 | `confirmed`：本次按该口径重审盗贼生产交互，单候选手牌成本、附着行动、目标随从和计分响应均保留真实可见选择入口 |
+| 生产交互门禁 | `src/games/smashup/abilities/munchkin.ts`：9 个盗贼交互显式设置 `autoResolveIfSingle: false` | `fixed_scoped`：盗贼相关选择不再因只有一个合法候选而自动结算；改动只作用于盗贼选择链，不改变原版基地布局或能力规则 |
+| 盗贼真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "盗贼"`；本批次当前真实入口筛选 | `passed`：13/13；覆盖盗贼大师、顺手拿走、扒手、销赃犯、背刺、药水腰带、走私、打劫、剥光、盗贼公会、转移注意力 / 秘密藏匿处 / 金库计分链等真实入口流程 |
+| 盗贼领域行为测试 | `src/games/smashup/__tests__/munchkinMechanics.test.ts`；盗贼相关定向行为测试 | `passed`：12/12；能力规则、行动转移、宝藏奖励、计分链与选择后收口通过领域层验证 |
+| 运行时随机交互审计 | 当前工作区盗贼真实运行时随机交互审计 | `passed`：3/3；确认新增交互源均有登记，且选择状态没有在单候选条件下被运行时默认路径直接消解 |
+| 药水腰带真实点击 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/药水腰带可从真实手牌入口弃宝藏并给任意随从本回合加力量/`；当前截图 160-162 | `visual_pass`：先手动点击真实目标随从，再手动点击唯一手牌宝藏成本；目标随从本体、高亮、手牌宝藏、公共怪物 / 宝藏小牌和结束回合入口均可读，没有中央重复源卡 |
+| 打劫真实点击 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从/`；当前截图 166-169 | `visual_pass`：先手动选择目标随从身上的行动，再手动选择己方另一个随从；第二步目标随从本体清楚可见，行动卡没有遮挡候选，结算后行动附着已转移 |
+| 金库计分链真实点击 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/金库计分链同时处理秘密藏匿处、转移注意力和计分后抽宝藏/`；当前截图 175-178 | `visual_pass`：计分前的转移注意力、让过和金库计分后宝藏奖励均通过页面可见选项由玩家逐步选择；没有用测试 harness 直接提交隐藏选项，计分后抽宝藏小牌显示数量并保留原版弃牌区布局 |
+| 静态检查 | `npx eslint src/games/smashup/abilities/munchkin.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed`：ESLint 0 errors，仅保留大型 E2E 文件既有 `no-explicit-any` warnings；差异检查无内容错误 |
+| 当前范围裁决 | 本节与盗贼对象矩阵 | `passed_batch / scoped_debt`：盗贼本批次 13/13 真实入口、12/12 领域行为、3/3 运行时随机交互审计已通过；药水腰带、打劫、金库计分链的真实页面点击和截图已复核。该结论只覆盖盗贼批次，不代表整个 Munchkin 新派系完成，也不替代其他派系和移动端逐对象审计。 |
+
+## 2026-08-05 续审记录：法师剩余真实入口窄链补证
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 法师对象范围 | `src/games/smashup/data/factions/munchkin.ts`：4 张随从、8 张行动、次元之门 / 法师之塔 2 个基地；`src/games/smashup/abilities/munchkin_mages.ts` | `locked`：当前补证对象只覆盖法师派系，不把牧师抓鬼跨派系用例计入法师卡牌数量 |
+| 法师领域行为测试 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-mages.test.ts --configLoader native --reporter=dot` | `passed`：12/12；弃牌成本、目标选择、额外出牌类型、怪物召唤、计分前特殊能力和基地触发均通过领域层验证 |
+| 当前工作区窄链 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "法师勤读者手动选择弃牌成本后抽一张牌"`；同入口分别运行“大上一倍”“通往次元之门”“恢复奥术智慧”“神奇的夜晚”“快速阅读” | `passed`：6/6；真实页面分别覆盖单候选弃牌、先选场上随从再多选弃牌、附着行动天赋召唤怪物、抽牌到五张、多选弃牌后额外低力随从额度、抽三张牌 |
+| 单候选手选门禁 | `src/games/smashup/abilities/munchkin_mages.ts`：弃牌成本、魅力目标、大上一倍目标、神奇的夜晚多选、次元之门 / 法师之塔、魔杖天才模式等交互均显式设置 `autoResolveIfSingle: false`；上述窄链真实页面点击 | `passed_scoped`：当前补证链没有因单候选直接跳过玩家点击；多选链显示真实卡牌候选和选择态 |
+| 法师代表截图审计 | 当前工作区截图：通往次元之门三张流程图、魔杖天才额外出牌类型图；截图目录位于 `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/` | `PASS / 92`：选择态提示位于顶部，弃牌成本由真实手牌承接；通往次元之门结算后怪物位于基地下方怪物行，公共宝藏小牌、弃牌堆、手牌和结束回合入口未被遮挡或重复承载 |
+| 法师整组筛选运行结果 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "法师" --project=chromium` | `runtime_timeout / not_passed`：本次命令在 244028ms 超时，没有拿到 Playwright 最终汇总；超时前已生成到魔杖天才目录的当前截图，不能把截图已生成解释成整组 `passed`，也不能把它误判为法师玩法失败 |
+| 当前范围裁决 | 本节与法师对象矩阵 | `representative_only / scoped_debt`：法师领域 12/12、当前补证窄链 6/6、代表图面审计已通过；法师整组筛选仍受长文件运行器超时影响，首批其它真实入口只保留既有证据，不能据本节升级为法师整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：木精灵剩余高风险真实入口补证
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 木精灵领域行为测试 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-elves.test.ts --configLoader native --reporter=dot` | `passed`：13/13；覆盖单候选手选、玩家与随从多段选择、树屋两段手动交互、舞动之根重洗、精灵斗士响应、援手计分后 VP、旅行精灵移动和援助山谷动态力量 |
+| 精灵斗士真实入口 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵精灵斗士在对手打出随从后把反应选择交给精灵控制者" --project=chromium` | `passed`：1/1；对手打出随从后，精灵斗士反应由精灵控制者页面承接，玩家手动选择己方随从，结算后双方力量指示物均落到真实随从本体 |
+| 精灵斗士截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵精灵斗士在对手打出随从后把反应选择交给精灵控制者/` 下 2 张 JPG | `PASS / 92`：选择前后的两个基地、随从列、力量标记、记分板、公共小牌、手牌槽和弃牌区均可读；没有中央重复源卡或响应按钮抢占目标随从 |
+| 援助山谷真实入口 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵援助山谷随当前回合玩家动态排除自己并给其他玩家加力" --project=chromium` | `passed`：1/1；同一真实入口比较玩家 0 / 玩家 1 回合，当前回合玩家不计入加力，其他玩家随从获得对应力量变化 |
+| 援助山谷截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵援助山谷随当前回合玩家动态排除自己并给其他玩家加力/` 下 2 张 JPG | `PASS / 92`：两张回合对照图中基地下方随从列、力量总值、记分板和公共怪物 / 宝藏小牌均保持同一布局；力量变化可直接落到比较对象，不依赖隐藏状态推断 |
+| 树屋真实入口 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵树屋先选另一位玩家，再由目标玩家手动选择抽牌或跳过" --project=chromium` | `passed`：1/1；施放者先手动点击“玩家 1”，目标玩家页面再手动选择“抽一张牌”或“跳过”，测试断言目标页面没有重复上下文卡 |
+| 树屋截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵树屋先选另一位玩家，再由目标玩家手动选择抽牌或跳过/` 下 1 张 JPG | `PASS / 92`：顶部只保留“树屋：选择另一位玩家”和真实“玩家 1”按钮，树屋基地本体仍在牌桌；后续目标页面的抽牌 / 跳过按钮由同一真实交互承接，不重复展示源基地大卡 |
+| 单候选手选门禁与静态检查 | `src/games/smashup/abilities/munchkin_elves.ts`；`npx eslint src/games/smashup/abilities/munchkin_elves.ts src/games/smashup/__tests__/abilities/munchkin-elves.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed_scoped`：木精灵选择交互显式保留 `autoResolveIfSingle: false`；ESLint 0 errors，仅有大型 E2E 文件既有 82 条 `any` warnings；差异检查无内容错误 |
+| 当前范围裁决 | 本节与木精灵对象矩阵 | `representative_only / scoped_debt`：精灵斗士、援助山谷、树屋的高风险真实入口和图面证据已补齐，领域测试 13/13 通过；结合既有木精灵真实入口证据继续推进，但移动端逐对象、所有否定 / 清理分支和整派系完整矩阵仍未全部收口，不能宣称木精灵整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-06 续审记录：勇士模式选择去重复与桌面端图面审计
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 原始视觉问题 | 本次复跑前的勇士“大英雄”和“骚乱”模式选择截图 | `confirmed`：模式按钮上方还重复显示来源卡；这张卡不是玩法交互载体，桌面上已经有同一张真实卡牌，因此违反“信息只保留一个承载源”的当前 UI 口径。 |
+| 重复源卡修正 | `src/games/smashup/abilities/munchkin_warriors.ts`：勇士模式选择不再写入 `displayCard`；选择标题与按钮仍保留，领域状态和来源 UID 不变 | `fixed_scoped`：重复卡只从模式选择提示层移除，没有改变大英雄、地牢诱饵或骚乱的规则分支，也没有把真实场上卡牌移走。 |
+| 原始空卡问题 | 斩杀场景 `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` 原先使用不存在的 `robot_power_up` 作为持续行动 | `confirmed_fixture_issue`：该对象不在当前 Smash Up 卡牌数据中，导致真实页面显示白色空卡；这是 E2E 场景夹具问题，不是勇士能力规则问题。 |
+| 夹具修正 | 同一 E2E 场景将无效持续行动替换为项目已有的“全速航行” | `fixed_scoped`：截图中的基地上方持续行动恢复为真实卡面，未改生产布局或玩法逻辑。 |
+| 勇士真实入口回归 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "勇士" --project=chromium` | `passed`：4/4；覆盖大英雄先选模式再选怪物、斩杀先选怪物再选宝藏额外随从和基地、战争怒吼先选怪物再选同基地随从、骚乱先选基地再选效果。运行时仍验证单候选交互 `autoResolveIfSingle=false`，并通过真实卡牌/基地本体点击完成选择。 |
+| 当前截图集合 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/` 下 4 个“勇士”目录，共 15 张 1440x900 JPG；本次运行时间为 2026-08-06 01:29-01:30 | `verified_current_workspace`：所有图来自当前工作区本次复跑，不引用历史 worktree 或旧截图。 |
+| 原版布局压力态基准 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "怪物行和公共小牌堆不抢原版布局" --project=chromium`；同目录 `怪物行和公共小牌堆不抢原版布局/01-当前实现-怪物行和公共牌堆.jpg`、`02-点击怪物后宝藏进入手牌.jpg` | `passed`：1/1；当前工作区本次重跑。压力态同时包含泰坦、两张持续行动、基地、基地下方怪物行与随从、手牌、牌库、弃牌堆、公共怪物/宝藏小牌和记分板；持续行动均为真实卡面，无白色空卡、裁切或相互压位。 |
+| 逐张 AI 图面审计 | 大英雄 4 张、斩杀 4 张、战争怒吼 3 张、骚乱 3 张 | `PASS / 92`：怪物均排在对应基地下方，选择态高亮落在真实怪物/随从/基地本体；模式选择态只显示短标题与按钮，不再出现中央重复源卡；斩杀场景的“全速航行”卡面正常，不再有白色空卡。 |
+| 布局与信息承载 | 同一 15 张截图 | `PASS / 92`：基地、基地上方持续行动、基地下方怪物行、基地下方随从、手牌、牌库、弃牌堆、记分板和结束回合入口均可读；公共怪物/宝藏仅以牌库旁小牌 + 数量显示，没有新增公共弃牌堆，也没有把同一张源卡复制到中央提示层。勇士本次夹具没有泰坦，因此泰坦与怪物行的交叉布局仍以既有“怪物行和公共小牌堆不抢原版布局”代表测试为证。 |
+| 当前范围裁决 | 本节只覆盖勇士 4 条真实入口、桌面 1440x900 和本次截图集合 | `passed_batch / scoped_debt`：勇士代表性桌面交互和图面审计已收口；不等于勇士全部卡牌的移动端、所有否定/清理分支，也不等于 Munchkin 新派系整体完成。 |

@@ -26,6 +26,7 @@ import { HudPortal, UI_Z_INDEX } from "../../core";
 import type { ActionBarAction } from "../../core/ui/types";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import { MagnifyOverlay } from "../../components/common/overlays/MagnifyOverlay";
+import { FoldLinePageFlipStage } from "../../components/home-v2/FoldLinePageFlipStage";
 import { DiceBoxPhysicsSource } from "../../lib/dice-physics/DiceBoxPhysicsSource";
 import type { DiceBoxDieSkin } from "../../lib/dice-box-threejs/engine";
 import type { DiceBoxStyleProfile } from "../../lib/dice-box-threejs/engine";
@@ -167,6 +168,13 @@ type ScenarioReaderPage = {
   sections?: ScenarioReaderSection[];
 };
 
+type ScenarioBookTurnSnapshot = {
+  fromPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
+  toPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
+};
+
+const SCENARIO_BOOK_TURN_DURATION_MS = 380;
+
 const isChineseLocale = (locale: string) =>
   locale.toLowerCase().startsWith("zh");
 
@@ -174,6 +182,13 @@ type ScenarioReaderAudience = "all" | "heroes" | "traitor";
 type ScenarioReaderScope = "all" | "heroes" | "traitor";
 
 const SCENARIO_READER_RULE_HANDOFF_SECTION_IDS = new Set(["setup"]);
+const SCENARIO_READER_ENDING_SECTION_IDS = new Set([
+  "ending",
+  "endingHeroes",
+  "endingTraitor",
+  "endingHaunt",
+  "endingSurvivors",
+]);
 const SCENARIO_READER_CINEMATIC_SECTION_IDS = new Set([
   "prologue",
   "prologueHeroes",
@@ -467,6 +482,7 @@ function filterScenarioSectionsByScope(
   const immersiveSections = sections.filter(
     (section) =>
       !SCENARIO_READER_RULE_HANDOFF_SECTION_IDS.has(section.id) &&
+      !SCENARIO_READER_ENDING_SECTION_IDS.has(section.id) &&
       !SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id),
   );
   return immersiveSections.filter(
@@ -502,7 +518,9 @@ function buildScenarioReaderPages(
   scope: ScenarioReaderScope = "all",
 ): ScenarioReaderPage[] {
   const scopedSections = filterScenarioSectionsByScope(dossier.sections, scope);
-  const pageCount = Math.min(4, Math.max(2, scopedSections.length));
+  // 每个正文段占一页；书本一次展示左右两页，但不能为了减少翻页把结局
+  // 和前置规则段压到同一轮翻页里，否则第一页翻页就会直接看到结局。
+  const pageCount = Math.max(2, scopedSections.length);
   const baseSectionsPerPage = Math.floor(scopedSections.length / pageCount);
   const pagesWithExtraSection = scopedSections.length % pageCount;
   let sectionOffset = 0;
@@ -522,6 +540,20 @@ function buildScenarioReaderPages(
       sections,
     };
   });
+}
+
+function resolveScenarioReaderSpreadPages(
+  pages: ScenarioReaderPage[],
+  hasOpeningStage: boolean,
+  spreadIndex: number,
+): [ScenarioReaderPage | null, ScenarioReaderPage | null] {
+  const bookSpreadIndex = hasOpeningStage
+    ? Math.max(0, spreadIndex - 1)
+    : spreadIndex;
+  return [
+    pages[bookSpreadIndex * 2] ?? null,
+    pages[bookSpreadIndex * 2 + 1] ?? null,
+  ];
 }
 
 function BetrayalDebugPanel(props: {
@@ -2529,30 +2561,112 @@ function ConditionalHudPortal({
 
 function ScenarioBookTurnSheet({
   direction,
+  fromPages,
+  toPages,
+  title,
+  isPhoneLandscapeLayout = false,
 }: {
   direction: "back" | "forward" | null;
+  fromPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
+  toPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
+  title: string;
+  isPhoneLandscapeLayout?: boolean;
 }) {
+  const { t } = useTranslation("game-betrayal");
   if (!direction) return null;
 
   const isForward = direction === "forward";
+  const renderPageFace = (
+    page: ScenarioReaderPage | null,
+    section: ScenarioReaderSection | null,
+    face: "front" | "back",
+  ) => (
+    <div
+      className={`relative h-full w-full overflow-hidden border border-[#c7a06b] bg-[radial-gradient(circle_at_48%_18%,rgba(255,243,204,0.96),rgba(229,200,151,0.98)_58%,rgba(205,164,102,0.98)_100%)] p-3 text-[#3b2211] shadow-[inset_0_0_0_1px_rgba(255,246,215,0.36),inset_0_0_42px_rgba(95,54,19,0.18)] sm:p-4 lg:p-6 ${face === "back" ? "[backface-visibility:hidden]" : ""}`}
+      style={{ backfaceVisibility: "hidden" }}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(0deg,rgba(92,55,24,0.08)_0_1px,transparent_1px_8px),radial-gradient(circle_at_18%_22%,rgba(88,49,18,0.12),transparent_18%),radial-gradient(circle_at_80%_70%,rgba(96,55,21,0.10),transparent_22%)]" />
+      <div className="pointer-events-none absolute inset-[10px] border border-[#b98343]/40" />
+      <div className="relative flex h-full min-h-0 flex-col">
+        <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7d5129]">
+          {page ? `剧本 ${String(page.pageNumber).padStart(2, "0")}` : title}
+        </div>
+        <h3 className="mt-2 text-[21px] font-black tracking-[0.04em] text-[#3b2211] lg:text-[27px]">
+          {page?.type === "cover" ? title : section ? title : "下一页"}
+        </h3>
+        {section ? (
+          <>
+            <div className={`mt-3 border-l-4 ${section.accentClass} pl-3`}>
+              <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#7d5129]">
+                {t(section.labelKey)}
+              </div>
+              <p className="mt-2 max-h-[190px] overflow-hidden whitespace-pre-line text-[14px] leading-6 text-[#4e321c] lg:text-[16px] lg:leading-7">
+                {t(section.bodyKey)}
+              </p>
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 text-[15px] font-semibold leading-7 text-[#57361f] lg:text-[17px] lg:leading-8">
+            {title}
+          </p>
+        )}
+        <div className="mt-auto flex items-center justify-between border-t border-[#b98343]/36 pt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86643f]">
+          <span>{title}</span>
+          <span>{page ? String(page.pageNumber).padStart(2, "0") : "—"}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSpread = (
+    leftPage: ScenarioReaderPage | null,
+    rightPage: ScenarioReaderPage | null,
+  ) => (
+    <div className="grid h-full w-full grid-cols-2 gap-2 bg-[#2a170d] p-1.5">
+      {renderPageFace(leftPage, leftPage?.sections?.[0] ?? null, "front")}
+      {renderPageFace(rightPage, rightPage?.sections?.[0] ?? null, "front")}
+    </div>
+  );
+
+  const viewportWidth =
+    typeof window === "undefined" ? 1000 : Math.max(320, window.innerWidth);
+  const viewportHeight =
+    typeof window === "undefined" ? 680 : Math.max(260, window.innerHeight);
+  const stageWidth = isPhoneLandscapeLayout
+    ? Math.max(320, Math.min(viewportWidth * 0.94, 900))
+    : Math.max(640, Math.min(viewportWidth * 0.9, 1080));
+  const stageHeight = isPhoneLandscapeLayout
+    ? Math.max(260, Math.min(viewportHeight - 88, 420))
+    : Math.max(420, Math.min(viewportHeight * 0.78, 720));
+
   return (
     <div
       data-testid="betrayal-scenario-book-turning-sheet"
-      data-turn-direction={direction}
+      data-flip-direction={direction}
+      data-flip-implementation="home-v2-real-frame-sequence"
+      data-flip-from-page={fromPages.map((page) => page?.id ?? "").join(",")}
+      data-flip-to-page={toPages.map((page) => page?.id ?? "").join(",")}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-y-[7px] z-20 w-[calc(50%_-_7px)] border border-[#d8b77d]/72 bg-[linear-gradient(105deg,rgba(255,243,208,0.88)_0%,rgba(235,204,151,0.96)_42%,rgba(138,83,36,0.44)_50%,rgba(255,239,199,0.74)_58%,rgba(194,137,74,0.26)_100%)] shadow-[0_18px_44px_rgba(0,0,0,0.42),inset_0_0_36px_rgba(82,48,20,0.16)] transition-[transform,opacity,filter] duration-500 ease-out ${
-        isForward
-          ? "right-[7px] origin-left [transform:perspective(720px)_rotateY(-15deg)_translateX(-8%)_skewY(-2deg)]"
-          : "left-[7px] origin-right [transform:perspective(720px)_rotateY(15deg)_translateX(8%)_skewY(2deg)]"
-      }`}
+      className="pointer-events-none absolute inset-[7px] z-20 overflow-hidden"
     >
-      <div className="absolute inset-0 opacity-[0.18] [background-image:repeating-linear-gradient(0deg,rgba(82,48,20,0.14)_0_1px,transparent_1px_9px)]" />
-      <div
-        className={`absolute inset-y-0 w-[46%] ${
-          isForward
-            ? "left-0 bg-[linear-gradient(90deg,rgba(65,36,17,0.50),transparent)]"
-            : "right-0 bg-[linear-gradient(270deg,rgba(65,36,17,0.50),transparent)]"
-        }`}
+      <FoldLinePageFlipStage
+        mode={isForward ? "flippingToDetail" : "flippingToOverview"}
+        testId="betrayal-scenario-book-real-flip-stage"
+        durationMs={SCENARIO_BOOK_TURN_DURATION_MS}
+        renderOverviewStage={() =>
+          renderSpread(
+            ...(isForward ? fromPages : toPages),
+          )
+        }
+        renderDetailStage={() =>
+          renderSpread(
+            ...(isForward ? toPages : fromPages),
+          )
+        }
+        overviewStageSize={{ width: stageWidth, height: stageHeight }}
+        detailStageSize={{ width: stageWidth, height: stageHeight }}
+        leftPageRect={{ left: "0%", top: "0%", width: "50%", height: "100%" }}
+        rightPageRect={{ left: "50%", top: "0%", width: "50%", height: "100%" }}
       />
     </div>
   );
@@ -2667,12 +2781,15 @@ function CharacterSelectScreen({
     React.useState(0);
   const [scenarioReaderTurnDirection, setScenarioReaderTurnDirection] =
     React.useState<"back" | "forward" | null>(null);
+  const [scenarioReaderTurnSnapshot, setScenarioReaderTurnSnapshot] =
+    React.useState<ScenarioBookTurnSnapshot | null>(null);
 
   React.useEffect(() => {
     if (!isReady) {
       setScenarioSelectionOpen(false);
       setScenarioDetailsOpen(false);
       setScenarioReaderSpreadIndex(0);
+      setScenarioReaderTurnSnapshot(null);
     }
   }, [isReady]);
   React.useEffect(
@@ -2720,6 +2837,7 @@ function CharacterSelectScreen({
       onProposeScenarioCard(candidateId);
       setScenarioDetailsOpen(false);
       setScenarioReaderSpreadIndex(0);
+      setScenarioReaderTurnSnapshot(null);
     },
     [onProposeScenarioCard],
   );
@@ -2731,6 +2849,7 @@ function CharacterSelectScreen({
         setScenarioSelectionOpen(false);
         setScenarioDetailsOpen(false);
         setScenarioReaderSpreadIndex(0);
+        setScenarioReaderTurnSnapshot(null);
       }, 0);
     },
     [
@@ -2744,6 +2863,7 @@ function CharacterSelectScreen({
       event?.stopPropagation();
       setScenarioDetailsOpen(false);
       setScenarioReaderSpreadIndex(0);
+      setScenarioReaderTurnSnapshot(null);
     },
     [],
   );
@@ -2758,10 +2878,9 @@ function CharacterSelectScreen({
     proposedScenarioCard,
   );
   const scenarioReaderTitle = t(scenarioReaderDossier.titleKey);
-  const scenarioReaderOpeningSection = findScenarioOpeningNarrationSection(
-    scenarioReaderDossier,
-    "all",
-  );
+  // 角色选择阶段只是阅读剧本预览，不属于进入游戏后的开局剧情幕。
+  // 开局黑幕只由 preHaunt 的真实开始流程负责展示。
+  const scenarioReaderOpeningSection = null;
   const scenarioReaderPages = buildScenarioReaderPages(
     scenarioReaderDossier,
     "all",
@@ -2770,7 +2889,7 @@ function CharacterSelectScreen({
     1,
     Math.ceil(scenarioReaderPages.length / 2),
   );
-  const scenarioReaderHasOpeningStage = Boolean(scenarioReaderOpeningSection);
+  const scenarioReaderHasOpeningStage = false;
   const scenarioReaderSpreadCount =
     scenarioReaderBookSpreadCount + (scenarioReaderHasOpeningStage ? 1 : 0);
   const isScenarioReaderOpeningStage =
@@ -2785,24 +2904,36 @@ function CharacterSelectScreen({
   const canTurnScenarioReaderBack = scenarioReaderSpreadIndex > 0;
   const canTurnScenarioReaderForward =
     scenarioReaderSpreadIndex < scenarioReaderSpreadCount - 1;
-  const handleScenarioReaderTurn = React.useCallback(
-    (direction: "back" | "forward") => {
-      const nextSpreadIndex =
-        direction === "back"
-          ? Math.max(0, scenarioReaderSpreadIndex - 1)
-          : Math.min(
-              scenarioReaderSpreadCount - 1,
-              scenarioReaderSpreadIndex + 1,
-            );
-      const didTurn = nextSpreadIndex !== scenarioReaderSpreadIndex;
-      if (!didTurn) return;
-      playSound(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
-      setScenarioReaderTurnDirection(direction);
-      setScenarioReaderSpreadIndex(nextSpreadIndex);
-      window.setTimeout(() => setScenarioReaderTurnDirection(null), 720);
-    },
-    [scenarioReaderSpreadCount, scenarioReaderSpreadIndex],
-  );
+  const handleScenarioReaderTurn = (direction: "back" | "forward") => {
+    const nextSpreadIndex =
+      direction === "back"
+        ? Math.max(0, scenarioReaderSpreadIndex - 1)
+        : Math.min(
+            scenarioReaderSpreadCount - 1,
+            scenarioReaderSpreadIndex + 1,
+          );
+    const didTurn = nextSpreadIndex !== scenarioReaderSpreadIndex;
+    if (!didTurn) return;
+    setScenarioReaderTurnSnapshot({
+      fromPages: resolveScenarioReaderSpreadPages(
+        scenarioReaderPages,
+        scenarioReaderHasOpeningStage,
+        scenarioReaderSpreadIndex,
+      ),
+      toPages: resolveScenarioReaderSpreadPages(
+        scenarioReaderPages,
+        scenarioReaderHasOpeningStage,
+        nextSpreadIndex,
+      ),
+    });
+    playSound(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
+    setScenarioReaderTurnDirection(direction);
+    setScenarioReaderSpreadIndex(nextSpreadIndex);
+    window.setTimeout(() => {
+      setScenarioReaderTurnDirection(null);
+      setScenarioReaderTurnSnapshot(null);
+    }, SCENARIO_BOOK_TURN_DURATION_MS + 80);
+  };
 
   return (
     <div
@@ -3401,7 +3532,7 @@ function CharacterSelectScreen({
                   data-testid="betrayal-scenario-detail-panel"
                   className={`relative flex w-full flex-col overflow-hidden ${
                     isScenarioReaderOpeningStage
-                      ? "h-screen max-h-none max-w-none border-0 bg-black text-[#f5e6c7] shadow-none"
+                      ? "h-screen max-h-none max-w-none border-0 bg-transparent text-[#f5e6c7] shadow-none"
                       : "max-h-[calc(100vh-18px)] max-w-[1120px] border border-[#9a7b46] bg-[linear-gradient(135deg,rgba(52,34,20,0.98),rgba(18,14,10,0.99)_48%,rgba(5,7,6,0.99))] text-[#3a2414] shadow-[0_34px_90px_rgba(0,0,0,0.72)]"
                   }`}
                   onClick={(event) => event.stopPropagation()}
@@ -3436,9 +3567,9 @@ function CharacterSelectScreen({
                           ? "betrayal-scenario-opening-stage"
                           : "betrayal-scenario-book"
                       }
-                      className={`relative mx-auto w-full overflow-hidden transition-[transform,opacity,filter] duration-300 ease-out ${
+                      className={`relative mx-auto w-full overflow-hidden ${
                         isScenarioReaderOpeningStage
-                          ? "h-full max-w-none bg-black"
+                          ? "h-full max-w-none bg-transparent"
                           : "grid grid-cols-2 border border-[#5a371a] bg-[#2a170d] shadow-[0_26px_62px_rgba(0,0,0,0.58),inset_0_0_0_1px_rgba(236,196,117,0.18)]"
                       } ${
                         isScenarioReaderOpeningStage
@@ -3446,12 +3577,6 @@ function CharacterSelectScreen({
                           : isPhoneLandscapeLayout
                             ? "h-[calc(100vh-78px)] min-h-0 p-[5px]"
                             : "h-[min(84vh,760px)] min-h-[360px] p-[7px] lg:h-[min(86vh,780px)]"
-                      } ${
-                        scenarioReaderTurnDirection === "forward"
-                          ? "translate-x-1 opacity-95 brightness-110"
-                          : scenarioReaderTurnDirection === "back"
-                            ? "-translate-x-1 opacity-95 brightness-110"
-                            : "translate-x-0 opacity-100 brightness-100"
                       }`}
                     >
                       {isScenarioReaderOpeningStage &&
@@ -3486,6 +3611,14 @@ function CharacterSelectScreen({
                           <div className="pointer-events-none absolute inset-[7px] bg-[linear-gradient(90deg,rgba(53,30,14,0)_0%,rgba(52,30,15,0)_47%,rgba(52,30,15,0.74)_50%,rgba(255,236,187,0.10)_51%,rgba(52,30,15,0)_54%,rgba(52,30,15,0)_100%)]" />
                           <ScenarioBookTurnSheet
                             direction={scenarioReaderTurnDirection}
+                            fromPages={
+                              scenarioReaderTurnSnapshot?.fromPages ?? [null, null]
+                            }
+                            toPages={
+                              scenarioReaderTurnSnapshot?.toPages ?? [null, null]
+                            }
+                            title={scenarioReaderTitle}
+                            isPhoneLandscapeLayout={isPhoneLandscapeLayout}
                           />
                           {[scenarioReaderLeftPage, scenarioReaderRightPage].map(
                         (page, sideIndex) => {
@@ -3565,12 +3698,14 @@ function CharacterSelectScreen({
                                 </div>
                               ) : (
                                 <div className="relative flex h-full flex-col">
-                                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                                  <div
+                                    data-testid="betrayal-scenario-reader-body-scroll"
+                                    className="scrollbar-thin min-h-0 flex-1 overflow-y-auto pr-1"
+                                  >
                                     <div
                                       className={`grid ${isPhoneLandscapeLayout ? "gap-2" : "gap-4 lg:gap-5"}`}
                                     >
-                                      {(page.sections ?? []).map(
-                                        (section, sectionIndex) => {
+                                      {(page.sections ?? []).map((section) => {
                                           const isCinematicSection =
                                             SCENARIO_READER_CINEMATIC_SECTION_IDS.has(
                                               section.id,
@@ -3610,7 +3745,7 @@ function CharacterSelectScreen({
                                                     aria-hidden="true"
                                                   >
                                                     {String(
-                                                      sectionIndex + 1,
+                                                      page.pageNumber,
                                                     ).padStart(2, "0")}
                                                   </div>
                                                   <h3
@@ -3619,7 +3754,7 @@ function CharacterSelectScreen({
                                                     {t(section.labelKey)}
                                                   </h3>
                                                   <p
-                                                    className={`${isPhoneLandscapeLayout ? "mt-1 text-[12px] leading-[1.45]" : "mt-2 text-[15px] leading-7 lg:text-[16px] lg:leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
+                                                    className={`${isPhoneLandscapeLayout ? "mt-1 text-[12px] leading-[1.45]" : "mt-2 text-[14px] leading-[1.6] lg:text-[15px] lg:leading-[1.65]"} whitespace-pre-line font-medium text-[#4e321c]`}
                                                   >
                                                     {t(section.bodyKey)}
                                                   </p>
@@ -4605,40 +4740,26 @@ function CinematicNarrationPanel({
       data-cinematic-stage={isStage ? "standalone" : undefined}
       className={`betrayal-cinematic-narration relative flex min-h-full overflow-hidden text-[#f5e6c7] ${
         isStage
-          ? "border-y border-[rgba(242,207,130,0.42)] bg-[rgba(3,5,4,0.32)] shadow-[0_24px_90px_rgba(0,0,0,0.44),inset_0_0_0_1px_rgba(255,224,143,0.06),inset_0_0_72px_rgba(214,155,65,0.10)]"
+          ? "border-y border-[rgba(242,207,130,0.30)] bg-[rgba(0,0,0,0.42)] shadow-[0_24px_90px_rgba(0,0,0,0.44)]"
           : "border border-[rgba(222,184,92,0.44)] bg-[#030506] shadow-[0_18px_46px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(255,224,143,0.08)]"
       } ${
         compact ? "px-3 py-4" : "px-8 py-8"
       } ${className}`}
     >
-      <div
-        className={`pointer-events-none absolute inset-0 ${
-          isStage
-            ? "bg-[radial-gradient(circle_at_50%_42%,rgba(126,95,48,0.20),rgba(10,12,10,0.24)_38%,rgba(0,0,0,0.58)_78%)]"
-            : "bg-[radial-gradient(circle_at_50%_42%,rgba(126,95,48,0.28),rgba(10,12,10,0.42)_36%,rgba(0,0,0,0.94)_76%)]"
-        }`}
-      />
-      <div className={`pointer-events-none absolute inset-0 ${isStage ? "opacity-[0.10]" : "opacity-[0.16]"} [background-image:repeating-linear-gradient(90deg,rgba(255,240,182,0.12)_0_1px,transparent_1px_7px),repeating-linear-gradient(0deg,rgba(255,255,255,0.08)_0_1px,transparent_1px_11px)]`} />
-      <div
-        className={`pointer-events-none absolute inset-x-0 top-0 h-[18%] ${
-          isStage
-            ? "bg-[linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0.34),transparent)]"
-            : "bg-[linear-gradient(180deg,rgba(0,0,0,0.98),rgba(0,0,0,0.64),transparent)]"
-        }`}
-      />
-      <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 h-[26%] ${
-          isStage
-            ? "bg-[linear-gradient(0deg,rgba(0,0,0,0.82),rgba(0,0,0,0.42),transparent)]"
-            : "bg-[linear-gradient(0deg,rgba(0,0,0,0.98),rgba(0,0,0,0.72),transparent)]"
-        }`}
-      />
-      <div className="pointer-events-none absolute inset-x-[8%] top-[14%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.52),transparent)]" />
-      <div className="pointer-events-none absolute inset-x-[12%] bottom-[16%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.36),transparent)]" />
-      <div className="pointer-events-none absolute left-4 top-4 h-5 w-5 border-l border-t border-[rgba(242,207,130,0.52)]" />
-      <div className="pointer-events-none absolute right-4 top-4 h-5 w-5 border-r border-t border-[rgba(242,207,130,0.52)]" />
-      <div className="pointer-events-none absolute bottom-4 left-4 h-5 w-5 border-b border-l border-[rgba(242,207,130,0.42)]" />
-      <div className="pointer-events-none absolute bottom-4 right-4 h-5 w-5 border-b border-r border-[rgba(242,207,130,0.42)]" />
+      {!isStage ? (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(126,95,48,0.28),rgba(10,12,10,0.42)_36%,rgba(0,0,0,0.94)_76%)]" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:repeating-linear-gradient(90deg,rgba(255,240,182,0.12)_0_1px,transparent_1px_7px),repeating-linear-gradient(0deg,rgba(255,255,255,0.08)_0_1px,transparent_1px_11px)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[18%] bg-[linear-gradient(180deg,rgba(0,0,0,0.98),rgba(0,0,0,0.64),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[26%] bg-[linear-gradient(0deg,rgba(0,0,0,0.98),rgba(0,0,0,0.72),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-[8%] top-[14%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.52),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-[12%] bottom-[16%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.36),transparent)]" />
+          <div className="pointer-events-none absolute left-4 top-4 h-5 w-5 border-l border-t border-[rgba(242,207,130,0.52)]" />
+          <div className="pointer-events-none absolute right-4 top-4 h-5 w-5 border-r border-t border-[rgba(242,207,130,0.52)]" />
+          <div className="pointer-events-none absolute bottom-4 left-4 h-5 w-5 border-b border-l border-[rgba(242,207,130,0.42)]" />
+          <div className="pointer-events-none absolute bottom-4 right-4 h-5 w-5 border-b border-r border-[rgba(242,207,130,0.42)]" />
+        </>
+      ) : null}
 
       <div className="relative z-10 flex min-h-full w-full flex-col justify-between text-center">
         <div>
@@ -4738,6 +4859,8 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   initialThrowSpread: 0.86,
   settledSpreadAnimationMs: 180,
   settledFaceForwardAnimationMs: 160,
+  settledTiltX: -0.42,
+  settledTiltY: 0.38,
   fitWorldToCameraView: true,
   worldWidthScale: 0.82,
   worldHeightScale: 0.78,
@@ -5049,6 +5172,10 @@ function BetrayalHouseDice3DGroup({
   const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>(
     [],
   );
+  React.useEffect(() => {
+    setHasPhysicsState(false);
+    setPhysicsStates([]);
+  }, [roll.dice.join(","), roll.id]);
   const visibleRuleValues = React.useMemo(
     () =>
       roll.dice.map((pip, index) => {
@@ -5132,7 +5259,8 @@ function BetrayalHouseDice3DGroup({
           : "theme-surface"
       }
       data-dice-physics-ready={hasPhysicsState ? "true" : "false"}
-      data-dice-preload-state={hasPhysicsState ? "retired" : "visible"}
+      data-dice-preload-state="none"
+      data-dice-physics-state-count={physicsStates.length}
       data-dice-count={roll.dice.length}
       data-dice-rule-values={roll.dice.join(",")}
       data-dice-visible-rule-values={visibleRuleValues.join(",")}
@@ -5156,51 +5284,6 @@ function BetrayalHouseDice3DGroup({
         data-dice-tray-surface="transparent"
         className="pointer-events-none absolute inset-0 z-0 rounded-[18px] bg-transparent"
       />
-      {!hasPhysicsState && roll.dice.length > 0 ? (
-        <div
-          aria-hidden="true"
-          data-testid="betrayal-house-dice-preloaded-faces"
-          data-dice-preload-source="betrayal-house-dice-skin"
-          className="pointer-events-none absolute inset-0 z-[12] flex items-center justify-center gap-3 bg-transparent"
-        >
-          {roll.dice.map((pip, dieIndex) => {
-            const ruleValue = normalizeBetrayalHouseRuleValue(pip);
-            const size =
-              roll.dice.length >= 5 ? 56 : roll.dice.length >= 4 ? 62 : 72;
-            return (
-              <div
-                key={`${roll.id}-preloaded-die-${dieIndex}`}
-                data-testid={`betrayal-house-dice-preloaded-face-${dieIndex}`}
-                data-rule-value={ruleValue}
-                className="relative grid shrink-0 place-items-center rounded-[18%] border border-[rgba(255,241,194,0.78)] bg-[radial-gradient(circle_at_38%_27%,#fff8d6_0%,#edcf82_48%,#d49a4f_100%)] text-[#4d2a10] shadow-[0_7px_16px_rgba(0,0,0,0.26),inset_0_0_0_2px_rgba(255,255,255,0.20)]"
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                }}
-              >
-                {ruleValue === 0 ? (
-                  <span className="font-serif text-[1.9em] font-black leading-none">
-                    0
-                  </span>
-                ) : (
-                  <span
-                    className={`grid h-full w-full place-items-center ${
-                      ruleValue === 2 ? "grid-cols-2" : ""
-                    }`}
-                  >
-                    {Array.from({ length: ruleValue }).map((_, pipIndex) => (
-                      <span
-                        key={`${roll.id}-preloaded-die-${dieIndex}-pip-${pipIndex}`}
-                        className="block h-[28%] w-[28%] rounded-full bg-[#4d2a10] shadow-[inset_0_0_0_2px_rgba(255,248,219,0.42)]"
-                      />
-                    ))}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
       <DiceBoxPhysicsSource
         dice={diceInputs}
         isRolling={animateInitialRoll && rerollingDieIndex === null}
@@ -5217,7 +5300,9 @@ function BetrayalHouseDice3DGroup({
             "dice-box-d6-with-per-die-betrayal-0-1-2-skin",
         }}
         onPhysicsStatesChange={(states) => {
-          setHasPhysicsState(states.length > 0);
+          setHasPhysicsState(
+            roll.dice.length > 0 && states.length >= roll.dice.length,
+          );
           setPhysicsStates(states);
         }}
         onSettledChange={(settled) => {
@@ -5556,7 +5641,7 @@ function RecentRollPanel({
             : "min-h-[112px] gap-4 px-4 py-3"
       } ${resultGridColumns} ${
         showResultCopy ? "" : "justify-end"
-      } items-center ${denseResult ? "overflow-hidden" : "overflow-visible"} text-left ${resultStageClassName} ${
+      } items-center ${denseResult ? (actionSlot ? "overflow-visible" : "overflow-hidden") : "overflow-visible"} text-left ${resultStageClassName} ${
         denseResult
           ? openTable
             ? "bg-transparent shadow-none"
@@ -5762,8 +5847,8 @@ function StandardRecentRollOverlay({
     <button
       type="button"
       data-testid="betrayal-roll-continue"
-      className={`pointer-events-auto inline-flex min-h-[42px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a] ${
-        isPhoneLandscapeLayout ? "w-full min-w-0" : "min-w-[168px]"
+      className={`pointer-events-auto inline-flex min-h-[42px] max-w-full shrink-0 items-center justify-center whitespace-nowrap border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a] ${
+        isPhoneLandscapeLayout ? "min-w-[132px]" : "min-w-[168px]"
       }`}
       onClick={onDismiss}
     >
@@ -5933,20 +6018,24 @@ function EndgameScreen({
     <div
       data-testid="betrayal-endgame-screen"
       data-tutorial-id="betrayal-endgame-screen"
-      className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#08110f] text-[#f1e8d4]"
-      style={{
-        backgroundImage: [
-          "radial-gradient(circle at 50% 10%, rgba(156,203,77,0.14), transparent 24%)",
-          "repeating-linear-gradient(90deg, rgba(45,61,50,0.04) 0 2px, rgba(0,0,0,0) 2px 22px)",
-          "repeating-linear-gradient(0deg, rgba(37,52,42,0.03) 0 2px, rgba(0,0,0,0) 2px 24px)",
-          "linear-gradient(180deg, #0d1714 0%, #07100e 100%)",
-        ].join(","),
-      }}
+      className="absolute inset-0 z-[240] flex h-full min-h-full flex-col overflow-hidden bg-transparent text-[#f1e8d4]"
+      style={
+        endingNarrationOpen
+          ? undefined
+          : {
+              backgroundImage: [
+                "radial-gradient(circle at 50% 10%, rgba(156,203,77,0.14), transparent 24%)",
+                "repeating-linear-gradient(90deg, rgba(45,61,50,0.04) 0 2px, rgba(0,0,0,0) 2px 22px)",
+                "repeating-linear-gradient(0deg, rgba(37,52,42,0.03) 0 2px, rgba(0,0,0,0) 2px 24px)",
+                "linear-gradient(180deg, #0d1714 0%, #07100e 100%)",
+              ].join(","),
+            }
+      }
     >
       {endingNarrationOpen ? (
         <section
           data-testid="betrayal-endgame-ending-stage"
-          className="relative flex h-full min-h-full w-full flex-col overflow-hidden bg-black"
+          className="relative flex h-full min-h-full w-full flex-col overflow-hidden bg-[rgba(0,0,0,0.36)] backdrop-blur-[1px]"
         >
           <CinematicNarrationPanel
             testId="betrayal-endgame-ending-narration"
@@ -6506,8 +6595,12 @@ export default function BetrayalBoard({
     React.useState<ReferencePageId>("front");
   const [referenceScenarioSpreadIndex, setReferenceScenarioSpreadIndex] =
     React.useState(0);
+  const [referenceScenarioOpeningStageActive, setReferenceScenarioOpeningStageActive] =
+    React.useState(false);
   const [referenceScenarioTurnDirection, setReferenceScenarioTurnDirection] =
     React.useState<"back" | "forward" | null>(null);
+  const [referenceScenarioTurnSnapshot, setReferenceScenarioTurnSnapshot] =
+    React.useState<ScenarioBookTurnSnapshot | null>(null);
   const previousBoardPhaseRef = React.useRef<BetrayalCore["phase"]>(
     baseCore.phase,
   );
@@ -6618,6 +6711,21 @@ export default function BetrayalBoard({
   const closeExplorerDetails = React.useCallback(() => {
     setInspectedExplorerPlayerId(null);
   }, []);
+  const focusRoomOnMap = React.useCallback(
+    (roomId: string) => {
+      const targetRoom = core.rooms.find((room) => room.id === roomId);
+      if (!targetRoom) {
+        return;
+      }
+      setSelectedRoomMapFloor(targetRoom.floor);
+      const nextTarget = `betrayal-room-${targetRoom.id}`;
+      setRoomFocusPanTarget(null);
+      window.requestAnimationFrame(() => {
+        setRoomFocusPanTarget(nextTarget);
+      });
+    },
+    [core.rooms],
+  );
   const focusExplorerRoom = React.useCallback(
     (playerId: string | null) => {
       const targetExplorer =
@@ -6630,14 +6738,20 @@ export default function BetrayalBoard({
       if (!targetRoom) {
         return;
       }
-      setSelectedRoomMapFloor(targetRoom.floor);
-      const nextTarget = `betrayal-room-${targetRoom.id}`;
-      setRoomFocusPanTarget(null);
-      window.requestAnimationFrame(() => {
-        setRoomFocusPanTarget(nextTarget);
-      });
+      focusRoomOnMap(targetRoom.id);
     },
-    [allExplorers, core.currentExplorer, core.rooms],
+    [allExplorers, core.currentExplorer, core.rooms, focusRoomOnMap],
+  );
+  const focusMonsterRoom = React.useCallback(
+    (monsterId: string | null) => {
+      const monster = monsterId
+        ? core.monsters.find((candidate) => candidate.id === monsterId)
+        : null;
+      if (monster) {
+        focusRoomOnMap(monster.roomId);
+      }
+    },
+    [core.monsters, focusRoomOnMap],
   );
   const handleObserveExplorer = React.useCallback(
     (playerId: string) => {
@@ -6670,13 +6784,8 @@ export default function BetrayalBoard({
     }
     observationReturnPlayerIdRef.current = null;
     setObservedExplorerPlayerId(null);
-    setSelectedRoomMapFloor(selfRoom.floor);
-    const nextTarget = `betrayal-room-${selfRoom.id}`;
-    setRoomFocusPanTarget(null);
-    window.requestAnimationFrame(() => {
-      setRoomFocusPanTarget(nextTarget);
-    });
-  }, [core.currentExplorer.roomId, core.rooms]);
+    focusRoomOnMap(selfRoom.id);
+  }, [core.currentExplorer.roomId, core.rooms, focusRoomOnMap]);
   const referencePages = React.useMemo(
     () => resolveReferencePages(core),
     [core],
@@ -6718,9 +6827,9 @@ export default function BetrayalBoard({
     1,
     Math.ceil(referenceScenarioPages.length / 2),
   );
-  const referenceScenarioHasOpeningStage = Boolean(
-    referenceScenarioOpeningSection,
-  );
+  const referenceScenarioHasOpeningStage =
+    referenceScenarioOpeningStageActive &&
+    Boolean(referenceScenarioOpeningSection);
   const referenceScenarioSpreadCount =
     referenceScenarioBookSpreadCount +
     (referenceScenarioHasOpeningStage ? 1 : 0);
@@ -6816,6 +6925,7 @@ export default function BetrayalBoard({
   }, [referencePages, referenceSide]);
   React.useEffect(() => {
     setReferenceScenarioSpreadIndex(0);
+    setReferenceScenarioOpeningStageActive(false);
   }, [activeHauntDossier.id]);
   React.useEffect(() => {
     const previousPhase = previousBoardPhaseRef.current;
@@ -6871,7 +6981,9 @@ export default function BetrayalBoard({
         ? Math.min(1, referenceScenarioSpreadCount - 1)
         : 0;
     setReferenceScenarioSpreadIndex(initialScenarioSpreadIndex);
+    setReferenceScenarioOpeningStageActive(false);
     setReferenceScenarioTurnDirection(null);
+    setReferenceScenarioTurnSnapshot(null);
     setScenarioReaderOpen(true);
     if (shouldAdvanceScenarioReferenceTutorial) {
       nextStep("auto");
@@ -6893,6 +7005,7 @@ export default function BetrayalBoard({
   const closeReferenceOverlay = React.useCallback(() => {
     setReferenceOpen(false);
     setScenarioReaderOpen(false);
+    setReferenceScenarioOpeningStageActive(false);
   }, []);
 
   const openReferenceCards = React.useCallback(() => {
@@ -10301,41 +10414,6 @@ export default function BetrayalBoard({
       hauntRevealDiscoveryKey !== dismissedHauntRevealDiscoveryKey &&
       !shouldDeferHauntRevealCueUntilDiscoveryRead,
   );
-  const acknowledgeHauntRevealDiscovery = React.useCallback(
-    (discoveryKey: string) => {
-      setDismissedHauntRevealDiscoveryKey(discoveryKey);
-      if (core.recentRoll?.sourceTitle === core.latestDiscovery?.title) {
-        setPreviewState((previousState) => ({
-          ...previousState,
-          dismissedRecentRollId:
-            coreRecentRollDisplayKey ?? previousState.dismissedRecentRollId,
-        }));
-      }
-      setLatestDiscoveryQueue((previousQueue) =>
-        previousQueue.filter((entry) => entry.key !== discoveryKey),
-      );
-    },
-    [
-      core.latestDiscovery?.title,
-      core.recentRoll?.sourceTitle,
-      coreRecentRollDisplayKey,
-    ],
-  );
-  React.useEffect(() => {
-    if (
-      !scenarioReaderOpen ||
-      !shouldShowHauntRevealCue ||
-      !hauntRevealDiscoveryKey
-    ) {
-      return;
-    }
-    acknowledgeHauntRevealDiscovery(hauntRevealDiscoveryKey);
-  }, [
-    acknowledgeHauntRevealDiscovery,
-    hauntRevealDiscoveryKey,
-    scenarioReaderOpen,
-    shouldShowHauntRevealCue,
-  ]);
   const hauntRevealAutoOpenKey = shouldShowHauntRevealCue
     ? [
         activeHauntDossier.id,
@@ -10377,7 +10455,9 @@ export default function BetrayalBoard({
     }
     autoOpenedHauntScenarioReaderKeysRef.current.add(hauntRevealAutoOpenKey);
     setReferenceScenarioSpreadIndex(0);
+    setReferenceScenarioOpeningStageActive(true);
     setReferenceScenarioTurnDirection(null);
+    setReferenceScenarioTurnSnapshot(null);
     setScenarioReaderOpen(true);
   }, [
     core.scenarioRuntime.hauntCardNumber,
@@ -10993,23 +11073,69 @@ export default function BetrayalBoard({
       return nextPage?.id ?? "front";
     });
   }, [referencePages]);
-  const handleReferenceScenarioTurn = React.useCallback(
-    (direction: "back" | "forward") => {
-      setReferenceScenarioSpreadIndex((previousIndex) => {
-        const nextIndex =
-          direction === "back"
-            ? Math.max(0, previousIndex - 1)
-            : Math.min(referenceScenarioSpreadCount - 1, previousIndex + 1);
-        if (nextIndex !== previousIndex) {
-          playSound(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
-          setReferenceScenarioTurnDirection(direction);
-          window.setTimeout(() => setReferenceScenarioTurnDirection(null), 720);
-        }
-        return nextIndex;
-      });
-    },
-    [referenceScenarioSpreadCount],
+  const handleReferenceScenarioTurn = (direction: "back" | "forward") => {
+    setReferenceScenarioSpreadIndex((previousIndex) => {
+      const nextIndex =
+        direction === "back"
+          ? Math.max(0, previousIndex - 1)
+          : Math.min(referenceScenarioSpreadCount - 1, previousIndex + 1);
+      if (nextIndex !== previousIndex) {
+        setReferenceScenarioTurnSnapshot({
+          fromPages: resolveScenarioReaderSpreadPages(
+            referenceScenarioPages,
+            referenceScenarioHasOpeningStage,
+            previousIndex,
+          ),
+          toPages: resolveScenarioReaderSpreadPages(
+            referenceScenarioPages,
+            referenceScenarioHasOpeningStage,
+            nextIndex,
+          ),
+        });
+        playSound(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
+        setReferenceScenarioTurnDirection(direction);
+        window.setTimeout(() => {
+          setReferenceScenarioTurnDirection(null);
+          setReferenceScenarioTurnSnapshot(null);
+        }, SCENARIO_BOOK_TURN_DURATION_MS + 80);
+      }
+      return nextIndex;
+    });
+  };
+  const latestDiscoveryPendingPossessionCard = React.useMemo<
+    BetrayalInventoryCard | null
+  >(() => {
+    const pending = activePendingCardResolution;
+    if (
+      !pending?.cardId ||
+      (pending.deckKind !== "item" && pending.deckKind !== "omen")
+    ) {
+      return null;
+    }
+    return {
+      id: pending.cardId,
+      name: pending.cardName,
+      kind: pending.deckKind,
+    };
+  }, [activePendingCardResolution]);
+  const latestDiscoveryPendingPossessionVisual = React.useMemo(
+    () =>
+      latestDiscoveryPendingPossessionCard
+        ? resolvePossessionAtlasVisual(latestDiscoveryPendingPossessionCard)
+        : null,
+    [latestDiscoveryPendingPossessionCard],
   );
+  const latestDiscoveryPanelVisual =
+    latestDiscoveryPendingPossessionVisual ?? latestDiscoveryVisual;
+  const latestDiscoveryDisplayedKindLabel = latestDiscoveryPendingPossessionCard
+    ? latestDiscoveryPendingPossessionCard.kind === "item"
+      ? t("board.discovery.itemCard")
+      : t("board.discovery.omenCard")
+    : latestDiscovery?.kind === "none" && latestDiscoveryPendingCardResolution
+      ? t("board.discovery.roomEffect")
+      : latestDiscoveryKindLabel;
+  const latestDiscoveryDisplayedTitle =
+    latestDiscoveryPendingPossessionCard?.name ?? latestDiscovery?.title ?? "";
 
   const scrollToSection = React.useCallback((sectionId: string) => {
     if (typeof document === "undefined") {
@@ -11046,8 +11172,9 @@ export default function BetrayalBoard({
         ...previousState,
         interactionMode: useSkeletonKey ? "default" : "move",
       }));
+      focusRoomOnMap(roomId);
     },
-    [dispatchCommand, skeletonKeyMoveTargetRoomIds],
+    [dispatchCommand, focusRoomOnMap, skeletonKeyMoveTargetRoomIds],
   );
 
   const handleMoveAction = React.useCallback(() => {
@@ -11057,11 +11184,16 @@ export default function BetrayalBoard({
       previewState.interactionMode !== "move" &&
       core.movesRemaining > 0 &&
       moveTargetRooms.length > 0;
+    const isEnteringMoveMode =
+      previewState.interactionMode !== "move" &&
+      core.movesRemaining > 0 &&
+      moveTargetRooms.length > 0;
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "move") {
         return {
           ...previousState,
           interactionMode: "default",
+          selectedMonsterMoveMonsterId: null,
           selectedMonsterAttackMonsterId: null,
         };
       }
@@ -11071,14 +11203,19 @@ export default function BetrayalBoard({
       return {
         ...previousState,
         interactionMode: "move",
+        selectedMonsterMoveMonsterId: null,
         selectedMonsterAttackMonsterId: null,
       };
     });
+    if (isEnteringMoveMode) {
+      focusExplorerRoom(null);
+    }
     if (shouldAdvanceOpenMoveTutorial) {
       nextStep("auto");
     }
   }, [
     core.movesRemaining,
+    focusExplorerRoom,
     isTutorialActive,
     moveTargetRooms.length,
     nextStep,
@@ -12126,6 +12263,11 @@ export default function BetrayalBoard({
 
   const handleMonsterMoveAction = React.useCallback(() => {
     setInventoryPreviewCardId(null);
+    const selectedMonsterId = monsterMoveSlots.some(
+      (slot) => slot.monsterId === previewState.selectedMonsterMoveMonsterId,
+    )
+      ? previewState.selectedMonsterMoveMonsterId
+      : (monsterMoveSlots[0]?.monsterId ?? null);
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "monsterMove") {
         return {
@@ -12151,7 +12293,10 @@ export default function BetrayalBoard({
         hauntTargetingActionKind: null,
       };
     });
-  }, [monsterMoveSlots]);
+    if (previewState.interactionMode !== "monsterMove" && selectedMonsterId) {
+      focusMonsterRoom(selectedMonsterId);
+    }
+  }, [focusMonsterRoom, monsterMoveSlots, previewState.interactionMode, previewState.selectedMonsterMoveMonsterId]);
 
   const handleSelectMonsterMoveMonster = React.useCallback(
     (monsterId: string) => {
@@ -12163,8 +12308,9 @@ export default function BetrayalBoard({
         selectedMonsterAttackMonsterId: null,
         hauntTargetingActionKind: null,
       }));
+      focusMonsterRoom(monsterId);
     },
-    [],
+    [focusMonsterRoom],
   );
 
   function handleMoveMonsterToRoom(roomId: string) {
@@ -12175,6 +12321,7 @@ export default function BetrayalBoard({
       monsterId: selectedMonsterMoveMonsterId,
       roomId,
     });
+    focusRoomOnMap(roomId);
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => ({
       ...previousState,
@@ -13025,6 +13172,8 @@ export default function BetrayalBoard({
     ? bloodFromStoneSetupPlacementActionItems
     : core.turnEndedByDiscovery
     ? actionItems.filter((action) => action.id === "endTurn")
+    : monsterActionItems.length > 0
+    ? monsterActionItems
     : [
         ...actionItems.filter((action) => {
           if (action.id === "explore" && !canStartExploreSelection) {
@@ -13035,7 +13184,6 @@ export default function BetrayalBoard({
           }
           return true;
         }),
-        ...monsterActionItems,
       ];
 
   const tutorialMapTargetRoomId = React.useMemo(() => {
@@ -13539,19 +13687,6 @@ export default function BetrayalBoard({
     );
   }
 
-  if (core.phase === "endgame") {
-    return (
-      <>
-        <EndgameScreen
-          core={core}
-          matchData={matchData}
-          effectiveLocale={effectiveLocale}
-        />
-        <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
-      </>
-    );
-  }
-
   const observedExplorerTemplate = EXPLORER_CATALOG.find(
     (explorer) => explorer.explorerId === observedExplorer.explorerId,
   );
@@ -13588,7 +13723,7 @@ export default function BetrayalBoard({
       {shouldShowScenarioStartOpening && referenceScenarioOpeningSection ? (
         <div
           data-testid="betrayal-start-scenario-opening-stage"
-          className="fixed inset-0 z-[240] bg-black text-[#f5e6c7]"
+          className="fixed inset-0 z-[240] bg-[rgba(0,0,0,0.58)] text-[#f5e6c7]"
         >
           <CinematicNarrationPanel
             testId="betrayal-start-scenario-opening-cinematic"
@@ -14527,7 +14662,7 @@ export default function BetrayalBoard({
                   data-testid="betrayal-discovery-panel"
                   data-card-testid="betrayal-discovery-card-reveal"
                   data-tutorial-id="betrayal-latest-discovery"
-                  aria-label={`${latestDiscoveryKindLabel} ${latestDiscovery!.title}`}
+                  aria-label={`${latestDiscoveryDisplayedKindLabel} ${latestDiscoveryDisplayedTitle}`}
                   data-allows-inventory-roll-modifiers={
                     canCurrentPlayerModifyLatestDiscoveryRoll ? "true" : "false"
                   }
@@ -14547,7 +14682,7 @@ export default function BetrayalBoard({
                       : "inset-y-0 left-0 right-0 z-[120] items-center justify-center px-4 py-16 md:left-[392px] md:right-[240px]"
                   }`}
                 >
-                  {latestDiscoveryVisual ? null : (
+                  {latestDiscoveryPanelVisual ? null : (
                     <div
                       data-testid="betrayal-discovery-top-banner"
                       data-prompt-placement="top"
@@ -14567,7 +14702,7 @@ export default function BetrayalBoard({
                         {t("board.discovery.label")}
                       </span>
                       <span className="text-[#d8c692]">
-                        {latestDiscoveryKindLabel}
+                        {latestDiscoveryDisplayedKindLabel}
                       </span>
                       <span
                         data-testid="betrayal-discovery-top-banner-title"
@@ -14575,7 +14710,7 @@ export default function BetrayalBoard({
                           isPhoneLandscapeLayout ? "text-[17px]" : "text-[24px]"
                         }`}
                       >
-                        {latestDiscovery!.title}
+                        {latestDiscoveryDisplayedTitle}
                       </span>
                       <span
                         data-testid="betrayal-discovery-top-banner-detail"
@@ -14689,11 +14824,11 @@ export default function BetrayalBoard({
                         >
                           {latestDiscovery!.summary} {latestDiscovery!.detail}
                         </span>
-                        {latestDiscoveryVisual ? (
+                        {latestDiscoveryPanelVisual ? (
                           <DiscoveryAtlasFrame
-                            visual={latestDiscoveryVisual}
+                            visual={latestDiscoveryPanelVisual}
                             locale={effectiveLocale}
-                            alt={latestDiscovery!.title}
+                            alt={latestDiscoveryDisplayedTitle}
                             testId="betrayal-discovery-card-front-atlas"
                           />
                         ) : (
@@ -14702,7 +14837,7 @@ export default function BetrayalBoard({
                             className="flex aspect-[675/1275] flex-col items-center justify-center gap-2 rounded-[10px] border border-[rgba(211,179,109,0.28)] bg-[rgba(13,15,11,0.94)] px-4 text-center leading-tight text-[#d6c498]"
                           >
                             <span className="text-[11px] font-semibold tracking-[0.12em] text-[#9d8f66]">
-                              {latestDiscoveryKindLabel}
+                              {latestDiscoveryDisplayedKindLabel}
                             </span>
                             <span className="text-[18px] font-black text-[#eadbb0]">
                               {latestDiscovery!.title}
@@ -14842,6 +14977,7 @@ export default function BetrayalBoard({
               ) : null}
 
               {core.recentRoll &&
+              core.phase !== "endgame" &&
               !isRecentRollDismissed &&
               !isConfirmedExorciseRoll &&
               !pendingEventChoice &&
@@ -15998,12 +16134,12 @@ export default function BetrayalBoard({
                   className={`relative h-full min-h-0 w-full bg-transparent ${
                     isPhoneLandscapeLayout
                       ? "mx-auto grid max-w-none place-items-center"
-                      : ""
+                      : "pt-[72px] pb-[72px]"
                   }`}
                   contentClassName={`relative ${
                     isPhoneLandscapeLayout
                         ? "mx-auto"
-                        : "mx-auto xl:ml-0 xl:mr-auto"
+                        : "mx-auto"
                   }`}
                   containerTestId="betrayal-room-grid"
                   contentTestId="betrayal-room-canvas"
@@ -17595,7 +17731,9 @@ export default function BetrayalBoard({
                   : null}
                 <div
                   data-testid="betrayal-room-floor-switcher"
-                  className={`pointer-events-auto absolute bottom-3 right-3 z-[60] w-[54px] flex-col items-center overflow-hidden rounded-[10px] border bg-[rgba(8,10,8,0.76)] text-[11px] font-semibold text-[#d6c498] shadow-[0_10px_24px_rgba(0,0,0,0.36)] backdrop-blur-sm lg:right-[236px] ${
+                   className={`pointer-events-auto absolute bottom-3 z-[60] w-[54px] flex-col items-center overflow-hidden rounded-[10px] border bg-[rgba(8,10,8,0.76)] text-[11px] font-semibold text-[#d6c498] shadow-[0_10px_24px_rgba(0,0,0,0.36)] backdrop-blur-sm ${
+                    isPhoneLandscapeLayout ? "right-3" : "right-[228px]"
+                  } ${
                     shouldHideTableChromeForBlockingOverlay
                       ? "hidden"
                       : "flex"
@@ -19012,7 +19150,7 @@ export default function BetrayalBoard({
                   ? "betrayal-scenario-reader-close"
                   : "betrayal-reference-close"
               }
-              className="absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-[12px] font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+              className="pointer-events-auto absolute right-3 top-3 z-50 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-[12px] font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
             >
               {scenarioReaderOpen
                 ? t("board.characterSelect.hideScenarioDetails")
@@ -19023,11 +19161,11 @@ export default function BetrayalBoard({
                 data-testid="betrayal-scenario-objective-page"
                 data-reference-page="scenario"
                 data-scenario-reader-scope={scenarioReaderScope}
-                className={`relative flex h-full w-full flex-col overflow-hidden text-[#f3e0b4] ${
-                  isReferenceScenarioOpeningStage
-                    ? "border border-transparent bg-transparent p-0 shadow-none"
-                    : `border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] shadow-[0_24px_56px_rgba(0,0,0,0.44)] ${isPhoneLandscapeLayout ? "p-3" : "p-5"}`
-                }`}
+                  className={`relative flex h-full w-full flex-col overflow-hidden text-[#f3e0b4] ${
+                    isReferenceScenarioOpeningStage
+                      ? "border border-transparent bg-transparent p-0 shadow-none"
+                      : `border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] shadow-[0_24px_56px_rgba(0,0,0,0.44)] ${isPhoneLandscapeLayout ? "p-3" : "p-5"}`
+                  }`}
               >
                 <div
                   className={`flex items-start justify-between gap-4 border-b border-[rgba(211,179,109,0.24)] pr-32 ${
@@ -19069,16 +19207,10 @@ export default function BetrayalBoard({
                       ? "betrayal-scenario-opening-stage"
                       : "betrayal-scenario-book"
                   }
-                  className={`relative min-h-0 flex-1 overflow-hidden transition-[transform,opacity,filter] duration-300 ease-out ${
+                  className={`relative min-h-0 flex-1 overflow-hidden ${
                     isReferenceScenarioOpeningStage
                       ? "mt-0"
                       : `grid grid-cols-2 ${isPhoneLandscapeLayout ? "mt-2 gap-2" : "mt-4 gap-3"}`
-                  } ${
-                    referenceScenarioTurnDirection === "forward"
-                      ? "translate-x-1 opacity-95 brightness-110"
-                      : referenceScenarioTurnDirection === "back"
-                        ? "-translate-x-1 opacity-95 brightness-110"
-                        : "translate-x-0 opacity-100 brightness-100"
                   }`}
                 >
                   {isReferenceScenarioOpeningStage &&
@@ -19120,6 +19252,14 @@ export default function BetrayalBoard({
                     <>
                       <ScenarioBookTurnSheet
                         direction={referenceScenarioTurnDirection}
+                        fromPages={
+                          referenceScenarioTurnSnapshot?.fromPages ?? [null, null]
+                        }
+                        toPages={
+                          referenceScenarioTurnSnapshot?.toPages ?? [null, null]
+                        }
+                        title={activeHauntTitle}
+                        isPhoneLandscapeLayout={isPhoneLandscapeLayout}
                       />
                       {[
                         referenceScenarioLeftPage,
@@ -19148,7 +19288,10 @@ export default function BetrayalBoard({
                             >
                               {String(page.pageNumber).padStart(2, "0")}
                             </div>
-                            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+                            <div
+                              data-testid="betrayal-scenario-reader-body-scroll"
+                              className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-1"
+                            >
                               <div
                                 className={`grid min-h-full content-center ${isPhoneLandscapeLayout ? "gap-2 py-5" : "gap-6 px-3 py-10"}`}
                               >
@@ -19193,7 +19336,7 @@ export default function BetrayalBoard({
                                             {t(section.labelKey)}
                                           </h3>
                                           <p
-                                            className={`${isPhoneLandscapeLayout ? "mt-1 text-[12px] leading-[1.45]" : "mt-3 text-[15px] leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
+                                            className={`${isPhoneLandscapeLayout ? "mt-1 text-[12px] leading-[1.45]" : "mt-3 text-[14px] leading-[1.6]"} whitespace-pre-line font-medium text-[#4e321c]`}
                                           >
                                             {t(section.bodyKey)}
                                           </p>
@@ -19856,6 +19999,13 @@ export default function BetrayalBoard({
           </div>
         )}
       </div>
+      {core.phase === "endgame" ? (
+        <EndgameScreen
+          core={core}
+          matchData={matchData}
+          effectiveLocale={effectiveLocale}
+        />
+      ) : null}
     </div>
   );
 }

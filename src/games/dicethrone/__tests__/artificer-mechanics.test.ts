@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DiceThroneDomain } from '../domain';
 import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
-import { resolveOffensivePreDefenseEffects, resolvePostDamageEffects } from '../domain/attack';
+import { resolveOffensivePreDefenseEffects } from '../domain/attack';
 import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { initializeCustomActions } from '../domain/customActions';
@@ -1622,6 +1622,120 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB]).toBe(1);
     });
 
+    it('五条技能赠送的机器人激活都应忽略“然后”，在伤害结算前进入选择', () => {
+        const cases = [
+            { abilityId: 'overclock', sourceAbilityId: 'overclock', level: 1 },
+            { abilityId: 'overclock', sourceAbilityId: 'overclock-2-main', level: 2 },
+            { abilityId: 'shock-bot', sourceAbilityId: 'shock-bot', level: 1 },
+            { abilityId: 'shock-bot', sourceAbilityId: 'shock-bot-3-main', level: 3 },
+            { abilityId: 'maximum-power', sourceAbilityId: 'maximum-power', level: 1 },
+        ];
+
+        for (const entry of cases) {
+            const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+            if (entry.level > 1) {
+                setArtificerAbilityLevel(state.core, entry.abilityId, entry.level);
+            }
+            state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+            setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: entry.sourceAbilityId,
+                isDefendable: true,
+                damageResolved: false,
+                resolvedDamage: 0,
+                settlementStage: 'preDamage',
+            } as DiceThroneCore['pendingAttack'];
+
+            const events = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 290);
+            const request = eventsOfType(events, 'CHOICE_REQUESTED')[0];
+
+            expect(request?.payload.options, entry.sourceAbilityId).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    labelKey: 'choices.artificerBotActivation.activateShockBotFree',
+                    labelParams: undefined,
+                }),
+                expect.objectContaining({ labelKey: 'choices.artificerBotActivation.skip' }),
+            ]));
+            expect(eventsOfType(events, 'DAMAGE_DEALT'), entry.sourceAbilityId).toHaveLength(0);
+        }
+    });
+
+    it('技能赠送的电能机器人激活应免费并入当前攻击，而不是伤害后另造成 3 点伤害', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 5;
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shock-bot',
+            isDefendable: true,
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
+        } as DiceThroneCore['pendingAttack'];
+
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 291);
+        const requestedState = applyEvents(state.core, requestEvents);
+        const request = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
+        const shockOption = request?.payload.options.find(option => (
+            option.labelKey === 'choices.artificerBotActivation.activateShockBotFree'
+        ));
+
+        expect(shockOption).toBeDefined();
+        if (!shockOption) return;
+
+        const resolution = resolveChoiceWithFollowups(requestedState, {
+            playerId: '0',
+            customId: shockOption.customId!,
+            sourceAbilityId: 'shock-bot',
+            value: shockOption.value!,
+            timestamp: 292,
+            random: fixedRandom,
+        });
+
+        expect(eventsOfType(resolution.followupEvents, 'TOKEN_USED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            tokenId: TOKEN_IDS.SHOCK_BOT,
+            amount: 1,
+            effectType: 'damageBoost',
+            damageModifier: 3,
+        });
+        expect(eventsOfType(resolution.followupEvents, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(5);
+        expect(resolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+        expect(resolution.nextState.pendingAttack?.bonusDamage).toBe(3);
+        expect(resolution.nextState.players['0'].artificerBotState?.[TOKEN_IDS.SHOCK_BOT]?.activationsUsedThisTurn).toBe(1);
+    });
+
+    it('技能赠送激活仍只允许已建造且本回合尚有次数的机器人', () => {
+        const buildRequest = (built: boolean, activationsUsedThisTurn: number) => {
+            const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+            state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+            if (built) {
+                setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT, { activationsUsedThisTurn });
+            }
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'shock-bot',
+                isDefendable: true,
+                damageResolved: false,
+                resolvedDamage: 0,
+                settlementStage: 'preDamage',
+            } as DiceThroneCore['pendingAttack'];
+            return eventsOfType(resolveOffensivePreDefenseEffects(state.core, fixedRandom, 293), 'CHOICE_REQUESTED')[0];
+        };
+
+        expect(buildRequest(false, 0)).toBeUndefined();
+        expect(buildRequest(true, 1)).toBeUndefined();
+        expect(buildRequest(true, 0)?.payload.options.map(option => option.labelKey)).toEqual([
+            'choices.artificerBotActivation.activateShockBotFree',
+            'choices.artificerBotActivation.skip',
+        ]);
+    });
+
     it('真本能量的机器人激活链会二次请求且第二次不能重复选择同一机器人', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 4;
@@ -1632,12 +1746,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'maximum-power',
-            damageResolved: true,
-            resolvedDamage: 10,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
-        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 300);
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 300);
         const requestedState = applyEvents(state.core, requestEvents);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
         const nanobotOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateNanobotFree');
@@ -1660,14 +1774,14 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         const secondRequest = eventsOfType(firstResolution.followupEvents, 'CHOICE_REQUESTED')[0];
 
         expect(firstResolution.nextState.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(1);
-        expect(firstResolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
+        expect(firstResolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(6);
         expect(firstResolution.nextState.players['0'].artificerBotState?.[TOKEN_IDS.NANOBOT]).toMatchObject({
             built: true,
             upgraded: false,
             activationsUsedThisTurn: 1,
         });
         expect(firstResolution.nextState.players['1'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
-        expect(firstResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(firstResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
         expect(secondRequest?.payload.titleKey).toBe('choices.artificerBotActivation.titleSingle');
         expect(secondRequest?.payload.options.map(option => option.labelKey)).toEqual([
             'choices.artificerBotActivation.activateShockBotFree',
@@ -1686,18 +1800,19 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(eventsOfType(secondResolution.followupEvents, 'CHOICE_REQUESTED')).toHaveLength(0);
         expect(secondResolution.nextState.players['0'].tokens[TOKEN_IDS.SHOCK_BOT]).toBe(1);
-        expect(secondResolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+        expect(secondResolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(6);
         expect(secondResolution.nextState.players['0'].artificerBotState?.[TOKEN_IDS.SHOCK_BOT]).toMatchObject({
             built: true,
             upgraded: false,
             activationsUsedThisTurn: 1,
         });
-        expect(secondResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
-        expect(secondResolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
-        expect(secondResolution.nextState.pendingAttack?.settlementStage).toBe('readyToResolve');
+        expect(secondResolution.nextState.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
+        expect(secondResolution.nextState.pendingAttack?.bonusDamage).toBe(3);
+        expect(secondResolution.nextState.pendingAttack?.preDefenseResolved).toBe(true);
+        expect(secondResolution.nextState.pendingAttack?.settlementStage).toBe('preDamage');
     });
 
-    it('单次机器人激活窗口也应允许跳过，并在跳过后直接收口攻击链', () => {
+    it('单次机器人激活窗口也应允许跳过，并在跳过后继续伤害前链路', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
         setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
@@ -1705,12 +1820,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'shock-bot',
-            damageResolved: true,
-            resolvedDamage: 9,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
-        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 312);
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 312);
         const requestedState = applyEvents(state.core, requestEvents);
         const request = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
 
@@ -1732,8 +1847,8 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(eventsOfType(resolution.followupEvents, 'CHOICE_REQUESTED')).toHaveLength(0);
         expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SHOCK_BOT]).toBe(1);
         expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
-        expect(resolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
-        expect(resolution.nextState.pendingAttack?.settlementStage).toBe('readyToResolve');
+        expect(resolution.nextState.pendingAttack?.preDefenseResolved).toBe(true);
+        expect(resolution.nextState.pendingAttack?.settlementStage).toBe('preDamage');
     });
 
     it('真本能量不能被防御方用卡牌、闪避或太极响应', () => {
@@ -1819,7 +1934,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(checkPlayCard(state.core, '0', getArtificerCard('upgrade-artificer-shock-bot-2'), 'defensiveRoll')).toEqual({ ok: true });
     });
 
-    it('电能脉冲选择治疗机器人时会按工匠骰面真实治疗并收口攻击链', () => {
+    it('电能脉冲选择治疗机器人时会按工匠骰面真实治疗并继续伤害前链路', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
         setArtificerBot(state.core, '0', TOKEN_IDS.HEAL_BOT);
@@ -1828,12 +1943,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'shock-bot',
-            damageResolved: true,
-            resolvedDamage: 9,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
-        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 310);
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 310);
         const requestedState = applyEvents(state.core, requestEvents);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
         const healOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateHealBotFree');
@@ -1854,16 +1969,16 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         });
         expect(resolution.nextState.players['0'].resources[RESOURCE_IDS.HP]).toBe(42);
         expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.HEAL_BOT]).toBe(1);
-        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+        expect(resolution.nextState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(2);
         expect(resolution.nextState.players['0'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
             built: true,
             upgraded: false,
             activationsUsedThisTurn: 1,
         });
-        expect(resolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
+        expect(resolution.nextState.pendingAttack?.preDefenseResolved).toBe(true);
     });
 
-    it('攻击后机器人选择生成后应暂停攻击结算并保留 pendingAttack', () => {
+    it('伤害前机器人选择生成后应暂停攻击结算并保留 pendingAttack', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
         setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
@@ -1872,9 +1987,9 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'shock-bot',
-            damageResolved: true,
-            resolvedDamage: 9,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
         const result = diceThroneFlowHooks.onPhaseExit?.({
@@ -1891,7 +2006,8 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(eventsOfType(events, 'ATTACK_RESOLVED')).toHaveLength(0);
         expect(result && !Array.isArray(result) ? result.halt : false).toBe(true);
         expect(next.pendingAttack?.sourceAbilityId).toBe('shock-bot');
-        expect(next.pendingAttack?.settlementStage).toBe('postDamagePending');
+        expect(next.pendingAttack?.settlementStage).toBe('preDamage');
+        expect(next.pendingAttack?.preDefenseResolved).toBe(true);
     });
 
     it('超频运行在技能送的激活链中无视正常激活条件，可免费激活基础和高级机器人', () => {
@@ -1903,12 +2019,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'overclock',
-            damageResolved: true,
-            resolvedDamage: 6,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
-        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 320);
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 320);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
 
         expect(firstRequest?.payload.options.map(option => ({
@@ -1930,12 +2046,12 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             attackerId: '0',
             defenderId: '1',
             sourceAbilityId: 'overclock',
-            damageResolved: true,
-            resolvedDamage: 6,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
         } as DiceThroneCore['pendingAttack'];
 
-        const requestEvents = resolvePostDamageEffects(state.core, fixedRandom, 321);
+        const requestEvents = resolveOffensivePreDefenseEffects(state.core, fixedRandom, 321);
         const requestedState = applyEvents(state.core, requestEvents);
         const firstRequest = eventsOfType(requestEvents, 'CHOICE_REQUESTED')[0];
         const nanobotOption = firstRequest?.payload.options.find(option => option.labelKey === 'choices.artificerBotActivation.activateNanobotFree');

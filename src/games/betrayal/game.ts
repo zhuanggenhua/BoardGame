@@ -7442,6 +7442,25 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
             reason: resolveBloodFromStoneMonsterTurnStatus(core).reason,
         };
     }
+    const helpingHandsMonsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
+    const isMonsterActionControllerTurn = isBloodFromStoneHaunt(core)
+        ? resolveBloodFromStoneMonsterTurnStatus(core).active
+            && resolveBloodFromStoneMonsterTurnStatus(core).controllerPlayerId === core.currentPlayer
+        : isHelpingHandsHaunt(core)
+            ? helpingHandsMonsterTurnStatus.active
+                && helpingHandsMonsterTurnStatus.controllerPlayerId === core.currentPlayer
+            : Boolean(core.scenarioRuntime.traitorPlayerId)
+                && core.scenarioRuntime.traitorPlayerId === core.currentPlayer;
+    if (!isMonsterActionControllerTurn) {
+        return {
+            active: false,
+            monsterIds: monsterStatuses.map((status) => status.monsterId),
+            movementGroupIds: [],
+            slots: [],
+            contractGaps: [],
+            reason: '当前是玩家回合，等待怪物控制者回合后才能处理怪物动作。',
+        };
+    }
 
     const movementGroups = resolveBetrayalMonsterMovementGroups(core);
     const actionSets = resolveBetrayalMonsterActionSets(core);
@@ -14909,6 +14928,16 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     const actorRoomId = resolveControlledRoomId(core, actor);
     const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
     const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(command.playerId);
+    const isStandardMonsterTurnCommand = (
+        command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
+        || command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
+        || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+        || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
+        || command.type === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
+    ) && !isHelpingHandsMonsterCommand && !isBloodFromStoneMonsterCommand;
+    if (isStandardMonsterTurnCommand && !isTraitor) {
+        return { valid: false, error: '只有当前叛徒能执行普通怪物回合动作。' };
+    }
 
     if (command.type === BETRAYAL_COMMANDS.HAUNT_ATTACK && core.usedCardIdsThisTurn.includes('haunt-attack')) {
         return { valid: false, error: '本回合已经攻击过。' };

@@ -7,6 +7,7 @@ import {
     EVENT_FRONT_FRAME_BY_TITLE,
     resolveDiscoveryAtlasVisual,
 } from '../discoveryAtlas';
+import { resolvePossessionAtlasVisual } from '../possessionAtlas';
 import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';
 import tutorialCatalog from '../tutorial';
 import {
@@ -295,6 +296,17 @@ describe('Betrayal 教程配置', () => {
         expect(Number.parseFloat(String(style.height))).toBeCloseTo(500.078, 3);
         expect(String(style.transform)).toContain('translate(-66.655');
         expect(String(style.transform)).toContain('-39.993');
+    });
+
+    it('发现牌展示能识别带运行时来源后缀的物品牌 ID', () => {
+        expect(resolvePossessionAtlasVisual({
+            id: 'medical-kit-armory-0-1',
+            name: '急救包',
+            kind: 'item',
+        })).toMatchObject({
+            image: 'betrayal/cards/item-front-atlas',
+            frameIndex: 4,
+        });
     });
 
     it('haunt 章节会合并第一剧本目标与真实收尾入口', () => {

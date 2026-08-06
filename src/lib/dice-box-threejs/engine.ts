@@ -1,5 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { LinearFilter, LinearMipmapLinearFilter, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { Euler, LinearFilter, LinearMipmapLinearFilter, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
@@ -42,6 +42,8 @@ export interface DiceBoxStyleProfile {
     recoverOutOfBounds?: boolean;
     settledLayoutScale?: number;
     settledLayout?: Array<{ x: number; y: number; yaw: number }>;
+    settledTiltX?: number;
+    settledTiltY?: number;
     compactSettledDice?: boolean;
     settledFaceForwardAnimationMs?: number;
     settledScreenZScale?: number;
@@ -301,7 +303,6 @@ const SETTLED_SCREEN_SLOTS_BY_COUNT: Record<number, Array<{ x: number; y: number
         { x: 0.78, y: 0.3, yaw: -0.08 },
     ],
 };
-const WORLD_UP = new Vector3(0, 0, 1);
 export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
@@ -1116,9 +1117,7 @@ export class DiceBoxThreeEngine {
             const slot = screenSlots[sortedIndex] ?? { x: 0.5, y: 0.5, yaw: 0 };
             const z = baseScale * settledScreenZScale;
             const target = this.getWorldPointAtScreenFraction(slot.x, slot.y, z);
-            const settledQuaternion = new Quaternion()
-                .setFromAxisAngle(WORLD_UP, slot.yaw)
-                .normalize();
+            const settledQuaternion = this.getSettledQuaternionForDie(slot);
             this.setVector(entry.die.position, target);
             this.setVector(entry.die.body?.position, target);
             this.setVector(entry.die.body?.velocity, { x: 0, y: 0, z: 0 });
@@ -1976,8 +1975,10 @@ export class DiceBoxThreeEngine {
 
     private getSettledQuaternionForDie(layout?: { yaw: number }): Quaternion {
         const yaw = layout?.yaw ?? 0;
+        const tiltX = this.styleProfile.settledTiltX ?? 0;
+        const tiltY = this.styleProfile.settledTiltY ?? 0;
         return new Quaternion()
-            .setFromAxisAngle(WORLD_UP, yaw)
+            .setFromEuler(new Euler(tiltX, tiltY, yaw, 'XYZ'))
             .normalize();
     }
 

@@ -93,7 +93,7 @@ const buildFromScratch = (description: string, timing: EffectTiming = 'preDefens
 const activateBots = (
     description: string,
     maxActivations: number,
-    timing: EffectTiming = 'postDamage',
+    timing: EffectTiming = 'preDefense',
 ): AbilityEffect => custom('artificer-activate-bots', description, {
     timing,
     params: { maxActivations },

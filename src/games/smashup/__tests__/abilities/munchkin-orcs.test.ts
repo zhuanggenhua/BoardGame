@@ -152,6 +152,7 @@ describe('萌奇金兽人派系随从', () => {
         const playerPrompt = getSimpleChoicePrompt(choseBase.finalState, 'munchkin_orcs_crush_player');
         expect(playerPrompt.options).toHaveLength(1);
         expect(playerPrompt.autoResolveIfSingle).toBe(false);
+        expect(playerPrompt.displayCard).toBeUndefined();
 
         const chosePlayer = respondToPromptOption(
             choseBase.finalState,
@@ -162,6 +163,7 @@ describe('萌奇金兽人派系随从', () => {
         const minionPrompt = getSimpleChoicePrompt(chosePlayer.finalState, 'munchkin_orcs_crush_minion');
         expect(minionPrompt.options).toHaveLength(1);
         expect(minionPrompt.autoResolveIfSingle).toBe(false);
+        expect(minionPrompt.displayCard).toBeUndefined();
 
         const resolved = respondToPromptOption(
             chosePlayer.finalState,

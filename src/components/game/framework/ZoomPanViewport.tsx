@@ -651,9 +651,12 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             contentEl.getBoundingClientRect();
 
             const contentRect = contentEl.getBoundingClientRect();
+            const containerRect = containerEl.getBoundingClientRect();
             const elementRect = targetEl.getBoundingClientRect();
             const targetCenterX = (elementRect.left + elementRect.right) / 2 - contentRect.left;
             const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - contentRect.top;
+            const contentOffsetX = contentRect.left - containerRect.left;
+            const contentOffsetY = contentRect.top - containerRect.top;
 
             contentEl.style.transform = savedTransform;
             contentEl.getBoundingClientRect();
@@ -661,8 +664,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
             const contentCenterX = contentWidth / 2;
             const contentCenterY = contentHeight / 2;
-            const targetTx = (contentCenterX - targetCenterX) * targetScale;
-            const targetTy = (contentCenterY - targetCenterY) * targetScale;
+            const viewportCenterX = containerSize.width / 2;
+            const viewportCenterY = containerSize.height / 2;
+            const targetTx =
+                viewportCenterX -
+                (contentOffsetX +
+                    contentCenterX +
+                    (targetCenterX - contentCenterX) * targetScale);
+            const targetTy =
+                viewportCenterY -
+                (contentOffsetY +
+                    contentCenterY +
+                    (targetCenterY - contentCenterY) * targetScale);
             const nextViewport = clampViewportState({
                 zoomLevel: targetZoomLevel,
                 position: { x: targetTx, y: targetTy },

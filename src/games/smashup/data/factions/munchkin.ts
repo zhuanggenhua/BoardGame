@@ -548,21 +548,21 @@ const WARRIORS_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_WARRIORS_CARDS;
 const WARRIORS_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_WARRIORS_BASES;
 
 export const MUNCHKIN_WARRIORS_MINIONS: MinionCardDef[] = [
-    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_big_hero', '大英雄', 'Big Hero', 5, 1, 0]),
-    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_star_player', '明星勇士', 'Star Player', 4, 2, 1]),
-    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_berserker', '狂战士', 'Berserker', 3, 3, 3]),
-    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_taunter', '嘲讽者', 'Taunter', 2, 4, 6]),
+    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_big_hero', '大英雄', 'Big Hero', 5, 1, 0], ['talent']),
+    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_star_player', '明星勇士', 'Star Player', 4, 2, 1], ['ongoing']),
+    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_berserker', '狂战士', 'Berserker', 3, 3, 3], ['onPlay']),
+    minion(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_taunter', '嘲讽者', 'Taunter', 2, 4, 6], ['onPlay']),
 ];
 
 export const MUNCHKIN_WARRIORS_ACTIONS: ActionCardDef[] = [
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_campaign', '领导运动', 'Campaign', 1, 10]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_cleave', '斩杀', 'Cleave', 2, 11]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dumbbells', '哑铃', 'Dumbbells', 1, 13]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dungeon_bait', '地牢诱饵', 'Dungeon Bait', 2, 14]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_eternal_hero', '永恒的英雄', 'Eternal Hero', 1, 16]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_ruckus', '骚乱', 'Ruckus', 1, 17]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_shield_of_ubiquity', '无处不在之盾', 'Shield of Ubiquity', 1, 18]),
-    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_war_cry', '战争怒吼', 'War Cry', 1, 19]),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_campaign', '领导运动', 'Campaign', 1, 10], ['onPlay']),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_cleave', '斩杀', 'Cleave', 2, 11], ['onPlay']),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dumbbells', '哑铃', 'Dumbbells', 1, 13], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true }),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_dungeon_bait', '地牢诱饵', 'Dungeon Bait', 2, 14], ['onPlay']),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_eternal_hero', '永恒的英雄', 'Eternal Hero', 1, 16], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'own' }),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_ruckus', '骚乱', 'Ruckus', 1, 17], ['onPlay']),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_shield_of_ubiquity', '无处不在之盾', 'Shield of Ubiquity', 1, 18], { subtype: 'ongoing', abilityTags: ['ongoing'], ongoingTarget: 'minion', playNeedsMinion: true }),
+    action(WARRIORS, WARRIORS_CARD_ATLAS, ['munchkin_warriors_war_cry', '战争怒吼', 'War Cry', 1, 19], ['onPlay']),
 ];
 
 export const MUNCHKIN_WARRIORS_CARDS: CardDef[] = [

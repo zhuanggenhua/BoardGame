@@ -730,6 +730,10 @@ export interface TriggerInstance {
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
+    /** Munchkin 怪物被击败时的公开快照，用于 onMonsterDestroyed 触发回放。 */
+    destroyedMonsterUid?: string;
+    destroyedMonsterDefId?: string;
+    destroyedMonsterPower?: number;
     triggerCardUid?: string;
     triggerCardDefId?: string;
     triggerCardOwnerId?: PlayerId;
@@ -1625,6 +1629,8 @@ export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
         sourceBaseIndex?: number;
         /** Internal guard used when an optional return replacement is declined. */
         skipReturnReplacement?: boolean;
+        /** 只把列出的附着行动随宿主一起回手，其它附着行动按原规则离场。 */
+        returnAttachedActionUids?: string[];
     };
 }
 
@@ -2171,6 +2177,10 @@ export interface MunchkinMonsterDefeatedEvent extends GameEvent<typeof SU_EVENTS
         monsterDefId?: string;
         /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
         treasureUids?: string[];
+        /** 骚乱的全怪物摧毁分支不产生宝藏奖励。 */
+        suppressTreasureReward?: boolean;
+        /** 斩杀：击败奖励进入手牌后，为这些宝藏逐张发放即时额外出牌机会。 */
+        grantTreasureExtraPlay?: boolean;
         reason: string;
     };
 }

@@ -167,4 +167,36 @@ describe('ZoomPanViewport', () => {
 
         expect(content.style.transform).toContain('scale(0.7');
     });
+
+    it('accounts for content offset and base scale when centering a focused target', async () => {
+        render(
+            <ZoomPanViewport
+                initialScale={1}
+                minScale={0.5}
+                maxScale={3}
+                panBoundsMode="free"
+                panToTarget="room-a"
+                containerTestId="viewport"
+                contentTestId="content"
+            >
+                <div data-zoom-pan-target="room-a">room a</div>
+            </ZoomPanViewport>,
+        );
+
+        const viewport = screen.getByTestId('viewport');
+        const content = screen.getByTestId('content');
+        const target = screen.getByText('room a');
+        mockElementBox(viewport, { width: 400, height: 300 });
+        mockElementBox(content, { width: 800, height: 600, left: 100, top: 20 });
+        mockElementBox(target, { width: 40, height: 40, left: 180, top: 50 });
+        await refreshMeasuredSizes();
+
+        await act(async () => {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+        });
+
+        await waitFor(() => {
+            expect(content.style.transform).toContain('translate(-150px, -45px)');
+        });
+    });
 });

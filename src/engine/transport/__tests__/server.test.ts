@@ -4683,6 +4683,87 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.trackerKey).toBe(payload?.trackerKey);
     });
 
+    it('online AI watchdog 应按时间片限制连续恢复步数，并在下一 tick 继续交还真人回合', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-recovery-slice-budget', {
+            initialState: createOnlineAiRecoveryState(),
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryMaxAdvanceSteps: 4,
+            onlineAiRecoveryMaxStepsPerSlice: 1,
+        } as any);
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-recovery-slice-budget');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType) => {
+            if (commandType !== 'ADVANCE_PHASE') {
+                return false;
+            }
+            if (activeMatch.state.sys.phase === 'main2') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'discard',
+                    },
+                };
+                return true;
+            }
+            if (activeMatch.state.sys.phase === 'discard') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'main1',
+                        turnNumber: 5,
+                    },
+                };
+                return true;
+            }
+            return false;
+        });
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+        await nextTick();
+
+        expect(executeSpy).toHaveBeenCalledTimes(1);
+        expect(match.state.sys.phase).toBe('discard');
+        expect(match.state.core.activePlayerId).toBe('1');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+        await nextTick();
+
+        expect(executeSpy).toHaveBeenCalledTimes(2);
+        expect(match.state.sys.phase).toBe('main1');
+        expect(match.state.core.activePlayerId).toBe('0');
+    });
+
     it('online AI watchdog 在 AI seat 已离线时应立即接管 active-turn，而不是继续等待宿主页恢复', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

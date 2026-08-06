@@ -1,5 +1,5 @@
 import React from 'react';
-import { getOptimizedImageUrls } from '../../../core/AssetLoader';
+import { getLocalAssetPath, getOptimizedImageUrls } from '../../../core/AssetLoader';
 import type { FrameSequenceDefinition } from './frameSequence';
 
 const DEFAULT_FPS = 12;
@@ -31,6 +31,7 @@ export interface FrameSequencePlayerProps extends Omit<React.ImgHTMLAttributes<H
     playbackKey?: string | number;
     playing?: boolean;
     onComplete?: () => void;
+    onFrameChange?: (frameIndex: number) => void;
 }
 
 export const FrameSequencePlayer = ({
@@ -38,14 +39,19 @@ export const FrameSequencePlayer = ({
     playbackKey,
     playing = true,
     onComplete,
+    onFrameChange,
     alt = '',
     ...imgProps
 }: FrameSequencePlayerProps) => {
     const prefersReducedMotion = usePrefersReducedMotion();
     const onCompleteRef = React.useRef(onComplete);
+    const onFrameChangeRef = React.useRef(onFrameChange);
     const resolvedFrames = React.useMemo(
-        () => sequence.frames.map((frame) => getOptimizedImageUrls(frame).webp),
-        [sequence.frames],
+        () => sequence.frames.map((frame) =>
+            sequence.assetSource === 'local'
+                ? getLocalAssetPath(frame)
+                : getOptimizedImageUrls(frame).webp),
+        [sequence.assetSource, sequence.frames],
     );
     const frameCount = resolvedFrames.length;
     const lastFrameIndex = Math.max(frameCount - 1, 0);
@@ -56,6 +62,14 @@ export const FrameSequencePlayer = ({
     React.useEffect(() => {
         onCompleteRef.current = onComplete;
     }, [onComplete]);
+
+    React.useEffect(() => {
+        onFrameChangeRef.current = onFrameChange;
+    }, [onFrameChange]);
+
+    React.useEffect(() => {
+        onFrameChangeRef.current?.(frameIndex);
+    }, [frameIndex]);
 
     React.useEffect(() => {
         resolvedFrames.forEach((frame) => {

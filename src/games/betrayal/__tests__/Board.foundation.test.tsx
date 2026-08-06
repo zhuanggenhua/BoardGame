@@ -1873,8 +1873,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-reference-toggle')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveAttribute('data-scenario-reader-scope', 'heroes');
         expect(screen.getByTestId('betrayal-scenario-reader-role')).toHaveTextContent('英雄剧本书');
-        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('1/3');
-        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('1/3');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('1/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('1/2');
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-opening-stage')).toBeInTheDocument();
         const openingCinematic = screen.getByTestId('betrayal-scenario-opening-cinematic');
@@ -1898,8 +1898,8 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-scenario-book')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveTextContent('01');
-        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/3');
-        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/3');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/2');
         expect(screen.getByTestId('betrayal-scenario-book-section-heroes')).toHaveTextContent('敌方情报 / 胜利条件');
         expect(screen.getByTestId('betrayal-scenario-book-section-heroes')).toHaveTextContent('奸徒致力达成木乃伊及女孩的婚事');
         expect(screen.getByTestId('betrayal-scenario-book-section-heroes')).not.toHaveTextContent('石棺开启');
@@ -1912,13 +1912,12 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-next-zone'));
 
-        expect(screen.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveTextContent('03');
-        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('3/3');
-        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('3/3');
+        expect(screen.getByTestId('betrayal-scenario-reader-page-label-desktop-left')).toHaveTextContent('01');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/2');
         expect(screen.queryByTestId('betrayal-scenario-book-section-traitor')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-scenario-book-section-monster')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-scenario-book-section-endingHeroes')).toHaveTextContent('结局');
-        expect(screen.getByTestId('betrayal-scenario-book-section-endingHeroes')).toHaveTextContent('你合上书本后');
+        expect(screen.queryByTestId('betrayal-scenario-book-section-endingHeroes')).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
         fireEvent.click(screen.getByTestId('betrayal-open-reference'));
@@ -1951,8 +1950,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-next-zone'));
 
         expect(screen.getByTestId('betrayal-scenario-book')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/3');
-        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/3');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/2');
         expect(screen.getByTestId('betrayal-scenario-book-section-traitor')).toHaveTextContent('敌方情报 / 胜利条件');
         expect(screen.getByTestId('betrayal-scenario-book-section-traitor')).toHaveTextContent('他们妄图将木乃伊驱逐回亡者之国');
         expect(screen.getByTestId('betrayal-scenario-book-section-monster')).toHaveTextContent('木乃伊 / 战斗要诀');
@@ -1964,11 +1963,11 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-next-zone'));
 
-        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('3/3');
-        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('3/3');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('2/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('2/2');
         expect(screen.queryByTestId('betrayal-scenario-book-section-heroes')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-scenario-book-section-special')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-scenario-book-section-endingTraitor')).toHaveTextContent('小女孩瑟缩于角落');
+        expect(screen.queryByTestId('betrayal-scenario-book-section-endingTraitor')).not.toBeInTheDocument();
     });
 
     it('作祟揭示切到下一行动者后只显示可关闭阶段横幅，并保留手动查阅入口', async () => {
@@ -4666,7 +4665,7 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
             'aria-label',
-            expect.stringContaining('无发现牌 器械库'),
+            expect.stringContaining('物品牌 砍刀'),
         );
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('器械库获得砍刀');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('展示后埋葬急救包');
@@ -7497,16 +7496,13 @@ describe('Betrayal Board foundation', () => {
             );
             expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
                 'data-dice-preload-state',
-                'visible',
+                'none',
             );
             expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
                 'data-dice-surface-mode',
                 'transparent-virtual',
             );
-            expect(screen.getByTestId('betrayal-house-dice-preloaded-faces')).toHaveAttribute(
-                'data-dice-preload-source',
-                'betrayal-house-dice-skin',
-            );
+            expect(screen.queryByTestId('betrayal-house-dice-preloaded-faces')).not.toBeInTheDocument();
             expect(screen.getByTestId('betrayal-recent-roll-result-stage')).toHaveAttribute(
                 'data-result-layout',
                 'split-primary-total',

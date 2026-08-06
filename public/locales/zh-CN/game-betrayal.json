@@ -424,7 +424,7 @@
       "hauntRiskPhasePreHaunt": "作祟前",
       "hauntRiskPhaseHaunt": "作祟中",
       "hauntRevealPlayerTitle": "公开揭示：作祟开始",
-      "hauntRevealLead": "作祟开始。",
+      "hauntRevealLead": "剧本已切换。",
       "hauntRevealSource": "剧本卡 {{scenarioCard}} / 触发 {{omen}} / 作祟 {{number}}",
       "hauntRevealDismiss": "关闭"
     },
@@ -880,6 +880,7 @@
       "itemCard": "物品牌",
       "omenCard": "预兆牌",
       "noCard": "无发现牌",
+      "roomEffect": "房间效果",
       "eventResolved": "即时生效",
       "addedToInventory": "已加入持有区",
       "readyToUse": "已选中，可直接使用",

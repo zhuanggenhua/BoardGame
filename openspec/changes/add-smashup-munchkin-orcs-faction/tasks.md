@@ -24,7 +24,7 @@
 - [x] 3.5 接入狗堆普通打出 / 计分前特殊打出、随从选择和目标基地选择。
 - [x] 3.6 接入给我！附着行动选择、原宿主摧毁和新宿主转移。
 - [x] 3.7 接入洗手间逐次可选保护与太难了附着行动保护。
-- [ ] 3.8 补八张行动的对象级 L2 测试、能力标签和交互登记审计。
+- [x] 3.8 补八张行动的对象级 L2 测试、能力标签和交互登记审计。
 
 ## 4. Bases
 
@@ -34,9 +34,9 @@
 
 ## 5. Real entry and audit
 
-- [ ] 5.1 为每个需要玩家决定的兽人对象补真实入口 E2E；单候选仍必须手动。
-- [ ] 5.2 对选择态逐张核对目标本体、提示角色、源卡 / HUD 避让和无重复信息。
-- [ ] 5.3 运行定向 Vitest、真实 E2E、ESLint、typecheck 和 diff check。
-- [ ] 5.4 将绝对截图路径、AI 图面裁决和负向影响检查写入 evidence。
-- [ ] 5.5 只有证据覆盖后才更新对象矩阵；不能把代表链外推为整派系完成。
-- [ ] 5.6 通过 `openspec validate add-smashup-munchkin-orcs-faction --strict --no-interactive`。
+- [x] 5.1 为每个需要玩家决定的兽人对象补真实入口 E2E；单候选仍必须手动。
+- [x] 5.2 对选择态逐张核对目标本体、提示角色、源卡 / HUD 避让和无重复信息。
+- [x] 5.3 运行定向 Vitest、真实 E2E、ESLint、typecheck 和 diff check。
+- [x] 5.4 将绝对截图路径、AI 图面裁决和负向影响检查写入 evidence。
+- [x] 5.5 只有证据覆盖后才更新对象矩阵；不能把代表链外推为整派系完成。
+- [x] 5.6 通过 `openspec validate add-smashup-munchkin-orcs-faction --strict --no-interactive`。

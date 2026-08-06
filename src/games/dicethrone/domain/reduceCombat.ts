@@ -4,13 +4,13 @@
  */
 
 import type { DiceThroneCore, DiceThroneEvent } from './types';
-import { TOKEN_IDS } from './ids';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS } from './ids';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
+import { buildArtificerBotStateAfterActivation, isArtificerBotTokenId } from './artificerBots';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -643,23 +643,25 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
     state,
     event
 ) => {
-    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll, deferredDamageEvents } = event.payload;
+    const {
+        playerId,
+        tokenId,
+        amount,
+        effectType,
+        damageModifier,
+        evasionRoll,
+        deferredDamageEvents,
+        appliesToCurrentAttack,
+    } = event.payload;
 
     // 消耗 Token
     let players = state.players;
     const player = state.players[playerId];
     if (player) {
         const currentAmount = player.tokens[tokenId] ?? 0;
-        const isArtificerBot = tokenId === TOKEN_IDS.NANOBOT || tokenId === TOKEN_IDS.SHOCK_BOT || tokenId === TOKEN_IDS.HEAL_BOT;
+        const isArtificerBot = isArtificerBotTokenId(tokenId);
         const nextArtificerBotState = isArtificerBot
-            ? {
-                ...player.artificerBotState,
-                [tokenId]: {
-                    ...(player.artificerBotState?.[tokenId] ?? { built: false, upgraded: false, activationsUsedThisTurn: 0 }),
-                    built: true,
-                    activationsUsedThisTurn: (player.artificerBotState?.[tokenId]?.activationsUsedThisTurn ?? 0) + amount,
-                },
-            }
+            ? buildArtificerBotStateAfterActivation(state, playerId, tokenId, amount)
             : player.artificerBotState;
         players = {
             ...state.players,
@@ -765,6 +767,19 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
             };
         }
+    }
+
+    if (
+        !state.pendingDamage
+        && appliesToCurrentAttack
+        && effectType === 'damageBoost'
+        && damageModifier
+        && pendingAttack?.attackerId === playerId
+    ) {
+        pendingAttack = {
+            ...pendingAttack,
+            bonusDamage: (pendingAttack.bonusDamage ?? 0) + damageModifier,
+        };
     }
 
     return { ...state, players, pendingDamage, pendingAttack, treantSpiritSpentThisTurn };

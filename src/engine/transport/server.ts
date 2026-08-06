@@ -219,6 +219,7 @@ const DEFAULT_TRAINING_CAPTURE_POLICY = 'human-only' as const;
 const DEFAULT_ONLINE_AI_RECOVERY_TICK_MS = 500;
 const DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS = 8000;
 const DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS = 16;
+const DEFAULT_ONLINE_AI_RECOVERY_MAX_STEPS_PER_SLICE = 3;
 const DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS = 60_000;
 const DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD = 2;
 const DEFAULT_ONLINE_AI_RECOVERY_REPEATED_ATTEMPT_LIMIT = 3;
@@ -958,6 +959,7 @@ export interface GameTransportServerConfig {
     onlineAiRecoveryTickMs?: number;
     onlineAiRecoveryTimeoutMs?: number;
     onlineAiRecoveryMaxAdvanceSteps?: number;
+    onlineAiRecoveryMaxStepsPerSlice?: number;
     onlineAiRecoveryFeedbackCooldownMs?: number;
     onlineAiRecoveryFailureReportThreshold?: number;
     onlineAiRecoveryRepeatedAttemptLimit?: number;
@@ -998,6 +1000,7 @@ export class GameTransportServer {
     private readonly onlineAiRecoveryTickMs: number;
     private readonly onlineAiRecoveryTimeoutMs: number;
     private readonly onlineAiRecoveryMaxAdvanceSteps: number;
+    private readonly onlineAiRecoveryMaxStepsPerSlice: number;
     private readonly onlineAiRecoveryFeedbackCooldownMs: number;
     private readonly onlineAiRecoveryFailureReportThreshold: number;
     private readonly onlineAiRecoveryRepeatedAttemptLimit: number;
@@ -1035,6 +1038,12 @@ export class GameTransportServer {
         this.onlineAiRecoveryTickMs = config.onlineAiRecoveryTickMs ?? DEFAULT_ONLINE_AI_RECOVERY_TICK_MS;
         this.onlineAiRecoveryTimeoutMs = config.onlineAiRecoveryTimeoutMs ?? DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS;
         this.onlineAiRecoveryMaxAdvanceSteps = config.onlineAiRecoveryMaxAdvanceSteps ?? DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS;
+        this.onlineAiRecoveryMaxStepsPerSlice = (
+            Number.isFinite(config.onlineAiRecoveryMaxStepsPerSlice)
+            && (config.onlineAiRecoveryMaxStepsPerSlice ?? 0) > 0
+        )
+            ? Math.floor(config.onlineAiRecoveryMaxStepsPerSlice!)
+            : DEFAULT_ONLINE_AI_RECOVERY_MAX_STEPS_PER_SLICE;
         this.onlineAiRecoveryFeedbackCooldownMs = config.onlineAiRecoveryFeedbackCooldownMs ?? DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS;
         this.onlineAiRecoveryFailureReportThreshold = config.onlineAiRecoveryFailureReportThreshold ?? DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD;
         this.onlineAiRecoveryRepeatedAttemptLimit = (
@@ -2403,6 +2412,13 @@ export class GameTransportServer {
             seenStepKeys.add(buildRecoverySequenceStepKey(currentCandidate.playerId, progressMarkerBeforeRecovery));
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
+                if (recoverySteps >= this.onlineAiRecoveryMaxStepsPerSlice) {
+                    // 后台恢复必须分片执行，避免单个复杂 AI 房间长期独占 Node 事件循环。
+                    syncRecoveryTrackerToCandidate(currentCandidate);
+                    tracker.firstSeenAt = Date.now();
+                    tracker.autoSubmittedAt = null;
+                    return;
+                }
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
                 const markerBeforeStep = buildAiProgressMarker(match.state, {
                     engineConfig: match.engineConfig,

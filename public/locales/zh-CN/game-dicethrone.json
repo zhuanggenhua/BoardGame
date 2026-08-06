@@ -653,7 +653,8 @@
       "damageBoost": "增伤",
       "damageReduction": "减伤",
       "evasionAttempt": "闪避判定",
-      "removeDebuff": "净化"
+      "removeDebuff": "净化",
+      "botActivation": "激活机器人"
     },
     "offensiveRollEndTokenUsed": "使用 {{tokenLabel}}（{{effectLabel}}）",
     "offensiveRollEndTokenEffect": {
@@ -4168,40 +4169,40 @@
     },
     "overclock": {
       "name": "超频运行",
-      "description": "4 电能：造成 6 点不可防御伤害，然后激活至多 2 个不同机器人（无视正常激活条件）。",
+      "description": "4 电能：造成 6 点不可防御伤害；免费激活至多 2 个不同机器人（无视正常激活条件）。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。"
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。"
       }
     },
     "overclock-2": {
       "name": "超频运行 II",
-      "description": "4 电能：施加纳米爆弹，造成 6 点不可防御伤害，然后激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 纳米爆弹。",
+      "description": "4 电能：施加纳米爆弹，造成 6 点不可防御伤害；免费激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 纳米爆弹。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。",
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。",
         "energyBoostInflictNanobomb3": "对 1 名对手施加 3 纳米爆弹。"
       }
     },
     "shock-bot": {
       "name": "电能脉冲",
-      "description": "大顺子：施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。",
+      "description": "大顺子：施加 1 纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。",
       "effects": {
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage9": "造成 9 点伤害。",
-        "activateOneBot": "激活 1 个机器人（无视正常激活条件）。"
+        "activateOneBot": "免费激活 1 个机器人（无视正常激活条件）。"
       }
     },
     "shock-bot-3": {
       "name": "电能脉冲 III",
-      "description": "大顺子：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。",
+      "description": "大顺子：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。",
       "effects": {
         "gainSynth2": "获得 2 合成器。",
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage9": "造成 9 点伤害。",
-        "activateOneBot": "激活 1 个机器人（无视正常激活条件）。",
+        "activateOneBot": "免费激活 1 个机器人（无视正常激活条件）。",
         "mechanicalArmy": "造成 5 点伤害。你每有 1 个机器人，就再 +1 伤害。"
       }
     },
@@ -4221,12 +4222,12 @@
     },
     "maximum-power": {
       "name": "真本能量！",
-      "description": "终极：获得 2 合成器，施加 1 纳米爆弹，造成 10 点伤害，然后激活至多 2 个不同机器人（无视正常激活条件）。",
+      "description": "终极：获得 2 合成器，施加 1 纳米爆弹，造成 10 点伤害；免费激活至多 2 个不同机器人（无视正常激活条件）。",
       "effects": {
         "gainSynth2": "获得 2 合成器。",
         "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage10": "造成 10 点伤害。",
-        "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。"
+        "activateTwoBots": "免费激活至多 2 个不同机器人（无视正常激活条件）。"
       }
     },
     "card-artificer-masterpiece": {
@@ -4766,14 +4767,14 @@
     },
     "upgrade-artificer-overclock-2": {
       "name": "超频运行 II",
-      "description": "升级超频运行：4 电能，施加 1 个纳米爆弹，造成 6 点不可防御伤害，然后激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 个纳米爆弹。",
+      "description": "升级超频运行：4 电能，施加 1 个纳米爆弹，造成 6 点不可防御伤害；免费激活至多 2 个不同的机器人（无视正常激活条件）。能量提升：3 电能，对 1 名对手施加 3 个纳米爆弹。",
       "effects": {
         "upgrade": "升级超频运行至 II 级。"
       }
     },
     "upgrade-artificer-shock-bot-3": {
       "name": "电能脉冲 III",
-      "description": "升级电能脉冲：大顺子，获得 2 个合成器，施加 1 个纳米爆弹，造成 9 点伤害，然后激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害；你每有 1 个机器人，就再 +1 伤害。",
+      "description": "升级电能脉冲：大顺子，获得 2 个合成器，施加 1 个纳米爆弹，造成 9 点伤害；免费激活 1 个机器人（无视正常激活条件）。机械大军：1 扳手 + 2 齿轮 + 1 电能，造成 5 点伤害；你每有 1 个机器人，就再 +1 伤害。",
       "effects": {
         "upgrade": "升级电能脉冲至 III 级。"
       }

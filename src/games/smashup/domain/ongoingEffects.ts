@@ -92,6 +92,7 @@ export type TriggerTiming =
     | 'onDuelResolved'
     | 'onMinionPlayed'
     | 'onActionPlayed'
+    | 'onMonsterDestroyed'
     | 'onVpAwarded'
     | 'onCardsDiscarded'
     | 'onCardBuried'
@@ -172,6 +173,10 @@ export interface TriggerContext {
     triggerMinionDefId?: string;
     /** 触发相关随从力量 */
     triggerMinionPower?: number;
+    /** Munchkin 怪物被击败时的快照 */
+    destroyedMonsterUid?: string;
+    destroyedMonsterDefId?: string;
+    destroyedMonsterPower?: number;
     /** 触发相关场上行动牌 UID */
     triggerCardUid?: string;
     /** 触发相关场上行动牌 defId */
@@ -632,6 +637,9 @@ function createTriggerInstance(
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: ctx.triggerMinionPower,
+        destroyedMonsterUid: ctx.destroyedMonsterUid,
+        destroyedMonsterDefId: ctx.destroyedMonsterDefId,
+        destroyedMonsterPower: ctx.destroyedMonsterPower,
         triggerCardUid: ctx.triggerCardUid,
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,

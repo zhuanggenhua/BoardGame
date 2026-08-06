@@ -105,7 +105,14 @@ export function resolvePossessionAtlasVisual(card: BetrayalInventoryCard): Betra
     const normalizedCardId = card.id
         .replace(/-preview-\d+$/, '')
         .replace(/-\d+$/, '');
-    return POSSESSION_FRONT_VISUALS[normalizedCardId] ?? null;
+    const exactVisual = POSSESSION_FRONT_VISUALS[normalizedCardId];
+    if (exactVisual) {
+        return exactVisual;
+    }
+    const runtimeCardId = Object.keys(POSSESSION_FRONT_VISUALS)
+        .sort((left, right) => right.length - left.length)
+        .find((cardId) => normalizedCardId.startsWith(`${cardId}-`));
+    return runtimeCardId ? POSSESSION_FRONT_VISUALS[runtimeCardId] ?? null : null;
 }
 
 export function buildPossessionAtlasImageStyle(visual: BetrayalPossessionAtlasVisual): CSSProperties & { aspectRatio: number } {

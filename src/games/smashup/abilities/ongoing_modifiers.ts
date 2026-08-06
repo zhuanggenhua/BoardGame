@@ -756,6 +756,27 @@ function registerMunchkinOrcsModifiers(): void {
     ]);
 }
 
+function registerMunchkinWarriorsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_warriors_dumbbells',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'munchkin_warriors_dumbbells',
+            ) * 3,
+        },
+        {
+            sourceDefId: 'munchkin_warriors_shield_of_ubiquity',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'munchkin_warriors_shield_of_ubiquity',
+            ) * (ctx.base.monsters?.length ?? 0) * 2,
+        },
+    ]);
+}
+
 // ============================================================================
 // 狼人派系
 // ============================================================================
@@ -1009,6 +1030,7 @@ export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
     registerMunchkinElvesModifiers();
     registerMunchkinOrcsModifiers();
+    registerMunchkinWarriorsModifiers();
     registerStructuredOngoingPowerModifiers();
     registerDinosaurModifiers();
     registerRobotModifiers();

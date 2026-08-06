@@ -698,6 +698,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const monsterTurnStartAction = page.getByTestId('betrayal-action-monsterTurnStart');
         await expect(monsterTurnStartAction).toBeVisible();
         await expect(monsterTurnStartAction).toContainText('木乃伊开回合');
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await expect(page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`)).toBeVisible();
         await saveScreenshot(page, MOVE_READY_SCREENSHOT);
 
@@ -711,6 +713,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
         await expect(rollPanel).toContainText('可移动 0 间');
+        await waitForPhysicalDiceSettled(rollPanel);
+        await expect(rollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'true');
+        await expect(rollPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-physics-ready', 'true');
+        await expect(rollPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-preload-state', 'none');
         await saveScreenshot(page, MOVE_ROLL_SCREENSHOT);
 
         await page.getByTestId('betrayal-roll-continue').click();
@@ -718,6 +724,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
         await expect(monsterMoveAction).toContainText('移动木乃伊');
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await monsterMoveAction.click();
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
@@ -771,6 +779,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const monsterTurnStartAction = page.getByTestId('betrayal-action-monsterTurnStart');
         await expect(monsterTurnStartAction).toBeVisible();
         await expect(monsterTurnStartAction).toContainText('木乃伊开回合');
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await monsterTurnStartAction.click();
         const movementRollAction = page.getByTestId('betrayal-action-monsterMovementRoll');
         await expect(movementRollAction).toBeVisible();
@@ -781,6 +791,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
         await expect(rollPanel).toContainText('可移动 1 间');
+        await waitForPhysicalDiceSettled(rollPanel);
+        await expect(rollPanel.getByTestId('betrayal-house-dice-physics-source')).toHaveAttribute('data-dice-settled', 'true');
+        await expect(rollPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-physics-ready', 'true');
+        await expect(rollPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-preload-state', 'none');
         await saveScreenshot(page, MOVE_ONE_ROLL_SCREENSHOT);
 
         await page.getByTestId('betrayal-roll-continue').click();
@@ -789,6 +803,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
         await expect(monsterMoveAction).toContainText('移动木乃伊');
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-explore')).toHaveCount(0);
         await monsterMoveAction.click();
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');

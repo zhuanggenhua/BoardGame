@@ -2752,6 +2752,10 @@ function postProcessSystemEvents(
         sysState._processedMunchkinMonsterPlayedEvents = new Set<string>();
     }
     const processedMunchkinMonsterPlayedEvents = sysState._processedMunchkinMonsterPlayedEvents;
+    if (!(sysState._processedMunchkinMonsterDefeatedEvents instanceof Set)) {
+        sysState._processedMunchkinMonsterDefeatedEvents = new Set<string>();
+    }
+    const processedMunchkinMonsterDefeatedEvents = sysState._processedMunchkinMonsterDefeatedEvents;
     
     // 【修复】清理返回手牌的随从的去重标记
     // 当随从返回手牌后再次打出时，应该重新触发 onPlay 能力
@@ -3047,6 +3051,111 @@ function postProcessSystemEvents(
                     timestamp: event.timestamp,
                 } as SmashUpEvent);
             }
+            prePlayEvents.push(event);
+        } else if (event.type === SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED) {
+            const defeatedEvt = event as SmashUpEvent & {
+                payload: {
+                    playerId: PlayerId;
+                    baseIndex: number;
+                    monsterDefId?: string;
+                    monsterUid: string;
+                    treasureUids?: string[];
+                    grantTreasureExtraPlay?: boolean;
+                    reason: string;
+                };
+            };
+            const eventKey = `MONSTER_DEFEATED:${defeatedEvt.payload.monsterUid}@${defeatedEvt.payload.baseIndex}:${event.timestamp}`;
+            if (processedMunchkinMonsterDefeatedEvents.has(eventKey)) {
+                prePlayEvents.push(event);
+                continue;
+            }
+            processedMunchkinMonsterDefeatedEvents.add(eventKey);
+
+            let tempCore = state;
+            for (const preEvt of prePlayEvents) {
+                tempCore = reduce(tempCore, preEvt);
+            }
+            const baseBeforeDefeat = tempCore.bases[defeatedEvt.payload.baseIndex];
+            const monsterBeforeDefeat = baseBeforeDefeat?.monsters?.find(
+                candidate => candidate.uid === defeatedEvt.payload.monsterUid,
+            );
+            const monsterDefId = monsterBeforeDefeat?.defId ?? defeatedEvt.payload.monsterDefId;
+            const monsterPower = monsterDefId
+                ? (getMunchkinSpecialCardDescriptor(monsterDefId)?.power ?? 0)
+                : 0;
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            }
+            let tempMatchState = { ...ms, core: tempCore };
+            const sourceEventId = `monster-destroyed:${defeatedEvt.payload.monsterUid}:${defeatedEvt.payload.baseIndex}:${event.timestamp}`;
+            const frameId = `monster-destroyed-frame:${defeatedEvt.payload.monsterUid}:${defeatedEvt.payload.baseIndex}:${event.timestamp}`;
+
+            const queuedMonsterTriggers = collectTriggers(tempCore, 'onMonsterDestroyed', {
+                state: tempCore,
+                matchState: tempMatchState,
+                playerId: defeatedEvt.payload.playerId,
+                baseIndex: defeatedEvt.payload.baseIndex,
+                destroyedMonsterUid: defeatedEvt.payload.monsterUid,
+                destroyedMonsterDefId: monsterDefId,
+                destroyedMonsterPower: monsterPower,
+                destroyerId: defeatedEvt.payload.playerId,
+                reason: defeatedEvt.payload.reason,
+                frameId,
+                sourceEventId,
+                random,
+                now: event.timestamp,
+            });
+            if (queuedMonsterTriggers) {
+                derivedEvents.push(queuedMonsterTriggers);
+                tempCore = reduce(tempCore, queuedMonsterTriggers);
+                tempMatchState = { ...tempMatchState, core: tempCore };
+            }
+
+            const queuedMonsterBaseTriggers = collectExtendedBaseAbilityTriggers({
+                core: tempCore,
+                timing: 'onMonsterDestroyed',
+                ownerPlayerId: defeatedEvt.payload.playerId,
+                baseIndex: defeatedEvt.payload.baseIndex,
+                triggerMinionDefId: monsterDefId,
+                triggerMinionPower: monsterPower,
+                destroyerId: defeatedEvt.payload.playerId,
+                reason: defeatedEvt.payload.reason,
+                frameId,
+                sourceEventId,
+                now: event.timestamp,
+            });
+            if (queuedMonsterBaseTriggers) {
+                derivedEvents.push(queuedMonsterBaseTriggers);
+                tempCore = reduce(tempCore, queuedMonsterBaseTriggers);
+                tempMatchState = { ...tempMatchState, core: tempCore };
+            }
+
+            if (defeatedEvt.payload.grantTreasureExtraPlay) {
+                const awardedUids = defeatedEvt.payload.treasureUids ?? [];
+                const hand = tempCore.players[defeatedEvt.payload.playerId]?.hand ?? [];
+                for (const treasureUid of awardedUids) {
+                    const treasure = hand.find(card => card.uid === treasureUid);
+                    if (!treasure) continue;
+                    if (getCardDef(treasure.defId)?.type === 'minion') {
+                        derivedEvents.push(grantExtraMinion(
+                            defeatedEvt.payload.playerId,
+                            'munchkin_warriors_cleave',
+                            event.timestamp,
+                            undefined,
+                            { playTiming: 'immediate', specificCardUid: treasure.uid },
+                        ));
+                    } else {
+                        derivedEvents.push(grantExtraAction(
+                            defeatedEvt.payload.playerId,
+                            'munchkin_warriors_cleave',
+                            event.timestamp,
+                            { playTiming: 'immediate', restrictToCardUid: treasure.uid },
+                        ));
+                    }
+                }
+            }
+
+            ms = tempMatchState;
             prePlayEvents.push(event);
         } else {
             prePlayEvents.push(event);

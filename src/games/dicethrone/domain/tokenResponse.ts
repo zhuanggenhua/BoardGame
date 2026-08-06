@@ -30,19 +30,12 @@ import { TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 import { getTokenStackLimit } from './rules';
 import { isPurifiableDebuffId } from './statusRemoval';
-
-const ARTIFICER_BOT_ACTIVATION_LIMITS: Partial<Record<string, number>> = {
-    [TOKEN_IDS.NANOBOT]: 1,
-    [TOKEN_IDS.SHOCK_BOT]: 1,
-    [TOKEN_IDS.HEAL_BOT]: 2,
-};
+import { getRemainingArtificerBotActivations, isArtificerBotTokenId } from './artificerBots';
 
 function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
-    const maxUses = ARTIFICER_BOT_ACTIVATION_LIMITS[tokenId];
-    if (!maxUses) return undefined;
-    const botState = state.players[playerId]?.artificerBotState?.[tokenId];
-    if (!botState?.built) return 0;
-    return Math.max(0, maxUses - (botState.activationsUsedThisTurn ?? 0));
+    return isArtificerBotTokenId(tokenId)
+        ? getRemainingArtificerBotActivations(state, playerId, tokenId)
+        : undefined;
 }
 
 // ============================================================================

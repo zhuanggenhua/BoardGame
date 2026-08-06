@@ -2613,7 +2613,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_RETURNED: {
-            const { minionUid, minionDefId, fromBaseIndex, toPlayerId } = event.payload;
+            const { minionUid, minionDefId, fromBaseIndex, toPlayerId, returnAttachedActionUids } = event.payload;
             const base = state.bases[fromBaseIndex];
             const minion = base?.minions.find(m => m.uid === minionUid);
             if (!base || !minion) {
@@ -2647,7 +2647,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             // 附着的行动卡回各自所有者弃牌堆（与 MINION_DESTROYED 逻辑一致）
             if (minion) {
                 for (const attached of minion.attachedActions) {
-                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard', { state, host: minion });
+                    const returnsWithMinion = returnAttachedActionUids?.includes(attached.uid) ?? false;
+                    newPlayers = placeAttachedActionLeavingPlay(
+                        newPlayers,
+                        attached,
+                        returnsWithMinion ? 'hand' : 'discard',
+                        { state, host: minion },
+                    );
                 }
             }
             
@@ -4073,7 +4079,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED: {
-            const { playerId, baseIndex, monsterUid, treasureUids } = (event as MunchkinMonsterDefeatedEvent).payload;
+            const { playerId, baseIndex, monsterUid, treasureUids, suppressTreasureReward } = (event as MunchkinMonsterDefeatedEvent).payload;
             const player = state.players[playerId];
             const base = state.bases[baseIndex];
             if (!player || !base?.monsters?.length || !state.treasureDeck) return state;
@@ -4082,7 +4088,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const descriptor = getMunchkinSpecialCardDescriptor(defeatedMonster.defId);
             if (descriptor?.kind !== 'monster') return state;
 
-            const rewardCount = Math.min(descriptor.treasureReward ?? 0, state.treasureDeck.length);
+            const rewardCount = suppressTreasureReward
+                ? 0
+                : Math.min(descriptor.treasureReward ?? 0, state.treasureDeck.length);
             const drawnTreasureDefIds = state.treasureDeck.slice(0, rewardCount);
             const allocation = allocateMunchkinTreasureUids(state, treasureUids, rewardCount);
             const awardedTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) =>

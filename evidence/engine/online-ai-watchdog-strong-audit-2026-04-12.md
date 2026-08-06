@@ -1,5 +1,35 @@
 # 引擎层在线 AI watchdog / 强制跳过 / 强制结束回合 — 强口径审计（2026-04-12）
 
+## 2026-08-06 修订：资源占用结论失效，恢复序列改为分片执行
+
+2026-04-12 的真人保护、隐藏交互识别和响应窗口结论仍然成立；但文末“性能成本可接受”与整体 `APPROVE` 不再覆盖资源占用维度。生产证据已经推翻该结论：
+
+- `/home/admin/BoardGame/logs/game-server-cpu-watch/restart-history.log` 记录了 2026-07-28 至 2026-08-05 共 20 次 `boardgame-game-server` 持续高 CPU 自动重启，平均值为 93.88% 至 99.65%。
+- 20 个故障窗口都出现在线 AI watchdog 恢复活动；同一批连续重启通常由同一个房间占据主要日志，且涉及王权骰铸、大杀四方和《The Gang》，排除了单款游戏规则作为共同根因。
+- 旧状态版本校验、熔断和重同步已经在生产部署，但 2026-08-04、2026-08-05 仍继续出现接近 99% 的告警，因此这些改动只能减少无效命令，不能解释或修复持续高 CPU。
+- 共享根因落在 `src/engine/transport/server.ts` 的 `runOnlineAiRecoverySequence()`：watchdog 每 500ms 检查活跃 AI 房间，单次接管原先可在 `while` 循环中连续执行最多 16 步合法动作/强制推进，没有单时间片工作量边界。复杂或离线 AI 房间因此可以长时间连续占用 Node 单线程；重启清空活跃恢复序列后 CPU 立即恢复到低负载，与该机制一致。
+
+本轮修复把“完成恢复”与“单次占满事件循环”拆开：
+
+- 新增 `onlineAiRecoveryMaxStepsPerSlice`，生产默认每个恢复时间片最多 3 步。
+- 达到时间片上限时保留下一候选、清除本次提交标记并返回；下一次 watchdog tick 从该候选继续，不写失败反馈，也不丢失最终交还真人的目标。
+- 默认值保留了王权骰铸 `投骰 -> 确认 -> 推进` 等既有三步闭环，同时把单房间一次连续恢复的最坏步数从 16 降到 3。
+
+验证：
+
+- 红测：`online AI watchdog 应按时间片限制连续恢复步数，并在下一 tick 继续交还真人回合` 在旧实现中第一次接管执行了 2 步，断言要求 1 步时失败。
+- 绿测：该用例与原有“两步交还真人”用例通过。
+- 扩大回归：`npx vitest run src/engine/transport/__tests__/server.test.ts -t "online AI watchdog" --reporter=dot`，134 条通过、122 条未命中筛选。
+
+同类扩审记录：
+
+- 搜索范围：`runOnlineAiRecoverySequence`、`onlineAiRecoveryMaxAdvanceSteps`、`onlineAiRecoveryTickMs`、`resolveNextAiDispatch`，覆盖 `src/engine/transport/server.ts`、`src/engine/ai/localRunner.ts`、浏览器侧自动派发入口和各游戏 `onlineAiRecovery` 配置。
+- 命中结论：跨 tick 的多步恢复循环只存在于服务端 `runOnlineAiRecoverySequence()`；本地 AI runner 和浏览器侧入口每次只请求一次下一动作。大杀四方、王权骰铸、召唤师战争的游戏配置只决定候选与强制命令许可，最终都共用同一个服务端调度循环，因此本轮应在共享传输层修复，不在单个游戏打补丁。
+- 回归覆盖：生产故障样本跨王权骰铸、大杀四方和《The Gang》；测试按共享 watchdog 行为筛选，覆盖 134 条现有恢复、响应窗口、隐藏交互、合法动作与真人交还路径。
+- 残余扩审范围：当前预算按“恢复步骤”计数；单个合法动作仍可能串行包含多条命令，也没有墙钟时间预算。该项不改变本轮把单序列最坏连续步骤从 16 降到 3 的修复结论，但部署后仍需继续观察 CPU；若同类高占用再次出现，下一层动作是补命令数/墙钟预算并采集 profiler 或火焰图，而不是继续提高步骤上限。
+
+当前结论等级：**资源占用根因已定位并完成本地修复与共享链回归；尚未部署生产，因此不能用当前线上低 CPU 证明新代码已经在线生效。**
+
 > 目的：回答“底层是不是设计有问题、为什么会卡死、兜底是否会误伤真人、为什么会弹失败提示、自动上报是否包含无法选择原因”。  
 > 本文是**引擎层统一审计**；各游戏的交互类型细节见对应 `evidence/*-ai-interaction-audit-*.md`。
 
@@ -134,10 +164,12 @@
    - watchdog 只对 AI seat 出手；  
    - “强制结束失败/自动跳过失败”提示来自前端兜底复查后仍无进展；  
    - 服务端上报包含 interaction/responseWindow/selectability/unsatisfiableReason/legalActions 等诊断字段。
-2. `server.ts` 在隐藏交互阻塞（`current == null && isBlocked == true`）时构造 AI seat 的 `playerView` 以识别隐藏交互，方向正确且必要；不会误伤真人，性能成本可接受。
+2. `server.ts` 在隐藏交互阻塞（`current == null && isBlocked == true`）时构造 AI seat 的 `playerView` 以识别隐藏交互，方向正确且必要；不会误伤真人。原“性能成本可接受”结论已被 2026-08-06 生产 CPU 证据推翻，资源占用改按本页修订后的分片合同验收。
 3. 三游戏审计文档满足强口径最低线：有证据链接 + 未覆盖项清单 + 不夸大成“全仓 100% 收口”。
 
 保留风险（需要在后续任务里继续治理，不能靠 watchdog 兜底长期拖着）：
 - hidden interaction 识别仍依赖 `isBlocked === true` 契约；若某游戏没正确置位会漏检。
 - watchdog tick 下 `playerView` 必须保持**纯函数/无副作用/不过重计算**；否则可能把“只在发包时跑”的昂贵逻辑带进后台 tick。
 - response-loop 反复重开往往是游戏层根因，watchdog 只能救火不能治本。
+
+> 2026-08-06 状态修订：原 `APPROVE` 仅保留在真人保护、隐藏交互识别和功能闭环维度；资源占用维度的旧审批失效，以本页顶部修订为准。

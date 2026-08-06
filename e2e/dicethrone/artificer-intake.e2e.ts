@@ -151,7 +151,7 @@ const injectArtificerNanobotUpkeep = async (matchId: string, page: Page) => {
     await injectMatchState(matchId, next as never, page);
 };
 
-const injectArtificerShockBotPostDamageChoice = async (matchId: string, page: Page) => {
+const injectArtificerShockBotPreDamageChoice = async (matchId: string, page: Page) => {
     const current = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(current.G ?? current);
     const core = asRecord(root.core);
@@ -170,7 +170,7 @@ const injectArtificerShockBotPostDamageChoice = async (matchId: string, page: Pa
 
     nextRoot.core = {
         ...core,
-        phase: 'main2',
+        phase: 'offensiveRoll',
         activePlayerId: '0',
         currentChoiceSourceAbilityId: 'shock-bot',
         turnOrder,
@@ -227,33 +227,47 @@ const injectArtificerShockBotPostDamageChoice = async (matchId: string, page: Pa
             defenderId: '1',
             sourceAbilityId: 'shock-bot',
             isDefendable: true,
-            damageResolved: true,
-            resolvedDamage: 9,
-            settlementStage: 'postDamagePending',
+            damageResolved: false,
+            resolvedDamage: 0,
+            bonusDamage: 0,
+            preDefenseResolved: true,
+            settlementStage: 'preDamage',
         },
     };
     nextRoot.sys = {
         ...sys,
-        phase: 'main2',
+        phase: 'offensiveRoll',
         turnOrder,
         currentPlayerIndex: 0,
         interaction: {
             ...asRecord(sys.interaction),
             current: {
-                id: 'artificer-online-shock-bot-post-damage-choice',
+                id: 'artificer-online-shock-bot-pre-damage-choice',
                 kind: 'simple-choice',
                 playerId: '0',
                 data: {
                     sourceId: 'shock-bot',
-                    title: '选择要激活的机器人',
+                    title: 'choices.artificerBotActivation.titleSingle',
+                    titleKey: 'choices.artificerBotActivation.titleSingle',
                     options: [
                         {
                             id: 'activate-shock-bot',
-                            label: '激活电能机器人',
+                            label: 'choices.artificerBotActivation.activateShockBotFree',
+                            labelKey: 'choices.artificerBotActivation.activateShockBotFree',
                             value: {
                                 customId: 'artificer-activate-bot-resolve',
                                 sourceAbilityId: 'shock-bot',
                                 value: 202,
+                            },
+                        },
+                        {
+                            id: 'skip-bot-activation',
+                            label: 'choices.artificerBotActivation.skip',
+                            labelKey: 'choices.artificerBotActivation.skip',
+                            value: {
+                                customId: 'artificer-activate-bot-resolve',
+                                sourceAbilityId: 'shock-bot',
+                                value: 0,
                             },
                         },
                     ],
@@ -335,20 +349,20 @@ test.describe('DiceThrone 工匠真实入口', () => {
         }
     });
 
-    test('真实入口电能机器人激活后应保留本体并只记录本回合已激活次数', async ({ browser }, testInfo) => {
+    test('真实入口技能赠送的电能机器人应在伤害前免费激活并把加伤并入当前攻击', async ({ browser }, testInfo) => {
         test.setTimeout(180000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
         const match = await setupArtificerMatch(browser, baseURL);
 
         try {
-            await injectArtificerShockBotPostDamageChoice(match.matchId, match.hostPage);
+            await injectArtificerShockBotPreDamageChoice(match.matchId, match.hostPage);
 
             const choiceModal = match.hostPage.locator('#modal-root');
             await expect(choiceModal.getByRole('heading', { name: '技能结算选择' })).toBeVisible({ timeout: 10000 });
             await expect(choiceModal.getByText('选择要激活的机器人', { exact: true })).toBeVisible({ timeout: 10000 });
 
-            const activateShockBotButton = choiceModal.getByRole('button', { name: /激活电能机器人|Shock Bot/i });
+            const activateShockBotButton = choiceModal.getByRole('button', { name: /免费激活电能机器人|Activate Shock Bot for free/i });
             await expect(activateShockBotButton).toBeVisible({ timeout: 10000 });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '04-电能机器人激活前');
@@ -364,22 +378,25 @@ test.describe('DiceThrone 工匠真实入口', () => {
                 const host = asRecord(players['0']);
                 const guest = asRecord(players['1']);
                 const hostBotState = asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.SHOCK_BOT]);
+                const pendingAttack = asRecord(core.pendingAttack);
                 return {
                     hostSynth: Number(asRecord(host.tokens)[TOKEN_IDS.SYNTH] ?? -1),
                     hostShockBot: Number(asRecord(host.tokens)[TOKEN_IDS.SHOCK_BOT] ?? -1),
                     shockBotBuilt: Boolean(hostBotState.built ?? false),
                     shockBotUsed: Number(hostBotState.activationsUsedThisTurn ?? -1),
                     guestHp: Number(asRecord(guest.resources)[RESOURCE_IDS.HP] ?? -1),
+                    bonusDamage: Number(pendingAttack.bonusDamage ?? -1),
                     interactionKind: asRecord(root.sys).interaction && asRecord(asRecord(root.sys).interaction).current
                         ? String(asRecord(asRecord(asRecord(root.sys).interaction).current).kind ?? '')
                         : null,
                 };
             }, { timeout: 15000 }).toEqual({
-                hostSynth: 0,
+                hostSynth: 2,
                 hostShockBot: 1,
                 shockBotBuilt: true,
                 shockBotUsed: 1,
-                guestHp: 47,
+                guestHp: 50,
+                bonusDamage: 3,
                 interactionKind: null,
             });
 

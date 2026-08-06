@@ -267,56 +267,12 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
   await expect(diceGroup).toHaveAttribute("data-dice-count", /[1-9]/);
   const initialDiceState = await diceGroup.evaluate((node) => {
     const group = node as HTMLElement;
-    const preload = group.querySelector(
-      '[data-testid="betrayal-house-dice-preloaded-faces"]',
-    ) as HTMLElement | null;
-    const preloadedFaces = Array.from(
-      group.querySelectorAll<HTMLElement>(
-        '[data-testid^="betrayal-house-dice-preloaded-face-"]',
-      ),
-    );
-    const preloadStyle = preload ? window.getComputedStyle(preload) : null;
-    const preloadRect = preload?.getBoundingClientRect();
     return {
       physicsReady: group.dataset.dicePhysicsReady ?? "",
       preloadState: group.dataset.dicePreloadState ?? "",
-      preloadCount: preloadedFaces.length,
-      preloadVisible: Boolean(
-        preload &&
-          preloadRect &&
-          preloadRect.width > 0 &&
-          preloadRect.height > 0 &&
-          preloadStyle &&
-          preloadStyle.display !== "none" &&
-          preloadStyle.visibility !== "hidden" &&
-          Number(preloadStyle.opacity || "1") > 0.5,
-      ),
-      preloadBackgroundColor: preloadStyle?.backgroundColor ?? null,
-      preloadBackgroundImage: preloadStyle?.backgroundImage ?? null,
     };
   });
-  if (initialDiceState.physicsReady !== "true") {
-    expect(
-      initialDiceState.preloadState,
-      `山屋物理骰首帧必须有同皮肤预加载承接：${JSON.stringify(initialDiceState)}`,
-    ).toBe("visible");
-    expect(
-      initialDiceState.preloadCount,
-      `山屋物理骰首帧不能空白：${JSON.stringify(initialDiceState)}`,
-    ).toBeGreaterThan(0);
-    expect(
-      initialDiceState.preloadVisible,
-      `山屋物理骰预加载层必须真实可见：${JSON.stringify(initialDiceState)}`,
-    ).toBe(true);
-    expect(
-      initialDiceState.preloadBackgroundColor,
-      `山屋物理骰预加载层不能变成黑底托盘：${JSON.stringify(initialDiceState)}`,
-    ).toBe("rgba(0, 0, 0, 0)");
-    expect(
-      initialDiceState.preloadBackgroundImage,
-      `山屋物理骰预加载层不能叠背景图：${JSON.stringify(initialDiceState)}`,
-    ).toBe("none");
-  }
+  expect(initialDiceState.preloadState).toBe("none");
   try {
     await expect
       .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
@@ -396,9 +352,9 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
       `山屋物理骰子没有渲染就绪：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  await expect(diceGroup).toHaveAttribute("data-dice-preload-state", "retired");
+  await expect(diceGroup).toHaveAttribute("data-dice-preload-state", "none");
   await expect(
-    diceGroup.getByTestId("betrayal-house-dice-preloaded-faces"),
+    diceGroup.locator('[data-testid^="betrayal-house-dice-preloaded-"]'),
   ).toHaveCount(0);
 
   const physicsSource = rollPanel.getByTestId(
@@ -487,6 +443,22 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
+  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+  await expect
+    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
       timeout: 15000,
@@ -509,6 +481,12 @@ export const expectPhysicalDiceStableAfterSettled = async (
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
+  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
+  await expect
+    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
+      timeout: 15000,
+    })
+    .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
       timeout: 15000,

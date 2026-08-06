@@ -38,6 +38,7 @@ import { registerMunchkinMagesAbilities, registerMunchkinMagesBaseAbilities, reg
 import { registerMunchkinElvesAbilities, registerMunchkinElvesBaseAbilities, registerMunchkinElvesInteractionHandlers } from './munchkin_elves';
 import { registerMunchkinClericsAbilities, registerMunchkinClericsInteractionHandlers } from './munchkin_clerics';
 import { registerMunchkinOrcsAbilities, registerMunchkinOrcsInteractionHandlers } from './munchkin_orcs';
+import { registerMunchkinWarriorsAbilities, registerMunchkinWarriorsInteractionHandlers } from './munchkin_warriors';
 
 const BAG_OF_CALTROPS = 'munchkin_treasure_bag_of_caltrops';
 const CROSSBOW = 'munchkin_treasure_crossbow';
@@ -1846,6 +1847,7 @@ function fenceTalent(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_fence_choose_treasures_title',
             responseValidationMode: 'live',
             autoRefresh: 'hand',
+            autoResolveIfSingle: false,
             multi: { min: 2, max: 2 },
             displayCard: { defId: THIEVES_FENCE, cardUid: ctx.cardUid },
         },
@@ -1884,6 +1886,7 @@ function backstabOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_backstab_choose_treasure_title',
             responseValidationMode: 'live',
             autoRefresh: 'hand',
+            autoResolveIfSingle: false,
             multi: { min: 1, max: 1 },
             displayCard: { defId: THIEVES_BACKSTAB, cardUid: ctx.cardUid },
         },
@@ -1926,6 +1929,7 @@ function potionBandolierOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_potion_bandolier_choose_treasure_title',
             responseValidationMode: 'live',
             autoRefresh: 'hand',
+            autoResolveIfSingle: false,
             multi: { min: 1, max: 1 },
             displayCard: { defId: THIEVES_POTION_BANDOLIER, cardUid: ctx.cardUid },
         },
@@ -1965,6 +1969,7 @@ function smugglingOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_smuggling_choose_treasures_title',
             responseValidationMode: 'live',
             autoRefresh: 'hand',
+            autoResolveIfSingle: false,
             multi: { min: 2, max: 2 },
             displayCard: { defId: THIEVES_SMUGGLING, cardUid: ctx.cardUid },
         },
@@ -2002,6 +2007,7 @@ function catBurglarOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_cat_burglar_choose_treasures_title',
             responseValidationMode: 'live',
             autoRefresh: 'hand',
+            autoResolveIfSingle: false,
             multi: { min: 0, max: options.length },
             displayCard: { defId: THIEVES_CAT_BURGLAR, cardUid: ctx.cardUid },
         },
@@ -2060,6 +2066,7 @@ function muggingOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_mugging_choose_action_title',
             responseValidationMode: 'live',
             autoRefresh: 'field',
+            autoResolveIfSingle: false,
             displayCard: { defId: THIEVES_MUGGING, cardUid: ctx.cardUid },
         },
     );
@@ -2096,6 +2103,7 @@ function stripBareOnPlay(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.munchkin_thieves_strip_bare_choose_treasure_title',
             responseValidationMode: 'live',
             autoRefresh: 'field',
+            autoResolveIfSingle: false,
             displayCard: { defId: THIEVES_STRIP_BARE, cardUid: ctx.cardUid },
         },
     );
@@ -3099,6 +3107,7 @@ export function registerMunchkinAbilities(): void {
     registerMunchkinElvesBaseAbilities();
     registerMunchkinClericsAbilities();
     registerMunchkinOrcsAbilities();
+    registerMunchkinWarriorsAbilities();
     registerAbility('munchkin_treasure_halfling_hireling', 'onPlay', halflingHirelingOnPlay);
     registerAbility(HALFLINGS_SHIRE_MARSHAL, 'talent', {
         execute: shireMarshalTalent,
@@ -3240,6 +3249,7 @@ export function registerMunchkinInteractionHandlers(): void {
     registerMunchkinElvesInteractionHandlers();
     registerMunchkinClericsInteractionHandlers();
     registerMunchkinOrcsInteractionHandlers();
+    registerMunchkinWarriorsInteractionHandlers();
     registerInteractionHandler(HALFLINGS_SHIRE_MARSHAL_CHOOSE_BASE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const choice = value as ShireMarshalBaseChoice | undefined;
         const data = interactionData as ShireMarshalInteractionData | undefined;
@@ -3899,6 +3909,7 @@ export function registerMunchkinInteractionHandlers(): void {
                 titleKey: 'ui.munchkin_thieves_backstab_choose_minion_title',
                 responseValidationMode: 'live',
                 autoRefresh: 'field',
+                autoResolveIfSingle: false,
                 displayCard: { defId: THIEVES_BACKSTAB, cardUid: sourceCardUid },
             },
         );
@@ -4139,6 +4150,7 @@ export function registerMunchkinInteractionHandlers(): void {
                 titleKey: 'ui.munchkin_thieves_mugging_choose_minion_title',
                 responseValidationMode: 'live',
                 autoRefresh: 'field',
+                autoResolveIfSingle: false,
             },
         );
         interaction.data.optionsGenerator = (latestState, latestData) => {

@@ -813,7 +813,7 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
         tokenId: string;
         amount: number;
         /** 效果类型 */
-        effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt' | 'removeDebuff';
+        effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt' | 'removeDebuff' | 'botActivation';
         /** 伤害修改量（加伤/减伤） */
         damageModifier?: number;
         /** 闪避投骰结果（仅 evasionAttempt） */
@@ -823,6 +823,8 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
         };
         /** 需要等响应窗口关闭后再发出的附加伤害（如武士反击） */
         deferredDamageEvents?: PendingDamage['deferredDamageEvents'];
+        /** 没有伤害响应窗口时，仍将伤害修正并入当前攻击（如技能赠送的电能机器人激活） */
+        appliesToCurrentAttack?: boolean;
     };
 }
 

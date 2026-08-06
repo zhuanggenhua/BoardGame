@@ -474,6 +474,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             || promptTitleKey?.startsWith('ui.base_treehouse_') === true
             // 法师天赋的额外出牌类型是屏幕按钮选择，不能压在基地下方随从上。
             || promptTitleKey === 'ui.munchkin_mages_wand_whiz_mode_title'
+            // 勇士的模式/效果选择不承接场上目标，停靠顶部以避让基地下方随从与怪物行。
+            || promptTitleKey === 'ui.munchkin_warriors_big_hero_mode_title'
+            || promptTitleKey === 'ui.munchkin_warriors_taunter_mode_title'
+            || promptTitleKey === 'ui.munchkin_warriors_dungeon_bait_mode_title'
+            || promptTitleKey === 'ui.munchkin_warriors_ruckus_mode_title'
             // 计分前响应动作选择必须避开正在被选择的基地与随从。
             || prompt?.sourceId === 'smashup_reaction_choose');
 

@@ -653,7 +653,8 @@
       "damageBoost": "Damage Boost",
       "damageReduction": "Damage Reduction",
       "evasionAttempt": "Evasion Check",
-      "removeDebuff": "Purify"
+      "removeDebuff": "Purify",
+      "botActivation": "Bot Activation"
     },
     "offensiveRollEndTokenUsed": "Used {{tokenLabel}} ({{effectLabel}})",
     "offensiveRollEndTokenEffect": {
@@ -4092,40 +4093,40 @@
     },
     "overclock": {
       "name": "Overclock",
-      "description": "4 Electricity: deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions).",
+      "description": "4 Electricity: deal 6 undefendable damage; freely activate up to 2 different bots (ignoring normal activation conditions).",
       "effects": {
         "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage6Unblockable": "Deal 6 undefendable damage.",
-        "activateTwoBots": "Activate up to 2 different bots (ignoring normal activation conditions)."
+        "activateTwoBots": "Freely activate up to 2 different bots (ignoring normal activation conditions)."
       }
     },
     "overclock-2": {
       "name": "Overclock II",
-      "description": "4 Electricity: inflict Nanobomb, deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
+      "description": "4 Electricity: inflict Nanobomb, deal 6 undefendable damage; freely activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
       "effects": {
         "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage6Unblockable": "Deal 6 undefendable damage.",
-        "activateTwoBots": "Activate up to 2 different bots (ignoring normal activation conditions).",
+        "activateTwoBots": "Freely activate up to 2 different bots (ignoring normal activation conditions).",
         "energyBoostInflictNanobomb3": "Inflict 3 Nanobombs on an opponent."
       }
     },
     "shock-bot": {
       "name": "Shock Bot",
-      "description": "Large Straight: inflict 1 Nanobomb, deal 9 damage, then activate 1 bot (ignoring normal activation conditions).",
+      "description": "Large Straight: inflict 1 Nanobomb, deal 9 damage; freely activate 1 bot (ignoring normal activation conditions).",
       "effects": {
         "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage9": "Deal 9 damage.",
-        "activateOneBot": "Activate 1 bot (ignoring normal activation conditions)."
+        "activateOneBot": "Freely activate 1 bot (ignoring normal activation conditions)."
       }
     },
     "shock-bot-3": {
       "name": "Shock Bot III",
-      "description": "Large Straight: gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot (ignoring normal activation conditions). Mechanical Army: 1 Wrench + 2 Gear + 1 Electricity, deal 5 damage. Deal +1 damage for each bot you have.",
+      "description": "Large Straight: gain 2 Synth, inflict 1 Nanobomb, deal 9 damage; freely activate 1 bot (ignoring normal activation conditions). Mechanical Army: 1 Wrench + 2 Gear + 1 Electricity, deal 5 damage. Deal +1 damage for each bot you have.",
       "effects": {
         "gainSynth2": "Gain 2 Synth.",
         "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage9": "Deal 9 damage.",
-        "activateOneBot": "Activate 1 bot (ignoring normal activation conditions).",
+        "activateOneBot": "Freely activate 1 bot (ignoring normal activation conditions).",
         "mechanicalArmy": "Deal 5 damage. Deal +1 damage for each bot you have."
       }
     },
@@ -4145,12 +4146,12 @@
     },
     "maximum-power": {
       "name": "Maximum Power!",
-      "description": "Ultimate: gain 2 Synth, inflict 1 Nanobomb, deal 10 damage, then activate up to 2 different bots (ignoring normal activation conditions).",
+      "description": "Ultimate: gain 2 Synth, inflict 1 Nanobomb, deal 10 damage; freely activate up to 2 different bots (ignoring normal activation conditions).",
       "effects": {
         "gainSynth2": "Gain 2 Synth.",
         "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage10": "Deal 10 damage.",
-        "activateTwoBots": "Activate up to 2 different bots (ignoring normal activation conditions)."
+        "activateTwoBots": "Freely activate up to 2 different bots (ignoring normal activation conditions)."
       }
     },
     "card-artificer-masterpiece": {
@@ -4670,14 +4671,14 @@
     },
     "upgrade-artificer-overclock-2": {
       "name": "Overclock II",
-      "description": "Upgrade Overclock: 4 Electricity, inflict 1 Nanobomb, deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
+      "description": "Upgrade Overclock: 4 Electricity, inflict 1 Nanobomb, deal 6 undefendable damage; freely activate up to 2 different bots (ignoring normal activation conditions). Energy Boost: 3 Electricity, inflict 3 Nanobombs on an opponent.",
       "effects": {
         "upgrade": "Upgrade Overclock to level II."
       }
     },
     "upgrade-artificer-shock-bot-3": {
       "name": "Shock Bot III",
-      "description": "Upgrade Shock Bot: Large Straight, gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot (ignoring normal activation conditions). Mechanical Army: 1 Wrench + 2 Gear + 1 Electricity, deal 5 damage; deal +1 damage for each bot you have.",
+      "description": "Upgrade Shock Bot: Large Straight, gain 2 Synth, inflict 1 Nanobomb, deal 9 damage; freely activate 1 bot (ignoring normal activation conditions). Mechanical Army: 1 Wrench + 2 Gear + 1 Electricity, deal 5 damage; deal +1 damage for each bot you have.",
       "effects": {
         "upgrade": "Upgrade Shock Bot to level III."
       }

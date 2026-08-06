@@ -666,6 +666,7 @@ test.describe('召唤师战争冰苔兽人真实入口与关键交互 E2E', () =
       await dismissDiceResultOverlay(hostPage);
       await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
         .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostPage.mouse.move(20, 20);
       await hostGame.screenshot('12-激励保留后原始狂怒位移入口', testInfo);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
       await expect.poll(async () => {
@@ -681,6 +682,7 @@ test.describe('召唤师战争冰苔兽人真实入口与关键交互 E2E', () =
       await dismissDiceResultOverlay(hostPage);
       await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
         .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostPage.mouse.move(20, 20);
       await hostGame.screenshot('13-激励重摇后原始狂怒位移入口', testInfo);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
       await expect.poll(async () => {

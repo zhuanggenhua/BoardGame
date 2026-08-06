@@ -83,6 +83,27 @@ test.describe('DiceThrone 炽天使真实入口', () => {
                 await expect(hostBoard.locator(`[data-ability-slot="${slotId}"]`).first())
                     .toHaveAttribute('data-base-ability-id', abilityId);
             }
+            const boardLayoutMetrics = await hostBoard.evaluate((surface) => {
+                const face = surface.querySelector('[data-testid="player-board-face-shell"]') as HTMLElement | null;
+                const combo = surface.querySelector('[data-ability-slot="combo"]') as HTMLElement | null;
+                if (!face || !combo) return null;
+
+                const viewportWidth = window.innerWidth;
+                const surfaceRect = surface.getBoundingClientRect();
+                const faceRect = face.getBoundingClientRect();
+                const comboRect = combo.getBoundingClientRect();
+                return {
+                    viewportWidth,
+                    surfaceHeight: surfaceRect.height,
+                    comboLeftRatio: (comboRect.left - faceRect.left) / faceRect.width * 100,
+                    comboTopRatio: (comboRect.top - faceRect.top) / faceRect.height * 100,
+                };
+            });
+            expect(boardLayoutMetrics).not.toBeNull();
+            if (!boardLayoutMetrics) throw new Error('炽天使玩家板几何信息缺失');
+            expect(boardLayoutMetrics.surfaceHeight / boardLayoutMetrics.viewportWidth).toBeCloseTo(0.31, 2);
+            expect(boardLayoutMetrics.comboLeftRatio).toBeCloseTo(67.67, 0);
+            expect(boardLayoutMetrics.comboTopRatio).toBeCloseTo(21.41, 0);
             await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(4, { timeout: 10000 });
             await expect(match.hostPage.getByText(/回合|Turn/i).first()).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-炽天使玩家板与手牌');

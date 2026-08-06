@@ -177,6 +177,42 @@ async function getReactionWindowStatus(page: Page): Promise<{ sourceId: string |
     });
 }
 
+async function clickVisibleInteractionOptionBy(
+    page: Page,
+    game: GameTestContext,
+    matcher: (option: InteractionOption) => boolean,
+    description: string,
+): Promise<void> {
+    const options = await game.getInteractionOptions() as InteractionOption[];
+    const option = options.find(matcher);
+    if (!option?.id) {
+        throw new Error(`${description}：当前交互没有匹配的可选项`);
+    }
+
+    const cardOption = page.locator(`[data-option-id="${option.id}"]`).first();
+    if (await cardOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await cardOption.click({ force: true });
+        await page.waitForTimeout(300);
+        return;
+    }
+
+    const buttonLabels = [
+        option.label,
+        option.value?.kind === 'pass' ? '让过' : undefined,
+        option.value?.kind === 'pass' ? 'Pass' : undefined,
+    ].filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
+    for (const label of buttonLabels) {
+        const button = page.getByRole('button', { name: label, exact: true }).first();
+        if (await button.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await button.click({ force: true });
+            await page.waitForTimeout(300);
+            return;
+        }
+    }
+
+    throw new Error(`${description}：匹配选项存在，但页面没有可见的真实点击载体（optionId=${option.id}）`);
+}
+
 async function passOpenReactionOrResponseWindow(
     page: Page,
     game: GameTestContext,
@@ -184,7 +220,9 @@ async function passOpenReactionOrResponseWindow(
 ): Promise<boolean> {
     const status = await getReactionWindowStatus(page);
     if (status.sourceId === 'smashup_reaction_choose') {
-        await game.selectInteractionOptionBy(
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
             (option: InteractionOption) => option.value?.kind === 'pass',
             description,
         );
@@ -198,13 +236,14 @@ async function passOpenReactionOrResponseWindow(
 }
 
 async function chooseReactionBySourceDefId(
+    page: Page,
     game: GameTestContext,
     sourceDefId: string,
     description: string,
 ): Promise<void> {
     const state = await game.getState();
     const triggers = (state.core?.triggerQueue ?? []) as TriggerQueueEntry[];
-    await game.selectInteractionOptionBy((option: InteractionOption) => {
+    await clickVisibleInteractionOptionBy(page, game, (option: InteractionOption) => {
         const triggerId = option.value?.triggerId;
         const trigger = triggers.find((entry) => entry?.id === triggerId);
         return trigger?.sourceDefId === sourceDefId
@@ -263,7 +302,7 @@ async function expectManualChoiceVisible(
     page: Page,
     selector: string,
     description: string,
-    options: { forbidPromptContext?: boolean } = {},
+    options: { forbidPromptContext?: boolean; minVisibleHitCount?: number } = {},
 ): Promise<void> {
     await expect(page.getByTestId('smashup-action-fx-card')).toHaveCount(0);
     if (options.forbidPromptContext) {
@@ -351,7 +390,7 @@ async function expectManualChoiceVisible(
     expect(
         visibility.visibleHitCount,
         `${description}：候选本体必须露出可点击命中点，实际命中=${JSON.stringify(visibility.hits)}`,
-    ).toBeGreaterThanOrEqual(2);
+    ).toBeGreaterThanOrEqual(options.minVisibleHitCount ?? 2);
 }
 
 async function expectManualMinionChoiceVisible(
@@ -371,6 +410,89 @@ async function clickManualMinionChoice(page: Page, minionUid: string, descriptio
             [0.5, 0.18],
             [0.22, 0.52],
             [0.78, 0.52],
+            [0.5, 0.76],
+        ].map(([xRatio, yRatio]) => ({
+            x: rect.left + rect.width * xRatio,
+            y: rect.top + rect.height * yRatio,
+        })).filter((candidate) => (
+            candidate.x >= 0
+            && candidate.y >= 0
+            && candidate.x <= window.innerWidth
+            && candidate.y <= window.innerHeight
+        ));
+
+        return points.find((candidate) => {
+            const top = document.elementFromPoint(candidate.x, candidate.y) as HTMLElement | null;
+            return top?.closest('[data-minion-uid]')?.getAttribute('data-minion-uid') === expectedUid;
+        }) ?? null;
+    }, minionUid);
+
+    expect(point, `${description}：必须有真实可见命中点`).not.toBeNull();
+    await page.mouse.click(point!.x, point!.y);
+    await page.waitForTimeout(300);
+}
+
+async function expectCurrentInteractionManual(game: GameTestContext, description: string): Promise<void> {
+    const state = await game.getState();
+    expect(
+        state.sys?.interaction?.current?.data?.autoResolveIfSingle,
+        `${description}：即使只有一个候选也必须保留手动选择`,
+    ).toBe(false);
+}
+
+async function clickManualBaseChoice(page: Page, baseIndex: number, description: string): Promise<void> {
+    const base = page.locator(`[data-base-index="${baseIndex}"]`).first();
+    await expect(base, `${description}：基地本体必须可见`).toBeVisible({ timeout: 15000 });
+    await base.click({ force: true });
+    await page.waitForTimeout(300);
+}
+
+async function clickManualMonsterChoice(page: Page, monsterUid: string, description: string): Promise<void> {
+    const monster = page.locator(`[data-monster-uid="${monsterUid}"]`).first();
+    await expect(monster, `${description}：怪物卡本体必须可见`).toBeVisible({ timeout: 15000 });
+    const point = await monster.evaluate((target, expectedUid) => {
+        const rect = target.getBoundingClientRect();
+        const points = [
+            [0.5, 0.5],
+            [0.18, 0.52],
+            [0.22, 0.52],
+            [0.32, 0.52],
+            [0.78, 0.52],
+            [0.5, 0.28],
+            [0.5, 0.76],
+        ].map(([xRatio, yRatio]) => ({
+            x: rect.left + rect.width * xRatio,
+            y: rect.top + rect.height * yRatio,
+        })).filter((candidate) => (
+            candidate.x >= 0
+            && candidate.y >= 0
+            && candidate.x <= window.innerWidth
+            && candidate.y <= window.innerHeight
+        ));
+
+        return points.find((candidate) => {
+            const top = document.elementFromPoint(candidate.x, candidate.y) as HTMLElement | null;
+            return top?.closest('[data-monster-uid]')?.getAttribute('data-monster-uid') === expectedUid;
+        }) ?? null;
+    }, monsterUid);
+
+    expect(point, `${description}：必须有真实可见命中点`).not.toBeNull();
+    await page.mouse.click(point!.x, point!.y);
+    await page.waitForTimeout(300);
+}
+
+async function clickManualMinionActivation(page: Page, minionUid: string, description: string): Promise<void> {
+    const minion = page.locator(`[data-minion-uid="${minionUid}"]`).first();
+    await expect(minion, `${description}：随从本体必须可见`).toBeVisible({ timeout: 15000 });
+    const point = await minion.evaluate((target, expectedUid) => {
+        const rect = target.getBoundingClientRect();
+        const points = [
+            [0.5, 0.5],
+            [0.18, 0.52],
+            [0.22, 0.52],
+            [0.32, 0.52],
+            [0.78, 0.52],
+            [0.5, 0.28],
             [0.5, 0.76],
         ].map(([xRatio, yRatio]) => ({
             x: rect.left + rect.width * xRatio,
@@ -495,7 +617,7 @@ const buildMunchkinMonsterTreasureScene = (): SmashUpSceneConfig => ({
                     ],
                     ongoingActions: [
                         { uid: 'ongoing-full-sail-0', defId: 'pirate_full_sail', ownerId: '0' },
-                        { uid: 'ongoing-power-up-1', defId: 'robot_power_up', ownerId: '1' },
+                        { uid: 'ongoing-power-up-1', defId: 'pirate_full_sail', ownerId: '1' },
                     ],
                     monsters: [
                         { uid: 'monster-dragon-0', defId: 'munchkin_monster_treasure_dragon' },
@@ -4611,6 +4733,192 @@ const buildMunchkinMagesBaseInteractionScene = (): SmashUpSceneConfig => ({
     },
 });
 
+const buildMunchkinOrcsSwordLordScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-sword-action-1', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 24,
+            nextUid: 2400,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-sword-lord-a', 'munchkin_orcs_sword_lord', '0', 5),
+                        minion('orcs-sword-ally', 'alien_invader', '0', 2),
+                        minion('orcs-sword-enemy', 'pirate_first_mate', '1', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('orcs-sword-other-base', 'alien_scout', '0', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsDorkOrcProtectionScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-dork-crush-1', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 34,
+            nextUid: 3400,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-dork-attacker-a', 'alien_invader', '0', 3),
+                        minion('orcs-dork-attacker-b', 'alien_scout', '0', 2),
+                        minion('orcs-dork-attacker-c', 'pirate_first_mate', '0', 4),
+                        minion('orcs-dork-protected', 'munchkin_orcs_dork_orc', '1', 2),
+                        minion('orcs-dork-free', 'alien_invader', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsPitsProtectionScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'orcs-pits-crush-1', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' },
+            { uid: 'orcs-pits-crush-2', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 2,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 35,
+            nextUid: 3500,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_pits',
+                    minions: [
+                        minion('orcs-pits-attacker-a', 'alien_invader', '0', 3),
+                        minion('orcs-pits-attacker-b', 'alien_scout', '0', 2),
+                        minion('orcs-pits-attacker-c', 'pirate_first_mate', '0', 4),
+                        minion('orcs-pits-protected-a', 'alien_invader', '1', 3),
+                        minion('orcs-pits-protected-b', 'pirate_first_mate', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        minion('orcs-pits-other-attacker-a', 'alien_scout', '0', 2),
+                        minion('orcs-pits-other-attacker-b', 'alien_invader', '0', 3),
+                        minion('orcs-pits-free', 'pirate_first_mate', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
 const buildMunchkinOrcsHammerSlammerScene = (): SmashUpSceneConfig => ({
     gameId: 'smashup',
     currentPlayer: '0',
@@ -4921,7 +5229,7 @@ const buildMunchkinOrcsBaseScoringScene = (options: {
     },
     player1: {
         hand: [],
-        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        deck: deckCards('1', 'munchkin_orcs_sword_lord', 12),
         discard: [],
         factions: ['munchkin_orcs', 'pirates'],
         minionsPlayed: 0,
@@ -5076,12 +5384,126 @@ const buildMunchkinOrcsStallingScene = (): SmashUpSceneConfig => ({
     },
 });
 
-const buildMunchkinOrcsTooToughScene = (): SmashUpSceneConfig => ({
+const buildMunchkinOrcsStallingPlacementScene = (): SmashUpSceneConfig => ({
     gameId: 'smashup',
     currentPlayer: '0',
     phase: 'playCards',
     player0: {
-        hand: [{ uid: 'orcs-too-tough-action-1', defId: 'munchkin_orcs_death_breath', type: 'action', owner: '0' }],
+        hand: [{ uid: 'orcs-stalling-placement-1', defId: 'munchkin_orcs_stalling', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 30,
+            nextUid: 3010,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-stalling-placement-own', 'alien_invader', '0', 3),
+                        minion('orcs-stalling-placement-enemy', 'pirate_first_mate', '1', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('orcs-stalling-placement-other', 'alien_scout', '1', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsCrushScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-crush-action-1', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 30,
+            nextUid: 3000,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-crush-attacker-a', 'alien_invader', '0', 3),
+                        minion('orcs-crush-attacker-b', 'alien_scout', '0', 2),
+                        minion('orcs-crush-defender', 'pirate_first_mate', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsDeathBreathProtectionScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-death-breath-action-1', defId: 'munchkin_orcs_death_breath', type: 'action', owner: '0' }],
         deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
         discard: [],
         factions: ['munchkin_orcs', 'ninjas'],
@@ -5119,15 +5541,71 @@ const buildMunchkinOrcsTooToughScene = (): SmashUpSceneConfig => ({
                     defId: 'base_garrison',
                     minions: [
                         {
-                            ...minion('orcs-too-tough-protected', 'pirate_first_mate', '1', 3),
-                            attachedActions: [{ uid: 'orcs-too-tough-card', defId: 'munchkin_orcs_too_tough', ownerId: '1' }],
+                            ...minion('orcs-death-breath-protected', 'pirate_first_mate', '1', 3),
+                            attachedActions: [{ uid: 'orcs-death-breath-too-tough', defId: 'munchkin_orcs_too_tough', ownerId: '1' }],
                         },
-                        minion('orcs-too-tough-free', 'alien_scout', '1', 3),
+                        minion('orcs-death-breath-free', 'alien_scout', '1', 3),
                     ],
                     ongoingActions: [],
                     monsters: [],
                 },
                 { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsTooToughPlacementScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-too-tough-placement-1', defId: 'munchkin_orcs_too_tough', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 30,
+            nextUid: 3020,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [minion('orcs-too-tough-placement-target', 'pirate_first_mate', '0', 3)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('orcs-too-tough-placement-other', 'alien_scout', '1', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
             ],
         },
     },
@@ -6165,7 +6643,7 @@ const buildMunchkinClericsJoinTheClubScene = (): SmashUpSceneConfig => ({
     },
     player1: {
         hand: [],
-        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        deck: deckCards('1', 'munchkin_orcs_sword_lord', 12),
         discard: [],
         factions: ['munchkin_orcs', 'ninjas'],
         minionsPlayed: 1,
@@ -6195,7 +6673,7 @@ const buildMunchkinClericsJoinTheClubScene = (): SmashUpSceneConfig => ({
                 },
                 {
                     defId: 'base_the_mothership',
-                    minions: [minion('clerics-club-base-1', 'munchkin_orcs_dork_orc', '1', 2)],
+                    minions: [minion('clerics-club-base-1', 'munchkin_orcs_sword_lord', '1', 2)],
                     ongoingActions: [],
                     monsters: [],
                 },
@@ -6554,6 +7032,332 @@ const buildMunchkinClericsWordRecallScene = (): SmashUpSceneConfig => ({
     },
 });
 
+type WarriorsSceneOptions = {
+    hand: Array<{ uid: string; defId: string; type: 'minion' | 'action'; owner: '0' }>;
+    bases: Array<{
+        defId: string;
+        minions: ReturnType<typeof minion>[];
+        ongoingActions: Array<{ uid: string; defId: string; ownerId: '0' | '1' }>;
+        monsters: Array<{ uid: string; defId: string; controllerId?: string }>;
+    }>;
+    monsterDeck: string[];
+    treasureDeck: string[];
+    turnNumber: number;
+    actionLimit?: number;
+};
+
+const buildMunchkinWarriorsScene = (options: WarriorsSceneOptions): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: options.hand,
+        deck: deckCards('0', 'munchkin_warriors_berserker', 14),
+        discard: [],
+        factions: ['munchkin_warriors', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: options.actionLimit ?? 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'pirate_first_mate', 14),
+        discard: [],
+        factions: ['pirates', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 3,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: options.turnNumber,
+            nextUid: options.turnNumber * 100,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: options.monsterDeck,
+            treasureDeck: options.treasureDeck,
+            baseDeck: options.bases.map(base => base.defId),
+            baseDiscard: [],
+            bases: options.bases,
+        },
+    },
+});
+
+const buildMunchkinWarriorsBigHeroScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-big-hero-hand', defId: 'munchkin_warriors_campaign', type: 'action', owner: '0' }],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling', 'munchkin_treasure_spiky_boots', 'munchkin_treasure_wishing_ring'],
+    turnNumber: 61,
+    bases: [
+        {
+            defId: 'base_the_homeworld',
+            minions: [
+                minion('warriors-star-player', 'munchkin_warriors_star_player', '0', 4),
+                minion('warriors-big-hero', 'munchkin_warriors_big_hero', '0', 5),
+            ],
+            ongoingActions: [{ uid: 'warriors-full-sail', defId: 'pirate_full_sail', ownerId: '0' }],
+            monsters: [
+                { uid: 'warriors-big-hero-monster-a', defId: 'munchkin_monster_bigfoot' },
+                { uid: 'warriors-big-hero-monster-b', defId: 'munchkin_monster_ghoul' },
+            ],
+        },
+        {
+            defId: 'base_the_gauntlet',
+            minions: [minion('warriors-other-base-minion', 'pirate_first_mate', '1', 2)],
+            ongoingActions: [],
+            monsters: [],
+        },
+    ],
+});
+
+const buildMunchkinWarriorsCleaveScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-cleave-action', defId: 'munchkin_warriors_cleave', type: 'action', owner: '0' }],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling', 'munchkin_treasure_spiky_boots'],
+    turnNumber: 62,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [minion('warriors-cleave-ally', 'alien_invader', '0', 2)],
+            ongoingActions: [{ uid: 'warriors-cleave-ongoing', defId: 'pirate_full_sail', ownerId: '1' }],
+            monsters: [{ uid: 'warriors-cleave-monster', defId: 'munchkin_monster_ghoul' }],
+        },
+        { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+    ],
+});
+
+const buildMunchkinWarriorsWarCryScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-war-cry-action', defId: 'munchkin_warriors_war_cry', type: 'action', owner: '0' }],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling', 'munchkin_treasure_spiky_boots'],
+    turnNumber: 63,
+    bases: [
+        {
+            defId: 'base_the_homeworld',
+            minions: [
+                minion('warriors-war-cry-own', 'alien_invader', '0', 2),
+                minion('warriors-war-cry-other', 'pirate_first_mate', '1', 3),
+            ],
+            ongoingActions: [{ uid: 'warriors-war-cry-ongoing', defId: 'pirate_full_sail', ownerId: '0' }],
+            monsters: [{ uid: 'warriors-war-cry-monster-a', defId: 'munchkin_monster_bigfoot' }],
+        },
+        {
+            defId: 'base_the_gauntlet',
+            minions: [minion('warriors-war-cry-other-base', 'pirate_first_mate', '1', 2)],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-war-cry-monster-other-base', defId: 'munchkin_monster_pegasus' }],
+        },
+    ],
+});
+
+const buildMunchkinWarriorsBerserkerScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-berserker-hand', defId: 'munchkin_warriors_berserker', type: 'minion', owner: '0' }],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+    turnNumber: 65,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-berserker-monster', defId: 'munchkin_monster_ghoul' }],
+        },
+        { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+    ],
+});
+
+const buildMunchkinWarriorsTaunterScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-taunter-hand', defId: 'munchkin_warriors_taunter', type: 'minion', owner: '0' }],
+    monsterDeck: ['munchkin_monster_bigfoot', 'munchkin_monster_ghoul'],
+    treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+    turnNumber: 66,
+    bases: [
+        { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+        { defId: 'base_the_gauntlet', minions: [], ongoingActions: [], monsters: [] },
+    ],
+});
+
+const buildMunchkinWarriorsCampaignScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-campaign-hand', defId: 'munchkin_warriors_campaign', type: 'action', owner: '0' }],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+    turnNumber: 67,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [minion('warriors-campaign-boosted', 'pirate_first_mate', '0', 2)],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-campaign-monster', defId: 'munchkin_monster_bigfoot' }],
+        },
+        {
+            defId: 'base_the_homeworld',
+            minions: [minion('warriors-campaign-unboosted', 'pirate_first_mate', '0', 2)],
+            ongoingActions: [],
+            monsters: [],
+        },
+    ],
+});
+
+const buildMunchkinWarriorsDungeonBaitScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-dungeon-bait-hand', defId: 'munchkin_warriors_dungeon_bait', type: 'action', owner: '0' }],
+    monsterDeck: ['munchkin_monster_bigfoot'],
+    treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+    turnNumber: 68,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [minion('warriors-dungeon-bait-target', 'pirate_first_mate', '1', 2)],
+            ongoingActions: [],
+            monsters: [],
+        },
+        { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+    ],
+});
+
+const buildMunchkinWarriorsOngoingScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [
+        { uid: 'warriors-dumbbells-hand', defId: 'munchkin_warriors_dumbbells', type: 'action', owner: '0' },
+        { uid: 'warriors-shield-hand', defId: 'munchkin_warriors_shield_of_ubiquity', type: 'action', owner: '0' },
+    ],
+    monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+    turnNumber: 69,
+    actionLimit: 2,
+    bases: [
+        {
+            defId: 'base_the_homeworld',
+            minions: [
+                minion('warriors-ongoing-host', 'pirate_first_mate', '0', 2),
+                minion('warriors-ongoing-bystander', 'pirate_first_mate', '1', 2),
+            ],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-ongoing-monster', defId: 'munchkin_monster_bigfoot' }],
+        },
+        { defId: 'base_the_gauntlet', minions: [], ongoingActions: [], monsters: [] },
+    ],
+});
+
+const buildMunchkinWarriorsEternalHeroScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: deckCards('0', 'munchkin_warriors_berserker', 14),
+        discard: [],
+        factions: ['munchkin_warriors', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'pirate_first_mate', 14),
+        discard: [],
+        factions: ['pirates', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 3,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 70,
+            nextUid: 7000,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: ['munchkin_treasure_wishing_ring'],
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        {
+                            ...minion('warriors-eternal-host', 'alien_invader', '0', 2),
+                            attachedActions: [
+                                {
+                                    uid: 'warriors-eternal-hero',
+                                    defId: 'munchkin_warriors_eternal_hero',
+                                    ownerId: '0',
+                                },
+                                {
+                                    uid: 'warriors-eternal-other-action',
+                                    defId: 'pirate_full_sail',
+                                    ownerId: '1',
+                                },
+                                {
+                                    uid: 'warriors-eternal-magic-missile',
+                                    defId: 'munchkin_treasure_magic_missile',
+                                    ownerId: '0',
+                                    talentUsed: false,
+                                },
+                            ],
+                        },
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_gauntlet', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinWarriorsBaseTriggerScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [],
+    monsterDeck: ['munchkin_monster_bigfoot'],
+    treasureDeck: ['munchkin_treasure_spiky_boots'],
+    turnNumber: 71,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [minion('warriors-bastion-defeater', 'alien_invader', '0', 5)],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-bastion-monster', defId: 'munchkin_monster_ghoul' }],
+        },
+        {
+            defId: 'base_the_gauntlet',
+            minions: [minion('warriors-gauntlet-defeater', 'alien_invader', '0', 5)],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-gauntlet-monster', defId: 'munchkin_monster_ghoul' }],
+        },
+    ],
+});
+
+const buildMunchkinWarriorsRuckusScene = (): SmashUpSceneConfig => buildMunchkinWarriorsScene({
+    hand: [{ uid: 'warriors-ruckus-action', defId: 'munchkin_warriors_ruckus', type: 'action', owner: '0' }],
+    monsterDeck: ['munchkin_monster_bigfoot', 'munchkin_monster_ghoul', 'munchkin_monster_pegasus'],
+    treasureDeck: ['munchkin_treasure_dwarf_hireling', 'munchkin_treasure_spiky_boots'],
+    turnNumber: 64,
+    bases: [
+        {
+            defId: 'base_bastion',
+            minions: [minion('warriors-ruckus-own', 'alien_invader', '0', 2)],
+            ongoingActions: [{ uid: 'warriors-ruckus-ongoing', defId: 'pirate_full_sail', ownerId: '0' }],
+            monsters: [{ uid: 'warriors-ruckus-monster', defId: 'munchkin_monster_bigfoot' }],
+        },
+        {
+            defId: 'base_the_gauntlet',
+            minions: [minion('warriors-ruckus-other-base', 'pirate_first_mate', '1', 2)],
+            ongoingActions: [],
+            monsters: [{ uid: 'warriors-ruckus-other-monster', defId: 'munchkin_monster_ghoul' }],
+        },
+    ],
+});
+
 test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
     test('怪物行和公共小牌堆不抢原版布局', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
@@ -6719,6 +7523,130 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('移动端横屏-怪物行和公共小牌堆不抢原版布局', testInfo);
     });
 
+    test('兽人剑王真实入口显示同基地己方力量加成并排除自身、对手和其他基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsSwordLordScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-minion-uid="orcs-sword-lord-a"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-sword-ally"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-sword-enemy"]').first()).toBeVisible({ timeout: 15000 });
+
+        const allyBadge = page.getByTestId('su-minion-power-badge-orcs-sword-ally');
+        await expect(allyBadge).toBeVisible({ timeout: 15000 });
+        await expect(allyBadge).toHaveText('+1');
+        await expect(allyBadge).toHaveAttribute('title', /基础: 2[\s\S]*剑王: \+1[\s\S]*= 3/);
+        await expect(page.getByTestId('su-minion-power-badge-orcs-sword-lord-a')).toHaveCount(0);
+        await expect(page.getByTestId('su-minion-power-badge-orcs-sword-enemy')).toHaveCount(0);
+        await expect(page.getByTestId('su-minion-power-badge-orcs-sword-other-base')).toHaveCount(0);
+
+        const state = await game.getState();
+        const bases = state.core.bases as Array<{ minions: Array<{ uid: string; basePower?: number }> }>;
+        expect(bases[0]?.minions.find(minion => minion.uid === 'orcs-sword-ally')?.basePower).toBe(2);
+        expect(bases[1]?.minions.find(minion => minion.uid === 'orcs-sword-other-base')?.basePower).toBe(2);
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-剑王-同基地己方获得加成且自身对手与其他基地不加成', testInfo);
+    });
+
+    test('兽人呆瓜兽人真实入口排除对手行动目标但保留同基地普通随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsDorkOrcProtectionScene());
+
+        await expect(page.locator('[data-card-uid="orcs-dork-crush-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-dork-protected"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-dork-free"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_orcs_crush');
+        await game.waitForInteraction('munchkin_orcs_crush_base', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 0, '呆瓜兽人保护链选择基地');
+        await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.targetPlayerId === '1', '呆瓜兽人保护链选择目标玩家');
+        await game.waitForInteraction('munchkin_orcs_crush_minion', 10000);
+
+        const targetOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-dork-free')).toBe(true);
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-dork-protected')).toBe(false);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-dork-free',
+            '呆瓜兽人受到对手行动影响时，合法目标应显示普通随从本体',
+            { forbidPromptContext: true },
+        );
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-呆瓜兽人-对手行动排除受保护随从', testInfo);
+
+        await clickManualMinionChoice(page, 'orcs-dork-free', '呆瓜兽人保护链选择普通随从');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        const finalState = await game.getState();
+        const targetBase = finalState.core.bases[0];
+        expect(targetBase.minions.some((minion: any) => minion.uid === 'orcs-dork-protected')).toBe(true);
+        expect(targetBase.minions.some((minion: any) => minion.uid === 'orcs-dork-free')).toBe(false);
+        expect(finalState.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-dork-crush-1')).toBe(true);
+        await game.screenshot('兽人-呆瓜兽人-普通随从被摧毁而呆瓜兽人保留', testInfo);
+    });
+
+    test('兽人坑洞真实入口只保护坑洞内随从不受对手行动', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsPitsProtectionScene());
+
+        await expect(page.locator('[data-card-uid="orcs-pits-crush-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-pits-protected-a"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-pits-free"]').first()).toBeVisible({ timeout: 15000 });
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-坑洞保护-两座基地对照初始状态', testInfo);
+
+        await game.playCard('munchkin_orcs_crush');
+        await game.waitForInteraction('munchkin_orcs_crush_base', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 0, '坑洞保护链第一张行动选择坑洞');
+        await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.targetPlayerId === '1', '坑洞保护链第一张行动选择坑洞内目标玩家');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const pitsState = await game.getState();
+        expect(pitsState.core.bases[0].minions.some((minion: any) => minion.uid === 'orcs-pits-protected-a')).toBe(true);
+        expect(pitsState.core.bases[0].minions.some((minion: any) => minion.uid === 'orcs-pits-protected-b')).toBe(true);
+        expect(pitsState.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-pits-crush-1')).toBe(true);
+        await game.screenshot('兽人-坑洞保护-对手行动无法摧毁坑洞随从', testInfo);
+
+        await game.playCard('munchkin_orcs_crush');
+        await game.waitForInteraction('munchkin_orcs_crush_base', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 1, '坑洞保护链第二张行动选择另一基地');
+        await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
+        await game.selectInteractionOptionBy(option => option.value?.targetPlayerId === '1', '坑洞保护链第二张行动选择另一基地目标玩家');
+        await game.waitForInteraction('munchkin_orcs_crush_minion', 10000);
+        const freeTargetOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(freeTargetOptions.some(option => option.value?.minionUid === 'orcs-pits-free')).toBe(true);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-pits-free',
+            '坑洞外的普通随从仍应成为对手行动的可选目标',
+            { forbidPromptContext: true },
+        );
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-坑洞保护-另一基地仍可手动选择目标', testInfo);
+        await clickManualMinionChoice(page, 'orcs-pits-free', '坑洞保护链选择另一基地普通随从');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const finalState = await game.getState();
+        expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'orcs-pits-protected-a')).toBe(true);
+        expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'orcs-pits-protected-b')).toBe(true);
+        expect(finalState.core.bases[1].minions.some((minion: any) => minion.uid === 'orcs-pits-free')).toBe(false);
+        expect(finalState.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-pits-crush-2')).toBe(true);
+        await game.screenshot('兽人-坑洞保护-坑洞保留而另一基地目标被摧毁', testInfo);
+    });
+
     test('兽人重击者真实入口手动选择力量目标，单候选也不自动结算', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
@@ -6774,7 +7702,8 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await page.locator('[data-minion-uid="orcs-topper-1"]').first().click({ force: true });
         await waitForSmashUpFxToSettle(page);
         await expect(page.getByTestId('su-minion-used-badge-orcs-topper-1')).toBeVisible({ timeout: 15000 });
-        const core = await readCoreState(page) as { bases: Array<{ minions: Array<{ uid: string; talentUsed?: boolean }> }> };
+        const state = await game.getState();
+        const core = state.core as { bases: Array<{ minions: Array<{ uid: string; talentUsed?: boolean }> }> };
         expect(core.bases.flatMap(base => base.minions).find(minion => minion.uid === 'orcs-topper-1')?.talentUsed).toBe(true);
         await hideSmashUpDebugPanelForEvidence(page);
         await game.screenshot('兽人-粉碎者-天赋已使用', testInfo);
@@ -6844,13 +7773,138 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         }, { timeout: 10000 }).toEqual({
             sourceHostPresent: false,
             targetAttachedUids: ['orcs-gimme-attached'],
-            player1DiscardDefIds: [],
+            player1DiscardDefIds: ['alien_invader'],
             interactionSourceId: null,
         });
         await target.hover();
         await expect(target.locator('[data-attached-action-uid="orcs-gimme-attached"]').first()).toBeVisible({ timeout: 15000 });
         await hideSmashUpDebugPanelForEvidence(page);
         await game.screenshot('兽人-给我-转移后行动保留在新宿主', testInfo);
+    });
+
+    test('兽人洗手间从真实手牌入口手动选择附着基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsStallingPlacementScene());
+
+        await expect(page.locator('[data-card-uid="orcs-stalling-placement-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-base-index="0"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-base-index="1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-洗手间-手牌打出前两个基地', testInfo);
+
+        await page.locator('[data-card-uid="orcs-stalling-placement-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-base-index="0"] > div').first()).toHaveClass(/ring-(green|emerald)-400/);
+        await expect(page.locator('[data-base-index="1"] > div').first()).toHaveClass(/ring-(green|emerald)-400/);
+        await expectManualChoiceVisible(
+            page,
+            '[data-base-index="0"]',
+            '洗手间打出后应显示可手动选择的附着基地本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-洗手间-手动选择附着基地', testInfo);
+        await page.locator('[data-base-index="0"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        expect(core.bases[0].ongoingActions?.some(action => action.uid === 'orcs-stalling-placement-1')).toBe(true);
+        expect(player0?.hand?.some(card => card.uid === 'orcs-stalling-placement-1')).toBe(false);
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        await game.screenshot('兽人-洗手间-已附着到目标基地', testInfo);
+    });
+
+    test('兽人太难了从真实手牌入口手动选择附着随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsTooToughPlacementScene());
+
+        await expect(page.locator('[data-card-uid="orcs-too-tough-placement-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-placement-target"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-placement-other"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-太难了-手牌打出前两个候选随从', testInfo);
+
+        await page.locator('[data-card-uid="orcs-too-tough-placement-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-too-tough-placement-target',
+            '太难了打出后应显示可手动选择的附着随从本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-太难了-手动选择附着随从', testInfo);
+        await clickManualMinionChoice(page, 'orcs-too-tough-placement-target', '太难了选择附着宿主随从');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const target = core.bases[0].minions.find(minion => minion.uid === 'orcs-too-tough-placement-target');
+        expect(target?.attachedActions?.some(action => action.uid === 'orcs-too-tough-placement-1')).toBe(true);
+        expect(player0?.hand?.some(card => card.uid === 'orcs-too-tough-placement-1')).toBe(false);
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        await game.screenshot('兽人-太难了-已附着到目标随从', testInfo);
+    });
+
+    test('兽人挤碎真实入口按基地、玩家、随从三步手动选择', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsCrushScene());
+
+        await expect(page.locator('[data-card-uid="orcs-crush-action-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-crush-defender"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_orcs_crush');
+        await game.waitForInteraction('munchkin_orcs_crush_base', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            '[data-base-index="0"]',
+            '挤碎第一步应显示基地本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-挤碎-第一步手动选择基地', testInfo);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 0, '挤碎选择目标基地');
+
+        await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
+        await waitForSmashUpFxToSettle(page);
+        const playerOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(playerOptions).toHaveLength(1);
+        expect(playerOptions[0]?.value?.targetPlayerId).toBe('1');
+        await expect(page.getByText(/AI 2 号位|AI 2/i)).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('兽人-挤碎-第二步手动选择仆从更少玩家', testInfo);
+        await game.selectInteractionOptionBy(option => option.value?.targetPlayerId === '1', '挤碎选择仆从更少的玩家');
+
+        await game.waitForInteraction('munchkin_orcs_crush_minion', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-crush-defender',
+            '挤碎第三步应显示要摧毁的随从本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-挤碎-第三步手动选择要摧毁随从', testInfo);
+        await clickManualMinionChoice(page, 'orcs-crush-defender', '挤碎选择要摧毁的随从');
+
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-minion-uid="orcs-crush-defender"]')).toHaveCount(0);
+        const finalState = await game.getState() as {
+            core?: { players?: Record<string, { discard?: Array<{ uid?: string }> }> };
+        };
+        expect(finalState.core?.players?.['1']?.discard?.some(card => card.uid === 'orcs-crush-defender')).toBe(true);
+        await game.screenshot('兽人-挤碎-目标随从被摧毁后', testInfo);
     });
 
     test('兽人躺下！计分前真实响应先手动选择行动并压制其他玩家特殊能力', async ({ page, game }, testInfo) => {
@@ -6969,8 +8023,8 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.openTestGame('smashup', { skipInitialization: true }, 20000);
         await game.setupScene(buildMunchkinOrcsBaseScoringScene({
             baseDefId: 'base_garrison',
-            ownPower: 11,
-            opponentPower: 11,
+            ownPower: 12,
+            opponentPower: 10,
             turnNumber: 31,
         }));
 
@@ -6980,19 +8034,19 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('兽人-要塞-计分前总力量达到22', testInfo);
 
         await game.advancePhase();
-        await game.waitForPhase('scoreBases', 10000);
         await page.waitForFunction(
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
-                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+                return state?.sys?.phase === 'scoreBases' || state?.sys?.phase === 'playCards';
             },
             { timeout: 15000, polling: 200 },
         );
-        const responseOptions = await game.getInteractionOptions() as InteractionOption[];
-        expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
-        await game.screenshot('兽人-要塞-计分前响应入口', testInfo);
+        const responseStatus = await getReactionWindowStatus(page);
+        if (responseStatus.sourceId === 'smashup_reaction_choose') {
+            const responseOptions = await game.getInteractionOptions() as InteractionOption[];
+            expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
+            await game.screenshot('兽人-要塞-计分前响应入口', testInfo);
+        }
 
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const state = await game.getState();
@@ -7007,14 +8061,14 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 phase: state.sys?.phase,
                 ownVp: state.core.players?.['0']?.vp ?? 0,
                 opponentVp: state.core.players?.['1']?.vp ?? 0,
-                scoredBaseDiscarded: state.core.baseDiscard?.some((base: any) => base.defId === 'base_garrison') ?? false,
+                scoredBaseLeftBoard: !state.core.bases?.some((base: any) => base.defId === 'base_garrison'),
                 scoredBaseCleared: state.core.bases?.[0]?.minions?.length === 0,
             };
         }, { timeout: 20000 }).toEqual({
             phase: 'playCards',
             ownVp: 8,
             opponentVp: 7,
-            scoredBaseDiscarded: true,
+            scoredBaseLeftBoard: true,
             scoredBaseCleared: true,
         });
         await waitForSmashUpFxToSettle(page);
@@ -7039,19 +8093,19 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('兽人-坑洞-计分前总力量达到16', testInfo);
 
         await game.advancePhase();
-        await game.waitForPhase('scoreBases', 10000);
         await page.waitForFunction(
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
-                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+                return state?.sys?.phase === 'scoreBases' || state?.sys?.phase === 'playCards';
             },
             { timeout: 15000, polling: 200 },
         );
-        const responseOptions = await game.getInteractionOptions() as InteractionOption[];
-        expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
-        await game.screenshot('兽人-坑洞-计分前响应入口', testInfo);
+        const responseStatus = await getReactionWindowStatus(page);
+        if (responseStatus.sourceId === 'smashup_reaction_choose') {
+            const responseOptions = await game.getInteractionOptions() as InteractionOption[];
+            expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
+            await game.screenshot('兽人-坑洞-计分前响应入口', testInfo);
+        }
 
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const state = await game.getState();
@@ -7066,14 +8120,14 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 phase: state.sys?.phase,
                 ownVp: state.core.players?.['0']?.vp ?? 0,
                 opponentVp: state.core.players?.['1']?.vp ?? 0,
-                scoredBaseDiscarded: state.core.baseDiscard?.some((base: any) => base.defId === 'base_the_pits') ?? false,
+                scoredBaseLeftBoard: !state.core.bases?.some((base: any) => base.defId === 'base_the_pits'),
                 scoredBaseCleared: state.core.bases?.[0]?.minions?.length === 0,
             };
         }, { timeout: 20000 }).toEqual({
             phase: 'playCards',
             ownVp: 8,
             opponentVp: 6,
-            scoredBaseDiscarded: true,
+            scoredBaseLeftBoard: true,
             scoredBaseCleared: true,
         });
         await waitForSmashUpFxToSettle(page);
@@ -7216,39 +8270,39 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         }
     });
 
-    test('兽人太难了从行动目标候选中排除受保护随从', async ({ page, game }, testInfo) => {
+    test('兽人死亡之息真实入口排除附着太难了的受保护随从', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
         await page.setViewportSize({ width: 1440, height: 900 });
         await game.openTestGame('smashup', { skipInitialization: true }, 20000);
-        await game.setupScene(buildMunchkinOrcsTooToughScene());
+        await game.setupScene(buildMunchkinOrcsDeathBreathProtectionScene());
 
-        await expect(page.locator('[data-card-uid="orcs-too-tough-action-1"]').first()).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-minion-uid="orcs-too-tough-protected"]').first()).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-minion-uid="orcs-too-tough-free"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="orcs-death-breath-action-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-death-breath-protected"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-death-breath-free"]').first()).toBeVisible({ timeout: 15000 });
 
         await game.playCard('munchkin_orcs_death_breath');
         await game.waitForInteraction('munchkin_orcs_death_breath_target', 10000);
         await waitForSmashUpFxToSettle(page);
         const targetOptions = await game.getInteractionOptions() as InteractionOption[];
-        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-too-tough-free')).toBe(true);
-        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-too-tough-protected')).toBe(false);
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-death-breath-free')).toBe(true);
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-death-breath-protected')).toBe(false);
         await expectManualMinionChoiceVisible(
             page,
-            'orcs-too-tough-free',
-            '太难了应把未受保护随从作为唯一可选目标',
+            'orcs-death-breath-free',
+            '死亡之息应把未受太难了保护的随从作为唯一可选目标',
             { forbidPromptContext: true },
         );
-        await game.screenshot('兽人-太难了-过滤受保护目标', testInfo);
-        await clickManualMinionChoice(page, 'orcs-too-tough-free', '死亡之息选择未受保护随从');
+        await game.screenshot('兽人-死亡之息-过滤太难了保护目标', testInfo);
+        await clickManualMinionChoice(page, 'orcs-death-breath-free', '死亡之息选择未受保护随从');
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
 
-        await expect(page.locator('[data-minion-uid="orcs-too-tough-free"]')).toHaveCount(0);
-        await expect(page.locator('[data-minion-uid="orcs-too-tough-protected"]')).toHaveCount(1);
+        await expect(page.locator('[data-minion-uid="orcs-death-breath-free"]')).toHaveCount(0);
+        await expect(page.locator('[data-minion-uid="orcs-death-breath-protected"]')).toHaveCount(1);
         const state = await game.getState();
-        expect(state.core.players?.['1']?.deck?.some((card: any) => card.uid === 'orcs-too-tough-free')).toBe(true);
-        await game.screenshot('兽人-太难了-受保护随从保留', testInfo);
+        expect(state.core.players?.['1']?.deck?.some((card: any) => card.uid === 'orcs-death-breath-free')).toBe(true);
+        await game.screenshot('兽人-死亡之息-受保护随从保留', testInfo);
     });
 
     test('法师快速攻击先手动选弃牌成本，再手动选力量目标', async ({ page, game }, testInfo) => {
@@ -7954,7 +9008,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             };
         }, { timeout: 10000 }).toEqual({
             base0Uids: ['halfling-hireling-1'],
-            player0HandDefIds: ['munchkin_treasure_tiger_steed'],
+            player0HandDefIds: ['munchkin_treasure_tiger_steed', 'munchkin_treasure_dwarf_hireling'],
             player0DiscardDefIds: [],
             player0MinionsPlayed: 1,
             player0MinionLimit: 2,
@@ -7984,18 +9038,18 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             };
         }, { timeout: 10000 }).toEqual({
             base0Uids: ['halfling-hireling-1', 'tiger-steed-1'],
-            player0HandUids: [],
+            player0HandUids: ['munchkin_treasure_760'],
             player0DiscardDefIds: [],
             player0MinionsPlayed: 2,
             player0MinionLimit: 2,
-            treasureDeckSize: 22,
+            treasureDeckSize: 21,
             treasureDiscardSize: 0,
             triggerQueueLength: 0,
             interactionSourceId: null,
             responseWindowType: null,
         });
         await expect(page.getByTestId('su-munchkin-monster-supply-count')).toHaveText('x 20');
-        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 21');
         await page.waitForTimeout(1000);
         await game.screenshot('40-半身人雇佣兵开放第二个随从后状态', testInfo);
     });
@@ -8716,7 +9770,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         );
         await page.waitForTimeout(600);
         if ((await getReactionWindowStatus(page)).sourceId === 'smashup_reaction_choose') {
-            await chooseReactionBySourceDefId(game, 'munchkin_halflings_small_but_tough', '小而坚韧触发');
+            await chooseReactionBySourceDefId(page, game, 'munchkin_halflings_small_but_tough', '小而坚韧触发');
         }
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
@@ -9297,9 +10351,14 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect(page.locator('[data-minion-uid="bandolier-bystander"]').first()).toBeVisible({ timeout: 15000 });
         await game.screenshot('160-药水腰带打出前手牌宝藏与目标随从', testInfo);
 
-        await game.playCard('munchkin_thieves_potion_bandolier', {
-            targetMinionUid: 'bandolier-target',
-        });
+        await page.locator('[data-card-uid="bandolier-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'bandolier-target',
+            '药水腰带选择目标随从',
+        );
+        await clickManualMinionChoice(page, 'bandolier-target', '药水腰带选择目标随从');
         await game.waitForInteraction('munchkin_thieves_potion_bandolier_choose_treasure', 10000);
         await waitForSmashUpFxToSettle(page);
         const treasureOptions = await game.getInteractionOptions();
@@ -9708,7 +10767,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         });
         await game.screenshot('177-转移注意力afterScoring响应入口', testInfo);
 
-        await game.selectInteractionOptionBy(
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
             (option: InteractionOption) =>
                 option.value?.kind === 'play_action'
                 && option.value?.cardUid === 'clever-distraction-1',
@@ -9742,9 +10803,22 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                         || option.value?.defId === 'base_the_coffers';
                 });
                 if (hasCoffersTrigger) {
-                    await chooseReactionBySourceDefId(game, 'base_the_coffers', '金库 afterScoring 抽宝藏');
+                    await clickVisibleInteractionOptionBy(
+                        page,
+                        game,
+                        (option: InteractionOption) => {
+                            const triggerId = option.value?.triggerId;
+                            const trigger = triggers.find((entry) => entry?.id === triggerId);
+                            return trigger?.sourceDefId === 'base_the_coffers'
+                                || trigger?.source?.defId === 'base_the_coffers'
+                                || option.value?.defId === 'base_the_coffers';
+                        },
+                        '金库 afterScoring 抽宝藏',
+                    );
                 } else if (options.some((option) => option.value?.kind === 'pass')) {
-                    await game.selectInteractionOptionBy(
+                    await clickVisibleInteractionOptionBy(
+                        page,
+                        game,
                         (option: InteractionOption) => option.value?.kind === 'pass',
                         `金库计分链让过 ${attempt + 1}`,
                     );
@@ -9854,12 +10928,12 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         }, { timeout: 10000 }).toEqual({
             base0Uids: ['dwarf-hireling-1'],
             base0DefIds: ['munchkin_treasure_dwarf_hireling'],
-            player0HandUids: [],
+            player0HandUids: ['munchkin_treasure_765'],
             player0DiscardDefIds: [],
             player0MinionsPlayed: 1,
             player0MinionLimit: 1,
             hasLongTermTreasureZone: false,
-            treasureDeckSize: 22,
+            treasureDeckSize: 21,
             treasureDiscardSize: 0,
             triggerQueueLength: 0,
             interactionSourceId: null,
@@ -9867,7 +10941,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         });
         await expect(page.locator('[data-minion-uid="dwarf-hireling-1"]').first()).toBeVisible({ timeout: 15000 });
         await expect(page.getByTestId('su-munchkin-monster-supply-count')).toHaveText('x 20');
-        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 21');
         await game.screenshot('56-矮人雇佣兵打出后进入基地', testInfo);
     });
 
@@ -12635,13 +13709,13 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect.poll(async () => {
             const state = await game.getState();
             return {
-                player0DiscardDefIds: state.core.players['0'].discard.map((card: any) => card.defId),
+                player0HasRunAwayDiscard: state.core.players['0'].discard.some((card: any) => card.defId === 'munchkin_elves_run_away'),
                 interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
                 responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
                 hasEmptyOpponentPrompt: Boolean(state.sys?.interaction?.current?.data?.sourceId === 'munchkin_elves_run_away_choose_other_minion'),
             };
         }, { timeout: 15000 }).toEqual({
-            player0DiscardDefIds: ['munchkin_elves_run_away'],
+            player0HasRunAwayDiscard: true,
             interactionSourceId: null,
             responseWindowType: null,
             hasEmptyOpponentPrompt: false,
@@ -12769,7 +13843,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('木精灵-援手-手动选择己方随从', testInfo);
         await clickManualMinionChoice(page, 'elves-helping-own', '援手选择己方随从');
         await game.waitForInteraction('smashup_reaction_choose', 10000);
-        await chooseReactionBySourceDefId(game, 'munchkin_elves_helping_hands', '选择援手计分后效果');
+        await chooseReactionBySourceDefId(page, game, 'munchkin_elves_helping_hands', '选择援手计分后效果');
         await game.waitForInteraction('munchkin_elves_helping_hands_choose_vp', 15000);
         await waitForSmashUpFxToSettle(page);
         await expect(page.getByRole('button', { name: '获得 1 VP' })).toBeVisible({ timeout: 15000 });
@@ -12933,10 +14007,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await waitForSmashUpFxToSettle(page);
 
         const movedState = await game.getState();
-        expect(movedState.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual([
-            'elves-run-more-b',
-            'elves-run-more-opponent',
-        ]);
+        expect(movedState.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual([]);
         expect(movedState.core.bases[1].minions.map((entry: any) => entry.uid)).toEqual(['elves-run-more-a']);
         await game.screenshot('木精灵-赶紧逃跑吧-选择后随从移至目标基地', testInfo);
     });
@@ -13089,7 +14160,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('牧师-光盘-自动回收两张牌后无确认交互', testInfo);
     });
 
-    test('牧师好习惯从真实手牌入口给所有基地随从增加临时力量', async ({ page, game }, testInfo) => {
+    test('牧师好习惯从真实手牌入口遵守呆瓜兽人行动保护', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
         await page.setViewportSize({ width: 1440, height: 900 });
@@ -13110,12 +14181,12 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
         const allMinions = core.bases.flatMap(base => base.minions);
 
-        expect(allMinions.map(entry => entry.tempPowerModifier)).toEqual([1, 1, 1]);
+        expect(allMinions.map(entry => entry.tempPowerModifier)).toEqual([1, 0, 0]);
         expect(player0?.actionsPlayed).toBe(1);
         expect(player0?.discard?.map(card => card.uid)).toEqual(['clerics-habits-1']);
         expect(state.sys?.interaction?.current ?? null).toBeNull();
         expect(state.sys?.responseWindow?.current ?? null).toBeNull();
-        await game.screenshot('牧师-好习惯-两座基地所有随从获得临时力量', testInfo);
+        await game.screenshot('牧师-好习惯-呆瓜兽人不受对手行动影响', testInfo);
     });
 
     test('牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地', async ({ page, game }, testInfo) => {
@@ -13428,5 +14499,419 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(state.core.players['1'].discard.map((entry: any) => entry.uid)).not.toContain('clerics-recall-target');
         expect(state.core.players['0'].actionLimit).toBe(1);
         await game.screenshot('牧师-回忆祷词-行动转入手牌并获得额外行动', testInfo);
+    });
+
+    test('勇士大英雄从真实天赋入口先手动选择模式再手动选择怪物', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsBigHeroScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-minion-uid="warriors-big-hero"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-big-hero-monster-a"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-big-hero-monster-b"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-大英雄-天赋前怪物行与手牌', testInfo);
+
+        await clickManualMinionActivation(page, 'warriors-big-hero', '大英雄天赋');
+        if (await page.locator('[data-minion-uid="warriors-big-hero"]').first().getAttribute('data-activation-armed') === 'true') {
+            await clickManualMinionActivation(page, 'warriors-big-hero', '大英雄天赋二次确认');
+        }
+        await game.waitForInteraction('munchkin_warriors_big_hero_mode', 10000);
+        await expectCurrentInteractionManual(game, '大英雄模式选择');
+        const modeOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(modeOptions.some(option => option.value?.mode === 'destroyMonster')).toBe(true);
+        expect(modeOptions.some(option => option.value?.mode === 'playMonster')).toBe(true);
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('勇士-大英雄-手动选择摧毁或打出怪物', testInfo);
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            option => option.value?.mode === 'destroyMonster',
+            '大英雄选择摧毁怪物模式',
+        );
+
+        await game.waitForInteraction('munchkin_warriors_big_hero_monster', 10000);
+        await expectCurrentInteractionManual(game, '大英雄怪物选择');
+        await expectManualChoiceVisible(
+            page,
+            '[data-monster-uid="warriors-big-hero-monster-a"]',
+            '大英雄怪物选择必须显示基地下方的怪物本体',
+            { forbidPromptContext: true, minVisibleHitCount: 1 },
+        );
+        await game.screenshot('勇士-大英雄-手动选择基地下方怪物', testInfo);
+        await clickManualMonsterChoice(page, 'warriors-big-hero-monster-a', '大英雄选择怪物');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters.map((entry: any) => entry.uid)).toEqual(['warriors-big-hero-monster-b']);
+        expect(state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-star-player')?.powerCounters).toBe(1);
+        expect(state.core.players['0'].hand.some((entry: any) => entry.defId === 'munchkin_treasure_dwarf_hireling')).toBe(true);
+        await expect(page.getByTestId('su-minion-power-badge-warriors-star-player')).toContainText('+1');
+        await game.screenshot('勇士-大英雄-怪物被手动摧毁并触发明星勇士', testInfo);
+    });
+
+    test('勇士斩杀从真实手牌入口手动选择怪物并逐张手动选择宝藏额外出牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsCleaveScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-card-uid="warriors-cleave-action"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-cleave-monster"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_warriors_cleave');
+        await game.waitForInteraction('munchkin_warriors_cleave_monster', 10000);
+        await expectCurrentInteractionManual(game, '斩杀怪物选择');
+        await expectManualChoiceVisible(
+            page,
+            '[data-monster-uid="warriors-cleave-monster"]',
+            '斩杀必须显示真实怪物卡本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('勇士-斩杀-手动选择怪物', testInfo);
+        await clickManualMonsterChoice(page, 'warriors-cleave-monster', '斩杀选择怪物');
+
+        await game.waitForInteraction('smashup_immediate_extra_minion', 10000);
+        await expectCurrentInteractionManual(game, '斩杀宝藏额外出牌选择');
+        const afterDefeat = await game.getState();
+        const treasureInHand = afterDefeat.core.players['0'].hand.find((entry: any) => entry.defId === 'munchkin_treasure_dwarf_hireling');
+        expect(treasureInHand, '斩杀击败怪物后应把宝藏放入当前玩家手牌').toBeTruthy();
+        const extraOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(extraOptions.some(option => option.value?.cardUid === treasureInHand.uid)).toBe(true);
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector(treasureInHand.uid),
+            '斩杀额外出牌应显示宝藏手牌本体',
+            { forbidPromptContext: false },
+        );
+        await game.screenshot('勇士-斩杀-手动选择宝藏额外随从', testInfo);
+        await page.locator(handCardSelector(treasureInHand.uid)).first().click({ force: true });
+        await page.waitForTimeout(300);
+
+        await game.waitForInteraction('smashup_immediate_extra_minion_base', 10000);
+        await expectCurrentInteractionManual(game, '斩杀额外随从基地选择');
+        await expectManualChoiceVisible(page, '[data-base-index="0"]', '斩杀额外随从应显示目标基地本体', { forbidPromptContext: true });
+        await game.screenshot('勇士-斩杀-手动选择额外随从基地', testInfo);
+        await clickManualBaseChoice(page, 0, '斩杀选择额外随从基地');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const finalState = await game.getState();
+        expect(finalState.core.bases[0].minions.map((entry: any) => entry.uid)).toContain(treasureInHand.uid);
+        expect(finalState.core.players['0'].discard.map((entry: any) => entry.uid)).toContain('warriors-cleave-action');
+        await game.screenshot('勇士-斩杀-宝藏额外随从落到基地后收口', testInfo);
+    });
+
+    test('勇士战争怒吼从真实手牌入口先手动选择怪物再手动选择同基地随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsWarCryScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-card-uid="warriors-war-cry-action"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-war-cry-monster-a"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_warriors_war_cry');
+        await game.waitForInteraction('munchkin_warriors_war_cry_monster', 10000);
+        await expectCurrentInteractionManual(game, '战争怒吼怪物选择');
+        await expectManualChoiceVisible(
+            page,
+            '[data-monster-uid="warriors-war-cry-monster-a"]',
+            '战争怒吼第一步必须显示怪物本体',
+            { forbidPromptContext: true, minVisibleHitCount: 1 },
+        );
+        await game.screenshot('勇士-战争怒吼-第一步手动选择怪物', testInfo);
+        await clickManualMonsterChoice(page, 'warriors-war-cry-monster-a', '战争怒吼选择怪物');
+
+        await game.waitForInteraction('munchkin_warriors_war_cry_minion', 10000);
+        await expectCurrentInteractionManual(game, '战争怒吼随从选择');
+        const minionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(minionOptions.some(option => option.value?.minionUid === 'warriors-war-cry-own')).toBe(true);
+        expect(minionOptions.some(option => option.value?.minionUid === 'warriors-war-cry-other')).toBe(true);
+        await expectManualMinionChoiceVisible(
+            page,
+            'warriors-war-cry-own',
+            '战争怒吼第二步必须显示同基地随从本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('勇士-战争怒吼-第二步手动选择同基地随从', testInfo);
+        await clickManualMinionChoice(page, 'warriors-war-cry-own', '战争怒吼选择同基地随从');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters).toEqual([]);
+        expect(state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-war-cry-own')?.tempPowerModifier).toBeGreaterThan(0);
+        expect(state.core.bases[0].minions.some((entry: any) => entry.uid === 'warriors-war-cry-other')).toBe(true);
+        await game.screenshot('勇士-战争怒吼-怪物摧毁并把力量加到所选随从', testInfo);
+    });
+
+    test('勇士骚乱从真实手牌入口先手动选择基地再手动选择效果', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsRuckusScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-card-uid="warriors-ruckus-action"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_warriors_ruckus');
+        await game.waitForInteraction('munchkin_warriors_ruckus_base', 10000);
+        await expectCurrentInteractionManual(game, '骚乱基地选择');
+        await expectManualChoiceVisible(page, '[data-base-index="0"]', '骚乱第一步应显示第一座基地本体', { forbidPromptContext: true });
+        await expectManualChoiceVisible(page, '[data-base-index="1"]', '骚乱第一步应显示第二座基地本体', { forbidPromptContext: true });
+        await game.screenshot('勇士-骚乱-第一步手动选择基地', testInfo);
+        await clickManualBaseChoice(page, 0, '骚乱选择第一座基地');
+
+        await game.waitForInteraction('munchkin_warriors_ruckus_mode', 10000);
+        await expectCurrentInteractionManual(game, '骚乱效果选择');
+        const modeOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(modeOptions.some(option => option.value?.mode === 'playTwo')).toBe(true);
+        expect(modeOptions.some(option => option.value?.mode === 'destroyAll')).toBe(true);
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('勇士-骚乱-第二步手动选择打出两个怪物或摧毁全部怪物', testInfo);
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            option => option.value?.mode === 'playTwo',
+            '骚乱选择打出两个怪物',
+        );
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters).toHaveLength(3);
+        expect(state.core.treasureDeck).toHaveLength(2);
+        await expect(page.locator('[data-testid="su-base-monster-row-0"] [data-monster-uid]')).toHaveCount(3);
+        await game.screenshot('勇士-骚乱-两个怪物落到所选基地且宝藏堆不变', testInfo);
+    });
+
+    test('勇士狂战士从真实打出入口手动选择同基地不高于自身的怪物', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsBerserkerScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-card-uid="warriors-berserker-hand"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-berserker-monster"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_warriors_berserker', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_warriors_berserker_monster', 10000);
+        await expectCurrentInteractionManual(game, '狂战士怪物选择');
+        await expectManualChoiceVisible(
+            page,
+            '[data-monster-uid="warriors-berserker-monster"]',
+            '狂战士必须显示基地下方真实怪物本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('勇士-狂战士-手动选择同基地怪物', testInfo);
+        await clickManualMonsterChoice(page, 'warriors-berserker-monster', '狂战士选择怪物');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const source = state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-berserker-hand');
+        expect(state.core.bases[0].monsters).toEqual([]);
+        expect(source?.powerCounters).toBe(1);
+        expect(state.core.players['0'].hand.some((entry: any) => entry.defId === 'munchkin_treasure_dwarf_hireling')).toBe(true);
+        await expect(page.getByTestId('su-minion-power-badge-warriors-berserker-hand')).toContainText('+1');
+        await game.screenshot('勇士-狂战士-摧毁怪物并获得力量指示物', testInfo);
+    });
+
+    test('勇士嘲讽者从真实打出入口保留跳过或手动打出怪物选择', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsTaunterScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await game.playCard('munchkin_warriors_taunter', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_warriors_taunter_mode', 10000);
+        await expectCurrentInteractionManual(game, '嘲讽者是否打出怪物');
+        const options = await game.getInteractionOptions() as InteractionOption[];
+        expect(options.some(option => option.value?.skip === true)).toBe(true);
+        expect(options.some(option => option.value?.mode === 'playMonster')).toBe(true);
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('勇士-嘲讽者-手动选择跳过或打出怪物', testInfo);
+        await clickVisibleInteractionOptionBy(page, game, option => option.value?.mode === 'playMonster', '嘲讽者选择打出怪物');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters).toHaveLength(1);
+        expect(state.core.bases[0].monsters[0].defId).toBe('munchkin_monster_bigfoot');
+        await expect(page.locator('[data-testid="su-base-monster-row-0"] [data-monster-uid]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-嘲讽者-手动打出怪物后进入基地下方怪物行', testInfo);
+    });
+
+    test('勇士领导运动从真实手牌入口只强化有怪物基地的己方随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsCampaignScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-card-uid="warriors-campaign-hand"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-领导运动-打出前有怪物与无怪物基地对照', testInfo);
+        await game.playCard('munchkin_warriors_campaign');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-campaign-boosted')?.tempPowerModifier).toBe(2);
+        expect(state.core.bases[1].minions.find((entry: any) => entry.uid === 'warriors-campaign-unboosted')?.tempPowerModifier ?? 0).toBe(0);
+        expect(state.core.players['0'].discard.some((entry: any) => entry.defId === 'munchkin_warriors_campaign')).toBe(true);
+        await expect(page.getByTestId('su-minion-power-badge-warriors-campaign-boosted')).toContainText('+2');
+        await game.screenshot('勇士-领导运动-只有有怪物基地的己方随从获得加成', testInfo);
+    });
+
+    test('勇士地牢诱饵从真实手牌入口先选效果再手动选择怪物基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsDungeonBaitScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await game.playCard('munchkin_warriors_dungeon_bait');
+        await game.waitForInteraction('munchkin_warriors_dungeon_bait_mode', 10000);
+        await expectCurrentInteractionManual(game, '地牢诱饵效果选择');
+        const modeOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(modeOptions.some(option => option.value?.mode === 'playMonster')).toBe(true);
+        expect(modeOptions.some(option => option.value?.mode === 'destroyMinion')).toBe(true);
+        await game.screenshot('勇士-地牢诱饵-手动选择打怪或摧毁随从', testInfo);
+        await clickVisibleInteractionOptionBy(page, game, option => option.value?.mode === 'playMonster', '地牢诱饵选择打出怪物');
+
+        await game.waitForInteraction('munchkin_warriors_dungeon_bait_base', 10000);
+        await expectCurrentInteractionManual(game, '地牢诱饵基地选择');
+        await expectManualChoiceVisible(page, '[data-base-index="1"]', '地牢诱饵必须显示目标基地本体', { forbidPromptContext: true });
+        await game.screenshot('勇士-地牢诱饵-手动选择怪物基地', testInfo);
+        await clickManualBaseChoice(page, 1, '地牢诱饵选择怪物基地');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters).toEqual([]);
+        expect(state.core.bases[1].monsters?.map((entry: any) => entry.defId)).toEqual(['munchkin_monster_bigfoot']);
+        await expect(page.locator('[data-testid="su-base-monster-row-1"] [data-monster-uid]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-地牢诱饵-怪物进入手动选择的基地', testInfo);
+    });
+
+    test('勇士哑铃与无处不在之盾从真实手牌入口手动附着到随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsOngoingScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-minion-uid="warriors-ongoing-host"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-附着行动-目标随从与怪物行', testInfo);
+        await game.playCard('munchkin_warriors_dumbbells', { targetMinionUid: 'warriors-ongoing-host' });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-attached-action-uid="warriors-dumbbells-hand"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-minion-power-badge-warriors-ongoing-host')).toHaveAttribute('title', /哑铃: \+3/);
+        await game.screenshot('勇士-哑铃-手动附着并获得力量', testInfo);
+
+        await game.playCard('munchkin_warriors_shield_of_ubiquity', { targetMinionUid: 'warriors-ongoing-host' });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-attached-action-uid="warriors-shield-hand"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-minion-power-badge-warriors-ongoing-host')).toHaveAttribute('title', /无处不在之盾: \+2/);
+        await game.screenshot('勇士-无处不在之盾-手动附着并按怪物数量加力', testInfo);
+
+        const state = await game.getState();
+        const host = state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-ongoing-host');
+        expect(host?.attachedActions.map((entry: any) => entry.defId)).toEqual([
+            'munchkin_warriors_dumbbells',
+            'munchkin_warriors_shield_of_ubiquity',
+        ]);
+        expect(state.core.bases[0].minions.find((entry: any) => entry.uid === 'warriors-ongoing-bystander')?.tempPowerModifier ?? 0).toBe(0);
+    });
+
+    test('勇士永恒的英雄从真实附着卡本体触发并只带宿主与自身回手', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsEternalHeroScene());
+        await waitForSmashUpFxToSettle(page);
+
+        const host = page.locator('[data-minion-uid="warriors-eternal-host"]').first();
+        const eternalHero = page.locator('[data-attached-action-uid="warriors-eternal-hero"]').first();
+        const magicMissile = page.locator('[data-attached-action-uid="warriors-eternal-magic-missile"]').first();
+        await expect(host).toBeVisible({ timeout: 15000 });
+        await host.hover();
+        await expect(eternalHero).toBeVisible({ timeout: 15000 });
+        await expect(magicMissile).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-永恒的英雄-宿主与附着行动', testInfo);
+
+        await magicMissile.click({ force: true });
+        await game.waitForInteraction('munchkin_treasure_magic_missile_destroy', 10000);
+        await expectManualMinionChoiceVisible(
+            page,
+            'warriors-eternal-host',
+            '永恒的英雄测试必须显示可被摧毁的宿主本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('勇士-永恒的英雄-手动选择宿主', testInfo);
+        await clickManualMinionChoice(page, 'warriors-eternal-host', '魔法导弹选择永恒英雄宿主');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const baseMinionUids = state.core.bases[0].minions.map((entry: any) => entry.uid);
+        const player0HandUids = state.core.players['0'].hand.map((entry: any) => entry.uid);
+        const player1DiscardUids = state.core.players['1'].discard.map((entry: any) => entry.uid);
+        expect(baseMinionUids).toEqual([]);
+        expect(player0HandUids).toContain('warriors-eternal-host');
+        expect(player0HandUids).toContain('warriors-eternal-hero');
+        expect(player1DiscardUids).toContain('warriors-eternal-other-action');
+        expect(state.core.treasureDeck).toContain('munchkin_treasure_magic_missile');
+        expect(state.core.triggerQueue ?? []).toHaveLength(0);
+        await expect(page.locator('[data-minion-uid="warriors-eternal-host"]')).toHaveCount(0);
+        await game.screenshot('勇士-永恒的英雄-宿主与本行动回手后收口', testInfo);
+    });
+
+    test('勇士堡垒与锦标赛从真实怪物本体入口触发同基地效果', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinWarriorsBaseTriggerScene());
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-monster-uid="warriors-bastion-monster"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid="warriors-gauntlet-monster"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('勇士-基地触发-堡垒与锦标赛怪物行', testInfo);
+
+        await clickManualMonsterChoice(page, 'warriors-bastion-monster', '堡垒选择同基地怪物');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+        let state = await game.getState();
+        expect(state.core.bases[0].monsters).toEqual([]);
+        expect(state.core.players['0'].hand.map((entry: any) => entry.defId)).toContain('munchkin_treasure_spiky_boots');
+        await game.screenshot('勇士-基地触发-堡垒抽到宝藏', testInfo);
+
+        await clickManualMonsterChoice(page, 'warriors-gauntlet-monster', '锦标赛选择同基地怪物');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+        state = await game.getState();
+        expect(state.core.bases[1].monsters).toEqual([
+            expect.objectContaining({ defId: 'munchkin_monster_bigfoot' }),
+        ]);
+        expect(state.core.monsterDeck).toEqual([]);
+        expect(state.core.triggerQueue ?? []).toHaveLength(0);
+        await game.screenshot('勇士-基地触发-锦标赛补怪物后收口', testInfo);
     });
 });

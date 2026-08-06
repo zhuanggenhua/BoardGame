@@ -423,7 +423,7 @@
       "hauntRiskPhasePreHaunt": "Before haunt",
       "hauntRiskPhaseHaunt": "Haunt",
       "hauntRevealPlayerTitle": "Public Reveal: Haunt begins",
-      "hauntRevealLead": "The haunt begins.",
+      "hauntRevealLead": "The scenario is now active.",
       "hauntRevealSource": "Scenario {{scenarioCard}} / trigger {{omen}} / haunt {{number}}",
       "hauntRevealDismiss": "Close"
     },
@@ -879,6 +879,7 @@
       "itemCard": "Item Card",
       "omenCard": "Omen Card",
       "noCard": "No Discovery Card",
+      "roomEffect": "Room effect",
       "eventResolved": "Immediate effect",
       "addedToInventory": "Added to inventory",
       "readyToUse": "Selected and ready to use",

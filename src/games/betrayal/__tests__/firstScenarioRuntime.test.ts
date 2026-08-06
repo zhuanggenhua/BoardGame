@@ -5445,6 +5445,37 @@ describe('Betrayal first scenario runtime', () => {
         expect(resolveBetrayalNormalMonsterAttackTargets(core, mummyMonsterId)?.targetPlayerIds).not.toContain(deadHeroId);
     });
 
+    it('英雄回合不显示也不能执行普通木乃伊动作，叛徒回合才开放怪物动作', () => {
+        const core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
+
+        expect(core.currentPlayer).toBe(heroId);
+        expect(resolveBetrayalMonsterActionPanel(core)).toMatchObject({
+            active: false,
+            reason: '当前是玩家回合，等待怪物控制者回合后才能处理怪物动作。',
+            slots: [],
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+                heroId,
+                { monsterId: mummyMonsterId },
+            ),
+        )).toMatchObject({
+            valid: false,
+            error: '只有当前叛徒能执行普通怪物回合动作。',
+        });
+
+        activateTestExplorer(core, traitorId);
+        const traitorPanel = resolveBetrayalMonsterActionPanel(core);
+        expect(traitorPanel.slots.find((slot) => slot.id === `turn-start:${mummyMonsterId}`)).toMatchObject({
+            enabled: true,
+        });
+    });
+
     it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代替伤害', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
