@@ -85,13 +85,13 @@
 - 定向测试：通过，3 个测试文件、68 个测试全部通过。
 - TypeScript：`npx tsc --noEmit --pretty false` 通过。
 - 改动 TS/TSX 文件 ESLint：通过，0 errors；相对主线未新增 warning（基线与当前均为 78）。
-- i18n 缺失 key：已补齐本 PR 新增的 29 个中英文 key；独立检查仍报告主线已有且未被本 PR 修改的 2 条 warning，因此增量 pre-push 门禁尚未绿灯。
+- i18n 缺失 key：已补齐本 PR 新增的 29 个中英文 key；主线已有且未被本 PR 修改的 2 条 warning 已登记到 `scripts/verify/i18n-warning-baseline.json`，不改变运行时行为。
 - 构建：`npm run build -- --minify false --configLoader bundle` 通过；产物清理按脚本完成。
 - 全量 ESLint：默认堆大小运行时 OOM；提高 Node 堆上限后在 4 分钟内超时，均未输出 lint error。该资源限制已如实保留，不能将其表述为全量 ESLint 通过。
 - 合并审计：普通审计 13 个混合结果、1 个等价单边结果；严格审计按预期因 `reducer.ts` 等于父 2 返回失败，单边原因已在上节单独记录。
 
 ## 7. 结果
 
-- 当前状态：冲突已按三方差异解决，定向验证、TypeScript、构建和改动文件 ESLint 已通过；待处理主线已有的 2 条 i18n warning 后再推送收口。
+- 当前状态：冲突已按三方差异解决，定向验证、TypeScript、构建、改动文件 ESLint 和 i18n 检查已通过；待 pre-push 门禁完成后推送收口。
 - 合并提交：当前隔离 worktree 的合并提交（本次门禁修复一并 amend）。
 - 推送目标：目标仓库 `main`（PR head fork 无写权限时按已确认 fallback 收口）。

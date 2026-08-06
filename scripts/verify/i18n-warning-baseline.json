@@ -1,4 +1,19 @@
 {
   "version": 1,
-  "warnings": []
+  "warnings": [
+    {
+      "type": "raw-jsx-visible-text",
+      "file": "src/games/betrayal/Board.tsx",
+      "line": 2595,
+      "source": "JSX.expression",
+      "key": "下一页"
+    },
+    {
+      "type": "raw-prompt-option-label",
+      "file": "src/games/smashup/abilities/munchkin_warriors.ts",
+      "line": 318,
+      "source": "PromptOption.label",
+      "key": "打出一个怪物"
+    }
+  ]
 }
