@@ -108,6 +108,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** 主动基地能力：玩家选择的目标基地。 */
+    targetBaseIndex?: number;
+    /** 主动基地能力：玩家选择的目标随从。 */
+    targetMinionUid?: string;
     /** onActionPlayed 时：刚打出的行动卡 uid / defId / owner */
     triggerCardUid?: string;
     triggerCardDefId?: string;
@@ -1187,7 +1191,11 @@ export function registerBaseAbilities(): void {
                     defId: m.defId,
                     ownerId: m.owner,
                     sourcePlayerId: m.controller,
-                    reason: '仪式场所：随从洗回牌库' },
+                    reason: '仪式场所：随从洗回牌库',
+                    sourceDefId: 'base_ritual_site',
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: ctx.baseIndex,
+                },
                 timestamp: ctx.now } as CardToDeckBottomEvent);
         }
         return { events };

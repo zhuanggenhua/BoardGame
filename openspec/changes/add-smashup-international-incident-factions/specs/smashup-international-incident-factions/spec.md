@@ -59,6 +59,28 @@
 - **AND** 玩家 MUST 同时能跳过或提交空选
 - **AND** 跳过路径 MUST NOT 改变不应改变的权威状态
 
+### Requirement: International Incident immediate extra plays SHALL expose target selection as an explicit step
+
+系统 SHALL 将国际事件派系产生的即时额外随从或即时额外战术按规则顺序拆成“选择额外卡牌”与“选择目标”两个交互步骤；即使当前只有一个合法基地或随从目标，也不得在选择卡牌的同一次响应中静默替玩家提交目标。
+
+#### Scenario: A single legal base for an extra minion still requires target confirmation
+
+- **WHEN** 火枪手“投入战斗”产生即时额外随从，且当前只有一个合法基地
+- **THEN** 玩家选择额外随从后 MUST 先进入基地目标选择
+- **AND** 只有玩家提交该基地目标后，系统 MUST 产生随从打出、额外行动限制和待处理效果消费结果
+
+#### Scenario: A single legal minion for an extra action still requires target confirmation
+
+- **WHEN** 火枪手的即时额外战术只能作用于一个合法随从
+- **THEN** 玩家选择额外战术后 MUST 先进入随从目标选择
+- **AND** 只有玩家提交该随从目标后，系统 MUST 产生行动牌打出和目标效果结果
+
+#### Scenario: A restricted extra action cannot affect another minion
+
+- **WHEN** 阿拉米斯产生只允许作用于阿拉米斯本人的即时额外行动
+- **THEN** 目标交互 MUST 只提供阿拉米斯
+- **AND** 提交该目标后，行动牌 MUST 影响阿拉米斯而不得影响同基地的其他随从
+
 ### Requirement: International Incident faction implementation SHALL close one faction at a time
 
 系统 SHALL 逐派系完成静态数据、玩法、基地、测试、E2E 和 evidence 后再推进下一个派系。

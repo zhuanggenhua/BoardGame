@@ -80,6 +80,8 @@ import { registerNightmareBeforeChristmasAbilities } from './nightmare_before_ch
 import { registerWreckItRalphAbilities } from './wreck_it_ralph';
 import { registerHalfTheBattleAbilities } from './half_the_battle';
 import { registerMunchkinAbilities, registerMunchkinInteractionHandlers } from './munchkin';
+import { registerGoblinAbilities } from './goblins';
+import { registerRoundTableKnightAbilities } from './round_table_knights';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -235,6 +237,8 @@ export function initAllAbilities(): void {
     registerHalfTheBattleAbilities();
     registerMunchkinAbilities();
     registerMunchkinInteractionHandlers();
+    registerRoundTableKnightAbilities();
+    registerGoblinAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

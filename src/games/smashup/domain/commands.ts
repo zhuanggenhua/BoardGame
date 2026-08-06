@@ -179,7 +179,7 @@ function resolveTitanAbilityLabel(kind: TitanAbilityKind): string {
 
 function validateTitanAbility(
     state: MatchState<SmashUpCore>,
-    command: { playerId: string; payload: { titanUid?: string; baseIndex: number } },
+    command: { playerId: string; payload: { titanUid?: string; baseIndex: number; targetBaseIndex?: number; targetMinionUid?: string } },
     kind: TitanAbilityKind,
 ): ValidationResult {
     const core = state.core;
@@ -247,6 +247,8 @@ function validateTitanAbility(
             cardUid: titan.uid,
             defId: titan.defId,
             baseIndex,
+            targetBaseIndex: command.payload.targetBaseIndex,
+            targetMinionUid: command.payload.targetMinionUid,
             random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
             now: core.turnNumber ?? 0,
         });
@@ -259,6 +261,8 @@ function validateTitanAbility(
             cardUid: titan.uid,
             defId: titan.defId,
             baseIndex,
+            targetBaseIndex: command.payload.targetBaseIndex,
+            targetMinionUid: command.payload.targetMinionUid,
             random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
             now: core.turnNumber ?? 0,
         });
@@ -898,7 +902,7 @@ export function validate(
             if (command.playerId !== currentPlayerId) {
                 return { valid: false, error: 'player_mismatch' };
             }
-            const { baseIndex } = command.payload;
+            const { baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             if (!base) return { valid: false, error: '无效的基地索引' };
 
@@ -920,6 +924,8 @@ export function validate(
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
+                targetBaseIndex,
+                targetMinionUid,
                 now: core.turnNumber ?? 0,
             };
             const canUse = canUseActiveBaseAbility(base.defId, baseAbilityContext);
@@ -937,7 +943,7 @@ export function validate(
             if (command.playerId !== currentPlayerId) {
                 return { valid: false, error: 'player_mismatch' };
             }
-            const { minionUid, ongoingCardUid, titanUid, baseIndex } = command.payload;
+            const { minionUid, ongoingCardUid, titanUid, baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const targetCount = [minionUid, ongoingCardUid, titanUid].filter(Boolean).length;
             if (targetCount !== 1) {
                 return { valid: false, error: '蹇呴』涓旀墜鑳藉彧鑳芥寚瀹氫竴绉嶅ぉ璧嬬洰鏍?' };
@@ -997,6 +1003,8 @@ export function validate(
                     cardUid: ongoingCardUid,
                     defId: ongoing.defId,
                     baseIndex,
+                    targetBaseIndex,
+                    targetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
                 });
@@ -1048,6 +1056,8 @@ export function validate(
                 cardUid: minionUid,
                 defId: targetMinion.defId,
                 baseIndex,
+                targetBaseIndex,
+                targetMinionUid,
                 random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                 now: core.turnNumber ?? 0,
             });
@@ -1075,6 +1085,7 @@ export function validate(
                 discardCardUid: spDiscardCardUid,
                 handCardUid: spHandCardUid,
                 baseIndex: spBaseIndex,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const targetCount = [spMinionUid, spTitanUid, spDiscardCardUid, spHandCardUid].filter(Boolean).length;
@@ -1118,6 +1129,8 @@ export function validate(
                     cardUid: spHandCardUid,
                     defId: handCard.defId,
                     baseIndex: spBaseIndex,
+                    targetBaseIndex: spTargetBaseIndex,
+                    targetMinionUid: spTargetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
                 });
@@ -1163,6 +1176,7 @@ export function validate(
                     cardUid: spDiscardCardUid,
                     defId: discardCard.defId,
                     baseIndex: spBaseIndex,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
@@ -1175,7 +1189,7 @@ export function validate(
             if (spTitanUid) {
                 const titanValidation = validateTitanAbility(
                     state,
-                    { playerId: command.playerId, payload: { titanUid: spTitanUid, baseIndex: spBaseIndex } },
+                    { playerId: command.playerId, payload: { titanUid: spTitanUid, baseIndex: spBaseIndex, targetBaseIndex: spTargetBaseIndex, targetMinionUid: spTargetMinionUid } },
                     'special',
                 );
                 if (!titanValidation.valid) {
@@ -1230,6 +1244,8 @@ export function validate(
                 cardUid: spMinionUid,
                 defId: spMinion.defId,
                 baseIndex: spBaseIndex,
+                targetBaseIndex: spTargetBaseIndex,
+                targetMinionUid: spTargetMinionUid,
                 random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                 now: core.turnNumber ?? 0,
             });
