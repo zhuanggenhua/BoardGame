@@ -46,7 +46,10 @@ function extractEngineGuidePreventDestroyIds(): string[] {
 }
 
 function readProjectEngineSystemsGuide(): string {
-  return readFileSync(join(SMASHUP_ROOT, '..', '..', '..', 'docs', 'ai-rules', 'engine-systems.md'), 'utf8');
+  return readFileSync(
+    join(SMASHUP_ROOT, '..', '..', '..', '.spec', 'knowledge', 'standards', 'engine-systems.md'),
+    'utf8',
+  );
 }
 
 describe('destroy pendingSave replacement contract', () => {
@@ -78,7 +81,7 @@ describe('destroy pendingSave replacement contract', () => {
     expect(engineSystemsGuide).toContain('PREVENT_DESTROY_SOURCE_IDS');
 
     for (const { sourceId } of INTERACTIVE_REPLACEMENT_SOURCES) {
-      expect(engineSystemsGuide, `docs/ai-rules/engine-systems.md 应点名 ${sourceId} 所属合同`).toContain(sourceId);
+      expect(engineSystemsGuide, `.spec/knowledge/standards/engine-systems.md 应点名 ${sourceId} 所属合同`).toContain(sourceId);
     }
   });
 });
