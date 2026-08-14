@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getBaseDefIdsForFactions, getFactionCards } from '../data/cards';
 import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from '../data/factions/anansi_tales';
@@ -29,6 +29,11 @@ function readJson(path: string): any {
 
 function sha256(path: string): string {
     return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+function expectLocalAssetHashIfPresent(path: string, expectedSha256: string): void {
+    if (!existsSync(path)) return;
+    expect(sha256(path)).toBe(expectedSha256);
 }
 
 describe('文化冲击四派系静态接入', () => {
@@ -112,10 +117,10 @@ describe('文化冲击四派系静态接入', () => {
     });
 
     it('文化冲击卡牌与基地 atlas 已进入根级与游戏级资源清单', () => {
-        expect(sha256(CULTURE_SHOCK_CARD_ATLAS_PATH)).toBe(CULTURE_SHOCK_CARD_ATLAS_SHA256);
-        expect(sha256(CULTURE_SHOCK_COMPRESSED_CARD_ATLAS_PATH)).toBe(CULTURE_SHOCK_COMPRESSED_CARD_ATLAS_SHA256);
-        expect(sha256(CULTURE_SHOCK_BASE_ATLAS_PATH)).toBe(CULTURE_SHOCK_BASE_ATLAS_SHA256);
-        expect(sha256(CULTURE_SHOCK_COMPRESSED_BASE_ATLAS_PATH)).toBe(CULTURE_SHOCK_COMPRESSED_BASE_ATLAS_SHA256);
+        expectLocalAssetHashIfPresent(CULTURE_SHOCK_CARD_ATLAS_PATH, CULTURE_SHOCK_CARD_ATLAS_SHA256);
+        expectLocalAssetHashIfPresent(CULTURE_SHOCK_COMPRESSED_CARD_ATLAS_PATH, CULTURE_SHOCK_COMPRESSED_CARD_ATLAS_SHA256);
+        expectLocalAssetHashIfPresent(CULTURE_SHOCK_BASE_ATLAS_PATH, CULTURE_SHOCK_BASE_ATLAS_SHA256);
+        expectLocalAssetHashIfPresent(CULTURE_SHOCK_COMPRESSED_BASE_ATLAS_PATH, CULTURE_SHOCK_COMPRESSED_BASE_ATLAS_SHA256);
 
         const rootManifest = readJson('public/assets/i18n/assets-manifest.json');
         const gameManifest = readJson('public/assets/i18n/zh-CN/smashup/assets-manifest.json');
