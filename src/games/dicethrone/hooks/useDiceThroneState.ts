@@ -62,6 +62,17 @@ export function getFocusPlayerId(state: EngineState): PlayerId {
     return core.activePlayerId;
 }
 
+export function canManuallyAdvancePhase(state: EngineState): boolean {
+    const { core, sys } = state;
+    const turnPhase = sys.phase as TurnPhase;
+    const hasPendingInteraction = Boolean(sys.interaction.current);
+    const hasActiveResponseWindow = Boolean(sys.responseWindow?.current);
+
+    return canAdvancePhaseDomain(core, turnPhase)
+        && !hasPendingInteraction
+        && !hasActiveResponseWindow;
+}
+
 // ============================================================================
 // 统一状态访问接口
 // ============================================================================
@@ -145,10 +156,8 @@ export function useDiceThroneState(G: EngineState): DiceThroneStateAccess {
                 ? getAvailableAbilityIds(core, rollerId, turnPhase)
                 : [];
         
-        // 阶段推进权限：领域规则校验 + 无待处理交互
-        const hasPendingInteraction = Boolean(sys.interaction.current);
-        const domainCanAdvance = canAdvancePhaseDomain(core, turnPhase);
-        const canAdvance = domainCanAdvance && !hasPendingInteraction;
+        // 阶段推进权限：响应窗口期间只能响应/跳过响应，不能结束攻击或防御。
+        const canAdvance = canManuallyAdvancePhase(G);
         
         return {
             players: core.players,

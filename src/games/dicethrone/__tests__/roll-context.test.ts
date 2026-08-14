@@ -18,6 +18,7 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { canAdvancePhase, checkPlayCard } from '../domain/rules';
+import { canManuallyAdvancePhase, getFocusPlayerId } from '../hooks/useDiceThroneState';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
 import { zhanshujiaDiceDefinition } from '../heroes/zhanshujia/diceConfig';
@@ -731,6 +732,49 @@ describe('DiceThrone 单槽当前骰区', () => {
             valid: false,
             error: 'cannot_advance_phase',
         });
+    });
+
+    it('响应窗口把响应者设为焦点时，不授予手动结束攻击或防御权限', () => {
+        const core = createCore();
+        core.activePlayerId = '0';
+        core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            settlementStage: 'afterDefense',
+            isDefendable: true,
+            sourceAbilityId: 'main-attack',
+            defenseAbilityId: 'basic-defense',
+            damageResolved: false,
+            resolvedDamage: 0,
+            preDefenseResolved: true,
+            defenseResolved: true,
+        } as any;
+        core.rollCount = 1;
+        core.rollConfirmed = true;
+
+        const state = {
+            core,
+            sys: {
+                phase: 'defensiveRoll',
+                interaction: { current: undefined },
+                responseWindow: {
+                    current: {
+                        id: 'after-defense-response-window',
+                        windowType: 'afterRollConfirmed',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
+            },
+        } as MatchState<DiceThroneCore>;
+
+        expect(getFocusPlayerId(state)).toBe('0');
+        expect(canAdvancePhase(core, 'defensiveRoll')).toBe(true);
+        expect(canManuallyAdvancePhase(state)).toBe(false);
+
+        state.sys.responseWindow.current = undefined;
+        expect(canManuallyAdvancePhase(state)).toBe(true);
     });
 
     it('奖励骰被新投掷覆盖后，旧奖励骰字段不再是可操作当前骰', () => {
