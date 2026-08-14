@@ -736,6 +736,25 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(combatFocusAudit).not.toBeNull();
         expect(combatFocusAudit!.targetInsideA2).toBe(true);
         expect(combatFocusAudit!.targetCenterHitsTarget).toBe(true);
+        const interactionVisualAudit = await page.evaluate(() => {
+            const source = document.querySelector<HTMLElement>('[data-object-id="mw-test-focus-red-angel"]');
+            const target = document.querySelector<HTMLElement>('[data-object-id="mw-test-focus-blue-archer"]');
+            const sourceFrame = source?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-source-frame"]');
+            const targetFrame = target?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
+            const legalMoveZone = document.querySelector<HTMLElement>('[data-legal-move-zone="true"]');
+            return {
+                sourceClassName: source?.className ?? '',
+                targetClassName: target?.className ?? '',
+                sourceFrameClassName: sourceFrame?.className ?? '',
+                targetFrameClassName: targetFrame?.className ?? '',
+                legalMoveClassName: legalMoveZone?.className ?? '',
+            };
+        });
+        expect(interactionVisualAudit.sourceClassName).toContain('-translate-y-2');
+        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-cyan-100');
+        expect(interactionVisualAudit.sourceFrameClassName).toContain('border-2');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('border-rose-300/90');
+        expect(interactionVisualAudit.legalMoveClassName).toContain('bg-sky-300/14');
         await mkdir(dirname(SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
 

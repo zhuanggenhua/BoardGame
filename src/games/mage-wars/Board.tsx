@@ -343,8 +343,8 @@ function MageHud({
                             className={cx(
                                 'pointer-events-none absolute -inset-1 z-10 rounded-[0.25rem] border shadow-[0_0_24px_rgba(251,191,36,0.34)]',
                                 role === 'source'
-                                    ? 'border-amber-200/80'
-                                    : 'border-rose-200/80',
+                                    ? 'border-cyan-200/90 shadow-[0_0_26px_rgba(34,211,238,0.48)]'
+                                    : 'border-rose-300/90 shadow-[0_0_28px_rgba(251,113,133,0.5)]',
                             )}
                             data-testid={`mage-wars-mage-hud-${role}-frame`}
                             data-mage-hud-role={role}
@@ -674,7 +674,7 @@ function ZoneFieldCard({
                 <>
                     <span
                         className={cx(
-                            'pointer-events-none absolute rounded-[0.22rem] border border-amber-200/78 shadow-[0_0_22px_rgba(251,191,36,0.42)]',
+                            'pointer-events-none absolute rounded-[0.22rem] border border-rose-300/90 shadow-[0_0_24px_rgba(251,113,133,0.5)]',
                             compact ? '-left-1.5 -right-1.5 -top-1.5 -bottom-1.5' : '-left-3 -right-3 -top-3 -bottom-3',
                         )}
                         data-testid="mage-wars-field-card-target-frame"
@@ -683,7 +683,7 @@ function ZoneFieldCard({
             ) : null}
             {role === 'source' ? (
                 <span
-                    className="pointer-events-none absolute -inset-1 z-10 rounded-[0.22rem] border border-amber-200/70 shadow-[0_0_22px_rgba(251,191,36,0.38)]"
+                    className="pointer-events-none absolute -inset-1.5 z-10 rounded-[0.22rem] border-2 border-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.72),inset_0_0_16px_rgba(34,211,238,0.26)]"
                     data-testid="mage-wars-field-card-source-frame"
                 />
             ) : null}
@@ -696,8 +696,8 @@ function ZoneFieldCard({
             className={cx(
                 'relative z-20 shrink-0 rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
-                role === 'target' && 'shadow-[0_0_30px_rgba(251,191,36,0.38)]',
-                role === 'source' && 'shadow-[0_0_30px_rgba(251,191,36,0.38)]',
+                role === 'target' && 'shadow-[0_0_32px_rgba(251,113,133,0.46)]',
+                role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
                 !onClick && 'pointer-events-none',
             )}
             disabled={!onClick}
@@ -1084,10 +1084,10 @@ function ZoneOccupant({
         <div
             className={cx(
                 'relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
-                role === 'source' && 'shadow-[0_0_24px_rgba(251,191,36,0.28)]',
-                role === 'target' && 'shadow-[0_0_28px_rgba(251,113,133,0.32)]',
+                role === 'source' && '-translate-y-2 shadow-[0_0_30px_rgba(34,211,238,0.58)]',
+                role === 'target' && 'shadow-[0_0_30px_rgba(251,113,133,0.46)]',
                 'pointer-events-auto',
-                onClick && 'cursor-pointer outline outline-2 outline-amber-200/70',
+                onClick && 'cursor-pointer outline outline-2 outline-cyan-200/70',
             )}
             role={onClick ? 'button' : undefined}
             tabIndex={onClick ? 0 : undefined}
@@ -1395,9 +1395,9 @@ function ArenaStage({
                             'outline outline-1 outline-transparent hover:bg-amber-200/8 hover:outline-amber-100/45',
                             zone.occupantIds.length > 0 && 'bg-black/5',
                             entityCount > 0 && 'z-10',
-                            isSourceZone && 'bg-amber-200/8 outline-amber-200/55',
-                            isLegalMoveZone && 'bg-emerald-200/12 outline-emerald-100/65 shadow-[inset_0_0_0_1px_rgba(167,243,208,0.3),inset_0_0_34px_rgba(16,185,129,0.1)]',
-                            isLegalTargetZone && 'bg-amber-200/12 outline-amber-100/70 shadow-[inset_0_0_0_1px_rgba(254,240,138,0.34),inset_0_0_34px_rgba(245,158,11,0.1)]',
+                            isSourceZone && 'bg-cyan-200/10 outline-cyan-200/60',
+                            isLegalMoveZone && 'bg-sky-300/14 outline-sky-200/75 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.42),inset_0_0_36px_rgba(56,189,248,0.13)]',
+                            isLegalTargetZone && 'bg-rose-300/14 outline-rose-200/80 shadow-[inset_0_0_0_1px_rgba(253,164,175,0.46),inset_0_0_36px_rgba(244,63,94,0.14)]',
                         )}
                         style={{
                             left: pct(rect.left),

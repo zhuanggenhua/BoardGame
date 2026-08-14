@@ -49,7 +49,7 @@
 | 视觉肯定先 AI 验收，再人工验收 | 把未通过候选交给用户挑错 | `ui-audit-loop` 自见失败不得送验；`show-image-to-user` final gate | AI 自审发现基础问题时继续重构；只有 AI_PASS 且打开原图后才请用户看 | covered |
 | 验收图不能是空态 | E2E 通过但截图缺已计划、弃牌、骰子、token，导致用户纠正项被技术绿灯掩盖 | `mage-wars-ui-design-memory` 规则到 UI 到实现执行顺序；`e2e-verification.md` 状态型截图口径 | 设计稿 / 真实 Board/UI 送验截图必须构造饱和交互态：法术书 6 张、已计划 2 张、公开弃牌正面、骰子、效果骰、伤害 / 燃烧 / 守卫 / 行动 token、来源和合法目标高亮同时可见；空开局只能作诊断 | covered |
 | 每次设计完用用户原话反思 | 审计只看几何 / DOM，不回看用户纠正 | `mage-wars-ui-design-memory` 用户原话反思表；本账本 | 最终审计必须逐条列用户原话自审和本账本自审，不得只报分数 | covered |
-| 单个问题不要默认多层规范同时改 | 把问题本质误判成“改了多处”或制造多重真相 | `skill-governance` 多重真相定义；本账本角色声明 | 修改前先裁定 canonical-source / adapter / evidence；审计和本账本只能引用，不各自创造新规则 | covered |
+| 单个问题不要默认多层规范同时改 | 把问题本质误判成“改了多处”或制造多重真相 | `spec-steward` 多重真相定义；本账本角色声明 | 修改前先裁定 canonical-source / adapter / evidence；审计和本账本只能引用，不各自创造新规则 | covered |
 | 规则到 UI 不能靠纠正账本兜底，必须先有对象覆盖矩阵 | 用户没有逐条骂到的规则对象可能继续被遗漏，例如骰子、token、公开弃牌、已计划法术或合法目标高亮 | `mage-wars-ui-design-memory` 规则对象覆盖矩阵；本账本仅作 drift-check / evidence | 设计 / 实现 / 送验前必须列出 foundation 规则对象，每行裁定可见性、实体锚点、素材 / 程序化来源和截图验收方式；无结论行按遗漏处理 | covered |
 | 规则到 UI 再到实现不能只看最后一张图 | 规则对象、交互职责和用户纠正项在实现时被遗漏 | `mage-wars-ui-design-memory` 规则到 UI 到实现执行顺序；`generated-design-implementation.md` | 实现前必须重新锁规则对象、唯一实体锚点、主交互链，并逐条把本账本映射到真实 Board/UI 承载位置 | covered |
 | 设计稿到实现不能漏掉纠正项 | 只按最后一张图的大致布局实现，容易重新漏骰子、token、公开弃牌堆正面、分页样式或规则术语 | `generated-design-implementation`；`.spec/knowledge/standards/generated-design-implementation.md`；`board-layout-contract.md` | 真实 Board/UI 实现前必须逐项消费本账本；实现截图必须回答每个用户纠正项在图面中的承载、是否可读、是否被省略或误改 | covered |
