@@ -80,7 +80,7 @@ describe('gameHudRuntimeAdapter', () => {
         expect(screen.getByText('hud.smashup.overlay')).toBeInTheDocument();
     });
 
-    it('dicethrone 通过 runtime adapter 处理 HUD force dismiss 的 bonus-dice 特例', () => {
+    it('dicethrone 奖励骰不得由 HUD force dismiss 代替骰盘普通确认', () => {
         const dispatch = vi.fn();
         const state = {
             core: {
@@ -95,8 +95,8 @@ describe('gameHudRuntimeAdapter', () => {
             state,
             playerId: '0',
             dispatch,
-        })).toBe(true);
-        expect(dispatch).toHaveBeenCalledWith('SKIP_BONUS_DICE_REROLL', {});
+        })).toBe(false);
+        expect(dispatch).not.toHaveBeenCalled();
     });
 
     it('dicethrone bonus-dice 不属于当前玩家时，不应吞掉共享 HUD force dismiss', () => {

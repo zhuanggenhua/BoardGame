@@ -467,7 +467,7 @@ property('interaction clears after resolve', () => {
 
 迁移完成后需要更新以下文档：
 
-1. `docs/ai-rules/engine-systems.md` - 更新交互系统说明
+1. `.spec/knowledge/standards/engine-systems.md` - 更新交互系统说明
 2. `docs/framework/interaction-system.md` - 新增 DiceThrone 交互示例
 3. `AGENTS.md` - 更新"禁止在 core 中存放交互状态"规则
 4. 游戏规则文档 - 无需更新（不影响规则）

@@ -26,8 +26,8 @@
 
 - `AGENTS.md`
 - `.spec/skills/git-operations/SKILL.md`
-- `docs/ai-rules/asset-pipeline.md`
-- `docs/ai-rules/doc-index.md`
+- `.spec/knowledge/standards/asset-pipeline.md`
+- `.spec/knowledge/README.md`
 - `docs/automated-testing.md`
 
 这些属于项目级规范或流程文档，不属于“Fantasy Realms 实现吸收”范围。

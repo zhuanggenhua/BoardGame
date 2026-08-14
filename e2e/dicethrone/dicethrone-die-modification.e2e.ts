@@ -776,6 +776,16 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                         allowDiceModification: true,
                         displayOnly: false,
                         resolutionMode: 'attackBonus',
+                        continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
+                    },
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'e2e-temporary-barbarian-parent-attack',
+                        isDefendable: true,
+                        damage: 0,
+                        bonusDamage: 0,
+                        settlementStage: 'preDamage',
                     },
                     currentRollContext: temporaryRollContext,
                 },
@@ -784,6 +794,18 @@ test.describe('DiceThrone - 选择骰子修改', () => {
 
         const diceTray = page.getByTestId('dicethrone-2d-dice-tray');
         const temporaryDie = diceTray.getByTestId('die-button-0');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                pendingAttackSource: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+                continuationKind: state?.core?.pendingBonusDiceSettlement?.continuation?.kind ?? null,
+                hasSuspendedParent: Boolean(state?.core?.currentRollContext?.suspendedParent),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            pendingAttackSource: 'e2e-temporary-barbarian-parent-attack',
+            continuationKind: 'attack',
+            hasSuspendedParent: true,
+        });
         await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), {
             sourceAbilityId: 'e2e-temporary-barbarian-die',
         });
@@ -805,9 +827,13 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                 phase: state?.sys?.phase ?? null,
                 activePlayerId: state?.core?.activePlayerId ?? null,
                 pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+                pendingAttackStage: state?.core?.pendingAttack?.settlementStage ?? null,
+                bonusDiceResolved: state?.core?.pendingAttack?.bonusDiceResolved ?? false,
                 currentRollContext: {
                     id: state?.core?.currentRollContext?.id ?? null,
                     kind: state?.core?.currentRollContext?.kind ?? null,
+                    status: state?.core?.currentRollContext?.status ?? null,
+                    replayOnly: state?.core?.currentRollContext?.display?.replayOnly ?? false,
                     ownerPlayerId: state?.core?.currentRollContext?.ownerPlayerId ?? null,
                     dice: state?.core?.currentRollContext?.dice?.map((die: any) => die.value) ?? [],
                     hasSuspendedParent: Boolean(state?.core?.currentRollContext?.suspendedParent),
@@ -817,9 +843,13 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             phase: 'offensiveRoll',
             activePlayerId: '0',
             pendingBonusDiceSettlement: null,
+            pendingAttackStage: 'preDamage',
+            bonusDiceResolved: true,
             currentRollContext: {
                 id: 'roll:offensive:0:1',
                 kind: 'offensive',
+                status: 'open',
+                replayOnly: false,
                 ownerPlayerId: '0',
                 dice: [6, 5, 4, 3, 2],
                 hasSuspendedParent: false,

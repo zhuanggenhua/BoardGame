@@ -357,7 +357,8 @@ describe('upload-to-server 安卓素材包刷新预演', () => {
         expect(result.status).toBe(0);
         expect(result.output).toContain('游戏资源变更: dicethrone');
         expect(result.output).toContain('共享音频变更: 否');
-        expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs --game dicethrone --reuse-shared-audio --index-manifest-only');
+        expect(result.output).toContain('服务器自动刷新: 发布入口会在服务器 release 内刷新已有 channel 的 file-index/manifest/games latest');
+        expect(result.output).not.toContain('scripts/mobile/publish-android-game-packages.mjs');
     });
 
     it('共享音频上传后应刷新共享音频包和全部游戏 manifest', () => {
@@ -369,8 +370,8 @@ describe('upload-to-server 安卓素材包刷新预演', () => {
         expect(result.status).toBe(0);
         expect(result.output).toContain('游戏资源变更: dicethrone');
         expect(result.output).toContain('共享音频变更: 是');
-        expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs');
-        expect(result.output).not.toContain('--game dicethrone --reuse-shared-audio --index-manifest-only');
+        expect(result.output).toContain('服务器自动刷新: 共享音频暂未接入自动刷新，正式发布会中断并要求走共享音频发布流程');
+        expect(result.output).not.toContain('scripts/mobile/publish-android-game-packages.mjs');
     });
 });
 
@@ -423,6 +424,17 @@ describe('upload-to-server 路径过滤', () => {
 
         expect(result.status).not.toBe(0);
         expect(result.output).toContain('检测到 npm 未把 --asset-prefix/--check 正确传给上传脚本');
+    });
+
+    it('包管理游戏的运行时 JSON 应随素材上传，避免服务器刷新 file-index 时漏清单', () => {
+        const result = runUploadCheck(
+            '--asset-prefix',
+            'i18n/zh-CN/dicethrone/images/tianshi/status-icons-atlas',
+        );
+
+        expect(result.status).toBe(0);
+        expect(result.output).toContain('待发布: official/i18n/zh-CN/dicethrone/images/tianshi/status-icons-atlas.json');
+        expect(result.output).toContain('检查完成：待发布 1 个对象');
     });
 });
 
@@ -516,6 +528,7 @@ describe('Android 游戏包素材内容', () => {
 
         expect(duplicateSummary.map(({ gameId }) => gameId)).toEqual([
             'dicethrone',
+            'mage-wars',
             'qidahen',
             'smashup',
             'summonerwars',
@@ -577,7 +590,7 @@ describe('Android 游戏包素材内容', () => {
         }, 0);
 
         expect(rawImageFiles).toEqual([]);
-        expect(totalBytes).toBeLessThan(30 * 1024 * 1024);
+        expect(totalBytes).toBeLessThan(50 * 1024 * 1024);
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v2.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp');

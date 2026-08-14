@@ -71,7 +71,7 @@
 ## 规则补强
 
 - 已补到：
-  [docs/ai-rules/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/e2e-verification.md)
+  [.spec/knowledge/standards/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/e2e-verification.md)
 - 新增的硬规则是：
   1. 几何居中/对齐必须直接量目标对象组中心与承载区中心的偏差，不能再拿“前几个固定槽位坐标差不多”冒充居中。
   2. 几何稳定性至少覆盖两种数量或尺寸状态，防止“只在单一截图里看起来像居中”。

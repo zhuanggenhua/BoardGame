@@ -37,4 +37,4 @@
   - `e2e/betrayal/*`（仅在需要新增教程验证时）
   - `public/locales/*/game-betrayal.json`
   - `src/games/manifest.client.generated.tsx`（由生成脚本派生）
-  - `docs/games/betrayal/workflows/betrayal-tutorial-coverage-matrix.md`
+  - `docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md`

@@ -109,29 +109,14 @@ npm run dev
 
 #### 方式二：无 Docker（纯内存模式，适合快速体验）
 
-无需安装 Docker 和 MongoDB。该模式会让游戏服退回纯内存存储，并跳过 API 启动；重启后数据会丢失。
+无需安装 Docker 和 MongoDB。该模式会让游戏服退回纯内存存储，并跳过 API 启动；重启后数据会丢失。游戏运行时素材直接读取公开资源域名，因此新 clone 不需要先下载完整素材镜像。
 该模式会自动跳过排行榜归档、UGC 动态注册等依赖游戏服持久化存储的能力；认证、社交、管理后台等依赖 API 的能力在该模式下不可用。
 
 ```bash
 npm run dev:lite
 ```
 
-启动后访问 http://localhost:5173 即可。
-
-### 给 AI 的首次接管提示词
-
-新 clone 本仓库后，直接把下面这段话交给 AI。它只负责把本机制作环境跑通，完成后即可专注游戏制作；不会擅自发布、部署或改动无关功能。
-
-```text
-这是刚 clone 的 BoardGame 项目。请直接接管首次本地搭建，不要只告诉我命令。
-
-1. 先阅读 README.md、AGENTS.md、.spec/AGENTS.md，并只加载“本地运行、测试、资源上传检查、创建游戏”直接相关的项目规范。
-2. 检查 Node、npm、Git 和可选 Docker 是否可用；安装项目依赖，按 .env.example 建立本地 .env。
-3. 启动项目：优先 npm run dev；Docker 或 MongoDB 不可用时改用 npm run dev:lite。确认 http://localhost:5173 可访问，并运行一项与本次环境相符的最小本地测试。
-4. 验证资源上传通道，但绝对不要真实上传：只运行 npm run assets:check。只有输出“已获取服务器对象清单”才算上传入口连通；若输出 SSH 回退、本地扫描、缺 token 或连接错误，只报告“上传入口未验证”及缺少的最小环境条件，不得改用 npm run assets:upload、SSH、部署或索要/输出密钥。
-5. Open Design 是可选项：仅当我说要做设计稿、设计系统或使用 Open Design MCP 时，才运行 npm run setup:open-design、npm run start:open-design，并检查 http://127.0.0.1:7456/api/health；安装后提醒我重启 Codex。未提出设计需求时跳过它。
-6. 最后用简短中文汇报：本地地址、实际启动模式、测试结果、上传入口是否已验证、Open Design 是否跳过/可用、以及任何阻塞的最小补救动作。环境完成后，不要继续扫描、重构、部署或处理其它系统；等我提出具体游戏制作任务。
-```
+启动后访问 http://localhost:4273 即可；若该端口已被占用，启动日志会显示自动选出的本地地址。
 
 ### Open Design MCP（协作者可选）
 
@@ -174,6 +159,24 @@ npm run start:open-design
 ## 🎮 添加新游戏
 
 项目内置了完整的 AI 辅助创建工作流，分 6 个阶段逐步完成（骨架 → 类型 → 领域逻辑 → 系统组装 → UI → 收尾）。
+
+<details>
+<summary>新 clone 后交给 AI 的首次接管提示词</summary>
+
+新 clone 本仓库后，直接把下面这段话交给 AI。它只负责把本机制作环境跑通，完成后即可专注游戏制作；不会擅自发布、部署或改动无关功能。
+
+```text
+这是刚 clone 的 BoardGame 项目。请直接接管首次本地搭建，不要只告诉我命令。
+
+1. 先阅读 README.md、AGENTS.md、.spec/AGENTS.md，并只加载“本地运行、测试、资源上传检查、创建游戏”直接相关的项目规范。
+2. 检查 Node、npm、Git 和可选 Docker 是否可用；安装项目依赖，按 .env.example 建立本地 .env。
+3. 启动项目：优先 npm run dev；Docker 或 MongoDB 不可用时改用 npm run dev:lite。确认启动日志给出的本地地址（默认 `http://localhost:4273`）可访问，并运行一项与本次环境相符的最小本地测试。
+4. 验证资源上传通道，但绝对不要真实上传：只运行 npm run assets:check。只有输出“已获取服务器对象清单”才算上传入口连通；若输出 SSH 回退、本地扫描、缺 token 或连接错误，只报告“上传入口未验证”及缺少的最小环境条件，不得改用 npm run assets:upload、SSH、部署或索要/输出密钥。
+5. Open Design 是可选项：仅当我说要做设计稿、设计系统或使用 Open Design MCP 时，才运行 npm run setup:open-design、npm run start:open-design，并检查 http://127.0.0.1:7456/api/health；安装后提醒我重启 Codex。未提出设计需求时跳过它。
+6. 最后用简短中文汇报：本地地址、实际启动模式、测试结果、上传入口是否已验证、Open Design 是否跳过/可用、以及任何阻塞的最小补救动作。环境完成后，不要继续扫描、重构、部署或处理其它系统；等我提出具体游戏制作任务。
+```
+
+</details>
 
 使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.spec/skills/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
 
@@ -244,7 +247,7 @@ npm run check:arch         # 架构检查
 
 # 音频注册表 & 资源上传（新增/修改音频文件后必须执行）
 node scripts/audio/generate_common_audio_registry.js  # 重新生成音频注册表
-npm run assets:download  # 服务器素材主源兼容入口；当前不再从对象存储反向同步
+npm run assets:download -- --game <gameId> # 按游戏从服务器下载本地运行时素材
 npm run assets:upload    # 上传压缩资源到服务器素材主源
 npm run setup:design:mcp  # 给当前协作者补 Codex/OpenClaw 的 Open Design MCP 配置
 npm run setup:open-design:install # 首次使用源码版 Open Design 时安装并接入
@@ -295,13 +298,30 @@ npm run test:e2e
 
 欢迎提交 Issue 和 Pull Request！
 
-默认协作方式是 **先 clone 主仓库，再在本地开分支**。这样更适合多人和 AI 共同开发，也更不容易出现 fork 长期漂移、权限判断混乱、PR head 不可写等问题。只有在你**没有主仓库写权限**，或者明确需要账号/权限隔离时，才建议改走 fork 路线。
+公开仓库允许直接 clone、拉取和本地运行；fork 不是为了“看代码”，而是为了给没有主仓写权限的协作者提供一个自己可写的远端仓库。只有维护者或已受邀协作者能直推 `zhuanggenhua/BoardGame`；如果直推主仓遇到 `403` 或 `Write access to repository not granted`，这只是说明当前账号不能写上游主仓，不代表项目不可协作。
 
-1. Clone 主仓库：`git clone https://github.com/zhuanggenhua/BoardGame.git`
-2. 创建特性分支：`git checkout -b feature/amazing-feature`
-3. 提交更改：`git commit -m "用中文准确描述改动"`
-4. 有主仓库写权限时直接推送：`git push origin feature/amazing-feature`
-5. 没有写权限时，再 fork 到自己账号，改推送到 fork 后提 Pull Request
+只想拉项目或本地体验时，直接 clone 主仓即可：
+
+```bash
+git clone https://github.com/zhuanggenhua/BoardGame.git
+```
+
+准备提交代码贡献时，外部协作者默认走 fork 后 Pull Request：
+
+1. 在 GitHub 上 fork `zhuanggenhua/BoardGame` 到自己的账号。
+2. Clone 自己的 fork，并添加主仓为 `upstream`：
+   ```bash
+   git clone https://github.com/<your-account>/BoardGame.git
+   cd BoardGame
+   git remote add upstream https://github.com/zhuanggenhua/BoardGame.git
+   git fetch upstream
+   ```
+3. 从主仓最新代码创建特性分支：`git checkout -b feature/amazing-feature upstream/main`
+4. 提交更改：`git commit -m "用中文准确描述改动"`
+5. 推送到自己的 fork：`git push origin feature/amazing-feature`
+6. 向 `zhuanggenhua/BoardGame` 的 `main` 分支创建 Pull Request。
+
+也可以先直接 clone 主仓再添加自己的 fork 作为可写远端；关键不是 clone 哪个仓库，而是不要把没有权限的上游主仓当作 push 目标。只有确认自己拥有主仓写权限时，才直接 push `zhuanggenhua/BoardGame`。普通代码 PR 不需要生产服务器 SSH 私钥、服务器主机指纹或部署权限；这些只属于发布、素材上传或远端回查场景。
 
 ## 📜 许可证
 

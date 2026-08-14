@@ -56,7 +56,7 @@
 
 ### 4. 教程章节必须绑定覆盖矩阵，而不是边做边想
 
-- 当前 `docs/games/betrayal/workflows/betrayal-tutorial-coverage-matrix.md` 已先列出：
+- 当前 `docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md` 已先列出：
   - 规则条目
   - 建议章节
   - 当前证据 / 当前缺口
@@ -93,5 +93,5 @@
   - 如新增教程级 E2E，则必须通过标准入口 `/play/betrayal/tutorial` 或 `/play/betrayal/tutorial/:tutorialId`
 - Docs:
   - 更新 `docs/games/betrayal/README.md`
-  - 维护 `docs/games/betrayal/workflows/betrayal-tutorial-coverage-matrix.md`
+  - 维护 `docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md`
   - 为教程证据建立 `evidence/betrayal-tutorial/`

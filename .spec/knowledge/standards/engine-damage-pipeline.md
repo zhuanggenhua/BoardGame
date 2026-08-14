@@ -1,3 +1,11 @@
+---
+name: engine-damage-pipeline
+description: 伤害管线标准：伤害计算、结算时机和跨层消费——改伤害或生命值流程时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 引擎伤害计算管线
 
 > 来源：从 `.spec/knowledge/standards/engine-systems.md` 无损拆出。本文档承载 `engine/primitives/damageCalculation.ts` 的使用合同；迁移步骤另见 `docs/damage-calculation-pipeline-migration-guide.md`。

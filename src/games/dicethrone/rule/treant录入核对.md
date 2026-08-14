@@ -29,7 +29,7 @@
 
 ## 2026-06-05 批次级 L4 判等矩阵
 
-> 判等标准按 `docs/ai-rules/testing-audit.md` 与升级重审 evidence 的“共享链路仅配置不同”门禁执行：只有 handler / resolver / interaction family / 清理语义一致，且差异只剩静态配置时，才允许复用 `L3/L4`。
+> 判等标准按 `.spec/knowledge/standards/testing-audit.md` 与升级重审 evidence 的“共享链路仅配置不同”门禁执行：只有 handler / resolver / interaction family / 清理语义一致，且差异只剩静态配置时，才允许复用 `L3/L4`。
 
 | 对象 | 共享链名称 | 代表对象 | 是否满足“仅配置不同” | 判等依据 | 当前残余 |
 | --- | --- | --- | --- | --- | --- |

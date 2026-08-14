@@ -379,7 +379,7 @@ export function executeTokenCommand(
             }
 
             // 神罚 (retribution)：反弹伤害给攻击者。
-            // 这类反伤必须等响应窗口收口后再播，否则会在 Token/奖励骰特写尚未结束时提前播完。
+            // 这类反伤必须等响应窗口收口后再播，否则会在 Token/奖励骰右侧骰盘结算尚未结束时提前播完。
             if (result.success && tokenDef.id === TOKEN_IDS.RETRIBUTION) {
                 deferredDamageEvents.push({
                     targetId: pendingDamage.sourcePlayerId,

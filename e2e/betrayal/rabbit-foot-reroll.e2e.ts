@@ -9,6 +9,7 @@ import type {
 } from "../../src/games/betrayal/game";
 import {
   createRuntimeCore,
+  expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
@@ -24,9 +25,9 @@ const EVIDENCE_DIR = "evidence/山屋惊魂-兔脚重掷完整链路";
 const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-兔脚重掷前最近投骰可见.jpg`;
 const RABBIT_FOOT_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-兔脚本体已选中.jpg`;
 const DIE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-选择具体骰子高亮.jpg`;
-const REROLL_RUNNING_SCREENSHOT = `${EVIDENCE_DIR}/04-重掷后骰盘更新.jpg`;
-const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷结算结果可见.jpg`;
-const REROLL_CLOSED_SCREENSHOT = `${EVIDENCE_DIR}/06-收口后回牌桌可操作.jpg`;
+const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认使用.jpg`;
+const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后等待确认最终结果.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-确认最终结果后结算.jpg`;
 
 function createRabbitFootRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -35,18 +36,11 @@ function createRabbitFootRerollCore(): BetrayalCore {
     name: "兔脚",
     kind: "item",
   };
-  const traitsBeforeEvent = {
-    ...core.currentExplorer.traits,
-    knowledge: 3,
-    speed: 4,
-  };
+  const traitsBeforeEvent = { ...core.currentExplorer.traits, knowledge: 3, speed: 4 };
 
   core.currentExplorer = {
     ...core.currentExplorer,
-    traits: {
-      ...traitsBeforeEvent,
-      speed: 3,
-    },
+    traits: traitsBeforeEvent,
     inventory: [rabbitFoot],
   };
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -58,7 +52,7 @@ function createRabbitFootRerollCore(): BetrayalCore {
     kind: "event",
     title: "外星几何",
     summary: "知识检定失败",
-    detail: "知识检定 2：失去 1 点速度；速度 -1",
+    detail: "知识检定 2：失去 1 点速度；等待确认最终结果",
     tone: "warning",
   };
   core.latestDiscoveryOwnerPlayerId = "0";
@@ -72,12 +66,6 @@ function createRabbitFootRerollCore(): BetrayalCore {
     dice: [2, 0, 0],
     passiveBonus: 0,
     latestLabel: "失去 1 点速度",
-    eventEffectSnapshot: {
-      traitsBeforeEffect: traitsBeforeEvent,
-      roomIdBeforeEffect: core.currentExplorer.roomId,
-      damageRolls: [],
-      drawnCards: [],
-    },
     consumedRabbitFootCardIds: [],
     branchThresholds: [
       {
@@ -102,12 +90,18 @@ function createRabbitFootRerollCore(): BetrayalCore {
       },
     ],
   };
+  core.pendingEventRollResolution = {
+    rollId: core.recentRoll.id,
+    playerId: "0",
+    sourceTitle: "外星几何",
+    effect: { mode: "trait", trait: "speed", amount: -1, recommendedAction: "endTurn" },
+  };
 
   return core;
 }
 
 test.describe("山屋惊魂兔脚重掷完整链路", () => {
-  test("兔脚从最近投骰点击本体、选择骰子、重掷结算并收口", async ({
+  test("兔脚从最近投骰选择骰子、确认使用并确认最终结果", async ({
     page,
     context,
   }) => {
@@ -135,10 +129,16 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(rollPanel).toBeVisible();
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
-    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
+    await expectPhysicalDiceSeparated(rollPanel, {
+      minDiceCount: 3,
+      minCanvasEdgeMargin: 12,
+    });
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "2,0,0");
+    await expectEventRollWorkbenchReadable(page, "兔脚重掷前", {
+      expectedEventFrameIndex: "24",
+    });
     const rabbitFootCard = page.getByTestId("betrayal-inventory-rope");
     await expect(rabbitFootCard, "重掷前必须看得到兔脚本体").toBeVisible();
     await expect(rabbitFootCard).toHaveAttribute(
@@ -157,6 +157,9 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       page.getByTestId("betrayal-selected-inventory-card-name"),
     ).toHaveText("兔脚");
     await expect(rabbitFootCard).toHaveAttribute("aria-pressed", "true");
+    await expectEventRollWorkbenchReadable(page, "兔脚本体选中后", {
+      expectedEventFrameIndex: "24",
+    });
     await saveScreenshot(page, RABBIT_FOOT_SELECTED_SCREENSHOT);
 
     const rabbitFootDice = page.getByTestId("betrayal-rabbit-foot-dice");
@@ -180,18 +183,27 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       Math.round(targetBox?.width ?? 0),
       "选骰命中区必须是贴合骰子的正圆，不是旁路数字按钮",
     ).toBe(Math.round(targetBox?.height ?? 0));
+    await expectEventRollWorkbenchReadable(page, "兔脚选骰目标高亮后", {
+      expectedEventFrameIndex: "24",
+    });
     await saveScreenshot(page, DIE_TARGET_SCREENSHOT);
 
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
+    await expect(page.getByTestId("betrayal-roll-modifier-confirm")).toBeVisible();
+    await expectEventRollWorkbenchReadable(page, "兔脚选中骰子后", {
+      expectedEventFrameIndex: "24",
+    });
+    await saveScreenshot(page, REROLL_SELECTED_SCREENSHOT);
+
+    await page.getByTestId("betrayal-roll-modifier-confirm").click();
     await expect(rabbitFootDice).toBeHidden();
-    await expect(
-      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
-    ).toHaveAttribute("data-dice-rerolling-die-index", "1");
-    await saveScreenshot(page, REROLL_RUNNING_SCREENSHOT);
 
     await waitForPhysicalDiceSettled(rollPanel);
-    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
+    await expectPhysicalDiceSeparated(rollPanel, {
+      minDiceCount: 3,
+      minCanvasEdgeMargin: 12,
+    });
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "2,2,0");
@@ -204,6 +216,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
+    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -222,7 +235,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     expect(finalState?.recentRoll?.lastRabbitFootRerollDieIndex).toBe(1);
     expect(finalState?.recentRoll?.consumedRabbitFootCardIds).toContain("rope");
     expect(finalState?.usedCardIdsThisTurn).toContain("rope");
-    expect(finalState?.currentExplorer.traits.knowledge).toBe(4);
+    expect(finalState?.currentExplorer.traits.knowledge).toBe(3);
     expect(finalState?.currentExplorer.traits.speed).toBe(4);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
@@ -232,15 +245,15 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "兔脚重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await expect(
-      page.getByTestId("betrayal-board"),
-      "兔脚重掷后必须回到可操作牌桌",
-    ).toBeVisible();
-    await expect(discoveryPanel).toHaveAttribute("data-backdrop-dismiss", "enabled");
-    await discoveryPanel.click({ position: { x: 12, y: 12 } });
-    await expect(discoveryPanel).toHaveCount(0);
-    await expect(rollPanel).toHaveCount(0);
-    await saveScreenshot(page, REROLL_CLOSED_SCREENSHOT);
+    await page.getByTestId("betrayal-event-roll-finalize").click();
+    const finalizedState = await page.evaluate(() => {
+      const harness = (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } }).__BG_TEST_HARNESS__;
+      return harness?.state?.get?.().core ?? null;
+    });
+    expect(finalizedState?.pendingEventRollResolution).toBeNull();
+    expect(finalizedState?.currentExplorer.traits.knowledge).toBe(4);
+    expect(finalizedState?.currentExplorer.traits.speed).toBe(4);
+    await saveScreenshot(page, REROLL_FINALIZED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-rabbit-foot-reroll", diagnostics },

@@ -18,7 +18,7 @@
 
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/monk-coverage.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "连段冲拳②"`
 - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/dicethrone.e2e.ts "regression: 武僧连段冲拳②两颗太极奖励骰结算为5伤害加4气"`
-- `npx eslint e2e/dicethrone/dicethrone.e2e.ts src/games/dicethrone/__tests__/monk-coverage.test.ts src/games/dicethrone/heroes/monk/tokens.ts docs/ai-rules/e2e-verification.md evidence/dicethrone-monk-taiji-combo-e2e-test.md evidence/dicethrone-武僧连段冲拳二-e2e-test.md`
+- `npx eslint e2e/dicethrone/dicethrone.e2e.ts src/games/dicethrone/__tests__/monk-coverage.test.ts src/games/dicethrone/heroes/monk/tokens.ts .spec/knowledge/standards/e2e-verification.md evidence/dicethrone-monk-taiji-combo-e2e-test.md evidence/dicethrone-武僧连段冲拳二-e2e-test.md`
 
 ## 结论
 

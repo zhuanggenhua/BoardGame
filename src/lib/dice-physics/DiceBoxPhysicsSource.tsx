@@ -55,11 +55,12 @@ export function DiceBoxPhysicsSource({
     const previousDiceIdsRef = React.useRef<number[]>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
     const pendingRerollMotionRef = React.useRef<{ key: string; indices: number[]; values: number[]; lockedIndices: number[] } | null>(null);
-    const settledRef = React.useRef(true);
+    const settledRef = React.useRef(dice.length === 0);
     const lastPhysicsSnapshotRef = React.useRef('');
     const [engineVersion, setEngineVersion] = React.useState(0);
     const [engineReady, setEngineReady] = React.useState(false);
-    const [settled, setSettled] = React.useState(true);
+    const [settled, setSettled] = React.useState(() => dice.length === 0);
+    const [engineFailureMessage, setEngineFailureMessage] = React.useState('');
     const [containerSizeReady, setContainerSizeReady] = React.useState(() => typeof ResizeObserver !== 'function');
 
     React.useEffect(() => {
@@ -77,17 +78,20 @@ export function DiceBoxPhysicsSource({
         previousDiceIdsRef.current = [];
         activeMotionRef.current = null;
         pendingRerollMotionRef.current = null;
-        settledRef.current = true;
+        const nextSettled = dice.length === 0;
+        settledRef.current = nextSettled;
         lastPhysicsSnapshotRef.current = '';
         setEngineReady(false);
-        setSettled(true);
+        setSettled(nextSettled);
+        setEngineFailureMessage(error instanceof Error ? error.message : String(error));
+        onSettledChangeRef.current?.(nextSettled);
         onPhysicsStatesChangeRef.current?.([]);
         try {
             engine?.destroy();
         } catch {
             // Ignore cleanup failures after WebGL errors.
         }
-    }, []);
+    }, [dice.length]);
 
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
     const valuesKey = React.useMemo(() => values.join(','), [values]);
@@ -221,6 +225,7 @@ export function DiceBoxPhysicsSource({
                     return;
                 }
                 engineRef.current = engine;
+                setEngineFailureMessage('');
                 engine.resize();
                 engine.setCanvasDiagnostics({
                     settled: settledRef.current,
@@ -441,6 +446,8 @@ export function DiceBoxPhysicsSource({
             data-dice-physics-source="dice-box-threejs"
             data-dice-physics-mode={rendererMode}
             data-dice-settled={settled ? 'true' : 'false'}
+            data-dice-engine-ready={engineReady ? 'true' : 'false'}
+            data-dice-engine-failure={engineFailureMessage || undefined}
             data-dice-skins-ready={requiredDieSkinsReady ? 'true' : 'false'}
             data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
             {...dataAttributes}

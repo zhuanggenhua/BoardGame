@@ -29,7 +29,7 @@ export interface CardSpotlightConfig {
     isSpectator?: boolean;
     /** 鐜╁閫夎鏄犲皠锛堢敤浜庤В鏋愰瀛愬浘闆嗭級 */
     selectedCharacters?: Record<PlayerId, CharacterId>;
-    /** 阻塞式奖励骰已由 modal stack 接管时，禁止再产出独立奖励骰特写 */
+    /** 阻塞式奖励骰由右侧 2D 骰盘承接时，禁止再产出独立中央骰子展示 */
     suppressStandaloneBonusDie?: boolean;
     /** 奖励骰已由骰盘承接时，卡牌特写只展示卡牌本体，不再附带骰子 */
     suppressBonusDiceInCardSpotlight?: boolean;
@@ -621,7 +621,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                         continue;
                     }
 
-                    // 鐙珛楠板瓙鐗瑰啓锛堜笉缁戝畾鍒板崱鐗岋級
+                    // 独立骰子展示（不绑定到卡牌）；奖励骰结算态会被右侧骰盘抑制。
                     pendingStandaloneBonusDie = {
                         value: bonusValue,
                         face: bonusFace,

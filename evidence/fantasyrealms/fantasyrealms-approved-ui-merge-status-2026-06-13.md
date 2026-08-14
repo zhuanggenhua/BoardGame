@@ -87,7 +87,7 @@
 ### B. 项目级规则 / 主线规范
 
 - `AGENTS.md`
-- `docs/ai-rules/**`
+- `.spec/knowledge/standards/**`
 - `docs/e2e-testing-guide.md`
 - `docs/testing-best-practices.md`
 - `.spec/skills/git-operations/SKILL.md`

@@ -1,4 +1,5 @@
 import { test, expect } from '../framework';
+import { expectRightTrayBonusDiceConfirmation, getRightTrayDiceTray } from './bonus-dice-flow';
 
 test.describe('DiceThrone Volley 5 Dice Display', () => {
     test('displayOnly 奖励骰结算会展示 5 颗骰子面板', async ({ page, game }) => {
@@ -53,10 +54,10 @@ test.describe('DiceThrone Volley 5 Dice Display', () => {
             rerollCount: 0,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        const diceTray = getRightTrayDiceTray(page);
 
-        const bonusDice = overlay.getByTestId('dice-2d');
+        const bonusDice = diceTray.getByTestId('dice-2d');
         await expect(bonusDice).toHaveCount(5, { timeout: 5000 });
         await expect(
             page.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }),

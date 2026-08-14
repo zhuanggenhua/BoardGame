@@ -22,7 +22,7 @@
 
 ## 权威来源
 
-1. `docs/ai-rules/testing-audit.md`
+1. `.spec/knowledge/standards/testing-audit.md`
 2. `docs/bugs/smashup/smashup-igor-fix-summary.md`
 3. `evidence/smashup/smashup-online-ai-timeout-recovery-e2e-test.md`
 4. 上述源码与测试文件

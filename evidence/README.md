@@ -30,7 +30,7 @@
 
 ## 当前整理状态（2026-08-08）
 
-- docs 内 Markdown / 文本 / JSON 精确重复已清零，详见 `docs/ai-rules/document-merge-ledger.md`。
+- docs 内 Markdown / 文本 / JSON 精确重复已清零，详见 `.spec/decisions/document-merge-ledger.md`。
 - evidence 内无引用 0 字节文件已清理一批；仍保留有引用或生成职责的空文件。
 - evidence 内 Markdown 精确重复已收口一批：跨项目报告保留 `_shared`，游戏专项报告保留对应游戏目录。
 - evidence 内仍存在截图 / 图片哈希重复；这些必须按上面的截图规则逐项裁决，不能直接批量删除。
@@ -39,5 +39,5 @@
 
 涉及 evidence 的迁移、删除、合并、归档，必须同步更新：
 
-- `docs/ai-rules/document-merge-ledger.md`：记录逐批裁决、哈希 / 引用证据和保留侧。
-- `docs/ai-rules/document-consolidation.md`：记录本轮整理进展与未处理候选。
+- `.spec/decisions/document-merge-ledger.md`：记录逐批裁决、哈希 / 引用证据和保留侧。
+- `.spec/decisions/document-consolidation.md`：记录本轮整理进展与未处理候选。

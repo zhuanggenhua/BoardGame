@@ -231,4 +231,4 @@ npm run test:watch -- divine-shield
 
 - [自动化测试指南](../automated-testing.md)
 - [测试工具快速参考](../testing-tools-quick-reference.md)
-- [测试审计规范](../ai-rules/testing-audit.md)
+- [测试审计规范](../../.spec/knowledge/standards/testing-audit.md)

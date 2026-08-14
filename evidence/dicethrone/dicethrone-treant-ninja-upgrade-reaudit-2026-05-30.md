@@ -284,7 +284,7 @@
 #### 本轮新增方法论回写
 
 - `烟雾阵 II` 家族暴露出新的审计缺口：**`simple-choice / CHOICE_RESOLVED` 不能只 forged 一个 reducer 事件就当“分支效果已验证”**。这类对象真正的业务链是 `SYS_INTERACTION_RESOLVED -> CHOICE_RESOLVED -> choiceResolvedEventHandler followup -> 最终权威状态`；只测 reducer 最多证明锚点校验或通用 token/status 增量，不能替代 followup handler 真正生效。
-- 因此本轮已经把通用门禁补硬到 `docs/ai-rules/testing-audit.md`：凡对象效果依赖 `choiceResolvedEventHandler`，L2 必须走真实 choice 锚点链或显式调用注册 handler，L3 仍需真实弹窗点击后的最终收口证据。
+- 因此本轮已经把通用门禁补硬到 `.spec/knowledge/standards/testing-audit.md`：凡对象效果依赖 `choiceResolvedEventHandler`，L2 必须走真实 choice 锚点链或显式调用注册 handler，L3 仍需真实弹窗点击后的最终收口证据。
 
 ### 2026-06-04 继续补记：Ninja direct closeout 已补对象级 L3
 

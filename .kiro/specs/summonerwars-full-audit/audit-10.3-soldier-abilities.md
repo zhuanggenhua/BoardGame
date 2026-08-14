@@ -62,7 +62,7 @@
 - 游戏层（helpers.ts）`getPassedThroughUnitPositions` 改为：直线路径走 `getStraightGridPath`，非直线路径走引擎层 BFS + 评分（优先选敌人最多、友军最少的路径）
 - `getMovePath` 同步更新，支持任意距离的状态感知路径选择
 
-**教训**：D1-D10 框架缺少"能力组合输入域扩展"检查——当能力 A 扩展了能力 B 的输入范围时，必须验证 B 的算法覆盖扩展后的完整输入域。已补充到 `docs/ai-rules/testing-audit.md` 教训附录。
+**教训**：D1-D10 框架缺少"能力组合输入域扩展"检查——当能力 A 扩展了能力 B 的输入范围时，必须验证 B 的算法覆盖扩展后的完整输入域。已补充到 `.spec/knowledge/standards/testing-audit.md` 教训附录。
 
 描述中"士兵"无敌我限定，实现中 damageOnPassThrough 对路径上所有单位生效（不区分敌我），语义正确。
 

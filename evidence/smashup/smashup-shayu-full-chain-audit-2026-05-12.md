@@ -2,7 +2,7 @@
 
 ## 结论边界
 
-- 本轮是按 `docs/ai-rules/testing-audit.md` 新补强的**通用交互入口语义矩阵**做的 shayu 全量 P0/P1 重审。
+- 本轮是按 `.spec/knowledge/standards/testing-audit.md` 新补强的**通用交互入口语义矩阵**做的 shayu 全量 P0/P1 重审。
 - 覆盖对象：`sharks` / `tornados` / `mythic_greeks` 三派系 **39 张卡 + 6 张基地**。
 - 本轮重点：描述动作链第一入口、目标归属、数量/可选、动作链上下文、UI/validator/handler/reducer 单一真相。
 - 本轮没有新增浏览器 E2E 截图，因此结论不升级为“全量 L3 E2E 收口”。已有历史 E2E 继续作为旧证据引用，但本轮新增结论以 L1/L2/P0/P1 为主。
@@ -98,7 +98,7 @@
 - `npx vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts` → 1 file / 16 tests passed。
 - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "直接入口字段|控制者约束"` → 1 file / 2 tests passed，24 skipped。
 - `npm run typecheck -- --pretty false` → `tsc --noEmit` passed；npm 输出 `--pretty` unknown config warning，不影响 typecheck 结果。
-- `git diff --check -- docs/ai-rules/testing-audit.md evidence/smashup/smashup-shayu-full-chain-audit-2026-05-12.md evidence/smashup/smashup-shayu-faction-audit.md task_plan.md findings.md progress.md temp/smashup-shayu-full-audit-2026-05-12.json` → exit 0；仅提示 `progress.md` 工作区 LF→CRLF。
+- `git diff --check -- .spec/knowledge/standards/testing-audit.md evidence/smashup/smashup-shayu-full-chain-audit-2026-05-12.md evidence/smashup/smashup-shayu-faction-audit.md task_plan.md findings.md progress.md temp/smashup-shayu-full-audit-2026-05-12.json` → exit 0；仅提示 `progress.md` 工作区 LF→CRLF。
 
 ## 2026-05-12 再次抽样调查回写
 

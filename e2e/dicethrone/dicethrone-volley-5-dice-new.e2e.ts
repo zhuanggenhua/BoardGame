@@ -8,6 +8,7 @@
 
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { expectRightTrayBonusDiceConfirmation, getRightTrayDiceTray } from './bonus-dice-flow';
 
 test.describe('骰子王座万箭齐发五骰展示', () => {
     test('万箭齐发使用奖励骰结算时整屏展示五颗骰子', async ({ page, game }, testInfo) => {
@@ -63,13 +64,13 @@ test.describe('骰子王座万箭齐发五骰展示', () => {
             rerollCount: 0,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        const diceTray = getRightTrayDiceTray(page);
 
-        const bonusDice = overlay.locator('[data-testid="bonus-die-spotlight-content"]');
+        const bonusDice = diceTray.locator('[data-testid^="die-button-"]');
         await expect(bonusDice).toHaveCount(5, { timeout: 5000 });
-        await expect.poll(async () => overlay
-            .locator('[data-testid^="bonus-die-reroll-option-"]')
+        await expect.poll(async () => diceTray
+            .locator('[data-testid^="die-button-"]')
             .evaluateAll((nodes) => nodes.filter((node) => {
                 const element = node as HTMLElement;
                 const rect = element.getBoundingClientRect();
@@ -84,8 +85,8 @@ test.describe('骰子王座万箭齐发五骰展示', () => {
             path: getEvidenceScreenshotPath(testInfo, '01-万箭齐发五骰-整屏结果图', { requireChineseName: true }),
             fullPage: false,
         });
-        const diceBounds = await overlay
-            .locator('[data-testid^="bonus-die-reroll-option-"]')
+        const diceBounds = await diceTray
+            .locator('[data-testid^="die-button-"]')
             .evaluateAll((nodes) => nodes.map((node) => {
                 const rect = (node as HTMLElement).getBoundingClientRect();
                 return {

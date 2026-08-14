@@ -19,6 +19,7 @@ import type {
     BatchDispatchMeta,
     CommandDispatchMeta,
     MatchUiEvent,
+    ManualForceEndAiPhaseResult,
     type OnlineAiClientPatchIssue,
     type OnlineAiClientStateEventKind,
 } from './protocol';
@@ -426,6 +427,20 @@ export class GameTransportClient {
             'manual-setup-selection',
             this.config.matchID,
             request,
+            this.config.credentials,
+            onResult,
+        );
+        return true;
+    }
+
+    /** 请求服务端按当前权威状态立即恢复 / 强制收口 AI 阶段。 */
+    requestForceEndAiPhase(onResult?: (result: ManualForceEndAiPhaseResult) => void): boolean {
+        if (!this.socket || this._destroyed || this._syncInFlight || this._connectionState !== 'connected') {
+            return false;
+        }
+        this.socket.emit(
+            'manual-force-end-ai-phase',
+            this.config.matchID,
             this.config.credentials,
             onResult,
         );

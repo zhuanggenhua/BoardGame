@@ -68,7 +68,7 @@
   - [x] 13.2 从 SmashUp types.ts 中删除 @deprecated 字段声明（MinionCardDef/ActionCardDef/BaseCardDef）
   - [x] 13.3 更新验证测试适配字段删除（改用 abilityTags 判断白板卡）
   - [x] 13.4 更新 AGENTS.md 中"现有游戏的历史债务"描述
-  - [x] 13.5 更新 docs/ai-rules/engine-systems.md 中债务清单和反面教材引用
+  - [x] 13.5 更新 .spec/knowledge/standards/engine-systems.md 中债务清单和反面教材引用
 
 ## 阶段六：abilityText() 引擎层提取
 
@@ -78,4 +78,4 @@
   - [x] 14.3 将 SummonerWars `abilityTextHelper.ts` 改为 re-export 引擎层实现
   - [x] 14.4 验证 SummonerWars i18n 完整性测试通过（5/5）
   - [x] 14.5 验证 DiceThrone 测试通过（49/49 moon-elf + pyromancer）
-  - [x] 14.6 更新 docs/ai-rules/engine-systems.md 文档（引擎原语描述、参考实现、示例代码）
+  - [x] 14.6 更新 .spec/knowledge/standards/engine-systems.md 文档（引擎原语描述、参考实现、示例代码）

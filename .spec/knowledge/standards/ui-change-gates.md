@@ -1,3 +1,11 @@
+---
+name: ui-change-gates
+description: UI 改动门禁：布局、槽位、截图审计和返工条件——改可见界面时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # UI 改动门禁与验收入口
 
 > 来源：从 `.spec/knowledge/standards/ui-ux.md` 无损拆出。本文档是 BoardGame 项目的 UI 改动、布局、主交互槽位、回归恢复与双端增量门禁主源；`ui-ux.md` 保留审美、组件单一来源和游戏 UI 特化范式。
@@ -79,6 +87,15 @@
 - **玩家视角优先于几何通过**：DOM 不相交、bbox 不重叠、元素数量正确、截图尺寸正确，只能证明基础工程约束；不能证明玩家能看懂。若肉眼复核仍出现小牌不可读、中心结果团块、右下无职责、对象归属不清或下一步点击对象不明确，必须撤销 `AI_PASS` 并写成 `geometry-pass-player-failed`。
 - **当前结算拥挤按注意力团块判定**：骰子、伤害、状态、目标框、路径线、短标签和 HUD 即使互不遮挡，只要在同一小区域形成多焦点团块，让玩家需要分辨“骰子属于谁、结果贴谁、还能点哪里”，就判 `center-pressure-failed`。修法优先减少、分层、贴附和退场低权重对象；不得把主结算丢到远侧栏换取干净。
 - **审计必须用玩家语言**：最终审计必须回答“玩家第一眼看哪里、当前能用什么、该点哪个对象、点完反馈在哪里”。如果审计只能列几何数值、元素数量或内部 class，不足以证明玩家友好。
+
+## 0.0F HUD / 动态提示不得挤压主布局（强制）
+
+- 动态出现的提示 UI，例如交互提示、等待提示、状态通知、战斗短浮层和 viewport 锚点 Loading，必须使用 `absolute`、`fixed` 或 `HudPortal` 等脱离普通文档流的承载方式；禁止让它们以 `relative/static` 节点插入后挤压右侧栏、手牌区、技能区、主棋盘或其它核心槽位。
+- `MobileBoardShell` 或其它整体缩放壳层内部不得直接渲染 viewport 语义的 `fixed/absolute` HUD。凡战斗提示、短浮层、悬浮 HUD、viewport Loading 等需要锚定真实视口的层，必须通过 `HudPortal` / `getHudPortalRoot` 进入 `#hud-root`。整页阶段 UI、页面级选择界面和本来就是页面主内容的全屏层不得因为“也是 overlay”就塞进 portal。
+- `LoadingScreen`、`ConnectionLoadingScreen`、`CriticalImageGate` 在 board-shell 场景必须使用 viewport 锚点或 `HudPortal` 承载；根节点不得用 `relative` 覆盖 `fixed/absolute` 语义，避免跟随缩放容器偏移。
+- 对已经内置居中、定位或安全区锚点的浮层组件，禁止用 `containerClassName` 完全替换默认定位类；扩展样式只能追加，或通过显式 props 调整。若必须替换定位，必须同步补截图或 DOM 几何证据证明居中、热区和周边槽位未被破坏。
+- 动态提示的层级必须通过项目 z-index 常量、明确语义层或同源组件约定表达；不得用随手增大的裸 z-index 掩盖遮挡问题。提示默认 `pointer-events-none`，只有真实需要交互时才允许打开指针事件。
+- 手机横屏主路径默认保留横屏桌面化构图；用户反馈“整体偏一点 / 不居中 / 像桌面端 / 不该变窄”时，优先修锚点、容器、比例、scale 与 transform-origin，不得未经证据擅自改成窄布局、双列手机竖稿或大留白路线。
 
 ## 0.1 样式修复不得擅自升级为布局修复（强制）
 

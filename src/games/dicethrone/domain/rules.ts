@@ -112,8 +112,8 @@ export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
 /**
  * 获取活跃骰子（根据 rollDiceCount）
  */
-export const getActiveDice = (state: DiceThroneCore): Die[] => {
-    return getCurrentRollDice(state);
+export const getActiveDice = (state: DiceThroneCore, phase?: TurnPhase): Die[] => {
+    return getCurrentRollDice(state, phase);
 };
 
 export const ATTACK_SNAPSHOT_DIE_ID_OFFSET = 100;
@@ -324,7 +324,7 @@ export const getSelectedCombatOpponentId = (
 
         const effectivePhase = phase ?? state.turnPhase;
         if (effectivePhase === 'targetingRoll') {
-            const targetingValue = getActiveDice(state)[0]?.value;
+            const targetingValue = getActiveDice(state, effectivePhase)[0]?.value;
             if (typeof targetingValue === 'number') {
                 return getTargetingRollAutoDefenderId(state, playerId, targetingValue);
             }
@@ -703,7 +703,7 @@ export const getAvailableAbilityIds = (
     const player = state.players[playerId];
     if (!player) return [];
     
-    const dice = getActiveDice(state);
+    const dice = getActiveDice(state, phase);
     const diceValues = dice.map(d => d.value);
     const faceCounts = getFaceCounts(dice);
 
@@ -847,8 +847,8 @@ const isDiceRollPhase = (phase: TurnPhase): boolean => (
     || phase === 'defensiveRoll'
 );
 
-const getDiceResultCountForCardPlay = (state: DiceThroneCore): number => {
-    return getActiveDice(state).length;
+const getDiceResultCountForCardPlay = (state: DiceThroneCore, phase: TurnPhase): number => {
+    return getActiveDice(state, phase).length;
 };
 
 const matchesPendingDamagePlayCondition = (
@@ -1076,7 +1076,7 @@ const checkStandardCardPlay = (
             }
         }
 
-        const diceResultCount = getDiceResultCountForCardPlay(state);
+        const diceResultCount = getDiceResultCountForCardPlay(state, phase);
 
         if (cond.requireDiceExists && diceResultCount === 0) {
             if (!hasCurrentDiceTargetForCard(state, card, phase)) {

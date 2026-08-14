@@ -1470,8 +1470,15 @@ export function resolveEffectsToEvents(
             ))
             ? 'inline' as const
             : 'standalone' as const;
+        const rollDieFeedsAttack = effect.action.type === 'rollDie'
+            && ctx.state.pendingAttack
+            && (
+                timing === 'preDefense'
+                || effect.action.resolutionMode === 'attackBonus'
+                || rollDieBonusDamageMode === 'inline'
+            );
         const rollDieContinuation = effect.action.type === 'rollDie'
-            ? ctx.state.pendingAttack
+            ? rollDieFeedsAttack
                 ? timing === 'preDefense'
                     ? {
                         kind: 'attack' as const,

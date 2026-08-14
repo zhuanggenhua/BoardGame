@@ -65,8 +65,8 @@ P2 验证发现约 8-10 个文件的测试用例确实缺失，需要评估恢�
 
 **影响评估**：
 - 这是多 afterScoring 交互链式传递的典型案例
-- `docs/ai-rules/testing-audit.md` 中明确提到这是已知的复杂交互场景
-- `docs/ai-rules/engine-systems.md` 中提到多 afterScoring 交互链式传递的 bug 修复
+- `.spec/knowledge/standards/testing-audit.md` 中明确提到这是已知的复杂交互场景
+- `.spec/knowledge/standards/engine-systems.md` 中提到多 afterScoring 交互链式传递的 bug 修复
 
 **恢复决策**：⭐⭐⭐ **强烈建议恢复**
 

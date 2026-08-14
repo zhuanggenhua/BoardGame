@@ -22,7 +22,7 @@
 - 前端交互承载：`src/games/dicethrone/ui/BoardOverlays.tsx`
 - 能力/卡牌真实实现：各英雄 `customActions/*.ts`
 - 规则语义关键词复审：各英雄 `abilities.ts`
-- 审计框架：`docs/ai-rules/testing-audit.md`
+- 审计框架：`.spec/knowledge/standards/testing-audit.md`
 
 ## 审计方法
 

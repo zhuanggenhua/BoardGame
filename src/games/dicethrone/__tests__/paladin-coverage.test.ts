@@ -110,6 +110,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'blessing-of-might' }),
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → 不可防御+门控过滤 → 直接结算 → main2
+                    cmd('RESPONSE_PASS', '0'),       // 攻击后响应窗口让过 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -236,7 +237,16 @@ describe('圣骑士 GTR 技能覆盖', () => {
             expect(afterCrit.success).toBe(true);
             const afterAccuracy = respondToPrompt(afterCrit.state, 'option-0', '0', random, ['0', '1']);
             expect(afterAccuracy.success).toBe(true);
-            expect(assertState(afterAccuracy.state, {
+            const closeResponse = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                afterAccuracy.state,
+                { ...cmd('RESPONSE_PASS', '0'), timestamp: Date.now() } as any,
+                random,
+                ['0', '1'],
+            );
+            expect(closeResponse.success).toBe(true);
+            if (!closeResponse.success) return;
+            expect(assertState(closeResponse.state as MatchState<DiceThroneCore>, {
                     turnPhase: 'main2',
                     players: {
                         '0': {
@@ -274,6 +284,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'vengeance' }),
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → main2
+                    cmd('RESPONSE_PASS', '0'),       // 攻击后响应窗口让过 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -444,6 +455,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer-2-main' }),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -483,6 +495,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'unyielding-faith' }),
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → main2
+                    cmd('RESPONSE_PASS', '0'),       // 攻击后响应窗口让过 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -533,6 +546,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'blessing-of-might-2-main' }),
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → 门控过滤 → 直接结算 → main2
+                    cmd('RESPONSE_PASS', '0'),       // 攻击后响应窗口让过 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -566,6 +580,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → preDefense choice → halt
                     // 选择暴击（option-0 = crit）→ 自动继续 → 不可防御 → 直接结算 → main2
                     cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',

@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { test, expect } from '../framework';
+import { expectRightTrayBonusDiceConfirmation, getRightTrayDiceTray } from './bonus-dice-flow';
 
 test.describe('DiceThrone - 雷霆万钧', () => {
     test('重掷奖励骰会消耗太极并更新结算状态', async ({ page, game }) => {
@@ -57,11 +58,7 @@ test.describe('DiceThrone - 雷霆万钧', () => {
             taiji: 2,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(
-            overlay.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }).last(),
-        ).toBeVisible({ timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
 
         const evidenceDir = join(
             process.cwd(),
@@ -72,19 +69,17 @@ test.describe('DiceThrone - 雷霆万钧', () => {
         );
         mkdirSync(evidenceDir, { recursive: true });
 
-        const bonusDice = overlay.getByTestId('dice-2d');
-        const bonusContents = overlay.locator('[data-testid="bonus-die-spotlight-content"]');
+        const diceTray = getRightTrayDiceTray(page);
+        const bonusDice = diceTray.getByTestId('dice-2d');
+        const bonusButtons = diceTray.locator('[data-testid^="die-button-"]');
         await expect(bonusDice).toHaveCount(3, { timeout: 5000 });
-        await expect(bonusContents).toHaveCount(3, { timeout: 5000 });
-        await overlay.screenshot({ path: join(evidenceDir, '01-before-reroll.png') });
+        await expect(bonusButtons).toHaveCount(3, { timeout: 5000 });
+        await diceTray.screenshot({ path: join(evidenceDir, '01-before-reroll.png') });
         await expect.poll(async () => bonusDice.evaluateAll((nodes) => nodes.map((node) => (
-            node.className.includes('animate-pulse')
+            (node as HTMLElement).dataset.rollAnimation === 'rolling'
         ))), { timeout: 2000 }).toEqual([false, false, false]);
-        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
-            (node as HTMLElement).dataset.rollAnimationKey ?? ''
-        ))).toEqual(['', '', '']);
 
-        await bonusDice.first().click();
+        await bonusButtons.first().click();
         await expect.poll(async () => {
             const state = await game.getState();
             const settlement = state?.core?.pendingBonusDiceSettlement;
@@ -104,13 +99,10 @@ test.describe('DiceThrone - 雷霆万钧', () => {
             rerollAnimationKey: 1,
             taiji: 0,
         });
-        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
-            (node as HTMLElement).dataset.rollAnimationKey ?? ''
-        )), { timeout: 2000 }).toEqual(['1:0', '', '']);
-        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
-            (node as HTMLElement).dataset.animateOnMount ?? ''
-        )), { timeout: 2000 }).toEqual(['true', 'false', 'false']);
-        await overlay.screenshot({ path: join(evidenceDir, '02-after-first-die-reroll-result.png') });
+        await expect.poll(async () => bonusButtons.evaluateAll((nodes) => nodes.map((node) =>
+            (node as HTMLElement).dataset.clickable ?? ''
+        )), { timeout: 2000 }).toEqual(['false', 'false', 'false']);
+        await diceTray.screenshot({ path: join(evidenceDir, '02-after-first-die-reroll-result.png') });
 
         const finalState = await game.getState();
         const finalSettlement = finalState?.core?.pendingBonusDiceSettlement;

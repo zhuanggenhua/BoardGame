@@ -257,7 +257,9 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
     events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, opponentId, dice, timestamp + 5, {
         customResolutionId: BARBARIAN_MORE_PLEASE_SETTLEMENT_ID,
         summaryEffectKey: 'bonusDie.effect.morePleaseRoll.result',
-        continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
+        // “再来点儿”是主攻击伤害前的攻击修正：奖励骰确认后应回到父攻击的正常伤害结算，
+        // 不能标成 readyToResolve（该阶段表示主伤害已经落地，只剩 ATTACK_RESOLVED 收口）。
+        continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
     }));
 
     return events;

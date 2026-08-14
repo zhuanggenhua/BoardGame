@@ -168,6 +168,11 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
         await expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
         expect((await boardMarker.textContent())?.trim()).toBe('');
+        const currentExplorerPanel = page.getByTestId('betrayal-observed-explorer-panel');
+        await expect(currentExplorerPanel).toBeVisible();
+        await expect(currentExplorerPanel).toHaveAttribute('data-player-id', '0');
+        await expect(currentExplorerPanel).toHaveAttribute('data-panel-asset', core.currentExplorer.portraitAsset);
+        await expect(currentExplorerPanel).not.toHaveAttribute('data-token-asset', /.*/);
         await expect(page.locator('[data-testid^="betrayal-bottom-teammate-"] [data-player-status-tone="neutral"]').filter({ hasText: '同房间' }).first()).toBeVisible();
         await expect(page.locator('[data-player-status-tone="target"]').filter({ hasText: '同房间' })).toHaveCount(0);
         await saveScreenshot(page, CURRENT_TRACK_SCREENSHOT);
@@ -221,6 +226,11 @@ test.describe('山屋惊魂属性轨 UI', () => {
             return Math.abs((labelBox.top + labelBox.height / 2) - (slotBox.top + slotBox.height / 2));
         });
         expect(observedSlotVerticalCenterDelta).toBeLessThanOrEqual(1);
+        const observedExplorerPanel = page.getByTestId('betrayal-observed-explorer-panel');
+        await expect(observedExplorerPanel).toBeVisible();
+        await expect(observedExplorerPanel).toHaveAttribute('data-player-id', '1');
+        await expect(observedExplorerPanel).toHaveAttribute('data-panel-asset', requireExplorerTemplate('stephanie-richter').portraitAsset);
+        await expect(observedExplorerPanel).not.toHaveAttribute('data-token-asset', /.*/);
         await saveScreenshot(page, OBSERVED_TRACK_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-trait-track-ui', diagnostics }]);

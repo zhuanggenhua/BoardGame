@@ -38,10 +38,10 @@
 
 - `design-system/game-ui/MASTER.md`
 - `design-system/games/fantasyrealms.md`
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/games/fantasyrealms/design/README.md`
 - `docs/testing-best-practices.md`
 

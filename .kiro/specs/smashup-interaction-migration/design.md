@@ -1018,7 +1018,7 @@ export interface AbilityExecuteResult {
 
 - `AGENTS.md` - 项目编码规范
 - `src/engine/systems/InteractionSystem.ts` - InteractionSystem 实现
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 - 现有游戏的 InteractionSystem 使用示例
 
 ### 12.2 术语表

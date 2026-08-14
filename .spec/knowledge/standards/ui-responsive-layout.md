@@ -1,3 +1,11 @@
+---
+name: ui-responsive-layout
+description: 响应式布局标准：PC/移动、横竖屏和壳层分工——改多端布局时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # UI 双端与响应式布局规范
 
 > 来源：从 `.spec/knowledge/standards/ui-ux.md` 无损拆出。本文档承载多端布局、参考分辨率、双端架构分层和单位选择规则；`ui-ux.md` 只保留入口摘要。

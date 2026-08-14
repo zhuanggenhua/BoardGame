@@ -2,7 +2,7 @@
 
 ## 简介
 
-对大杀四方（SmashUp, gameId: `smashup`）进行基于 `docs/ai-rules/testing-audit.md` D1-D33 全维度框架的系统性审计。
+对大杀四方（SmashUp, gameId: `smashup`）进行基于 `.spec/knowledge/standards/testing-audit.md` D1-D33 全维度框架的系统性审计。
 
 **第一阶段（已完成）**：D1 描述→实现文本一致性 + D3 注册覆盖的静态审计，覆盖基础版 8 派系。发现 3 个 i18n 文本错误（已修复）和 2 个逻辑 bug（待修复）。已有静态属性测试（Property 1-3, 6, 9）和逐派系文本审计报告（`docs/audit/smashup/phase1-*.md`）。
 

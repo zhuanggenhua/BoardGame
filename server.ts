@@ -904,7 +904,7 @@ router.post('/games/:name/create', async (ctx) => {
     const { state: initialState, randomCursor } = setupResult;
 
     // 构建 metadata（每个座位包含 id 字段）
-    const players: Record<string, { id: number; name?: string; credentials?: string; isConnected?: boolean }> = {};
+    const players: Record<string, { id: number; name?: string; credentials?: string; isConnected?: boolean; ownerKey?: string }> = {};
     for (let i = 0; i < playerIds.length; i++) {
         players[playerIds[i]] = { id: i };
     }
@@ -916,6 +916,10 @@ router.post('/games/:name/create', async (ctx) => {
         updatedAt: Date.now(),
         setupData,
         status: 'waiting',
+    };
+    metadata.players['0'] = {
+        ...metadata.players['0'],
+        ownerKey,
     };
 
     let ownerCredentials: string | undefined;

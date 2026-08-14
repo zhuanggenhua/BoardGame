@@ -62,13 +62,13 @@ const buildBonusDiceAfterRollConfirmedWindowEvent = (
         return null;
     }
 
-    const rollSignature = buildAfterRollConfirmedSignature(state.core);
+    const rollerId = settlement.attackerId;
+    const phase = (state.sys.phase || 'main1') as TurnPhase;
+    const rollSignature = buildAfterRollConfirmedSignature(state.core, phase);
     if (hasAfterRollConfirmedWindowBeenHandled(state.core, rollSignature)) {
         return null;
     }
 
-    const rollerId = settlement.attackerId;
-    const phase = (state.sys.phase || 'main1') as TurnPhase;
     const responderQueue = getResponderQueue(
         state.core,
         'afterRollConfirmed',
@@ -107,7 +107,8 @@ const isBonusDiceAwaitingAfterRollConfirmedResponse = (
         return false;
     }
 
-    const rollSignature = buildAfterRollConfirmedSignature(state.core);
+    const phase = (state.sys.phase || 'main1') as TurnPhase;
+    const rollSignature = buildAfterRollConfirmedSignature(state.core, phase);
     const currentWindow = state.sys.responseWindow?.current;
     return (
         currentWindow?.windowType === 'afterRollConfirmed'
@@ -734,6 +735,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'INTERACTION_REQUESTED') {
                     const payload = (dtEvent as InteractionRequestedEvent).payload;
                     const pendingInteraction = payload.interaction;
+                    const currentPhase = (newState.sys.phase ?? 'main1') as TurnPhase;
                     
                     // 骰子修改类交互 → multistep-choice
                     if (pendingInteraction.type === 'modifyDie') {
@@ -742,7 +744,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         const mode = config?.mode;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
                             ? Array.from(new Set(pendingInteraction.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
-                            : getActiveDice(newState.core).map(die => die.id);
+                            : getActiveDice(newState.core, currentPhase).map(die => die.id);
                         const completedDieIds = Array.isArray(pendingInteraction.completedDieIds)
                             ? Array.from(new Set(pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
                             : [];
@@ -793,7 +795,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         const selectCount = pendingInteraction.selectCount ?? 1;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
                             ? Array.from(new Set(pendingInteraction.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
-                            : getActiveDice(newState.core).map(die => die.id);
+                            : getActiveDice(newState.core, currentPhase).map(die => die.id);
                         const completedDieIds = Array.isArray(pendingInteraction.completedDieIds)
                             ? Array.from(new Set(pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
                             : [];
@@ -1024,7 +1026,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 }
 
                 // ---- BONUS_DICE_SETTLED → resolve ----
-                // 临时骰确认后必须释放交互；右侧骰盘保留刚结算的奖励骰只读回看。
+                // 临时骰确认后必须释放交互；后续骰盘展示由 settlement continuation 决定。
                 if (dtEvent.type === 'BONUS_DICE_SETTLED') {
                     newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                 }
@@ -1143,7 +1145,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'ABILITY_ACTIVATED') {
                     const { abilityId, playerId, isDefense } = dtEvent.payload;
                     // 仅在自己的进攻阶段触发（非防御技能）
-                    const phase = newState.sys.phase as string;
+                    const phase = newState.sys.phase as TurnPhase;
                     if (!isDefense && phase === 'offensiveRoll' && playerId === newState.core.activePlayerId) {
                         const passives = getPlayerPassiveAbilities(newState.core, playerId);
                         for (const passive of passives) {
@@ -1161,7 +1163,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 hasFace = trigger.symbols.includes(passive.trigger.requiredFace);
                             } else if (trigger.type === 'smallStraight' || trigger.type === 'largeStraight') {
                                 // 顺子不声明骰面，需要检查实际骰面中是否包含所需面
-                                const activeDice = getActiveDice(newState.core);
+                                const activeDice = getActiveDice(newState.core, phase);
                                 hasFace = activeDice.some(d => d.symbol === passive.trigger!.requiredFace);
                             }
                             if (hasFace) {

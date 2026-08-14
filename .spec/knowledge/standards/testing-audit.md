@@ -1,3 +1,11 @@
+---
+name: testing-audit
+description: 测试审计总入口：结论分层、工具选择和专项入口——做规则或玩法审计时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试与审计规范
 
 > **触发条件**：新增功能/技能/API、修复 bug、审查实现完整性时阅读。
@@ -129,9 +137,9 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 
 ## E2E 测试选择器一致性检查（强制）
 
-> E2E 选择器来源、交互路径、i18n 按钮文本、状态断言和反模式已归并到 `docs/automated-testing.md` 的「E2E 测试选择器一致性检查」。
+> E2E 选择器来源、交互路径、i18n 按钮文本、状态断言和反模式以 [`e2e-verification`](e2e-verification.md) 的「选择器与断言一致性」为准。
 >
-> 本文档只保留审计入口；凡因 UI 重构需要判断 E2E 断言是否同步，必须回到 automated-testing 主源，不在审计入口复制检查清单。
+> 本文档只保留审计入口；凡因 UI 重构需要判断 E2E 断言是否同步，先回到 E2E 主源。`docs/automated-testing.md` 只能作为 runner、fixture 和工具 API 参考。
 
 ---
 

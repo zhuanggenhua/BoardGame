@@ -245,7 +245,7 @@ Tests  31 passed (31)
 - `docs/bugs/dicethrone/dicethrone-shield-final-summary.md` — 护盾 bug 修复完整总结
 - `docs/bugs/engine-vs-game-implementation-comparison.md` — 引擎层 vs 游戏层实现对比
 - `docs/cumulative-state-solution-analysis.md` — 累计状态污染分析
-- `docs/ai-rules/engine-systems.md` — 引擎系统使用规范
+- `.spec/knowledge/standards/engine-systems.md` — 引擎系统使用规范
 - `AGENTS.md` — 面向百游戏设计规范
 
 ## 总结

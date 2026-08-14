@@ -1,3 +1,11 @@
+---
+name: undo-auto-advance
+description: 撤回与自动推进标准：撤回窗口、自动阶段和状态恢复——改 undo 或自动推进时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 撤回后自动推进规范（强制）
 
 > **问题根源**：撤回恢复状态后，FlowSystem.afterEvents 中的 `onAutoContinueCheck` 会被触发，导致某些阶段意外自动推进。
@@ -265,7 +273,8 @@ it('撤回标记在下一个命令前被清理', () => {
 
 ## 相关文档
 
-- `docs/automated-testing.md` — 撤回测试规范
+- `.spec/knowledge/standards/e2e-verification.md` — 撤回 E2E 验收规范
+- `docs/automated-testing.md` — 测试 runner / fixture / API 参考
 - `src/engine/systems/UndoSystem.ts` — 撤回系统实现
 - `src/engine/systems/FlowSystem.ts` — 流程系统实现
 - `.spec/knowledge/standards/engine-systems.md` — 引擎系统规范

@@ -1,3 +1,11 @@
+---
+name: conversation-handoff-target-lock
+description: 接续目标锁定：摘要、交接和当前目标防漂移——上下文压缩或接手任务时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 对话接续与目标锁定
 
 > 适用：上下文压缩后继续、读取交接摘要、用户说“继续”、读取 `task_plan.md` / `progress.md` / `findings.md` / `temp/**` / evidence 清单，或发现上个模型总结和用户当前主线不一致。

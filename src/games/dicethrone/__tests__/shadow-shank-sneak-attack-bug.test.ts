@@ -258,7 +258,7 @@ describe('暗影穿刺 + 伏击 伤害丢失 Bug 复现', () => {
         expect(tokenUsedEvent).toBeDefined();
         expect(tokenUsedEvent.payload.damageModifier).toBe(0);
 
-        // 确认奖励骰后才有按最终骰面产生的 BONUS_DIE_ROLLED。
+        // 普通确认右侧奖励骰盘后才有按最终骰面产生的 BONUS_DIE_ROLLED。
         const bonusDieEvent = confirmBonusDieEvents.find((e: any) => e.type === 'BONUS_DIE_ROLLED');
         expect(bonusDieEvent).toBeDefined();
         expect(bonusDieEvent.payload.pendingDamageBonus).toBe(3);

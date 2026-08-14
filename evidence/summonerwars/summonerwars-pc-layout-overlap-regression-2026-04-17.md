@@ -25,7 +25,7 @@
 
 ### E2E 视口修复（2026-04-18 追加）
 
-- `playwright.config.ts` 的 `chromium` 项目从默认 `devices['Desktop Chrome']`（1280x720）改为显式 `viewport: { width: 1920, height: 1080 }`，符合 `docs/ai-rules/ui-ux.md` §2.0 规范。
+- `playwright.config.ts` 的 `chromium` 项目从默认 `devices['Desktop Chrome']`（1280x720）改为显式 `viewport: { width: 1920, height: 1080 }`，符合 `.spec/knowledge/standards/ui-ux.md` §2.0 规范。
 - `e2e/summonerwars/summonerwars.e2e.ts` 在线对局测试内部硬编码 `viewport: { width: 1440, height: 900 }`，覆盖了 config 设置，已改为 `1920x1080`。
 
 ### Action Banner 居中修复（2026-04-18 追加）

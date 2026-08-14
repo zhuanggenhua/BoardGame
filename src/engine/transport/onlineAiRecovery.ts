@@ -74,7 +74,7 @@ export type HiddenInteractionDescriptor = {
 
 type ForcedInteractionRecoveryCommand = {
     type: string;
-    payload: Record<string, unknown>;
+    payload: unknown;
 };
 
 export type ForceSkippableHiddenAiInteraction = {
@@ -555,29 +555,7 @@ function buildForceEndTurnFromInteractionState(
     }
 
     const fingerprintHint = buildInteractionRecoveryFingerprintHint(state, current, playerId, options);
-
-    const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId, options);
-    if (forceSkipPayload) {
-        return {
-            playerId,
-            reason,
-            requiresConfirmedAdvancePhase: true,
-            fingerprintHint,
-            resolution: buildForceEndTurnResolution({
-                playerId,
-                suffix: fingerprintHint,
-                commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: forceSkipPayload.payload }],
-            }),
-        };
-    }
-
-    const configuredForceCommand = options?.engineConfig?.onlineAiRecovery?.resolveForcedInteractionCommand?.({
-        state,
-        playerId,
-        interaction: current,
-        reason,
-    }) as ForcedInteractionRecoveryCommand | null | undefined;
-
+    const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
     const fallbackInteractionId = typeof current.id === 'string' && current.id.length > 0
         ? current.id
         : `${playerId}:unknown-interaction`;
@@ -599,12 +577,40 @@ function buildForceEndTurnFromInteractionState(
         && compareRollEnabledOptionIds.length === 0
         && compareRollData !== undefined
         && Object.prototype.hasOwnProperty.call(compareRollData, 'confirmValue');
-    const forceCommand = configuredForceCommand
-        ?? (compareRollSingleOptionId
-            ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
-            : shouldForceCompareRollConfirm
-                ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
-                : { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } });
+    const fallbackCommand = compareRollSingleOptionId
+        ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
+        : shouldForceCompareRollConfirm
+            ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
+            : { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } };
+
+    const configuredForceCommand = options?.engineConfig?.onlineAiRecovery?.resolveForcedInteractionCommand?.({
+        state,
+        playerId,
+        phase,
+        interaction: current,
+        fallbackCommand,
+    }) as ForcedInteractionRecoveryCommand | false | null | undefined;
+
+    if (configuredForceCommand === false) {
+        return null;
+    }
+
+    const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId, options);
+    if (!configuredForceCommand && forceSkipPayload) {
+        return {
+            playerId,
+            reason,
+            requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
+            resolution: buildForceEndTurnResolution({
+                playerId,
+                suffix: fingerprintHint,
+                commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: forceSkipPayload.payload }],
+            }),
+        };
+    }
+
+    const forceCommand = configuredForceCommand ?? fallbackCommand;
 
     return {
         playerId,

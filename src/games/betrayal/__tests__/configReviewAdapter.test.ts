@@ -18,9 +18,47 @@ describe('Betrayal configReviewAdapter', () => {
         expect(table.gameId).toBe('betrayal');
         expect(table.configVersion).toBe(BETRAYAL_CONFIG_REVIEW_VERSION);
         expect(table.rows.length).toBeGreaterThan(50);
+        expect(table.rows.some((row) => row.objectType === 'explorer')).toBe(true);
         expect(table.rows.some((row) => row.objectType === 'room-template')).toBe(true);
         expect(table.rows.some((row) => row.objectType === 'scenario-card')).toBe(true);
         expect(table.rows.some((row) => row.objectType === 'scenario-config')).toBe(true);
+    });
+
+    it('探索者玩家面板资源和地图 token 进入同一配置表并可被搜索索引', () => {
+        const table = buildBetrayalConfigReviewTable();
+        const jaden = table.rows.find((row) => row.objectId === 'jaden-jones');
+        const stephanie = table.rows.find((row) => row.objectId === 'stephanie-richter');
+        const explorerRows = table.rows.filter((row) => row.objectType === 'explorer');
+
+        expect(explorerRows).toHaveLength(12);
+        expect(jaden).toMatchObject({
+            objectType: 'explorer',
+            displayName: '杰登·琼斯',
+        });
+        expect(jaden?.values).toMatchObject({
+            explorerId: 'jaden-jones',
+            panelAsset: 'betrayal/explorers/jade-jones',
+            panelSourceFile: 'public/assets/i18n/zh-CN/betrayal/explorers/jade-jones.png',
+            mapTokenAsset: 'betrayal/tokens/explorers/jaden-jones',
+            mapTokenSourceFile: 'public/assets/i18n/zh-CN/betrayal/tokens/explorers/jaden-jones.png',
+            mapTokenCompressedAsset: 'public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/jaden-jones.webp',
+            reviewStatus: 'locked',
+        });
+        expect(jaden?.fieldPaths.panelAsset).toBe(
+            'legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.jaden-jones.portraitAsset',
+        );
+        expect(jaden?.fieldPaths.mapTokenAsset).toBe(
+            'legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.jaden-jones.tokenAsset',
+        );
+        expect(jaden?.searchText).toContain('betrayal/explorers/jade-jones');
+        expect(jaden?.searchText).toContain('betrayal/tokens/explorers/jaden-jones');
+        expect(jaden?.searchText).toContain('玩家面板使用 panelasset');
+
+        expect(stephanie?.values.mapTokenAsset).toBe('betrayal/tokens/explorers/stephanie-richter');
+        expect(getBetrayalConfigReviewCellValue(jaden!, 'panelAsset')).toBe('betrayal/explorers/jade-jones');
+        expect(getBetrayalConfigReviewCellValue(jaden!, 'mapTokenAsset')).toBe('betrayal/tokens/explorers/jaden-jones');
+        expect(isBetrayalConfigReviewFieldApplicable(jaden!, 'panelAsset')).toBe(true);
+        expect(isBetrayalConfigReviewFieldApplicable(jaden!, 'doorways')).toBe(false);
     });
 
     it('显式暴露房间门位、旋转后门位和连通校验字段', () => {

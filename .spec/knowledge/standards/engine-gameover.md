@@ -1,3 +1,11 @@
+---
+name: engine-gameover
+description: 游戏结束标准：胜负判定、终局状态和传输收口——改 gameover 流程时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 游戏结束检测规范
 
 ## 游戏结束检测（`sys.gameover`）（强制）

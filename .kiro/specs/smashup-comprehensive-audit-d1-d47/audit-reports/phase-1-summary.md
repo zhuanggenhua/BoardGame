@@ -144,7 +144,7 @@
 - **代码审查**: 逐行审查实现代码
 - **GameTestRunner**: 引擎层行为测试工具
 - **Vitest**: 单元测试框架
-- **审计规范**: `docs/ai-rules/testing-audit.md` D1-D47 维度定义
+- **审计规范**: `.spec/knowledge/standards/testing-audit.md` D1-D47 维度定义
 
 ---
 
@@ -241,7 +241,7 @@
 
 ### 参考文档
 
-- **审计规范**: `docs/ai-rules/testing-audit.md`
+- **审计规范**: `.spec/knowledge/standards/testing-audit.md`
 - **需求文档**: `.kiro/specs/smashup-comprehensive-audit-d1-d47/requirements.md`
 - **设计文档**: `.kiro/specs/smashup-comprehensive-audit-d1-d47/design.md`
 - **任务列表**: `.kiro/specs/smashup-comprehensive-audit-d1-d47/tasks.md`

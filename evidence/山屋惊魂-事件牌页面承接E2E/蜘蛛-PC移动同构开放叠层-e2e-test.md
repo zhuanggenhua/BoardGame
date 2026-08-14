@@ -43,7 +43,7 @@
 
 ## 规范更新
 
-- `docs/ai-rules/ui-ux.md`：新增事件目标选择不得加代理文字标签或目标块；目标必须由真实对象本体承接。
+- `.spec/knowledge/standards/ui-ux.md`：新增事件目标选择不得加代理文字标签或目标块；目标必须由真实对象本体承接。
 - `D:\codex-home\skills\mobile-responsiveness\SKILL.md`：补充移动端不得新增 PC 没有的代理目标块，例如事件面板里的 `地图 / 某房间`。
 
 ## AI 图面裁决

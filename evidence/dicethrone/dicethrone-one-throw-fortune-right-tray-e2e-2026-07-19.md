@@ -13,7 +13,7 @@
 
 ## 改动摘要
 
-- `docs/ai-rules/e2e-verification.md`
+- `.spec/knowledge/standards/e2e-verification.md`
   - 明确端到端截图必须是一组覆盖完整流程步骤的截图，不能只给单张中间产物。
   - 用户要求打开端到端图时，必须一次性打开整组原图。
 - `src/games/dicethrone/ui/CardSpotlightOverlay.tsx`

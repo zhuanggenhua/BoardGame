@@ -23,8 +23,8 @@ vi.mock('../SpotlightContainer', () => ({
     ),
 }));
 
-vi.mock('../BonusDieSpotlightContent', () => ({
-    default: ({ value }: { value: number }) => <div data-testid="bonus-die-content">{value}</div>,
+vi.mock('../RollSpotlightDiceContent', () => ({
+    default: ({ value }: { value: number }) => <div data-testid="roll-spotlight-dice-content">{value}</div>,
 }));
 
 describe('CompareRollOverlay', () => {

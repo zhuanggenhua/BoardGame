@@ -573,7 +573,8 @@ describe('灰烬 - 自动机制', () => {
       newState,
       events,
       testRandom(),
-      { core: newState, sys: { _ppseInputEventsReduced: true } as never } as MatchState<SummonerWarsCore>,
+      { core: newState, sys: {} } as MatchState<SummonerWarsCore>,
+      { inputEventsAlreadyReduced: true },
     );
     const processedEvents = Array.isArray(processed) ? processed : processed.events;
     expect(processedEvents.some(e => e.type === SW_EVENTS.UNIT_DESTROYED)).toBe(false);

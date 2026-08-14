@@ -172,7 +172,7 @@
 
 - **旧结论进一步限定**：2026-05-10 的“新机制真实入口 E2E 已验证”只能按当时的代表性 E2E 覆盖理解，不能解释为 39 张卡 + 6 张基地逐对象 L3 全覆盖。
 - **本轮新增证据**：`evidence/smashup/smashup-shayu-full-chain-audit-2026-05-12.md`。
-- **本轮审计口径**：按 `docs/ai-rules/testing-audit.md` 新补强的通用交互入口语义矩阵，对 shayu 三派系全部对象做 P0/P1 重审，逐项核对第一入口、目标归属、数量/可选、上下文携带、UI/validator/handler/reducer 单一真相。
+- **本轮审计口径**：按 `.spec/knowledge/standards/testing-audit.md` 新补强的通用交互入口语义矩阵，对 shayu 三派系全部对象做 P0/P1 重审，逐项核对第一入口、目标归属、数量/可选、上下文携带、UI/validator/handler/reducer 单一真相。
 - **新结论**：截至本轮静态 + 行为证据复核，未发现新的 P0/P1 blocker；但本轮未新增浏览器 E2E 截图，因此不能把本轮结论升级为“全量 L3 E2E 收口”。
 - **当前等级**：shayu 三派系可表述为“全量入口矩阵 P0/P1 已审 + 代表性 L2/L3 已验证 + 仍保留非逐对象 L3 残余范围”。
 

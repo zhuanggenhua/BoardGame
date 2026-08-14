@@ -178,7 +178,7 @@ if (currentIsMultiBaseScoring || hasMultiBaseScoringInQueue) {
 - `evidence/smashup/smashup-multi-base-duplicate-replacement-fix.md` - 多基地替换为同一个基地修复
 - `evidence/smashup/smashup-multi-base-infinite-loop-fix.md` - 多基地计分无限循环修复
 - `evidence/smashup/smashup-multi-base-duplicate-events-user-report.md` - 用户反馈分析
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 
 ## 总结
 

@@ -7,7 +7,7 @@
 | 类别 | 文件 / 来源 | 对 v48 的直接影响 |
 | --- | --- | --- |
 | 全局 UI 设计链 | `D:\codex-home\skills\ui-design-pipeline\SKILL.md`、`ui-audit-loop`、`frontend-design`、`existing-ui-design-baseline`、`game-design`、`ui-ux-pro-max` | 设计稿必须先有规则 / 素材 / 玩家任务证据；AI 自检 PASS 前不得打开人工验收 |
-| 项目入口 | `AGENTS.md`、`docs/infra/open-design.md`、`docs/ai-rules/doc-index.md`、`docs/ai-rules/ui-change-gates.md`、`docs/ai-rules/ui-ux.md`、`docs/ai-rules/asset-pipeline.md`、`design-system/game-ui/MASTER.md` | Open Design artifact 是代码设计稿，禁止 `od media generate`；PC 未过前冻结实现和移动端；素材主体不能被文字壳替代 |
+| 项目入口 | `AGENTS.md`、`docs/infra/open-design.md`、`.spec/knowledge/README.md`、`.spec/knowledge/standards/ui-change-gates.md`、`.spec/knowledge/standards/ui-ux.md`、`.spec/knowledge/standards/asset-pipeline.md`、`design-system/game-ui/MASTER.md` | Open Design artifact 是代码设计稿，禁止 `od media generate`；PC 未过前冻结实现和移动端；素材主体不能被文字壳替代 |
 | Mage Wars 设计真相 | `step1-runtime-board-saturated-ui-design.md`、`v47-audit.md`、`apprentice-zone-layout-contract.md`、`board-coordinate-contract.md`、`board-ui-preflight-matrix.md` | v47 的三项失败必须修：对手计划左上镜像、问号区裁规则职责、分页改成书页边缘样式 |
 | Mage Wars 规则 / 数据 | `apprentice-spellbooks.md`、`apprentice-card-field-contract.md` | 当前动作锁为邪术师已计划 `火球术`，目标为 `B2` 的 `西锁骑士`；91 张学徒卡字段完整，卡面字段由卡图承担 |
 | 素材输入包 | `step1-runtime-board-asset-input-manifest.md`、Open Design `refs/mage-wars-step1/` | 竞技场、法师牌、火球术、法师祸咒、卡背、攻击骰、效果骰、伤害 / 燃烧 / 行动 / 快速施法 token 均有正式或来源锁定渲染来源 |

@@ -431,11 +431,26 @@ const buildAbilityHighlightStyle = (
             },
         }), [allLayouts, layoutVersion]);
 
-        const resolveAbilityId = (slotId: string) => {
+        const resolveAbilityIdFromCandidates = (slotId: string, abilityIds: Array<string | undefined>) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
             if (!mapping) return null;
-            return availableAbilityIds.find(id => slotContainsAbilityIdForCharacter(characterId, slotId, id, playerBoardFace)) ?? null;
+            return abilityIds.find(id => (
+                typeof id === 'string'
+                && slotContainsAbilityIdForCharacter(characterId, slotId, id, playerBoardFace)
+            )) ?? null;
         };
+
+        const resolveAvailableAbilityId = (slotId: string) => (
+            resolveAbilityIdFromCandidates(slotId, availableAbilityIds)
+        );
+
+        const resolveSelectedAbilityId = (slotId: string) => (
+            resolveAbilityIdFromCandidates(slotId, [selectedAbilityId])
+        );
+
+        const resolveActivatingAbilityId = (slotId: string) => (
+            resolveAbilityIdFromCandidates(slotId, [activatingAbilityId])
+        );
 
         const handleMouseDown = (e: React.MouseEvent, id: string, type: 'move' | 'resize') => {
             if (!isEditing) return;
@@ -565,7 +580,10 @@ const buildAbilityHighlightStyle = (
                     }
                     
                     // 方案 A：不再需要计算精灵图位置（col, row, bgX, bgY），玩家面板已包含基础技能
-                    const isResolved = resolveAbilityId(slot.id);
+                    const availableAbilityId = resolveAvailableAbilityId(slot.id);
+                    const selectedSlotAbilityId = resolveSelectedAbilityId(slot.id);
+                    const activatingSlotAbilityId = resolveActivatingAbilityId(slot.id);
+                    const displayAbilityId = availableAbilityId ?? selectedSlotAbilityId ?? activatingSlotAbilityId;
                     const baseAbilityId = getSlotAbilityId(characterId, slot.id, playerBoardFace);
                     const level = baseAbilityId ? (abilityLevels?.[baseAbilityId] ?? 1) : 1;
                     const upgradeCard = baseAbilityId && level > 1
@@ -574,10 +592,10 @@ const buildAbilityHighlightStyle = (
                     const upgradePreviewRef = upgradeCard?.previewRef;
                     const mapping = ABILITY_SLOT_MAP[slot.id];
                     const slotLabel = mapping ? t(mapping.labelKey) : slot.id;
-                    const isAbilitySelected = !isEditing && selectedAbilityId === isResolved;
-                    const isAvailable = Boolean(isResolved);
+                    const isAbilitySelected = !isEditing && Boolean(selectedSlotAbilityId);
+                    const isAvailable = Boolean(availableAbilityId);
                     const canClick = !isEditing && canSelect && isAvailable;
-                    const isActivating = !isEditing && activatingAbilityId === isResolved;
+                    const isActivating = !isEditing && Boolean(activatingSlotAbilityId);
                     const shouldHighlight = !isEditing && canHighlight && isAvailable;
                     const hasPrimarySlotClick = canClick || (!isEditing && shouldHighlight && !canSelect && Boolean(onHighlightedAbilityClick));
                     const slotInspectKey = `upgrade-${characterId}-${slot.id}-${upgradeCard?.id ?? 'none'}`;
@@ -587,7 +605,10 @@ const buildAbilityHighlightStyle = (
                             key={slot.id}
                             data-ability-slot={slot.id}
                             data-ability-slot-scope={slotScope}
-                            data-resolved-ability-id={isResolved ?? ''}
+                            data-resolved-ability-id={displayAbilityId ?? ''}
+                            data-available-ability-id={availableAbilityId ?? ''}
+                            data-selected-ability-id={selectedSlotAbilityId ?? ''}
+                            data-activating-ability-id={activatingSlotAbilityId ?? ''}
                             data-base-ability-id={baseAbilityId ?? ''}
                             data-upgrade-preview-slot={upgradeCard ? slot.id : undefined}
                             data-can-click={canClick ? 'true' : 'false'}
@@ -611,10 +632,10 @@ const buildAbilityHighlightStyle = (
                                     onMagnifyCard?.(upgradeCard);
                                     return;
                                 }
-                                if (canClick && isResolved) {
+                                if (canClick && availableAbilityId) {
                                     // DiceThrone：选择技能统一使用 dialog_choice 点击音效
                                     playSound('ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none');
-                                    onSelectAbility(isResolved);
+                                    onSelectAbility(availableAbilityId);
                                 } else if (!isEditing && shouldHighlight && !canSelect && onHighlightedAbilityClick) {
                                     onHighlightedAbilityClick();
                                 }

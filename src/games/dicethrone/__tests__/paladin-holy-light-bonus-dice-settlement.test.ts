@@ -38,6 +38,9 @@ describe('圣光术奖励骰反馈回归', () => {
             attackerId: '0',
         });
         expect(state.core.pendingBonusDiceSettlement?.dice).toHaveLength(2);
+        expect(getCurrentInteractionSummary(state).kind).toBeUndefined();
+
+        dispatch('RESPONSE_PASS');
         expect(getCurrentInteractionSummary(state).kind).toBe('dt:bonus-dice');
 
         const skipResult = dispatch('SKIP_BONUS_DICE_REROLL');

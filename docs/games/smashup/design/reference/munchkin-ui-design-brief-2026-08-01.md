@@ -19,10 +19,10 @@
 本轮实际读取并用于设计裁定的来源：
 
 - `D:\gongzuo\webgame\BoardGame\evidence\smashup\munchkin-intake-atlas-contract-2026-08-01.md`
-- `D:\gongzuo\webgame\BoardGame\docs\ai-rules\doc-index.md`
-- `D:\gongzuo\webgame\BoardGame\docs\ai-rules\ui-ux.md`
-- `D:\gongzuo\webgame\BoardGame\docs\ai-rules\ui-change-gates.md`
-- `D:\gongzuo\webgame\BoardGame\docs\ai-rules\asset-pipeline.md`
+- `D:\gongzuo\webgame\BoardGame\.spec/knowledge/README.md`
+- `D:\gongzuo\webgame\BoardGame\.spec/knowledge/standards/ui-ux.md`
+- `D:\gongzuo\webgame\BoardGame\.spec/knowledge/standards/ui-change-gates.md`
+- `D:\gongzuo\webgame\BoardGame\.spec/knowledge/standards/asset-pipeline.md`
 - `D:\gongzuo\webgame\BoardGame\design-system\game-ui\MASTER.md`
 - `D:\gongzuo\webgame\BoardGame\design-system\styles\tactical-clean.md`
 - `D:\codex-home\skills\.system\imagegen\SKILL.md`

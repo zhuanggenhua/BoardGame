@@ -459,7 +459,7 @@ describe('useCardSpotlight rollback consumer', () => {
         });
     });
 
-    it('自己打出会投奖励骰的卡时，只保留右侧骰盘，不再创建中央卡牌或奖励骰特写', async () => {
+    it('自己打出会投奖励骰的卡时，只保留右侧骰盘，不再创建中央卡牌或奖励骰展示', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
                 {children}

@@ -80,7 +80,7 @@ expect(ctx?._deferredPostScoringEvents.length).toBeGreaterThan(0);
 
 ## Why These Tests Matter
 
-1. **Critical Timing Scenario**: Temple + First Mate is explicitly mentioned in `docs/ai-rules/testing-audit.md` as a high-priority test case.
+1. **Critical Timing Scenario**: Temple + First Mate is explicitly mentioned in `.spec/knowledge/standards/testing-audit.md` as a high-priority test case.
 
 2. **Tests Bug Fix**: Verifies the `_deferredPostScoringEvents` mechanism that was fixed in commit 6ea1f9f (POD commit).
 
@@ -119,8 +119,8 @@ expect(ctx?._deferredPostScoringEvents.length).toBeGreaterThan(0);
 - `src/games/smashup/domain/index.ts` - `_deferredPostScoringEvents` mechanism (line 370)
 
 ### Documentation
-- `docs/ai-rules/testing-audit.md` - Lists Temple+FirstMate as critical
-- `docs/ai-rules/engine-systems.md` - Documents `_deferredPostScoringEvents`
+- `.spec/knowledge/standards/testing-audit.md` - Lists Temple+FirstMate as critical
+- `.spec/knowledge/standards/engine-systems.md` - Documents `_deferredPostScoringEvents`
 
 ## Next Steps
 

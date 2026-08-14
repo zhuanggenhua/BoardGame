@@ -119,9 +119,14 @@ type DiceBoxDieWithBody = DiceBoxDie & {
 };
 
 type DiceBoxSurfaceObject = {
+    type?: string;
+    name?: string;
+    isMesh?: boolean;
     visible?: boolean;
+    castShadow?: boolean;
     receiveShadow?: boolean;
     material?: DiceBoxMaterialInstance | DiceBoxMaterialInstance[];
+    traverse?: (visitor: (object: DiceBoxSurfaceObject) => void) => void;
 };
 
 type DiceBoxDieTransformSnapshot = {
@@ -235,6 +240,7 @@ export class DiceBoxThreeEngine {
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
     private activePresetSkinId: string | null = null;
     private worldBounds: DiceBoxWorldBounds = { width: 0, height: 0 };
+    private transparentSurfaceHiddenObjects: string[] = [];
 
     private constructor(
         box: InstanceType<typeof DiceBoxModule>,
@@ -434,6 +440,7 @@ export class DiceBoxThreeEngine {
                     }))
                     : [],
             })),
+            transparentSurfaceHiddenObjects: this.transparentSurfaceHiddenObjects,
             dice: this.box.diceList.map((die, index) => {
                 const dieWithBody = die as DiceBoxDieWithBody;
                 if (!die.geometry.boundingBox) {
@@ -453,6 +460,7 @@ export class DiceBoxThreeEngine {
                         }
                         : null,
                     layout: this.getProjectedLayout(index, index),
+                    motion: this.getMotionSnapshot(index),
                     value: readDieValue(die),
                     materialCount: Array.isArray(die.material) ? die.material.length : (die.material ? 1 : 0),
                     materialSummary: (Array.isArray(die.material) ? die.material : [die.material]).map((material) => ({
@@ -616,19 +624,39 @@ export class DiceBoxThreeEngine {
         const runtime = this.box as DiceBoxInternalRuntime & {
             desk?: DiceBoxSurfaceObject;
         };
-        const desk = runtime.desk;
-        if (!desk) return;
+        const hiddenObjects: string[] = [];
+        const diceSet = new Set<unknown>(this.box.diceList);
+        const hideSurface = (
+            surface: DiceBoxSurfaceObject | null | undefined,
+            fallbackName: string,
+        ): void => {
+            if (!surface) return;
+            surface.visible = false;
+            surface.receiveShadow = false;
+            surface.castShadow = false;
+            const materials = Array.isArray(surface.material) ? surface.material : [surface.material];
+            for (const material of materials) {
+                if (!material) continue;
+                material.visible = false;
+                material.transparent = true;
+                material.opacity = 0;
+                material.needsUpdate = true;
+            }
+            hiddenObjects.push(surface.name || surface.type || fallbackName);
+        };
 
-        desk.visible = false;
-        desk.receiveShadow = false;
-        const materials = Array.isArray(desk.material) ? desk.material : [desk.material];
-        for (const material of materials) {
-            if (!material) continue;
-            material.visible = false;
-            material.transparent = true;
-            material.opacity = 0;
-            material.needsUpdate = true;
-        }
+        hideSurface(runtime.desk, 'desk');
+
+        const scene = this.box.scene as DiceBoxSurfaceObject | undefined;
+        scene?.traverse?.((object) => {
+            if (object === scene || diceSet.has(object)) return;
+            if (!object.isMesh && !object.material) return;
+            const label = `${object.name ?? ''} ${object.type ?? ''}`.toLowerCase();
+            if (label.includes('die') || label.includes('dice')) return;
+            hideSurface(object, 'scene-surface');
+        });
+
+        this.transparentSurfaceHiddenObjects = Array.from(new Set(hiddenObjects));
         this.box.renderer?.render?.(this.box.scene, this.box.camera);
     }
 

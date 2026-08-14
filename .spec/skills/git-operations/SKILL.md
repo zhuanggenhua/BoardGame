@@ -68,6 +68,7 @@ description: "BoardGame Git 操作入口。用于提交、推送、同步主分�
 - `fetch` 后若分支出现 `behind` 或 `ahead + behind`，不得自动 `pull`、`merge`、`rebase` 或 `stash`；先说明远端已有新提交，并按本项目 AI 协作常态，默认建议进入可审计的 merge 同步流程
 - 若用户当轮已经明确要求“处理远端更新后继续推 / 同步后再推 / 合并远端再推 / 改到能 push”，可把远端分叉视为同一 `push` 目标内的同步 blocker，先锁定合并方向、工作区归属和双边内容范围，再按 merge 规则推进
 - `push` 失败先分辨：是网络/协议、hook 门禁、还是代码测试失败
+- GitHub 返回 `403`、`Permission denied`、`Write access to repository not granted` 时，先判断现实含义是不是“当前账号不能直推上游主仓”；这通常不代表项目不可协作，也不代表流程被 GitHub 权限阻塞。若目标是提交代码贡献，默认切到 fork 后 PR 路径，而不是索要上游写权限。
 - 任何门禁、guard、预算或 hook 的绕过（例如 `--no-verify`、`BG_BYPASS_GLOBAL_HEAVY_BUDGET=1`、guard bypass env）都不是默认动作；除非用户当轮明确允许，否则只能等门禁通过，或停止并汇报 blocker
 
 ## 2. 本项目默认口径
@@ -80,9 +81,12 @@ description: "BoardGame Git 操作入口。用于提交、推送、同步主分�
 
 ### 2.2 当前仓库
 
-- `origin` 默认应指向主仓库 SSH：
+- 维护者本机、已确认拥有主仓写权限的工作树里，`origin` 默认应指向主仓库 SSH：
   - `git@github.com:zhuanggenhua/BoardGame.git`
-- 若发现 `origin` 还是 HTTPS，且用户目标涉及远端操作，可直接切为 SSH
+- 外部协作者、不可写账号或 fork PR 场景里，`origin` 必须指向协作者自己的 fork，`upstream` 指向主仓：
+  - `origin`: `git@github.com:<account>/BoardGame.git` 或对应 HTTPS fork
+  - `upstream`: `https://github.com/zhuanggenhua/BoardGame.git` 或主仓 SSH
+- 若发现 `origin` 还是 HTTPS，且用户目标涉及远端操作，只能在同一仓库身份内切协议；不得把协作者 fork 的 `origin` 直接改成主仓 SSH。
 
 ### 2.3 工作区
 
@@ -197,8 +201,14 @@ git rebase ...
 
 ### 4.2 fork / 主仓
 
-- 默认优先主仓协作，不默认 fork
-- 只有主仓不可写、需要账号隔离、或用户明确要求时才走 fork
+- 先识别协作身份，不把“公开可读”误解成“当前账号可直推主仓”：
+  - 维护者 / 已确认有上游写权限：可以走主仓分支直推或维护者 PR 流。
+  - 外部协作者 / 未确认有上游写权限 / 已遇到 GitHub `403`：默认走 fork 后 PR。
+- 只读、拉代码或本地运行时可以直接 clone 主仓，不需要 fork；fork 只解决“我要把自己的提交推到 GitHub 哪里”这个可写远端问题。
+- 开源贡献路径默认是：fork `zhuanggenhua/BoardGame` 到当前 GitHub 账号，让某个远端指向 fork、另一个远端指向主仓，从主仓 `main` 开功能分支，推到 fork 的 `<branch>`，再向 `zhuanggenhua/BoardGame` 创建 Pull Request。常见配置是 `origin` 指向 fork，`upstream` 指向主仓；若已经先 clone 主仓，也可以新增 `fork` 远端并推到 `fork <branch>`。
+- GitHub `403`、`Write access to repository not granted` 或 `Permission denied` 在这个场景下只说明“不能直推上游主仓”；正确补救是推 fork 并开 PR，不是把普通代码贡献标成权限阻塞。
+- 不得为了普通代码 PR 索要主仓写权限、生产 SSH 私钥或服务器 known-hosts；这些只和维护者直推、自动合并、发布部署或远端回查有关。
+- 如果本轮目标同时包含代码 PR 与素材上传 / 部署 / 服务器 HEAD 回查，必须拆开汇报：代码贡献走 fork/PR；发布或回查缺少 token、SSH 或主机指纹时，只阻塞对应外部发布动作，不能阻塞 PR 提交本身。
 
 ### 4.3 PR 写回 / merge
 

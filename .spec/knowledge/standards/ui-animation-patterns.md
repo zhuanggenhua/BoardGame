@@ -1,3 +1,11 @@
+---
+name: ui-animation-patterns
+description: UI 动画模式：触发、结果揭示和事件身份——改 UI 动效时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # UI 动画设计规范
 
 > 来源：从 `.spec/knowledge/standards/ui-ux.md` 无损拆出。本文档承载 UI 动画触发、结果揭示和表现层事件身份规则；`ui-ux.md` 只保留入口摘要。

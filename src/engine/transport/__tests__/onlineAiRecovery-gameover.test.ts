@@ -1071,7 +1071,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
-    it('可见 dt:bonus-dice 时，watchdog 应返回 SKIP_BONUS_DICE_REROLL 而不是 cancel', () => {
+    it('可见 dt:bonus-dice 时，watchdog 不能代替右侧骰盘普通确认', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1106,12 +1106,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             engineConfig: diceThroneEngineConfig,
         });
 
-        expect(result?.reason).toBe('visible-interaction');
-        expect(result?.requiresConfirmedAdvancePhase).toBe(true);
-        expect(result?.resolution.action.commands[0]).toEqual({
-            type: 'SKIP_BONUS_DICE_REROLL',
-            payload: {},
-        });
+        expect(result).toBeNull();
     });
 
     it('自定义 interaction kind 可通过 engineConfig seam 提供 force command，而不必改 shared transport', () => {
@@ -1165,6 +1160,51 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             type: 'CUSTOM_SKIP_TIMING_WINDOW',
             payload: {},
         });
+    });
+
+    it('engineConfig seam 返回 false 时，watchdog 不应回退到共享 cancel', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'timingWindow',
+                interaction: {
+                    current: {
+                        id: 'custom-non-recoverable-1',
+                        playerId: '1',
+                        kind: 'custom:non-recoverable',
+                        data: {
+                            sourceId: 'custom_non_recoverable_source',
+                            title: '必须保留给正式 UI 的时机窗',
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: {
+                gameId: 'test-custom-game',
+                onlineAiRecovery: {
+                    resolveForcedInteractionCommand: ({ interaction }) => interaction.kind === 'custom:non-recoverable'
+                        ? false
+                        : null,
+                },
+            },
+        });
+
+        expect(result).toBeNull();
     });
 
     it('自定义 seat-legal-only recovery 可通过 engineConfig seam 提供 force command，而不必改 shared transport', () => {
@@ -1288,7 +1328,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
     });
 
-    it('可见 dt:bonus-dice 的 settlement 语义漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+    it('可见 dt:bonus-dice 的 settlement 语义漂移时，watchdog 仍不得生成强制确认候选', () => {
         const buildState = (rerollCount: number): MatchState<unknown> => ({
             core: {
                 activePlayerId: '1',
@@ -1337,7 +1377,8 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             engineConfig: diceThroneEngineConfig,
         });
 
-        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+        expect(first).toBeNull();
+        expect(second).toBeNull();
     });
 
     it('可见 compare-roll-choice 在同 interactionId 下若 confirmValue 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {

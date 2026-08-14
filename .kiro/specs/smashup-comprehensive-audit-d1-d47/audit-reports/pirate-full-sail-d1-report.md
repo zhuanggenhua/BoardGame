@@ -223,4 +223,4 @@ for (let i = 0; i < state.bases.length; i++) {
 ## 审计人员
 
 - AI Assistant (Kiro)
-- 审计框架: `docs/ai-rules/testing-audit.md`
+- 审计框架: `.spec/knowledge/standards/testing-audit.md`

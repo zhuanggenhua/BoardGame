@@ -116,7 +116,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server
 ## 审计补记
 
 - 本轮还顺手补了审计口径：
-  - `docs/ai-rules/testing-audit.md`
+  - `.spec/knowledge/standards/testing-audit.md`
 - 新增明确点：
   - `D40` 继续负责“批内副作用未串行推进”的问题，例如“远古之物同时杀俩小鬼只结算一次”
   - 本轮新漏口属于 `D37`：动态刷新不等于可激活性校验完整，validator 仍必须把 `zone/location` 前置条件写全

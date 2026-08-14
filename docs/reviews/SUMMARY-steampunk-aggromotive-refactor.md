@@ -128,7 +128,7 @@
 
 ### 1. 新增审计维度 D50
 
-已添加到 `docs/ai-rules/testing-audit.md`：
+已添加到 `.spec/knowledge/standards/testing-audit.md`：
 
 **D50：持续效果稳定性（强制）**
 
@@ -162,7 +162,7 @@
 1. **refactor-steampunk-aggromotive.md** — 完整的重构方案
 2. **steampunk-aggromotive-audit-failure-analysis.md** — 审计失败分析
 3. **src/games/smashup/__tests__/steampunk-aggromotive-bug.test.ts** — Bug 验证测试
-4. **docs/ai-rules/testing-audit.md** — 已添加 D50 维度
+4. **.spec/knowledge/standards/testing-audit.md** — 已添加 D50 维度
 
 ---
 

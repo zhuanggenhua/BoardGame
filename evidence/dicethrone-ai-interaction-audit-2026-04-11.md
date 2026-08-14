@@ -7,7 +7,7 @@
 - 在线 AI watchdog / 强制推进：`src/engine/transport/onlineAiRecovery.ts`、`src/engine/transport/server.ts`
 
 ## 权威来源
-- `docs/ai-rules/testing-audit.md`（D3/D5/D8/D15/D39 维度）
+- `.spec/knowledge/standards/testing-audit.md`（D3/D5/D8/D15/D39 维度）
 - `src/games/dicethrone/domain/core-types.ts`（交互类型定义）
 - `src/games/dicethrone/rule/*.md`（交互语义与阶段规则）
 

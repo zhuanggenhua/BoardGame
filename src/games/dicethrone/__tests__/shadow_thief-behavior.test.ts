@@ -799,7 +799,7 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
     // 伏击
     // ========================================================================
     describe('shadow_thief-sneak-attack-use (伏击：骰值加伤)', () => {
-        it('确认奖励骰后，按最终骰面增加伤害到pendingAttack', () => {
+        it('普通确认右侧奖励骰盘后，按最终骰面增加伤害到pendingAttack', () => {
             const state = createState({});
             // 设置 pendingAttack（伏击 token 在攻击阶段使用）
             state.pendingAttack = {

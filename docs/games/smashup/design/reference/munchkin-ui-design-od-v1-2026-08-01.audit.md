@@ -18,9 +18,9 @@
 ### 本轮实际读取的规则 / 规范文件
 
 - `AGENTS.md`
-- `docs/ai-rules/doc-index.md`
-- `docs/ai-rules/ui-ux.md`
-- `docs/ai-rules/asset-pipeline.md`
+- `.spec/knowledge/README.md`
+- `.spec/knowledge/standards/ui-ux.md`
+- `.spec/knowledge/standards/asset-pipeline.md`
 - `.spec/skills/boardgame-ui-imagegen/SKILL.md`
 - `docs/infra/open-design.md`
 - `docs/games/smashup/design/reference/munchkin-ui-design-brief-2026-08-01.md`

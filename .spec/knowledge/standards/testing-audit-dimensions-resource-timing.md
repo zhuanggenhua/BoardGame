@@ -1,3 +1,11 @@
+---
+name: testing-audit-dimensions-resource-timing
+description: 资源时机审计维度：资源变化、触发顺序和结算窗口——审计资源类能力时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试审计 D 维度细则：资源与时序
 
 > 来源：从 .spec/knowledge/standards/testing-audit-dimensions.md 无损拆出。资源守恒、时序正确、幂等重入和元数据一致相关细则；正文可引用其他 D 编号作为交叉门禁。

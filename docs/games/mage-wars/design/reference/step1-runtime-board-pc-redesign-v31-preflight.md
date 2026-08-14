@@ -7,7 +7,7 @@
 | 项 | 锁定结果 |
 | --- | --- |
 | 问题对象 | Mage Wars 学徒模式 PC Open Design Step 1 运行时主界面设计稿，v30 人工验收失败后重构为 v31 |
-| 真相来源 | 本轮读取 `skill-governance`、`ui-design-pipeline`、`game-design` UI 主题、`boardgame-ui-imagegen`、`ui-change-gates.md`、外部 UI 方法论基线、学徒法术书合同、学徒 2x3 区域合同和正式素材输入包 |
+| 真相来源 | 本轮读取 `spec-steward`、`ui-design-pipeline`、`game-design` UI 主题、`boardgame-ui-imagegen`、`ui-change-gates.md`、外部 UI 方法论基线、学徒法术书合同、学徒 2x3 区域合同和正式素材输入包 |
 | 目标入口 / 环境 | Open Design artifact 代码设计稿：`D:\codex-home\tools\open-design\.od\projects\mage-wars-ui-design\mage-wars-step1-runtime-board-v31.html`；`mediaGenerate=false` |
 | 验收口径 | 先 AI 图面核验；只有 AI PASS 才允许打开给用户人工验收。用户批准前实现、真实页面 E2E 和移动端继续冻结 |
 

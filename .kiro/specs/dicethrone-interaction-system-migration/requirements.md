@@ -335,7 +335,7 @@ git checkout <commit-before-migration>
 
 ## 11. 参考资料
 
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 - `src/engine/systems/InteractionSystem.ts` - InteractionSystem 实现
 - `src/games/summonerwars/domain/interactions/` - SummonerWars 交互实现示例
 - `src/games/smashup/domain/interactions/` - SmashUp 交互实现示例

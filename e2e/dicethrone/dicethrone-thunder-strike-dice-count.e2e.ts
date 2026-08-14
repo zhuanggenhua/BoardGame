@@ -1,5 +1,6 @@
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
+import { expectRightTrayBonusDiceConfirmation } from './bonus-dice-flow';
 
 async function setupThunderStrikeSettlement(game: GameTestContext): Promise<void> {
     await game.openTestGame('dicethrone');
@@ -52,10 +53,7 @@ test.describe('雷霆万钧骰子数量验证', () => {
             rerollCostAmount: 2,
         });
 
-        const bonusDieOverlay = page
-            .locator('[data-testid="bonus-die-overlay"], [class*="BonusDie"]')
-            .first();
-        await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'thunder-strike' });
 
         const state = await game.getState();
         const settlement = state?.core?.pendingBonusDiceSettlement;

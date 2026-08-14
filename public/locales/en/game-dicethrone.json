@@ -251,6 +251,7 @@
       "aiTurn": "Opponent's turn in progress...",
       "knockdownExplain": "The opponent played Palm Strike, inflicting Knockdown on you! Knockdown forces you to skip offensive roll, but you can remove it with Purify.",
       "enlightenmentPlay": "Play the Enlightenment card from your hand to roll 1 die. Rolling a Lotus face grants Taiji, Evasive, and Purify tokens.",
+      "enlightenmentConfirm": "The die rolled by Enlightenment pauses in the dice tray. Use the normal Confirm button to settle its result.",
       "sellCardIntro": "You can **sell cards for CP** anytime! **Drag a card to the discard pile** on the right to sell it and gain **1 CP**. Selling is always available, regardless of phase. Try selling a card now!",
       "main2Intro": "Attack resolved! Now entering Main Phase 2. You can play action or upgrade cards here, same as Main Phase 1.",
       "aiTurnIntro": "Your actions are done. Now it's your opponent's turn. Watch how they play cards and attack.",

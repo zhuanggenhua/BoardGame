@@ -409,7 +409,7 @@ export const openTemporaryRollContext = (
         const legacyDice = getLegacyActiveDice(state);
         if (state.rollCount <= 0 || legacyDice.length === 0) return undefined;
         return createMainRollContext(state, {
-            phase: state.phase,
+            phase: getStatePhase(state),
             ownerPlayerId: state.activePlayerId,
             dice: legacyDice,
         });
@@ -468,11 +468,30 @@ export const isCurrentBonusRollSettlement = (
     return currentContextId === undefined || currentContextId === getBonusRollContextId(settlement);
 };
 
+export const isSettledReplayOnlyRollContext = (
+    context: DiceThroneRollContext | undefined,
+): boolean => context?.status === 'settled' && context.display.replayOnly === true;
+
+const isMainRollPhase = (phase: TurnPhase | undefined): boolean => (
+    phase === 'offensiveRoll'
+    || phase === 'defensiveRoll'
+    || phase === 'targetingRoll'
+);
+
+const getStatePhase = (state: DiceThroneCore): TurnPhase | undefined => {
+    const phaseCarrier = state as DiceThroneCore & { turnPhase?: TurnPhase; phase?: TurnPhase };
+    return phaseCarrier.turnPhase ?? phaseCarrier.phase;
+};
+
 export const resolveCurrentRollContext = (
     state: DiceThroneCore,
     phase?: TurnPhase,
 ): DiceThroneRollContext | undefined => {
-    if (state.currentRollContext) return state.currentRollContext;
+    // 已结算的奖励骰/临时骰只读回看仍保存在 currentRollContext，供右侧骰盘展示。
+    // 但它不再是可操作骰区；后续改骰牌、重掷牌和掷骰者判断应回到主攻击/防御骰。
+    if (state.currentRollContext && !isSettledReplayOnlyRollContext(state.currentRollContext)) {
+        return state.currentRollContext;
+    }
     const settlement = state.pendingBonusDiceSettlement;
     if (
         settlement
@@ -481,11 +500,15 @@ export const resolveCurrentRollContext = (
     ) {
         return createBonusRollContextFromSettlement(state, settlement);
     }
+    const legacyPhase = phase ?? getStatePhase(state);
+    if (!isMainRollPhase(legacyPhase)) {
+        if (legacyPhase !== undefined || state.currentRollContext) return undefined;
+    }
     const dice = getLegacyActiveDice(state);
     if (dice.length === 0) return undefined;
     return createMainRollContext(state, {
-        phase,
-        ownerPlayerId: inferRollOwnerId(state, phase),
+        phase: legacyPhase,
+        ownerPlayerId: inferRollOwnerId(state, legacyPhase),
         dice,
     });
 };

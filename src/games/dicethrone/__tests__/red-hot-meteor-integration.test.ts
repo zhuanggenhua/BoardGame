@@ -62,11 +62,24 @@ const allAttackModifierCases: AttackModifierCase[] = [
     { label: 'ninja: ninja-card-shuriken', heroId: 'ninja', card: shurikenCard },
 ];
 
+const normalizeTestDice = (dice: unknown[] = [1, 2, 3, 4, 5]) => dice.map((die, index) => {
+    const value = typeof die === 'number'
+        ? die
+        : typeof (die as { value?: unknown })?.value === 'number'
+            ? (die as { value: number }).value
+            : 1;
+    return {
+        ...(typeof die === 'object' && die !== null ? die as Record<string, unknown> : {}),
+        id: typeof (die as { id?: unknown })?.id === 'number' ? (die as { id: number }).id : index,
+        value,
+        isKept: (die as { isKept?: boolean })?.isKept ?? false,
+    };
+});
+
 const makeRuleCheckCore = (overrides: Partial<DiceThroneCore> = {}): DiceThroneCore => ({
     activePlayerId: '0',
     turnNumber: 1,
     turnPhase: 'offensiveRoll',
-    dice: [1, 2, 3, 4, 5] as any,
     rollCount: 1,
     rollConfirmed: true,
     rollsRemaining: 0,
@@ -102,6 +115,7 @@ const makeRuleCheckCore = (overrides: Partial<DiceThroneCore> = {}): DiceThroneC
         } as any,
     } as any,
     ...overrides,
+    dice: normalizeTestDice(overrides.dice as unknown[] | undefined) as any,
 });
 
 const makeFourPlayerAttackModifierCore = (
@@ -689,7 +703,7 @@ describe('红热攻击修正出牌边界', () => {
         expect(result.ok).toBe(true);
     });
 
-    it('4 人模式 targetingRoll 自动目标窗口打出吃我子弹时，应立即把击倒与特写目标落到自动目标', () => {
+    it('4 人模式 targetingRoll 自动目标窗口打出吃我子弹时，应先挂起奖励骰并在普通确认后结算到自动目标', () => {
         const core = makeFourPlayerAttackModifierCore('gunslinger', eatMyLeadCard, 2);
         (core.players['0'] as any).characterId = 'gunslinger';
         const events = execute(
@@ -708,12 +722,30 @@ describe('红热攻击修正出牌边界', () => {
             core,
         );
 
-        expect(nextCore.pendingAttack?.bonusDamage).toBe(5);
-        expect(nextCore.pendingAttack?.attackModifierBonusDamage).toBe(5);
         expect(nextCore.pendingBonusDiceSettlement?.targetId).toBe('3');
         expect(nextCore.pendingBonusDiceSettlement?.summaryEffectKey).toBe('bonusDie.effect.gunslingerEatMyLead.resultKnockdown');
-        expect(nextCore.players['3'].statusEffects.knockdown).toBe(1);
-        expect(nextCore.players['2'].statusEffects.knockdown ?? 0).toBe(0);
+        expect(nextCore.pendingAttack?.bonusDamage ?? 0).toBe(0);
+        expect(nextCore.players['3'].statusEffects.knockdown ?? 0).toBe(0);
+
+        const settledEvents = execute(
+            { core: nextCore, sys: { phase: 'targetingRoll' } } as any,
+            {
+                type: 'SKIP_BONUS_DICE_REROLL',
+                playerId: '0',
+                payload: {},
+                timestamp: 20,
+            } as any,
+            fixedRandom,
+        );
+        const settledCore = settledEvents.reduce(
+            (state, event) => reduce(state, event as DiceThroneEvent),
+            nextCore,
+        );
+
+        expect(settledCore.pendingAttack?.bonusDamage).toBe(5);
+        expect(settledCore.pendingAttack?.attackModifierBonusDamage).toBe(5);
+        expect(settledCore.players['3'].statusEffects.knockdown).toBe(1);
+        expect(settledCore.players['2'].statusEffects.knockdown ?? 0).toBe(0);
     });
 
     it.each(fourPlayerTargetLockedAttackModifierCases)('4 人模式 targetingRoll 手选目标窗口也允许提前打出攻击修正卡: %s', ({ heroId, card, tokens }) => {

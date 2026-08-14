@@ -1,3 +1,11 @@
+---
+name: engine-transport
+description: 传输层标准：在线状态、服务端权威、恢复和反馈过滤——改联网链路时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 引擎传输层与 Board Props 规范
 
 ### 传输层架构（强制理解）

@@ -63,7 +63,7 @@
 
 已更新：
 
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
   - 新增“框架消费合同必须反向审计”。
   - 新增“测试不得吞掉未预期命令失败”。
 - `.windsurf/skills/add-new-faction/SKILL.md`

@@ -1,3 +1,11 @@
+---
+name: worktree-branch-target-lock
+description: worktree 与分支目标锁定：工作区归属和改动边界——处理分支或脏树时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 分支 / Worktree 目标锁定
 
 ## 触发场景

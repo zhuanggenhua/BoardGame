@@ -142,7 +142,7 @@ if (deferredEvents && deferredEvents.length > 0) {
 
 - `evidence/smashup/smashup-multi-base-duplicate-replacement-fix.md` - 之前修复的多基地替换为同一个基地的 bug
 - `evidence/smashup/smashup-multi-base-infinite-loop-fix.md` - 之前修复的多基地计分无限循环 bug
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范，包含交互系统和延迟事件机制
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范，包含交互系统和延迟事件机制
 
 ## 总结
 

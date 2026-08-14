@@ -80,6 +80,37 @@ SmashUp `afterScoring` interaction handlers SHALL only emit the domain outcome f
 ### Requirement: Scoring transaction SHALL advance only from formally reduced domain events
 SmashUp SHALL let the pipeline formally reduce every domain event that changes the authoritative core exactly once. The scoring frame SHALL decide later steps only from that formally reduced core and its own frame metadata.
 
+#### Scenario: BASE_SCORED commits before After Scoring collection
+- **GIVEN** a scoreBases session is resolving a selected base
+- **WHEN** the scoring driver emits `BASE_SCORED` or Munchkin treasure reward reveal events
+- **THEN** the session MUST suspend before collecting After Scoring triggers or options
+- **AND** After Scoring MUST resume only after those scoring events have been formally reduced into the authoritative core
+
+#### Scenario: Before Scoring commits before Me First window
+- **GIVEN** a scoreBases session is resolving a selected base
+- **WHEN** the scoring driver queues ordinary beforeScoring triggers, beforeScoring base ability triggers, and `BEFORE_SCORING_TRIGGERED`
+- **THEN** the session MUST suspend before opening the Me First response window or calculating VP
+- **AND** Me First and later scoring steps MUST resume only after those beforeScoring events have been formally reduced into the authoritative core
+
+#### Scenario: When Scoring commits before BASE_SCORED
+- **GIVEN** a scoreBases session has completed Before Scoring for a selected base
+- **WHEN** the scoring driver queues whenScoring base ability triggers and `WHEN_SCORING_TRIGGERED`
+- **THEN** the session MUST suspend before emitting `BASE_SCORED`
+- **AND** `BASE_SCORED` MUST be computed only after whenScoring events and any events produced by resolving that frame have been formally reduced into the authoritative core
+
+#### Scenario: After Scoring trigger marker commits before response and cleanup
+- **GIVEN** a scoreBases session has formally reduced `BASE_SCORED` for a selected base
+- **WHEN** the scoring driver queues afterScoring triggers, records the afterScoring marker, and registers the current base cleanup payload
+- **THEN** the session MUST suspend before opening After Scoring response options or emitting cleanup events
+- **AND** After Scoring interactions and response windows MUST resume from the committed session frame instead of causing another `BASE_SCORED`
+- **AND** the current base cleanup payload MUST remain available to those interactions without reconstructing it from a projected future core
+
+#### Scenario: BASE_REPLACED commits before reveal reactions
+- **GIVEN** a scored base is cleared and replaced
+- **WHEN** the scoring driver emits `BASE_REPLACED`
+- **THEN** reveal reactions for the new base MUST be collected only after `BASE_REPLACED` has been formally reduced into the authoritative core
+- **AND** deferred post-scoring payloads MUST NOT pre-populate reveal trigger queue events from a projected future core
+
 #### Scenario: 计分规划不得把预演 core 写回比赛状态
 - **GIVEN** 当前计分步骤需要发出一个或多个领域事件
 - **WHEN** driver 需要等待这些事件改变基地、手牌、弃牌堆或力量后才能决定下一步

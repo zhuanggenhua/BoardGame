@@ -2,7 +2,7 @@
 
 ## 简介
 
-对大杀四方（Smash Up, gameId: `smashup`）进行基于 `docs/ai-rules/testing-audit.md` D1-D47 全维度框架的系统性审计。本审计为第二阶段，补全第一阶段完全缺失的运行时行为维度。
+对大杀四方（Smash Up, gameId: `smashup`）进行基于 `.spec/knowledge/standards/testing-audit.md` D1-D47 全维度框架的系统性审计。本审计为第二阶段，补全第一阶段完全缺失的运行时行为维度。
 
 **第一阶段（已完成）**：
 - D1 描述→实现文本一致性审计
@@ -30,7 +30,7 @@
 ## 术语表
 
 - **GameTestRunner**: 引擎层行为测试工具，通过命令序列+状态断言验证运行时行为
-- **D1-D47**: `docs/ai-rules/testing-audit.md` 中定义的 47 个审计维度
+- **D1-D47**: `.spec/knowledge/standards/testing-audit.md` 中定义的 47 个审计维度
 - **afterScoring**: 基地计分后触发的 ongoing trigger 时机
 - **ctx.playerId**: trigger 回调中的当前回合玩家 ID（非卡牌 owner）
 - **post-reduce**: reducer 执行后的状态（计数器已递增）

@@ -24,5 +24,5 @@
   - `src/pages/__tests__/matchSeatValidation.test.ts`
   - `src/engine/transport/__tests__/server.test.ts`
   - 对应 `e2e/src/**` 镜像文件
-  - `docs/ai-rules/engine-systems.md`
+  - `.spec/knowledge/standards/engine-systems.md`
 

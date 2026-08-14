@@ -1,0 +1,76 @@
+# DiceThrone 奖励骰 / 临时骰共享链路收口证据（2026-08-14）
+
+## 当前裁决
+
+- 当前对象：DiceThrone 奖励骰 / 临时骰新增右侧普通“确认”按钮后的完整生命周期。
+- 原始症状保真：奖励骰以前直接触发正常；新增确认按钮后，父攻击链、临时骰、展示型奖励骰和响应窗口之间出现混淆，表现为确认后去向不稳定、旧专用确认/旧中央特写口径残留、测试反复把旧设计写回。
+- 设计结论：奖励骰 / 临时骰不是一条完全独立流程。带 `continuation.kind === 'attack'` 的奖励骰属于攻击父链暂停点；确认后必须恢复被挂起的父攻击骰盘并继续父链。只有明确 `complete` / 独立展示型分支，才保留 `settled + replayOnly` 只读回看。
+- 明确禁止回退：不恢复旧 `BonusDieOverlay`、奖励骰专用确认按钮、自动结算、卡牌内嵌确认、背景点击结算或“恢复覆盖前骰区”按钮。
+
+## 本轮改动
+
+| 文件 | 改动 | 现实效果 |
+| --- | --- | --- |
+| `src/games/dicethrone/domain/reducer.ts` | `BONUS_DICE_SETTLED` 在当前奖励骰挂起父骰盘且 continuation 不是 `complete` 时恢复父骰盘；嵌套奖励骰仍恢复上一层奖励骰 settlement | 父链临时骰确认后回到攻击 / 防御等父流程，不再被当成最终只读展示 |
+| `src/games/dicethrone/__tests__/roll-context.test.ts` | 三条旧“攻击型奖励骰确认后只读回看”断言改为父攻击恢复；保留 `complete` 分支只读回看保护 | 单测锁住父链临时骰、嵌套奖励骰、complete 展示型三类去向 |
+| `e2e/dicethrone/bonus-dice-flow.ts` | 公共 helper 注释改为“确认入口统一，确认后去向由 continuation 决定” | 避免后续 E2E 再把所有奖励骰写成只读回看 |
+| `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts` | 背景点击用例改为：背景点击不结算，普通确认才清 pending，并回到“结算攻击”等待；测试前置补真实主攻击骰上下文 | 覆盖新增普通确认按钮最关键的“不靠背景点击、不自动结算”合同 |
+| `e2e/dicethrone/dicethrone-die-modification.e2e.ts` | 野蛮人临时奖励骰确认后断言恢复 5 颗主攻击骰 | 覆盖父链临时骰恢复主攻击骰，不切回合、不切对手 |
+| `e2e/dicethrone/dicethrone-ninja-bonus-reroll.e2e.ts` | 死亡盛放 II 改为攻击 continuation 口径：确认后攻击完成，pending 清空，当前骰区清理 | 覆盖攻击型 5 骰奖励骰重投上限与最终攻击收口 |
+| `src/games/dicethrone/domain/systems.ts` | 系统注释改为“确认后展示由 continuation 决定” | 清除旧“临时骰确认后一律只读回看”的误导 |
+
+## 验证命令
+
+### 单测 / 类型 / 构建
+
+- `node scripts\infra\vitest-cli-safe.mjs run src\games\dicethrone\__tests__\roll-context.test.ts --configLoader native --reporter verbose`
+  - 结果：`1 passed / 38 tests passed`。
+- `node scripts\infra\vitest-cli-safe.mjs run src\games\dicethrone --configLoader native --reporter dot`
+  - 结果：退出码 `0`，DiceThrone 全量单测通过。输出中存在既有预期拒绝命令日志，不是失败。
+- `npm run typecheck`
+  - 结果：通过。
+- `npm run build`
+  - 结果：通过。仅有既有 CSS 优化、Browserslist 过期、动态导入与 chunk size 警告。
+- `node --test scripts\infra\ensure-e2e-assets.test.mjs`
+  - 结果：`3 passed`。
+
+### E2E / 真实页面链
+
+- `node scripts\infra\run-e2e-command.mjs isolated e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts --project=chromium --workers=1 --grep "bonus die right tray should ignore backdrop click"`
+  - 结果：`1 passed`。
+  - 覆盖：背景点击不结算奖励骰；只有右侧普通“确认”清掉 pending；确认后回到攻击结算等待。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "bonus die right tray should settle on ordinary confirm in display mode"`
+  - 结果：`1 passed`。
+  - 覆盖：右侧普通确认按钮可完成 Watch Out 奖励骰收口。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-modification.e2e.ts "野蛮人临时奖励骰确认后恢复主攻击骰，不切给僧侣或对手回合"`
+  - 结果：`1 passed`。
+  - 覆盖：临时奖励骰确认后恢复父主攻击骰 `[6,5,4,3,2]`，仍是 0 号玩家进攻回合。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-reroll.e2e.ts "card-wild-west 应触发装填奖励骰，不改攻击骰盘"`
+  - 结果：`1 passed`。
+  - 覆盖：Wild West / Loaded 奖励骰不污染主攻击骰盘。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-modification.e2e.ts "战术家真实战争贩子奖励骰可用战术优势重投军刀，并在确认后才进入 5 点攻击结算"`
+  - 结果：`1 passed`。
+  - 覆盖：奖励骰可被战术优势重投，且必须普通确认后才进入攻击结算。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-ninja-bonus-reroll.e2e.ts "死亡盛放 II 应从真实槽位进入奖励骰界面，并在 2 次重投后达到上限"`
+  - 结果：`1 passed`。
+  - 覆盖：5 颗奖励骰进入右侧骰盘，2 次重投达到上限，普通确认后攻击完成，防守方 HP 变为 25，延迟毒 1 层，pending 与当前骰区清空。
+
+## 同类扩审记录
+
+- 旧口径扫描范围：`src\games\dicethrone`、`e2e\dicethrone`、`evidence\dicethrone`、`temp\dicethrone-bonus-dice-closeout-task.json`。
+- 扫描目标：旧“父链攻击型临时骰不恢复父骰盘”、旧“野蛮人确认后只显示 1 颗奖励骰”、旧“只凭嵌套 settlement 才恢复父链”的实现条件。
+- 当前结论：源码、单测、E2E、evidence 和任务状态文件中，旧正向口径已清除。
+- 本轮没有做全英雄全奖励骰逐对象 E2E；覆盖等级是“共享 reducer + 代表 E2E + DiceThrone 全量单测 + type/build”。
+
+## 漏审归因
+
+- 表层触发：新增右侧普通确认按钮后，旧测试仍把“奖励骰确认后直接变成最终只读展示”当统一规则。
+- 根本机制：临时奖励骰的显示职责和父攻击流程职责没有拆清。攻击型奖励骰应暂停父链，确认后回到父链；独立展示型奖励骰才保留只读回看。
+- 旧测试为什么没挡住：旧断言把“背景点击关闭 / 旧中央特写 / 只读回看”混在一起，未同时检查 pending 是否清理、父链是否恢复、当前骰区身份、骰子数量和攻击结算按钮。
+- 本轮补强：`roll-context` 单测锁三类去向；Watch Out E2E 锁“背景不结算、普通确认结算”；野蛮人 E2E 锁父链恢复；死亡盛放 II E2E 锁攻击完成后清理。
+
+## 当前限制
+
+- 本轮完成的是本地实现和本地门禁，不代表已部署生产环境。
+- 本轮未回写线上反馈系统状态，也未做线上复测。
+- 仓库存在大量无关脏改动；提交或发布前必须只选择本轮 DiceThrone 奖励骰 / 临时骰相关改动。

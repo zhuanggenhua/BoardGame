@@ -28,7 +28,7 @@ type AbilitySource = {
 
 const DEFENSE_RESOLVER_CONSUMED_TIMINGS = new Set<EffectTiming>(['withDamage', 'postDamage']);
 
-const HERO_CARDS: Record<SelectableCharacterId, AbilityCard[]> = {
+const HERO_CARDS: Partial<Record<SelectableCharacterId, AbilityCard[]>> = {
     barbarian: BARBARIAN_CARDS,
     monk: MONK_CARDS,
     pyromancer: PYROMANCER_CARDS,
@@ -50,7 +50,7 @@ const collectEffects = (ability: AbilityDef): AbilityEffect[] => [
 ];
 
 const collectUpgradeAbilityDefs = (heroId: SelectableCharacterId): AbilitySource[] =>
-    HERO_CARDS[heroId].flatMap(card =>
+    (HERO_CARDS[heroId] ?? []).flatMap(card =>
         (card.effects ?? [])
             .map(effect => effect.action?.newAbilityDef)
             .filter((value): value is AbilityDef => {

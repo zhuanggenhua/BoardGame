@@ -9,7 +9,12 @@ import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import { TestHarness, isTestEnvironment } from '../testing';
 import { refreshInteractionOptions } from '../systems/InteractionSystem';
-import type { ManualSetupSelectionRequest, ManualSetupSelectionResult, MatchPlayerInfo } from './protocol';
+import type {
+    ManualForceEndAiPhaseResult,
+    ManualSetupSelectionRequest,
+    ManualSetupSelectionResult,
+    MatchPlayerInfo,
+} from './protocol';
 import type { GameEngineConfig } from './server';
 import { GameTransportClient } from './client';
 import type { LatencyOptimizationConfig } from './latency/types';
@@ -294,6 +299,12 @@ export function useGameProviderRuntime(args: {
         clientRef.current?.requestManualSetupSelection(request, onResult) ?? false
     ), []);
 
+    const requestForceEndAiPhase = useCallback((
+        onResult?: (result: ManualForceEndAiPhaseResult) => void,
+    ): boolean => (
+        clientRef.current?.requestForceEndAiPhase(onResult) ?? false
+    ), []);
+
     const sendUiEvent = useCallback((type: string, payload: unknown) => {
         clientRef.current?.sendUiEvent(type, payload);
     }, []);
@@ -323,6 +334,7 @@ export function useGameProviderRuntime(args: {
         state,
         dispatch,
         requestManualSetupSelection,
+        requestForceEndAiPhase,
         playerId,
         matchPlayers,
         seatControllers: undefined,
@@ -330,7 +342,7 @@ export function useGameProviderRuntime(args: {
         isMultiplayer: true,
         sendUiEvent,
         subscribeUiEvent,
-    }), [dispatch, isConnected, matchPlayers, playerId, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
+    }), [dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
 
     return {
         rollbackSignal,

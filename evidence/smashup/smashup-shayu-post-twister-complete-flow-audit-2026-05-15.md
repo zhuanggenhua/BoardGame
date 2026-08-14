@@ -14,7 +14,7 @@
 修复后证据入口：
 
 - `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`
-- `docs/ai-rules/testing-audit.md` 已新增通用“规则文本逐句/子句覆盖”门禁。
+- `.spec/knowledge/standards/testing-audit.md` 已新增通用“规则文本逐句/子句覆盖”门禁。
 
 因此本文的对象级 `mythic_greeks_argonaut` pass 结论在 2026-05-15 前是不完整的；后续引用必须同时引用上述修复证据。
 
@@ -39,7 +39,7 @@
 | --- | --- |
 | 全面重审新派系 | 本文 45 行完整技能流程矩阵；对象全集来自 `src/games/smashup/data/factions/{sharks,tornados,mythic_greeks}.ts` 与 `src/games/smashup/data/cards.ts`。 |
 | 完成后抽查几个全链路审查 | 本文“全链路抽查计划与结果”记录至少 3 条机制家族抽查、命令和结果。 |
-| 如果有实现不对就加强审计规范 | Twister 已触发一次规范升级；本轮若再发现新缺陷，必须追加到 `docs/ai-rules/testing-audit.md` 或项目 skill。 |
+| 如果有实现不对就加强审计规范 | Twister 已触发一次规范升级；本轮若再发现新缺陷，必须追加到 `.spec/knowledge/standards/testing-audit.md` 或项目 skill。 |
 | 然后再重审，如此循环 | 本轮专门在 Twister 修复和规范升级之后执行再审计；guard：`temp/smashup-shayu-post-twister-loop-2026-05-15.json`。 |
 
 ## 完整技能流程矩阵
@@ -171,4 +171,4 @@ npm run test:e2e:ci:file -- e2e/smashup-shayu-factions.e2e.ts "Tornados 随风�
 
 45/45 对象完整技能流程矩阵已补齐，Twister 反馈新增的“可选否定路径”门禁已应用回 shayu 三派系全集。三条不同机制家族全链路抽查均通过，实际看图未发现新的实现错误。
 
-本轮没有触发新的规范升级：Twister 暴露的可选/否定路径缺口已经在 `docs/ai-rules/testing-audit.md`、`.spec/skills/add-new-faction/SKILL.md` 与 `.spec/skills/smashup-faction-addition/SKILL.md` 固化；本次 post-Twister 再审计没有发现第二类新不变量。
+本轮没有触发新的规范升级：Twister 暴露的可选/否定路径缺口已经在 `.spec/knowledge/standards/testing-audit.md`、`.spec/skills/add-new-faction/SKILL.md` 与 `.spec/skills/smashup-faction-addition/SKILL.md` 固化；本次 post-Twister 再审计没有发现第二类新不变量。

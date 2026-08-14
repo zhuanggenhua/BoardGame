@@ -29,9 +29,9 @@
 - 架构审查：`evidence/betrayal/betrayal-architecture-review-2026-06-16.md`
 - UI 设计规范：`design-system/games/betrayal.md`
 - 位图设计稿索引：`docs/games/betrayal/design/README.md`
-- 第一剧本完成度审计：`docs/games/betrayal/workflows/betrayal-first-scenario-completion.md`
+- 第一剧本完成度审计：`docs/games/betrayal/records/betrayal-first-scenario-completion.md`
 - 主 spec 视角与当前缺口：`docs/games/betrayal/master-spec-view.md`
-- 回主分支合并口径：`docs/games/betrayal/workflows/betrayal-merge-back-to-main.md`
+- 回主分支合并口径：`docs/games/betrayal/records/betrayal-merge-back-to-main.md`
 - 运行时页面级布局合同：`docs/games/betrayal/style-b-screen-contract.md`（历史文件名保留，当前记录的是 `v4` 实现合同，不再代表独立风格分叉）
 - 当前运行时实现基线：`docs/games/betrayal/design/generated/betrayal-runtime-prehaunt-board-v4.png`
 - `v8-v12`：历史继续稿，统一记录为过程参考；当前不再视为候选，因为用户本轮已要求回到 `v4` 实施

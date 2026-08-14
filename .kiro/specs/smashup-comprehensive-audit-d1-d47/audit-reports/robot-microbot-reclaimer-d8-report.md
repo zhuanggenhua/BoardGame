@@ -146,7 +146,7 @@ onPlay 回调执行: 检查 minionsPlayed === 1 → 不触发
 
 ## 参考文档
 
-- `docs/ai-rules/testing-audit.md` - D8 维度定义
+- `.spec/knowledge/standards/testing-audit.md` - D8 维度定义
 - `src/games/smashup/abilities/robots.ts` - 实现代码
 - `src/games/smashup/__tests__/robotAbilities.test.ts` - 已有测试
 - `src/games/smashup/__tests__/audit-d8-robot-microbot-reclaimer.test.ts` - 审计测试
@@ -158,4 +158,4 @@ onPlay 回调执行: 检查 minionsPlayed === 1 → 不触发
 **审计人**: Kiro AI Agent  
 **审计方法**: 代码审查 + GameTestRunner 行为测试  
 **审计工具**: Vitest + GameTestRunner  
-**审计标准**: `docs/ai-rules/testing-audit.md` D8 维度
+**审计标准**: `.spec/knowledge/standards/testing-audit.md` D8 维度

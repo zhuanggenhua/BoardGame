@@ -113,6 +113,11 @@ export interface ManualSetupSelectionResult {
     reason?: 'unauthorized' | 'rejected';
 }
 
+export interface ManualForceEndAiPhaseResult {
+    accepted: boolean;
+    reason?: 'unauthorized' | 'unavailable' | 'busy' | 'rejected';
+}
+
 // ============================================================================
 // 客户端 → 服务端 事件
 // ============================================================================
@@ -145,6 +150,13 @@ export interface ClientToServerEvents {
         request: ManualSetupSelectionRequest,
         credentials?: string,
         acknowledge?: (result: ManualSetupSelectionResult) => void,
+    ) => void;
+
+    /** 请求服务端立即用权威状态尝试恢复 / 强制收口 AI 卡住的阶段。 */
+    'manual-force-end-ai-phase': (
+        matchID: string,
+        credentials?: string,
+        acknowledge?: (result: ManualForceEndAiPhaseResult) => void,
     ) => void;
 
     /** 临时 UI 事件：只转发给同局客户端，不进入权威游戏状态 */

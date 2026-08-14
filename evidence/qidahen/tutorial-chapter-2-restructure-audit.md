@@ -10,7 +10,7 @@
 
 | 层级 | 结论 | 落点 |
 | --- | --- | --- |
-| 跨游戏判断方法 | 教程基础章必须从玩家第一次拥有真实选择权的正式入口开始；不能把后续目标、支付对象或默认聚焦对象提前写成第一步。 | `docs/ai-rules/tutorial-design.md` 已有规则，本轮不改通用层。 |
+| 跨游戏判断方法 | 教程基础章必须从玩家第一次拥有真实选择权的正式入口开始；不能把后续目标、支付对象或默认聚焦对象提前写成第一步。 | `.spec/knowledge/standards/tutorial-design.md` 已有规则，本轮不改通用层。 |
 | 七大恨专项答案 | 第二章当前从 `dispatch-targeting` 开始，直接让玩家点察哈尔，跳过了规则书里的「手牌行动 / 轮盘行动」一级入口。第二章应从大明行动窗口选择「突袭作战」开始。 | 本 evidence、`src/games/qidahen/tutorial.ts`、`src/games/qidahen/tutorialSetup.ts`、语言包、教程单测。 |
 | 不升格内容 | 「突袭作战」是七大恨当前第二章的示范路线，不是所有游戏教程的固定模板。 | 保留在七大恨专项文档和实现内。 |
 
@@ -173,7 +173,7 @@
 
 ## 规范复核
 
-- 用户指出“给玩家看的不是给我看的”对应的通用规则已存在：`docs/ai-rules/tutorial-design.md` §42 明确禁止把测试、审计、实现证明或防误报口径写进玩家教程正文。
+- 用户指出“给玩家看的不是给我看的”对应的通用规则已存在：`.spec/knowledge/standards/tutorial-design.md` §42 明确禁止把测试、审计、实现证明或防误报口径写进玩家教程正文。
 - 项目 tutorial workflow 也已有同口径规则：`.spec/skills/tutorial-workflow/SKILL.md` §16.2 要求“真实链路 / 运行态 / E2E 已覆盖 / 正式验证”只能进入测试、截图证据、审计文档或开发汇报，玩家正文必须改成游戏内动作和结果。
 - 本轮不继续改通用规范：现有规则已经覆盖本次失误类型，当前更有效的动作是按该规则继续审七大恨玩家文案和教程运行态，而不是重复新增同义条款。
 
@@ -200,6 +200,6 @@
 
 更新时间：2026-07-14 01:35
 
-- 已把 `docs/games/qidahen/workflows/qidahen-tutorial-script-draft.md` 第二章从旧「进攻调度 / moveEntry」改为当前运行态的「突袭作战 -> payRaid -> 野战」链路。
-- 已把 `docs/games/qidahen/workflows/qidahen-tutorial-coverage-matrix.md` 的第二章覆盖、截图批次说明和手牌行动缺口更新为当前结论：军备牌《火炮技术》直点升级已成立，事件牌完整入口与普通手牌全集仍保留缺口。
-- 已把 `docs/games/qidahen/workflows/qidahen-tutorial-implementation-map.md` 从旧实施前映射更新为当前章节与续章链：第二章后续章包含撤退、骑兵避战、骑兵劫掠、中立入侵和水路调度；轮盘发展链包含开垦、军屯、征兵训练、军备、事件和外交。
+- 已把 `docs/games/qidahen/records/qidahen-tutorial-script-draft.md` 第二章从旧「进攻调度 / moveEntry」改为当前运行态的「突袭作战 -> payRaid -> 野战」链路。
+- 已把 `docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md` 的第二章覆盖、截图批次说明和手牌行动缺口更新为当前结论：军备牌《火炮技术》直点升级已成立，事件牌完整入口与普通手牌全集仍保留缺口。
+- 已把 `docs/games/qidahen/records/qidahen-tutorial-implementation-map.md` 从旧实施前映射更新为当前章节与续章链：第二章后续章包含撤退、骑兵避战、骑兵劫掠、中立入侵和水路调度；轮盘发展链包含开垦、军屯、征兵训练、军备、事件和外交。

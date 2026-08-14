@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react';
+import { useCallback, useEffect, type ComponentType, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AiSeatController } from '../engine/ai';
@@ -25,6 +25,8 @@ import type { MatchRoomOnlineHudBridgeProps } from './useMatchRoomOnlineHudModel
 import {
     OnlineManualSetupSelectionBridge,
 } from './onlineManualSetupSelectionBridge';
+
+const FORCE_END_AI_PHASE_ACK_TIMEOUT_MS = 6000;
 
 type MatchRoomBoardComponent = ComponentType<GameBoardProps>;
 type MatchRoomStatusPlayer = {
@@ -97,6 +99,7 @@ export type MatchRoomOnlineOverlayBridgesModel = {
 export type MatchRoomOnlineSeatBridgeModel = {
     seatControllers: Record<string, AiSeatController>;
     engineConfig: GameEngineConfig | null;
+    onForceEndAiPhaseReady: (handler: (() => Promise<boolean>) | null) => void;
 };
 
 export type MatchRoomOnlineBoardRuntimeModel = {
@@ -310,6 +313,7 @@ const MatchRoomOnlineSeatBridge = ({
 }) => {
     return (
         <>
+            <OnlineAiServerRecoveryBridge onForceEndAiPhaseReady={seatBridge.onForceEndAiPhaseReady} />
             {/* Keep the board inside the manual-setup seam so seat overrides apply to board commands. */}
             <OnlineManualSetupSelectionBridge
                 seatControllers={seatBridge.seatControllers}
@@ -320,6 +324,49 @@ const MatchRoomOnlineSeatBridge = ({
             </OnlineManualSetupSelectionBridge>
         </>
     );
+};
+
+const OnlineAiServerRecoveryBridge = ({
+    onForceEndAiPhaseReady,
+}: {
+    onForceEndAiPhaseReady: MatchRoomOnlineSeatBridgeModel['onForceEndAiPhaseReady'];
+}) => {
+    const { requestForceEndAiPhase } = useGameClient();
+
+    const handleForceEndAiPhase = useCallback((): Promise<boolean> => (
+        new Promise<boolean>((resolve) => {
+            if (!requestForceEndAiPhase) {
+                resolve(false);
+                return;
+            }
+
+            let settled = false;
+            const finish = (accepted: boolean) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                resolve(accepted);
+            };
+            const timeoutId = setTimeout(() => {
+                finish(false);
+            }, FORCE_END_AI_PHASE_ACK_TIMEOUT_MS);
+            const sent = requestForceEndAiPhase((result) => {
+                finish(result.accepted);
+            });
+            if (!sent) {
+                finish(false);
+            }
+        })
+    ), [requestForceEndAiPhase]);
+
+    useEffect(() => {
+        onForceEndAiPhaseReady(handleForceEndAiPhase);
+        return () => {
+            onForceEndAiPhaseReady(null);
+        };
+    }, [handleForceEndAiPhase, onForceEndAiPhaseReady]);
+
+    return null;
 };
 
 export function MatchRoomOnlineBoardRuntime({ runtime }: { runtime: MatchRoomOnlineBoardRuntimeModel }) {

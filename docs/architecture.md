@@ -611,8 +611,8 @@ runner.runAll([
 │   ├── shared/                   #   前后端共享类型
 │   └── types/                    #   全局类型声明
 ├── e2e/                          #   Playwright E2E 测试
-├── docs/                         #   研发文档
-│   └── ai-rules/                 #     AI 助手专项规范
+├── .spec/                        #   AI 规范、项目 workflow 与任务路由
+├── docs/                         #   事实资料、规则来源、工具参考与历史记录
 ├── openspec/                     #   变更规范与提案
 ├── public/                       #   静态资源（图片/音频/国际化）
 └── scripts/                      #   工具脚本（资源处理/音频/数据库）

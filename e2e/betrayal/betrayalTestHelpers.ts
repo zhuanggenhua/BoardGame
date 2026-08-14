@@ -259,6 +259,306 @@ export const saveScreenshot = async (page: Page, path: string) => {
   throw lastError;
 };
 
+export const expectEventRollWorkbenchReadable = async (
+  page: Page,
+  label: string,
+  options: { expectedEventFrameIndex?: string } = {},
+) => {
+  const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+  const card = page.getByTestId("betrayal-discovery-card-front-atlas");
+  const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
+  await expect(discoveryPanel, `${label}必须显示事件/投骰同屏工作台`).toBeVisible();
+  await expect(card, `${label}必须显示正式事件牌正面，不得退回文字占位`).toBeVisible();
+  await expect(
+    page.getByTestId("betrayal-discovery-card-front-missing"),
+    `${label}不得出现缺图/文字占位牌`,
+  ).toHaveCount(0);
+  await expect(card).toHaveAttribute(
+    "data-asset-src",
+    /betrayal\/cards\/event-front-atlas/,
+  );
+  if (options.expectedEventFrameIndex) {
+    await expect(card).toHaveAttribute(
+      "data-atlas-frame-index",
+      options.expectedEventFrameIndex,
+    );
+  }
+  await expect(rollPanel, `${label}必须显示同源投骰面板`).toBeVisible();
+
+  const metrics = await page.evaluate(() => {
+    const rectOf = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) {
+        throw new Error(`missing ${selector}`);
+      }
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        centerX: rect.left + rect.width / 2,
+        centerY: rect.top + rect.height / 2,
+      };
+    };
+    const optionalRectOf = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) {
+        return null;
+      }
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        centerX: rect.left + rect.width / 2,
+        centerY: rect.top + rect.height / 2,
+      };
+    };
+    const overlapArea = (
+      a: ReturnType<typeof rectOf>,
+      b: ReturnType<typeof rectOf>,
+    ) => {
+      const width = Math.max(
+        0,
+        Math.min(a.right, b.right) - Math.max(a.left, b.left),
+      );
+      const height = Math.max(
+        0,
+        Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top),
+      );
+      return width * height;
+    };
+    const confirm = optionalRectOf(
+      '[data-testid="betrayal-event-roll-finalize"], [data-testid="betrayal-roll-modifier-confirm"]',
+    );
+    const confirmElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-event-roll-finalize"], [data-testid="betrayal-roll-modifier-confirm"]',
+    );
+    const diceGroupElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-house-dice-3d-group"]',
+    );
+    const outsidePromptElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-reroll-prompt-outside-dice"]',
+    );
+    const rerollLayerElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-rabbit-foot-dice"]',
+    );
+    const resultStageElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-recent-roll-result-stage"]',
+    );
+    const dicePhysicsSourceElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-house-dice-physics-source"]',
+    );
+    if (!resultStageElement) {
+      throw new Error("missing betrayal recent roll result stage");
+    }
+    if (!dicePhysicsSourceElement) {
+      throw new Error("missing betrayal dice physics source");
+    }
+    const resultStageStyle = getComputedStyle(resultStageElement);
+    const dicePhysicsSourceStyle = getComputedStyle(dicePhysicsSourceElement);
+    const diceGroupStyle = diceGroupElement ? getComputedStyle(diceGroupElement) : null;
+    const diceBoundaryElement = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-house-dice-boundary-highlight"]',
+    );
+    const diceBoundaryStyle = diceBoundaryElement
+      ? getComputedStyle(diceBoundaryElement)
+      : null;
+    const resultBackgroundParts = resultStageStyle.backgroundColor
+      .replace(/[^\d.,]/g, "")
+      .split(",")
+      .filter(Boolean)
+      .map(Number);
+    const resultBackgroundAlpha =
+      resultBackgroundParts.length >= 4 ? resultBackgroundParts[3] : 1;
+    const resultBorderMaxPx = Math.max(
+      Number.parseFloat(resultStageStyle.borderTopWidth) || 0,
+      Number.parseFloat(resultStageStyle.borderRightWidth) || 0,
+      Number.parseFloat(resultStageStyle.borderBottomWidth) || 0,
+      Number.parseFloat(resultStageStyle.borderLeftWidth) || 0,
+    );
+    const diceGroup = rectOf('[data-testid="betrayal-house-dice-3d-group"]');
+    const outsidePrompt = optionalRectOf(
+      '[data-testid="betrayal-reroll-prompt-outside-dice"]',
+    );
+    const rerollLayer = optionalRectOf('[data-testid="betrayal-rabbit-foot-dice"]');
+    let confirmHitTestId = "";
+    if (confirm && confirmElement) {
+      const hit = document.elementFromPoint(confirm.centerX, confirm.centerY);
+      confirmHitTestId =
+        hit?.closest<HTMLElement>("button")?.dataset.testid ??
+        (hit as HTMLElement | null)?.dataset?.testid ??
+        "";
+    }
+    return {
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      content: rectOf('[data-testid="betrayal-discovery-panel-content"]'),
+      card: rectOf('[data-testid="betrayal-discovery-card-front-atlas"]'),
+      roll: rectOf(
+        '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-recent-roll-panel"]',
+      ),
+      diceGroup,
+      diceGroupBoundaryHighlight:
+        diceGroupElement?.getAttribute("data-dice-boundary-highlight") ?? "",
+      diceGroupBackgroundImage: diceGroupStyle?.backgroundImage ?? "",
+      diceGroupBoxShadow: diceGroupStyle?.boxShadow ?? "",
+      diceBoundaryBackgroundImage: diceBoundaryStyle?.backgroundImage ?? "",
+      diceBoundaryBoxShadow: diceBoundaryStyle?.boxShadow ?? "",
+      outsidePrompt,
+      outsidePromptText: outsidePromptElement?.innerText.trim() ?? "",
+      outsidePromptInsideDiceGroup: Boolean(
+        outsidePromptElement && diceGroupElement?.contains(outsidePromptElement),
+      ),
+      rerollLayer,
+      rerollLayerText: rerollLayerElement?.innerText.trim() ?? "",
+      result: rectOf(
+        '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-recent-roll-result-stage"]',
+      ),
+      resultSurface:
+        resultStageElement.getAttribute("data-result-surface") ?? "",
+      resultBackgroundAlpha,
+      resultBorderMaxPx,
+      dicePhysicsSourceFilter: dicePhysicsSourceStyle.filter,
+      actionRail: rectOf('[data-testid="betrayal-action-rail"]'),
+      statusRail: rectOf('[data-testid="betrayal-status-rail"]'),
+      confirm,
+      confirmHitTestId,
+      bottomContinueCount: Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-testid="betrayal-discovery-continue"][data-discovery-action-position="bottom"]',
+        ),
+      ).filter((element) => element.offsetParent !== null).length,
+      cardRollOverlap: overlapArea(
+        rectOf('[data-testid="betrayal-discovery-card-front-atlas"]'),
+        rectOf('[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-recent-roll-panel"]'),
+      ),
+    };
+  });
+
+  expect(
+    metrics.card.width,
+    `${label}事件牌必须保持桌面可读宽度：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThanOrEqual(280);
+  expect(
+    metrics.cardRollOverlap,
+    `${label}事件牌和投骰面板不得发生几何重叠：${JSON.stringify(metrics)}`,
+  ).toBe(0);
+  expect(
+    metrics.roll.left,
+    `${label}投骰面板必须在事件牌右侧同一工作台：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThanOrEqual(metrics.card.right + 12);
+  expect(
+    Math.abs(metrics.roll.centerY - metrics.card.centerY),
+    `${label}事件牌和投骰面板必须共享同一工作台中轴，避免上下散落：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(24);
+  expect(
+    metrics.roll.height,
+    `${label}投骰面板不能继续占据大半屏：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(metrics.viewport.height * 0.48);
+  expect(
+    metrics.diceGroupBoundaryHighlight,
+    `${label}骰盘必须是开放式透明承接，不能回到硬框弹窗：${JSON.stringify(metrics)}`,
+  ).toBe("subtle-open-stage");
+  expect(
+    metrics.diceGroupBackgroundImage,
+    `${label}开放骰盘容器不得绘制整体背景，否则玩家会看到暗色方框：${JSON.stringify(metrics)}`,
+  ).toBe("none");
+  expect(
+    metrics.diceGroupBoxShadow,
+    `${label}开放骰盘容器不得绘制整体阴影，否则玩家会看到暗色方框：${JSON.stringify(metrics)}`,
+  ).toBe("none");
+  expect(
+    metrics.diceBoundaryBackgroundImage,
+    `${label}开放骰盘边界层不得再画整块背景，只允许骰子本体和逐骰高亮：${JSON.stringify(metrics)}`,
+  ).toBe("none");
+  expect(
+    metrics.diceBoundaryBoxShadow,
+    `${label}开放骰盘边界层不得再画整块阴影，只允许骰子本体和逐骰高亮：${JSON.stringify(metrics)}`,
+  ).toBe("none");
+  expect(
+    metrics.resultSurface,
+    `${label}开放骰盘结果区必须是轻量信息带，不能退回封闭结果盒：${JSON.stringify(metrics)}`,
+  ).toBe("open-info-band");
+  expect(
+    metrics.resultBorderMaxPx,
+    `${label}开放骰盘结果区不得保留可见硬边框：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(0);
+  expect(
+    metrics.resultBackgroundAlpha,
+    `${label}开放骰盘结果区不得使用深色封闭背景：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(0.45);
+  expect(
+    metrics.dicePhysicsSourceFilter,
+    `${label}开放骰盘不得给整张物理骰 canvas 套阴影滤镜，否则会显示成暗色方框：${JSON.stringify(metrics)}`,
+  ).toBe("none");
+  if (metrics.rerollLayer) {
+    expect(
+      metrics.outsidePrompt,
+      `${label}改骰选择态必须把“选择骰子”提示放在骰盘外部：${JSON.stringify(metrics)}`,
+    ).not.toBeNull();
+    expect(
+      metrics.outsidePromptInsideDiceGroup,
+      `${label}改骰提示不得再塞进骰盘命中层或骰子方框里：${JSON.stringify(metrics)}`,
+    ).toBe(false);
+    expect(
+      metrics.outsidePrompt!.bottom,
+      `${label}改骰提示必须位于骰盘外上方，而不是覆盖骰子：${JSON.stringify(metrics)}`,
+    ).toBeLessThanOrEqual(metrics.diceGroup.top + 2);
+    expect(
+      metrics.outsidePromptText,
+      `${label}骰盘外提示必须清楚说明当前要选择骰子：${JSON.stringify(metrics)}`,
+    ).toMatch(/选择要重掷的骰子|选择骰子/);
+    expect(
+      metrics.rerollLayerText,
+      `${label}骰盘命中层只能承接真实骰子目标，不得再显示提示正文：${JSON.stringify(metrics)}`,
+    ).not.toMatch(/选择要重掷的骰子|选择骰子/);
+  }
+  expect(
+    metrics.content.right,
+    `${label}工作台不能压进右侧牌堆/状态栏：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(metrics.statusRail.left - 2);
+  expect(
+    metrics.content.bottom,
+    `${label}工作台不能压住底部行动栏：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(metrics.actionRail.top + 4);
+  expect(
+    metrics.result.left,
+    `${label}结果与确认入口必须收在投骰面板内：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThanOrEqual(metrics.roll.left - 4);
+  expect(
+    metrics.result.right,
+    `${label}结果与确认入口不能漂出投骰面板：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(metrics.roll.right + 4);
+  if (metrics.confirm) {
+    expect(
+      metrics.confirm.left,
+      `${label}确认按钮必须跟随投骰结果，不得贴到事件牌或房间牌上：${JSON.stringify(metrics)}`,
+    ).toBeGreaterThanOrEqual(metrics.roll.left - 4);
+    expect(
+      metrics.confirm.right,
+      `${label}确认按钮不能漂出投骰工作台：${JSON.stringify(metrics)}`,
+    ).toBeLessThanOrEqual(metrics.roll.right + 4);
+    expect(
+      metrics.confirm.bottom,
+      `${label}确认按钮不能压到底部行动栏附近：${JSON.stringify(metrics)}`,
+    ).toBeLessThanOrEqual(metrics.actionRail.top - 32);
+    expect(
+      metrics.confirmHitTestId,
+      `${label}确认按钮中心点必须真实命中按钮本体：${JSON.stringify(metrics)}`,
+    ).toMatch(/betrayal-(event-roll-finalize|roll-modifier-confirm)/);
+    expect(
+      metrics.bottomContinueCount,
+      `${label}已有投骰确认入口时不得再残留底部返回/确认按钮：${JSON.stringify(metrics)}`,
+    ).toBe(0);
+  }
+};
+
 export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
   const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
   await expect(diceGroup).toBeVisible();
@@ -461,16 +761,31 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     })
     .toBe("true");
   await expect
-    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
-      timeout: 15000,
-    })
+    .poll(
+      async () => {
+        const [groupReady, settled, engineReady, engineFailure] = await Promise.all([
+          diceGroup.getAttribute("data-dice-physics-ready"),
+          physicsSource.getAttribute("data-dice-settled"),
+          physicsSource.getAttribute("data-dice-engine-ready"),
+          physicsSource.getAttribute("data-dice-engine-failure"),
+        ]);
+        if (groupReady === "true" || settled === "true") return "true";
+        return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
+      },
+      { timeout: 15000 },
+    )
     .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
       timeout: 15000,
     })
     .toBe("true");
-  await rollPanel.page().waitForTimeout(450);
+  await expectPhysicalDiceStableAfterSettled(rollPanel, {
+    waitMs: 360,
+    maxCenterShiftPx: 1,
+    maxGroupDriftPx: 1,
+    maxRotationShiftRad: 0.02,
+  });
 };
 
 export const expectPhysicalDiceStableAfterSettled = async (
@@ -479,19 +794,31 @@ export const expectPhysicalDiceStableAfterSettled = async (
     waitMs?: number;
     maxCenterShiftPx?: number;
     maxGroupDriftPx?: number;
+    maxRotationShiftRad?: number;
   } = {},
 ) => {
   const waitMs = options.waitMs ?? 600;
   const maxCenterShiftPx = options.maxCenterShiftPx ?? 24;
   const maxGroupDriftPx = options.maxGroupDriftPx ?? 8;
+  const maxRotationShiftRad = options.maxRotationShiftRad ?? 0.08;
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
   );
   const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
   await expect
-    .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
-      timeout: 15000,
-    })
+    .poll(
+      async () => {
+        const [groupReady, settled, engineReady, engineFailure] = await Promise.all([
+          diceGroup.getAttribute("data-dice-physics-ready"),
+          physicsSource.getAttribute("data-dice-settled"),
+          physicsSource.getAttribute("data-dice-engine-ready"),
+          physicsSource.getAttribute("data-dice-engine-failure"),
+        ]);
+        if (groupReady === "true" || settled === "true") return "true";
+        return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
+      },
+      { timeout: 15000 },
+    )
     .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
@@ -509,7 +836,15 @@ export const expectPhysicalDiceStableAfterSettled = async (
         visualWidth?: number;
         visualHeight?: number;
       };
-      type DebugDie = { layout?: Layout | null };
+      type Motion = {
+        x: number;
+        y: number;
+        z: number;
+        rotateX: number;
+        rotateY: number;
+        rotateZ: number;
+      };
+      type DebugDie = { layout?: Layout | null; motion?: Motion | null };
       type DebugSnapshot = {
         dice?: DebugDie[];
         canvas?: { clientWidth?: number; clientHeight?: number } | null;
@@ -517,6 +852,9 @@ export const expectPhysicalDiceStableAfterSettled = async (
       const panel = node as HTMLElement;
       const group = panel.querySelector(
         '[data-testid="betrayal-house-dice-3d-group"]',
+      ) as HTMLElement | null;
+      const source = panel.querySelector(
+        '[data-testid="betrayal-house-dice-physics-source"]',
       ) as HTMLElement | null;
       const groupRect = group?.getBoundingClientRect();
       const debugRegistry =
@@ -568,10 +906,40 @@ export const expectPhysicalDiceStableAfterSettled = async (
           width: layout.visualWidth ?? layout.width,
           height: layout.visualHeight ?? layout.height,
         }));
+      const motions = (snapshot?.dice ?? [])
+        .map((die) => die.motion)
+        .filter(
+          (motion): motion is Motion =>
+            Boolean(motion) &&
+            Number.isFinite(motion.x) &&
+            Number.isFinite(motion.y) &&
+            Number.isFinite(motion.z) &&
+            Number.isFinite(motion.rotateX) &&
+            Number.isFinite(motion.rotateY) &&
+            Number.isFinite(motion.rotateZ),
+        )
+        .map((motion) => ({
+          x: motion.x,
+          y: motion.y,
+          z: motion.z,
+          rotateX: motion.rotateX,
+          rotateY: motion.rotateY,
+          rotateZ: motion.rotateZ,
+        }));
 
       return {
         hasSnapshot: Boolean(snapshot),
         activeCanvasTestId,
+        debugKeys: Object.keys(debugRegistry),
+        sourceDataset: source ? { ...source.dataset } : null,
+        canvasCount: canvases.length,
+        canvases: canvases.map((canvas) => ({
+          dataset: { ...canvas.dataset },
+          width: canvas.width,
+          height: canvas.height,
+          clientWidth: canvas.clientWidth,
+          clientHeight: canvas.clientHeight,
+        })),
         diceCount: layouts.length,
         displayScaleX,
         displayScaleY,
@@ -584,6 +952,7 @@ export const expectPhysicalDiceStableAfterSettled = async (
             }
           : null,
         layouts,
+        motions,
       };
     });
 
@@ -598,6 +967,10 @@ export const expectPhysicalDiceStableAfterSettled = async (
     after.diceCount,
     `山屋骰盘停稳后骰子数量不能变化：${JSON.stringify({ before, after })}`,
   ).toBe(before.diceCount);
+  expect(
+    after.motions.length,
+    `山屋骰盘停稳稳定性必须读到每颗骰子的旋转快照：${JSON.stringify({ before, after })}`,
+  ).toBe(after.diceCount);
   expect(
     before.diceCount,
     `山屋骰盘停稳稳定性至少要看到一颗骰子：${JSON.stringify({ before, after })}`,
@@ -615,6 +988,20 @@ export const expectPhysicalDiceStableAfterSettled = async (
     maxShift,
     `山屋骰子停稳后不能二次瞬移：${JSON.stringify({ before, after, shifts })}`,
   ).toBeLessThanOrEqual(maxCenterShiftPx);
+  const rotationShifts = before.motions.map((motion, index) => {
+    const next = after.motions[index];
+    if (!next) return Number.POSITIVE_INFINITY;
+    return Math.max(
+      Math.abs(next.rotateX - motion.rotateX),
+      Math.abs(next.rotateY - motion.rotateY),
+      Math.abs(next.rotateZ - motion.rotateZ),
+    );
+  });
+  const maxRotationShift = Math.max(...rotationShifts);
+  expect(
+    maxRotationShift,
+    `山屋骰子停稳截图前旋转必须已经停止：${JSON.stringify({ before, after, rotationShifts })}`,
+  ).toBeLessThanOrEqual(maxRotationShiftRad);
   if (before.groupRect && after.groupRect) {
     const groupDrift = Math.max(
       Math.abs(after.groupRect.x - before.groupRect.x),

@@ -1,3 +1,11 @@
+---
+name: testing-audit-core-principles
+description: 测试审计核心原则：fail-close、深审流程和交互矩阵——做深度审计时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试审计核心原则与矩阵门禁
 
 > 来源：从 `.spec/knowledge/standards/testing-audit.md` 无损拆出。本文档承载 fail-close 审计速查、全面审计完成定义、深度审计执行步骤、录入/图片/旧 evidence 边界、交互入口语义矩阵和技能完整流程矩阵；`testing-audit.md` 只保留入口摘要、证据分层和流程路由。
@@ -193,7 +201,7 @@
 - **批次 L4 必须产出共享链判等矩阵（强制）**：凡当前任务范围是“新派系 / 新英雄 / 一整批对象全面审计 / 同类对象补审”，且你准备在最终口径里复用代表链或声明“剩余只差 L4”，evidence 里必须单列一张 `L4 共享链判等矩阵`。每个对象至少写明：① 对象名；② 共享链名称或 family；③ 代表对象；④ 是否满足“仅配置不同”；⑤ 判等依据；⑥ 本对象剩余差异/残余风险。没有这张矩阵时，不得把“L3 都有了”升级成“整批只剩治理尾巴”或“已全面审计完成”。
 - **状态家族 completion audit 不得只停在“状态已写入”（强制）**：凡当前范围内有多个对象写入同一状态/token，或同一新英雄/新派系存在一组状态家族，evidence 必须为每个状态至少列出：① 写入 seam（如 direct `grantStatus`、`customAction`、`choiceResolved`、被动/阶段钩子）；② 共享消费者（如 stack limit、accept/decline gate、upkeep、`passiveTrigger`、cleanup、transfer、response gate）；③ 已验证的代表入口；④ 当前不能互相外推的差异。没有这张 `写入 seam -> 消费点 -> 清理/后续` 对照表时，不得因为“多张牌都能写这个状态”就把该状态家族升级成 `L4` 或“只差治理尾项”。
 - **升级/替换链不得只审“升级牌壳”（强制）**：凡对象通过 `replaceAbility`、升级牌写槽、双面切换能力集或类似“先替换定义，再跑新定义”的方式生效，审计必须拆成两层：① 升级/替换壳是否成立（打牌、扣费、离手、`abilityLevel` / `upgradeCardByAbilityId` / 能力集切换是否正确）；② 被替换后的能力 seam 是否成立（新的 `trigger / variants / customAction / tags / postDamage continuation` 是否真实收口）。只证明“升级牌写进升级槽 / 角色翻面成功”最多算壳层通过，不能自动证明 replacement ability 本体已经完成 `L4`。
-- **奖励骰/bonus overlay 不得只审“特写壳”（强制）**：凡多个对象都经过 `rollDie`、`BONUS_DIE_ROLLED`、奖励骰特写或 `displayOnlySettlement`，审计必须继续拆出：① 特写壳是否真实打开/关闭且流程可继续；② 不同骰面最终落到哪类消费者（`drawCard / grantToken / damage / status / extraAttack / selectPlayer / damageShield`）；③ 是否还有 `postDamage`、额外进攻、选择确认或其它 continuation。只看到“奖励骰特写出现了”或“写了 `BONUS_DIE_ROLLED / displayOnlySettlement`”不能把兄弟对象判成同一 `L4` family；真正的判等边界必须落在后续消费者与 continuation。
+- **奖励骰/右侧骰盘不得只审“展示壳”（强制）**：凡多个对象都经过 `rollDie`、`BONUS_DIE_ROLLED`、右侧奖励骰骰盘或 `displayOnlySettlement`，审计必须继续拆出：① 右侧骰盘是否真实显示、普通确认且流程可继续；② 旧中央 overlay / 专用确认按钮是否没有接管；③ 不同骰面最终落到哪类消费者（`drawCard / grantToken / damage / status / extraAttack / selectPlayer / damageShield`）；④ 是否还有 `postDamage`、额外进攻、选择确认或其它 continuation。只看到“奖励骰骰盘出现了”或“写了 `BONUS_DIE_ROLLED / displayOnlySettlement`”不能把兄弟对象判成同一 `L4` family；真正的判等边界必须落在后续消费者与 continuation。
 - **同类已修 bug 必须检查直接消费者（强制）**：一旦某个对象因完整流程审计发现实现错误，必须查找同游戏/同系统中共享相同时机、handler、resolver、UI 入口或资源合同的候选消费者；只有存在同一共享 seam、同一字段读取或同一合同源的直接影响证据时，才把对象纳入同轮重审。禁止只凭同批次、同命名或相似外观扩审，也禁止修完用户点名对象后不记录直接消费者检查结果。典型：防御技能 effect timing 修复后，检查实际消费该 timing 的防御 resolver 调用点；资源图集合同修复后，检查实际引用同一 manifest/frame 合同的消费者。
 - **框架消费合同必须反向审计（强制）**：审计不能只从数据定义、卡图文字或 helper 命名正向推导“应该会执行”，还必须从实际 resolver / system / pipeline 消费点反查字段合法性。任何 `timing`、`phaseId`、`customActionId`、`status timing`、`command payload`、`targetType`、资源 atlas/index 等字段，只要是被共享系统按枚举值消费，就必须证明该字段值会被对应消费点读取。若类型允许的值多于某个消费点实际处理的值，必须建立合同测试或显式白名单；禁止让“定义存在但消费点静默跳过”的对象通过审计。典型：DiceThrone 防御 resolver 只消费 `withDamage/postDamage`，防御技能 effect 若写成 `immediate/preDefense/default`，即使 customAction handler 单测通过，也不能视为防御技能已实现。
 - **共享枚举消费必须列“声明值 -> 消费点 -> 证据”对照（强制）**：只要对象语义依赖共享框架枚举或消费合同（如 `timing`、`phaseId`、`customActionId`、`resolutionMode`、`targetType`、骰面/符号映射、资源槽位映射），审计文档必须至少写清三件事：① 声明层实际填了什么值；② 哪个 resolver/system/helper 在何处消费该值；③ 哪条 L2/L3/L4 证据证明这个消费点真的按该值执行。没有这张对照，就不能把“定义里有这个字段”写成“框架已正确消费”。
@@ -227,7 +235,7 @@
 - **交互语义必须单一真相（强制）**：凡涉及“候选生成 / UI 高亮或置灰 / 用户点击提交 / validator / resolver / reducer 生效”的链路，必须明确唯一权威来源：要么 UI、提交和 resolver 都消费同一份 `PromptOption`/`optionId`，要么全部通过同一个 `validate(...)`/查询 helper 派生。禁止 UI 用一套近似条件高亮、handler/resolver 再用另一套条件拒绝；禁止用 `defId`、`baseIndex`、标签、局部状态等弱标识替代真实 option 的 `uid`/稳定标识；禁止“看起来可选但提交后无效”的双重/多重真相。若确实需要多层校验，后层只能做活体性/权限复核，不能引入与候选来源不一致的新业务口径；测试必须至少覆盖：候选出现、UI/命令选择同一 option、响应成功、最终权威状态变化。修复任一双重真相 bug 时，必须扩审同 targetType / 同 UI 组件 / 同 helper 的其他调用点，不能只修两张牌。
 - **交互入口语义必须审计（强制）**：凡规则、卡牌、技能或按钮描述包含“选择 / 移动 / 打出到 / 从...到... / 另一个 / 你的 / 敌方 / 任意 / 至多 / 可以 / 然后 / instead / then / choose / move / target”等用户动作链，审计时必须拆出**第一用户选择对象**，并核对 UI 入口、command payload、validator、resolver/handler 消费字段是否同一语义。典型检查：① 描述动作链是“选择 A → 对 A 做事 → 再选择 B”，不得把 B 误当前置入口；② 直接入口字段（如 `playNeedsBase` / `playNeedsMinion` / `targetType` / `position` / `targetPlayerId`）必须与第一选择对象一致；③ 第二步及后续选择必须携带第一步上下文（如 `sourceUid`、`sourceBaseIndex`、`originPosition`、`selectedCardUid`、`selectedPlayerId`），不得靠“当前基地 / 第一个匹配对象 / 当前 UI 选中态”猜；④ 若某能力选择“任意数量 / 至多 N / 可选执行”，UI 多选、validator、resolver 的数量与 skip 语义必须一致。该维度是通用审计门禁，不得只按某张卡或某个游戏写特例关键词。
 - **升级/替换 family 必须拆“升级牌壳”和“被替换能力 seam”（强制）**：凡对象通过 `replaceAbility`、升级牌、双面能力集切换或其它“先替换定义，再由新定义继续运行”的方式生效，审计时必须分两层写证据：① **升级牌壳/替换壳**是否真实完成打牌、扣费、离手、`abilityLevel` / `upgradeCardByAbilityId` / 能力集切换写入；② **被替换后的能力 seam**是否真实完成 `trigger / variants / customAction / tags / postDamage continuation`。禁止只因为“升级槽写对了 / abilityLevel 变了”就把整条升级链判成 `L4`。
-- **奖励骰/特写 family 必须拆“展示壳”和“后续消费者 seam”（强制）**：凡多个对象都走 `rollDie`、奖励骰 overlay、`BONUS_DIE_ROLLED`、`displayOnlySettlement` 或类似 bonus 特写，审计时必须继续回答：① overlay 是否真实打开、关闭并允许流程继续；② 结果最终落到哪类消费者：`drawCard / grantToken / grantStatus / bonusDamage / damage / extraAttack / selectPlayer / damageShield`；③ 是否还存在 `postDamage`、额外进攻、选择确认等 continuation。禁止只因为“都能看到奖励骰特写”或“都发出了 `BONUS_DIE_ROLLED`”就把它们登记成同一 `L4` family。
+- **奖励骰 family 必须拆“右侧骰盘流程”和“后续消费者 seam”（强制）**：凡多个对象都走 `rollDie`、右侧奖励骰骰盘、`BONUS_DIE_ROLLED`、`displayOnlySettlement` 或类似 bonus 结算，审计时必须继续回答：① 右侧骰盘是否真实显示、由骰主普通确认并允许流程继续；② 旧中央 overlay / 专用确认按钮是否没有接管；③ 结果最终落到哪类消费者：`drawCard / grantToken / grantStatus / bonusDamage / damage / extraAttack / selectPlayer / damageShield`；④ 是否还存在 `postDamage`、额外进攻、选择确认等 continuation。禁止只因为“都能看到奖励骰骰盘”或“都发出了 `BONUS_DIE_ROLLED`”就把它们登记成同一 `L4` family。
 
 #### 交互入口语义矩阵（强制，通用）
 

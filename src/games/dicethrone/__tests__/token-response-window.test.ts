@@ -20,6 +20,7 @@ const createCoreState = (): DiceThroneCore => ({
     players: {
         '0': {
             id: '0',
+            characterId: 'barbarian',
             hand: [],
             deck: [],
             discard: [],
@@ -32,6 +33,7 @@ const createCoreState = (): DiceThroneCore => ({
         },
         '1': {
             id: '1',
+            characterId: 'monk',
             hand: [],
             deck: [],
             discard: [],
@@ -44,6 +46,7 @@ const createCoreState = (): DiceThroneCore => ({
         },
     },
     activePlayerId: '0',
+    selectedCharacters: { '0': 'barbarian', '1': 'monk' },
     turnNumber: 1,
     dice: [],
     rollCount: 0,

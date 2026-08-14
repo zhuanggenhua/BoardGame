@@ -1,3 +1,11 @@
+---
+name: description-to-implementation-audit
+description: 描述到实现审计：从规则文字追到代码消费点——查玩法实现是否吃对规则时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 描述到实现全链路审查规范
 
 ## 描述→实现全链路审查规范（强制）

@@ -111,7 +111,7 @@
 | 17 | card-play-six | 666！ | ✅ |
 
 ## 通用“时机正确性语义核对（四问）”
-> 本轮按 `docs/ai-rules/testing-audit.md` 的 D8 口径，统一追问四个问题：
+> 本轮按 `.spec/knowledge/standards/testing-audit.md` 的 D8 口径，统一追问四个问题：
 > 1) 触发/宣告时点对不对？
 > 2) 消耗/结算窗口对不对？
 > 3) 状态写入后是否还在可消费窗口，没有被提前清掉？

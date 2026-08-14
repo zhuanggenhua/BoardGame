@@ -1,3 +1,11 @@
+---
+name: feedback-system
+description: 反馈系统标准：提交、状态、去重、恢复和回写边界——改用户反馈链路时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 反馈系统规范
 
 ## 反馈提交入口

@@ -1,3 +1,11 @@
+---
+name: asset-pipeline
+description: 图片资源与发布总规范：资源目录、manifest、上传和运行时加载——改素材链路时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 图片资源与发布总规范
 
 > 本文档是 `AGENTS.md` 的补充，承载图片资源链、压缩、manifest、服务器发布和移动素材包合同。
@@ -400,19 +408,22 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 16. **服务器历史 release 必须有固定留存上限**：服务器素材发布完成并原子切换 `current` 后，默认只保留按发布号排序的最近 5 个 release；`current` 即使不在最近 5 个内也必须额外保留。清理目标只能是 `releases/` 下已确认不是 `current` 且不在留存集合中的历史目录，不得删除 Docker 服务、运行容器或 `current` 指向的目录。发布脚本必须在切换成功后执行同一留存策略，清理失败必须明确暴露，不能静默吞掉。
 17. **容量门禁先核对 release 占用再补救**：服务器空间不足时，必须区分上传临时归档、新 release 和历史 release 的实际占用，优先按第 16 条清理历史快照后重跑原发布流程；不得降低 `5 GiB` 最低可用空间门槛、使用旁路上传或把部分发布说成整体完成。清理后必须回查剩余 release 数量、`current` 指针和文件系统可用空间。
 18. **按游戏下载与 E2E 自动补齐**：`npm run assets:download -- --game <gameId>` 必须从服务器主源按游戏拉取运行时对象、对应语言目录、atlas 配置和共享运行时依赖；共享音频只拉取精简运行时注册表实际引用的 OGG，不得因为公共音频目录存在就把全站音频一起拉回。不能把空壳提示当作下载完成。标准 E2E 入口对明确的 `e2e/<gameId>/...` 目标必须在启动测试服务前自动执行同一按游戏补齐，已有文件按服务器 `size + SHA-256` 跳过；`--list`、无明确游戏目标和共享测试不得自动扩大为全站下载。只有明确使用 `--all` 才允许拉取全部运行时对象。
+19. **新 clone 的 `dev:lite` 必须可直接体验**：`npm run dev:lite` 只负责代码本地运行和内存游戏服，不要求先同步完整本地素材镜像；运行时媒体和该模式下需要读取的资源配置默认指向正式公开资源域名。完整本地素材调试才显式使用 `assets:download -- --game <gameId>`；正常 `dev`、生产和移动包的本地/包内资源优先级不得因 `dev:lite` 改变。
 
 ### 远端对象与 App 素材包的单一内容真相（强制）
 
 1. **服务器对象 + 文件索引是内容真相**：同一张图片、音频、图集配置只能有一份路径与哈希真相。服务器活动版本、Android 已安装素材包、离线缓存和公开 URL 都必须引用同一组 `path/hash/size`；禁止让“服务器文件”和“App ZIP 包内文件”各自维护独立事实。
 2. **App 素材包必须由同一份索引派生**：`mobile-packages/android/<channel>/file-index/...json` 里的每个 `files[].path/hash/size` 必须能回到正式资源清单或服务器主源对象本身；禁止手工改 ZIP、手工改 manifest，或只更新服务器单文件却不更新 App 可见索引。
-3. **差异化更新是默认目标，不是可选优化**：当只替换少量资源时，正确目标应是：把变更文件和索引原子发布到服务器主源 → App 客户端比较本地 file-index 与远端 file-index → 只下载缺失或哈希变化的文件。禁止把“为了让 App 吃到一张新图，重发整包 ZIP”当长期正式方案。
-4. **全量 ZIP 只能作为 bootstrap / 兼容兜底**：完整游戏 ZIP 适合作为首次安装、清缓存重建、旧客户端不支持差异下载、或大量资源重排后的兜底包。若当前工具链暂时只能重发整包，最终汇报必须明确写成“当前工具链全量重发，不是差异化更新”，不得包装成商业级素材热更新已完成。
-5. **单一真相的版本号应来自内容索引**：素材包版本应由 file-index checksum、内容哈希集合或明确的资源版本生成；时间戳只能作为发布审计信息。禁止把时间戳 ZIP 版本当成唯一真相，否则同一内容会产生多个等价包，App 难以判断是否真有差异。
-6. **商业游戏常见做法口径**：正式项目通常采用 CDN 上的内容寻址对象、版本 manifest、按资源组拆分 bundle、文件级或 chunk 级 patch；客户端只拉新增/变更 bundle，旧 bundle 留在本地缓存。大包全量下载一般只用于首装、强制修复或跨大版本迁移，不用于每次小素材替换。
-7. **Android 游戏包只发布压缩运行时交付物**：`mobile-packages/android` 的游戏包媒体文件只能来自 `compressed/` 目录下的 `.webp` / `.ogg`；运行时 JSON/SVG 配置可入包，但不得携带源图片、源音频、设计源文件或临时文件。`.png/.jpg/.jpeg/.mp3/.wav/.psd/.ai/.aseprite/.kra/.xcf/.tmp/.bak` 以及路径中含 `temp/tmp/bak/backup/old/copy/副本/临时/测试/test` 的文件一律不得进入 file-index 或 ZIP。源文件可以留在本地资源树用于再压缩，但不能随 App 素材包发布。
-8. **共享音频包只发布压缩 OGG**：Android 共享音频包 `common-audio` 只允许 `common/audio/**/compressed/*.ogg` 进入 file-index 或 ZIP。`public/assets/common/audio/registry.json`、`phrase-mappings.zh-CN.json` 等构建/开发用配置不进入共享音频包；运行时音频映射由 App 内置的精简注册表提供。若未来确需把某个配置随包下发，必须先明确它是运行时配置而非素材源文件，并补四层路径合同与回归测试。
-9. **重复素材必须收口到路径合同，不能只在发布层盲删**：发现同哈希重复文件时，先判断每条路径是否仍被运行时代码、manifest、图集配置或历史客户端引用；只有确认某条路径是旧别名/废弃路径，且运行时不再请求它，才允许从发布候选中排除或迁移。禁止单纯按哈希去重导致客户端按旧路径请求时缺图。
-10. **清理并重新下载必须证明真实下载模式已切换**：处理移动端素材包“增量文件校验失败 / 本地临时文件校验失败 / 清理后仍提示旧错误”时，不能只改提示文案或只清 H5 状态。修复必须闭合到三层证据：① 清理动作清空本地包目录、状态文件和活动任务；② 下一次安装即使拿到旧 `diffOnly` / file-index manifest，也强制以完整 ZIP 进入原生安装；③ 真机或等价原生日志证明 `fileIndexUrl` 为空、`incrementalMode` 为 false，且不再出现 `incremental-file` 单文件校验。没有第③层证据时，只能说“代码层已加保护，真机原始位点未验收”，不得宣称问题已彻底修复。
+3. **差异化更新是默认目标，不是可选优化**：当只替换少量资源时，正确目标应是：把变更文件上传到服务器素材发布入口 → 服务器在同一个 release 内原子写入变更对象并刷新关联游戏已有 channel 的 `file-index` / version manifest / `games/<gameId>.json` → App 客户端比较本地 file-index 与远端 file-index → 只下载缺失或哈希变化的文件。禁止把“为了让 App 吃到一张新图，重发整包 ZIP”当长期正式方案。
+4. **普通游戏素材上传后由服务器闭合包索引**：`compressed/*.webp`、关联游戏运行时 `.json/.svg`、`atlas-configs/<gameId>/*.json` 等普通游戏运行时对象发布成功后，服务器 `apply-server-asset-publish` 必须基于服务器活动 release 自动重建该游戏在已有 Android channel 下的差异 file-index 和 latest manifest；本机上传端不得再依赖第二轮移动包发布命令、第二套 token 或公网拉取来补清单。
+5. **共享音频未自动化时必须中断**：共享音频 `common-audio` 涉及共享包 ZIP 与所有游戏 manifest 的联动；在服务器端自动刷新共享音频包闭合前，发现共享音频对象上传必须中断并要求走专项共享音频发布流程，不得只上传 OGG 后宣称 App 包已更新。
+6. **全量 ZIP 只能作为 bootstrap / 兼容兜底**：完整游戏 ZIP 适合作为首次安装、清缓存重建、旧客户端不支持差异下载、或大量资源重排后的兜底包。若当前工具链暂时只能重发整包，最终汇报必须明确写成“当前工具链全量重发，不是差异化更新”，不得包装成商业级素材热更新已完成。
+7. **单一真相的版本号应来自内容索引**：素材包版本应由 file-index checksum、内容哈希集合或明确的资源版本生成；时间戳只能作为发布审计信息。禁止把时间戳 ZIP 版本当成唯一真相，否则同一内容会产生多个等价包，App 难以判断是否真有差异。
+8. **商业游戏常见做法口径**：正式项目通常采用 CDN 上的内容寻址对象、版本 manifest、按资源组拆分 bundle、文件级或 chunk 级 patch；客户端只拉新增/变更 bundle，旧 bundle 留在本地缓存。大包全量下载一般只用于首装、强制修复或跨大版本迁移，不用于每次小素材替换。
+9. **Android 游戏包只发布压缩运行时交付物**：`mobile-packages/android` 的游戏包媒体文件只能来自 `compressed/` 目录下的 `.webp` / `.ogg`；运行时 JSON/SVG 配置可入包，但不得携带源图片、源音频、设计源文件或临时文件。`.png/.jpg/.jpeg/.mp3/.wav/.psd/.ai/.aseprite/.kra/.xcf/.tmp/.bak` 以及路径中含 `temp/tmp/bak/backup/old/copy/副本/临时/测试/test` 的文件一律不得进入 file-index 或 ZIP。源文件可以留在本地资源树用于再压缩，但不能随 App 素材包发布。
+10. **共享音频包只发布压缩 OGG**：Android 共享音频包 `common-audio` 只允许 `common/audio/**/compressed/*.ogg` 进入 file-index 或 ZIP。`public/assets/common/audio/registry.json`、`phrase-mappings.zh-CN.json` 等构建/开发用配置不进入共享音频包；运行时音频映射由 App 内置的精简注册表提供。若未来确需把某个配置随包下发，必须先明确它是运行时配置而非素材源文件，并补四层路径合同与回归测试。
+11. **重复素材必须收口到路径合同，不能只在发布层盲删**：发现同哈希重复文件时，先判断每条路径是否仍被运行时代码、manifest、图集配置或历史客户端引用；只有确认某条路径是旧别名/废弃路径，且运行时不再请求它，才允许从发布候选中排除或迁移。禁止单纯按哈希去重导致客户端按旧路径请求时缺图。
+12. **清理并重新下载必须证明真实下载模式已切换**：处理移动端素材包“增量文件校验失败 / 本地临时文件校验失败 / 清理后仍提示旧错误”时，不能只改提示文案或只清 H5 状态。修复必须闭合到三层证据：① 清理动作清空本地包目录、状态文件和活动任务；② 下一次安装即使拿到旧 `diffOnly` / file-index manifest，也强制以完整 ZIP 进入原生安装；③ 真机或等价原生日志证明 `fileIndexUrl` 为空、`incrementalMode` 为 false，且不再出现 `incremental-file` 单文件校验。没有第③层证据时，只能说“代码层已加保护，真机原始位点未验收”，不得宣称问题已彻底修复。
 
 ### assets-manifest 生成模式（强制）
 
@@ -431,7 +442,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 2. **先核对运行时真实请求路径**：图片运行时会自动补 `i18n/<locale>/` 与 `compressed/`，排查 404 时必须以最终请求 URL 为准，而不是只看源码里的相对路径。
 3. **裁切图也必须满足 `compressed/` 约定**：凡是运行时通过 `OptimizedImage` / `CardPreview` / `getOptimizedImageUrls()` 加载的裁切图，实际可访问文件必须位于对应目录的 `compressed/` 子目录；仅有 `crops/foo.webp` 而没有 `crops/compressed/foo.webp`，视为资源不完整。
 4. **上传前先重建 / 校验本地清单以找运行时对象**：资源目录有新增/移动后，先执行默认增量 `npm run assets:manifest` 或等价校验，确认新增运行时对象和 `basePrefix`；随后发布服务器需要的运行时对象。只有完整资源维护任务才使用 full 模式。
-5. **上传脚本入口**：当前正式入口是 `npm run assets:upload` / `npm run assets:check`，底层调用 `scripts/assets/upload-to-server.js`。排查“为什么本机能传/不能传”时，必须先确认本机或 CI 是否配置 `ASSET_SERVER_UPLOAD_URL` / `ASSET_SERVER_UPLOAD_TOKEN`、服务器 runner 的 `/asset-publish` 是否可达、服务器发布脚本是否存在，以及目标服务器活动目录是否正常；受限 SSH 只作为管理员 fallback 排查项。
+5. **上传脚本入口**：当前正式入口是 `npm run assets:upload` / `npm run assets:check`，底层调用 `scripts/assets/upload-to-server.js`。排查“为什么本机能传/不能传”时，必须先确认本机或 CI 是否配置 `ASSET_SERVER_UPLOAD_URL` / `ASSET_SERVER_UPLOAD_TOKEN`、服务器 runner 的 `/asset-publish` 是否可达、服务器发布脚本是否存在，以及目标服务器活动目录是否正常；普通游戏素材的 Android file-index / manifest 刷新由服务器发布脚本接管，不再要求上传端本机继续跑 `publish-android-game-packages`。受限 SSH 只作为管理员 fallback 排查项。
 6. **出现“多叠一层整图/四角异常”先查叠层来源（通用规则）**：优先用 DevTools 选中异常区域，检查上层元素是否存在整图覆盖；查看 **计算后** `opacity/visibility/filter/transform` 是否被脚本改写；必要时用 `elementsFromPoint()` 或逐层禁用 DOM 来定位真正的上层来源。该步骤必须在调整裁剪/圆角/纹理之前完成。
 
 ---

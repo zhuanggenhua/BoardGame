@@ -1,3 +1,11 @@
+---
+name: critical-image-preload
+description: 关键图片预加载：critical/warm 分层、图集初始化和教程裁剪——改预加载链路时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 关键图片预加载规范
 
 > 来源：从 `.spec/knowledge/standards/asset-pipeline.md` 无损拆出。本文档承载 `criticalImageResolver`、两阶段预加载、教程模式资源裁剪和图集初始化规则；`asset-pipeline.md` 只保留入口摘要。

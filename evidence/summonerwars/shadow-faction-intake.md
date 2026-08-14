@@ -48,7 +48,7 @@
 
 ## 权威来源与对照源
 
-卡名、卡面字段、规则原文和图集槽位以 `temp/summonerwars-shadow-source-cards/` 中的 11 张完整单卡、正式目录中的 `hero.jpg`/`tip.jpg` 和当前 `cards.jpg` 图集为准；`temp/summonerwars-shadow-excluded-source/` 中的两张混入素材只作为排除记录。现有老派系代码和 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md` 只作为结构与版式对照，不覆盖卡面内容。
+卡名、卡面字段、规则原文和图集槽位以 `temp/summonerwars-shadow-source-cards/` 中的 11 张完整单卡、正式目录中的 `hero.jpg`/`tip.jpg` 和当前 `cards.jpg` 图集为准；`temp/summonerwars-shadow-excluded-source/` 中的两张混入素材只作为排除记录。现有老派系代码和 `.spec/skills/summonerwars-faction-intake/SKILL.md` 只作为结构与版式对照，不覆盖卡面内容。
 
 正式运行目录当前只有 3 张 JPG 派生/运行时资源，原始单卡核对输入位于 `temp/`，不能把两层混称为同一目录。
 

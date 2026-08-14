@@ -21,7 +21,7 @@
   - `src/engine/transport/`
   - `src/games/dicethrone/domain/`
   - `src/games/tictactoe/`
-  - `docs/ai-rules/engine-systems.md`
+  - `.spec/knowledge/standards/engine-systems.md`
 
 ## Current Status
 - 已完成实现，按收缩后的真实范围归档。

@@ -75,7 +75,7 @@ Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.10
 
 ### 审计规范
 
-- [docs/ai-rules/testing-audit.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/testing-audit.md)
+- [.spec/knowledge/standards/testing-audit.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/testing-audit.md)
   - 新增 `D55 共享合同多消费者一致性`
 
 ## 回归

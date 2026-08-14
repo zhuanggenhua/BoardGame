@@ -455,7 +455,7 @@ function resolvePassivePhaseTriggerEvents(args: {
     const player = args.state.players[args.playerId];
     if (!player) return [];
 
-    const activeDice = getActiveDice(args.state);
+    const activeDice = getActiveDice(args.state, args.phase);
     const triggerCtx = {
         currentPhase: args.phase,
         resources: player.resources,
@@ -1702,7 +1702,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
             let targetingCore = core;
             const attackerId = core.pendingAttack.attackerId;
-            const targetingValue = getActiveDice(core)[0]?.value ?? 1;
+            const targetingValue = getActiveDice(core, from as TurnPhase)[0]?.value ?? 1;
             const autoDefenderId = getTargetingRollAutoDefenderId(core, attackerId, targetingValue);
             const selectedDefenderId = command.type === 'SELECT_DEFENDER_TARGET'
                 ? ((command.payload as { defenderId?: unknown } | undefined)?.defenderId)

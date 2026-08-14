@@ -64,15 +64,15 @@ npm run test -- temple-firstmate-afterscore.test.ts
 
 ### Why This Test is Important
 
-This test covers a critical timing scenario mentioned in `docs/ai-rules/testing-audit.md`:
+This test covers a critical timing scenario mentioned in `.spec/knowledge/standards/testing-audit.md`:
 - Temple of Goju + First Mate is explicitly listed as a high-priority test case
 - Tests the `_deferredPostScoringEvents` mechanism that was fixed in commit 6ea1f9f
 - Covers the "removed minions should not trigger" scenario that's unique to Temple
 
 ### Related Documentation
 
-- `docs/ai-rules/testing-audit.md` - Lists Temple+FirstMate as critical timing scenario
-- `docs/ai-rules/engine-systems.md` - Documents `_deferredPostScoringEvents` mechanism
+- `.spec/knowledge/standards/testing-audit.md` - Lists Temple+FirstMate as critical timing scenario
+- `.spec/knowledge/standards/engine-systems.md` - Documents `_deferredPostScoringEvents` mechanism
 - `src/games/smashup/__tests__/mothership-scout-afterscore-bug.test.ts` - Reference pattern
 - `src/games/smashup/__tests__/miskatonic-scout-afterscore.test.ts` - Correct engine usage
 

@@ -1403,6 +1403,128 @@ const prepareArtificerOverclockUpgradeBoardScene = async (page: Page): Promise<v
     });
 };
 
+const prepareArtificerOverclock2MainHealBotBoardScene = async (page: Page): Promise<void> => {
+    await page.evaluate(({ shockBotId, healBotId, synthId, nanobombId }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => JsonRecord;
+                    set?: (state: JsonRecord) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!state || !harness?.state?.set) {
+            throw new Error('TestHarness state 不可用');
+        }
+
+        const core = state.core as JsonRecord;
+        const sys = state.sys as JsonRecord;
+        const players = core.players as Record<string, JsonRecord>;
+        const player0 = players['0'];
+        const player1 = players['1'];
+
+        const toDie = (value: number, symbol: string, id: number) => ({
+            id,
+            value,
+            symbol,
+            symbols: [symbol],
+            isKept: false,
+            isLocked: false,
+            playerId: '0',
+        });
+
+        return harness.state.set({
+            ...state,
+            core: {
+                ...core,
+                activePlayerId: '0',
+                currentPlayer: '0',
+                currentPlayerIndex: 0,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                pendingAttack: null,
+                pendingDamage: null,
+                pendingBonusDiceSettlement: undefined,
+                activatingAbilityId: undefined,
+                players: {
+                    ...players,
+                    '0': {
+                        ...player0,
+                        hand: [],
+                        resources: {
+                            ...(player0.resources ?? {}),
+                            cp: player0.resources?.cp ?? 8,
+                            hp: 40,
+                        },
+                        tokens: {
+                            ...(player0.tokens ?? {}),
+                            [synthId]: 0,
+                            [shockBotId]: 1,
+                            [healBotId]: 1,
+                        },
+                        tokenStackLimits: {
+                            ...(player0.tokenStackLimits ?? {}),
+                            [shockBotId]: 1,
+                            [healBotId]: 1,
+                        },
+                        artificerBotState: {
+                            ...(player0.artificerBotState ?? {}),
+                            [shockBotId]: {
+                                built: true,
+                                upgraded: false,
+                                activationsUsedThisTurn: 0,
+                            },
+                            [healBotId]: {
+                                built: true,
+                                upgraded: false,
+                                activationsUsedThisTurn: 0,
+                            },
+                        },
+                    },
+                    '1': {
+                        ...player1,
+                        resources: {
+                            ...(player1.resources ?? {}),
+                            cp: player1.resources?.cp ?? 10,
+                            hp: 50,
+                        },
+                        statusEffects: {
+                            ...(player1.statusEffects ?? {}),
+                            [nanobombId]: 0,
+                        },
+                    },
+                },
+                dice: [
+                    toDie(6, 'electricity', 0),
+                    toDie(6, 'electricity', 1),
+                    toDie(6, 'electricity', 2),
+                    toDie(6, 'electricity', 3),
+                    toDie(1, 'wrench', 4),
+                ],
+            },
+            sys: {
+                ...sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    ...((sys.interaction ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+                responseWindow: {
+                    ...((sys.responseWindow ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+            },
+        });
+    }, {
+        shockBotId: TOKEN_IDS.SHOCK_BOT,
+        healBotId: TOKEN_IDS.HEAL_BOT,
+        synthId: TOKEN_IDS.SYNTH,
+        nanobombId: STATUS_IDS.NANOBOMB,
+    });
+};
+
 const prepareArtificerOverclockMainBoardScene = async (page: Page): Promise<void> => {
     await page.evaluate(({ shockBotId, synthId, nanobombId }) => {
         const harness = (window as Window & {
@@ -3298,6 +3420,141 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         });
 
         await game.screenshot('artificer-overclock-2-after-energy-boost', testInfo);
+    });
+
+    test('超频运行 II 主分支选择治疗机器人后应普通确认右侧奖励骰盘并继续激活另一个机器人', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, ['upgrade-artificer-overclock-2'], { randomQueue: [4] });
+        await game.screenshot('artificer-overclock-2-main-before-play', testInfo);
+
+        await dragHandCardToPlay(page, 'upgrade-artificer-overclock-2');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            return {
+                handIds: artificer?.hand?.map((card: JsonRecord) => card.id) ?? [],
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                abilityLevel: artificer?.abilityLevels?.['overclock'] ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['overclock']?.cardId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            handIds: [],
+            cp: 8,
+            abilityLevel: 2,
+            upgradeCardId: 'upgrade-artificer-overclock-2',
+        });
+
+        await prepareArtificerOverclock2MainHealBotBoardScene(page);
+        await setHarnessRandomQueue(page, [4]);
+        await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
+        await game.screenshot('artificer-overclock-2-main-board-ready', testInfo);
+
+        await clickResolvedAbilitySlot(page, 'lightning', 'overclock-2-main');
+
+        const abilityChoiceModal = page.locator('#modal-root');
+        await expect(abilityChoiceModal.getByRole('heading', { name: '选择发动变体' })).toBeVisible({ timeout: 5000 });
+        await expect(abilityChoiceModal.getByRole('button', { name: /超频运行 II（4个电流）/ })).toBeVisible({ timeout: 5000 });
+        await game.screenshot('artificer-overclock-2-main-ability-choice', testInfo);
+        await abilityChoiceModal.getByRole('button', { name: /超频运行 II（4个电流）/ }).click();
+
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const monk = state?.core?.players?.['1'];
+            const pendingAttack = state?.core?.pendingAttack;
+            const interaction = state?.sys?.interaction?.current;
+            const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
+                ? interaction.data.options
+                : [];
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: interaction?.kind ?? null,
+                sourceAbilityId: interaction?.data?.sourceId ?? null,
+                pendingAttackSourceId: pendingAttack?.sourceAbilityId ?? null,
+                playerHp: artificer?.resources?.[RESOURCE_IDS.HP] ?? null,
+                synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            interactionKind: 'simple-choice',
+            sourceAbilityId: 'overclock-2-main',
+            pendingAttackSourceId: 'overclock-2-main',
+            playerHp: 40,
+            synth: 0,
+            opponentNanobomb: 1,
+            optionLabels: [
+                'choices.artificerBotActivation.activateShockBotFree',
+                'choices.artificerBotActivation.activateHealBotFree',
+                'choices.artificerBotActivation.skip',
+            ],
+        });
+
+        await game.screenshot('artificer-overclock-2-main-first-choice', testInfo);
+        await clickSimpleChoiceByIndex(page, game, 1);
+
+        await settleCurrentBonusDice(page, () => game.getState() as Promise<JsonRecord>, {
+            sourceAbilityId: 'artificer-heal-bot-use',
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const interaction = state?.sys?.interaction?.current;
+            const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
+                ? interaction.data.options
+                : [];
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: interaction?.kind ?? null,
+                sourceAbilityId: interaction?.data?.sourceId ?? null,
+                playerHp: artificer?.resources?.[RESOURCE_IDS.HP] ?? null,
+                healBotUsed: artificer?.artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn ?? null,
+                shockBotUsed: artificer?.artificerBotState?.[TOKEN_IDS.SHOCK_BOT]?.activationsUsedThisTurn ?? null,
+                pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            interactionKind: 'simple-choice',
+            sourceAbilityId: 'overclock-2-main',
+            playerHp: 41,
+            healBotUsed: 1,
+            shockBotUsed: 0,
+            pendingBonusDiceSettlement: null,
+            optionLabels: [
+                'choices.artificerBotActivation.activateShockBotFree',
+                'choices.artificerBotActivation.skip',
+            ],
+        });
+
+        await game.screenshot('artificer-overclock-2-main-second-choice-after-heal-bot', testInfo);
+        await clickSimpleChoiceByIndex(page, game, 0);
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const interaction = state?.sys?.interaction?.current;
+            const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
+                ? interaction.data.options
+                : null;
+            return {
+                healBotUsed: artificer?.artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn ?? null,
+                shockBotUsed: artificer?.artificerBotState?.[TOKEN_IDS.SHOCK_BOT]?.activationsUsedThisTurn ?? null,
+                pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+                optionLabels: options?.map((option: JsonRecord) => option?.labelKey ?? option?.label) ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            healBotUsed: 1,
+            shockBotUsed: 1,
+            pendingBonusDiceSettlement: null,
+            optionLabels: null,
+        });
+
+        await game.screenshot('artificer-overclock-2-main-after-two-bots', testInfo);
     });
 
     test('基础超频运行应可从真实玩家板触发并在伤害前请求免费激活机器人', async ({ page, game }, testInfo) => {

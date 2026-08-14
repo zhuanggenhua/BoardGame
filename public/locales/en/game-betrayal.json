@@ -4,10 +4,10 @@
   "configReview": {
     "back": "Back",
     "title": "Betrayal configuration review",
-    "description": "Current values come from {{source}}. Review room doorways, rotated connections, scenario candidates, and the initial scenario here. Edits create field-level correction proposals only; they do not modify the source in the browser.",
+    "description": "Current values come from {{source}}. Review explorer panel assets, map character tokens, room doorways, rotated connections, scenario candidates, and the initial scenario here. Edits create field-level correction proposals only; they do not modify the source in the browser.",
     "clearDrafts": "Clear drafts",
     "submitEdits": "Submit corrections ({{count}})",
-    "searchPlaceholder": "Search rooms, scenarios, doorways, or sources...",
+    "searchPlaceholder": "Search explorers, player panels, tokens, rooms, scenarios, doorways, or sources...",
     "rowSummary": "Showing {{filtered}} of {{total}} rows; {{invalid}} invalid drafts",
     "pendingEdits": "{{count}} field changes are staged. After submission, they are saved as correction proposals; source changes still require code updates and verification.",
     "auditCoverage": "The adapter defines {{count}} required audit fields. The table does not display an independent configuration copy; source documents and evidence are review references only.",

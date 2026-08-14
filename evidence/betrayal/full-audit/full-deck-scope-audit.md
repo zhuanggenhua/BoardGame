@@ -134,9 +134,9 @@
 | `evidence/betrayal/betrayal-discovery-effect-audit-2026-07-02.md` | “发现池对象与代表性玩法已验证”不是整牌库完成 | 只能作为当前发现池效果审计历史证据 |
 | `evidence/betrayal/betrayal-event-e2e-coverage-2026-07-04.md` | 23 张事件页面 E2E 绿灯容易被外推为 43 张事件完成 | 只证明早期 23 张事件的页面承接代表链；新增 20 张事件仍按主合同继续补证 |
 | `evidence/betrayal/final-closeout-readable/README.md` | 作祟 3 / 12 / 33 高清产物图容易被外推为整游戏或整牌库完成 | 只证明当时三个作祟代表链的可读产物，不证明当前整牌库、UI/E2E 或截图验收完成 |
-| `docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md` | 旧可玩性审计中的 23 事件、12 物品、23 运行持有牌口径已过时 | 只作为旧首剧本与页面链路现场记录；当前整牌库数量和缺口以主合同为准 |
+| `docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md` | 旧可玩性审计中的 23 事件、12 物品、23 运行持有牌口径已过时 | 只作为旧首剧本与页面链路现场记录；当前整牌库数量和缺口以主合同为准 |
 | `evidence/betrayal/betrayal-half-implemented-audit-2026-07-18.md` | 半实现审计里的 23 事件和作祟 1/3/12/33 代表链容易被外推为当前整牌库完成 | 只作为当时半实现专项和作祟代表链证据；当前整牌库仍按 43/22/9 主合同 |
-| `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md` | 灰尘专项计划里的 23 事件 / 12 物品 / 23 运行持有牌口径已过时 | 只覆盖作祟 3 灰尘交叉补证现场；不覆盖整牌库对象全集 |
+| `docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md` | 灰尘专项计划里的 23 事件 / 12 物品 / 23 运行持有牌口径已过时 | 只覆盖作祟 3 灰尘交叉补证现场；不覆盖整牌库对象全集 |
 | `docs/games/betrayal/haunts/03-the-dust.md` | 灰尘子账本很长，容易被误读为全持有牌 / 全事件 / 全作祟完成 | 只覆盖作祟 3 灰尘专项子账本；不能证明整牌库或其它作祟完成 |
 | `docs/games/betrayal/master-spec-view.md` | 整游戏主视角里保留旧 `12 张物品 / 23 张事件 / 发现池已完成第一层收口`，容易被误读为当前发现牌整牌库完成 | 只作为整游戏缺口导航和历史 change 汇总；当前发现牌整牌库仍以 `full-deck-data-intake-contract.md` 的 43/22/9 主合同和下游缺口矩阵为准 |
 | `docs/games/betrayal/full-rule-interaction-redesign.md` | 全规则交互账本里保留大量旧代表链和历史数量口径，容易被误读为当前整牌库或全规则完成 | 只作为规则交互导航；当前发现牌对象全集、atlas、alias 和缺口状态仍以主合同为准 |

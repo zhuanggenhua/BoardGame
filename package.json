@@ -15,7 +15,7 @@
     "predev:un": "node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",
     "dev:un": "cross-env NODE_ENV=development concurrently \"npm:dev:game\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
     "predev:lite": "node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs",
-    "dev:lite": "cross-env NODE_ENV=development BG_DEV_LITE=1 BG_DEV_SKIP_API=1 BG_DEV_DISABLE_HOT_RELOAD=1 node scripts/infra/dev-orchestrator.js",
+    "dev:lite": "cross-env NODE_ENV=development BG_DEV_LITE=1 BG_DEV_SKIP_API=1 BG_DEV_DISABLE_HOT_RELOAD=1 VITE_ASSET_SOURCE=remote VITE_DEV_REMOTE_ASSETS=true node scripts/infra/dev-orchestrator.js",
     "db:start": "docker compose up -d mongodb",
     "db:stop": "docker compose stop mongodb",
     "dev:frontend": "node scripts/infra/vite-with-logging.js",

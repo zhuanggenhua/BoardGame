@@ -272,7 +272,7 @@ UI 读取 → RESPOND → onResolve() → 后续事件 → reducer
   - 影响：无（已验证 0 个引用）
 
 ### 6. 文档更新（可选）
-- 更新 `docs/ai-rules/engine-systems.md` - 添加 DiceThrone 交互示例
+- 更新 `.spec/knowledge/standards/engine-systems.md` - 添加 DiceThrone 交互示例
 - 更新 `AGENTS.md` - 更新"禁止在 core 中存放交互状态"规则
 - 创建 `docs/framework/dicethrone-interactions.md` - 新增 DiceThrone 交互文档
 

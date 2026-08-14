@@ -207,6 +207,11 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
 
         expect(s.sys.tutorial.step?.id).toBe('enlightenment-play');
         s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-enlightenment' }, 'C: play-enlightenment');
+        expect(s.core.pendingBonusDiceSettlement).toBeDefined();
+        expect(s.sys.tutorial.step?.id).toBe('enlightenment-confirm');
+
+        s = exec(s, 'SKIP_BONUS_DICE_REROLL', '0', {}, 'C: confirm-enlightenment-bonus-die');
+        expect(s.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(s.core.players['0'].tokens[TOKEN_IDS.PURIFY]).toBeGreaterThanOrEqual(1);
         expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(2);
 

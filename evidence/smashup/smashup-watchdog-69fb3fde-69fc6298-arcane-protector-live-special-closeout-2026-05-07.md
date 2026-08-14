@@ -65,7 +65,7 @@
 ## 为什么这次审计会漏
 
 - 这次漏的不是 D40。
-  - `远古之物同时杀俩小鬼只结算一次` 属于“批内副作用未串行吃到最新状态”，已经在 `docs/ai-rules/testing-audit.md` 的 `D40` 里单列。
+  - `远古之物同时杀俩小鬼只结算一次` 属于“批内副作用未串行吃到最新状态”，已经在 `.spec/knowledge/standards/testing-audit.md` 的 `D40` 里单列。
 - 这次漏的是 `D37` 的空档：
   - 现有 D37 更强调“交互选项是否会动态刷新掉 stale option”
   - 但还不够明确地区分：
@@ -75,7 +75,7 @@
 
 ## 本轮规范回写
 
-- 已把 `docs/ai-rules/testing-audit.md` 的 `D37` 补成更明确的口径：
+- 已把 `.spec/knowledge/standards/testing-audit.md` 的 `D37` 补成更明确的口径：
   - 动态刷新不等于可激活性校验完整
   - 凡是候选依赖实体当前位置/区域（如 `setaside` 泰坦 special），审计时必须额外核对 validator 是否写全 zone/location 前置条件
 

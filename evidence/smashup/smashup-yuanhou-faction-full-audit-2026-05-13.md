@@ -6,15 +6,15 @@
 
 2026-05-15 effect atom 口径追加降级：本文件下方“56 对象全链路矩阵”只能作为对象级 rollup 与已发现问题修复记录，不能继续解释为 effect atom 全量完成证明。新的全链路重审入口为 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`；该文件要求把每张卡/基地继续拆成效果原子，并逐 atom 核销语义、静态绑定、共享合同、本地参数、handler/reducer/UI 和测试证据。
 
-触发原因：抽样发现 `base_isis_swingin_pad` 曾存在 HIGH 级 ID 漂移和语义错误。按 `docs/ai-rules/testing-audit.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md` 新增门禁，抽样不能外推为全面审计；发现 HIGH/CRITICAL 后必须回到完整对象清单逐项核销。
+触发原因：抽样发现 `base_isis_swingin_pad` 曾存在 HIGH 级 ID 漂移和语义错误。按 `.spec/knowledge/standards/testing-audit.md` 与 `.spec/skills/smashup-faction-implementation/SKILL.md` 新增门禁，抽样不能外推为全面审计；发现 HIGH/CRITICAL 后必须回到完整对象清单逐项核销。
 
 本次重审范围为 `yuanhou` 图集对应的 48 张卡 + 8 个基地，共 56 个对象。每个对象均按“牌面/原子语义 -> 静态定义 -> 注册入口 -> handler/trigger/reducer -> UI/交互出口 -> 测试证据”建立结论。当前没有未解释的 HIGH/CRITICAL；仍保留的能力边界是 `Copycat` / `Cellular Bonding` 只证明当前实现的代表性复制代理，不声明已经支持任意跨派系能力的完全动态复制 runtime。
 
 ## 审计规范更新
 
-- `docs/ai-rules/testing-audit.md`：新增并升级“抽样不得冒充全面审计”“全链路审计必须逐效果原子覆盖”“共享合同可复用但必须可追溯”“语义审计不得被结构审计替代”。
-- `docs/games/smashup/workflows/smashup-faction-implementation.md`：新增并升级“抽样发现问题后必须回到 effect atom 全量矩阵”“shared-contract dirty/clean 可追溯”。
-- `docs/games/smashup/workflows/smashup-faction-intake.md`：新增大图读取门禁，超过阈值必须先做低清总览、分块图和单格裁片。
+- `.spec/knowledge/standards/testing-audit.md`：新增并升级“抽样不得冒充全面审计”“全链路审计必须逐效果原子覆盖”“共享合同可复用但必须可追溯”“语义审计不得被结构审计替代”。
+- `.spec/skills/smashup-faction-implementation/SKILL.md`：新增并升级“抽样发现问题后必须回到 effect atom 全量矩阵”“shared-contract dirty/clean 可追溯”。
+- `.spec/skills/smashup-faction-intake/SKILL.md`：新增大图读取门禁，超过阈值必须先做低清总览、分块图和单格裁片。
 - `.spec/skills/add-new-faction/SKILL.md`：同步新增大 atlas / 扫描图禁止整张反复视觉读取的工作流要求。
 
 ## 权威来源
@@ -94,7 +94,7 @@
 
 ## 交互入口语义矩阵
 
-本节按 `docs/ai-rules/testing-audit.md` 的“交互入口语义矩阵”补齐所有含选择、移动、排序、可选执行或后续连锁的对象；纯自动光环/持续加力/保护类对象以 56 对象矩阵中的自动出口为准，不再伪造不存在的玩家入口。
+本节按 `.spec/knowledge/standards/testing-audit.md` 的“交互入口语义矩阵”补齐所有含选择、移动、排序、可选执行或后续连锁的对象；纯自动光环/持续加力/保护类对象以 56 对象矩阵中的自动出口为准，不再伪造不存在的玩家入口。
 
 | 对象 | 动作链 | 第一入口 | 字段/命令 | 目标归属 | 数量/可选 | 上下文携带 | 验证层级 | 结论 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

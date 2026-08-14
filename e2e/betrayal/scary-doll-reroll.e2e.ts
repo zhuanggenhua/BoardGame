@@ -9,6 +9,7 @@ import type {
 } from "../../src/games/betrayal/game";
 import {
   createRuntimeCore,
+  expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
@@ -23,8 +24,9 @@ import {
 const EVIDENCE_DIR = "evidence/山屋惊魂-恐怖玩偶重掷完整链路";
 const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-恐怖玩偶重掷前最近属性检定可见.jpg`;
 const DOLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-恐怖玩偶选中后三颗骰子均可重掷.jpg`;
-const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/03-恐怖玩偶重掷后三颗骰子更新.jpg`;
-const REROLL_CLOSED_SCREENSHOT = `${EVIDENCE_DIR}/04-恐怖玩偶重掷收口后回牌桌.jpg`;
+const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-恐怖玩偶选中骰子等待确认使用.jpg`;
+const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/04-恐怖玩偶重掷后等待确认最终结果.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/05-恐怖玩偶确认最终结果后结算.jpg`;
 
 function createScaryDollRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -33,18 +35,11 @@ function createScaryDollRerollCore(): BetrayalCore {
     name: "恐怖玩偶",
     kind: "item",
   };
-  const traitsBeforeEvent = {
-    ...core.currentExplorer.traits,
-    knowledge: 3,
-    speed: 4,
-  };
+  const traitsBeforeEvent = { ...core.currentExplorer.traits, knowledge: 3, speed: 4 };
 
   core.currentExplorer = {
     ...core.currentExplorer,
-    traits: {
-      ...traitsBeforeEvent,
-      speed: 3,
-    },
+    traits: traitsBeforeEvent,
     inventory: [scaryDoll],
   };
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -54,9 +49,9 @@ function createScaryDollRerollCore(): BetrayalCore {
   core.recommendedAction = "use";
   core.latestDiscovery = {
     kind: "event",
-    title: "墙中低语",
+    title: "外星几何",
     summary: "知识检定失败",
-    detail: "知识检定 0：被低语扰乱，失去 1 点速度；速度 -1",
+    detail: "知识检定 0：理解外星几何失败，失去 1 点速度；等待确认最终结果",
     tone: "warning",
   };
   core.latestDiscoveryOwnerPlayerId = "0";
@@ -64,27 +59,17 @@ function createScaryDollRerollCore(): BetrayalCore {
     id: "scary-doll-reroll-e2e-roll",
     kind: "eventTraitCheck",
     playerId: "0",
-    sourceTitle: "墙中低语",
+    sourceTitle: "外星几何",
     trait: "knowledge",
     rollLabel: "知识检定",
     dice: [0, 0, 0],
     passiveBonus: 0,
-    latestLabel: "被低语扰乱，失去 1 点速度",
-    eventEffectSnapshot: {
-      traitsBeforeEffect: traitsBeforeEvent,
-      traitTracksBeforeEffect: core.currentExplorer.traitTracks,
-      roomIdBeforeEffect: core.currentExplorer.roomId,
-      possessionOrderByKindBeforeEffect: core.possessionOrderByKind,
-      currentExplorerInventoryBeforeEffect: [{ ...scaryDoll }],
-      deckCountsBeforeEffect: core.deckCounts,
-      damageRolls: [],
-      drawnCards: [],
-    },
+    latestLabel: "理解失败，失去 1 点速度",
     consumedRabbitFootCardIds: [],
     branchThresholds: [
       {
         min: 5,
-        label: "抵住低语，获得 1 点知识",
+        label: "看懂几何，获得 1 点知识",
         effect: {
           mode: "trait",
           trait: "knowledge",
@@ -94,7 +79,7 @@ function createScaryDollRerollCore(): BetrayalCore {
       },
       {
         min: 0,
-        label: "被低语扰乱，失去 1 点速度",
+        label: "理解失败，失去 1 点速度",
         effect: {
           mode: "trait",
           trait: "speed",
@@ -103,6 +88,12 @@ function createScaryDollRerollCore(): BetrayalCore {
         },
       },
     ],
+  };
+  core.pendingEventRollResolution = {
+    rollId: core.recentRoll.id,
+    playerId: "0",
+    sourceTitle: "外星几何",
+    effect: { mode: "trait", trait: "speed", amount: -1, recommendedAction: "endTurn" },
   };
 
   return core;
@@ -137,10 +128,16 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
     await expect(rollPanel).toBeVisible();
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
-    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
+    await expectPhysicalDiceSeparated(rollPanel, {
+      minDiceCount: 3,
+      minCanvasEdgeMargin: 12,
+    });
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "0,0,0");
+    await expectEventRollWorkbenchReadable(page, "恐怖玩偶重掷前", {
+      expectedEventFrameIndex: "24",
+    });
     const scaryDollCard = page.getByTestId("betrayal-inventory-scary-doll");
     await expect(scaryDollCard, "重掷前必须看得到恐怖玩偶本体").toBeVisible();
     await expect(scaryDollCard).toHaveAttribute(
@@ -157,7 +154,10 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
 
     const rerollDiceLayer = page.getByTestId("betrayal-rabbit-foot-dice");
     await expect(rerollDiceLayer).toBeVisible();
-    await expect(rerollDiceLayer).toHaveText(/选择要重掷的骰子/);
+    await expect(page.getByTestId("betrayal-reroll-prompt-outside-dice")).toHaveText(
+      /选择要重掷的骰子/,
+    );
+    await expect(rerollDiceLayer).not.toContainText(/选择要重掷的骰子/);
     await expect(rerollDiceLayer).toHaveAttribute(
       "data-reroll-target-count",
       "3",
@@ -167,14 +167,26 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
         page.getByTestId(`betrayal-house-dice-reroll-target-${dieIndex}`),
       ).toBeVisible();
     }
+    await expectEventRollWorkbenchReadable(page, "恐怖玩偶选中后", {
+      expectedEventFrameIndex: "24",
+    });
     await saveScreenshot(page, DOLL_SELECTED_SCREENSHOT);
 
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
-    await page.getByTestId("betrayal-house-dice-reroll-target-1").click();
+    await page.getByTestId("betrayal-house-dice-reroll-target-1").click({ force: true });
+    await expect(page.getByTestId("betrayal-roll-modifier-confirm")).toBeVisible();
+    await expectEventRollWorkbenchReadable(page, "恐怖玩偶选中骰子后", {
+      expectedEventFrameIndex: "24",
+    });
+    await saveScreenshot(page, REROLL_SELECTED_SCREENSHOT);
+    await page.getByTestId("betrayal-roll-modifier-confirm").click();
     await expect(rerollDiceLayer).toBeHidden();
 
     await waitForPhysicalDiceSettled(rollPanel);
-    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
+    await expectPhysicalDiceSeparated(rollPanel, {
+      minDiceCount: 3,
+      minCanvasEdgeMargin: 12,
+    });
     await expect(
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "2,2,2");
@@ -187,6 +199,7 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
+    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -207,7 +220,7 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       "scary-doll",
     );
     expect(finalState?.usedCardIdsThisTurn).toContain("scary-doll");
-    expect(finalState?.currentExplorer.traits.knowledge).toBe(4);
+    expect(finalState?.currentExplorer.traits.knowledge).toBe(3);
     expect(finalState?.currentExplorer.traits.speed).toBe(4);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
@@ -217,13 +230,15 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "恐怖玩偶重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-board")).toBeVisible();
-    await page.getByTestId("betrayal-discovery-panel").click({
-      position: { x: 12, y: 12 },
+    await page.getByTestId("betrayal-event-roll-finalize").click();
+    const finalizedState = await page.evaluate(() => {
+      const harness = (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } }).__BG_TEST_HARNESS__;
+      return harness?.state?.get?.().core ?? null;
     });
-    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
-    await expect(rollPanel).toHaveCount(0);
-    await saveScreenshot(page, REROLL_CLOSED_SCREENSHOT);
+    expect(finalizedState?.pendingEventRollResolution).toBeNull();
+    expect(finalizedState?.currentExplorer.traits.knowledge).toBe(4);
+    expect(finalizedState?.currentExplorer.traits.speed).toBe(4);
+    await saveScreenshot(page, REROLL_FINALIZED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-scary-doll-reroll", diagnostics },

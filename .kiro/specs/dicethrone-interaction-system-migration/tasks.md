@@ -184,7 +184,7 @@
 
 - [x] 6.1 更新技术文档
   - [x] 6.1.1 创建 `MIGRATION_SUMMARY.md` 迁移总结文档
-  - [ ] 6.1.2 更新 `docs/ai-rules/engine-systems.md`
+  - [ ] 6.1.2 更新 `.spec/knowledge/standards/engine-systems.md`
   - [ ] 6.1.3 更新 `AGENTS.md` 中的交互系统规则
 
 - [ ] 6.2 更新代码注释

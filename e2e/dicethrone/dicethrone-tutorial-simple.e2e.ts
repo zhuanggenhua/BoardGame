@@ -11,6 +11,7 @@ import { dirname, join } from 'node:path';
 import { setChineseLocale } from '../helpers/common';
 import { disableFabMenu, dispatchLocalCommand, waitForTutorialBoardReady } from '../helpers/dicethrone';
 import type { GameTestContext as __ThreeAxeFrameworkMarker } from '../framework';
+import { expectRightTrayBonusDiceConfirmation, getRightTrayDiceTray, settleCurrentBonusDice } from './bonus-dice-flow';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -25,6 +26,10 @@ void __ensureThreeAxesMarker;
 
 
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 936, height: 432 } as const;
+
+const readTutorialState = async (page: Parameters<typeof test>[0]['page']) => page.evaluate(() => (
+    (window as any).__BG_TEST_HARNESS__?.state?.get?.() ?? null
+));
 
 const waitForTutorialStep = async (page: Parameters<typeof test>[0]['page'], stepId: string, timeout = 15000) => {
     await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
@@ -543,12 +548,11 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
 
         await captureAlignedStep(19, 'enlightenment-play', 'hand-area');
         await clickHandCardVisibleArea(page, 'card-enlightenment');
-        const bonusDieOverlay = page.getByTestId('bonus-die-overlay');
-        await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => readTutorialState(page));
+        await settleCurrentBonusDice(page, () => readTutorialState(page), {});
 
         await waitForTutorialStep(page, 'inner-peace', 10000);
         await captureAlignedStep(20, 'inner-peace', 'hand-area');
-        await expect(bonusDieOverlay).toBeHidden({ timeout: 4000 });
         await clickHandCardVisibleArea(page, 'card-inner-peace');
 
         await waitForTutorialStep(page, 'ai-turn-intro', 10000);
@@ -577,7 +581,7 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         });
     });
 
-    test('顿悟后的奖励骰特写不应卡死手牌区', async ({ page }, testInfo) => {
+    test('顿悟后的右侧奖励骰骰盘不应卡死手牌区', async ({ page }, testInfo) => {
         test.setTimeout(180000);
 
         await setChineseLocale(page);
@@ -652,7 +656,6 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         await clickNextOverlayStep(page);
         await advanceToStep('enlightenment-play', 15000);
 
-        const bonusDieOverlay = page.getByTestId('bonus-die-overlay');
         const evidenceDir = join(
             process.cwd(),
             'test-results',
@@ -666,15 +669,14 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         for (let attempt = 0; attempt < 3; attempt += 1) {
             await clickHandCardVisibleArea(page, 'card-enlightenment');
             try {
-                await expect(bonusDieOverlay).toBeVisible({ timeout: 2500 });
-                await waitForTutorialStep(page, 'inner-peace', 2500);
+                await expectRightTrayBonusDiceConfirmation(page, () => readTutorialState(page));
                 if (!capturedOverlayVisible) {
                     capturedOverlayVisible = true;
-                    await bonusDieOverlay.screenshot({
-                        path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-overlay.png'),
+                    await getRightTrayDiceTray(page).screenshot({
+                        path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-right-tray.png'),
                     });
-                    await bonusDieOverlay.screenshot({
-                        path: testInfo.outputPath('tutorial-enlightenment-bonus-die-overlay.png'),
+                    await getRightTrayDiceTray(page).screenshot({
+                        path: testInfo.outputPath('tutorial-enlightenment-bonus-die-right-tray.png'),
                     });
                     await page.screenshot({
                         path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-visible.png'),
@@ -693,9 +695,9 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         }
         expect(openedEnlightenmentOverlay).toBe(true);
 
-        await page.waitForTimeout(250);
+        await settleCurrentBonusDice(page, () => readTutorialState(page), {});
+        await waitForTutorialStep(page, 'inner-peace', 10000);
         await clickHandCardVisibleArea(page, 'card-inner-peace');
-        await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
         await page.screenshot({
             path: join(evidenceDir, 'tutorial-enlightenment-bonus-die-auto-close.png'),
             fullPage: false,

@@ -38,7 +38,7 @@
   - 通过
 
 ## 文档与规范
-- 已更新 [docs/ai-rules/engine-systems.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/engine-systems.md)
+- 已更新 [.spec/knowledge/standards/engine-systems.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/engine-systems.md)
   - 新增“在线 AI 决策视图（强制）”章节
 - 已更新 OpenSpec 变更任务
 

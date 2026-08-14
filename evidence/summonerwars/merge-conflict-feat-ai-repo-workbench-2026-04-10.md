@@ -13,7 +13,7 @@
 
 1. `AGENTS.md`
 2. `android/app/src/main/assets/game-orientation-map.json`
-3. `docs/ai-rules/ui-ux.md`
+3. `.spec/knowledge/standards/ui-ux.md`
 4. `docs/mobile-adaptation.md`
 5. `e2e/_shared/lobby.e2e.ts`
 6. `e2e/summonerwars/summonerwars.e2e.ts`
@@ -31,7 +31,7 @@
 - `android/app/src/main/assets/game-orientation-map.json`
   - 不保留 `airepoworkbench` 工具项。
   - 直接通过 `node scripts/game/generate_game_manifests.js` 重新生成，确保只保留启用游戏的方向映射。
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/ui-ux.md`
   - 合并保留“主界面只展示直接用途元素”“后台/工作台默认中文”。
   - 同时带入主线新增的“禁止把实现细节直接写进用户 UI”。
 - `docs/mobile-adaptation.md`
@@ -72,7 +72,7 @@
 
 ### 仅属规范/口径补充
 
-- `docs/ai-rules/ui-ux.md` 与 `docs/mobile-adaptation.md` 已按主线口径收敛，不额外改变 AI Repo Workbench 业务行为。
+- `.spec/knowledge/standards/ui-ux.md` 与 `docs/mobile-adaptation.md` 已按主线口径收敛，不额外改变 AI Repo Workbench 业务行为。
 
 ## 本轮验证
 

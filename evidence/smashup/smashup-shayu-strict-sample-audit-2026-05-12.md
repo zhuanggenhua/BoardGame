@@ -29,7 +29,7 @@
 
 ## 本轮同步补强
 
-- `docs/ai-rules/testing-audit.md` 最低门禁新增通用规则：如果第一入口已由命令 payload / UI 点击对象确定，handler 必须直接消费该入口；不得再创建同 targetType 的二次选择 prompt。
+- `.spec/knowledge/standards/testing-audit.md` 最低门禁新增通用规则：如果第一入口已由命令 payload / UI 点击对象确定，handler 必须直接消费该入口；不得再创建同 targetType 的二次选择 prompt。
 - `src/games/smashup/__tests__/shayuFactionAbilities.test.ts` 新增 5 条抽样复审 L2 行为测试。
 
 ## 验证记录

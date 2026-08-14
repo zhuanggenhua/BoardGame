@@ -52,14 +52,14 @@
 **强制先读**（权威单一来源，避免本文档过时）：
 - `AGENTS.md`「音频资源架构（强制）」
 - `.spec/knowledge/standards/asset-pipeline.md`「🔊 音频资源规范」
-- 项目 skill `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）+ `docs/audio/audio-usage.md`（项目接入合同；新增音频资产流程见 `docs/audio/add-audio.md`）
+- 项目 skill `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）；`docs/audio/audio-usage.md` 与 `docs/audio/add-audio.md` 只作命令、目录和产物示例参考
 
 **你在新游戏里只需要做这些（最小闭环）**：
 1. 创建 `src/games/<gameId>/audio.config.ts`，导出 `GameAudioConfig`：
    - `feedbackResolver(event): SoundKey | null`：无动画事件返回 SoundKey；有动画事件返回 `null`，音效交给动画层 `onImpact()` 播放
    - `criticalSounds`：进入游戏后立即预加载的高频音效 key（建议 5~15）
    - （可选）`contextualPreloadKeys`：根据上下文增量预热
-   - BGM 列表按现有游戏格式配置（具体规则以 `docs/audio/audio-usage.md` 为准）
+   - BGM 列表按 `.spec/skills/audio-integration/SKILL.md` 配置；既有命令和目录示例可参考 `docs/audio/audio-usage.md`
 2. **音效 key 的唯一来源**：`public/assets/common/audio/registry.json`。
    - 禁止在游戏层声明 `basePath/sounds`
    - 禁止手写 `compressed/`

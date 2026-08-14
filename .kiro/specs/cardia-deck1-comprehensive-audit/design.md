@@ -2,7 +2,7 @@
 
 ## Overview
 
-本设计文档定义 Cardia 游戏 Deck I (card01-card16) 全面审计系统的架构、数据模型和实施方案。审计系统基于 `docs/ai-rules/testing-audit.md` 的 D1-D49 维度框架，系统性地审查所有卡牌效果实现和 E2E 测试覆盖。
+本设计文档定义 Cardia 游戏 Deck I (card01-card16) 全面审计系统的架构、数据模型和实施方案。审计系统基于 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 维度框架，系统性地审查所有卡牌效果实现和 E2E 测试覆盖。
 
 ### 设计目标
 

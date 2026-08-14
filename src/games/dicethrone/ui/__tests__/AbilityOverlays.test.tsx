@@ -373,7 +373,7 @@ describe('AbilityOverlays', () => {
                 resolvedAbilityId: 'take-cover',
                 abilityLevels: { 'take-cover': 2 },
                 upgradeCardId: 'upgrade-take-cover-2',
-                previewIndex: 24,
+                previewIndex: 23,
             },
             {
                 characterId: 'gunslinger',
@@ -382,7 +382,7 @@ describe('AbilityOverlays', () => {
                 resolvedAbilityId: 'deadeye',
                 abilityLevels: { deadeye: 2 },
                 upgradeCardId: 'upgrade-deadeye-2',
-                previewIndex: 26,
+                previewIndex: 24,
             },
             {
                 characterId: 'gunslinger',
@@ -391,7 +391,7 @@ describe('AbilityOverlays', () => {
                 resolvedAbilityId: 'duel',
                 abilityLevels: { duel: 2 },
                 upgradeCardId: 'upgrade-duel-2',
-                previewIndex: 28,
+                previewIndex: 25,
             },
             {
                 characterId: 'gunslinger',
@@ -400,7 +400,7 @@ describe('AbilityOverlays', () => {
                 resolvedAbilityId: 'quick-draw',
                 abilityLevels: { 'quick-draw': 2 },
                 upgradeCardId: 'upgrade-quick-draw',
-                previewIndex: 29,
+                previewIndex: 26,
             },
             {
                 characterId: 'paladin',

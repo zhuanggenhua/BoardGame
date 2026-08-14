@@ -22,7 +22,7 @@
 #### Scenario: Audit finds a shared-chain defect
 - **GIVEN** 某派系审计命中了共享 helper、reducer、验证层或 UI 流程中的缺陷
 - **WHEN** 修复该缺陷
-- **THEN** 必须按 `docs/ai-rules/testing-audit.md` 扩审其他复用同链路的调用点
+- **THEN** 必须按 `.spec/knowledge/standards/testing-audit.md` 扩审其他复用同链路的调用点
 - **AND** 对命中点给出“已一并修复”或“确认不受影响”的明确结论
 
 #### Scenario: Faction audit closes with reproducible evidence

@@ -117,8 +117,8 @@ Treant 图面合同的现行阅读顺序应是：
 
 规范补强：
 
-- `docs/ai-rules/testing-audit.md` 新增“同类已修 bug 必须扩审兄弟对象”。
-- `docs/ai-rules/testing-audit.md` 新增“多次随机/多骰 E2E 必须使用序列策略”。
+- `.spec/knowledge/standards/testing-audit.md` 新增“同类已修 bug 必须扩审兄弟对象”。
+- `.spec/knowledge/standards/testing-audit.md` 新增“多次随机/多骰 E2E 必须使用序列策略”。
 
 ### 循环 1 复审结论
 

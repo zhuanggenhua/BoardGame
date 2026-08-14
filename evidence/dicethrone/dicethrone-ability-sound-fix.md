@@ -202,7 +202,7 @@ npx eslint src/games/dicethrone/audio.config.ts
 - `src/games/dicethrone/audio.config.ts` - 音频配置（已修复）
 - `src/games/dicethrone/hooks/useAnimationEffects.ts` - 动画效果（包含音效播放逻辑）
 - `src/games/dicethrone/domain/combat/types.ts` - 技能定义（包含 `sfxKey` 字段）
-- `docs/ai-rules/engine-systems.md` - 音频架构规范
+- `.spec/knowledge/standards/engine-systems.md` - 音频架构规范
 - `AGENTS.md` - 音频事件定义规范
 
 ---

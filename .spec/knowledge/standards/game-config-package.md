@@ -1,3 +1,11 @@
+---
+name: game-config-package
+description: 游戏配置包标准：manifest、配置源和包体发布边界——改游戏配置包时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 游戏配置包规范
 
 > 适用：新游戏静态配置、配置审查表、玩家字段级修正提案，以及旧游戏是否接入统一配置视图的裁定。

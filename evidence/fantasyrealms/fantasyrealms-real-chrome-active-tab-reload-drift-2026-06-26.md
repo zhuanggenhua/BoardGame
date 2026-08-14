@@ -84,7 +84,7 @@
 
 ## 已补规范
 
-已在 [docs/ai-rules/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/e2e-verification.md:92) 追加两条：
+已在 [.spec/knowledge/standards/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/e2e-verification.md:92) 追加两条：
 
 - 活端口旧 tab 也可能挂过期运行时，不能只凭端口存活就当当前实现
 - 真实浏览器几何争议默认补同页刷新前后对比

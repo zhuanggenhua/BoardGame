@@ -234,7 +234,7 @@ function handleHolyDefenseRoll(...): DiceThroneEvent[] {
 - `src/games/dicethrone/domain/customActions/paladin.ts` - 神圣防御实现
 - `src/games/dicethrone/domain/commonCards.ts` - 下次一定卡牌定义
 - `src/games/dicethrone/game.ts` - 日志构建逻辑
-- `docs/ai-rules/engine-systems.md` - 引擎架构文档
+- `.spec/knowledge/standards/engine-systems.md` - 引擎架构文档
 
 ## 测试用例
 
@@ -250,4 +250,4 @@ function handleHolyDefenseRoll(...): DiceThroneEvent[] {
 
 - 用户反馈: 2026/2/27 18:42:56
 - 相关 Issue: 护盾双重扣减 bug（已修复）
-- 架构文档: `docs/ai-rules/engine-systems.md`
+- 架构文档: `.spec/knowledge/standards/engine-systems.md`

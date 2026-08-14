@@ -99,7 +99,7 @@
 
 ## 已补规范
 
-已在 [docs/ai-rules/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/e2e-verification.md:85) 追加两条：
+已在 [.spec/knowledge/standards/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/e2e-verification.md:85) 追加两条：
 
 - 死端口旧页 / 浏览器错误页不得当真实现场证据
 - 真实浏览器验收前必须先判活当前开发端口

@@ -1,3 +1,11 @@
+---
+name: engine-simple-choice
+description: SimpleChoice 标准：选择弹窗、modal stack 和可点击内容边界——改选择交互时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # createSimpleChoice API 使用规范
 
 ## `createSimpleChoice` API 使用规范（强制）

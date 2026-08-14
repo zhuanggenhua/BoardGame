@@ -1,8 +1,8 @@
 # 新增音频素材合同
 
 > 本文是“新增外部音频素材”这条链路的目录、命名、产物和验收合同。
-> 执行步骤、汇报模板、/dev/audio 收口动作已下沉到系统 skill `D:\codex-home\skills\audio-integration\SKILL.md`。
-> 如果任务只是“查已有库里的 key 并接到代码”，不要直接套本文，先走该 skill 的 A 类流程。
+> 执行步骤、汇报模板、/dev/audio 收口动作已下沉到项目 skill `.spec/skills/audio-integration/SKILL.md`。
+> 如果任务是“查已有库里的 key 并接到代码”，不要直接套本文，先走该 skill 的 A 类流程。
 
 ## 0. 适用范围
 
@@ -13,7 +13,7 @@
 
 如果不是新增素材，而是复用现有音效库 key，请改走：
 
-- `D:\codex-home\skills\audio-integration\SKILL.md`
+- `.spec/skills/audio-integration/SKILL.md`
 - `docs/audio/audio-usage.md`
 
 ## 1. 前置条件
@@ -70,7 +70,7 @@ public/assets/common/audio/
 
 ## 4. 必跑命令入口
 
-命令定义和可选压缩参数统一见 `docs/audio/audio-usage.md` §3，本文件只规定新增素材的执行顺序：
+命令定义和可选压缩参数统一见 `docs/audio/audio-usage.md` §3，本文件规定新增素材的执行顺序：
 
 1. 压缩新增素材并确认产物存在。
 2. 生成运行时 registry 和资源清单。

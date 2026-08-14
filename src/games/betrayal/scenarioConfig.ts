@@ -712,6 +712,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'isa-valencia',
         displayName: '伊莎·瓦伦西亚',
         portraitAsset: 'betrayal/explorers/xia',
+        tokenAsset: 'betrayal/tokens/explorers/isa-valencia',
         color: '#d0a23e',
         traits: { might: 3, speed: 5, knowledge: 4, sanity: 4 },
         traitTracks: {
@@ -727,6 +728,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'anita-hernandez',
         displayName: '安妮塔·赫南德兹',
         portraitAsset: 'betrayal/explorers/anita-hernandez',
+        tokenAsset: 'betrayal/tokens/explorers/anita-hernandez',
         color: '#d9b23f',
         traits: { might: 4, speed: 4, knowledge: 5, sanity: 3 },
         traitTracks: {
@@ -758,6 +760,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'dan-nguyen-md',
         displayName: '阮单 医学博士',
         portraitAsset: 'betrayal/explorers/dan-nguyen-md',
+        tokenAsset: 'betrayal/tokens/explorers/dan-nguyen-md',
         color: '#d8dce0',
         traits: { might: 4, speed: 3, knowledge: 5, sanity: 4 },
         traitTracks: {
@@ -789,6 +792,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'beat-box-bowen',
         displayName: '布里塔妮 “B-BOX” 鲍温',
         portraitAsset: 'betrayal/explorers/beat-box-bowen',
+        tokenAsset: 'betrayal/tokens/explorers/beat-box-bowen',
         color: '#b23f8a',
         traits: { might: 5, speed: 3, knowledge: 4, sanity: 4 },
         traitTracks: {
@@ -804,6 +808,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'josef-hooper',
         displayName: '约瑟夫 “铁子” 霍珀',
         portraitAsset: 'betrayal/explorers/josef-hooper',
+        tokenAsset: 'betrayal/tokens/explorers/josef-hooper',
         color: '#c85045',
         traits: { might: 5, speed: 4, knowledge: 3, sanity: 4 },
         traitTracks: {
@@ -819,6 +824,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'oliver-swift',
         displayName: '奥利弗·斯威夫特',
         portraitAsset: 'betrayal/explorers/oliver-swift',
+        tokenAsset: 'betrayal/tokens/explorers/oliver-swift',
         color: '#d0603f',
         traits: { might: 4, speed: 5, knowledge: 4, sanity: 3 },
         traitTracks: {
@@ -850,6 +856,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'persephone-puleri',
         displayName: '珀尔塞福涅·普拉里',
         portraitAsset: 'betrayal/explorers/persephone-puleri',
+        tokenAsset: 'betrayal/tokens/explorers/persephone-puleri',
         color: '#478bbf',
         traits: { might: 4, speed: 4, knowledge: 3, sanity: 5 },
         traitTracks: {
@@ -865,6 +872,7 @@ export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
         explorerId: 'sammy-angler',
         displayName: '塞米·昂勒尔',
         portraitAsset: 'betrayal/explorers/sammy-angler',
+        tokenAsset: 'betrayal/tokens/explorers/sammy-angler',
         color: '#719d4a',
         traits: { might: 4, speed: 5, knowledge: 3, sanity: 4 },
         traitTracks: {

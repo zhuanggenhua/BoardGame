@@ -289,8 +289,8 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 日常只替换少量游戏资源时，不应默认重发完整 ZIP。正确链路是：
 
 1. 上传变更后的服务器素材主源单文件对象，例如 `official/i18n/zh-CN/dicethrone/.../compressed/player-board.webp`
-2. 刷新目标游戏的 `file-index/<gameId>/<version>.json`
-3. 刷新 `games/<gameId>.json` 指到新的差异索引版本
+2. 服务器发布脚本在同一个 release 内刷新目标游戏已有 channel 的 `file-index/<gameId>/<version>.json`
+3. 服务器发布脚本同步刷新 `manifests/<gameId>/<version>.json` 与 `games/<gameId>.json`，让 latest manifest 指到新的差异索引版本
 4. App 读取远端 `file-index`，与本地 `installed-files-index.json` 比对，只下载新增或哈希变化文件
 
 本地预演某个资源路径会触发哪个 App 素材包刷新：
@@ -299,11 +299,7 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 node scripts/assets/upload-to-server.js --android-package-publish-plan official/i18n/zh-CN/dicethrone/images/pyromancer/compressed/player-board.webp
 ```
 
-普通游戏资源变更的预期命令应包含：
-
-```bash
-node scripts/mobile/publish-android-game-packages.mjs --game dicethrone --reuse-shared-audio --index-manifest-only
-```
+普通游戏资源变更的预期输出应显示“服务器自动刷新”，实际刷新发生在服务器 `/asset-publish` apply 阶段；本机上传端不再二次执行 `publish-android-game-packages`。
 
 也可以直接预演差异索引刷新：
 
@@ -313,7 +309,7 @@ node scripts/mobile/publish-android-game-packages.mjs --channel stable --game di
 
 `--index-manifest-only` 只上传新的 `file-index` 和 manifest，不上传 `bundles/<gameId>/<version>.zip`。该 manifest 的 `assetPack.diffOnly` 为 `true`，普通 `assetPack.url/checksum/bytes` 不应指向旧 ZIP；旧完整 ZIP 信息只能作为显式 fallback 字段保留，避免“更新成功但实际装回旧素材”的假结果。
 
-共享音频变更暂时仍按完整共享包刷新处理；这属于兜底路径，不等同于单游戏资源的文件级差异更新。
+共享音频变更暂时不走服务器自动刷新；上传入口发现共享音频对象时必须中断，并要求走完整共享音频包发布流程。这属于未自动化的阻塞，不得把“OGG 已上传”说成 App 共享音频包已更新。
 
 验收时必须拆开三件事：
 

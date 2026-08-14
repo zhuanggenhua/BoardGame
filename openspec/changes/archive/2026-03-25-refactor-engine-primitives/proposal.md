@@ -32,5 +32,5 @@
   - `src/games/smashup/**`
   - `src/games/cardia/**`
   - `AGENTS.md`
-  - `docs/ai-rules/engine-systems.md`
+  - `.spec/knowledge/standards/engine-systems.md`
   - `docs/architecture.md`

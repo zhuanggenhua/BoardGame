@@ -14,5 +14,5 @@
 
 ## 4. 文档与测试
 - [x] 4.1 补齐 `src/engine/primitives/__tests__/` 下的原语测试
-- [x] 4.2 更新 `AGENTS.md`、`docs/ai-rules/engine-systems.md`、`docs/architecture.md` 等文档口径到 primitives 架构
+- [x] 4.2 更新 `AGENTS.md`、`.spec/knowledge/standards/engine-systems.md`、`docs/architecture.md` 等文档口径到 primitives 架构
 - [x] 4.3 修正 openspec change 文档，使其与当前实现一致并可归档

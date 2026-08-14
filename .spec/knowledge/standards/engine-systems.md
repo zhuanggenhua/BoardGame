@@ -1,3 +1,11 @@
+---
+name: engine-systems
+description: 引擎系统总览：共享原语、事件、FX、AI 和状态边界——改共享引擎能力时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 引擎与框架系统完整规范
 
 > 本文档是 `AGENTS.md` 的补充详细规范。**触发条件**：开发/修改引擎系统、框架层代码、游戏 move/command 时阅读。

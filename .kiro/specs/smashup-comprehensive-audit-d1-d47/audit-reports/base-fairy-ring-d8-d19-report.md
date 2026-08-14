@@ -252,7 +252,7 @@ case SU_EVENTS.TURN_CHANGED:
 
 ## 参考文档
 
-- **审计规范**：`docs/ai-rules/testing-audit.md`
+- **审计规范**：`.spec/knowledge/standards/testing-audit.md`
 - **D8 子项定义**：写入-消费窗口对齐审计
 - **D19 定义**：组合场景审计
 - **实现文件**：

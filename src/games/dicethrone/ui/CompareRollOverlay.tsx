@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
 import type { DieFace } from '../types';
 import SpotlightContainer from './SpotlightContainer';
-import BonusDieSpotlightContent from './BonusDieSpotlightContent';
+import RollSpotlightDiceContent from './RollSpotlightDiceContent';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
 
@@ -115,7 +115,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                                 <div className="text-white/90 text-[1.1vw] font-bold tracking-[0.06em] uppercase">
                                     {label}
                                 </div>
-                                <BonusDieSpotlightContent
+                                <RollSpotlightDiceContent
                                     value={contestant.roll}
                                     face={contestant.face as DieFace | undefined}
                                     effectKey={contestant.effectKey}

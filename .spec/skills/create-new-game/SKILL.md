@@ -47,9 +47,9 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 - 数据录入/真相源契约：`.spec/knowledge/standards/data-entry.md`
 - 图片/音频资源接入：`.spec/knowledge/standards/asset-pipeline.md`
 - 新游戏阶段 0 / S0 红线：`references/intake-redlines.md`
-- 音频细则：项目 `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）+ `docs/audio/audio-usage.md`（项目接入合同）；新增音频资产流程见 `docs/audio/add-audio.md`
-- 工具脚本：`docs/tools.md`
-- 图片 intake 复刻案例：`docs/games/smashup/workflows/smashup-faction-intake.md`
+- 音频细则：项目 `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）；`docs/audio/audio-usage.md` 与 `docs/audio/add-audio.md` 只作命令、目录和产物示例参考
+- 工具脚本索引：`docs/tools.md`
+- 图片 intake 复刻案例：`.spec/skills/smashup-faction-intake/SKILL.md`
 - 不确定该读哪份：`.spec/knowledge/README.md`
 
 ## 实施规范接入门禁（强制）

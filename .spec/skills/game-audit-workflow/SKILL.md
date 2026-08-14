@@ -180,7 +180,7 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
 **代词/指代消歧（强制，D1/D5/D15/D18 高频漏审点）**：
 - 当权威描述包含“此/该/那/其/本次/这个/那个/this/that/it”等代词或省略主语时，必须输出一张**指代消歧表**，并写入审计文档：
   - 原文片段（不超过 25 字）
-  - 指代对象裁决（例如：主攻击骰盘第几颗骰 / 奖励骰特写中的骰 / 目标玩家 / 原攻击者）
+  - 指代对象裁决（例如：主攻击骰盘第几颗骰 / 右侧奖励骰骰盘中的骰 / 目标玩家 / 原攻击者）
   - 在代码里的落点（字段/事件/handler）
 - **禁止**在审计文档里写“应该是…”但不落到“指代对象 + 代码落点 + 证据”。
 
@@ -218,11 +218,11 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
      2) **被替换后的能力 seam**：新的 `trigger / variants / customAction / tags / postDamage continuation` 是否真实成立
    - **禁止**只因为“升级牌写进升级槽”或“角色翻面切到新能力集”就把整条 family 判成 `L4`；这只能证明壳层成立，不能替代 replacement ability 本体审计。
  - **奖励骰/特写壳与消费者拆分（强制）**：
-   - 遇到多个对象都经过 `rollDie`、`BONUS_DIE_ROLLED`、奖励骰特写或 `displayOnlySettlement` 时，必须继续拆成三层：
+   - 遇到多个对象都经过 `rollDie`、`BONUS_DIE_ROLLED`、右侧奖励骰骰盘或 `displayOnlySettlement` 时，必须继续拆成三层：
      1) **触发/展示壳**：overlay 是否真实打开、关闭、阶段是否可继续
      2) **分支消费者**：不同骰面最终落到 `drawCard / grantToken / damage / status / extraAttack / selectPlayer / damageShield` 哪一类消费者
      3) **收口 continuation**：是否还要经过 `postDamage`、额外进攻、选择确认或其它后续时序
-   - **禁止**只因为多个对象都能看到奖励骰特写，或都写了 `BONUS_DIE_ROLLED / displayOnlySettlement`，就把它们判成同一 `L4` family；真正的判等边界必须落在后续消费者与 continuation。
+   - **禁止**只因为多个对象都能看到奖励骰骰盘，或都写了 `BONUS_DIE_ROLLED / displayOnlySettlement`，就把它们判成同一 `L4` family；真正的判等边界必须落在后续消费者与 continuation。
 
 ### Step 3：D 维度审计（必须）
 - **先打开** `.spec/knowledge/standards/testing-audit-dimensions.md` 入口索引。
@@ -253,7 +253,7 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
   - 失败提示截图只能作为“否定路径”补充证据，不能替代成功链路证据。
 
 ### 4.2 奖励骰/特写交互：四段式闭环（强制）
-凡出现“骰子特写/奖励骰特写/重掷入口/显示-only 结算（displayOnly）”，E2E 证据必须满足最小闭环：
+凡出现“骰子展示/右侧奖励骰骰盘/重掷入口/显示-only 结算（displayOnly）”，E2E 证据必须满足最小闭环：
 1) **特写出现**（Spotlight Open）：能看到骰面/提示文案/关键入口；若规则要求“不改主攻击骰盘”，截图必须包含主骰盘区域。
 2) **重投/关键操作**（Reroll / Action）：至少执行一次关键操作（点击重掷/确认/跳过），并截图证明 UI/状态发生变化。
 3) **关闭特写**（Close）：必须截图证明特写已关闭（或被确认按钮关闭）。
@@ -286,7 +286,7 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
 审计必须明确区分“资源/指示物（token）”与“攻击修正汇总（attack modifier / bonus damage）”的 UI 归因，避免把 token 的变化误当作伤害修正已展示：
 - **Token 不等于攻击修正**：token 的获得/消耗只能证明资源变化，**不能**替代“攻击修正区可见”的证据。
 - **攻击修正徽章是“效果提示”，不是“结果证明”**：徽章/提示出现只能证明“攻击修正已打出/已激活”，**不能**证明伤害数值已提前计入。
-  - 若卡牌效果为“延迟结算/分段生效”（例如依赖奖励骰特写收口后再追加加伤），必须额外用状态断言证明“数值仅在实际生效时才进入 bonusDamage/attackModifierBonusDamage”。
+  - 若卡牌效果为“延迟结算/分段生效”（例如依赖右侧奖励骰骰盘普通确认后再追加加伤），必须额外用状态断言证明“数值仅在实际生效时才进入 bonusDamage/attackModifierBonusDamage”。
 - **卡牌加伤必须可见**：凡通过事件/reducer 进入“攻击/伤害结算汇总”的加伤（例如 BONUS_DAMAGE_ADDED / attackModifierBonusDamage / pendingAttack.bonusDamage），必须在以下至少一个位置可见并被证据覆盖：
   1) 攻击修正区域（徽章/列表/tooltip）
   2) 战斗日志/结算日志（能区分来源）
@@ -308,7 +308,7 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
 - 每张关键截图必须写 1-3 条“肉眼观察结论”，直接回答本轮验收点（禁止只写“正常/通过”）。
 - **最终回复门禁**：如果最终回复中提到“已跑 E2E / E2E 通过 / 已验证成功”，则至少要给出 1 张你实际核对过的关键截图的**完整绝对路径**；否则不得使用该口径。
 - 若本轮验收依赖视觉判断，除了给绝对路径，还必须先实际打开这些关键截图；没有开图，就不能写“我看图确认过”。
-- 详见 `docs/automated-testing.md` 的截图规范。
+- 截图验收规则以 `.spec/knowledge/standards/e2e-verification.md` 为准；`docs/automated-testing.md` 只作 runner / fixture / API 参考。
 
 ### Step 5：审计文档落地（强制）
 - 审计文档必须落在 `evidence/<gameId>/`。

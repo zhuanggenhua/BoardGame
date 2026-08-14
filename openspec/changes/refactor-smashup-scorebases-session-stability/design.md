@@ -9,6 +9,33 @@ SmashUp 的计分阶段已经不是单个函数能描述的线性流程，而是
 
 这导致同一语义在不同层反复出现，任何一处新增“提前 return / halt / queue next interaction / auto continue”都可能破坏整条链。
 
+## Current Migration State
+截至当前迁移切片，`BASE_SCORED` / Munchkin 宝藏 reveal 后已经建立正式提交屏障。权威 scoreBases session 会先记录 `awaiting-score-award-reduce`，让 pipeline 正式归约计分事件，再从该已落地 core 继续 After Scoring。这消除了 `BASE_SCORED → After Scoring` 这段最容易造成因果错误的影子 reduce。
+
+清场弃牌触发也已经改为事实驱动：`onMinionDiscardedFromBase` 只能在 `BASE_CLEARED` 正式造成随从进入拥有者弃牌堆后产生，After Scoring 已移走的 First Mate 不会再收到原基地清场弃牌触发。
+
+换基地 reveal 触发已经从 deferred payload 投影迁出：`BASE_REPLACED` 正式归约后，事件后处理基于已落地的新基地状态收集 `onBaseRevealed`，不再通过 `postScoringEvents.reduce(...)` 预构造未来 core。
+
+Before Scoring 入队已经建立提交屏障：普通 beforeScoring 触发和基地 beforeScoring 能力会进入同一个 `score-before` frame，并随 `BEFORE_SCORING_TRIGGERED` 一起交给 pipeline 正式归约；Me First 窗口和后续计分只从该已落地状态继续。若 reaction queue 在该阶段执行触发并产出领域事件，scoreBases 会再次暂停，等待这些事件正式归约后再继续，不再用触发执行后的影子 core 继续算 VP。
+
+When Scoring 入队也已经建立提交屏障：whenScoring 基地能力和 `WHEN_SCORING_TRIGGERED` 会先正式归约；该 frame 内执行出的额外 VP、交互或其它领域事件也必须先提交，然后才允许 `BASE_SCORED` 使用最终已落地状态。
+
+After Scoring 入队已经建立提交屏障：afterScoring trigger/marker 与当前基地的 deferred cleanup payload 会先登记到 scoring frame；如果强制 afterScoring 触发、可选 afterScoring 响应窗口或 replacement-base follow-up 需要暂停，session step 会进入对应等待态，恢复后继续使用已登记的 cleanup payload，不再通过重复 `BASE_SCORED` 补链。
+
+`scoreOneBase()` 外层 `preScoreCore` 回退契约已经删除：权威 scoreBases 路径调用 reaction queue 时启用“领域事件后暂停”模式，reaction queue 仍可生成事件和 sys/interaction 状态，但不会把用这些事件预演过的 core 作为权威 core 交回外层。
+
+`postProcessSystemEvents()` 已删除 `_ppseInputEventsReduced` sys 私有字段通道：pipeline 主命令分支现在用显式 `inputEventsAlreadyReduced` 参数说明输入事件已经正式归约，SmashUp 与 SummonerWars 不再从运行态 sys 中读取这个隐藏轮次信号。reaction session 的 stale trigger pruning 与 optional 全让过时的 trigger consumption 在暂停路径下也只发 `TRIGGER_CONSUMED`，不再先改写 core 后回滚。reaction trigger 执行与 reaction command 后处理在暂停路径下会调用“只派生事件、不递归解决 reaction queue”的后处理模式，因此同一 reaction frame 不会在正式 reduce 前被再次消费。
+
+局部卡牌/基地投影也已开始拆除：桌游桌 afterScoring 的“抽 3 后弃 2”候选从 `CARDS_DRAWN` 事件 payload 与当前手牌直接派生；Geeks Min Maxing / Non-Infinite Loop 的额外行动链不再把 `grantExtraAction` / `CARD_TRANSFERRED` 事件 reduce 进临时 core，而是构造只服务 `validate()` / `execute()` 的显式临时校验态，并且该临时态只保留在本地调用栈，不返回权威 `MatchState.core`；Min Maxing 查看手牌、Mulligan reveal 和 Banned List 多对手续链后的下一 prompt 上下文也不再预演事件。Griefer 多对手续链已删除 `simulateMatchState()`，由 ability runtime 在“领域事件 + 后续 program”之间发出内部 continuation 事件，等待 pipeline 正式归约后再恢复下一段 program。Marvel / Avengers / Marvel Villains 的 runtime prompt 续链已迁入同一 seam；Anansi / Russian Fairy Tales 的手写 interaction 链路也已迁为“领域事件正式归约后恢复 continuation/prompt”，覆盖 draw 后 prompt、destroy 后 search、transformation 后 attach、赠牌后抽牌/标记、移动/加指示物/洗回后赠牌等链路。continuation 恢复时可注入 pipeline 当前随机源，因此抽牌、洗牌和 reveal 后 prompt 不需要再预演未来 core。
+
+仍待迁移的投影/拼状态点包括：
+- Before Scoring / When Scoring / After Scoring 的非暂停 reaction trigger 执行与 reaction command 后处理仍会立即应用事件；当前切片已阻止 scoreBases 暂停路径继续消费这些影子 core，并删除了 stale/auto-pass trigger consumption 与暂停式 reaction 后处理的投影续链，但还没有把所有非暂停兼容路径迁成提交屏障。
+- standalone direct-test 兼容路径仍 inline reduce 清场/换基地事件。
+- `postProcessSystemEvents()` 内部仍会按本批事件顺序构造局部 tempCore 来收集部分触发；轮次信号已类型化，但这一段局部投影本身仍不是最终形态。
+- `SmashUpEventSystem.afterEvents()` 的 pending domain events preview 已删除：交互 handler 产出领域事件后，response/reaction 续链只允许从事件正式归约后的状态继续。
+- `mergePromptResultCoreWithPreEventState()` 已删除：交互 handler 发出领域事件时不再手工拼回部分 core 字段；若 handler 同时发领域事件并改写 core，会立即暴露为内部契约错误。
+- SmashUp reaction session 与通用 `ResponseWindowSystem` 仍存在镜像 responder 状态和双向 pass 桥接。
+
 ## Goals / Non-Goals
 - Goals:
   - 用单一状态机驱动 SmashUp `scoreBases` 结算链

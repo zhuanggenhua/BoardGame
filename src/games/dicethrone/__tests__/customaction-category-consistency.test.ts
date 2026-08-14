@@ -801,6 +801,9 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 影子盗贼伤害：依赖 CP 数量
             'shadow_thief-damage-half-cp',
             // 野蛮人再来点儿：依赖骰面结果（剑面数量）
+            // 野蛮人压制：奖励骰确认后统一从 settlement handler 产出伤害
+            'barbarian-suppress-roll',
+            'barbarian-suppress-2-roll',
             'more-please-roll-damage',
             // 火法师 FM 伤害：依赖 FM 数量且需要消耗 FM
             'pyro-details-dmg-per-fm',
@@ -842,6 +845,12 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'ninja-death-blossom',
             'ninja-death-blossom-2',
             'ninja-smoke-screen-kuji-kiri',
+            // 影子盗贼 / 神枪手 / 武士：奖励骰或后续选择确认后才产出伤害
+            'shadow_thief-shadow-dance-roll',
+            'shadow_thief-shadow-dance-roll-2',
+            'gunslinger-card-high-noon',
+            'gunslinger-card-high-noon-resolve',
+            'samurai-back-strike-use',
             // 战术家/咒缚海盗：伤害取决于防御骰、奖励骰或目标身上的诅咒金币层数
             'zhanshujia-war-monger-roll',
             'zhanshujia-war-monger-2-roll',

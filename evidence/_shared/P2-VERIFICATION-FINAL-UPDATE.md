@@ -35,7 +35,7 @@
 
 ### Why This Matters
 
-1. **Fills Critical Gap**: Temple + First Mate was explicitly listed in `docs/ai-rules/testing-audit.md` as a high-priority test case
+1. **Fills Critical Gap**: Temple + First Mate was explicitly listed in `.spec/knowledge/standards/testing-audit.md` as a high-priority test case
 2. **Tests Bug Fix**: Verifies the `_deferredPostScoringEvents` mechanism fixed in commit 6ea1f9f
 3. **Unique Scenario**: Temple's removal ability creates a test case not covered by other afterScoring tests
 4. **Production Ready**: Tests are active and passing, ready for CI/CD

@@ -15,7 +15,6 @@
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { extname, join, relative, sep } from 'path';
-import { spawnSync } from 'child_process';
 import mime from 'mime-types';
 import {
   fetchAssetPublishInventory,
@@ -26,12 +25,12 @@ import {
 const COMPRESSED_EXTS = new Set(['.ogg', '.webp']);
 const COMPRESSED_DIR_NAME = 'compressed';
 const DIRECT_ASSET_EXTS = new Set(['.svg']);
+const PACKAGE_RUNTIME_CONFIG_EXTS = new Set(['.json']);
 const AUDIO_DIR_NAMES = new Set(['sfx', 'bgm']);
 const CACHE_CONTROL_MEDIA = 'public, max-age=31536000, immutable';
 
 const forceUpload = process.env.FORCE_UPLOAD === '1' || process.argv.includes('--force-upload');
 const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--check');
-const skipAndroidPackagePublish = process.env.SKIP_ANDROID_PACKAGE_PUBLISH === '1' || process.argv.includes('--skip-android-package-publish');
 const androidPackagePublishPlanArgIndex = process.argv.indexOf('--android-package-publish-plan');
 const uploadBatchSize = Number.parseInt(process.env.ASSET_UPLOAD_BATCH_SIZE || '200', 10);
 const npmLifecycleEvent = process.env.npm_lifecycle_event || process.env.NPM_LIFECYCLE_EVENT || '';
@@ -222,79 +221,21 @@ function resolveAndroidPackagePublishPlan(relativePaths) {
   };
 }
 
-function formatAndroidPackagePublishCommands(plan) {
-  if (plan.hasSharedAudioChanges) {
-    return [
-      `${process.execPath} scripts/mobile/publish-android-game-packages.mjs`,
-    ];
-  }
-
-  return plan.gameIds.map((gameId) => (
-    `${process.execPath} scripts/mobile/publish-android-game-packages.mjs --game ${gameId} --reuse-shared-audio --index-manifest-only`
-  ));
-}
-
-function publishAndroidPackagesForUploadedAssets(gameIds, hasSharedAudioChanges) {
-  if (skipAndroidPackagePublish || (gameIds.size === 0 && !hasSharedAudioChanges)) {
-    return;
-  }
-
-  if (hasSharedAudioChanges) {
-    console.log('\n检测到共享音频资源变更，刷新共享安卓素材包和全部游戏 manifest...');
-    const result = spawnSync(
-      process.execPath,
-      ['scripts/mobile/publish-android-game-packages.mjs'],
-      {
-        cwd: process.cwd(),
-        env: process.env,
-        encoding: 'utf8',
-        stdio: 'inherit',
-      },
-    );
-
-    if (result.status !== 0) {
-      throw new Error('共享安卓素材包发布失败');
-    }
-    return;
-  }
-
-  console.log(`\n检测到安卓素材包资源变更，刷新 ${gameIds.size} 个游戏 file-index/manifest 差异索引（不重发完整 ZIP）...`);
-
-  const sortedGameIds = Array.from(gameIds).sort((left, right) => left.localeCompare(right));
-  for (const gameId of sortedGameIds) {
-    const result = spawnSync(
-      process.execPath,
-      ['scripts/mobile/publish-android-game-packages.mjs', '--game', gameId, '--reuse-shared-audio', '--index-manifest-only'],
-      {
-        cwd: process.cwd(),
-        env: process.env,
-        encoding: 'utf8',
-        stdio: 'inherit',
-      },
-    );
-
-    if (result.status !== 0) {
-      throw new Error(`安卓素材包差异索引刷新失败: ${gameId}`);
-    }
-  }
-}
-
 function printAndroidPackagePublishPlan(paths) {
   const plan = resolveAndroidPackagePublishPlan(paths);
-  const commands = formatAndroidPackagePublishCommands(plan);
 
   console.log('安卓素材包刷新预演');
   console.log(`游戏资源变更: ${plan.gameIds.length > 0 ? plan.gameIds.join(', ') : '无'}`);
   console.log(`共享音频变更: ${plan.hasSharedAudioChanges ? '是' : '否'}`);
-  if (commands.length === 0) {
-    console.log('刷新命令: 无');
+  if (plan.gameIds.length === 0 && !plan.hasSharedAudioChanges) {
+    console.log('服务器自动刷新: 无');
     return;
   }
-
-  console.log('刷新命令:');
-  for (const command of commands) {
-    console.log(`  ${command}`);
+  if (plan.hasSharedAudioChanges) {
+    console.log('服务器自动刷新: 共享音频暂未接入自动刷新，正式发布会中断并要求走共享音频发布流程');
+    return;
   }
+  console.log('服务器自动刷新: 发布入口会在服务器 release 内刷新已有 channel 的 file-index/manifest/games latest');
 }
 
 function getAllFiles(dir, fileList = []) {
@@ -355,9 +296,12 @@ function getFilesFromScanRoot(scanRoot) {
   return [];
 }
 
-function shouldUpload(filePath) {
+function shouldUpload(filePath, relativePath, packageManagedGames) {
   const ext = extname(filePath).toLowerCase();
   if (DIRECT_ASSET_EXTS.has(ext)) {
+    return true;
+  }
+  if (PACKAGE_RUNTIME_CONFIG_EXTS.has(ext) && resolvePackageManagedGameId(relativePath, packageManagedGames)) {
     return true;
   }
   const parts = filePath.split(sep);
@@ -389,11 +333,11 @@ async function main() {
     throw new Error(`本地素材目录不存在: ${assetsDir}`);
   }
 
+  const packageManagedGames = discoverPackageManagedGames();
   const files = resolveScanRoots(assetsDir)
     .flatMap((scanRoot) => getFilesFromScanRoot(scanRoot))
     .filter((file) => matchesAssetPrefix(relative(assetsDir, file)))
-    .filter(shouldUpload);
-  const packageManagedGames = discoverPackageManagedGames();
+    .filter((file) => shouldUpload(file, relative(assetsDir, file), packageManagedGames));
   const uploadedPackageManagedGames = new Set();
   let hasUploadedSharedAudioAssets = false;
 
@@ -483,7 +427,13 @@ async function main() {
         hasUploadedSharedAudioAssets = true;
       }
     }
-    publishAndroidPackagesForUploadedAssets(uploadedPackageManagedGames, hasUploadedSharedAudioAssets);
+    if (uploadedPackageManagedGames.size > 0 || hasUploadedSharedAudioAssets) {
+      console.log(
+        '\n安卓素材包刷新交给服务器发布入口自动执行：'
+        + `游戏=${uploadedPackageManagedGames.size > 0 ? [...uploadedPackageManagedGames].sort().join(',') : '无'} `
+        + `共享音频=${hasUploadedSharedAudioAssets ? '是' : '否'}`,
+      );
+    }
   }
 
   if (checkOnly) {

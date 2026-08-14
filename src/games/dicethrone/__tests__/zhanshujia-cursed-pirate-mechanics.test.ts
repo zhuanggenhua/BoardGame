@@ -1893,9 +1893,19 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(enteredDefense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore);
         expect(eventsOfType(enteredDefense.events as DiceThroneEvent[], 'DAMAGE_DEALT')).toHaveLength(0);
 
-        const bonusConfirmed = executePipeline(
+        const responsePassed = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
             enteredDefense.state,
+            command('RESPONSE_PASS', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(responsePassed.success).toBe(true);
+        expect(responsePassed.state.core.pendingBonusDiceSettlement).toBeTruthy();
+
+        const bonusConfirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            responsePassed.state,
             command('SKIP_BONUS_DICE_REROLL', '0'),
             fixedRandom,
             ['0', '1'],
@@ -1955,6 +1965,119 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         });
     });
 
+    it('战争贩子 II 军刀分支应先进入防御投掷，防御减伤后才结算 6 点攻击伤害', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-war-monger-2');
+        setPlayerBoardFace(state, '1', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 4, 4, 4, 6][index] ?? die.value,
+            symbol: [
+                ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            ][index] ?? die.symbol,
+        }));
+
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'war-monger' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const bonusOpened = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+        expect(bonusOpened.success).toBe(true);
+        expect(bonusOpened.state.core.pendingBonusDiceSettlement).toBeTruthy();
+        expect(bonusOpened.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore);
+
+        const responsePassed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            bonusOpened.state,
+            command('RESPONSE_PASS', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(responsePassed.success).toBe(true);
+
+        const bonusConfirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            responsePassed.state,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(bonusConfirmed.success).toBe(true);
+        expect(bonusConfirmed.state.core.pendingBonusDiceSettlement).toBeFalsy();
+        expect(bonusConfirmed.state.sys.phase).toBe('defensiveRoll');
+        expect(bonusConfirmed.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'war-monger',
+            isDefendable: true,
+            damage: 6,
+        });
+        expect(bonusConfirmed.state.core.pendingAttack?.defenseAbilityId).toBe('human-still-wet-behind-ears');
+
+        const defenseRolled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            bonusConfirmed.state,
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([6, 4, 4, 4]),
+            ['0', '1'],
+        );
+        expect(defenseRolled.success).toBe(true);
+
+        const defenseConfirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseRolled.state,
+            command('CONFIRM_ROLL', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(defenseConfirmed.success).toBe(true);
+
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseConfirmed.state,
+            command('ADVANCE_PHASE', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 4);
+        expect(eventsOfType(resolved.events as DiceThroneEvent[], 'PREVENT_DAMAGE')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 2,
+            sourceAbilityId: 'human-still-wet-behind-ears',
+        });
+        const warMongerDamage = eventsOfType(resolved.events as DiceThroneEvent[], 'DAMAGE_DEALT')
+            .find(event => event.payload.sourceAbilityId === 'war-monger');
+        expect(warMongerDamage?.payload.amount).toBe(6);
+        expect(warMongerDamage?.payload.shieldsConsumed?.[0]).toMatchObject({
+            sourceId: 'human-still-wet-behind-ears',
+            absorbed: 2,
+        });
+    });
+
     it('基础战争贩子勋章分支不应进入防御投掷，应直接进入额外进攻投掷阶段', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';
@@ -1992,16 +2115,28 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             createQueuedRandom([6]),
             ['0', '1'],
         );
-        const advanced = executePipeline(
+
+        expect(bonusOpened.success).toBe(true);
+        expect(bonusOpened.state.core.pendingBonusDiceSettlement).toBeTruthy();
+
+        const responsePassed = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
             bonusOpened.state,
+            command('RESPONSE_PASS', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(responsePassed.success).toBe(true);
+        expect(responsePassed.state.core.pendingBonusDiceSettlement).toBeTruthy();
+
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            responsePassed.state,
             command('SKIP_BONUS_DICE_REROLL', '0'),
             fixedRandom,
             ['0', '1'],
         );
 
-        expect(bonusOpened.success).toBe(true);
-        expect(bonusOpened.state.core.pendingBonusDiceSettlement).toBeTruthy();
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('offensiveRoll');
         expect(advanced.state.core.pendingAttack).toBeNull();
@@ -2044,14 +2179,22 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         );
         expect(selected.success).toBe(true);
 
-        const advanced = executePipeline(
+        const attackResolved = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
             selected.state,
             command('ADVANCE_PHASE', '0'),
             fixedRandom,
             ['0', '1'],
         );
+        expect(attackResolved.success).toBe(true);
 
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            attackResolved.state,
+            command('RESPONSE_PASS', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('main2');
         expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);

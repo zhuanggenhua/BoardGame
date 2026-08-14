@@ -4,8 +4,8 @@
 - [x] 1.3 在 spec 中定义旧结论失效回写与残余范围表达规则
 
 ## 2. Documentation
-- [x] 2.1 更新 `docs/ai-rules/testing-audit.md`，把 claim 等级、证据分层、失效回写写成硬规则
-- [x] 2.2 更新 `docs/games/smashup/workflows/smashup-faction-implementation.md`，明确结构审计、玩法审计、发布收口的不同门槛
+- [x] 2.1 更新 `.spec/knowledge/standards/testing-audit.md`，把 claim 等级、证据分层、失效回写写成硬规则
+- [x] 2.2 更新 `.spec/skills/smashup-faction-implementation/SKILL.md`，明确结构审计、玩法审计、发布收口的不同门槛
 - [x] 2.3 补一个统一审计 evidence 模板，要求逐项声明审计范围、claim 等级、共享根因、残余范围
 
 ## 3. Validation

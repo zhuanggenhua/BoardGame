@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ImageOff, Maximize2 } from 'lucide-react';
+import { ImageOff, Maximize2, X } from 'lucide-react';
 import { OptimizedImage } from '../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../components/common/overlays/MagnifyOverlay';
 import { ConfigReviewTable, type ConfigReviewColumn } from '../components/config/ConfigReviewTable';
+import betrayalAssetManifest from '../../public/assets/i18n/zh-CN/betrayal/assets-manifest.json';
 import {
   BETRAYAL_CONFIG_REVIEW_COLUMN_KEYS,
   BETRAYAL_CONFIG_REVIEW_FIELD_DEFINITIONS,
@@ -29,9 +30,143 @@ type RoomPreviewTarget = {
   name: string;
 };
 
-const TYPE_FILTERS: Array<'all' | BetrayalConfigReviewType> = ['all', 'starting-room', 'room-template', 'scenario-card', 'scenario-config', 'haunt-static'];
+type ManifestFileEntry = {
+  variants?: Record<string, unknown>;
+};
+
+type BetrayalAssetManifest = {
+  files?: Record<string, ManifestFileEntry>;
+};
+
+type AssetCandidate = {
+  asset: string;
+  sourceFile: string;
+  label: string;
+};
+
+type ExplorerAssetFieldKey = 'panelAsset' | 'mapTokenAsset';
+type ExplorerAssetTraceFieldKey = 'panelSourceFile' | 'mapTokenSourceFile' | 'mapTokenCompressedAsset';
+
+type AssetPickerState = {
+  rowDisplayName: string;
+  fieldKey: ExplorerAssetFieldKey;
+  fieldLabel: string;
+  currentValue: string;
+  candidates: readonly AssetCandidate[];
+  commitRawValue: (rawValue: string) => void;
+};
+
+const ASSET_VARIANT_ORDER = ['png', 'jpg', 'jpeg', 'webp'] as const;
+const betrayalManifestFiles = (betrayalAssetManifest as BetrayalAssetManifest).files ?? {};
+
+function resolveManifestExtension(entry: ManifestFileEntry | undefined): string {
+  const variants = entry?.variants ?? {};
+  return ASSET_VARIANT_ORDER.find((extension) => variants[extension]) ?? 'png';
+}
+
+function formatReadableNameFromSlug(slug: string): string {
+  return slug
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      if (word.toLocaleLowerCase() === 'md') return 'MD';
+      return word.charAt(0).toLocaleUpperCase() + word.slice(1);
+    })
+    .join(' ');
+}
+
+function isTechnicalAssetSlug(slug: string): boolean {
+  const normalized = slug.toLocaleLowerCase();
+  return normalized.startsWith('http')
+    || normalized.length > 48
+    || /[0-9a-f]{24,}/i.test(slug);
+}
+
+function formatAssetCandidateLabel(assetKey: string, prefix: string, candidateIndex: number): string {
+  const slug = assetKey.slice(prefix.length);
+  if (isTechnicalAssetSlug(slug)) {
+    const candidateType = prefix.includes('tokens/') ? 'Token' : '素材';
+    return `${candidateType} 候选 ${String(candidateIndex + 1).padStart(2, '0')}`;
+  }
+  return formatReadableNameFromSlug(slug);
+}
+
+function buildManifestAssetCandidates(prefix: string): AssetCandidate[] {
+  return Object.entries(betrayalManifestFiles)
+    .filter(([assetKey]) => assetKey.startsWith(prefix) && !assetKey.slice(prefix.length).startsWith('compressed/'))
+    .sort(([leftAssetKey], [rightAssetKey]) => leftAssetKey.localeCompare(rightAssetKey))
+    .map(([assetKey, entry], candidateIndex) => {
+      const extension = resolveManifestExtension(entry);
+      return {
+        asset: `betrayal/${assetKey}`,
+        sourceFile: `public/assets/i18n/zh-CN/betrayal/${assetKey}.${extension}`,
+        label: formatAssetCandidateLabel(assetKey, prefix, candidateIndex),
+      };
+    });
+}
+
+const PANEL_ASSET_CANDIDATES = buildManifestAssetCandidates('explorers/');
+const MAP_TOKEN_ASSET_CANDIDATES = buildManifestAssetCandidates('tokens/explorers/');
+
+function getAssetCandidatesForField(fieldKey: ExplorerAssetFieldKey): readonly AssetCandidate[] {
+  return fieldKey === 'panelAsset' ? PANEL_ASSET_CANDIDATES : MAP_TOKEN_ASSET_CANDIDATES;
+}
+
+function formatReadableAssetName(rawValue: string): string {
+  const normalized = rawValue.trim();
+  if (!normalized) return '未配置';
+  const lastPathSegment = normalized.split(/[\\/]/).filter(Boolean).pop() ?? normalized;
+  return formatReadableNameFromSlug(lastPathSegment) || normalized;
+}
+
+function resolveAssetCandidate(rawValue: string, candidates: readonly AssetCandidate[]): AssetCandidate | undefined {
+  return candidates.find((candidate) => candidate.asset === rawValue);
+}
+
+function formatAssetDisplayName(rawValue: string, candidates: readonly AssetCandidate[]): string {
+  if (!rawValue) return '未配置';
+  return resolveAssetCandidate(rawValue, candidates)?.label ?? formatReadableAssetName(rawValue);
+}
+
+function formatExplorerAssetDisplayValue(fieldKey: ExplorerAssetFieldKey, value: unknown): string {
+  return formatAssetDisplayName(formatCellValue(value), getAssetCandidatesForField(fieldKey));
+}
+
+function formatAssetTraceDisplayValue(fieldKey: ExplorerAssetTraceFieldKey, value: unknown): string {
+  const rawValue = formatCellValue(value);
+  if (!rawValue) return '未配置';
+  const extensionMatch = rawValue.match(/\.([a-z0-9]+)$/i);
+  const extensionLabel = extensionMatch ? `${extensionMatch[1]!.toLocaleUpperCase()} · ` : '';
+  const assetName = formatReadableAssetName(rawValue);
+  const statusLabel: Record<ExplorerAssetTraceFieldKey, string> = {
+    panelSourceFile: '面板源图已索引',
+    mapTokenSourceFile: '地图 Token 源图已索引',
+    mapTokenCompressedAsset: '地图 Token 运行压缩图已索引',
+  };
+  return `${assetName} · ${extensionLabel}${statusLabel[fieldKey]}`;
+}
+
+function formatBetrayalConfigReviewDisplayValue(
+  row: BetrayalConfigReviewRow,
+  fieldKey: BetrayalConfigReviewFieldKey,
+  value: unknown,
+): string {
+  if (row.objectType === 'explorer' && (fieldKey === 'panelAsset' || fieldKey === 'mapTokenAsset')) {
+    return formatExplorerAssetDisplayValue(fieldKey, value);
+  }
+  if (row.objectType === 'explorer' && (fieldKey === 'panelSourceFile' || fieldKey === 'mapTokenSourceFile' || fieldKey === 'mapTokenCompressedAsset')) {
+    return formatAssetTraceDisplayValue(fieldKey, value);
+  }
+  return formatCellValue(value);
+}
+
+const TYPE_FILTERS: Array<'all' | BetrayalConfigReviewType> = ['all', 'explorer', 'starting-room', 'room-template', 'scenario-card', 'scenario-config', 'haunt-static'];
 const TYPE_FILTER_LABELS: Record<'all' | BetrayalConfigReviewType, string> = {
   all: '全部配置',
+  explorer: '探索者角色',
   'starting-room': '起始布局',
   'room-template': '可探索房间',
   'scenario-card': '剧本候选',
@@ -41,6 +176,13 @@ const TYPE_FILTER_LABELS: Record<'all' | BetrayalConfigReviewType, string> = {
 const FIELD_LABELS: Record<BetrayalConfigReviewFieldKey, string> = {
   category: '分组',
   name: '名称',
+  explorerId: '角色 ID',
+  panelAsset: '玩家面板资源',
+  panelSourceFile: '面板源图',
+  mapTokenAsset: '地图 Token',
+  mapTokenSourceFile: 'Token 源图',
+  mapTokenCompressedAsset: 'Token 压缩图',
+  assetUsageContract: '素材职责',
   floor: '楼层',
   coordinates: '坐标',
   state: '状态',
@@ -67,6 +209,13 @@ const FIELD_LABELS: Record<BetrayalConfigReviewFieldKey, string> = {
 const COLUMN_WIDTHS: Record<BetrayalConfigReviewFieldKey, number> = {
   category: 112,
   name: 200,
+  explorerId: 180,
+  panelAsset: 250,
+  panelSourceFile: 420,
+  mapTokenAsset: 260,
+  mapTokenSourceFile: 430,
+  mapTokenCompressedAsset: 460,
+  assetUsageContract: 420,
   floor: 96,
   coordinates: 88,
   state: 132,
@@ -149,22 +298,298 @@ function RoomTilePreviewImage({ visual, name, visualId, locale, className = '' }
   );
 }
 
+function ExplorerAssetPreview({
+  row,
+  locale,
+  panelAsset,
+  tokenAsset,
+  onSelectPanel,
+  onSelectToken,
+}: {
+  row: BetrayalConfigReviewRow;
+  locale: string;
+  panelAsset: string;
+  tokenAsset: string;
+  onSelectPanel: () => void;
+  onSelectToken: () => void;
+}) {
+  if (!panelAsset && !tokenAsset) {
+    return (
+      <div className="flex h-[64px] w-[152px] items-center justify-center rounded-[6px] border border-[#8f6642]/30 bg-[#ead8b8]/60 text-[#8f6642]">
+        <ImageOff aria-hidden="true" className="h-4 w-4" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="grid h-[64px] w-[152px] grid-cols-2 gap-1"
+      data-testid="betrayal-config-explorer-asset-preview"
+      data-panel-asset={panelAsset}
+      data-map-token-asset={tokenAsset}
+    >
+      <button
+        type="button"
+        className="group relative overflow-hidden rounded-[6px] border border-[#5a3720]/35 bg-[#1d130c] text-left outline-none transition hover:ring-2 hover:ring-[#c08a45] focus-visible:ring-2 focus-visible:ring-[#c08a45]"
+        title={`选择玩家面板资源：${panelAsset}`}
+        aria-label={`选择 ${row.displayName} 玩家面板资源`}
+        data-testid="betrayal-config-explorer-asset-panel-button"
+        onClick={onSelectPanel}
+      >
+        {panelAsset ? (
+          <OptimizedImage
+            src={panelAsset}
+            locale={locale}
+            alt={`${row.displayName} 玩家面板资源`}
+            draggable={false}
+            className="h-full w-full object-contain"
+          />
+        ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
+        <span className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/55 px-1 py-0.5 text-center text-[9px] font-bold text-[#f6deb4]">
+          面板
+        </span>
+      </button>
+      <button
+        type="button"
+        className="group relative overflow-hidden rounded-[6px] border border-[#5a3720]/35 bg-[#1d130c] text-left outline-none transition hover:ring-2 hover:ring-[#c08a45] focus-visible:ring-2 focus-visible:ring-[#c08a45]"
+        title={`选择地图 Token：${tokenAsset}`}
+        aria-label={`选择 ${row.displayName} 地图 Token`}
+        data-testid="betrayal-config-explorer-asset-token-button"
+        onClick={onSelectToken}
+      >
+        {tokenAsset ? (
+          <OptimizedImage
+            src={tokenAsset}
+            locale={locale}
+            alt={`${row.displayName} 地图角色 token`}
+            draggable={false}
+            className="h-full w-full object-contain"
+          />
+        ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
+        <span className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/55 px-1 py-0.5 text-center text-[9px] font-bold text-[#f6deb4]">
+          Token
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function AssetPickerFieldCell({
+  row,
+  fieldKey,
+  fieldLabel,
+  value,
+  displayValue,
+  locale,
+  onOpen,
+}: {
+  row: BetrayalConfigReviewRow;
+  fieldKey: ExplorerAssetFieldKey;
+  fieldLabel: string;
+  value: string;
+  displayValue: string;
+  locale: string;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="group flex min-h-[42px] w-full items-center gap-2 rounded-[5px] px-1.5 py-1 text-left text-[11px] font-semibold text-[#3f2718] transition hover:bg-[#efe0bd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/25"
+      title={`点击选择${fieldLabel}：${displayValue}${value ? `；素材路径：${value}` : ''}`}
+      aria-label={`选择 ${row.displayName} ${fieldLabel}`}
+      data-testid={`betrayal-config-asset-picker-cell-${fieldKey}`}
+      data-asset={value}
+      data-display-value={displayValue}
+      onClick={onOpen}
+    >
+      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-[4px] border border-[#5a3720]/30 bg-[#1d130c]">
+        {value ? (
+          <OptimizedImage
+            src={value}
+            locale={locale}
+            alt={`${row.displayName} ${fieldLabel}`}
+            draggable={false}
+            className="h-full w-full object-contain"
+          />
+        ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] font-bold text-[#7b5a40]">{fieldLabel} · 点击选择候选</span>
+        <span className="block break-words">{displayValue}</span>
+      </span>
+    </button>
+  );
+}
+
+function AssetTraceCell({
+  rawValue,
+  displayValue,
+}: {
+  rawValue: string;
+  displayValue: string;
+}) {
+  return (
+    <span
+      className="block min-h-[34px] rounded-[5px] px-1.5 py-1 text-[11px] font-semibold leading-4 text-[#3f2718]"
+      title={rawValue || '未配置'}
+      data-asset={rawValue}
+    >
+      <span className="block text-[10px] font-bold text-[#7b5a40]">技术追踪</span>
+      <span className="block break-words">{displayValue}</span>
+    </span>
+  );
+}
+
+function AssetPickerOverlay({
+  picker,
+  locale,
+  onClose,
+}: {
+  picker: AssetPickerState | null;
+  locale: string;
+  onClose: () => void;
+}) {
+  if (!picker) return null;
+  const isTokenPicker = picker.fieldKey === 'mapTokenAsset';
+  const currentDisplayName = formatAssetDisplayName(picker.currentValue, picker.candidates);
+  return (
+    <div
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/55 px-5 py-6 font-serif"
+      role="dialog"
+      aria-modal="true"
+      data-testid="betrayal-config-asset-picker"
+    >
+      <div className="flex max-h-[86vh] w-[min(92vw,1120px)] flex-col overflow-hidden rounded-[12px] border border-[#8f6642]/55 bg-[#f2dfb8] text-[#301a0e] shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#8f6642]/35 bg-[#3f2718] px-4 py-3 text-[#f3e3c3]">
+          <div>
+            <div className="text-lg font-bold" data-testid="betrayal-config-asset-picker-title">
+              为 {picker.rowDisplayName} 选择{picker.fieldLabel}
+            </div>
+            <div className="mt-2 flex min-h-[34px] items-center gap-2 text-xs text-[#d9bd8c]">
+              {picker.currentValue ? (
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-[4px] border border-[#d9bd8c]/45 bg-[#1d130c]">
+                  <OptimizedImage
+                    src={picker.currentValue}
+                    locale={locale}
+                    alt={`当前${picker.fieldLabel} ${currentDisplayName}`}
+                    draggable={false}
+                    className="h-full w-full object-contain"
+                  />
+                </span>
+              ) : null}
+              <span className="font-bold text-[#fff1cf]">
+                {isTokenPicker ? '当前 Token' : `当前选择：${currentDisplayName}`}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="rounded-full p-2 text-[#f3e3c3]/70 transition hover:bg-white/10 hover:text-[#fff7df] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3e3c3]/45"
+            aria-label="关闭候选列表"
+            data-testid="betrayal-config-asset-picker-close"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="border-b border-[#8f6642]/20 bg-[#fff1cf] px-4 py-2 text-xs font-semibold text-[#5e3d27]">
+          {isTokenPicker ? '点击正确 Token 图；提交前只是草稿。' : '候选来自正式素材索引；选择后只写入待提交修正，不会直接改正式源。'}
+        </div>
+        <div
+          className={[
+            'grid min-h-0 flex-1 overflow-y-auto p-4',
+            isTokenPicker
+              ? 'grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2'
+              : 'grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-3',
+          ].join(' ')}
+          data-testid="betrayal-config-asset-picker-options"
+        >
+          {picker.candidates.map((candidate) => {
+            const isSelected = candidate.asset === picker.currentValue;
+            return (
+              <button
+                key={candidate.asset}
+                type="button"
+                className={[
+                  isTokenPicker
+                    ? 'relative flex aspect-square items-center justify-center rounded-[8px] border bg-[#1d130c] p-2 shadow-sm transition hover:border-[#d19b58] hover:bg-[#25170e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/35'
+                    : 'flex min-h-[164px] flex-col gap-2 rounded-[8px] border bg-[#fff8e6] p-2 text-left shadow-sm transition hover:border-[#9d6a35] hover:bg-[#fff1cf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/35',
+                  isSelected ? 'border-[#5f351a] ring-2 ring-[#5f351a]/25' : 'border-[#8f6642]/28',
+                ].join(' ')}
+                title={`候选：${candidate.label}；素材路径：${candidate.asset}；源图：${candidate.sourceFile}`}
+                aria-label={`选择${picker.fieldLabel} ${candidate.label}`}
+                data-testid="betrayal-config-asset-picker-option"
+                data-asset={candidate.asset}
+                data-source-file={candidate.sourceFile}
+                onClick={() => {
+                  picker.commitRawValue(candidate.asset);
+                  onClose();
+                }}
+              >
+                <span className={[
+                  'flex items-center justify-center rounded-[6px] border border-[#5a3720]/25 bg-[#1d130c]',
+                  isTokenPicker ? 'h-full w-full' : 'h-20',
+                ].join(' ')}>
+                  <OptimizedImage
+                    src={candidate.asset}
+                    locale={locale}
+                    alt={`${picker.fieldLabel}候选 ${candidate.label}`}
+                    draggable={false}
+                    className="h-full w-full object-contain"
+                  />
+                </span>
+                {!isTokenPicker ? (
+                  <>
+                    <span className="text-xs font-bold text-[#3f2718]">{candidate.label}</span>
+                    {isSelected ? <span className="mt-auto rounded-[4px] bg-[#5f351a] px-2 py-1 text-center text-[10px] font-bold text-[#fff4d5]">当前选择</span> : null}
+                  </>
+                ) : null}
+                {isTokenPicker && isSelected ? (
+                  <span className="pointer-events-none absolute bottom-1 left-1 right-1 rounded-[4px] bg-[#5f351a]/92 px-1 py-0.5 text-center text-[10px] font-bold text-[#fff4d5]">
+                    当前
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const BetrayalConfigReview = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('game-betrayal');
   const table = useMemo(() => buildBetrayalConfigReviewTable(), []);
   const [typeFilter, setTypeFilter] = useState<'all' | BetrayalConfigReviewType>('all');
   const [magnifiedRoom, setMagnifiedRoom] = useState<RoomPreviewTarget | null>(null);
+  const [assetPicker, setAssetPicker] = useState<AssetPickerState | null>(null);
   const locale = i18n.resolvedLanguage ?? i18n.language ?? 'zh-CN';
   const filteredRows = useMemo(() => table.rows.filter((row) => typeFilter === 'all' || row.objectType === typeFilter), [table.rows, typeFilter]);
   const columns = useMemo<ConfigReviewColumn<BetrayalConfigReviewFieldKey>[]>(() => [
-    { key: 'image', label: '房间图', minWidth: 104, sticky: true },
+    { key: 'image', label: '素材预览', minWidth: 178, sticky: true },
     ...BETRAYAL_CONFIG_REVIEW_COLUMN_KEYS.map((key) => ({
       key,
       label: FIELD_LABELS[key],
       minWidth: COLUMN_WIDTHS[key],
     })),
   ], []);
+  const openAssetPicker = (
+    row: BetrayalConfigReviewRow,
+    fieldKey: ExplorerAssetFieldKey,
+    currentValue: string,
+    commitRawValue: (rawValue: string) => void,
+  ) => {
+    setAssetPicker({
+      rowDisplayName: row.displayName,
+      fieldKey,
+      fieldLabel: FIELD_LABELS[fieldKey],
+      currentValue,
+      candidates: getAssetCandidatesForField(fieldKey),
+      commitRawValue,
+    });
+  };
 
   return (
     <>
@@ -207,10 +632,48 @@ export const BetrayalConfigReview = () => {
       getCellValue={getBetrayalConfigReviewCellValue}
       getFieldDefinition={getBetrayalConfigReviewFieldDefinition}
       isFieldApplicable={isBetrayalConfigReviewFieldApplicable}
-      formatCellValue={(_row, _fieldKey, value) => formatCellValue(value)}
+      formatCellValue={(row, fieldKey, value) => formatBetrayalConfigReviewDisplayValue(row, fieldKey, value)}
       parseSuggestedValue={(_row, fieldKey, rawValue) => parseSuggestedValue(fieldKey, rawValue)}
-      renderCell={({ row, columnKey }) => {
+      renderCell={({ row, columnKey, fieldKey, commitRawValue, getEffectiveCellValue }) => {
+        if (row.objectType === 'explorer' && fieldKey && (fieldKey === 'panelAsset' || fieldKey === 'mapTokenAsset')) {
+          const value = formatCellValue(getEffectiveCellValue(fieldKey));
+          const displayValue = formatExplorerAssetDisplayValue(fieldKey, value);
+          return (
+            <AssetPickerFieldCell
+              row={row}
+              fieldKey={fieldKey}
+              fieldLabel={FIELD_LABELS[fieldKey]}
+              value={value}
+              displayValue={displayValue}
+              locale={locale}
+              onOpen={() => openAssetPicker(row, fieldKey, value, (rawValue) => commitRawValue(fieldKey, rawValue))}
+            />
+          );
+        }
+        if (row.objectType === 'explorer' && fieldKey && (fieldKey === 'panelSourceFile' || fieldKey === 'mapTokenSourceFile' || fieldKey === 'mapTokenCompressedAsset')) {
+          const rawValue = formatCellValue(getEffectiveCellValue(fieldKey));
+          return (
+            <AssetTraceCell
+              rawValue={rawValue}
+              displayValue={formatAssetTraceDisplayValue(fieldKey, rawValue)}
+            />
+          );
+        }
         if (columnKey !== 'image') return undefined;
+        if (row.objectType === 'explorer') {
+          const panelAsset = formatCellValue(getEffectiveCellValue('panelAsset'));
+          const tokenAsset = formatCellValue(getEffectiveCellValue('mapTokenAsset'));
+          return (
+            <ExplorerAssetPreview
+              row={row}
+              locale={locale}
+              panelAsset={panelAsset}
+              tokenAsset={tokenAsset}
+              onSelectPanel={() => openAssetPicker(row, 'panelAsset', panelAsset, (rawValue) => commitRawValue('panelAsset', rawValue))}
+              onSelectToken={() => openAssetPicker(row, 'mapTokenAsset', tokenAsset, (rawValue) => commitRawValue('mapTokenAsset', rawValue))}
+            />
+          );
+        }
         const target = resolveRoomPreviewTarget(row);
         if (!target) {
           return <div className="flex h-[58px] w-[74px] items-center justify-center rounded-[6px] border border-[#8f6642]/30 bg-[#ead8b8]/60 text-[#8f6642]" title={t('configReview.material.noPreview')}><ImageOff aria-hidden="true" className="h-4 w-4" /></div>;
@@ -251,6 +714,7 @@ export const BetrayalConfigReview = () => {
       runtimeContext={{ mode: 'local', gameId: 'betrayal' }}
       testIdPrefix="betrayal-config"
     />
+    <AssetPickerOverlay picker={assetPicker} locale={locale} onClose={() => setAssetPicker(null)} />
     <MagnifyOverlay isOpen={Boolean(magnifiedRoom)} onClose={() => setMagnifiedRoom(null)} closeLabel={t('configReview.material.closePreview')} overlayClassName="bg-black/55" overlayTestId="betrayal-config-room-magnify">
       {magnifiedRoom ? (
         <div className="flex max-h-[88vh] w-[min(88vw,760px)] flex-col gap-3 rounded-[14px] bg-[#2a1a10] p-4 text-[#f7e6c6] shadow-2xl">

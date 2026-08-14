@@ -185,7 +185,7 @@ git push origin main
    - 记录 Ultimate 护盾免疫恢复
    - 记录 POD 提交审计完成
 
-2. **[ ] 更新 docs/ai-rules/testing-audit.md**
+2. **[ ] 更新 .spec/knowledge/standards/testing-audit.md**
    - 添加 Ultimate 护盾免疫案例
    - 更新审计方法论
 

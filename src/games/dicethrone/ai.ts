@@ -76,6 +76,16 @@ import {
 } from './ai/profiles';
 
 type DiceThroneState = MatchState<DiceThroneCore>;
+
+const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => (
+    state.sys.phase ?? state.sys.flow?.phase ?? 'setup'
+) as TurnPhase;
+
+const getAiActiveDice = (
+    state: DiceThroneState,
+    phase: TurnPhase = getDiceThronePhaseFromState(state),
+): DiceThroneCore['dice'] => getActiveDice(state.core, phase);
+
 type DiceThroneStrategyTag =
     | 'damage-race'
     | 'survive-response'
@@ -609,7 +619,7 @@ const buildDiceTargetPlans = (
 
     const availableIds = new Set(getAvailableAbilityIds(state.core, playerId, phase));
     const expectedType = phase === 'defensiveRoll' ? 'defensive' : phase === 'offensiveRoll' ? 'offensive' : undefined;
-    const dice = diceOverride ?? getActiveDice(state.core);
+    const dice = diceOverride ?? getAiActiveDice(state, phase);
     const plans: DiceTargetPlan[] = [];
 
     const pushPlan = (abilityId: string, trigger: TriggerCondition | undefined) => {
@@ -1451,6 +1461,7 @@ const buildEmergencyInteractionCancelAction = (
 const buildInteractionActions = (
     state: DiceThroneState,
     playerId: PlayerId,
+    phase: TurnPhase,
 ): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
     if (!current) return null;
@@ -1748,7 +1759,7 @@ const buildInteractionActions = (
 
     const data = current.data as DiceInteractionData;
     const meta = data.meta;
-    const activeDice = getActiveDice(state.core);
+    const activeDice = getAiActiveDice(state, phase);
     const interactionId = current.id;
     const allowedDieIds = Array.isArray(data.allowedDieIds) && data.allowedDieIds.length > 0
         ? new Set(data.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number'))
@@ -2209,7 +2220,7 @@ const buildPassiveActions = (state: DiceThroneState, playerId: PlayerId, phase: 
     const actions: AiLegalAction[] = [];
     const passiveAbilities = getPlayerPassiveAbilities(state.core, playerId);
     const currentRollContext = resolveCurrentRollContext(state.core, phase);
-    const activeDice = currentRollContext?.dice ?? getActiveDice(state.core);
+    const activeDice = currentRollContext?.dice ?? getAiActiveDice(state, phase);
 
     for (const passive of passiveAbilities) {
         passive.actions.forEach((passiveAction, actionIndex) => {
@@ -2348,7 +2359,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
             && !state.core.rollConfirmed
             && !rerollBlockedByBindCp
         ) {
-            for (const die of getActiveDice(state.core)) {
+            for (const die of getAiActiveDice(state, phase)) {
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('toggle-die-lock', die.id, die.isKept ? 'unlock' : 'lock'),
                     kind: 'toggle-die-lock',
@@ -2561,7 +2572,7 @@ export function buildDiceThroneAiLegalActions(args: {
 
     const phase = (state.sys.phase ?? state.sys.flow?.phase ?? 'setup') as TurnPhase;
 
-    const interactionActions = buildInteractionActions(state, args.playerId);
+    const interactionActions = buildInteractionActions(state, args.playerId, phase);
     if (interactionActions !== null) {
         const validInteractionActions = interactionActions.filter((action) =>
             action.commands.every((command) => isCommandValid(state, args.playerId, command.type, command.payload)),
@@ -2600,7 +2611,7 @@ export function buildDiceThroneAiLegalActions(args: {
 
 const getContextPhase = (context: AiDecisionContext): TurnPhase => {
     const state = context.visibleState as DiceThroneState;
-    return (state.sys.phase ?? state.sys.flow?.phase ?? 'setup') as TurnPhase;
+    return getDiceThronePhaseFromState(state);
 };
 
 const pushDiceThroneStrategyTag = (
@@ -2940,7 +2951,7 @@ const interactionValueScorer: LocalAiActionScorer = {
         const currentInteractionData = currentInteraction?.kind === 'multistep-choice'
             ? currentInteraction.data as DiceInteractionData | undefined
             : undefined;
-        const currentDice = getActiveDice(state.core);
+        const currentDice = getAiActiveDice(state, phase);
         const targetOpponentDice = currentInteraction?.kind === 'multistep-choice'
             && (!interactionId || currentInteraction.id === interactionId)
             && currentInteractionData?.meta?.targetOpponentDice === true;
@@ -2981,7 +2992,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                         phase,
                         targetOpponentDice,
                         buildProjectedDice(
-                            getActiveDice(state.core),
+                            currentDice,
                             dieIds.map((currentDieId, index) => ({ dieId: currentDieId, newValue: newValues[index] })),
                         ),
                     )
@@ -3011,7 +3022,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                         context.playerId,
                         phase,
                         targetOpponentDice,
-                        buildProjectedDice(getActiveDice(state.core), [{ dieId, newValue }]),
+                        buildProjectedDice(currentDice, [{ dieId, newValue }]),
                     )
                     : null;
                 const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
@@ -3042,7 +3053,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                                 context.playerId,
                                 phase,
                                 targetOpponentDice,
-                                getActiveDice(state.core).filter((die) => dieIds.includes(die.id)),
+                                currentDice.filter((die) => dieIds.includes(die.id)),
                             )?.score ?? 0)
                             : 0
                     ),
@@ -3276,7 +3287,7 @@ const dicePlanScorer: LocalAiActionScorer = {
         const state = context.visibleState as DiceThroneState;
         if (state.core.rollConfirmed) return null;
 
-        const activeDice = getActiveDice(state.core);
+        const activeDice = getAiActiveDice(state, phase);
         const plan = getBestDiceTargetPlan(state, context.playerId, phase);
         const chasePlan = getHigherAmbitionChasePlan(state, context.playerId, phase);
         const effectivePlan = chasePlan ?? plan;
@@ -3425,14 +3436,14 @@ const passiveValueScorer: LocalAiActionScorer = {
         if (!passiveAction) return null;
 
         if (passiveAction.type === 'rerollDie') {
+            const phase = getContextPhase(context);
             const targetDieId = typeof action.metadata?.targetDieId === 'number'
                 ? action.metadata.targetDieId
                 : null;
             const die = targetDieId !== null
-                ? getActiveDice(state.core).find((item) => item.id === targetDieId)
+                ? getAiActiveDice(state, phase).find((item) => item.id === targetDieId)
                 : null;
             if (!die) return null;
-            const phase = getContextPhase(context);
             const currentPlan = (phase === 'offensiveRoll' || phase === 'defensiveRoll')
                 ? getBestStableDiceTargetPlan(state, context.playerId, phase)
                 : null;
@@ -4105,7 +4116,7 @@ const evaluateDiceProjection = (
     targetOpponentDice: boolean,
     projectedDice: DiceThroneCore['dice'],
 ): DiceProjectionSummary => {
-    const currentDice = getActiveDice(state.core);
+    const currentDice = getAiActiveDice(state, phase);
     const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice);
     const useConfirmedOpponentThreat = targetOpponentDice
         && state.core.rollConfirmed
@@ -4231,7 +4242,7 @@ const evaluateExpectedRerollSelection = (
         return null;
     }
 
-    const baseDice = getActiveDice(state.core);
+    const baseDice = getAiActiveDice(state, phase);
     const totals = {
         score: 0,
         rawDelta: 0,
@@ -4286,7 +4297,7 @@ const evaluateBestRerollProjection = (
     targetOpponentDice: boolean,
     customActionId: string,
 ): DiceProjectionSummary | null => {
-    const currentDice = getActiveDice(state.core);
+    const currentDice = getAiActiveDice(state, phase);
     const selections = enumerateRerollSelectionsForAction(currentDice, customActionId);
     let best: DiceProjectionSummary | null = null;
 
@@ -4389,7 +4400,8 @@ const estimateDiceInterferenceCardValue = (
     card: AbilityCard,
     phase: TurnPhase,
 ): { score: number; reason: string } | null => {
-    const diceValues = getActiveDice(state.core).map((die) => die.value);
+    const activeDice = getAiActiveDice(state, phase);
+    const diceValues = activeDice.map((die) => die.value);
     if (diceValues.length === 0) return null;
 
     for (const effect of card.effects ?? []) {
@@ -4404,7 +4416,7 @@ const estimateDiceInterferenceCardValue = (
             playerId,
             phase,
             targetOpponentDice,
-            enumerateModifyProjectedDice(getActiveDice(state.core), effect.action.customActionId),
+            enumerateModifyProjectedDice(activeDice, effect.action.customActionId),
         );
         const rerollProjection = evaluateBestRerollProjection(
             state,
@@ -4766,7 +4778,7 @@ function getInitialKeyDieLockActionForDiceThrone(args: {
         ?? getBestDiceTargetPlan(state, args.context.playerId, phase);
     if (!plan || plan.keepDieIds.length === 0) return null;
 
-    const activeDice = getActiveDice(state.core);
+    const activeDice = getAiActiveDice(state, phase);
     if (activeDice.filter((die) => die.isKept).length >= 3) return null;
 
     const hasLockedKeyDie = activeDice.some((die) => plan.keepDieIds.includes(die.id) && die.isKept);

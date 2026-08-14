@@ -52,6 +52,7 @@ import {
     replaceCurrentRollContext,
     setCurrentRollContextDice,
     isCurrentBonusRollSettlement,
+    isSettledReplayOnlyRollContext,
 } from './rollContext';
 
 // ============================================================================
@@ -73,6 +74,16 @@ const syncLegacyMainDiceToCurrentRollContext = (state: DiceThroneCore): DiceThro
     if (!isLegacyMainRollContext(state)) return state;
     const rollDiceCount = typeof state.rollDiceCount === 'number' ? state.rollDiceCount : state.dice.length;
     return setCurrentRollContextDice(state, state.dice.slice(0, rollDiceCount));
+};
+
+const clearCurrentRollContextUnlessSettledReplay = (
+    state: DiceThroneCore,
+    contextId?: string,
+): DiceThroneCore => {
+    if (isSettledReplayOnlyRollContext(state.currentRollContext)) {
+        return state;
+    }
+    return clearCurrentRollContext(state, contextId);
 };
 
 const updateEvasionRollResult = (
@@ -338,7 +349,10 @@ const handlePlayerUnready: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER
 
 /**
  * 处理奖励骰结算事件
- * 清除 pendingBonusDiceSettlement，并保留最终骰面供右侧骰盘只读回看。
+ * 清除 pendingBonusDiceSettlement。
+ * 独立展示型奖励骰确认后保留最终骰面供右侧骰盘只读回看；
+ * 攻击 / 防御等父链临时骰确认后恢复被挂起的父骰盘继续父链；
+ * 嵌套奖励骰只恢复上一层被挂起的奖励骰结算。
  * 非 displayOnly 时标记 pendingAttack.bonusDiceResolved，
  * 避免 autoContinue 重入 defensiveRoll exit 时重复执行 resolveAttack。
  */
@@ -355,14 +369,32 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
                 : state.pendingAttack,
             continuation.settlementStage,
         )
-        : state.pendingAttack;
+        : continuation?.kind === 'complete' && state.pendingAttack && settlement?.rollDieResolution
+            ? { ...state.pendingAttack, bonusDiceResolved: true }
+            : state.pendingAttack;
+    const currentContext = state.currentRollContext;
     const restoredSettlement = settlement?.suspendedParentSettlement;
+    const shouldRestoreSuspendedParent = Boolean(
+        settlement
+        && currentContext?.id === `bonus:${settlement.id}`
+        && currentContext.suspendedParent
+        && (
+            restoredSettlement
+            || continuation?.kind !== 'complete'
+        )
+    );
     const nextState = {
         ...state,
         pendingBonusDiceSettlement: restoredSettlement,
         pendingAttack,
     };
     if (settlement) {
+        if (shouldRestoreSuspendedParent && currentContext?.suspendedParent) {
+            return {
+                ...nextState,
+                currentRollContext: currentContext.suspendedParent,
+            };
+        }
         const settledBonusContext = createBonusRollContextFromSettlement(nextState, settlement);
         return {
             ...nextState,
@@ -384,7 +416,7 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
             },
         };
     }
-    return clearCurrentRollContext(nextState);
+    return clearCurrentRollContextUnlessSettledReplay(nextState);
 };
 
 /**
@@ -1602,7 +1634,7 @@ export const reduce = (
 
                 if (to === 'offensiveRoll') {
                     const playerDice = createPlayerDice(state, activePlayerId);
-                    return clearCurrentRollContext({
+                    return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         rollCount: 0,
@@ -1620,7 +1652,7 @@ export const reduce = (
                 if (to === 'defensiveRoll') {
                     const defenderId = state.pendingAttack?.defenderId ?? activePlayerId;
                     const playerDice = createPlayerDice(state, defenderId);
-                    return clearCurrentRollContext({
+                    return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         rollCount: 0,
@@ -1633,7 +1665,7 @@ export const reduce = (
 
                 if (to === 'targetingRoll') {
                     const playerDice = createPlayerDice(state, activePlayerId);
-                    return clearCurrentRollContext({
+                    return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         rollCount: 0,
@@ -1658,7 +1690,7 @@ export const reduce = (
                         };
                     }
                     
-                    return clearCurrentRollContext({
+                    return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         players,
@@ -1666,7 +1698,7 @@ export const reduce = (
                     });
                 }
 
-                return clearCurrentRollContext({ ...state, activePlayerId });
+                return clearCurrentRollContextUnlessSettledReplay({ ...state, activePlayerId });
             }
 
             // 其他未知事件类型（包括系统层事件）直接返回原状态

@@ -40,6 +40,8 @@ export type MatchRoomPageStageControllersModel = Pick<
     | 'resetOnlineTransportError'
     | 'handleGameError'
     | 'handleCommandRejected'
+    | 'forceEndAiPhaseHandler'
+    | 'handleForceEndAiPhaseReady'
 >;
 
 export type MatchRoomPageSessionStateModel = Pick<
@@ -120,6 +122,7 @@ export type MatchRoomOnlineSeatRuntimeAdapter = {
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     seatControllers: MatchRoomPageSessionStateModel['onlineAiSeatControllers'];
     autoAcceptedPlayerIds: MatchRoomPageSessionStateModel['onlineAiRematchAutoAcceptedPlayerIds'];
+    onForceEndAiPhaseReady: MatchRoomPageStageControllersModel['handleForceEndAiPhaseReady'];
 };
 
 export type MatchRoomOnlineOverlaysStageAdapter = {
@@ -222,6 +225,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
     matchId?: string;
     gameId?: string;
     sessionState: MatchRoomPageSessionStateModel;
+    stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
     seatRuntime: MatchRoomOnlineSeatRuntimeAdapter;
 }): MatchRoomOnlineHudBridgeProps {
@@ -229,6 +233,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         matchId,
         gameId,
         sessionState,
+        stageControllers,
         exitFlow,
         seatRuntime,
     } = args;
@@ -244,8 +249,8 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         onLeave: exitFlow.handleLeaveRoom,
         onDestroy: exitFlow.handleDestroyRoom,
         onForceExit: exitFlow.handleForceExitLocal,
-        onForceEndAiPhase: undefined,
-        showForceEndAiPhase: false,
+        onForceEndAiPhase: stageControllers.forceEndAiPhaseHandler ?? undefined,
+        showForceEndAiPhase: sessionState.matchStatus.isHost && sessionState.hasOnlineAiSeat,
         isLoading: exitFlow.isLeaving,
         seatControllers: seatRuntime.seatControllers,
         engineConfig: seatRuntime.engineConfig,
@@ -257,7 +262,7 @@ function buildMatchRoomOnlineSeatRuntimeAdapter(args: {
     sessionState: MatchRoomPageSessionStateModel;
     stageControllers: MatchRoomPageStageControllersModel;
 }): MatchRoomOnlineSeatRuntimeAdapter {
-    const { runtimeSetup, sessionState } = args;
+    const { runtimeSetup, sessionState, stageControllers } = args;
 
     return {
         enabled: sessionState.matchStatus.isHost
@@ -266,6 +271,7 @@ function buildMatchRoomOnlineSeatRuntimeAdapter(args: {
         engineConfig: runtimeSetup.engineConfig,
         seatControllers: sessionState.onlineAiSeatControllers,
         autoAcceptedPlayerIds: sessionState.onlineAiRematchAutoAcceptedPlayerIds,
+        onForceEndAiPhaseReady: stageControllers.handleForceEndAiPhaseReady,
     };
 }
 
@@ -273,6 +279,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
     matchId?: string;
     gameId?: string;
     sessionState: MatchRoomPageSessionStateModel;
+    stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
     seatRuntime: MatchRoomOnlineSeatRuntimeAdapter;
 }): MatchRoomOnlineOverlaysStageAdapter {
@@ -280,6 +287,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
         matchId,
         gameId,
         sessionState,
+        stageControllers,
         exitFlow,
         seatRuntime,
     } = args;
@@ -301,6 +309,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
             matchId,
             gameId,
             sessionState,
+            stageControllers,
             exitFlow,
             seatRuntime,
         }),

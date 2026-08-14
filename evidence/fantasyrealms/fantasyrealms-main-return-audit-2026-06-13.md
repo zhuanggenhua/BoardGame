@@ -115,10 +115,10 @@
 以下文件当前根目录 `main` 工作树和 `fantasyrealms` worktree 版本都不同：
 
 - `AGENTS.md`
-- `docs/ai-rules/doc-index.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/README.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 
 其中当前 `main` 还带有本轮后续补强过的新规则，例如：
@@ -143,8 +143,8 @@
 
 - `AGENTS.md`
 - `.spec/skills/git-operations/SKILL.md`
-- `docs/ai-rules/asset-pipeline.md`
-- `docs/ai-rules/doc-index.md`
+- `.spec/knowledge/standards/asset-pipeline.md`
+- `.spec/knowledge/README.md`
 - `docs/automated-testing.md`
 - `src/games/fantasyrealms/Board.tsx`
 - `src/games/fantasyrealms/__tests__/Board.foundation.test.tsx`

@@ -208,7 +208,7 @@ export function calculateTotalHealingFromEvents(
 
 **2. 更新文档**
 
-在 \docs/ai-rules/engine-systems.md\ 中添加：
+在 \.spec/knowledge/standards/engine-systems.md\ 中添加：
 
 \\\markdown
 ### ActionLog 最佳实践（强制）

@@ -53,6 +53,7 @@ type AssetEnvLike = {
     DEV?: boolean | string;
     VITE_ASSETS_BASE_URL?: string;
     VITE_ASSET_SOURCE?: string;
+    VITE_DEV_REMOTE_ASSETS?: string;
 };
 
 export function resolveAssetsBaseUrlFromEnv(env?: AssetEnvLike): string {
@@ -86,6 +87,12 @@ export function setAssetsBaseUrl(value?: string): void {
 export function getAssetsBaseUrl(): string {
     return assetsBaseUrl;
 }
+
+const shouldUseRemoteAssetsInLiteDev = () => (
+    import.meta.env.DEV
+    && import.meta.env.VITE_DEV_REMOTE_ASSETS === 'true'
+    && /^https?:\/\//i.test(assetsBaseUrl)
+);
 
 export function setCommonAudioAssetBaseOverride(value?: string): void {
     commonAudioAssetBaseOverride = normalizeAssetsBaseUrl(value) ?? undefined;
@@ -1681,6 +1688,10 @@ export function getLocalAssetPath(path: string): string {
         return resolveVersionedAssetUrl(`${overrideBaseUrl}/${relative}`);
     }
 
+    if (shouldUseRemoteAssetsInLiteDev()) {
+        return resolveVersionedAssetUrl(`${assetsBaseUrl}/${relative}`);
+    }
+
     return resolveVersionedAssetUrl(`/assets/${relative}`);
 }
 
@@ -1699,6 +1710,10 @@ export function getLocalizedLocalAssetPath(path: string, locale?: string): strin
 
     if (overrideBaseUrl) {
         return resolveVersionedAssetUrl(`${overrideBaseUrl}/${localizedRelative}`);
+    }
+
+    if (shouldUseRemoteAssetsInLiteDev()) {
+        return resolveVersionedAssetUrl(`${assetsBaseUrl}/${localizedRelative}`);
     }
 
     return resolveVersionedAssetUrl(`/assets/${localizedRelative}`);

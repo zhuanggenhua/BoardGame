@@ -2,7 +2,7 @@
 
 - [x] 1.1 Lock source asset dimensions, hashes and `8x2` slot mapping for `hero/shouren`
 - [x] 1.2 Record summoner, starting setup, card names, values, rules and tip-name conflicts
-- [x] 1.3 Add a Summoner Wars faction intake workflow under `docs/games/summonerwars/workflows/`
+- [x] 1.3 Add a Summoner Wars faction intake workflow under `.spec/skills/summonerwars-faction-intake/SKILL.md`
 
 ## 2. Static Runtime
 

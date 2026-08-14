@@ -22,7 +22,7 @@
 - 当前仓库实现（仅静态代码审计，不改实现）
 - `openspec/changes/refactor-summonerwars-local-ui-interactions/design.md`
 - `openspec/changes/refactor-summonerwars-local-ui-interactions/specs/summonerwars-core/spec.md`
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
 
 ## 审计边界
 - 本轮只回答 **“还有哪些交互没迁到 InteractionSystem 真相源”**。

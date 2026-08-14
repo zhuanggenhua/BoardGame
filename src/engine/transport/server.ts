@@ -21,6 +21,7 @@ import type {
     MatchPlayerInfo,
     BatchDispatchMeta,
     CommandDispatchMeta,
+    ManualForceEndAiPhaseResult,
     ManualSetupSelectionRequest,
     OnlineAiClientTransportDiagnostics,
 } from './protocol';
@@ -100,21 +101,33 @@ import {
     shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn,
 } from './onlineAiWatchdogGameSemantics';
 
-// 离线裁决：按交互 kind 选择最小语义正确的兜底命令
+// 离线裁决：按交互 kind 选择最小语义正确的兜底命令。
+// null 表示该交互不允许离线代裁决，必须保留给真实玩家入口继续处理。
 // - simple-choice: 走通用系统取消
-// - dt:*: 走 DiceThrone 领域命令，确保回滚/清理逻辑完整执行
-const OFFLINE_ADJUDICATION_COMMAND_BY_KIND: Record<string, string> = {
+// - dt:token-response: 走 DiceThrone 领域命令，确保回滚/清理逻辑完整执行
+// - dt:bonus-dice: 不是离线弹窗，必须留给右侧骰盘普通确认
+const OFFLINE_ADJUDICATION_COMMAND_BY_KIND: Record<string, string | null> = {
     'simple-choice': INTERACTION_COMMANDS.CANCEL,
     'dt:card-interaction': INTERACTION_COMMANDS.CANCEL, // 已迁移到 InteractionSystem
     'dt:token-response': 'SKIP_TOKEN_RESPONSE',
-    'dt:bonus-dice': 'SKIP_BONUS_DICE_REROLL',
+    'dt:bonus-dice': null,
 };
 
-const resolveOfflineAdjudicationCommandType = (kind: unknown): string => {
+const resolveOfflineAdjudicationCommandType = (
+    kind: unknown,
+    engineConfig?: GameEngineConfig | null,
+): string | null => {
     if (typeof kind !== 'string') {
         return INTERACTION_COMMANDS.CANCEL;
     }
-    return OFFLINE_ADJUDICATION_COMMAND_BY_KIND[kind] ?? INTERACTION_COMMANDS.CANCEL;
+    const configured = engineConfig?.onlineAiRecovery?.offlineAdjudicationCommandByInteractionKind;
+    if (configured && Object.prototype.hasOwnProperty.call(configured, kind)) {
+        return configured[kind] ?? null;
+    }
+    if (Object.prototype.hasOwnProperty.call(OFFLINE_ADJUDICATION_COMMAND_BY_KIND, kind)) {
+        return OFFLINE_ADJUDICATION_COMMAND_BY_KIND[kind] ?? null;
+    }
+    return INTERACTION_COMMANDS.CANCEL;
 };
 
 const ALLOWED_INJECT_STATE_ENVS = new Set(['test', 'development']);
@@ -252,6 +265,28 @@ function isAuthorizedManualAiSeatDispatch(match: ActiveMatch, requesterPlayerId:
     return typeof ownerKey === 'string'
         && ownerKey.length > 0
         && requesterOwnerKey === ownerKey;
+}
+
+function isAuthorizedManualOnlineAiRecoveryRequest(
+    match: ActiveMatch,
+    requesterPlayerId: string,
+    seatControllers: Record<string, OnlineAiWatchdogSeatController>,
+): boolean {
+    const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
+    if (!hasAiSeat) {
+        return false;
+    }
+    const setupData = match.metadata.setupData;
+    const ownerKey = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
+        ? (setupData as { ownerKey?: unknown }).ownerKey
+        : undefined;
+    const requesterOwnerKey = match.metadata.players[requesterPlayerId]?.ownerKey;
+    if (typeof ownerKey === 'string' && ownerKey.length > 0) {
+        return requesterOwnerKey === ownerKey;
+    }
+
+    // 旧房间没有 ownerKey 时，前端房主口径仍是 0 号座位。
+    return requesterPlayerId === '0';
 }
 
 function isManualSetupSelectionRequest(value: unknown): value is ManualSetupSelectionRequest {
@@ -809,7 +844,7 @@ export interface GameEngineConfig<
             phase: string;
             interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
             fallbackCommand: { type: string; payload: unknown } | null;
-        }) => { type: string; payload: unknown } | null | undefined;
+        }) => { type: string; payload: unknown } | false | null | undefined;
         resolveSeatLegalOnlyRecovery?: (args: {
             state: MatchState<unknown>;
             phase: string;
@@ -832,7 +867,7 @@ export interface GameEngineConfig<
             reason: string;
             interaction: unknown;
         }) => boolean;
-        offlineAdjudicationCommandByInteractionKind?: Record<string, string>;
+        offlineAdjudicationCommandByInteractionKind?: Record<string, string | null>;
     };
 }
 
@@ -1356,6 +1391,34 @@ export class GameTransportServer {
                 acknowledge?.({ accepted: true });
             });
 
+            socket.on('manual-force-end-ai-phase', async (
+                matchID: string,
+                credentials?: string,
+                acknowledge?: (result: ManualForceEndAiPhaseResult) => void,
+            ) => {
+                if (!matchID) return;
+                const info = this.socketIndex.get(socket.id);
+                if (!info || info.matchID !== matchID || !info.playerID) return;
+                const authorized = await this.validateCommandAuth(matchID, info.playerID, info.credentials ?? credentials);
+                if (!authorized) {
+                    socket.emit('error', matchID, 'unauthorized');
+                    acknowledge?.({ accepted: false, reason: 'unauthorized' });
+                    return;
+                }
+                const match = this.activeMatches.get(matchID);
+                if (!match || this.resolveOnlineAiSeatControllerType(match, info.playerID) !== 'human') {
+                    socket.emit('error', matchID, 'unauthorized');
+                    acknowledge?.({ accepted: false, reason: 'unauthorized' });
+                    return;
+                }
+
+                const result = await this.handleManualForceEndAiPhase(match, info.playerID);
+                if (!result.accepted && result.reason === 'unauthorized') {
+                    socket.emit('error', matchID, 'unauthorized');
+                }
+                acknowledge?.(result);
+            });
+
             socket.on('ui:event', (
                 matchID: string,
                 eventType: string,
@@ -1772,6 +1835,65 @@ export class GameTransportServer {
             expectedStateID: match.stateID,
             onlineAiCircuitSource: 'watchdog',
         });
+    }
+
+    private async handleManualForceEndAiPhase(
+        match: ActiveMatch,
+        requesterPlayerId: string,
+    ): Promise<ManualForceEndAiPhaseResult> {
+        const seatControllers = this.buildOnlineAiSeatControllers(match);
+        if (!isAuthorizedManualOnlineAiRecoveryRequest(match, requesterPlayerId, seatControllers)) {
+            return { accepted: false, reason: 'unauthorized' };
+        }
+        if (match.unloaded) {
+            return { accepted: false, reason: 'unavailable' };
+        }
+        if (match.executing || this.onlineAiRecoveryInFlight.has(match.matchID)) {
+            return { accepted: false, reason: 'busy' };
+        }
+
+        const candidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+        if (!candidate) {
+            this.onlineAiRecoveryTrackers.delete(match.matchID);
+            return { accepted: false, reason: 'unavailable' };
+        }
+
+        const progressMarker = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        const recoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
+        const trackerKey = `${candidate.playerId}:${candidate.reason}:${recoveryFingerprint}`;
+        const tracker: OnlineAiRecoveryTracker = {
+            key: trackerKey,
+            firstSeenAt: Date.now(),
+            autoSubmittedAt: Date.now(),
+            lastReportedFailureReason: null,
+            failureCount: 0,
+        };
+        this.onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        this.onlineAiRecoveryInFlight.add(match.matchID);
+        try {
+            await this.runOnlineAiRecoverySequence(
+                match,
+                tracker,
+                candidate,
+                progressMarker,
+                seatControllers,
+            );
+        } finally {
+            this.onlineAiRecoveryInFlight.delete(match.matchID);
+        }
+
+        const markerAfter = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        const resolved = await this.hasOnlineAiRecoveryResolved(match, candidate, seatControllers);
+        if (resolved || markerAfter !== progressMarker) {
+            return { accepted: true };
+        }
+        return { accepted: false, reason: 'rejected' };
     }
 
     private buildOnlineAiCircuitQueueDiagnostic(match: ActiveMatch): Array<Record<string, unknown>> {
@@ -2217,6 +2339,60 @@ export class GameTransportServer {
         return 0;
     }
 
+    private shouldRunImmediateForcedRecoveryAfterLegalActionMiss(args: {
+        match: ActiveMatch;
+        candidate: ForceEndTurnStalledAiResolution;
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+        outcome: 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+        failedCommandType?: string | null;
+    }): boolean {
+        const { match, candidate, seatControllers, outcome, failedCommandType } = args;
+        const recoveryCommands = candidate.resolution.action.commands;
+        if (recoveryCommands.length === 0) {
+            return false;
+        }
+
+        const currentWindow = (match.state.sys as { responseWindow?: { current?: unknown } } | undefined)
+            ?.responseWindow?.current as { responderQueue?: unknown } | undefined;
+        const responderQueue = Array.isArray(currentWindow?.responderQueue) ? currentWindow.responderQueue : [];
+        const hasHumanResponder = responderQueue.some((responderId) => {
+            const id = typeof responderId === 'string' ? responderId : '';
+            return id.length > 0 && seatControllers[id]?.type === 'human';
+        });
+        if (hasHumanResponder) {
+            return false;
+        }
+
+        const isDirectRecoveryCandidate = candidate.legalActionOnly !== true
+            && (
+                candidate.reason === 'visible-interaction'
+                || candidate.reason === 'hidden-interaction'
+                || candidate.reason === 'response-window'
+                || candidate.reason === 'response-loop'
+            );
+        if (isDirectRecoveryCandidate) {
+            return true;
+        }
+
+        const canTreatMissAsExhausted = outcome === 'no-legal-action'
+            || (outcome === 'legal-action-command-failed' && !failedCommandType);
+        if (!canTreatMissAsExhausted) {
+            return false;
+        }
+
+        if (candidate.allowForceCommandAfterLegalActionExhausted === true) {
+            return true;
+        }
+
+        const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
+        return match.engineConfig.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+            state: match.state,
+            phase: currentPhase,
+            previousCandidate: candidate,
+            nextCandidate: candidate,
+        }) === true;
+    }
+
     private async runOnlineAiImmediateExecution(
         match: ActiveMatch,
         trigger: 'command-succeeded' | 'sync',
@@ -2306,7 +2482,40 @@ export class GameTransportServer {
                     seatControllers,
                 );
                 if (!actionRecovery.applied) {
-                    this.onlineAiRecoveryTrackers.delete(match.matchID);
+                    const shouldRunForcedRecovery = this.shouldRunImmediateForcedRecoveryAfterLegalActionMiss({
+                        match,
+                        candidate,
+                        seatControllers,
+                        outcome: actionRecovery.outcome,
+                        failedCommandType: actionRecovery.failedCommandType,
+                    });
+                    this.logOnlineAiExecutionTrace({
+                        matchId: match.matchID,
+                        gameId: match.gameId,
+                        playerId: candidate.playerId,
+                        stateIdBefore: stepStateIdBefore,
+                        candidateReason: candidate.reason,
+                        decisionMs: Date.now() - stepStartedAt,
+                        executionMs: 0,
+                        actionKind: actionRecovery.reportedAction?.actionKind ?? null,
+                        commandTypes: actionRecovery.executedCommandTypes,
+                        outcome: `fallback:${trigger}:${actionRecovery.outcome}`,
+                        blockedReason: actionRecovery.blockedReason,
+                        commandFailureReason: actionRecovery.commandFailureReason,
+                    });
+                    if (!shouldRunForcedRecovery) {
+                        this.onlineAiRecoveryTrackers.delete(match.matchID);
+                        this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(match.matchID);
+                        return;
+                    }
+                    await this.runOnlineAiRecoverySequence(
+                        match,
+                        tracker,
+                        candidate,
+                        progressMarker,
+                        seatControllers,
+                        { reuseExecutionLock: true },
+                    );
                     return;
                 }
 
@@ -2490,17 +2699,21 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
         progressMarkerBeforeRecovery: string,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
+        options?: { reuseExecutionLock?: boolean },
     ): Promise<void> {
         if (match.unloaded) {
             tracker.autoSubmittedAt = null;
             return;
         }
-        if (match.executing) {
+        const reuseExecutionLock = options?.reuseExecutionLock === true;
+        if (match.executing && !reuseExecutionLock) {
             tracker.autoSubmittedAt = null;
             return;
         }
 
-        match.executing = true;
+        if (!reuseExecutionLock) {
+            match.executing = true;
+        }
         const advancePhaseCommandType = match.gameId === 'summonerwars' ? 'sw:end_phase' : 'ADVANCE_PHASE';
         const mapRecoveryCommand = (command?: { type?: string; payload?: unknown }) => {
             if (!command) return { type: 'UNKNOWN', payload: {} };
@@ -3296,7 +3509,9 @@ export class GameTransportServer {
             if (!match.unloaded) {
                 await this.drainCommandQueue(match);
             }
-            match.executing = false;
+            if (!reuseExecutionLock) {
+                match.executing = false;
+            }
         }
     }
 
@@ -6396,7 +6611,8 @@ export class GameTransportServer {
             ?.interaction?.current;
         if (!interaction || interaction.playerId !== playerID) return;
 
-        const commandType = resolveOfflineAdjudicationCommandType(interaction.kind);
+        const commandType = resolveOfflineAdjudicationCommandType(interaction.kind, match.engineConfig);
+        if (!commandType) return;
 
         // 离线裁决必须与玩家命令共用同一串行通道，避免并发写状态
         await this.handleCommand(match.matchID, playerID, commandType, {});

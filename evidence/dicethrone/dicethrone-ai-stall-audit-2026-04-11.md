@@ -18,7 +18,7 @@
 ## 权威来源
 - 本轮用户复现与需求描述（AI 卡死/响应循环/无解交互自动反馈）
 - Dice Throne 规则注释（规则 4.4 终极技能行动锁定，见 `rules.ts` 注释）
-- 项目审计规范：`docs/ai-rules/testing-audit.md`
+- 项目审计规范：`.spec/knowledge/standards/testing-audit.md`
 
 ## 选定维度与理由
 - **D5 交互完整**：响应窗口与交互链是否完整可达、可关闭。

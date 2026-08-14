@@ -167,7 +167,7 @@ const minionOptions = otherMinions.map((m, i) => ({
 
 ## 相关规范
 
-更新了 `docs/ai-rules/testing-audit.md` 的 D37 维度：
+更新了 `.spec/knowledge/standards/testing-audit.md` 的 D37 维度：
 
 > **D37: 交互选项动态刷新完整性**
 > 

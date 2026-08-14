@@ -122,7 +122,7 @@
 
 - 现有规范 **已经提出方向**：
   - `AGENTS.md` 已写“App/网页边界隔离（强制）”
-  - `docs/ai-rules/global-systems.md` 已写“构建模式不是运行时边界”
+  - `.spec/knowledge/standards/global-systems.md` 已写“构建模式不是运行时边界”
 - 但当前规范 **还不够可执行**：
   - 没有明确列出禁止模式
   - 没有要求共享组件必须只走统一 helper

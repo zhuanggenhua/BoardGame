@@ -7,7 +7,7 @@
 - 仅收口本轮目标：**Summoner Wars 在线 AI seat + watchdog 卡死兜底证据**。不把本文扩写成“Summoner Wars 全量 AI 已审完”。
 
 ## 权威来源
-- `docs/ai-rules/testing-audit.md`（D3 / D5 / D8 / D15 / D39）
+- `.spec/knowledge/standards/testing-audit.md`（D3 / D5 / D8 / D15 / D39）
 - `src/games/summonerwars/rule/*.md`
 - `src/pages/onlineAiSeats.ts`
 - `src/engine/transport/server.ts`

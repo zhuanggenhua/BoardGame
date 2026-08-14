@@ -256,6 +256,6 @@
 
 ## 参考文档
 
-- `docs/ai-rules/testing-audit.md` - D1/D5/D37 维度定义
+- `.spec/knowledge/standards/testing-audit.md` - D1/D5/D37 维度定义
 - `src/games/smashup/abilities/aliens.ts` - alien_crop_circles 实现
 - `src/games/smashup/__tests__/fixtures/wikiSnapshots.ts` - Wiki 描述快照

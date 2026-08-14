@@ -4,11 +4,11 @@
 
 对大杀四方（Smash Up）游戏所有 16 个派系及全部基地中的多步骤/复杂能力进行系统性的「描述→实现全链路审查」。审查范围聚焦于涉及交互、选择、条件判断、持续效果、特殊触发时机的能力，单一效果能力（如"抽一张牌"、"获得1VP"）不在本次审查范围内。
 
-审查依据 `docs/ai-rules/testing-audit.md` 中的「描述→实现全链路审查规范」执行，以 `src/games/smashup/rule/大杀四方规则.md` 和 `public/locales/zh-CN/game-smashup.json` 中的 effectText/abilityText 为权威描述来源，逐条对比代码实现。
+审查依据 `.spec/knowledge/standards/testing-audit.md` 中的「描述→实现全链路审查规范」执行，以 `src/games/smashup/rule/大杀四方规则.md` 和 `public/locales/zh-CN/game-smashup.json` 中的 effectText/abilityText 为权威描述来源，逐条对比代码实现。
 
 ## 术语表
 
-- **全链路审查**：按 `docs/ai-rules/testing-audit.md`「描述→实现全链路审查规范」执行的八层审查流程
+- **全链路审查**：按 `.spec/knowledge/standards/testing-audit.md`「描述→实现全链路审查规范」执行的八层审查流程
 - **独立交互链**：任何需要独立触发条件、玩家输入或状态变更路径的效果，作为审查的原子单位
 - **八层**：定义层、注册层、执行层、状态层、验证层、UI 层、i18n 层、测试层
 - **审查矩阵**：独立交互链 × 八层的交叉表，每个交叉点标注 ✅/❌ 及具体证据

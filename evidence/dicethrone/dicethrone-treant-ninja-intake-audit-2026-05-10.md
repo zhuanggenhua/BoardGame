@@ -61,7 +61,7 @@
 
 本文件修订前曾把“选角可进入对局 + 静态资源可显示 + 少量 smoke 测试”写成接入完成。该结论现已失效：旧 E2E 只证明 `treant` / `ninja` 可被选择并进入游戏，不证明新增英雄的 token、被动、奖励骰、伤害修正等真实机制在 UI 链路中可触发、可展示、可收口。
 
-本修订版按当前仓库实际使用的新增派系 / 新英雄 workflow（`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/game-audit-workflow/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`）回写历史证据。需要强调的是：这些 workflow 在 2026-06-05 的现行口径下已经明确“新增批次默认全面审计留档、不再追问”，因此本文只能作为 2026-05-10 当轮 intake 证据快照，不能再被外推成当前默认收口范围。
+本修订版按当前仓库实际使用的新增派系 / 新英雄 workflow（`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/game-audit-workflow/SKILL.md` 与 `.spec/skills/dicethrone-hero-intake/SKILL.md`）回写历史证据。需要强调的是：这些 workflow 在 2026-06-05 的现行口径下已经明确“新增批次默认全面审计留档、不再追问”，因此本文只能作为 2026-05-10 当轮 intake 证据快照，不能再被外推成当前默认收口范围。
 
 ## 范围
 

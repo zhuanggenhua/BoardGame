@@ -334,6 +334,6 @@ if (!base.minions.some(m => m.controller === ctx.playerId)) continue;
 
 ## 参考文档
 
-- `docs/ai-rules/testing-audit.md` - D1 维度定义
+- `.spec/knowledge/standards/testing-audit.md` - D1 维度定义
 - `src/games/smashup/abilities/pirates.ts` - pirate_broadside 实现
 - `src/games/smashup/__tests__/fixtures/wikiSnapshots.ts` - Wiki 描述快照

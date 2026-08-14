@@ -12,7 +12,7 @@
 - 在线 AI watchdog / 自动反馈：`src/engine/transport/onlineAiRecovery.ts`、`src/engine/transport/server.ts`
 
 ## 2. 权威来源
-- 审计规范：`docs/ai-rules/testing-audit.md`
+- 审计规范：`.spec/knowledge/standards/testing-audit.md`
 - 当前仓库实现代码与注释（仅静态读码）
 
 ## 3. 审计方法与限制

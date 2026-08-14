@@ -44,7 +44,7 @@
   - 回归还原目标未唯一锁定时必须先停下或询问
 - worktree 版本明显更旧，若直接覆盖，会把这轮刚补强的硬门禁冲掉。
 
-### 2. `docs/ai-rules/doc-index.md`
+### 2. `.spec/knowledge/README.md`
 
 裁决：
 
@@ -55,7 +55,7 @@
 
 - `doc-index` 的职责是入口路由，不应被专项 worktree 旧版倒灌。
 
-### 3. `docs/ai-rules/document-consolidation.md`
+### 3. `.spec/decisions/document-consolidation.md`
 
 裁决：
 
@@ -92,7 +92,7 @@
 
 ## 二、应人工吸收 worktree 独有有效条目的文件
 
-### 1. `docs/ai-rules/e2e-verification.md`
+### 1. `.spec/knowledge/standards/e2e-verification.md`
 
 裁决：
 
@@ -139,7 +139,7 @@
 - 根目录当前版本已有 seam、层级、状态注入、真实场景真实性等主骨架。
 - worktree 版本里也有一些对根目录现版来说已重复或已被更强规则取代的段落，不宜整份覆盖。
 
-### 3. `docs/ai-rules/ui-ux.md`
+### 3. `.spec/knowledge/standards/ui-ux.md`
 
 裁决：
 
@@ -167,7 +167,7 @@
 - 这些条目都能直接拦住这次 Fantasy Realms UI 事故的具体错误动作。
 - 根目录当前版本已有大量截图、来源页、真实入口门禁，因此应补强而不是覆盖。
 
-### 4. `docs/ai-rules/generated-design-implementation.md`
+### 4. `.spec/knowledge/standards/generated-design-implementation.md`
 
 裁决：
 
@@ -188,7 +188,7 @@
 
 - 这些条目正面对应了本轮“错稿带偏”“把视觉稿偷渡成交互稿”“删目录前没先锁正式稿语义”的事故。
 
-### 5. `docs/ai-rules/animation-effects.md`
+### 5. `.spec/knowledge/standards/animation-effects.md`
 
 裁决：
 
@@ -205,7 +205,7 @@
 
 ## 三、当前不建议再从 worktree 抬回主线的条目
 
-### 1. `docs/ai-rules/ui-ux.md` 里的 Skill 路由细节
+### 1. `.spec/knowledge/standards/ui-ux.md` 里的 Skill 路由细节
 
 裁决：
 

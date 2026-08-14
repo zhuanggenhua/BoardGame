@@ -13,7 +13,7 @@ description: "BoardGame 线上反馈批量收口流程。用于未关闭反馈�
   - 处理线上反馈
   - `open / in_progress / resolved / closed`
   - `closedReason / resolvedMethod`
-  - 本地分诊板是否需要写
+  - 本地状态镜像何时必须写
   - HTTP 回写与 SSH / Mongo 回写切换
   - 反馈状态与部署状态拆轴
   都只以本文件为准。
@@ -33,14 +33,14 @@ description: "BoardGame 线上反馈批量收口流程。用于未关闭反馈�
 
 当用户说“处理反馈/收口反馈/修复反馈”时，**默认必须同时覆盖下面这些动作**，不能只做其中一部分就对外宣称“已处理”：
 
-1. **拉取最新线上真实反馈**（或明确获得用户许可改用生产库直连），必要时可同步到本地分诊板。
+1. **拉取最新线上真实反馈**（或明确获得用户许可改用生产库直连），并立即同步到本地状态镜像。
 2. **排重与代表项归并**，只对代表项进行分诊与处理。
 3. **分诊与结论**：判定是真 bug / 误报 / 建议 / 已修复待回写 / 证据不足等。
 4. **若是真 bug：修复 + 验证 + 证据**（测试、截图或日志证据），不得只改状态。
-5. **状态回写**：把正式状态与关闭/解决理由回写到远端真实反馈记录。
-6. **更新正式留档**：默认只更新线上真实反馈记录本身；若需要说明真实写入口或阻塞，只写最小临时诊断材料，不额外产出第二份正式收口档。
+5. **状态双回写**：把正式状态与关闭/解决理由回写到远端真实反馈记录，同时把同一结论同步到本地状态镜像。
+6. **更新正式留档与本地镜像**：线上真实反馈记录仍是唯一正式留档；本地状态镜像只作为当前仓库内可见的同步副本，但必须随线上状态立刻更新，不允许滞后。
 
-**注意**：仅回写状态 ≠ 修复完成；仅本地验证但未回写 ≠ 已收口。对外汇报时必须清楚说明本轮到底完成了哪些步骤。
+**注意**：仅回写状态 ≠ 修复完成；仅本地验证但未回写线上与本地镜像 ≠ 已收口。对外汇报时必须清楚说明本轮到底完成了哪些步骤。
 
 ## 完成门禁（强制）
 
@@ -94,16 +94,19 @@ description: "BoardGame 线上反馈批量收口流程。用于未关闭反馈�
 
 - `temp/feedback-closeout/**`、`evidence/feedback-closeout/**`、本地截图、导出文本、诊断包，默认都只算**临时工作材料**，不是正式留档。
 - 正式状态、`closedReason`（关闭理由）、`resolvedMethod`（解决方式）的唯一留档入口，统一以**线上真实反馈记录**为准。
+- **线上反馈的本地诊断副本仍必须回写线上状态（强制，2026-08-13 补强）**：当用户说“本地反馈 / 看本地反馈 / `temp/feedback-closeout`”，如果使用的 `summary.json` 是由线上真实反馈接口生成（例如 `baseUrl` 指向 `https://api.easyboardgame.top`），并且条目带有真实反馈 ID，则该目录只是线上反馈的本地诊断副本；结论成立后必须立即把对应线上真实反馈推进到 `resolved/closed`，不得用“本地”作为跳过正式状态回写的理由。
+- **本地状态镜像也必须立刻同步（强制，2026-08-13 重写）**：基于线上反馈处理出的每一次 `in_progress / resolved / closed` 结论，都必须同步写入 `temp/feedback-closeout/status-board.json`。线上真实记录是正式权威，本地状态板是强制镜像；两者职责不同，但状态不得一边更新、一边滞后。
+- 基于本地诊断副本收口时，最终回复前必须把本轮覆盖的代表反馈 ID 与 `summary.json` 中的同组重复 ID 对齐检查：代表项已 `resolved` 时线上同组都应 `resolved`，本地镜像也应记录该组所有反馈 ID 跟随 `resolved`；代表项已 `closed` 时线上同组都应 `closed`，本地镜像也应记录该组所有反馈 ID 跟随 `closed`；未能回写的条目必须逐条说明现实后果、证据缺口或写入口阻塞。
 - 默认动作：
-  - 不创建本地 `status-board`
+  - 创建或更新本地 `status-board`
   - 不额外写本地 feedback closeout 文档
-  - 不把本地 evidence 当成“收口已完成”的依据
+  - 不把本地 evidence 当成“正式留档”，但必须把本地状态镜像当成收口检查项
 - 允许例外：
   - 远端真实写入口阻塞，必须临时记阻塞证据
   - 需要并行分派，且远端状态不足以支撑分工
   - 用户当轮明确要求保留本地文档/截图/复盘材料
 - 即使出现这些例外，本地材料也仍然只是临时诊断，不升级为第二正式留档点。
-- 旧的 `status-board`、历史 `evidence` 文档若已存在，只按历史辅助材料看待；**不得继续把它们当默认入口或必经留档步骤**。
+- 旧的 `status-board`、历史 `evidence` 文档若已存在，只按历史辅助材料看待；当前批次必须重新同步到 `temp/feedback-closeout/status-board.json`，不得复用旧状态板冒充本轮本地镜像。
 
 ### 同轮流程缺口回填（强制，2026-06-10 新增）
 
@@ -122,26 +125,27 @@ description: "BoardGame 线上反馈批量收口流程。用于未关闭反馈�
   - `发布/部署状态` 只回答“修复代码是否已经 push / 已上线 / 已部署 / 已观察”
   - 两条轴都要记录，但**不得**把“还没发布/还没部署”当成“不能回写反馈状态”的理由
   - 如果本轮已确认“修复 + 验证 + 证据”成立，就必须先把反馈推进到 `resolved/closed`；发布、部署、观察属于后续单独事项
-- 只要某条反馈已经满足“修复 + 验证 + 证据”三件套，就**不得**继续长时间停留在“本地已修 / 远端未回写”的中间态。
+- 只要某条反馈已经满足“修复 + 验证 + 证据”三件套，就**不得**继续长时间停留在“本地已修 / 远端未回写”或“远端已回写 / 本地镜像未回写”的中间态。
 - **修复完毕后立刻收口（强制，2026-05-25 补强）**：当代码修复、定向验证和 evidence 已经证明原始反馈链路被覆盖时，必须立即把对应反馈推进到 `resolved/closed` 回写流程；不得再用“还没部署”“还没在线上复测”“等线上不再复发”作为继续保留 `open/in_progress` 的理由。
 - 这条规则的理由是：AI 在本地修复后无法在未部署新代码的线上生产环境验证修复后行为；生产环境仍运行旧代码时，“线上复测不复发”不是可取得证据。若把线上复测当成回写前置条件，会把所有已修反馈永久卡在中间态，造成状态板和真实修复进度失真。
 - 默认动作应是：
   1. 立刻执行远端正式状态回写，并同时写入 `closedReason/resolvedMethod`
-  2. 立刻复核远端状态与剩余未收口数量
-  3. 默认不再补本地留档；只有在需要临时阻塞说明、并行认领或用户明确要求时，才生成最小本地诊断材料
+  2. 立刻同步 `temp/feedback-closeout/status-board.json`，记录同一状态、同一理由、同组反馈 ID 和验证证据
+  3. 立刻复核远端状态、本地镜像状态与剩余未收口数量
+  4. 默认不再补额外本地留档；只有在需要阻塞说明、并行分派或用户明确要求时，才生成额外临时诊断材料
 - 只有在以下场景才允许暂不回写，并且必须在当轮汇报里显式写明阻塞：
   - 真实写入口不可用；
   - 用户明确要求“先别回写”；
   - 结论仍存在证据缺口，尚不能判为 `resolved/closed`。
 - `resolved` 的判定不以生产部署、线上复测或未来复发观察为前置条件。部署状态、CI 状态、发布窗口、线上后续观察只能作为后续待办单独记录；只要当前反馈已经有“根因定位 + 修复 + 验证 + evidence”，就必须回写 `resolved`。如果部署后再次出现同根因，应按新反馈/聚合项重新处理，而不是用不可证明的“等不复发”提前阻塞当前回写。
 - 对外汇报时若修复尚未部署，必须直说“反馈状态已回写，但部署状态未完成/未核对”；禁止把两件事混成一句“还不能回写”。
-- 禁止把“先记到本地，等攒几条一起回写”当作默认流程；除非用户明确要求批量统一回写。
+- 禁止把“先记到本地，等攒几条一起回写线上”或“先回写线上，等最后再补本地镜像”当作默认流程；除非用户明确要求暂停其中一边。
 
-旧的本地状态板脚本仅保留为阻塞场景 fallback，不再是默认流程：
+本地状态镜像是默认流程，必须在每次线上认领或终态回写后立即执行：
 
 ```bash
 node .spec/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/feedback-closeout/<timestamp>/summary.json
-node .spec/skills/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status in_progress --owner codex --notes "<仅在阻塞/并行分派时使用>"
+node .spec/skills/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status in_progress --owner codex --notes "<接手说明>"
 node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json
 ```
 
@@ -149,7 +153,7 @@ node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-boa
 
 - 默认目标必须是线上真实反馈。
 - 对外口径默认也必须是线上真实反馈；若本轮使用本地/离线视图，必须显式标注“本地口径”，禁止混说成线上结果。
-- 本地开发 API、本地 Mongo、本地导出目录、`feedbacks.repaired.json`、`temp/*.json`、网页域名上返回的 SPA HTML，都只能用于辅助诊断、证据整理和人审，不得默认视为“已经改到真实反馈状态”。
+- 本地开发 API、本地 Mongo、本地导出目录、`feedbacks.repaired.json`、`temp/*.json`、网页域名上返回的 SPA HTML，都只能用于辅助诊断、证据整理和人审，不得默认视为“已经改到真实反馈状态”；但由线上真实接口生成且带真实反馈 ID 的 `temp/feedback-closeout/**/summary.json`，必须按线上反馈的本地诊断副本处理，不能降级成离线视图。
 - 只要要执行 `in_progress / resolved / closed` 这类正式状态回写，必须先确认当前连接的就是线上真实反馈源。
 - 如果当前拿到的是本地开发库、测试库、历史导出快照，必须明确标成“本地/离线视图”，禁止对外宣称“已回写”。
 
@@ -200,7 +204,7 @@ node .spec/skills/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 - 选出一组 `parallelCandidates`，用于后续并行分派
 - 可选把 `parallelCandidates` 立即改成 `in_progress`
 
-拉取完成后，默认直接进入分诊与远端回写；只有在本轮确实需要本地并行认领/阻塞备注时，才允许把本批 `summary.json` 同步到本地分诊板：
+拉取完成后，必须先把本批 `summary.json` 同步到本地状态镜像，再进入分诊与远端回写；禁止把本地镜像同步降级成“并行认领/阻塞时才需要”的可选动作：
 
 ```bash
 node .spec/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/feedback-closeout/<timestamp>/summary.json
@@ -363,9 +367,9 @@ node .spec/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 1. **先看线上真实反馈状态**
    - 先确认目标反馈当前在真实线上记录里是不是已经 `resolved/closed`
    - 若线上已经收口，禁止再次当成待修 bug 派单
-2. **必要时再看本地分诊板**
+2. **同时看本地状态镜像**
    - `temp/feedback-closeout/status-board.json`
-   - 只把它当交接/并行认领线索，不得覆盖线上正式状态；若本轮没显式使用它，默认跳过
+   - 只把它当本地同步镜像与交接线索，不得覆盖线上正式状态；但本轮处理反馈时必须检查它是否与线上状态一致，不得默认跳过
 3. **再看最近证据与最近改动**
    - 优先看线上真实反馈记录里的 `closedReason / resolvedMethod / status`
    - 如仓库里已有历史 `evidence/`，只把它当辅助参考，不再要求新建同类文档
@@ -514,18 +518,21 @@ node .spec/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 
 执行顺序硬规则：
 
-1. 决定接手该条反馈的当下，就把线上真实记录改成 `in_progress`
-2. 一旦结论变成“已修好”或“确认不是 bug”，立刻把线上真实记录推进到 `resolved/closed`
-3. 推进到 `resolved/closed` 时，必须同时回写对应理由字段；若真实写入口支持两种理由字段并且不会引入歧义，默认补齐结论字段，不得留空
+1. 决定接手该条反馈的当下，就把线上真实记录和本地状态镜像同时改成 `in_progress`
+2. 一旦结论变成“已修好”或“确认不是 bug”，立刻把线上真实记录和本地状态镜像同时推进到 `resolved/closed`
+3. 推进到 `resolved/closed` 时，线上与本地都必须同时回写对应理由字段；若真实写入口支持两种理由字段并且不会引入歧义，默认补齐结论字段，不得留空；本地镜像还必须保留对应 evidence / verification / screenshots 路径
 4. 不得等“这一批都看完再一起改状态”
-5. 不得出现“代码已经改完、测试已经跑过、但线上状态还停在 `open/in_progress`”的长时间滞留
-6. 若因为远端回写阻塞导致无法同步正式状态，必须当场记录阻塞；需要交接时可补到本地分诊板，不得静默留待下一轮
+5. 不得出现“代码已经改完、测试已经跑过、但线上状态还停在 `open/in_progress`”或“线上已 `resolved/closed`、本地镜像仍停在旧状态”的滞留
+6. 若线上回写阻塞，必须当场把本地镜像标为 `blocked` 并写明阻塞原因；若本地镜像回写阻塞，必须继续修本地镜像，不得把线上已更新冒充为完整收口
+7. 最终回复前必须同时回查线上真实记录和本地状态镜像；任一侧未更新，均不得宣称反馈状态已收口
 
-本地分诊板不是默认双写目标：
+本地状态镜像是默认双写目标：
 
-1. 默认只回写线上真实状态，不再同步第二份本地留档
-2. 只有远端回写阻塞、需要并行认领或需要交接时，才临时补 `temp/feedback-closeout/status-board.json`
-3. 若远端回写失败且要继续交接，必须在本地分诊板补 `notes` 说明阻塞原因，任务结束后仍不得把它当正式留档
+1. 默认同时回写线上真实状态和 `temp/feedback-closeout/status-board.json`
+2. 本地状态镜像不是正式留档，不改变线上真实记录的权威性；它的职责是让当前仓库内能立刻看到同一批反馈的处理状态、理由和证据路径
+3. 同组反馈在线上跟随代表项更新时，本地镜像也必须为代表项和每个同组反馈 ID 都生成或更新对应条目，不允许只写代表项
+4. 线上写成功但本地镜像写失败时，本轮反馈状态回写仍未完成，必须继续修本地镜像；本地镜像写成功但线上写失败时，只能称为本地阻塞记录，不能宣称线上已收口
+5. 若远端回写失败且要继续交接，必须在本地状态镜像补 `blocked` 和 `notes` 说明阻塞原因，任务结束后仍不得把它当正式留档
 
 使用：
 
@@ -586,13 +593,13 @@ node .spec/skills/feedback-closeout/scripts/finalize-feedback-group.mjs temp/fee
 - `triage-open-feedback.mjs`
   - 拉取开放反馈、排重、分类、生成诊断包与并行候选。
 - `update-feedback-status.mjs`
-  - 用开放接口回写状态。
+  - 用开放接口回写状态，并同步更新本地状态镜像。
 - `finalize-feedback-group.mjs`
-  - 按 `summary.json` 收口代表项，并默认把同组反馈同步为代表项的最终状态。
+  - 按 `summary.json` 收口代表项，并默认把同组反馈在线上与本地状态镜像同步为代表项的最终状态。
 - `sync-feedback-status-board.mjs`
-  - 仅在阻塞/并行认领时，从 `summary.json` 初始化临时本地状态板。
+  - 从 `summary.json` 初始化或刷新本地状态镜像，必须覆盖代表项和同组反馈 ID。
 - `update-local-feedback-board.mjs`
-  - 仅在阻塞/并行认领时，临时更新单条反馈的本地备注。
+  - 更新单条反馈或同组反馈的本地状态镜像；线上回写后必须随即调用或由线上回写脚本自动调用。
 
 ### references/
 

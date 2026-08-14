@@ -434,6 +434,7 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'rage' }),
                     cmd('PLAY_CARD', '0', { cardId: 'card-more-please' }),
+                    cmd('SKIP_BONUS_DICE_REROLL', '0'),
                     cmd('ADVANCE_PHASE', '0'),
                 ],
                 expect: {

@@ -119,7 +119,7 @@
 
 ## 页面承接 E2E 补证
 
-2026-07-04 按 `docs/ai-rules/e2e-verification.md` 和 `docs/ai-rules/testing-audit.md` 重审后，事件牌页面承接口径已拆成两层：`Board.foundation.test.tsx` 只作为组件/React 层承接证据，不能替代真实浏览器 E2E；真实浏览器 E2E 由 `e2e/betrayal/event-choice-coverage.e2e.ts` 承接。
+2026-07-04 按 `.spec/knowledge/standards/e2e-verification.md` 和 `.spec/knowledge/standards/testing-audit.md` 重审后，事件牌页面承接口径已拆成两层：`Board.foundation.test.tsx` 只作为组件/React 层承接证据，不能替代真实浏览器 E2E；真实浏览器 E2E 由 `e2e/betrayal/event-choice-coverage.e2e.ts` 承接。
 
 2026-07-12 按 TDD 化审计口径回写：下文的“23 张 locked 官方事件逐张登记”只表示录入合同逐对象锁定，不表示每张事件牌都需要独立真实浏览器 E2E 截图链。页面验证按行为 family 做代表链；同构自动投骰、自动属性变化、自动伤害、自动抽牌、固定放置或复合自动效果复用共享结算链。只有新交互、不同消费者、高风险时序、旧证据失效或 deferred/finalize 差异分支，才补独立页面链。
 

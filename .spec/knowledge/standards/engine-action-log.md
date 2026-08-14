@@ -1,3 +1,11 @@
+---
+name: engine-action-log
+description: 行动日志标准：事件、可见记录和反馈追踪——改 action log 或事件展示时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # ActionLogSystem 使用规范
 
 ## ActionLogSystem 使用规范（强制）

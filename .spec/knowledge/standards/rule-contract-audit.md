@@ -1,3 +1,11 @@
+---
+name: rule-contract-audit
+description: 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 规则合同审计门禁
 
 > 适用：用户反馈“规则不对 / 等级效果不一致 / 不是这个等级能做 / 审计漏了 / 回归了”，或本轮准备修复卡牌、技能、Token、状态、阶段结算等规则 bug。

@@ -356,7 +356,7 @@ test.describe('DiceThrone 核心 E2E', () => {
         });
 
         await settleCurrentBonusDice(page, () => readDiceThroneHarnessState<DiceThroneMatchState>(page), {
-            sourceAbilityId: 'meditation',
+            sourceAbilityId: 'taiji-combo',
         });
 
         await expect.poll(async () => {
@@ -385,10 +385,6 @@ test.describe('DiceThrone 核心 E2E', () => {
         await game.screenshot('07-武僧连段冲拳二-奖励骰后-选择闪避或净化-无让过按钮', testInfo);
 
         await page.getByRole('button', { name: '闪避', exact: true }).click();
-
-        await settleCurrentBonusDice(page, () => readDiceThroneHarnessState<DiceThroneMatchState>(page), {
-            sourceAbilityId: 'meditation',
-        });
 
         await page.waitForFunction(
             () => {

@@ -87,7 +87,7 @@ const buildAfterRollConfirmedWindowEvent = (
     timestamp: number,
     commandType: string,
 ): ResponseWindowOpenedEvent | null => {
-    const rollSignature = buildAfterRollConfirmedSignature(state);
+    const rollSignature = buildAfterRollConfirmedSignature(state, phase);
     if (hasAfterRollConfirmedWindowBeenHandled(state, rollSignature)) {
         return null;
     }

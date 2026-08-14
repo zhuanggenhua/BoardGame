@@ -1,3 +1,11 @@
+---
+name: golden-rules
+description: 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # Golden Rules — 详细规范与代码示例
 
 > 本文档是 `AGENTS.md` 的补充，包含历史教训的详细代码示例与排查流程。

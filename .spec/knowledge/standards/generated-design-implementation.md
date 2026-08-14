@@ -1,3 +1,11 @@
+---
+name: generated-design-implementation
+description: 生成设计落地标准：设计稿到前端实现的可复刻边界——按视觉稿实现 UI 时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 生图设计稿到实现流程
 
 > 触发条件：使用 AI 生成图、设计稿、参考图、截图或 mockup 作为 UI 实现目标时必读。本文补充 `.spec/knowledge/standards/ui-ux.md`，专门约束“先生成设计稿，再按设计稿实现”的交付流程。

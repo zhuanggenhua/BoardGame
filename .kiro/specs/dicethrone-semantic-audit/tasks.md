@@ -1200,7 +1200,7 @@
 
 ## 任务 19：D10 Custom Action target 间接引用重审
 
-审查范围：根据 `docs/ai-rules/testing-audit.md` 新增的 D10 子项，对所有 custom action handler 重新核查 targetId 来源是否正确。
+审查范围：根据 `.spec/knowledge/standards/testing-audit.md` 新增的 D10 子项，对所有 custom action handler 重新核查 targetId 来源是否正确。
 
 ### 审计方法论
 
@@ -1480,7 +1480,7 @@ DiceThrone 的阶段边界交互全部正确处理：
 
 ## 任务 23：优化 testing-audit.md 通用性
 
-**目标**：将 `docs/ai-rules/testing-audit.md` 中游戏特定细节与通用审计方法论分离，使文档适用于任何新游戏。
+**目标**：将 `.spec/knowledge/standards/testing-audit.md` 中游戏特定细节与通用审计方法论分离，使文档适用于任何新游戏。
 
 ### 优化点（共 7 项）
 

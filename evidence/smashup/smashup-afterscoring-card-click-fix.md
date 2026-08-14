@@ -79,7 +79,7 @@ console.log('[DEBUG] handleCardClick:', {
 ## 相关文件
 
 - `src/games/smashup/Board.tsx` (line 1228)
-- `docs/ai-rules/golden-rules.md` (React Hooks 规范)
+- `.spec/knowledge/standards/golden-rules.md` (React Hooks 规范)
 
 ## 状态
 

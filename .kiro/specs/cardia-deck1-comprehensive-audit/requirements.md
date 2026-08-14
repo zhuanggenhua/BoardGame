@@ -2,7 +2,7 @@
 
 ## Introduction
 
-本规范定义 Cardia 游戏 Deck I (card01-card16) 的全面审计需求，系统性地审查所有卡牌效果实现和 E2E 测试覆盖。审计基于 `docs/ai-rules/testing-audit.md` 的 D1-D49 维度框架，确保实现完整性、测试覆盖完整性和质量标准。
+本规范定义 Cardia 游戏 Deck I (card01-card16) 的全面审计需求，系统性地审查所有卡牌效果实现和 E2E 测试覆盖。审计基于 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 维度框架，确保实现完整性、测试覆盖完整性和质量标准。
 
 ## Glossary
 
@@ -10,7 +10,7 @@
 - **Ability**: 卡牌能力，分为即时能力（onLose）和持续能力（ongoing）
 - **Implementation**: 能力的代码实现，包括 abilityRegistry 定义和 group*.ts 执行器
 - **E2E Test**: 端到端测试，验证完整的用户交互流程
-- **Audit Dimension**: 审计维度，来自 `docs/ai-rules/testing-audit.md` 的 D1-D49 检查项
+- **Audit Dimension**: 审计维度，来自 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 检查项
 - **AUDIT-REPORT.md**: 现有审计报告，位于 `.kiro/specs/cardia-ability-implementation/AUDIT-REPORT.md`
 
 ## Requirements
@@ -77,7 +77,7 @@
 
 ### Requirement 6: D1-D49 维度覆盖
 
-**User Story:** 作为开发者，我想要确保审计覆盖 `docs/ai-rules/testing-audit.md` 定义的所有关键维度。
+**User Story:** 作为开发者，我想要确保审计覆盖 `.spec/knowledge/standards/testing-audit.md` 定义的所有关键维度。
 
 #### Acceptance Criteria
 

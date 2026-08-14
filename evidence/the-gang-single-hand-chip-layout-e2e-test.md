@@ -45,12 +45,12 @@
 - `node scripts/infra/run-e2e-single.mjs ci e2e/the-gang/the-gang-runtime.e2e.ts "桌面端单副手牌先拿筹码后自己的筹码显示在一副手牌上方"`：通过，`1 passed`，并生成最终压力态图。
 - AI 图面核验：通过。压力态图能看到自己的 4 枚筹码在两张本地手牌正上方，公共牌、顶部玩家、左下入口、右上状态和“摊牌”按钮都没有被遮挡。
 - 本机开图：通过。`npm run verify:open-image -- "<压力态原图>" "<标注辅助图>"` 返回两条 `OPENED_IMAGE=`，已打开原始压力态图和圈出自己的筹码位置的辅助图。
-- `git diff --check -- .spec/skills/screenshot-delivery/SKILL.md docs/ai-rules/e2e-verification.md docs/ai-rules/doc-index.md e2e/the-gang/the-gang-runtime.e2e.ts`：通过。
+- `git diff --check -- .spec/skills/screenshot-delivery/SKILL.md .spec/knowledge/standards/e2e-verification.md .spec/knowledge/README.md e2e/the-gang/the-gang-runtime.e2e.ts`：通过。
 - `python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py D:\codex-home\skills\ui-audit-loop`：通过，`Skill is valid!`。
 
 ## 规范更新
 
 - `D:\codex-home\skills\ui-audit-loop\SKILL.md`：新增“验收口径变更后旧截图必须重新归类”，旧图不满足新压力态口径时只能作历史/局部诊断/失败/过期证据。
 - `.spec/skills/screenshot-delivery/SKILL.md`：新增 `10B`，项目截图交付中禁止把旧截图沿用为新口径下的最终验收图。
-- `docs/ai-rules/e2e-verification.md`：新增 `14B.2`，E2E 截图验收口径更新后必须降级旧图或重拍。
-- `docs/ai-rules/doc-index.md`：E2E 与截图验收入口摘要加入“验收口径更新后旧截图必须按新口径降级或重拍”。
+- `.spec/knowledge/standards/e2e-verification.md`：新增 `14B.2`，E2E 截图验收口径更新后必须降级旧图或重拍。
+- `.spec/knowledge/README.md`：E2E 与截图验收入口摘要加入“验收口径更新后旧截图必须按新口径降级或重拍”。

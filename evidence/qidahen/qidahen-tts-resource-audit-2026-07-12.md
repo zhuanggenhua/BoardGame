@@ -17,7 +17,7 @@
 | TTS 图片目录 | `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images` | 70 个本地图片文件，可作为资源核对入口 |
 | 当前正式资源 | `public/assets/i18n/zh-CN/qidahen/assets-manifest.json` | 当前资源树统计为 133 个文件，清单已覆盖正式运行资源，不能仅按 TTS 文件名判断缺失 |
 | 规则真相源 | `src/games/qidahen/rule/七大恨规则.md` | 1619、1622、1627 起始设置以规则书为强真相源 |
-| 区域拓扑文档 | `docs/games/qidahen/workflows/qidahen-region-topology-truth-sources.md` | 明确 `朵颜部` 尚未作为已确认独立闭合命名区落入正式印刷区表 |
+| 区域拓扑文档 | `docs/games/qidahen/records/qidahen-region-topology-truth-sources.md` | 明确 `朵颜部` 尚未作为已确认独立闭合命名区落入正式印刷区表 |
 
 ## TTS 对象观察
 

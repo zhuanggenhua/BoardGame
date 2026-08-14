@@ -146,6 +146,7 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
   payload: BetrayalCommandMap[Type],
   timestamp = 100,
   random: RandomFn = BETRAYAL_FIXED_RANDOM,
+  finalizeEventRoll = true,
 ): BetrayalCore {
   syncLegacyTestCoreTraitTracks(core);
   const nextCommand = createBetrayalCommand(type, playerId, payload, timestamp);
@@ -155,10 +156,26 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
       validation.error ?? `invalid betrayal command: ${String(type)}`,
     );
   }
-  return BetrayalDomain.execute(stateOf(core), nextCommand, random).reduce(
+  const nextCore = BetrayalDomain.execute(stateOf(core), nextCommand, random).reduce(
     (nextCore, event) => BetrayalDomain.reduce(nextCore, event),
     core,
   );
+  if (
+    finalizeEventRoll
+    && type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
+    && nextCore.pendingEventRollResolution
+  ) {
+    return applyBetrayalCommand(
+      nextCore,
+      BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+      nextCore.pendingEventRollResolution.playerId,
+      { rollId: nextCore.pendingEventRollResolution.rollId },
+      timestamp,
+      random,
+      false,
+    );
+  }
+  return nextCore;
 }
 
 export function acknowledgePendingCardResolutions(core: BetrayalCore): BetrayalCore {
@@ -1115,6 +1132,14 @@ export function createDustHauntCore(
       { accept: true },
       100,
       createBetrayalScriptedRandom(3, 3, 3),
+    );
+  }
+  if (core.pendingEventRollResolution) {
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+      "0",
+      { rollId: core.pendingEventRollResolution.rollId },
     );
   }
   core = acknowledgePendingCardResolutions(core);

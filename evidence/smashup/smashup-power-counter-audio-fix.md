@@ -107,6 +107,6 @@ feedbackResolver: (event) => {
 ## 相关文档
 
 - `evidence/smashup/smashup-minion-destroyed-sound-fix.md` - 消灭随从音效修复（registry 扫描问题）
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 - `src/lib/audio/useGameAudio.ts` - 音频播放机制
 - `src/games/smashup/domain/events.ts` - 事件音频配置

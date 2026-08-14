@@ -4,7 +4,7 @@ import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
-import { MAX_HEALTH, type DiceThroneCore } from '../types';
+import { MAX_HEALTH, type DiceThroneCore, type DieFace } from '../types';
 import { updatePendingAttackSettlementStage } from '../utils';
 import type {
     BonusDieRolledEvent,
@@ -533,7 +533,7 @@ function handleHealBotUse({ targetId, state, timestamp, random }: CustomActionCo
                 playerId: targetId,
                 targetPlayerId: targetId,
                 effectKey: 'bonusDie.effect.artificerHealBot',
-                effectParams: { value, heal: healAmount },
+                effectParams: { value, heal: healAmount, healAmount },
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
@@ -542,7 +542,13 @@ function handleHealBotUse({ targetId, state, timestamp, random }: CustomActionCo
             'artificer-heal-bot-use',
             targetId,
             targetId,
-            [{ index: 0, value, face: face as any, effectKey: 'bonusDie.effect.artificerHealBot', effectParams: { value, heal: healAmount } }],
+            [{
+                index: 0,
+                value,
+                face: face as DieFace,
+                effectKey: 'bonusDie.effect.artificerHealBot',
+                effectParams: { value, heal: healAmount, healAmount },
+            }],
             timestamp + 0.001,
             {
                 customResolutionId: ARTIFICER_HEAL_BOT_SETTLEMENT_ID,
@@ -664,7 +670,7 @@ function buildWrenchStrikeBonusEvents(
         sourceAbilityId ?? ARTIFICER_WRENCH_STRIKE_SETTLEMENT_ID,
         attackerId,
         state.pendingAttack?.defenderId ?? attackerId,
-        [{ index: 0, value, face: face as any, effectKey: faceToEffectKey[face] ?? 'bonusDie.effect.artificerWrenchStrikeWrench', presentationKind }],
+        [{ index: 0, value, face: face as DieFace, effectKey: faceToEffectKey[face] ?? 'bonusDie.effect.artificerWrenchStrikeWrench', presentationKind }],
         timestamp + 0.001,
         {
             customResolutionId: ARTIFICER_WRENCH_STRIKE_SETTLEMENT_ID,
@@ -756,7 +762,7 @@ function handlePerfectlyCalibratedRoll({ attackerId, sourceAbilityId, state, tim
                 playerId: attackerId,
                 targetPlayerId: attackerId,
                 effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
-                effectParams: { value, synth: synthGain },
+                effectParams: { value, synth: synthGain, synthGain },
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
@@ -765,7 +771,13 @@ function handlePerfectlyCalibratedRoll({ attackerId, sourceAbilityId, state, tim
             sourceAbilityId,
             attackerId,
             attackerId,
-            [{ index: 0, value, face: face as any, effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated', effectParams: { value, synth: synthGain } }],
+            [{
+                index: 0,
+                value,
+                face: face as DieFace,
+                effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
+                effectParams: { value, synth: synthGain, synthGain },
+            }],
             timestamp + 0.001,
             {
                 customResolutionId: ARTIFICER_PERFECTLY_CALIBRATED_SETTLEMENT_ID,

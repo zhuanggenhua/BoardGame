@@ -140,7 +140,7 @@ git mergetool path/to/file
 - 如果某个冲突块最终只能保留单边内容，必须能明确说明：
   - 为什么另一边内容已过时、重复、错误或与当前实现冲突
   - 为什么单边保留不会把已上线/已验证的小功能、断言、文案、类型字段静默裁掉
-- 对共享骨架、通用 UI、规则/校验、测试断言、i18n key、类型定义，以及 **规则/规范文档（AGENTS.md、docs/ai-rules/**、.codex/rules/**、.codex/workflows/**、.spec/skills/**、docs/git-merge-checklist.md）** 等高风险区域，默认按“**双方内容都可能有效**”处理，优先做块级合并而不是整份覆盖。
+- 对共享骨架、通用 UI、规则/校验、测试断言、i18n key、类型定义，以及 **规则/规范文档（AGENTS.md、CLAUDE.md、.spec/rules/**、.spec/knowledge/standards/**、.spec/agents/**、.spec/skills/**、openspec/**、docs/git-merge-checklist.md）** 等高风险区域，默认按“**双方内容都可能有效**”处理，优先做块级合并而不是整份覆盖。
 - `npm run merge:audit -- HEAD` 只能帮助发现“整份吃成单边”的风险，**不能替代逐冲突点的语义裁决**；审计通过不等于冲突解决正确。
 
 #### 业务规则真相源优先（强制）
@@ -364,7 +364,7 @@ npm run merge:audit:strict -- HEAD
 - 若某项属于“仅业务口径 / 规则变化”，必须补充建议更新落点，例如：
   - `src/games/<gameId>/rule/`
   - `AGENTS.md`
-  - `docs/ai-rules/*.md`
+  - `.spec/knowledge/standards/*.md`
   - 对应 `evidence` / spec / 测试注释
 - 如果本次未发现额外回归，也必须显式写明“本次未发现额外回归，仅处理原 PR 目标问题”
 
@@ -379,7 +379,7 @@ npm run merge:audit:strict -- HEAD
 合并完成后必须扫描冲突标记，任何命中都视为合并未完成：
 
 ```bash
-rg -n "^(<<<<<<<|=======|>>>>>>>)" AGENTS.md docs .codex src e2e
+rg -n "^(<<<<<<<|=======|>>>>>>>)" AGENTS.md CLAUDE.md .spec docs src e2e
 ```
 
 ### 1. 文件完整性检查

@@ -161,7 +161,7 @@
 
 ### L1 结构证据
 
-- BTR-03 文案检索命令：`rg -n "结算房间|Resolve Room|actionCueEndTurnRoomEffect|endTurnRoomEffect" public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal/__tests__/Board.foundation.test.tsx e2e/betrayal/room-effect-representative.e2e.ts docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md evidence/betrayal-playability-overhaul-2026-07-14.md`
+- BTR-03 文案检索命令：`rg -n "结算房间|Resolve Room|actionCueEndTurnRoomEffect|endTurnRoomEffect" public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal/__tests__/Board.foundation.test.tsx e2e/betrayal/room-effect-representative.e2e.ts docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md evidence/betrayal-playability-overhaul-2026-07-14.md`
 - 结果：运行时 i18n 已改为 `结束回合` / `End Turn`；“结算房间”只保留在测试负向断言、专项问题描述和 evidence 说明中。
 - 结论：用户点名的无规则动作名不再从运行时按钮或主提示文案外露。
 
@@ -756,7 +756,7 @@
 ### L4 治理证据
 
 - 当前边界：见第 8 节。
-- 通用端到端规范已补强：`docs/ai-rules/e2e-verification.md` 现在要求流程截图证据链按六段登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，并要求滚动、选项尺寸、背景框、属性颜色、骰子重叠、效果触发等用户点名目标必须在同一条主链中被证明；同时新增“端到端结果必须回扣本轮问题”，要求测试名、断言、截图和 evidence 命中用户点名的现实结果。无弹层流程也必须证明临时选择/目标锁定清空和主牌桌继续可操作；缺列或缺段必须降级为阶段承接链路。`docs/testing-best-practices.md` 也已同步把“完整流程 E2E”收紧为六段链，避免旧口径继续把“入口 -> 中间步骤 -> 结算”误写成完整端到端。
+- 通用端到端规范已补强：`.spec/knowledge/standards/e2e-verification.md` 现在要求流程截图证据链按六段登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，并要求滚动、选项尺寸、背景框、属性颜色、骰子重叠、效果触发等用户点名目标必须在同一条主链中被证明；同时新增“端到端结果必须回扣本轮问题”，要求测试名、断言、截图和 evidence 命中用户点名的现实结果。无弹层流程也必须证明临时选择/目标锁定清空和主牌桌继续可操作；缺列或缺段必须降级为阶段承接链路。`docs/testing-best-practices.md` 也已同步把“完整流程 E2E”收紧为六段链，避免旧口径继续把“入口 -> 中间步骤 -> 结算”误写成完整端到端。
 - 共享根因：待定位。
 - 旧结论失效：事件牌阶段承接证据不得再升级为完整可玩性证据；已在专项工作流文档降级。
 
@@ -777,7 +777,7 @@
 
 ## 9. 修订 / 失效记录
 
-- 旧文档路径：`docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md`
+- 旧文档路径：`docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md`
 - 旧结论：只建立事件牌家族清单并完成三条事件牌完整链路。
 - 失效/降级原因：该旧结论不覆盖 haunt、圣符、驱魔、骰盘、物品、交易全量可玩性；当前文件已分对象更新，仍不得把已收口对象外推到预兆、物品全家族或骰盘全家族。
 - 替代旧结论的新证据：当前事件牌完整链路已从三条扩展到当前数据合同 23/23 张逐张完整链。新增证据包含先选择属性再投检定的上古旧宅、夜幕众星；先投检定再选择后续效果的蜘蛛！、一条秘密通道、脑状食品；可选是否触发判定/作祟的肉质苔癣、一瓶微尘、大宅饿了、说“茄子”！、一抹鲜红；自动多属性检定后选择奖励的吊死鬼；以及 12 张投骰后直接结算事件牌的逐张六段截图。该结论只覆盖事件牌，不是山屋整体完成结论。

@@ -11,7 +11,12 @@ import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
 import { buildArtificerBotStateAfterActivation, isArtificerBotTokenId } from './artificerBots';
-import { clearCurrentRollContext, createEvasionRollContext, replaceCurrentRollContext } from './rollContext';
+import {
+    clearCurrentRollContext,
+    createEvasionRollContext,
+    isSettledReplayOnlyRollContext,
+    replaceCurrentRollContext,
+} from './rollContext';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -512,7 +517,7 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
 
     const nextAttackResolvedSequence = (state.attackResolvedSequence ?? 0) + 1;
 
-    return {
+    const nextState: DiceThroneCore = {
         ...state,
         activatingAbilityId: sourceAbilityId || defenseAbilityId,
         players,
@@ -523,6 +528,9 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
         lastResolvedAttackDamage: state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage,
         attackResolvedSequence: nextAttackResolvedSequence,
     };
+    return isSettledReplayOnlyRollContext(nextState.currentRollContext)
+        ? nextState
+        : clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
 };
 
 /**

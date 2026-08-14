@@ -7,7 +7,7 @@
 - 巨蚁 `giant_ants`
 
 ## 执行基线
-- 规则与审计规范：@docs/ai-rules/testing-audit.md#65-117
+- 规则与审计规范：@.spec/knowledge/standards/testing-audit.md#65-117
 - 自动审计验证：
   - `abilityBehaviorAudit.test.ts`
   - `interactionCompletenessAudit.test.ts`

@@ -1333,7 +1333,9 @@ const resolveDiceThroneForcedInteractionRecoveryCommand = (args: {
         return { type: 'SKIP_TOKEN_RESPONSE', payload: {} };
     }
     if (interactionKind === 'dt:bonus-dice') {
-        return { type: 'SKIP_BONUS_DICE_REROLL', payload: {} };
+        // 奖励骰不是可关闭弹窗。可见 dt:bonus-dice 必须保留给右侧 2D 骰盘普通“确认”。
+        // AI displayOnly 残留清理由 resolveDiceThroneSeatLegalOnlyRecovery 专门处理。
+        return false;
     }
     if (interactionKind !== 'dt:defender-choice') {
         return null;
@@ -1495,11 +1497,21 @@ const resolveDiceThroneRuntimeActorId = (args: {
         return args.fallbackPlayerId;
     }
 
-    const pendingAttack = (args.state.core as {
+    const core = args.state.core as {
         pendingAttack?: {
             defenderId?: unknown;
         };
-    } | undefined)?.pendingAttack;
+        pendingDamage?: {
+            responderId?: unknown;
+        };
+    } | undefined;
+
+    const pendingDamageResponderId = core?.pendingDamage?.responderId;
+    if (typeof pendingDamageResponderId === 'string') {
+        return pendingDamageResponderId;
+    }
+
+    const pendingAttack = core?.pendingAttack;
 
     return typeof pendingAttack?.defenderId === 'string'
         ? pendingAttack.defenderId
@@ -1601,7 +1613,7 @@ export const engineConfig = {
         shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
         offlineAdjudicationCommandByInteractionKind: {
             'dt:token-response': 'SKIP_TOKEN_RESPONSE',
-            'dt:bonus-dice': 'SKIP_BONUS_DICE_REROLL',
+            'dt:bonus-dice': null,
         },
         allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
     },

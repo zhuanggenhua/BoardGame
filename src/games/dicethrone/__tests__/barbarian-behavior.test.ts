@@ -9,6 +9,7 @@ import type { DiceThroneCore, Die, HeroState, DiceThroneEvent } from '../domain/
 import { getCustomActionHandler } from '../domain/effects';
 import type { CustomActionContext } from '../domain/effects';
 import { initializeCustomActions } from '../domain/customActions';
+import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { barbarianDiceDefinition } from '../heroes/barbarian/diceConfig';
@@ -88,6 +89,21 @@ function eventsOfType(events: DiceThroneEvent[], type: string) {
     return events.filter(e => e.type === type);
 }
 
+function settleBonusDiceEvents(state: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneEvent[] {
+    const pendingState = events.reduce((current, event) => reduce(current, event), state);
+    expect(pendingState.pendingBonusDiceSettlement).toBeDefined();
+    return execute(
+        { core: pendingState, sys: { phase: 'offensiveRoll' } } as any,
+        {
+            type: 'SKIP_BONUS_DICE_REROLL',
+            playerId: pendingState.pendingBonusDiceSettlement!.attackerId,
+            payload: {},
+            timestamp: 2000,
+        } as any,
+        { d: () => 1 } as any,
+    );
+}
+
 // ============================================================================
 // 测试套件
 // ============================================================================
@@ -109,20 +125,22 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 targetSelf: true,
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
+            expect(settlement).toHaveLength(1);
+            expect((settlement[0] as any).payload.settlement.dice).toHaveLength(3);
+            expect((settlement[0] as any).payload.settlement.displayOnly).toBe(true);
+
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const dmg = eventsOfType(settledEvents, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(12);
             // D10 关键断言：伤害目标必须是对手 '1'，不能是自己 '0'
             expect((dmg[0] as any).payload.targetId).toBe('1');
 
             // 12 <= 14，不施加脑震荡
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(0);
-
-            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
-            expect(settlement).toHaveLength(1);
-            expect((settlement[0] as any).payload.settlement.dice).toHaveLength(3);
-            expect((settlement[0] as any).payload.settlement.displayOnly).toBe(true);
         });
 
         it('总和>14时施加脑震荡（target:self 场景）', () => {
@@ -135,11 +153,13 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 targetSelf: true,
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const dmg = eventsOfType(settledEvents, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(16);
             expect((dmg[0] as any).payload.targetId).toBe('1');
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
             expect((status[0] as any).payload.statusId).toBe(STATUS_IDS.CONCUSSION);
             // 脑震荡也必须施加给对手
@@ -161,12 +181,14 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 targetSelf: true,
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const dmg = eventsOfType(settledEvents, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(11);
             expect((dmg[0] as any).payload.targetId).toBe('1');
-            expect(eventsOfType(events, 'STATUS_APPLIED')).toHaveLength(1);
-            expect((eventsOfType(events, 'STATUS_APPLIED')[0] as any).payload.targetId).toBe('1');
+            expect(eventsOfType(settledEvents, 'STATUS_APPLIED')).toHaveLength(1);
+            expect((eventsOfType(settledEvents, 'STATUS_APPLIED')[0] as any).payload.targetId).toBe('1');
         });
 
         it('总和<=9时不施加脑震荡（target:self 场景）', () => {
@@ -179,11 +201,13 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 targetSelf: true,
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const dmg = eventsOfType(settledEvents, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(6);
             expect((dmg[0] as any).payload.targetId).toBe('1');
-            expect(eventsOfType(events, 'STATUS_APPLIED')).toHaveLength(0);
+            expect(eventsOfType(settledEvents, 'STATUS_APPLIED')).toHaveLength(0);
         });
     });
 
@@ -328,11 +352,14 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 random: () => 4 / 6, // d(6)→4 → heart，3次
             }));
 
-            const heal = eventsOfType(events, 'HEAL_APPLIED');
+            expect(eventsOfType(events, 'HEAL_APPLIED')).toHaveLength(0);
+            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
+            expect(settlement).toHaveLength(1);
+
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const heal = eventsOfType(settledEvents, 'HEAL_APPLIED');
             expect(heal).toHaveLength(1);
             expect((heal[0] as any).payload.amount).toBe(7); // 1+2×3
-            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
-            expect(settlement).toHaveLength(0);
         });
 
         it('0个心面治疗1点', () => {
@@ -346,7 +373,8 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            expect((eventsOfType(events, 'HEAL_APPLIED')[0] as any).payload.amount).toBe(1); // 1+2×0
+            const settledEvents = settleBonusDiceEvents(state, events);
+            expect((eventsOfType(settledEvents, 'HEAL_APPLIED')[0] as any).payload.amount).toBe(1); // 1+2×0
         });
     });
 
@@ -363,7 +391,12 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
             }));
 
             expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
-            const bonus = eventsOfType(events, 'BONUS_DAMAGE_ADDED');
+            expect(eventsOfType(events, 'BONUS_DAMAGE_ADDED')).toHaveLength(0);
+            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
+            expect(settlement).toHaveLength(1);
+
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const bonus = eventsOfType(settledEvents, 'BONUS_DAMAGE_ADDED');
             expect(bonus).toHaveLength(1);
             expect((bonus[0] as any).payload).toMatchObject({
                 playerId: '0',
@@ -371,12 +404,10 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
                 sourceCardId: 'more-please-roll-damage',
             });
 
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
             expect((status[0] as any).payload.statusId).toBe(STATUS_IDS.CONCUSSION);
             expect((status[0] as any).payload.targetId).toBe('1');
-            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
-            expect(settlement).toHaveLength(0);
         });
 
         it('0个剑面不造成伤害但仍施加脑震荡（target:self 场景）', () => {
@@ -388,8 +419,10 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
             }));
 
             expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            expect(eventsOfType(events, 'STATUS_APPLIED')).toHaveLength(0);
+            const settledEvents = settleBonusDiceEvents(state, events);
             // 脑震荡始终施加给对手
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
             expect((status[0] as any).payload.targetId).toBe('1');
         });

@@ -246,7 +246,7 @@ describe('终极技能（Ultimate）护盾免疫', () => {
 
 3. **[ ] 更新文档**
    - 更新 CHANGELOG.md
-   - 更新 docs/ai-rules/testing-audit.md
+   - 更新 .spec/knowledge/standards/testing-audit.md
    - 更新 docs/automated-testing.md
    - 创建 docs/pod-commit-audit-summary.md
 

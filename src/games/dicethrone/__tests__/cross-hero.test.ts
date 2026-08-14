@@ -225,6 +225,7 @@ describe('cross hero battles', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'holy-strike-large' }),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -276,6 +277,7 @@ describe('cross hero battles', () => {
                     cmd('RESPONSE_PASS', '1'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'blessing-of-might' }),
                     cmd('ADVANCE_PHASE', '0'),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',

@@ -754,26 +754,126 @@ async function expectDiscoveryContinueAtPanelBottom(page: Page) {
     if (!main || !button || !content) {
       throw new Error("发现结果面板缺少主内容、返回牌桌按钮或内容容器");
     }
+    const rectsOf = (selector: string) =>
+      Array.from(document.querySelectorAll<HTMLElement>(selector))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          };
+        })
+        .filter((rect) => rect.width > 40 && rect.height > 40);
     const mainRect = main.getBoundingClientRect();
     const buttonRect = button.getBoundingClientRect();
     const contentRect = content.getBoundingClientRect();
+    const card = document.querySelector<HTMLElement>(
+      '[data-testid="betrayal-discovery-card-front-atlas"]',
+    );
+    const cardRect = card?.getBoundingClientRect() ?? null;
+    const hit = document.elementFromPoint(
+      buttonRect.left + buttonRect.width / 2,
+      buttonRect.top + buttonRect.height / 2,
+    );
     return {
       actionPosition: button.dataset.discoveryActionPosition,
+      actionSurface: button.dataset.discoveryActionSurface,
+      mainTop: Math.round(mainRect.top),
       mainBottom: Math.round(mainRect.bottom),
+      mainCenterX: Math.round(mainRect.left + mainRect.width / 2),
+      mainCenterY: Math.round(mainRect.top + mainRect.height / 2),
       buttonTop: Math.round(buttonRect.top),
       buttonBottom: Math.round(buttonRect.bottom),
+      buttonLeft: Math.round(buttonRect.left),
+      buttonRight: Math.round(buttonRect.right),
       contentBottom: Math.round(contentRect.bottom),
       contentCenterX: Math.round(contentRect.left + contentRect.width / 2),
       buttonCenterX: Math.round(buttonRect.left + buttonRect.width / 2),
+      buttonCenterY: Math.round(buttonRect.top + buttonRect.height / 2),
+      card: cardRect
+        ? {
+            left: Math.round(cardRect.left),
+            right: Math.round(cardRect.right),
+            top: Math.round(cardRect.top),
+            bottom: Math.round(cardRect.bottom),
+            centerX: Math.round(cardRect.left + cardRect.width / 2),
+          }
+        : null,
+      buttonHitTestId:
+        hit?.closest<HTMLElement>("button")?.dataset.testid ??
+        (hit as HTMLElement | null)?.dataset?.testid ??
+        "",
+      roomShells: rectsOf('[data-testid^="betrayal-room-shell-"]'),
     };
   });
-  expect(metrics.actionPosition).toBe("bottom");
+  const overlapArea = (
+    a: {
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+    },
+    b: {
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+    },
+  ) => {
+    const width = Math.max(
+      0,
+      Math.min(a.right, b.right) - Math.max(a.left, b.left),
+    );
+    const height = Math.max(
+      0,
+      Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top),
+    );
+    return width * height;
+  };
+  expect(
+    metrics.actionPosition,
+    "无投骰发现牌确认按钮必须在卡牌外的底部动作区，不能塞进正式卡面",
+  ).toBe("bottom");
   expect(metrics.buttonTop).toBeGreaterThanOrEqual(metrics.mainBottom - 1);
+  expect(
+    metrics.actionSurface,
+    "底部确认必须是卡外独立动作坞，不能退回透明贴房间牌",
+  ).toBe("card-external-dock");
   expect(metrics.contentBottom - metrics.buttonBottom).toBeLessThanOrEqual(2);
+  expect(metrics.card, "确认按钮外置检查必须读到正式事件牌").not.toBeNull();
+  expect(
+    metrics.buttonTop,
+    "确认按钮必须低于正式事件牌，不能压在卡面文字或图像上",
+  ).toBeGreaterThanOrEqual(metrics.card!.bottom + 6);
   expect(
     Math.abs(metrics.buttonCenterX - metrics.contentCenterX),
     "返回牌桌按钮必须居中贴在发现面板底部动作区",
   ).toBeLessThanOrEqual(2);
+  expect(
+    metrics.buttonHitTestId,
+    "确认按钮中心点必须真实命中按钮本体，不能被其它浮层盖住",
+  ).toBe("betrayal-discovery-continue");
+  const buttonRect = {
+    left: metrics.buttonLeft,
+    right: metrics.buttonRight,
+    top: metrics.buttonTop,
+    bottom: metrics.buttonBottom,
+  };
+  expect(
+    overlapArea(buttonRect, metrics.card!),
+    "确认按钮不得与正式事件牌卡面重叠",
+  ).toBe(0);
+  const buttonOverlappedRooms = metrics.roomShells.filter(
+    (room) => overlapArea(buttonRect, room) > 0,
+  );
+  expect(
+    buttonOverlappedRooms,
+    "确认/返回按钮不得贴在或压住房间牌",
+  ).toEqual([]);
 }
 
 async function expectDiscoveryResolutionLedgerTraceOnly(
@@ -963,9 +1063,9 @@ async function expectMobileEventChoiceLayout(page: Page, label: string) {
   ).toHaveCount(4);
   await expect(
     mobileStatusHud.locator(
-      '[data-testid^="betrayal-current-panel-token"][data-player-id]',
+      '[data-testid="betrayal-observed-explorer-panel"][data-player-id]',
     ),
-    `${label}移动端必须保留 PC 探索者 token/位置承载`,
+    `${label}移动端必须保留 PC 探索者人物面板，而不是把左上面板改成地图 token`,
   ).toBeVisible();
   await expect(
     mobilePhaseChip,
@@ -1049,6 +1149,9 @@ async function expectMobileEventChoiceLayout(page: Page, label: string) {
   await expect(
     rollPanel.getByTestId("betrayal-recent-roll-result-stage"),
   ).toHaveAttribute("data-result-layout", "split-primary-total");
+  await expect(
+    rollPanel.getByTestId("betrayal-recent-roll-result-stage"),
+  ).toHaveAttribute("data-result-surface", "open-info-band");
   await expect(rollPanel.getByTestId("betrayal-recent-roll-stage-surface")).toHaveCount(0);
   await expect(rollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("骰面合计");
   await expect(rollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("加值");
@@ -1442,6 +1545,9 @@ async function expectDesktopEventChoiceLayout(page: Page, label: string) {
     "data-roll-panel-style",
     "open-table-transparent",
   );
+  await expect(
+    rollPanel.getByTestId("betrayal-recent-roll-result-stage"),
+  ).toHaveAttribute("data-result-surface", "open-info-band");
 
   const metrics = await page.evaluate(() => {
     const rectOf = (selector: string) => {
@@ -2013,6 +2119,9 @@ async function expectMobileDiscoveryRollLayout(page: Page, label: string) {
     "data-roll-panel-style",
     "open-table-transparent",
   );
+  await expect(
+    rollPanel.getByTestId("betrayal-recent-roll-result-stage"),
+  ).toHaveAttribute("data-result-surface", "open-info-band");
   await expect(
     page.getByTestId("betrayal-mobile-event-status-hud"),
   ).toHaveAttribute("data-mobile-role", "pc-isomorphic-explorer-rail");

@@ -8,7 +8,7 @@
 
 ### 1. 现有规范的覆盖范围
 
-`docs/ai-rules/testing-audit.md` 中的 D1-D33 维度主要关注：
+`.spec/knowledge/standards/testing-audit.md` 中的 D1-D33 维度主要关注：
 
 - **业务逻辑正确性**（D1-D10）：语义保真、边界完整、数据流闭环、查询一致性、交互完整、副作用传播、资源守恒、时序正确、幂等与重入、元数据一致
 - **状态管理完整性**（D11-D20）：Reducer 消耗路径、写入-消耗对称、多来源竞争、回合清理完整、UI 状态同步、条件优先级、隐式依赖、否定路径、组合场景、状态可观测性
@@ -97,7 +97,7 @@
 
 ### 1. 补充审计规范
 
-✅ 已完成：在 `docs/ai-rules/testing-audit.md` 中添加 D34 维度
+✅ 已完成：在 `.spec/knowledge/standards/testing-audit.md` 中添加 D34 维度
 
 ### 2. 更新开发流程
 

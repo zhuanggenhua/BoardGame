@@ -54,7 +54,7 @@
 - 本次额外发现的真实回归：
   - `samuraiRoninOnPlay()` 中保留了一段 `return` 后的死代码；已删除，避免后续维护者误判真实行为。
 - 仅业务口径 / 规则变化：
-  - 无。本次没有新增规则口径变更，也不需要额外同步 `rule/` 或 `docs/ai-rules/`。
+  - 无。本次没有新增规则口径变更，也不需要额外同步 `rule/` 或 `.spec/knowledge/standards/`。
 
 ## 7. 结果
 - 合并提交：`afab2a8f885647604644bbfe9fadf4a0081104fa`

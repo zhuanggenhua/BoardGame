@@ -96,10 +96,10 @@
 - `progress.md`
 - `task_plan.md`
 - `design-system/game-ui/MASTER.md`
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 
 建议：
@@ -113,12 +113,12 @@
 
 - `.spec/skills/git-operations/SKILL.md`
 - `AGENTS.md`
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/asset-pipeline.md`
-- `docs/ai-rules/doc-index.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/asset-pipeline.md`
+- `.spec/knowledge/README.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/automated-testing.md`
 - `docs/testing-best-practices.md`
 

@@ -708,13 +708,8 @@ export function executePipeline<
                 currentState.core,
                 domainEvents as unknown as TEvent[],
                 effectiveRandom,
-                {
-                    ...currentState,
-                    sys: {
-                        ...currentState.sys,
-                        _ppseInputEventsReduced: true,
-                    } as typeof currentState.sys,
-                },
+                currentState,
+                { inputEventsAlreadyReduced: true },
             );
             // 兼容两种返回格式
             const processed = Array.isArray(processResult)

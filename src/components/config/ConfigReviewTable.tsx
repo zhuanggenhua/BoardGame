@@ -53,6 +53,10 @@ export interface ConfigReviewCellContext<TRow, TFieldKey extends string> {
   fieldKey?: TFieldKey;
   pendingEdit?: ConfigReviewPendingEdit<TRow, TFieldKey>;
   defaultContent: React.ReactNode;
+  cellTestId?: string;
+  commitRawValue: (fieldKey: TFieldKey, rawValue: string) => void;
+  getPendingEdit: (fieldKey: TFieldKey) => ConfigReviewPendingEdit<TRow, TFieldKey> | undefined;
+  getEffectiveCellValue: (fieldKey: TFieldKey) => unknown;
 }
 
 interface ConfigReviewLabels {
@@ -455,13 +459,23 @@ export function ConfigReviewTable<TRow extends ConfigReviewBaseRow, TFieldKey ex
                         {columns.map((column) => {
                           const fieldKey = column.key === 'image' ? undefined : column.key;
                           const pendingEdit = fieldKey ? pendingEdits[`${row.rowId}:${fieldKey}`] : undefined;
+                          const cellTestId = fieldKey ? `${testIdPrefix}-cell-${fieldKey}` : undefined;
+                          const getPendingEdit = (targetFieldKey: TFieldKey) => pendingEdits[`${row.rowId}:${targetFieldKey}`];
+                          const getEffectiveCellValue = (targetFieldKey: TFieldKey) => {
+                            const targetPendingEdit = getPendingEdit(targetFieldKey);
+                            if (targetPendingEdit && !targetPendingEdit.error) return targetPendingEdit.parsedValue;
+                            return getCellValue(row, targetFieldKey);
+                          };
+                          const commitRawValue = (targetFieldKey: TFieldKey, rawValue: string) => {
+                            handleCellCommit({ row, fieldKey: targetFieldKey, rawValue });
+                          };
                           const defaultContent = fieldKey ? (
                             <ConfigEditableCell
                               row={row}
                               fieldKey={fieldKey}
                               pendingEdit={pendingEdit}
                               labels={labels}
-                              testId={`${testIdPrefix}-cell-${fieldKey}`}
+                              testId={cellTestId!}
                               getCellValue={getCellValue}
                               getFieldDefinition={getFieldDefinition}
                               isFieldApplicable={isFieldApplicable}
@@ -469,7 +483,17 @@ export function ConfigReviewTable<TRow extends ConfigReviewBaseRow, TFieldKey ex
                               onCommit={handleCellCommit}
                             />
                           ) : null;
-                          const content = renderCell?.({ row, columnKey: column.key, fieldKey, pendingEdit, defaultContent }) ?? defaultContent;
+                          const content = renderCell?.({
+                            row,
+                            columnKey: column.key,
+                            fieldKey,
+                            pendingEdit,
+                            defaultContent,
+                            cellTestId,
+                            commitRawValue,
+                            getPendingEdit,
+                            getEffectiveCellValue,
+                          }) ?? defaultContent;
                           return (
                             <td
                               key={`${row.rowId}:${column.key}`}

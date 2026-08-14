@@ -336,7 +336,7 @@ Duration  1.47s
 
 ### 2. 音效语义正确性
 
-遵循 `docs/ai-rules/asset-pipeline.md` 中的音效语义规范：
+遵循 `.spec/knowledge/standards/asset-pipeline.md` 中的音效语义规范：
 
 - **卡牌操作**：使用 `card.handling.*` 和 `card.fx.*` 系列音效，表达物理操作感
 - **印戒获得**：使用 `coins.decks_and_cards_sound_fx_pack.small_reward_001`，表达奖励感

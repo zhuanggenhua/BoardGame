@@ -17,6 +17,10 @@ const toastErrorMock = vi.fn();
 const toastSuccessMock = vi.fn();
 const setPlayerIdMock = vi.fn();
 const rejoinMatchMock = vi.fn();
+const requestForceEndAiPhaseMock = vi.fn((onResult?: (result: { accepted: boolean }) => void) => {
+    onResult?.({ accepted: true });
+    return true;
+});
 const capturedGameProviderPlayerIds: Array<string | null> = [];
 let mockSearchParams = new URLSearchParams();
 let mockMatchStatus: MatchStatusShape = {
@@ -30,6 +34,7 @@ let mockTransportMatchPlayers: Array<{ id: number; name?: string; isConnected?: 
 let mockTransportConnected = false;
 let mockTransportState: any = null;
 let mockProviderPlayerId: string | null = '0';
+let mockOnlineAiSeatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }> = {};
 let mockNow = 1_000_000;
 
 vi.mock('react-i18next', () => ({
@@ -84,6 +89,7 @@ vi.mock('../../engine/transport/react', () => ({
     useGameClient: () => ({
         state: mockTransportState,
         dispatch: vi.fn(),
+        requestForceEndAiPhase: requestForceEndAiPhaseMock,
         playerId: mockProviderPlayerId,
         matchPlayers: mockTransportMatchPlayers,
         isConnected: mockTransportConnected,
@@ -171,13 +177,39 @@ vi.mock('../../config/games.config', () => ({
     }),
 }));
 
+vi.mock('../../services/matchApi', () => ({
+    getMatch: vi.fn(async () => ({
+        matchID: 'match-1',
+        gameName: 'smashup',
+        players: [{ id: 0, name: 'Alice' }, { id: 1, name: 'AI' }],
+        setupData: {
+            enableAi: true,
+            seatControllers: mockOnlineAiSeatControllers,
+        },
+    })),
+}));
+
 vi.mock('../../games/mobileSupport', () => ({
     getGamePageDataAttributes: () => ({}),
     syncGamePageDocumentAttributes: vi.fn(),
 }));
 
 vi.mock('../../components/game/framework/widgets/GameHUD', () => ({
-    GameHUD: () => null,
+    GameHUD: (props: { showForceEndAiPhase?: boolean; onForceEndAiPhase?: () => Promise<boolean> }) => (
+        props.showForceEndAiPhase && props.onForceEndAiPhase
+            ? (
+                <button
+                    type="button"
+                    data-testid="hud-force-end-ai-phase"
+                    onClick={() => {
+                        void props.onForceEndAiPhase?.();
+                    }}
+                >
+                    force
+                </button>
+            )
+            : null
+    ),
     resolveGameHudPhase: () => null,
 }));
 
@@ -299,7 +331,7 @@ vi.mock('../matchHudPresence', () => ({
 vi.mock('../onlineAiSeats', () => ({
     haveAiSeatCredentialsChanged: () => false,
     loadOnlineAiSeatState: vi.fn(async () => ({
-        seatControllers: {},
+        seatControllers: mockOnlineAiSeatControllers,
         seatCredentials: {},
     })),
     resolveMissingOnlineAiSeatCredentialIds: () => [],
@@ -359,7 +391,9 @@ describe('MatchRoom online route identity', () => {
         mockTransportConnected = false;
         mockTransportState = null;
         mockProviderPlayerId = '0';
+        mockOnlineAiSeatControllers = {};
         capturedGameProviderPlayerIds.length = 0;
+        requestForceEndAiPhaseMock.mockClear();
         rejoinMatchMock.mockReset();
         localStorage.clear();
         localStorage.setItem('match_creds_match-1', JSON.stringify({
@@ -386,6 +420,32 @@ describe('MatchRoom online route identity', () => {
         });
         expect(capturedGameProviderPlayerIds).toContain('0');
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
+    });
+
+    it('在线 AI 房房主应看到强制结束 AI 阶段按钮，并通过服务端恢复请求执行', async () => {
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            isHost: true,
+            players: [
+                { id: 0, name: 'Alice', isConnected: true },
+                { id: 1, name: 'AI', isConnected: true },
+            ],
+        };
+        mockOnlineAiSeatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        };
+
+        await renderMatchRoom();
+
+        await waitFor(() => {
+            expect(screen.getByTestId('hud-force-end-ai-phase')).toBeInTheDocument();
+        });
+        await act(async () => {
+            screen.getByTestId('hud-force-end-ai-phase').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        expect(requestForceEndAiPhaseMock).toHaveBeenCalledTimes(1);
     });
 
     it('当 URL seat 与本地 stored seat 冲突时，GameProvider 应以 stored seat 建立身份并修正 URL', async () => {

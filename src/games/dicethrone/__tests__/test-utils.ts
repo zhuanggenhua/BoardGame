@@ -749,6 +749,16 @@ export function injectPendingInteraction(
         return;
     }
 
+    // DiceThrone 的改骰 / 重掷交互必须挂在一个真实投骰阶段上。
+    // 旧测试曾只注入骰子和交互，不设阶段；阶段感知当前骰区后，这类裸状态不再是合法入口。
+    if (
+        state.sys.phase !== 'offensiveRoll'
+        && state.sys.phase !== 'defensiveRoll'
+        && state.sys.phase !== 'targetingRoll'
+    ) {
+        state.sys.phase = 'offensiveRoll';
+    }
+
     // 骰子类：multistep-choice，必须在客户端注入函数（JSON 序列化会丢失函数）
     if (interaction.type === 'modifyDie') {
         const config = interaction.dieModifyConfig;

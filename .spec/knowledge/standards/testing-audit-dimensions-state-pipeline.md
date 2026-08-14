@@ -1,3 +1,11 @@
+---
+name: testing-audit-dimensions-state-pipeline
+description: 状态管线审计维度：状态流、pipeline 阶段和重复副作用——审计状态管线时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试审计 D 维度细则：状态与管线
 
 > 来源：从 .spec/knowledge/standards/testing-audit-dimensions.md 无损拆出。Reducer 消耗、写入-消耗对称、多来源竞争、清理、UI 同步、条件优先级、组合场景、伤害管线、架构假设和 handler 状态一致性相关细则；正文可引用其他 D 编号作为交叉门禁。

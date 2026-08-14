@@ -82,9 +82,30 @@
 | `cards` | 12 | 牌背、玩家参考卡、中文参考卡 |
 | `explorers` | 13 | 已识别探索者角色牌 |
 | `monsters` | 3 | 已识别怪物/特殊角色卡 |
-| `tokens/explorers` | 4 | 已确认地图玩家指示物，来自 `384x336` 组；Rebecca / Darryl 已从旧错图纠正 |
+| `tokens/explorers` | 12 | 已确认玩家 Token / 对局玩家指示物，来自 `384x336` 组；仅用于地图房间内的玩家棋子 / 角色 token。左侧玩家面板必须走探索者角色板 / 肖像资源，不消费 token，也不继承 token 缺图诊断语义；Rebecca / Darryl 等历史错名只作为别名证据，不作为运行时语义路径 |
 | `tokens/monsters` | 43 | 已确认地图怪物 token：31 张用户点名的 3e 怪物 / Stunned token，以及小型怪物 1-6 双面图和正面裁片 |
 | `markers` | 28 | 数字、状态、资源标记 |
+
+### 5.1 探索者玩家面板 / 地图 Token 关联表
+
+本表是给配置关联用的合同表，不是第二套运行时真相源。运行时真相源仍是 `src/games/betrayal/scenarioConfig.ts` 中的 `BETRAYAL_EXPLORER_CATALOG`：玩家面板读取 `portraitAsset`，地图房间内角色 token 读取 `tokenAsset`。
+
+| explorerId | 角色名 | 玩家面板资源 `portraitAsset` | 玩家面板文件 | 地图角色 token `tokenAsset` | token 源图 | token 压缩图 | 状态 / 备注 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `isa-valencia` | 伊莎·瓦伦西亚 | `betrayal/explorers/xia` | `public/assets/i18n/zh-CN/betrayal/explorers/xia.png` | `betrayal/tokens/explorers/isa-valencia` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/isa-valencia.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp` | `locked`；角色板文件名沿用图面名 `xia`，token 用正式角色 id |
+| `anita-hernandez` | 安妮塔·赫南德兹 | `betrayal/explorers/anita-hernandez` | `public/assets/i18n/zh-CN/betrayal/explorers/anita-hernandez.png` | `betrayal/tokens/explorers/anita-hernandez` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/anita-hernandez.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp` | `locked` |
+| `father-warren-leung` | 神父 梁沃伦 | `betrayal/explorers/father-warren-leung` | `public/assets/i18n/zh-CN/betrayal/explorers/father-warren-leung.png` | `betrayal/tokens/explorers/father-warren-leung` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/father-warren-leung.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp` | `locked` |
+| `dan-nguyen-md` | 阮单 医学博士 | `betrayal/explorers/dan-nguyen-md` | `public/assets/i18n/zh-CN/betrayal/explorers/dan-nguyen-md.png` | `betrayal/tokens/explorers/dan-nguyen-md` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/dan-nguyen-md.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/dan-nguyen-md.webp` | `locked` |
+| `michelle-monroe` | 米歇尔·梦露 | `betrayal/explorers/michelle-monroe` | `public/assets/i18n/zh-CN/betrayal/explorers/michelle-monroe.png` | `betrayal/tokens/explorers/michelle-monroe` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/michelle-monroe.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/michelle-monroe.webp` | `locked`；旧错名 `darryl-highla` 只保留为历史别名证据 |
+| `beat-box-bowen` | 布里塔妮 “B-BOX” 鲍温 | `betrayal/explorers/beat-box-bowen` | `public/assets/i18n/zh-CN/betrayal/explorers/beat-box-bowen.png` | `betrayal/tokens/explorers/beat-box-bowen` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/beat-box-bowen.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/beat-box-bowen.webp` | `locked` |
+| `josef-hooper` | 约瑟夫 “铁子” 霍珀 | `betrayal/explorers/josef-hooper` | `public/assets/i18n/zh-CN/betrayal/explorers/josef-hooper.png` | `betrayal/tokens/explorers/josef-hooper` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/josef-hooper.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/josef-hooper.webp` | `locked` |
+| `oliver-swift` | 奥利弗·斯威夫特 | `betrayal/explorers/oliver-swift` | `public/assets/i18n/zh-CN/betrayal/explorers/oliver-swift.png` | `betrayal/tokens/explorers/oliver-swift` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/oliver-swift.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/oliver-swift.webp` | `locked`；历史错名 `father-warren-leung` 只保留为历史别名证据 |
+| `stephanie-richter` | 斯蒂芬妮·里克特 | `betrayal/explorers/stephanie-richter` | `public/assets/i18n/zh-CN/betrayal/explorers/stephanie-richter.png` | `betrayal/tokens/explorers/stephanie-richter` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/stephanie-richter.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/stephanie-richter.webp` | `locked`；旧错名 `rebecca-allen` 只保留为历史别名证据 |
+| `persephone-puleri` | 珀尔塞福涅·普拉里 | `betrayal/explorers/persephone-puleri` | `public/assets/i18n/zh-CN/betrayal/explorers/persephone-puleri.png` | `betrayal/tokens/explorers/persephone-puleri` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/persephone-puleri.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/persephone-puleri.webp` | `locked` |
+| `sammy-angler` | 塞米·昂勒尔 | `betrayal/explorers/sammy-angler` | `public/assets/i18n/zh-CN/betrayal/explorers/sammy-angler.png` | `betrayal/tokens/explorers/sammy-angler` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/sammy-angler.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/sammy-angler.webp` | `locked` |
+| `jaden-jones` | 杰登·琼斯 | `betrayal/explorers/jade-jones` | `public/assets/i18n/zh-CN/betrayal/explorers/jade-jones.png` | `betrayal/tokens/explorers/jaden-jones` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/jaden-jones.png` | `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/jaden-jones.webp` | `locked`；角色板文件名沿用 `jade-jones`，角色 id/token 使用 `jaden-jones` |
+
+未配对素材：`public/assets/i18n/zh-CN/betrayal/explorers/sera-nguyen.png` 当前是已识别角色板资源，但不在 `BETRAYAL_EXPLORER_CATALOG` 的当前可玩角色集合内，也没有已锁定的 `tokenAsset`；不得猜配 token。
 
 资源映射真相源：`docs/games/betrayal/sources/image-index/runtime-resource-map.json`
 
@@ -106,7 +127,7 @@
   - `contact-03-675-1275.jpg` 这组只包含牌背、玩家/叛徒/怪物参考卡；
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
 - 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 只能用牌背、对象名和类别临时维持可玩性，素材缺口必须记录在 intake / manifest / evidence，并向用户索要素材或锁定补源路径；不得误接错误拼页、marker 或其它无关素材，也不得把排障标签显示给玩家。
-- 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
+- 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；左侧玩家面板必须优先使用上表 `portraitAsset` 对应的探索者角色板 / 肖像资源。找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替；找不到玩家面板资源时，也不能反向用地图 token 顶替玩家面板。
 - 2026-07-31 `384x336` token 纠错：用户点名范围 `...EE7C83DC` 到 `...442F4782` 共 31 张，此前只登记 4 张，且 `...06AB53C7`、`...8EDF6B9A` 被误登记为 Rebecca / Darryl。现已全部落到 `tokens/monsters/*` 语义路径并生成同尺寸压缩产物；Rebecca / Darryl 已改回正确探索者 token 源图。证据见 `evidence/betrayal/full-audit/token-384x336-intake-correction-2026-07-31.md`。
 - 2026-07-31 木乃伊专项补充：旧版「木乃伊横行」规则要求「木乃伊怪物标记(大)」。虽然本轮已补齐 3e `384x336` 怪物 / Stunned token 组，但该组未发现木乃伊；当前代码仍引用 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`。用户批准先占位后，已新增明确写有“临时占位”的源图、压缩图、manifest 与 `runtime-resource-map.json` 记录；`evidence/betrayal/full-audit/mummy-token-source-search-2026-07-31.md` 已记录本地图包 `Mods\Images`、TTS、`Models`、`Assetbundles` 均未发现可确认木乃伊 token / portrait 源图。该对象正式素材状态仍必须保持 `blocked / visual-token-blocked`，不得把临时占位、其它怪物 token 或文字壳当成正式完成。
 - 山屋骰子素材真相已经从 TTS Workshop JSON 与本地解包文件锁定：
@@ -142,11 +163,7 @@
 
 - 探索者角色牌：已确认 13 张
 - 怪物/特殊角色卡：已确认 3 张
-- 探索者 token：当前确认 4 张，来自 `384x336` 组
-  - `tokens/explorers/jaden-jones.png`
-  - `tokens/explorers/father-warren-leung.png`
-  - `tokens/explorers/rebecca-allen.png`
-  - `tokens/explorers/darryl-highla.png`
+- 探索者 token：当前确认 12 张可玩探索者正式地图 token，来自 `384x336` 组；配置关联以“5.1 探索者玩家面板 / 地图 Token 关联表”为准。
 - 怪物 / Stunned token：当前确认 31 张用户点名范围内的 3e token，来自 `384x336` 组；另有小型怪物 1-6 双面图和正面裁片
   - `tokens/monsters/jacks-spirit.png`
   - `tokens/monsters/head-of-the-house.png`

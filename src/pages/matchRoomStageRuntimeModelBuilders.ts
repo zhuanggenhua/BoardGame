@@ -55,6 +55,7 @@ function buildMatchRoomOnlineSeatBridgeModel(args: {
     return {
         seatControllers: seatRuntime.seatControllers,
         engineConfig: seatRuntime.engineConfig,
+        onForceEndAiPhaseReady: seatRuntime.onForceEndAiPhaseReady,
     };
 }
 

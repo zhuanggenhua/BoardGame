@@ -15,7 +15,7 @@
 
 ## 权威来源
 
-1. `docs/ai-rules/testing-audit.md`
+1. `.spec/knowledge/standards/testing-audit.md`
 2. `src/engine/ai/snapshots.ts`
 3. `src/engine/ai/context.ts`
 4. `src/games/smashup/ai.ts`

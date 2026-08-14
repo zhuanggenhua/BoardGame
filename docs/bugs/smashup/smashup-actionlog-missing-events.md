@@ -218,7 +218,7 @@ if (formatter) {
 
 ## 相关文档
 
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范（ActionLogSystem）
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范（ActionLogSystem）
 - `docs/automated-testing.md` - 测试规范
 - `src/engine/systems/ActionLogSystem.ts` - ActionLog 系统实现
 - `src/games/smashup/domain/events.ts` - 事件定义

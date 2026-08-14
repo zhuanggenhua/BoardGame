@@ -8,7 +8,7 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
 ## 渐进式披露入口
 
 先读 ./.spec/skills/game-audit-workflow/references/reading-map.md，按反馈对象选择下面的规范，不要把所有审计分卷默认全文加载。
-本 skill 负责规则 bug 的执行顺序；规则合同、回归收口和审计维度仍以对应 docs/ai-rules 主源为准。
+本 skill 负责规则 bug 的执行顺序；规则合同、回归收口和审计维度仍以对应 .spec/knowledge 主源为准。
 
 ## 按需读取
 
@@ -29,7 +29,7 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
 
 - `跨游戏判断方法`：锁症状、查合同、判实现消费、回写合同、补回归、同类扩审。
 - `当前单游戏答案`：具体卡牌原文、技能等级差异、骰面公式、图标裁定、结算数字。
-- `单游戏答案下沉位置`：`docs/games/<gameId>/...`、对应 evidence、用户故事、规则矩阵或专项 workflow。
+- `单游戏答案下沉位置`：`docs/games/<gameId>/...` 事实资料、对应 evidence、用户故事、规则矩阵或该游戏自己的项目 skill。
 
 禁止把当前游戏的专属规则答案写进项目通用层。
 

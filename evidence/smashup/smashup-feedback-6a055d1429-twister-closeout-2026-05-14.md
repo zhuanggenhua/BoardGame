@@ -53,7 +53,7 @@
   - 新增 Twister 真实手牌入口 E2E，验证 prompt 出现 skip 且 skip 后候选仍留在原基地。
 - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`
   - 增加“已纳入全面审计的新派系可选/至多交互必须有拒绝或空选实现证据”的通用审计门禁。
-- `docs/ai-rules/testing-audit.md`、`.spec/skills/add-new-faction/SKILL.md`、`.spec/skills/smashup-faction-addition/SKILL.md`
+- `.spec/knowledge/standards/testing-audit.md`、`.spec/skills/add-new-faction/SKILL.md`、`.spec/skills/smashup-faction-addition/SKILL.md`
   - 补强通用可选语义门禁：合法候选存在时必须有 skip/空选否定路径，不能只测成功路径。
 
 ## 验证

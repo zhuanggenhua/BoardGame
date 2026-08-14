@@ -160,6 +160,6 @@ it('vampire_big_gulp 消灭 Igor → processDestroyMoveCycle → Igor onDestroy 
 
 ## 相关文档
 
-- `docs/ai-rules/engine-systems.md` - 引擎系统架构
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统架构
 - `docs/bugs/smashup/smashup-igor-double-trigger-investigation.md` - 初步调查
 - `docs/bugs/smashup/smashup-igor-double-trigger-root-cause-summary.md` - 早期根因分析（不完整）

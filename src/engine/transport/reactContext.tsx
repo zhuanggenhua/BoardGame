@@ -5,7 +5,14 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { MatchState } from '../types';
-import type { MatchPlayerInfo, GameBoardProps, ManualSetupSelectionRequest, ManualSetupSelectionResult, MatchUiEvent } from './protocol';
+import type {
+    MatchPlayerInfo,
+    GameBoardProps,
+    ManualForceEndAiPhaseResult,
+    ManualSetupSelectionRequest,
+    ManualSetupSelectionResult,
+    MatchUiEvent,
+} from './protocol';
 import type { AiSeatController } from '../ai/types';
 
 export interface GameClientContextValue {
@@ -17,6 +24,10 @@ export interface GameClientContextValue {
     requestManualSetupSelection?: (
         request: ManualSetupSelectionRequest,
         onResult?: (result: ManualSetupSelectionResult) => void,
+    ) => boolean;
+    /** 请求服务端立即恢复 / 强制收口当前 AI 阶段。 */
+    requestForceEndAiPhase?: (
+        onResult?: (result: ManualForceEndAiPhaseResult) => void,
     ) => boolean;
     /** 当前玩家 ID */
     playerId: string | null;
@@ -57,6 +68,9 @@ export function useGameClient<
         requestManualSetupSelection?: (
             request: ManualSetupSelectionRequest,
             onResult?: (result: ManualSetupSelectionResult) => void,
+        ) => boolean;
+        requestForceEndAiPhase?: (
+            onResult?: (result: ManualForceEndAiPhaseResult) => void,
         ) => boolean;
         playerId: string | null;
         matchPlayers: MatchPlayerInfo[];

@@ -51,7 +51,7 @@
 - `.spec/skills/create-new-game/references/preflight-gates.md`
 - `.spec/skills/create-new-game/references/mechanics-data-design.md`
 - `.spec/skills/data-entry-workflow/SKILL.md`
-- `docs/ai-rules/data-entry.md`
+- `.spec/knowledge/standards/data-entry.md`
 - `evidence/betrayal/full-audit/full-deck-scope-audit.md`
 - `docs/games/betrayal/intake-contract.md`
 - `evidence/betrayal/betrayal-event-card-ingest-2026-07-03.md`
@@ -140,9 +140,9 @@
 | `evidence/betrayal/betrayal-discovery-effect-audit-2026-07-02.md` | 旧发现池效果审计 | 卡面原文、原子子句、已接运行态能力证据、代表性玩法历史证据 | 2026-07-29 已补接续裁定：只作为历史发现池和代表链证据；不覆盖当前 43/22/9 整牌库，也不阻止 S0 合同层继续补证 |
 | `evidence/betrayal/betrayal-event-e2e-coverage-2026-07-04.md` | 早期 23 张事件页面承接 E2E 覆盖矩阵 | 23 张 locked 事件的页面选择代表链 | 2026-07-29 已补接续裁定：不能外推为当前 43 张事件或整牌库完成 |
 | `evidence/betrayal/final-closeout-readable/README.md` | 作祟 3 / 12 / 33 高清可读产物图索引 | 三个作祟代表链的历史可读产物 | 2026-07-29 已补接续裁定：不能作为当前整牌库 S0、UI/E2E 或截图验收证据 |
-| `docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md` | 旧可玩性与端到端审计入口 | 旧首剧本与事件/发现牌页面链路现场 | 2026-07-29 已补接续裁定：旧 23 事件 / 12 物品 / 23 运行持有牌口径不能覆盖当前整牌库主合同 |
+| `docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md` | 旧可玩性与端到端审计入口 | 旧首剧本与事件/发现牌页面链路现场 | 2026-07-29 已补接续裁定：旧 23 事件 / 12 物品 / 23 运行持有牌口径不能覆盖当前整牌库主合同 |
 | `evidence/betrayal/betrayal-half-implemented-audit-2026-07-18.md` | 半实现专项审计 | 作祟 1/3/12/33 代表链和早期 23 事件运行口径 | 2026-07-29 已补接续裁定：不能作为当前 43/22/9 整牌库完成证据 |
-| `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md` | 作祟 3「灰尘」专项补漏计划 | 灰尘剧本与当时牌池的交叉补证现场 | 2026-07-29 已补接续裁定：旧 23 事件 / 12 物品 / 23 持有牌口径不能覆盖当前整牌库主合同 |
+| `docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md` | 作祟 3「灰尘」专项补漏计划 | 灰尘剧本与当时牌池的交叉补证现场 | 2026-07-29 已补接续裁定：旧 23 事件 / 12 物品 / 23 持有牌口径不能覆盖当前整牌库主合同 |
 | `docs/games/betrayal/haunts/03-the-dust.md` | 作祟 3「灰尘」交互子账本 | 灰尘专项规则、死亡保护、兔脚、搜尸和持有牌交叉代表链 | 2026-07-29 已补接续裁定：只覆盖灰尘专项，不证明整牌库或其它作祟完成 |
 | `src/games/betrayal/possessionAtlas.ts` | 物品/预兆正面 atlas 映射 | 物品 frame、预兆 frame、alias | `partial`：存在复用 frame 与缺 crop |
 | `temp/betrayal-possession-contract-crops/manifest.json` | 物品/预兆单卡裁图 manifest | 单卡裁图、frame、hash | `partial`：manifest 原始 21 行缺 `strange-amulet` 和 `lantern` crop；本轮已从正式 item atlas 补 `strange-amulet` 临时完整裁图；`map/notebook/journal/manuscript` 共用 frame/hash |
@@ -690,7 +690,7 @@
 | `.spec/skills/create-new-game/SKILL.md` | 阶段 0 一票否决改为 `in_progress / S0-blocked` 或 `in_progress / downstream-blocked`，并明确 blocked 只拦阶段升级和完成宣称 | S0 缺口存在时继续补合同字段，不进入实现/UI/E2E/截图 |
 | `.spec/skills/create-new-game/references/preflight-gates.md` | 提案状态写法改为 `S0-blocked / downstream-blocked`，并保留“停在 S0，但不能停工” | 提案或矩阵只能引用已录入事实，不能写成完成方案 |
 | `.spec/skills/create-new-game/references/mechanics-data-design.md` | 数据量大、分批录入两处旧 `in_progress / blocked` 改为 `S0-blocked / downstream-blocked`，并说明不是数据层停工理由 | 可以分批录入已锁数据，但未闭合对象继续留在对象全集和缺口表 |
-| `.spec/skills/data-entry-workflow/SKILL.md`、`docs/ai-rules/data-entry.md` | 已有明确规则：`blocked / disputed / unknown-slot / not-in-runtime` 是阶段升级门禁，不是停工口令 | 作为后续继续合同层补证的主执行口径 |
+| `.spec/skills/data-entry-workflow/SKILL.md`、`.spec/knowledge/standards/data-entry.md` | 已有明确规则：`blocked / disputed / unknown-slot / not-in-runtime` 是阶段升级门禁，不是停工口令 | 作为后续继续合同层补证的主执行口径 |
 
 ### 6.20 74 行对象表结构完整性复核（2026-07-29）
 

@@ -1,3 +1,11 @@
+---
+name: engine-visual-events
+description: 视觉事件标准：EventStream、特写、数值冻结和 impact 回调——改表现事件时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 引擎动画、EventStream 与特写队列规范
 
 ## 动画表现与逻辑分离规范（强制）

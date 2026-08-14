@@ -244,16 +244,18 @@ export const DiceTray = ({
                     const showAnyModeButtons = isInteractionMode && isAnyMode && canModifyDie
                         && (isModified || currentSelectCount < maxSelectCount);
                     const isInactiveDie = isInteractionMode && !canModifyDie;
-                    const clickable = isInteractionMode
+                    const isReadOnlyDisplayDie = !isInteractionMode
+                        && Boolean(die.displayOnly)
+                        && !isBonusRerollMode;
+                    const clickable = isReadOnlyDisplayDie
+                        ? false
+                        : isInteractionMode
                         ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
                         : (isPassiveRerollMode
                             ? canInteract && !die.isKept
                             : isBonusRerollMode
                                 ? canRerollBonusDie
                                 : canToggleDieLock);
-                    const isReadOnlyDisplayDie = !isInteractionMode
-                        && Boolean(die.displayOnly)
-                        && !isBonusRerollMode;
                     const displayValue = (isAnyMode || isAdjustMode)
                         ? (modifyResult?.modifications[die.id] ?? die.value)
                         : die.value;

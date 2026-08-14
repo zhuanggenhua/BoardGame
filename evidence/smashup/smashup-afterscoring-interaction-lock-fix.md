@@ -141,7 +141,7 @@ npm test -- src/games/smashup/__tests__/afterscoring-response-window-execution.t
 
 - `src/engine/systems/ResponseWindowSystem.ts` - 响应窗口系统实现
 - `src/games/smashup/game.ts` - SmashUp 游戏配置
-- `docs/ai-rules/engine-systems.md` - 引擎系统文档
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统文档
 
 ## 总结
 

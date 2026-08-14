@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setPublicFileHashesForTesting, versionedPublicFileUrl } from '../../lib/publicFileUrl';
 import {
     buildLocalizedImageSet,
@@ -18,10 +18,14 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
     beforeEach(() => {
         setAssetsBaseUrl('/assets');
         setAssetHashesForTesting({});
-        setLocalizedImageIndexForTesting({});
-        setPublicFileHashesForTesting({});
-        clearGameAssetBaseOverrides();
-    });
+    setLocalizedImageIndexForTesting({});
+    setPublicFileHashesForTesting({});
+    clearGameAssetBaseOverrides();
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
+});
 
     it('SVG 资源保持原路径', () => {
         const urls = getOptimizedImageUrls('dicethrone/thumbnails/fengm.svg');
@@ -71,6 +75,16 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
         });
         expect(getLocalAssetPath('atlas-configs/dicethrone/ability-cards-common.atlas.json'))
             .toBe('/assets/atlas-configs/dicethrone/ability-cards-common.atlas.json?v=ef567890');
+    });
+
+    it('dev:lite 远程素材模式让强制本地资源路径也读取公开资源域名', () => {
+        vi.stubEnv('VITE_DEV_REMOTE_ASSETS', 'true');
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        expect(getLocalAssetPath('common/images/home-v2/book-catalog-wide/1.png'))
+            .toBe('https://assets.easyboardgame.top/official/common/images/home-v2/book-catalog-wide/1.png');
+        expect(getLocalizedLocalAssetPath('dicethrone/images/paladin/status-icons-atlas.json', 'zh-CN'))
+            .toBe('https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/status-icons-atlas.json');
     });
 
     it('游戏包 override 生效时，本地语言化 JSON 应优先走游戏包目录', () => {

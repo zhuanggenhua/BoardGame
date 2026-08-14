@@ -150,7 +150,7 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
    - 优先级: 低
 
 5. **[ ] 文档更新**
-   - 更新 `docs/ai-rules/engine-systems.md`
+   - 更新 `.spec/knowledge/standards/engine-systems.md`
    - 记录此次审计的教训
    - 优先级: 低
 

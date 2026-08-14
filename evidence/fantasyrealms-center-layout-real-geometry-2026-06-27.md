@@ -21,8 +21,8 @@
 - 真实在线房几何断言：
   - [e2e/fantasyrealms/fantasyrealms-online-ai.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/fantasyrealms/fantasyrealms-online-ai.e2e.ts:226)
 - 规范补强：
-  - [docs/ai-rules/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/e2e-verification.md:82)
-  - [docs/ai-rules/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/docs/ai-rules/e2e-verification.md:83)
+  - [.spec/knowledge/standards/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/e2e-verification.md:82)
+  - [.spec/knowledge/standards/e2e-verification.md](/D:/gongzuo/webgame/BoardGame/.spec/knowledge/standards/e2e-verification.md:83)
 
 ## 实际看图结论
 

@@ -113,20 +113,29 @@ test.describe("山屋惊魂女孩单位重构", () => {
     await expect(page.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,
     });
-    await expect(
-      page.getByTestId("betrayal-observed-explorer-token-slot"),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-observed-explorer-token-2"),
-    ).toHaveAttribute("data-token-state", "official");
-    await expect(
-      page.getByTestId("betrayal-observed-explorer-token-slot").locator(
-        '[data-testid="betrayal-observed-explorer-token-missing-2"]',
-      ),
-    ).toHaveCount(0);
+    const observedExplorerPanel = page.getByTestId(
+      "betrayal-observed-explorer-panel",
+    );
+    await expect(observedExplorerPanel).toBeVisible();
+    await expect(observedExplorerPanel).toHaveAttribute("data-player-id", "2");
+    await expect(observedExplorerPanel).not.toHaveAttribute(
+      "data-token-asset",
+      /.*/,
+    );
     await expect(page.getByTestId("betrayal-room-floor-down")).toBeEnabled();
     await page.getByTestId("betrayal-room-floor-down").click();
     await expect(page.getByTestId("betrayal-room-floor-basement")).toBeVisible();
+
+    const explorerRoomOccupant = page.getByTestId(
+      `betrayal-room-occupant-${roomId}-2`,
+    );
+    await expect(explorerRoomOccupant).toBeVisible();
+    await expect(
+      explorerRoomOccupant.getByTestId("betrayal-explorer-figure-token-2"),
+    ).toHaveAttribute("data-token-state", "official");
+    await expect(
+      explorerRoomOccupant.getByTestId("betrayal-explorer-figure-token-missing-2"),
+    ).toHaveCount(0);
 
     const girlToken = page.getByTestId(
       `betrayal-room-haunt-token-${roomId}-mummy-girl-token`,

@@ -1,3 +1,11 @@
+---
+name: testing-audit-d1-power-modifier-subject
+description: D1 力量修正审计维度：修正对象和主体归属——审计力量变更时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # D1 子项：力量修正主语审查（强制）
 
 > **触发条件**：新增/修改任何力量修正能力时触发

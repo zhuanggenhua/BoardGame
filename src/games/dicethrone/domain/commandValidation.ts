@@ -232,7 +232,7 @@ const validateDieInteraction = (
     const interaction = getValidationInteraction(pendingInteraction)!;
     const allowedDieIds = interaction.allowedDieIds?.length
         ? interaction.allowedDieIds
-        : getActiveDice(state).map(activeDie => activeDie.id);
+        : getActiveDice(state, phase).map(activeDie => activeDie.id);
     const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
     const isAttackSnapshotDie = phase === 'defensiveRoll'
         && isAttackSnapshotDieId(dieId)
@@ -317,7 +317,7 @@ const validateRollDice = (
     if (phase === 'defensiveRoll' && state.rollCount > 0) {
         const rerollDieLimit = getDefenseRerollDieLimit(state);
         if (typeof rerollDieLimit === 'number') {
-            const unlockedDiceCount = getActiveDice(state).filter((die) => !die.isKept).length;
+            const unlockedDiceCount = getActiveDice(state, phase).filter((die) => !die.isKept).length;
             if (unlockedDiceCount > rerollDieLimit) {
                 return fail('defense_reroll_die_limit_exceeded');
             }

@@ -2,7 +2,7 @@
 
 ## 概述
 
-基于 `docs/ai-rules/testing-audit.md` D1-D33 全维度框架，对 SmashUp 基础版 8 派系 + 全部基地卡进行系统性审计。
+基于 `.spec/knowledge/standards/testing-audit.md` D1-D33 全维度框架，对 SmashUp 基础版 8 派系 + 全部基地卡进行系统性审计。
 
 **第一阶段（已完成）**：D1 文本一致性 + D3 注册覆盖静态审计。
 **第二阶段（本计划）**：补全缺失的运行时行为维度（D1子项/D2/D5/D8/D11-D15/D18-D19/D24/D31/D33）。

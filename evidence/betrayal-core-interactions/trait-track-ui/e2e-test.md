@@ -39,3 +39,46 @@
 - 尚未证明伤害分配 UI 会用同一属性轨预览后果。
 - 尚未证明治疗 UI 会显示回绿色起点。
 - 尚未证明移动力快照、房间朝向选择、交易、特殊行动、攻击、怪物和全部作祟合同完成。
+
+## 2026-08-14 玩家面板 / 地图 Token 配置关联表与交互验收
+
+### 范围
+
+- 现实问题：配置资料里没有一张明确的“玩家面板资源 ↔ 地图角色 token”关联表，旧资源说明还写过“玩家面板和地图均可消费”，容易把两个职责再次混用。
+- 当前合同：左上玩家面板显示角色板 / 肖像 / 属性夹子 / 位置和持有摘要；地图房间格内显示正式探索者 token。两者通过 `BETRAYAL_EXPLORER_CATALOG` 里的 `portraitAsset` 与 `tokenAsset` 关联，但不能互相替代。
+- 本轮数据表：`docs/games/betrayal/intake-contract.md` 的“5.1 探索者玩家面板 / 地图 Token 关联表”列出 12 名当前可玩探索者的面板资源、token 源图、token 压缩图和备注；`sera-nguyen.png` 标为未配对素材，不猜 token。
+- 真实入口：`/play/betrayal`，桌面视口 `1600x900`，通过项目 E2E harness 注入属性轨代表态。
+
+### 验证命令
+
+- `node -e "JSON.parse(require('fs').readFileSync('docs/games/betrayal/sources/image-index/runtime-resource-map.json','utf8')); console.log('runtime-resource-map JSON OK')"`
+  - 结果：`runtime-resource-map JSON OK`。
+- `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "探索者玩家面板恢复人物板"`
+  - 结果：`1 passed / 180 skipped`。命令退出码为 `0`；结束后出现的 `ECONNRESET` 是测试环境退出噪声，不影响该用例结果。
+- `node scripts/infra/run-e2e-single.mjs default e2e/betrayal/trait-track-ui.e2e.ts`
+  - 结果：`1 passed`；素材准备选择 `711` 个资源，下载 `0`，跳过未变化 `711`，并重拍当前真实入口整图。
+
+### 截图
+
+| 文件 | 画面结论 |
+| --- | --- |
+| `01-属性轨角色板-连续轨指针位置.jpg` | 当前玩家视角：左上是布里塔妮 “B-BOX” 鲍温的角色板 / 肖像和属性轨，不显示“缺少正式标记”；地图大厅房间里同时可见三枚正式探索者 token。 |
+| `02-属性轨观察队友-连续轨指针位置.jpg` | 点击队友后切换观察视角：左上变为 AI 2 号位 / Stephanie Richter 的角色板 / 肖像和属性轨；右侧队友卡出现观察高亮；地图房间内三枚正式探索者 token 仍保留。 |
+| `03-玩家面板-显示玩家肖像且地图保留正式Token.jpg` | 已作废：这是此前把失败候选当正常版本时生成的旧图，不再作为最终验收图或 last-known-good 证据。 |
+
+### 图面核验
+
+- verdict: `PASS`
+- score: `94/100`
+- hard_failures: `[]`
+- 通过。左上玩家面板显示角色板 / 肖像 / 属性轨，不显示“缺少正式标记”，也没有把地图 token 当作面板主体。
+- 通过。地图房间格里的玩家棋子仍是正式 token 语义；点击队友只切换观察面板，不改变地图 token 承载。
+- 通过。截图是当前真实入口整屏原图，覆盖当前玩家和观察队友两个状态，能看到本轮要验证的修改交互。
+- 回归说明：`03-玩家面板-显示玩家肖像且地图保留正式Token.jpg` 已降级为旧失败候选；最终证据只认当前重拍的 `01` / `02` 整图。
+- 测试说明：没有为这次数据表更新新增新的长期 E2E 文件；复用 `trait-track-ui.e2e.ts` 的真实入口链路验证玩家面板资源与观察交互。
+
+### 用户可见展示
+
+- 已按项目 `show-image-to-user` 规则使用 PureRef 一次性打开 3 张用户验收图：`pure-ref-2026-08-14/00-sequence-index.png`、`pure-ref-2026-08-14/01-labeled-01-属性轨角色板-连续轨指针位置.png`、`pure-ref-2026-08-14/02-labeled-02-属性轨观察队友-连续轨指针位置.png`。
+- 原始整屏图保留为 `01-属性轨角色板-连续轨指针位置.jpg` 与 `02-属性轨观察队友-连续轨指针位置.jpg`；PureRef 展示图只是加了序号标题的全尺寸副本。
+- PureRef 打开结果：已有进程 `407188`，本次打开后新增进程 `328180`，所以按实际记录为“PureRef 新开进程”，不写成复用了同一窗口。

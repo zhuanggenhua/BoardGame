@@ -82,10 +82,10 @@
 这部分虽然仍在 worktree 当前 diff 里，但根据已经完成的规则吸收策略，它们不应再作为“准备回主线的专项正文”继续携带：
 
 - `design-system/game-ui/MASTER.md`
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 
 当前裁决：

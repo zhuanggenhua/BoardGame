@@ -17,7 +17,7 @@
 本轮对照了两类现有游戏：
 
 - `smashup`
-  - 参考 `docs/games/smashup/workflows/smashup-faction-intake.md`
+  - 参考 `.spec/skills/smashup-faction-intake/SKILL.md`
   - 重点看“图片 intake 之后如何落到正式运行时目录、如何生成 manifest、如何进入代码”
 - `qidahen`
   - 参考 `src/games/qidahen/rule/七大恨素材接入清单.md`

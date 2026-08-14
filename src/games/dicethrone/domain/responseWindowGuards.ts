@@ -1,5 +1,5 @@
 import type { PlayerId, ResponseWindowState } from '../../../engine/types';
-import type { DiceThroneCore } from './types';
+import type { DiceThroneCore, TurnPhase } from './types';
 import {
     areTeammates,
     getActiveDice,
@@ -29,13 +29,13 @@ export const isDirectDiceInterferenceActor = (
     return areTeammates(core, currentResponderId, playerId);
 };
 
-export const buildAfterRollConfirmedSignature = (core: DiceThroneCore): string => {
+export const buildAfterRollConfirmedSignature = (core: DiceThroneCore, phase?: TurnPhase): string => {
     const pendingBonusSettlement = core.pendingBonusDiceSettlement;
     const pendingBonusDice = isCurrentBonusRollSettlement(core)
         && shouldOpenAfterRollConfirmedForBonusSettlement(pendingBonusSettlement)
         ? getPendingBonusSettlementDice(pendingBonusSettlement)
         : [];
-    const dice = getActiveDice(core);
+    const dice = getActiveDice(core, phase);
     const turnNumber = typeof core.turnNumber === 'number' ? core.turnNumber : '';
     const activePlayerId = typeof core.activePlayerId === 'string' ? core.activePlayerId : '';
 

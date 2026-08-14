@@ -43,8 +43,8 @@ grep -r "temple_of_goju.*first_mate\|first_mate.*temple_of_goju" src/games/smash
 **理由**：
 
 1. **文档明确提到**：
-   - `docs/ai-rules/testing-audit.md` 中提到这是多 afterScoring 交互链式传递的典型案例
-   - `docs/ai-rules/engine-systems.md` 中提到多 afterScoring 交互链式传递的 bug 修复
+   - `.spec/knowledge/standards/testing-audit.md` 中提到这是多 afterScoring 交互链式传递的典型案例
+   - `.spec/knowledge/standards/engine-systems.md` 中提到多 afterScoring 交互链式传递的 bug 修复
 
 2. **复杂交互场景**：
    - 寺庙基地能力（afterScoring）+ 大副触发器（afterScoring）同时触发

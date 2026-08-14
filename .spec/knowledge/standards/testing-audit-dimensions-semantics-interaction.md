@@ -1,3 +1,11 @@
+---
+name: testing-audit-dimensions-semantics-interaction
+description: 语义交互审计维度：动作语义、选择对象和按钮语义——审计交互语义时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试审计 D 维度细则：语义与交互
 
 > 来源：从 .spec/knowledge/standards/testing-audit-dimensions.md 无损拆出。语义保真、边界完整、数据流闭环、查询一致性、交互完整和副作用传播相关细则；正文可引用其他 D 编号作为交叉门禁。

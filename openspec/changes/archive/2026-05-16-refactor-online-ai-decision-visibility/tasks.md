@@ -16,6 +16,6 @@
 - [x] 3.4 运行相关测试与静态检查
 
 ## 4. 文档
-- [x] 4.1 更新 `docs/ai-rules/engine-systems.md`，新增在线 AI 决策视图规范
+- [x] 4.1 更新 `.spec/knowledge/standards/engine-systems.md`，新增在线 AI 决策视图规范
 - [x] 4.2 记录本轮架构调整证据与回归说明
 - [x] 4.3 运行 `openspec validate refactor-online-ai-decision-visibility --strict --no-interactive`

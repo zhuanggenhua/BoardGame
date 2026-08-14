@@ -1,3 +1,11 @@
+---
+name: global-systems
+description: 全局系统标准：跨游戏公共能力和入口边界——改全局能力时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 全局系统与服务规范
 
 > 本文档是 `AGENTS.md` 的补充，包含全局 Context 系统和实时服务层的详细规范。

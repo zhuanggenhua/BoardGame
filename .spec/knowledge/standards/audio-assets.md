@@ -1,3 +1,11 @@
+---
+name: audio-assets
+description: 音频资源标准：共享包、registry、触发路径和迁移策略——接入或排查音效时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 音频资源规范
 
 > 来源：从 `.spec/knowledge/standards/asset-pipeline.md` 无损拆出。本文档承载跨游戏音频运行时架构、共享音频包路径合同和音效触发路径；具体工作流优先走项目 [`audio-integration`](../../skills/audio-integration/SKILL.md)，命令、查找与试听入口见 `docs/audio/audio-usage.md`。

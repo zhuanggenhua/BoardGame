@@ -1,4 +1,12 @@
 import { test, expect } from '../framework';
+import {
+    expectRightTrayBonusDiceConfirmation,
+    expectRightTrayBonusDiceReadOnlyReview,
+    getRightTrayDiceTray,
+    getRightTrayDie,
+    settleCurrentBonusDice,
+    waitForDiceThroneVisualIdle,
+} from './bonus-dice-flow';
 
 async function dragHandCardToPlay(page: any, cardId: string): Promise<void> {
     const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
@@ -245,7 +253,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         expect(finalEventTypes).toContain('DIE_REROLLED');
     });
 
-    test('card-wild-west 应触发弹药特写奖励骰，不改攻击骰盘', async ({ page, game }, testInfo) => {
+    test('card-wild-west 应触发装填奖励骰，不改攻击骰盘', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -316,8 +324,21 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         await expect(resolveAttackButton).toBeEnabled({ timeout: 5000 });
         await resolveAttackButton.click();
 
-        await expect(page.getByText(/技能结算选择/i)).toBeVisible({ timeout: 5000 });
-        const loadedOption = page.getByText(/^装填$/).first();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const current = state?.sys?.interaction?.current;
+            const options = Array.isArray(current?.data?.options) ? current.data.options : [];
+            return {
+                kind: current?.kind ?? null,
+                playerId: current?.playerId ?? null,
+                optionIds: options.map((option: any) => option?.value?.customId ?? option?.customId ?? option?.id),
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            kind: 'simple-choice',
+            playerId: '0',
+            optionIds: expect.arrayContaining(['use-loaded']),
+        });
+        const loadedOption = page.getByRole('button', { name: /^装填$/ }).first();
         await expect(loadedOption).toBeVisible({ timeout: 5000 });
         await loadedOption.click({ force: true });
 
@@ -335,9 +356,9 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             displayOnly: false,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(overlay.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        const diceTray = getRightTrayDiceTray(page);
+        await expect(diceTray.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
 
         const finalState = await game.getState();
         const finalDiceValues = (finalState?.core?.dice ?? []).map((die: any) => die.value);
@@ -349,9 +370,9 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             return state?.core?.pendingAttack?.attackModifierBonusDamage ?? null;
         }, { timeout: 5000 }).toBe(null);
 
-        await game.screenshot('gunslinger-wild-west-bonus-die-overlay', testInfo);
+        await game.screenshot('gunslinger-wild-west-bonus-die-right-tray', testInfo);
 
-        const bonusDie = page.getByTestId('bonus-die-reroll-option-0');
+        const bonusDie = getRightTrayDie(page, 0);
         await expect(bonusDie).toBeVisible({ timeout: 5000 });
         await page.evaluate(() => {
             window.__BG_TEST_HARNESS__?.dice.setValues([6]);
@@ -363,55 +384,67 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             return state?.core?.pendingBonusDiceSettlement?.dice?.[0]?.value ?? null;
         }, { timeout: 5000 }).toBe(6);
 
-        // 断言：已完成一次重掷后，应显示“到达重掷上限”，而不是“没装填可重掷”的误导提示
-        await expect(overlay).toContainText('已达到本次重掷上限', { timeout: 5000 });
+        // 断言：已完成一次重掷后，应进入重掷上限态，而不是“没装填可重掷”的误导状态。
+        await expect(bonusDie).toHaveAttribute('data-clickable', 'false', { timeout: 5000 });
         await expect(page.getByText('没有装填标记可用于重掷')).toHaveCount(0);
 
-        // 断言：在奖励骰仍处于特写阶段（未收口结算）时，不应提前计入“然后 +1”
+        // 断言：在奖励骰仍等待右侧骰盘确认时，不应提前计入“然后 +1”
         await expect.poll(async () => {
             const state = await game.getState();
             return state?.core?.pendingAttack?.attackModifierBonusDamage ?? null;
         }, { timeout: 5000 }).toBe(null);
 
-        await game.screenshot('gunslinger-wild-west-bonus-die-rerolled', testInfo);
+        await game.screenshot('gunslinger-wild-west-bonus-die-rerolled-right-tray', testInfo);
 
-        // 交互式奖励骰现在通过显式确认按钮收口；内容区点击不再承担关闭职责。
-        const confirmDamageButton = page.getByRole('button', { name: /^(确认伤害|Confirm Damage)$/i }).first();
-        await expect(confirmDamageButton).toBeVisible({ timeout: 5000 });
-        await confirmDamageButton.click();
-        await expect(overlay).toBeHidden({ timeout: 5000 });
-        await game.screenshot('gunslinger-wild-west-bonus-die-closed', testInfo);
-
+        // 交互式奖励骰现在通过右侧骰盘普通“确认”收口；旧特写点击不再是正式入口。
+        await settleCurrentBonusDice(page, () => game.getState(), {});
         await expect.poll(async () => {
             const state = await game.getState();
-            return state?.core?.pendingBonusDiceSettlement ?? null;
-        }, { timeout: 5000 }).toBeNull();
+            const context = state?.core?.currentRollContext;
+            return {
+                phase: state?.sys?.phase ?? null,
+                pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+                currentRollContext: context
+                    ? {
+                        id: context.id,
+                        kind: context.kind,
+                        status: context.status,
+                        replayOnly: context.display?.replayOnly ?? false,
+                        diceValues: Array.isArray(context.dice)
+                            ? context.dice.map((die: any) => die.value)
+                        : [],
+                    }
+                    : null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            pendingBonusDiceSettlement: null,
+            pendingAttack: null,
+            currentRollContext: null,
+        });
+        await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible [data-testid="dice-2d"]')).toHaveCount(0);
+        await game.screenshot('gunslinger-wild-west-bonus-die-confirmed-attack-resolved', testInfo);
 
-        // 断言：Wild West 绑定的 Loaded 奖励骰增强应在收口后清空，避免下次 Loaded 被错误复用（防回归）。
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state?.core?.pendingAttack?.loadedBonusDieBoost ?? null;
-        }, { timeout: 5000 }).toBeNull();
-
-        // 断言：收口后，总 bonusDamage 应包含 Loaded 半值加伤（6 -> +3）以及 Wild West 的“然后 +1”，合计 4；
-        // 但攻击修正汇总只应包含 Wild West 的 +1（Loaded 属于 token 效果，不应混入攻击修正卡汇总）。
+        // 断言：右侧骰盘普通确认后，Loaded 半值加伤（6 -> +3）与 Wild West +1 已落到最终血量。
+        const modifierBadge = page.locator('[data-testid="active-modifier-badge"]').first();
         await expect.poll(async () => {
             const state = await game.getState();
             return {
-                bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
-                attackModifierBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+                defenderHp: state?.core?.players?.['1']?.resources?.hp
+                    ?? state?.core?.players?.['1']?.resources?.HP
+                    ?? null,
+                lastResolvedAttackDamage: state?.core?.lastResolvedAttackDamage ?? null,
             };
-        }, { timeout: 5000 }).toMatchObject({
-            bonusDamage: 4,
-            attackModifierBonusDamage: 1,
+        }, { timeout: 10000 }).toMatchObject({
+            pendingAttack: null,
+            defenderHp: 46,
+            lastResolvedAttackDamage: 4,
         });
-
-        // 断言：该加伤应在“攻击修正”UI 区域可见（回应“荒野西部是否应显示在攻击修正里”的验收点）
-        const modifierBadge = page.locator('[data-testid="active-modifier-badge"]').first();
-        await expect(modifierBadge).toBeVisible({ timeout: 5000 });
-        await expect(modifierBadge).toHaveAttribute('data-bonus-damage', '1');
-        await game.screenshot('gunslinger-wild-west-attack-modifier-badge', testInfo);
-
+        await expect(modifierBadge).toHaveCount(0);
+        await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
+        await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+        await waitForDiceThroneVisualIdle(page);
         await game.screenshot('gunslinger-wild-west-bonus-die-settled', testInfo);
     });
 
@@ -456,7 +489,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await dragHandCardToPlay(page, 'card-wild-west');
 
-        // 断言：应提示 requireLoaded，而不是进入奖励骰特写
+        // 断言：应提示 requireLoaded，而不是进入右侧奖励骰结算态
         await expect(page.getByText('需要消耗 1 个装填才能打出此卡')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-testid="bonus-die-overlay"]')).toHaveCount(0);
 
@@ -476,7 +509,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         await game.screenshot('gunslinger-wild-west-require-loaded-toast', testInfo);
     });
 
-    test('card-high-noon（bullet）应造成 2 点不可防御伤害，并提供奖励骰特写证据链', async ({ page, game }, testInfo) => {
+    test('card-high-noon（bullet）应造成 2 点不可防御伤害，并通过右侧骰盘确认', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -520,7 +553,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
                 attackerId: settlement?.attackerId ?? null,
                 targetId: settlement?.targetId ?? null,
                 face: settlement?.dice?.[0]?.face ?? null,
-                // 高正午（bullet）伤害是立即结算的，但特写仍需收口
+                // 高正午（bullet）先停在右侧奖励骰盘；伤害必须等普通确认后才结算。
                 targetHp,
             };
         }, { timeout: 5000 }).toMatchObject({
@@ -529,22 +562,16 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             attackerId: '0',
             targetId: '1',
             face: 'bullet',
-            targetHp: 48,
+            targetHp: 50,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(overlay.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-bullet-overlay', testInfo);
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
+        await game.screenshot('gunslinger-high-noon-bullet-right-tray', testInfo);
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-bullet-closed', testInfo);
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state?.core?.pendingBonusDiceSettlement ?? null;
-        }, { timeout: 5000 }).toBeNull();
+        await settleCurrentBonusDice(page, () => game.getState(), {});
+        await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [1] });
+        await game.screenshot('gunslinger-high-noon-bullet-confirmed-review', testInfo);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -554,7 +581,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         await game.screenshot('gunslinger-high-noon-bullet-settled', testInfo);
     });
 
-    test('card-high-noon（dash）应施加 1 层击倒，并提供奖励骰特写证据链', async ({ page, game }, testInfo) => {
+    test('card-high-noon（dash）应施加 1 层击倒，并通过右侧骰盘确认', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -593,6 +620,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
                 attackerId: settlement?.attackerId ?? null,
                 targetId: settlement?.targetId ?? null,
                 face: settlement?.dice?.[0]?.face ?? null,
+                // 击倒必须等右侧骰盘普通确认后才施加。
                 knockdown,
             };
         }, { timeout: 5000 }).toMatchObject({
@@ -601,22 +629,16 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             attackerId: '0',
             targetId: '1',
             face: 'dash',
-            knockdown: 1,
+            knockdown: 0,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(overlay.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-dash-overlay', testInfo);
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
+        await game.screenshot('gunslinger-high-noon-dash-right-tray', testInfo);
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-dash-closed', testInfo);
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state?.core?.pendingBonusDiceSettlement ?? null;
-        }, { timeout: 5000 }).toBeNull();
+        await settleCurrentBonusDice(page, () => game.getState(), {});
+        await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [4] });
+        await game.screenshot('gunslinger-high-noon-dash-confirmed-review', testInfo);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -626,7 +648,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         await game.screenshot('gunslinger-high-noon-dash-settled', testInfo);
     });
 
-    test('card-high-noon（bullseye）应施加 1 层赏金，并提供奖励骰特写证据链', async ({ page, game }, testInfo) => {
+    test('card-high-noon（bullseye）应施加 1 层赏金，并通过右侧骰盘确认', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -665,6 +687,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
                 attackerId: settlement?.attackerId ?? null,
                 targetId: settlement?.targetId ?? null,
                 face: settlement?.dice?.[0]?.face ?? null,
+                // 赏金必须等右侧骰盘普通确认后才施加。
                 bounty,
             };
         }, { timeout: 5000 }).toMatchObject({
@@ -673,22 +696,16 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             attackerId: '0',
             targetId: '1',
             face: 'bullseye',
-            bounty: 1,
+            bounty: 0,
         });
 
-        const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(overlay.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-bullseye-overlay', testInfo);
+        await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+        await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
+        await game.screenshot('gunslinger-high-noon-bullseye-right-tray', testInfo);
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
-        await game.screenshot('gunslinger-high-noon-bullseye-closed', testInfo);
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state?.core?.pendingBonusDiceSettlement ?? null;
-        }, { timeout: 5000 }).toBeNull();
+        await settleCurrentBonusDice(page, () => game.getState(), {});
+        await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [6] });
+        await game.screenshot('gunslinger-high-noon-bullseye-confirmed-review', testInfo);
 
         await expect.poll(async () => {
             const state = await game.getState();

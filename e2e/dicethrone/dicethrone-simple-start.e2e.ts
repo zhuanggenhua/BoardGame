@@ -26,6 +26,7 @@ import { GUNSLINGER_CARDS } from '../../src/games/dicethrone/heroes/gunslinger/c
 import { VENGEANCE_2 } from '../../src/games/dicethrone/heroes/paladin/abilities';
 import { PALADIN_CARDS } from '../../src/games/dicethrone/heroes/paladin/cards';
 import { SAMURAI_CARDS } from '../../src/games/dicethrone/heroes/samurai/cards';
+import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -5008,9 +5009,8 @@ test.describe('DiceThrone Simple Start', () => {
 
         await eatMyLeadCard.click({ force: true });
 
-        const bonusDieOverlay = hostPage.locator('[data-testid="bonus-die-overlay"]').first();
-        await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
-        await expect(bonusDieOverlay.getByTestId('dice-2d')).toHaveCount(5, { timeout: 10000 });
+        await expectRightTrayBonusDiceConfirmation(hostPage, () => readHarnessState<any>(hostPage));
+        await expect(hostPage.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first().getByTestId('dice-2d')).toHaveCount(5, { timeout: 10000 });
 
         await expect.poll(async () => {
             const state = await readHarnessState<any>(hostPage);
@@ -5030,10 +5030,9 @@ test.describe('DiceThrone Simple Start', () => {
             defenderId: null,
         });
 
-        await saveEvidenceScreenshot(hostPage, testInfo, '08-four-player-eat-my-lead-overlay-on-auto-target');
+        await saveEvidenceScreenshot(hostPage, testInfo, '08-four-player-eat-my-lead-right-tray-on-auto-target');
 
-        await bonusDieOverlay.click({ force: true });
-        await expect(bonusDieOverlay).toBeHidden({ timeout: 10000 });
+        await settleCurrentBonusDice(hostPage, () => readHarnessState<any>(hostPage), {});
 
         await expect.poll(async () => {
             const state = await readHarnessState<any>(hostPage);

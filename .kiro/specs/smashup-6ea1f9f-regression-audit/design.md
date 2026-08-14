@@ -357,8 +357,8 @@ npm test -- meFirst.test.ts 2>&1 | tee /tmp/me-first-test.txt
 
 ### C. 参考文档
 
-- `docs/ai-rules/testing-audit.md` - 审计规范
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/testing-audit.md` - 审计规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 - `docs/automated-testing.md` - 测试规范
 - `tmp/6ea1f9f-bug-summary.md` - 已知 bug 总结
 - `tmp/6ea1f9f-critical-bugs.md` - 关键 bug 文档

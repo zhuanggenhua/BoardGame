@@ -100,7 +100,7 @@
   - 注册态：邮箱、发送验证码、验证码、昵称、密码、确认密码、注册按钮；
   - 重置态：邮箱、发送验证码、验证码、新密码、确认密码、重置按钮；
   - 当前没有第三方登录、协议勾选、Logo 说明区或教学说明。
-- 已更新 `docs/ai-rules/ui-ux.md`：之后生成设计稿前必须先盘点真实组件字段、按钮、状态和 i18n 文案；prompt 只能重排/美化已有能力，不能凭常见产品套路添加不存在的控件。
+- 已更新 `.spec/knowledge/standards/ui-ux.md`：之后生成设计稿前必须先盘点真实组件字段、按钮、状态和 i18n 文案；prompt 只能重排/美化已有能力，不能凭常见产品套路添加不存在的控件。
 - 已重新生成并保存登录弹窗目标稿：
   - 原始生成图：`D:\codex-home\generated_images\019e1cd3-23b2-7152-9efa-4a032bbc7295\ig_0913e0fb41b8bed6016a05264c6160819686f35def731606da.png`
   - 项目内目标稿：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\artifacts\home-v2-design\home-v2-auth-modal-target.png`
@@ -140,11 +140,11 @@
   - 真实根因：参考图实现验收缺失几何量测；此前只检查真实字段、modal 存在和大体风格，没有把目标稿 modal 占屏比例转为硬门禁。
   - 影响边界：所有按设计稿/生成稿/截图实现的 UI，尤其弹窗、浮层、书页目录、卡牌特写这类固定构图组件。
   - 应固化的不变量：实现必须对照目标稿关键比例，不能以“字段正确/大结构像”替代“符合设计稿”。
-  - 规范落点修正：用户指出“加错地方，应该是生图设计稿 -> 实现设计稿流程”。已新增 `docs/ai-rules/generated-design-implementation.md` 作为专项流程；`docs/ai-rules/ui-ux.md` 只保留入口提醒和通用 UI 原则；`docs/ai-rules/doc-index.md` 已加入该触发场景。
+  - 规范落点修正：用户指出“加错地方，应该是生图设计稿 -> 实现设计稿流程”。已新增 `.spec/knowledge/standards/generated-design-implementation.md` 作为专项流程；`.spec/knowledge/standards/ui-ux.md` 只保留入口提醒和通用 UI 原则；`.spec/knowledge/README.md` 已加入该触发场景。
 - 用户继续指出“为什么间隙很大，你只对齐了弹窗整体而不是弹窗内容吗”后，补充本质分析：
   - 判断成立：上一轮只把外框比例纳入门禁，未量 `forgot` 到 `submit`、主按钮位置、底部切换区等内部节奏。
   - 实现修正：非 embedded 登录态不再让表单 body 吃满剩余高度；登录态字段组使用更接近目标稿的纵向节奏。
-  - 流程修正：新增项目级 skill `.windsurf/skills/generated-design-implementation/SKILL.md`，并在 `docs/ai-rules/generated-design-implementation.md` 加入“内部间距不能被外框对齐掩盖”的强制项。
+  - 流程修正：新增项目级 skill `.windsurf/skills/generated-design-implementation/SKILL.md`，并在 `.spec/knowledge/standards/generated-design-implementation.md` 加入“内部间距不能被外框对齐掩盖”的强制项。
 - 已重新打开截图目录，并复制不会被同名覆盖缓存影响的新证据图：
   - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-auth-modal-overlay-20260514-inner-rhythm.png`
   - 源文件和副本 `LastWriteTime`：`2026/5/14 23:40:25`。
@@ -272,7 +272,7 @@
   - `返回目录` 当前是左上透明箭头 + 文本，没有深色胶囊背景、没有边框，也没有背景图；字号和热区仍足够，不再回到上一轮“小标签”问题。
   - 放大按钮后左页正文没有被继续压坏；右页账本仍上移在书页主区域，没有因为按钮变大被挤到中下部。
 - 规范修正：
-  - `.windsurf/skills/generated-design-implementation/SKILL.md`、`docs/ai-rules/generated-design-implementation.md` 和 `docs/ai-rules/ui-ux.md` 已修正：主操作/导航入口必须按主容器比例量高度、宽度、字号、热区、位置和装饰重量；创建/确认/加入等主操作需要可见承载，返回/关闭/回目录等导航入口必须按目标稿语义处理，目标稿是透明轻量样式时禁止强加按钮背景。
+  - `.windsurf/skills/generated-design-implementation/SKILL.md`、`.spec/knowledge/standards/generated-design-implementation.md` 和 `.spec/knowledge/standards/ui-ux.md` 已修正：主操作/导航入口必须按主容器比例量高度、宽度、字号、热区、位置和装饰重量；创建/确认/加入等主操作需要可见承载，返回/关闭/回目录等导航入口必须按目标稿语义处理，目标稿是透明轻量样式时禁止强加按钮背景。
 - 是否达到本轮验收标准：**达到“返回无背景轻量导航 + 创建房间主操作突出 + 两者都不再过小”的当前目标**。
 
 ### 2026-05-16 追加：详情页其他标签页与创建房间弹窗完成审计
@@ -340,7 +340,7 @@
   - 最新截图：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
   - 我实际看到什么：右页现在能看到 5 行完整房间和第 6 行起始，列分割线、表头、状态和操作按钮形成账本表格，不再是上一版只露出 3 行多的大卡片列表；左页简介和推荐人数仍可见，没有为了压右页而再次掏空左页。
 - 2026-05-17 追加：按 Home V2 专项规范继续修详情页左页和按钮。
-  - 新增规范：`docs/ai-rules/home-v2-design.md`，明确 Home V2 当前以移动横屏书本界面为验收对象，缩略图不能挤压描述，按钮必须是书页控件而不是普通网页胶囊。
+  - 新增规范：`.spec/knowledge/standards/home-v2-design.md`，明确 Home V2 当前以移动横屏书本界面为验收对象，缩略图不能挤压描述，按钮必须是书页控件而不是普通网页胶囊。
   - 实现变化：左页详情缩略图从 `96px` 缩到 `78px`，描述区宽度从 `0.72` 提升到 `0.83`；教程/创建房间按钮增加 lucide 图标、内描边、金色角标和上下细线。
   - E2E 量测：`detailThumbnailHeight=78.00`、`detailThumbnailWidthRatio=0.25`、`descriptionWidthRatio=0.83`、`tutorialWidthRatio=0.41`、`createRoomButtonHeight=32.00`、`createRoomButtonWidthRatio=0.30`。
   - 我实际看到什么：左页封面现在是辅助视觉，不再压住正文；`游戏简介` 区域完整可读；`教程模式` 和 `创建房间` 不再只是纯深色矩形，而是带书本按钮层次。
@@ -1330,7 +1330,7 @@ PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER
 - worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
 - 分支：`feat/homepage-v2`
 - 本轮目标：不改首页既有收口基线，继续把 **详情页状态** 从旧通用 scene 壳层中拆出来，改成与首页同类的固定构图 exact spread；中间翻页仍保留现有动画资源。
-- 移动端约束：按 `docs/mobile-adaptation.md` / `docs/ai-rules/ui-ux.md` 执行，固定构图类界面优先 `scale-to-fit`，移动端只条件化压缩，不改桌面端默认语义与结构。
+- 移动端约束：按 `docs/mobile-adaptation.md` / `.spec/knowledge/standards/ui-ux.md` 执行，固定构图类界面优先 `scale-to-fit`，移动端只条件化压缩，不改桌面端默认语义与结构。
 
 ## 本轮运行与校验
 

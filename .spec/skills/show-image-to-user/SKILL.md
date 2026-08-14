@@ -1,13 +1,13 @@
 ---
 name: show-image-to-user
-description: '给用户看本地图入口。Codex App 环境优先内联显示；非 Codex App 环境默认用 PureRef，PureRef 不可用时降级系统图片查看器；用于“打开图/图呢/给我看/我看看”；只展示已验证最终图，不展示候选或失败图。'
+description: '给用户看本地图入口。BoardGame 项目默认用 PureRef 打开；PureRef 不可用时降级系统图片查看器；用户明确要求在对话内展示时才用 Codex App 内联；用于“打开图/图呢/给我看/我看看”；只展示已验证最终图，不展示候选或失败图。'
 ---
 
 # Show Image To User
 
 ## BoardGame Project Adapter
 
-This project copy is the repository execution entry. It preserves the system image-display rules above and adds only BoardGame-specific paths and commands.
+This project copy is the repository execution entry. It preserves the system image-display safety rules and applies the BoardGame user preference that user-facing image delivery defaults to PureRef.
 
 - 主证据目录：`test-results/evidence-screenshots/<game>/<测试文件>/<用例>/`；目录、文件名和流程阶段遵循 `.spec/knowledge/standards/e2e-verification.md`。
 - 候选图、失败图和中间排查图不得作为最终 `passed` 交付；它们只能留在本地 evidence 或标为诊断材料。
@@ -23,6 +23,7 @@ node scripts/verify/open-verified-image.mjs --viewer pureref --paths "<00-sequen
 - `scripts/verify/open-verified-image.mjs` 只负责发起并回报查看器动作；脚本成功不等于用户已经看到图片。
 - `.spec/skills/show-image-to-user/scripts/label-image-sequence.py` 是项目内唯一的标记脚本，负责生成全尺寸标记副本和序列索引，不覆盖原图。具体何时生成、打开哪组文件仍由本 skill 的通用规则决定。
 - 项目证据资格另由 `.spec/knowledge/standards/e2e-verification.md` 和 `.spec/knowledge/standards/ui-change-gates.md` 负责；本节不复制它们的验收正文。
+- **当前用户偏好覆盖（强制）**：BoardGame 项目内，用户可见图片交付默认使用 PureRef，包括 Codex App / Codex desktop 环境。只有用户明确说“在这里打开 / 内联展示 / 发在对话里”，或 PureRef 与系统图片查看器都不可用时，才使用 Codex App Markdown 内联作为展示通道。
 
 ## Core Rule
 
@@ -30,8 +31,7 @@ Default to **not opening anything** unless the image is either explicitly reques
 
 - If a screenshot/image is produced as evidence, validation output, or a failed/partial candidate, first validate it as needed and report the absolute path.
 - Open/display an image when the user explicitly asks to see/open it, or when a workflow has produced a final closeout/acceptance image that has already passed AI visual validation. In the second case, opening is mandatory: do not stop at "validated", "passed", or a file path.
-- User preference: when running in Codex App / Codex desktop and local images can be rendered in-chat with Markdown, the default user-facing delivery is a Markdown image tag using the absolute local path. Do not open PureRef merely because an image is local if Codex App inline display is available.
-- Outside Codex App, PureRef is the default user-facing viewer. If PureRef is unavailable, does not stay running, or cannot accept the image, fall back to the Windows/system image viewer. An explicit request for PureRef or another external viewer overrides the Codex App inline default.
+- User preference: in the BoardGame project, the default user-facing delivery is PureRef, including Codex App / Codex desktop. If PureRef is unavailable, does not stay running, or cannot accept the image, fall back to the Windows/system image viewer. Use Codex App inline Markdown only when the user explicitly asks for in-chat display or external viewers fail.
 - For final closeout/acceptance images that have passed AI visual validation and are deliberately selected for user review, proactively display the original artifact in the same turn. Do not wait for another `图呢` / `打开图` request. This preference does not allow displaying intermediate, failed, stale, candidate, or unvalidated images as accepted artifacts.
 - Do not treat "E2E passed", "screenshot generated", "evidence updated", "screenshot chain complete", or "I need to inspect the image" as permission to open a local viewer; the image itself must be selected as the final user-facing closeout image and pass visual validation first.
 - If the user asks for a path, provide the absolute path and do not open the image.
@@ -44,15 +44,15 @@ Before sending any final response for a task that produced or validated a screen
 2. Did AI visual validation pass for that exact original image or every exact original image in the set?
 3. Has that exact image or exact image set been displayed in Codex App with Markdown image syntax, or has a PureRef / system-viewer open attempt succeeded or failed with explicit evidence in this same turn?
 
-If answers 1 and 2 are yes but answer 3 is no, the final response is prohibited. Display/open the image or image set first, then report. A `view_image` preview, OCR/contact-sheet reading, screenshot path, or statement such as "AI validation passed" never satisfies answer 3. A Markdown image tag with an absolute local path does satisfy answer 3 when the current Codex App supports inline local image rendering. Do not wait for the user to say `图呢` when the final validated image is already selected.
+If answers 1 and 2 are yes but answer 3 is no, the final response is prohibited. Display/open the image or image set first, then report. A `view_image` preview, OCR/contact-sheet reading, screenshot path, or statement such as "AI validation passed" never satisfies answer 3. In this project, PureRef is the default way to satisfy answer 3; a Markdown image tag with an absolute local path only satisfies answer 3 when the user explicitly selected in-chat display or external viewing failed. Do not wait for the user to say `图呢` when the final validated image is already selected.
 
-Common failure pattern to prevent: after running E2E, inspecting the screenshot with `view_image`, and deciding the UI is acceptable, the assistant replies with only a summary and path. That is incomplete; immediately display the same original screenshot in Codex App, or fall back to an external viewer before the final reply.
+Common failure pattern to prevent: after running E2E, inspecting the screenshot with `view_image`, and deciding the UI is acceptable, the assistant replies with only a summary and path. That is incomplete; immediately open the same original screenshot in PureRef, or fall back to the system viewer / explicit inline channel before the final reply.
 
 ## Delegation Boundary
 
 - A subagent may resolve paths, validate pixels, generate labels, or run the external viewer command, but its commentary and Markdown are not evidence that the user received a display. The parent agent owns the user-facing turn and must satisfy the Final Response Gate itself.
-- In Codex App, the parent agent must emit the selected image or numbered image set in its own user-facing response. Do not ask a subagent to emit Markdown and then treat a private subagent message as an inline display.
-- Outside Codex App, a subagent may execute the one required PureRef/system-viewer launch only when the parent delegates that exact action. It must return the command, selected paths, viewer result, and any process evidence. The parent reports that result without claiming an App inline display.
+- If the user explicitly selected Codex App inline display, the parent agent must emit the selected image or numbered image set in its own user-facing response. Do not ask a subagent to emit Markdown and then treat a private subagent message as an inline display.
+- A subagent may execute the one required PureRef/system-viewer launch only when the parent delegates that exact action. It must return the command, selected paths, viewer result, and any process evidence. The parent reports that result without claiming an App inline display.
 - When the parent cannot determine whether the user-facing channel is Codex App, it must not infer the channel from agent role or tool availability. The user's instruction `在这里打开` selects the App inline channel; all other opening requests use the external-viewer path.
 
 ## Multi-State Evidence Gate
@@ -62,20 +62,20 @@ Some business behavior cannot be proven by a single screenshot. If the active ta
 - Pagination/page-turning minimum: open at least two original screenshots as one ordered set: the current/first page before turning and the target/next page after turning. If the button state is part of the requirement, the set must show the relevant left/right button enabled/disabled state.
 - A single "after turning" screenshot is not enough to claim pagination validation. It cannot prove the starting page, the page-turn action, the before/after difference, or the business chain.
 - Multi-state final delivery must pass AI validation as a set. Validate that the selected images together cover the required states, sequence, and visible controls; do not validate only the prettiest or newest frame.
-- The user-facing display action must show the whole ordered set in Codex App as numbered Markdown images, or open it in one PureRef launch attempt when external viewing is needed, then report the exact order-to-meaning mapping. Do not show only the last image, and do not launch PureRef once per frame.
+- The user-facing display action must open the whole ordered set in one PureRef launch attempt by default, or show it in Codex App as numbered Markdown images only when inline display was explicitly selected or external viewing failed, then report the exact order-to-meaning mapping. Do not show only the last image, and do not launch PureRef once per frame.
 - Only allow a single image when the user explicitly asks for one frame, such as `只看一张`, `只打开最新图`, or `只看翻页后`. In that case, state that the image is a single-frame proof, not complete business-flow validation.
 
 ## Separation Of Responsibilities
 
 - **AI image reading / validation** means the assistant inspects an image to decide whether it passes. Use lightweight previews, OCR, contact sheets, crop scripts, `view_image`, or other assistant-side viewers when necessary. Do not open PureRef for this purpose.
-- **User image viewing / acceptance** means the user needs to see the final image. In Codex App, use Markdown image rendering with the absolute local path. Outside Codex App, use PureRef first and fall back to the system image viewer only when PureRef cannot be used.
+- **User image viewing / acceptance** means the user needs to see the final image. In BoardGame, use PureRef first and fall back to the system image viewer only when PureRef cannot be used. Use Codex App Markdown rendering with the absolute local path only when the user explicitly asks for in-chat display or external viewers fail.
 - **Displaying an image is a victory declaration, not a work-in-progress step.** Unless the user explicitly asks to see the image now, Codex inline display, PureRef, or an external viewer means "this is the selected user-facing artifact." Do not use it while still investigating, comparing candidates, checking E2E output, or deciding whether the screenshot passes. Once an image is validated and selected as the final acceptance artifact, user-facing display is required before the final report.
 - **Choose exactly one user-facing display channel per delivery.** Before displaying, decide whether this delivery uses Codex App inline Markdown, PureRef, or the system image viewer. After one channel succeeds, do not display/open the same selected image set in another channel in the same turn. If the wrong channel was used by mistake, report that mismatch and wait for an explicit correction request instead of “fixing” it by opening a second viewer.
 - Never open every screenshot generated by an E2E run. Pick only the required final acceptance images after validation. Intermediate, diagnostic, failed, stale, or candidate screenshots stay as paths plus written findings.
 - For multiple selected images in Codex App, render them as a numbered ordered set with one Markdown image per original artifact. For multiple selected images in PureRef, launching PureRef once per image is a failure even if every file opens; build one image path array and make exactly one PureRef launch attempt for that array. Only fall back to per-file default opening if PureRef is unavailable or does not stay running.
 - For multiple selected images, the assistant must also provide an ordered image-to-content mapping in the same turn. The mapping must use the exact inline/PureRef order and explain what each image proves in user-facing terms, such as `1. PC 选择态：事件牌 + 骰盘 + 属性选项`. Do not just say “已打开 8 张图” or rely on filenames.
 - If the displayed/opened images are diagnostic, stale, failed, or not yet accepted, the ordered mapping must say that explicitly for each group before describing content. Do not let a visible image imply acceptance merely because it rendered.
-- Showing an image to the user is not validation. AI validation is a separate step with a written pass/fail judgment; Codex inline display / PureRef / system viewer is only the display channel after that judgment or after an explicit user request.
+- Showing an image to the user is not validation. AI validation is a separate step with a written pass/fail judgment; PureRef / system viewer / explicit Codex inline display is only the display channel after that judgment or after an explicit user request.
 - **User-facing opens must use original-resolution acceptance artifacts.** For a single image, open the original screenshot/render/image that proves the target. For multiple images, open full-size labeled duplicates when sequence clarity matters, while preserving and reporting the original paths. Low-resolution previews, contact sheets, OCR crops, thumbnails, or downsampled composites are only for assistant-side validation. Open a contact sheet/composite only when the user explicitly asks for an overview/comparison sheet, or when that composite itself is the final requested deliverable.
 - **Blank or labels-only composites are failed artifacts.** A contact sheet, stitched comparison, sequence index, or overview image that shows empty/black panels, labels without the underlying screenshots, broken thumbnails, or placeholder blocks is not a valid user-facing image. Do not open it as an acceptance artifact. Trace it back to the original full-size screenshots and open the smallest complete ordered set that proves the requested flow.
 
@@ -123,15 +123,15 @@ When the user explicitly asks to see/open an image, do **not** satisfy the reque
 - **`Viewed Image` is forbidden before explicit opening is delivered.** After a user says `打开`、`打开图`、`打开图片`、`给我看图`、`图呢`、`我看看` or an equivalent request, do not call `view_image` or any tool that produces a `Viewed Image` event before the selected image is actually displayed in Codex App or opened through PureRef/system viewer. `Viewed Image` means the assistant inspected a local file; it does not mean the user saw it. If it appears before the user-visible action, classify the request as `OPEN_REQUEST_EXECUTION_FAILED`, immediately perform the required user-visible action with the same original path, and do not describe the preview as an opening attempt.
 - **Explicit opening has priority over AI inspection.** For an explicitly requested image, resolve the path and deliver it first. AI-side inspection may occur only after that delivery when separately needed for analysis, and must never replace or delay it.
 - `view_image`, OCR/contact-sheet reading, crops, thumbnails, or any other assistant-side visual inspection is **AI validation**, not the user-visible display action.
-- A Markdown image tag emitted to the user in Codex App with an absolute local path is **user-visible display** and is the preferred delivery channel when available.
-- If Codex App inline display is available, do not open PureRef first merely to satisfy `图呢` / `给我看图`; render the image in the current app first.
-- If Codex App inline display fails or is unavailable, fall back to PureRef, then the system image viewer if PureRef cannot be used.
-- After using `view_image` for AI validation, if the user says `图呢`, `给我看图`, `打开图`, or equivalent, immediately display the selected image with Codex Markdown or run the external-open fallback. Do not answer with “已经看过/已经显示/路径在...” unless a user-facing display/open attempt has been made and verified or has failed with evidence.
+- A Markdown image tag emitted to the user in Codex App with an absolute local path is **user-visible display** only when inline display is explicitly selected or used as a fallback.
+- In BoardGame, open PureRef first to satisfy `图呢` / `给我看图` / `打开图` unless the user explicitly asks for in-chat display.
+- If PureRef fails or is unavailable, fall back to the system image viewer; use Codex App inline display only if the user explicitly asks for it or external viewers cannot be used.
+- After using `view_image` for AI validation, if the user says `图呢`, `给我看图`, `打开图`, or equivalent, immediately open the selected image through the BoardGame PureRef-first workflow. Do not answer with “已经看过/已经显示/路径在...” unless a user-facing display/open attempt has been made and verified or has failed with evidence.
 - A final validated closeout image must be displayed to the user before claiming visual delivery complete. Assistant-side preview alone is incomplete.
 
 ## Immediate Response Rule For Explicit User Requests
 
-When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`, `打开图片`, `我看看`, or equivalent, the first user-facing delivery must be Codex App inline display when available; otherwise attempt PureRef and then the system image viewer if PureRef fails.
+When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`, `打开图片`, `我看看`, or equivalent, the first user-facing delivery in BoardGame must be PureRef. If PureRef fails or is unavailable, attempt the system image viewer. Use Codex App inline display only when the user explicitly asks for in-chat display or external viewers cannot be used.
 
 - Do not answer with only a path, evidence location, or statement that a screenshot exists.
 - Do not use assistant-side image preview, OCR, contact sheet, or `view_image` as the first delivery action.
@@ -149,7 +149,7 @@ When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`
 - If the active visual target is a flow or multi-state UI, such as entry -> first page -> last page, setup -> action -> result, PC + mobile, before/after, or opening/closing states, one screenshot is incomplete unless the user explicitly asks for a single frame. Select and display/open the minimal complete ordered set, then provide the ordered mapping.
    - For pagination/page-turning, the minimal complete set is at least two images: before turning and after turning. If there are previous/next buttons on the left and right, the screenshots must make those controls visible when their state matters.
 - If the user says the opened image is empty, wrong, stale, or asks why there is only one image, treat that as a delivery failure. First inspect the path that was opened, then replace it with the correct original screenshot(s) or complete sequence; do not defend the old artifact and do not just open one arbitrary replacement unless the target really is a single-frame proof.
-- A compliant response to an explicit open/show request must include a Codex App Markdown image render, or an attempted PureRef launch followed by the system viewer only when PureRef fails, unless no local file exists.
+- A compliant response to an explicit open/show request must include an attempted PureRef launch, followed by the system viewer only when PureRef fails, unless no local file exists or the user explicitly selected Codex App inline display.
 ## Required Workflow
 
 1. Resolve the exact image path.
@@ -162,18 +162,15 @@ When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`
    - If no image exists yet, first generate the screenshot/image, then display it.
 
 2. Open or display the image immediately for explicit user-visible image requests, and for final validated closeout/acceptance images only.
-   - First choice in Codex App / Codex desktop: render the original image inline with Markdown using an absolute filesystem path, e.g. `![说明](D:/absolute/path/image.png)`. Prefer forward slashes in Windows paths. If a path contains spaces or characters that may confuse Markdown, use angle brackets inside the image target, e.g. `![说明](<D:/path with spaces/image.png>)`.
-   - For multiple images in Codex App, render a numbered list with one Markdown image per selected original image, in the exact order described by the mapping.
-   - Do not also open PureRef after a successful Codex App inline display unless the user explicitly requests PureRef / external viewing or reports that inline rendering failed.
-   - External fallback first choice: reuse the existing PureRef window if PureRef is already running.
+   - First choice in BoardGame: reuse the existing PureRef window if PureRef is already running.
    - Before opening, always check for a running `PureRef` process. If one exists, call `C:\Program Files\PureRef\PureRef.exe` with the image path and treat that as an attempt to add/focus the image in the existing PureRef session.
    - If PureRef is installed but not running, start PureRef with the image path.
    - When opening multiple final acceptance images, pass all selected image paths in one PureRef launch call. Do not loop `Start-Process` once per image, because that can create one PureRef process/window per screenshot. Before running the command, self-check that the command has one `Start-Process -FilePath $pureRef` call for the whole array, not a `foreach` around PureRef.
    - For a multi-image closeout, the intended result is one PureRef session containing the selected images. If PureRef still opens multiple processes after a single multi-path launch, report the before/after process IDs and do not describe it as one reused window.
    - After any PureRef attempt, wait briefly and re-check `PureRef` process IDs. Do not claim the image reused the existing PureRef window unless there was a running PureRef process before the attempt and no new PureRef process ID appeared after the attempt.
    - If a new PureRef process appears after trying to reuse an existing one, report `PUREREF_OPENED_NEW_PROCESS` and do not describe the result as “reused the same PureRef”.
-   - If PureRef is unavailable, does not stay running, or fails to accept the image, use the Windows default image opener unless Codex App inline display was not yet attempted and is available.
-   - If neither Codex App inline display nor PureRef works, use the Windows default image opener with `Start-Process -FilePath <image-path>`.
+   - If PureRef is unavailable, does not stay running, or fails to accept the image, use the Windows default image opener.
+   - Use Codex App inline Markdown only when the user explicitly asks for `在这里打开 / 内联展示 / 发在对话里`, or when both PureRef and the system image viewer cannot be used. In that case, render the original image inline with Markdown using an absolute filesystem path, e.g. `![说明](D:/absolute/path/image.png)`. Prefer forward slashes in Windows paths. If a path contains spaces or characters that may confuse Markdown, use angle brackets inside the image target, e.g. `![说明](<D:/path with spaces/image.png>)`.
 
 3. Do not wait for the user to open it manually after they explicitly ask to open/show it.
    - The assistant must execute the open/display action whenever a local image path is available and the user explicitly requested viewing/opening.
@@ -186,7 +183,7 @@ When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`
 5. For validation/evidence without an explicit open/show request, open only final validated closeout/acceptance images.
    - Provide or render the screenshot's absolute path.
    - Say whether AI validation passed, failed, or was not performed.
-   - Render in Codex App inline, launch PureRef, Windows Photos, or browser viewers only when the image is the final validated closeout/acceptance image.
+   - Launch PureRef by default, then Windows Photos/system viewer if PureRef fails; render in Codex App inline only when the user explicitly asks for in-chat display or external viewers fail, and only when the image is the final validated closeout/acceptance image.
    - If AI validation passed and the image is the final closeout/acceptance image, display it immediately before reporting completion. A final response that says only `passed`, `validated`, or gives a path is incomplete.
    - Do not open failed, candidate, partial, diagnostic, stale, intermediate, bulk E2E, or unvalidated screenshots automatically.
    - If the image is being opened only so the assistant can inspect it, do not use PureRef and do not present it as user-facing display. Use a low-resolution preview/contact sheet/OCR/crop, `view_image`, or another assistant-side inspection tool instead.
@@ -201,7 +198,7 @@ When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`
 
 - If the image viewer cannot locate the file, immediately verify the path with a directory listing and retry with the resolved absolute path.
 - If the image was generated by Playwright or another screenshot tool, check that the file exists and has non-zero size before retrying.
-- If Codex App inline display was attempted but the user says the image did not render, treat that as a display failure and fall back to PureRef or the system image viewer with the same exact original path.
+- If Codex App inline display was explicitly selected or used as a fallback but the user says the image did not render, treat that as a display failure and fall back to PureRef or the system image viewer with the same exact original path.
 - If the user asked to reuse PureRef and no `PureRef` process is running, say clearly that there was no existing PureRef window to reuse, then start PureRef and verify that it stays running.
 - If `Start-Process` returns successfully but no `PureRef` process remains, treat that as a PureRef open failure and immediately fall back to Codex App inline display or the Windows default image opener.
 - If an existing PureRef process is running but the open command creates an additional PureRef process, treat it as “PureRef opened a new instance/window”, not as successful reuse. Report the before/after process IDs so the user can see what happened.
@@ -209,7 +206,7 @@ When the user explicitly asks `图呢`, `截图呢`, `给我看图`, `打开图`
 
 ## Codex App Inline Display
 
-Prefer this channel whenever the current app supports local Markdown images:
+Do not prefer this channel by default in BoardGame. Use it only when the user explicitly asks for in-chat display, or when PureRef and the system image viewer cannot be used:
 
 ```markdown
 ![用户可懂的图片说明](D:/absolute/path/to/image.png)
@@ -219,13 +216,13 @@ Rules:
 
 - The image target MUST be an absolute filesystem path, not a relative path.
 - Use the original screenshot/render/image selected for user viewing, not a thumbnail, crop, OCR helper, or assistant-side preview.
-- A successful inline Markdown render counts as the user-visible display action for this skill.
+- A successful inline Markdown render counts as the user-visible display action for this skill only when this channel was explicitly selected or used as a fallback.
 - `view_image` does not count; it is only for assistant-side inspection.
-- If the user asks for PureRef, system viewer, external opening, or says the inline image did not show, use the external fallback workflow.
+- If the user asks for PureRef, system viewer, external opening, or says the inline image did not show, use the external workflow.
 
 ## Windows Commands
 
-Use these only when Codex App inline display is unavailable, failed, or the user explicitly asks for an external viewer. Prefer and verify the existing PureRef process/window whenever possible. For multiple images, pass every selected image path in one `Start-Process` call:
+Use this workflow by default for BoardGame user-facing image delivery. Prefer and verify the existing PureRef process/window whenever possible. For multiple images, pass every selected image path in one `Start-Process` call:
 
 ```powershell
 $imagePaths = @(
@@ -277,6 +274,7 @@ When using `Start-Process`, do not mark AI validation complete. It only opens th
 ## Changelog
 
 - 2026-08-12: Unified viewer order: Codex App uses inline Markdown; outside Codex App, PureRef is the default and the system image viewer is the fallback. `view_image` remains assistant-only validation.
+- 2026-08-13: Updated BoardGame user preference: user-facing image delivery defaults to PureRef even in Codex App / Codex desktop; Codex inline display is only explicit request or fallback.
 - 2026-07-26: Added a multi-state evidence gate: pagination, page-turning, tabs, toggles, before/after, PC/mobile comparison, and flow states default to an ordered image set. Pagination now requires at least before-turning and after-turning screenshots, and the full set must be displayed together for user acceptance.
 - 2026-07-26: Added a hard final-response gate requiring a same-turn user-facing display/open attempt for any selected final image that already passed AI validation. This prevents finishing with only `view_image`, a path, or a written pass verdict and waiting for the user to ask `图呢`.
 - 2026-07-21: Added default multi-image PureRef sequence labeling with `scripts/label-image-sequence.py`, so final screenshot sets can be opened with visible order numbers and user-facing step names. Clarified that labels must preserve real object types, such as card vs skill vs response window, and that E2E sets must include previous-step transition notes.

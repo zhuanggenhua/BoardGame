@@ -2,7 +2,7 @@
 
 ## 审计范围
 
-根据 `docs/ai-rules/testing-audit.md` 的 D1-D49 维度，对忍者侍从（ninja_acolyte）的修复实现进行全链路审计。
+根据 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 维度，对忍者侍从（ninja_acolyte）的修复实现进行全链路审计。
 
 ## 审计结果
 
@@ -23,7 +23,7 @@
 }
 ```
 
-**Wiki 描述**：`docs/ai-rules/testing-audit.md` 中提到的 Wiki 快照
+**Wiki 描述**：`.spec/knowledge/standards/testing-audit.md` 中提到的 Wiki 快照
 ```
 wikiAbilityText: 'Special: On your turn, if you have not yet played a minion, you may return this minion to your hand and play an extra minion on this base.'
 ```

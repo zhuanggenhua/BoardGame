@@ -177,7 +177,7 @@ export const cardiaFlowHooks: FlowHooks<CardiaCore> = {
 
 ## 相关文档
 
-- `docs/ai-rules/engine-systems.md`：引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md`：引擎系统规范
 - `src/engine/transport/onlineAiRecovery.ts`：在线 AI 恢复机制
 - `src/engine/pipeline.ts`：游戏结束检测逻辑
 - `src/games/cardia/domain/flowHooks.ts`：Cardia 回合流程钩子

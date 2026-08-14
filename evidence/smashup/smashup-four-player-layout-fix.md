@@ -76,6 +76,6 @@
 
 ## 相关文档
 
-- `docs/ai-rules/ui-ux.md` - UI/UX 规范
+- `.spec/knowledge/standards/ui-ux.md` - UI/UX 规范
 - `src/games/smashup/ui/layoutConfig.ts` - 响应式布局配置
 - `src/games/smashup/ui/BaseZone.tsx` - 基地区域组件

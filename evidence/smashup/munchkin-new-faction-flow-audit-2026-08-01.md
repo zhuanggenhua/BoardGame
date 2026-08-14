@@ -321,7 +321,7 @@
 | 粉碎者 | `天赋：什么都不做。` | C1 天赋入口；C2 使用后无游戏状态变化；C3 仍需符合天赋按钮 / 可用性合同 | `implemented / L2_passed / L3/L4_passed`：天赋真实入口、两次点击确认、已使用标记和无额外游戏状态变化已验证 |
 | 重击者 | `摧毁一个力量2或更少的仆从。` | C1 入场 / 结算效果；C2 选择力量 2 或更少的仆从；C3 摧毁该仆从；C4 无合法目标时需阻塞或跳过按实现合同裁定 | `implemented / L2_passed / L3/L4_passed`：力量 2 或更少筛选、随从本体手动选择和摧毁收口已通过；无合法目标时移动端没有隐藏交互或假结算，负向图面已补 |
 | 呆瓜兽人 | `持续：这个仆从不受其他玩家的行动影响。` | C1 持续保护；C2 只保护这个仆从；C3 只防其他玩家的行动；C4 不防你的行动、基地效果、怪物效果或非行动影响 | `历史占位：已被 2026-08-05 当前对象矩阵、桌面真实入口和 2026-08-10 移动端对象级证据替代；当前实现状态见下方矩阵` |
-| 躺下！ | `特殊：一个基地计分前打出。如果你在这里有总计最高力量，其他玩家不能打出或使用特殊能力。` | C1 beforeScoring 特殊入口；C2 检查你在正在计分基地是否拥有总计最高力量；C3 若满足，其他玩家不能打出特殊牌；C4 其他玩家不能使用特殊能力；C5 平手最高是否满足需实现时按规则裁定 | `implemented / L2_passed / L3/L4_passed`：计分前响应、最高力量压制和移动端手动选择/收口已通过；落后时响应候选不再显示，平手最高边界仍保留在后续负向矩阵 |
+| 躺下！ | `特殊：一个基地计分前打出。如果你在这里有总计最高力量，其他玩家不能打出或使用特殊能力。` | C1 beforeScoring 特殊入口；C2 检查你在正在计分基地是否拥有总计最高力量；C3 若满足，其他玩家不能打出特殊牌；C4 其他玩家不能使用特殊能力；C5 平手最高仍满足“最高力量” | `implemented / L2_passed / L3/L4_passed`：计分前响应、最高力量压制和移动端手动选择/收口已通过；落后时响应候选不再显示，2026-08-13 已由双方 9/9 的真实移动端响应链验证平手最高仍可打出并完成压制清理 |
 | 愤怒的掠夺者 | `特殊：当一个基地计分时打出。如果你比第二名多至少3力量，获得1VP。` | C1 计分期间特殊入口；C2 检查你比第二名多至少 3 力量；C3 满足时获得 1VP；C4 未满足时不应获得 VP | `implemented / L2_passed / L3/L4_passed`：计分前响应、领先阈值、VP 奖励和移动端手动选择/收口已通过；领先不足 3 点时响应不显示且不产生额外 VP，负向图面已补 |
 | 挤碎 | `选择一个基地和一个在那里拥有比你更少仆从的玩家。摧毁那个玩家那里一个仆从。` | C1 选择基地；C2 选择该基地上仆从数量少于你的玩家；C3 选择那个玩家在那里 1 个仆从；C4 摧毁目标仆从；C5 无合法目标时不得生成隐藏交互或消耗卡牌 | `implemented / L2_passed / L3/L4_passed`：移动端补齐基地本体、可见玩家选项、目标随从本体三步手动选择和摧毁收口；无合法目标时卡牌留手且无交互收口已验证 |
 
@@ -908,9 +908,9 @@
 
 | 项目 | 证据 | 结论 |
 | --- | --- | --- |
-| 上位规范真相源 | `D:\codex-home\skills\game-ui-design\SKILL.md`；`docs\ai-rules\ui-ux.md` 第 109 行 | `canonical_source_confirmed`：玩家决策点不得因“只有一个候选”被系统隐式代选；当前仍需选择对象、目标、支付物、顺序、数量或模式时，即使候选只有 1 个，也必须手动点选。`docs\ai-rules\ui-ux.md` 已有等价项目 UI 规则，本轮补强全局 game-ui-design，并让新增派系 / Smash Up workflow 做薄适配 |
+| 上位规范真相源 | `D:\codex-home\skills\game-ui-design\SKILL.md`；`.spec\knowledge\standards\ui-ux.md` 第 109 行 | `canonical_source_confirmed`：玩家决策点不得因“只有一个候选”被系统隐式代选；当前仍需选择对象、目标、支付物、顺序、数量或模式时，即使候选只有 1 个，也必须手动点选。`.spec\knowledge\standards\ui-ux.md` 已有等价项目 UI 规则，本轮补强全局 game-ui-design，并让新增派系 / Smash Up workflow 做薄适配 |
 | 治理规范回代 | `D:\codex-home\skills\skill-governance\SKILL.md` | `passed`：已补“不得把跨项目不变量降级为单项目特例”：当用户质疑是否只改单游戏规范时，必须先检查上位 canonical-source；已有上位规则则按未执行已有规范处理，缺规则才更新全局 skill |
-| 项目适配 | `.spec\skills\add-new-faction\SKILL.md`；`docs\games\smashup\workflows\smashup-faction-implementation.md` | `passed_adapter`：新增派系和 Smash Up 专项 workflow 已明确：命中共享选择 helper / prompt / interaction 时必须反查 `autoResolveIfSingle` 或等价隐式代选默认；L3/E2E 必须逐段证明交互真实停住、玩家手动点选、再进入下一段或结算 |
+| 项目适配 | `.spec\skills\add-new-faction\SKILL.md`；`.spec\skills\smashup-faction-implementation\SKILL.md` | `passed_adapter`：新增派系和 Smash Up 专项 workflow 已明确：命中共享选择 helper / prompt / interaction 时必须反查 `autoResolveIfSingle` 或等价隐式代选默认；L3/E2E 必须逐段证明交互真实停住、玩家手动点选、再进入下一段或结算 |
 | 当前审计影响 | 本文盗贼记录 | `pre_fix_reclassified`：此前盗贼 166-178 的 `PASS / 93` 作废；旧 168 已明确判为 `REVISE`，对象级 L3/L4 收口结论降级为 `visual_revise / manual_choice_reaudit_pending`。2026-08-03 22:33 已完成打劫单链修复 / 重拍 / 重审，见下节；批次级手动选择重审仍未完成 |
 
 ## 2026-08-03 22:33 修复记录：打劫目标选择态重拍
@@ -1164,7 +1164,7 @@
 | 粉碎者 | 天赋入口与使用状态 | 桌面真实入口点击天赋，已使用标记可见；移动端横屏复核第一次点击待确认、第二次点击生效和已使用标记 | `L2 + 桌面 L3 + 移动端 L4 passed` |
 | 重击者 | 力量 2 或更少筛选、摧毁、单候选不自动结算 | 桌面真实随从本体高亮并完成摧毁；移动端横屏复核低力量候选、力量 3 排除、随从本体点击和布局收口 | `L2 + 桌面 L3 + 移动端 L4 passed` |
 | 呆瓜兽人 | 只防其他玩家行动的保护边界 | 桌面真实入口排除受保护目标，普通随从仍可手动选择并被摧毁；移动端三步选择复核同一候选过滤和收口 | `L2 + 桌面 L3/L4 + 移动端 L4 passed` |
-| 躺下！ | 最高力量门槛、特殊牌与特殊能力压制、平手边界 | 桌面计分前真实响应手动选择与压制状态收口；移动端横屏复核响应入口、提示避让和压制收口 | `L2 + 桌面 L3/L4 + 移动端 L4 passed` |
+| 躺下！ | 最高力量门槛、特殊牌与特殊能力压制、平手边界 | 桌面计分前真实响应手动选择与压制状态收口；移动端横屏复核响应入口、提示避让、压制收口，以及双方 9/9 平手仍可手动选择并正常基础计分 | `L2 + 桌面 L3/L4 + 移动端 L4 passed` |
 | 愤怒的掠夺者 | 领先第二名至少 3 点才奖励 VP | 桌面计分前真实响应手动选择与 VP 结算；移动端横屏复核响应入口、提示避让和 VP 收口 | `L2 + 桌面 L3/L4 + 移动端 L4 passed` |
 | 挤碎 | 基地→玩家→随从三段选择、摧毁和单候选手选 | 三张选择态截图与结算图 | `L2 + L3/L4 passed` |
 | 死亡之息 | 力量 4 或更少、按拥有者牌库底转移，且不选择受“太难了”保护的目标 | 桌面真实过滤保护目标并完成牌库底转移；移动端横屏只高亮未保护随从本体并验证收口 | `L2 + 桌面 L3/L4 + 移动端 L4 passed` |
@@ -1350,7 +1350,7 @@
 | --- | --- | --- |
 | 移动端真实入口 | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "直线跑路药水移动端横屏可手动选择计分后展示的宝藏" --project=chromium` | `passed`：1/1，29.8s；当前工作区真实 Smash Up 牌桌、`844x390` 横屏并启用粗指针模拟。玩家先通过页面可见响应入口手动选择《直线跑路药水》，再手动点击已展示宝藏《一袋铁蒺藜》，没有通过隐藏提交或单候选自动结算。 |
 | 四张当前截图 | `D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-munchkin-monster-treasure-ui.e2e\\直线跑路药水移动端横屏可手动选择计分后展示的宝藏\\移动端-直线跑路药水-计分前.jpg`、`移动端-直线跑路药水-afterScoring响应入口.jpg`、`移动端-直线跑路药水-手动选择已展示宝藏.jpg`、`移动端-直线跑路药水-计分收口后.jpg` | `PASS / object_mobile_visual`：计分前、afterScoring 响应入口、已展示宝藏选择层和收口状态均可读；基地、回合 / 阶段便签、公共宝藏小牌、手牌、弃牌堆和结束回合入口没有互相遮挡。 |
-| 短响应提示修正 | `src/games/smashup/ui/PromptOverlay.tsx`、`src/index.css`、`src/games/smashup/Board.tsx`；同一 E2E 内的 `smashup-docked-prompt`、基地牌和回合 / 阶段便签几何断言 | `fixed_scoped`：afterScoring 短响应提示改为移动横屏左侧停靠，不再压住中央基地或左上回合 / 阶段便签；提示层只承接响应按钮，不重复显示源卡。 |
+| 短响应提示历史口径 | `src/games/smashup/ui/PromptOverlay.tsx`、`src/index.css`、`src/games/smashup/Board.tsx`；同一 E2E 内的 `smashup-docked-prompt`、基地牌和回合 / 阶段便签几何断言 | `superseded_by_2026-08-14`：该批次曾把 afterScoring / beforeScoring 短响应提示并入 `smashup-docked-prompt` 并在移动横屏左侧停靠；回归排查确认响应窗口不应归入 Munchkin dock 分支，也不应另做移动端左侧停靠。当前以 `smashup-reaction-prompt` 独立承载，但位置沿用 PC 同构居中弹窗。 |
 | 收口状态 | 同一测试断言公共宝藏牌堆从 `x4` 到 `x1`，交互与响应窗口清空，玩家手牌新增被选择的已展示宝藏 | `passed_object_mobile_visual`：直线跑路药水计分后展示宝藏的移动端对象级链路已完成真实点击、状态断言和图面核销。 |
 | 当前范围裁决 | 直线跑路药水对象行与本节四张当前工作区截图 | `直线跑路药水移动端对象级 L4 已通过`；本条只覆盖《直线跑路药水》移动端 afterScoring 链路，不外推为其它宝藏、8 个派系、怪物对象或 Munchkin 新派系整体完成，整体仍保持 `in_progress / scoped_debt`。 |
 
@@ -1637,3 +1637,28 @@
 | 截图 3：目标消灭并收口 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人坑洞移动端其他玩家的非行动效果仍可影响坑洞随从\移动端-兽人坑洞非行动-目标被忍者道场消灭并收口.jpg` | `PASS / 92`：VP 6/7、计分基地替换、坑洞目标已离场并进入弃牌计数可见；公共小牌、两座基地、回合信息和结束回合入口仍在原版槽位内。 |
 | AI 图面审计 | 上述 3 张本次官方 runner 生成的当前工作区原始截图；已逐张打开核验 | `PASS / 92`：计分前、真实选择态和最终收口均清楚；没有提示遮挡、目标错位、公共小牌缺失、重复弃牌堆或横向溢出。 |
 | 当前范围裁决 | 本节仅覆盖兽人“坑洞”其他玩家非行动效果这一对象级边界 | `passed_object_mobile_visual / scoped_debt`：坑洞的行动保护、离开恢复、控制者自身行动和其他玩家非行动效果边界均已补齐；其它兽人对象、兽人整派系和 Munchkin 整体批次矩阵仍未完成，因此继续保持“实施中”。 |
+
+## 2026-08-13 续审记录：兽人《躺下！》并列最高移动端边界
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 移动端真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated PW_SKIP_ASSET_BOOTSTRAP=true node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人躺下移动端并列最高时仍进入计分前响应并完成压制清理" --project=chromium` | `passed`：1/1，官方隔离 runner 30.6 秒；真实 `844x390` 横屏、粗指针环境下双方在正在计分基地的力量均为 9。 |
+| 并列最高与手动响应 | 同一测试的真实计分前响应窗口、可见《躺下！》手牌与页面点击 | `passed`：平手仍被认定为最高力量；响应窗口明确要求选择反应动作，玩家手动选择《躺下！》，没有隐藏状态派发或自动代选。 |
+| 最终权威状态收口 | 同一测试最终 `game.getState()` 断言 | `passed`：压制事件已写入，《躺下！》进入弃牌；要塞离场并清场、交互与响应窗口均关闭。平手双方仅获得基础 3 VP，最终均为 `7/7`。 |
+| 截图 1：并列计分前 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人躺下移动端并列最高时仍进入计分前响应并完成压制清理\移动端-兽人躺下-并列最高计分前.jpg` | `PASS / 92`：双方9力量、要塞、手牌、公共怪物/宝藏小牌、回合信息和结束回合入口均清楚，无裁切或横向溢出。 |
+| 截图 2：响应入口 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人躺下移动端并列最高时仍进入计分前响应并完成压制清理\移动端-兽人躺下-并列最高计分前响应入口.jpg` | `PASS / 93`：响应窗口回到移动横屏中央区域，与 PC 响应窗口保持同一弹窗语义；不在左上角、顶部中轴或左侧停靠条；真实《躺下！》入口与“过”按钮可见，基地、随从、手牌、公共小牌和回合信息仍可读，没有横向溢出。 |
+| 截图 3：压制后清场收口 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人躺下移动端并列最高时仍进入计分前响应并完成压制清理\移动端-兽人躺下-并列最高压制后清场收口.jpg` | `PASS / 92`：双方 VP `7/7`、要塞清场、行动仅在弃牌区出现一次；公共小牌、手牌、回合信息和结束回合入口仍在原版布局内。 |
+| 当前范围裁决 | 本节仅覆盖兽人《躺下！》“平手最高仍可发动”这一对象级移动端边界 | `functional_passed / visual_passed / scoped_debt`：并列最高、手动选择、压制、最终状态和三张移动端原图均通过；响应窗口已退出 `smashup-docked-prompt`，以 `smashup-reaction-prompt` 独立识别，但位置沿用 PC 同构居中弹窗。兽人其余对象及 Munchkin 整体 C4/C5/C7 继续保持 `in_progress`。 |
+
+## 2026-08-13 修复记录：Smash Up 响应窗口移动端漂移回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 用户原始症状 | 用户反馈“弹窗跑左上角 / 之前不在顶上”，并要求先修弹窗再继续审计 | `regression_confirmed`：当前问题是响应窗口位置回归，不是玩法规则失败，也不是 Munchkin 整体审计完成问题。 |
+| 引入范围 | `b0053848a`（2026-08-05，作者：时侍）首次把 `smashup_reaction_choose` 纳入 Munchkin 停靠提示分支；`07f62bbba43135e58c61b3548a00fc528f6415a7`（2026-08-09，作者：时侍）又给 `smashup-docked-prompt` 增加移动横屏左侧停靠 CSS | `root_mechanism`：响应窗口被错误归类到 Munchkin player dock 提示；后续左侧 / 顶部微调都在错误分支内调整位置，容易变成左上角或顶部漂移。 |
+| 修复策略 | `src/games/smashup/ui/PromptOverlay.tsx`、`src/index.css` | `fixed_scoped`：响应窗口从 `shouldDockMunchkinPlayerPrompt` 分支移出，改用 `smashup-reaction-prompt` 独立测试锚点；删除响应窗口移动横屏左侧停靠 CSS，位置回到内联面板默认居中模型。其它 Munchkin dock prompt 的原有规则保持不变。 |
+| 回归断言 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：响应窗口存在时断言真实内容盒可见、`smashup-docked-prompt` 不存在、内容盒水平 / 垂直中心接近视口中心且无横向溢出；收口后同时断言 `smashup-reaction-prompt` 与 `smashup-docked-prompt` 均退场。 |
+| 移动端主链验证 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人躺下移动端并列最高时仍进入计分前响应并完成压制清理" --project=chromium` | `passed`：1/1，30.8 秒；截图 PASS / 93，响应窗口回到移动横屏中央区域，与 PC 保持同一弹窗语义，不再左侧停靠。 |
+| 同类移动端扩审 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "麻痹药水移动端横屏可手动选择计分前响应并收口" --project=chromium` | `passed`：1/1，37.5 秒；响应窗口同样居中，公共小牌断言继续使用“至少一个真实可见本体 + 数量”以匹配玩家可见对象，避免隐藏副本误判。 |
+| PC 对照 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "麻痹药水可从计分前响应窗口取消正在计分基地上的牌能力" --project=chromium` | `passed`：1/1，33.1 秒；撤销移动端左侧停靠没有改变桌面响应窗口。 |
+| 规范判断 | `.spec/skills/ui-audit-loop/SKILL.md`、`.spec/knowledge/standards/regression-closeout.md`、`.spec/skills/show-image-to-user/SKILL.md` | `no_new_rule_needed`：已有规范已经要求先找历史基线、回归优先恢复、当前真实截图 AI 审计 PASS 后主动给用户打开图；本次问题主要是执行没遵守，不是规范缺失。 |

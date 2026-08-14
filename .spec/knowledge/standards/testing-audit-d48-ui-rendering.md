@@ -1,3 +1,11 @@
+---
+name: testing-audit-d48-ui-rendering
+description: D48 UI 渲染审计维度：显示状态、交互载体和截图证明——审计 UI 渲染时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # D48：UI 交互渲染模式完整性审计（通用）
 
 > **新增维度**：补充 `testing-audit.md` 中缺失的 UI 渲染正确性检查

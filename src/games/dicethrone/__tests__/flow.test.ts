@@ -268,7 +268,7 @@ const baseTestCases: TestCase<DiceThroneExpectation>[] = [
         ],
         expect: {
             expectError: { command: 'ADVANCE_PHASE', error: '请先完成当前交互' },
-            turnPhase: 'main1',
+            turnPhase: 'offensiveRoll',
             pendingInteraction: { type: 'modifyDie', selectCount: 1, playerId: '0', dieModifyMode: 'any' },
         },
     },
@@ -1451,14 +1451,46 @@ describe('王权骰铸流程测试', () => {
 
             expect(result.success).toBe(true);
 
-            const resolvedState = result.state as MatchState<DiceThroneCore>;
+            const pendingBonusState = result.state as MatchState<DiceThroneCore>;
+            expect(pendingBonusState.core.pendingBonusDiceSettlement).toMatchObject({
+                sourceAbilityId: 'card-more-please',
+                attackerId: '0',
+                targetId: '3',
+                displayOnly: true,
+                continuation: {
+                    kind: 'attack',
+                    settlementStage: 'preDamage',
+                    markBonusDiceResolved: true,
+                },
+            });
+            expect(pendingBonusState.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
+            expect(getCurrentInteractionSummary(pendingBonusState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+            });
+
+            const confirmResult = executePipeline(
+                pipelineConfig,
+                pendingBonusState,
+                {
+                    type: 'SKIP_BONUS_DICE_REROLL',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(confirmResult.success).toBe(true);
+
+            const resolvedState = confirmResult.state as MatchState<DiceThroneCore>;
             expect(resolvedState.core.pendingBonusDiceSettlement).toBeUndefined();
             expect(resolvedState.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION]).toBe(1);
             expect(resolvedState.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
             expect(getCurrentInteractionSummary(resolvedState).id).toBeUndefined();
         });
 
-        it('4 人模式 targetingRoll 自动目标后，Loaded token 的奖励骰特写应命中自动目标', () => {
+        it('4 人模式 targetingRoll 自动目标后，Loaded token 的奖励骰结算应命中自动目标', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {
                 domain: DiceThroneDomain,
@@ -1528,9 +1560,39 @@ describe('王权骰铸流程测试', () => {
             );
 
             expect(loadedResult.success).toBe(true);
-            const finalState = loadedResult.state as MatchState<DiceThroneCore>;
-            expect(finalState.core.players['0'].tokens.loaded).toBe(0);
-            // Loaded 的奖励骰只是补充本次攻击伤害，自动目标与防御链必须保留。
+            const loadedPendingState = loadedResult.state as MatchState<DiceThroneCore>;
+            expect(loadedPendingState.core.players['0'].tokens.loaded).toBe(0);
+            expect(loadedPendingState.core.pendingBonusDiceSettlement).toMatchObject({
+                attackerId: '0',
+                targetId: '3',
+                displayOnly: true,
+                continuation: {
+                    kind: 'attack',
+                    settlementStage: 'preDamage',
+                    markBonusDiceResolved: false,
+                },
+            });
+            expect(loadedPendingState.core.pendingAttack?.defenderId).toBe('3');
+            expect(getCurrentInteractionSummary(loadedPendingState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+            });
+
+            const loadedConfirmResult = executePipeline(
+                pipelineConfig,
+                loadedPendingState,
+                {
+                    type: 'SKIP_BONUS_DICE_REROLL',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(loadedConfirmResult.success).toBe(true);
+            const finalState = loadedConfirmResult.state as MatchState<DiceThroneCore>;
+            // Loaded 的奖励骰只是补充本次攻击伤害，普通确认后自动目标与防御链必须保留。
             expect(finalState.sys.phase).toBe('defensiveRoll');
             expect(finalState.core.pendingBonusDiceSettlement).toBeUndefined();
             expect(finalState.core.pendingAttack).toMatchObject({
@@ -2295,11 +2357,38 @@ describe('王权骰铸流程测试', () => {
                 playerIds,
             );
             expect(targetResolveResult.success).toBe(true);
-            state = targetResolveResult.state as MatchState<DiceThroneCore>;
+            const awaitingBonusConfirmState = targetResolveResult.state as MatchState<DiceThroneCore>;
 
-            expect(state.core.pendingAttack?.defenderId).toBe('1');
+            expect(awaitingBonusConfirmState.core.pendingAttack?.defenderId).toBe('1');
+            expect(awaitingBonusConfirmState.core.pendingAttack?.deferredAttackModifierCardIds ?? []).toEqual([]);
+            expect(awaitingBonusConfirmState.core.pendingBonusDiceSettlement).toMatchObject({
+                sourceAbilityId: 'card-more-please',
+                attackerId: '0',
+                targetId: '1',
+                displayOnly: true,
+            });
+            expect(awaitingBonusConfirmState.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
+            expect(getCurrentInteractionSummary(awaitingBonusConfirmState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+            });
+
+            const bonusConfirmResult = executePipeline(
+                pipelineConfig,
+                awaitingBonusConfirmState,
+                {
+                    type: 'SKIP_BONUS_DICE_REROLL',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(bonusConfirmResult.success).toBe(true);
+            state = bonusConfirmResult.state as MatchState<DiceThroneCore>;
+
             expect(state.sys.phase).toBe('defensiveRoll');
-            expect(state.core.pendingAttack?.deferredAttackModifierCardIds ?? []).toEqual([]);
             expect(state.core.pendingBonusDiceSettlement).toBeUndefined();
             expect(state.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION]).toBe(1);
             expect(state.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
@@ -2677,11 +2766,37 @@ describe('王权骰铸流程测试', () => {
             expect(useResult.success).toBe(true);
             if (!useResult.success) return;
 
-            const ninjutsuPrompt = getSimpleChoicePrompt(useResult.state, 'shadow-fang-2-main');
+            expect(useResult.state.core.pendingBonusDiceSettlement).toMatchObject({
+                sourceAbilityId: 'shadow-fang-2-main',
+                attackerId: '0',
+                targetId: '1',
+                displayOnly: true,
+            });
+            expect(getCurrentInteractionSummary(useResult.state)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+            });
+
+            const confirmNinjutsuRollResult = executePipeline(
+                pipelineConfig,
+                useResult.state,
+                {
+                    type: 'SKIP_BONUS_DICE_REROLL',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(confirmNinjutsuRollResult.success).toBe(true);
+            if (!confirmNinjutsuRollResult.success) return;
+
+            const ninjutsuPrompt = getSimpleChoicePrompt(confirmNinjutsuRollResult.state, 'shadow-fang-2-main');
             const undefendableOption = ninjutsuPrompt.options.find((option) => option.value?.customId === 'ninja-ninjutsu-undefendable');
             expect(undefendableOption).toBeTruthy();
 
-            const resolveResult = respondToPrompt(useResult.state, undefendableOption!.id, '0', createQueuedRandom([1]), playerIds);
+            const resolveResult = respondToPrompt(confirmNinjutsuRollResult.state, undefendableOption!.id, '0', createQueuedRandom([1]), playerIds);
             expect(resolveResult.success).toBe(true);
             if (!resolveResult.success) return;
 
@@ -2912,9 +3027,25 @@ describe('王权骰铸流程测试', () => {
             const passed = runner.dispatch('RESPONSE_PASS', { playerId: responderId });
             expect(passed.success).toBe(true);
 
-            expect(passed.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
-            expect(getCurrentInteractionSummary(passed.finalState).id).toBeUndefined();
-            expect(passed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp + 2);
+            expect(passed.finalState.core.pendingBonusDiceSettlement).toMatchObject({
+                sourceAbilityId: 'card-one-throw-fortune',
+                attackerId,
+                displayOnly: true,
+            });
+            expect(passed.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
+            expect(passed.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(passed.finalState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: attackerId,
+            });
+            expect(passed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp);
+
+            runner.setState(passed.finalState);
+            const confirmed = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: attackerId });
+            expect(confirmed.success).toBe(true);
+            expect(confirmed.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(getCurrentInteractionSummary(confirmed.finalState).id).toBeUndefined();
+            expect(confirmed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp + 2);
         });
 
         it('奖励骰有可重投能力时先开放响应，能力重投并让过后必须等待骰主普通确认', () => {
@@ -5958,10 +6089,10 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it('flowHalted=true 状态下打出大吉大利不会误触发阶段推进', () => {
+        it('flowHalted=true 状态下打出大吉大利会挂起父奖励骰并在普通确认后恢复', () => {
             // 场景：攻击结算产生 BONUS_DICE_REROLL_REQUESTED → halt → flowHalted=true
-            // 此时玩家打出"大吉大利"（instant 卡），不会覆盖当前攻击的 bonus dice settlement
-            // 阶段应停留在 offensiveRoll（因为攻击的 bonus dice 还未处理）
+            // 此时玩家打出"大吉大利"（instant 卡），新的奖励骰必须显式挂起当前攻击奖励骰，
+            // 阶段应停留在 offensiveRoll；大吉大利确认后恢复父奖励骰，不能丢失原攻击收口。
             const random = createQueuedRandom([
                 // card-lucky 的 handleLuckyRollHeal 需要 3 次 d(6)
                 3, 3, 3,
@@ -6023,8 +6154,16 @@ describe('王权骰铸流程测试', () => {
                 },
             });
             expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.pendingBonusDiceSettlement?.id).toBe('attack-thunder-bonus');
-            expect(result.finalState.core.pendingBonusDiceSettlement?.suspendedParentSettlement).toBeUndefined();
+            expect(result.finalState.core.pendingBonusDiceSettlement?.sourceAbilityId).toBe('card-lucky');
+            expect(result.finalState.core.pendingBonusDiceSettlement?.suspendedParentSettlement?.id).toBe('attack-thunder-bonus');
+            expect(result.finalState.sys.phase).toBe('offensiveRoll');
+
+            runner.setState(result.finalState);
+            const luckyConfirmed = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '0' });
+            expect(luckyConfirmed.success).toBe(true);
+            expect(luckyConfirmed.finalState.core.pendingBonusDiceSettlement?.id).toBe('attack-thunder-bonus');
+            expect(luckyConfirmed.finalState.core.pendingBonusDiceSettlement?.suspendedParentSettlement).toBeUndefined();
+            expect(luckyConfirmed.finalState.sys.phase).toBe('offensiveRoll');
         });
     });
 });

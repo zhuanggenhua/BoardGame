@@ -49,7 +49,7 @@
 
 ## 机制级补充（本轮已落地）
 - 审计规范新增“替代/防止语义合同审计（强制）”
-  - 文档：@docs/ai-rules/testing-audit.md#100-117
+  - 文档：@.spec/knowledge/standards/testing-audit.md#100-117
 - 审计测试新增“描述含 防止...被消灭 必须有 onMinionDestroyed 触发器”
   - 测试：@src/games/smashup/__tests__/abilityBehaviorAudit.test.ts#252-264
 - 清理巨蚁历史豁免（避免再次漏审）

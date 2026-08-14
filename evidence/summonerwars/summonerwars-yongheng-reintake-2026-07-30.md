@@ -3,7 +3,7 @@
 ## 结论
 
 - 旧录入不是没有文档，而是通用录入规范和旧永恒议会 evidence 存在，但召唤师战争专项 workflow 没写清卡面数值版式，旧 evidence 又把错读结果标成 `locked`。
-- 本次已把版式规则补回 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md`，并把通用录入路由补到 `.spec/skills/data-entry-workflow/SKILL.md` 与 `docs/ai-rules/data-entry.md`。
+- 本次已把版式规则补回 `.spec/skills/summonerwars-faction-intake/SKILL.md`，并把通用录入路由补到 `.spec/skills/data-entry-workflow/SKILL.md` 与 `.spec/knowledge/standards/data-entry.md`。
 - 永恒议会单位牌按主图重录：左上第一数字是费用，左上红心是生命，右下圆牌是战力和攻击类型。
 
 ## 真相源表
@@ -64,7 +64,7 @@
 | 文件 | 动作 |
 | --- | --- |
 | `.spec/skills/data-entry-workflow/SKILL.md` | 补召唤师战争录入路由 |
-| `docs/ai-rules/data-entry.md` | 补专用 workflow 索引 |
-| `docs/games/summonerwars/workflows/summonerwars-faction-intake.md` | 补卡面版式锁定和新派系抽样回读门禁 |
+| `.spec/knowledge/standards/data-entry.md` | 补专用 workflow 索引 |
+| `.spec/skills/summonerwars-faction-intake/SKILL.md` | 补卡面版式锁定和新派系抽样回读门禁 |
 | `src/games/summonerwars/config/factions/yongheng.ts` | 修正永恒议会费用、生命、战力、攻击类型和牌组符号结构化数据 |
 | `src/games/summonerwars/__tests__/abilities-yongheng.test.ts` | 静态测试同步新版式合同，并补测牌组符号和事件费用 |

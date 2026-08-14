@@ -1,5 +1,6 @@
 import {
     BETRAYAL_DISCOVERY_POOLS,
+    BETRAYAL_EXPLORER_CATALOG,
     BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS,
     BETRAYAL_SCENARIO_CARD_CANDIDATES,
     BETRAYAL_SCENARIO_CONFIGS,
@@ -16,6 +17,7 @@ export const BETRAYAL_CONFIG_REVIEW_VERSION = 'legacy-ts-config-v1';
 export const BETRAYAL_CONFIG_REVIEW_TABLE_ID = 'betrayal:legacy-config-review';
 
 export type BetrayalConfigReviewType =
+    | 'explorer'
     | 'starting-room'
     | 'room-template'
     | 'scenario-card'
@@ -33,6 +35,13 @@ export type BetrayalConfigReviewStatus =
 export const BETRAYAL_CONFIG_REVIEW_FIELD_KEYS = [
     'category',
     'name',
+    'explorerId',
+    'panelAsset',
+    'panelSourceFile',
+    'mapTokenAsset',
+    'mapTokenSourceFile',
+    'mapTokenCompressedAsset',
+    'assetUsageContract',
     'floor',
     'coordinates',
     'state',
@@ -73,6 +82,7 @@ export type BetrayalConfigReviewFieldValueKind =
 
 export type BetrayalConfigReviewFieldApplicability =
     | 'all'
+    | 'explorer'
     | 'room'
     | 'scenario'
     | 'haunt';
@@ -115,6 +125,9 @@ const FIELD_EVIDENCE = {
     roomContract: 'evidence/betrayal/full-audit/room-tile-s0-contract-2026-07-29.md',
     setupAudit: 'evidence/betrayal/full-audit/opening-setup-and-explorer-config-audit-2026-08-01.md',
     hauntDocs: 'docs/games/betrayal/haunts/*.md',
+    intakeContract: 'docs/games/betrayal/intake-contract.md',
+    runtimeResourceMap: 'docs/games/betrayal/sources/image-index/runtime-resource-map.json',
+    assetManifest: 'public/assets/i18n/zh-CN/betrayal/assets-manifest.json',
 } as const;
 
 const EDGE_ORDER: readonly BetrayalRoomEdge[] = ['north', 'east', 'south', 'west'];
@@ -181,6 +194,7 @@ function buildRow({
     values,
     sourceContexts,
     root,
+    fieldPathOverrides,
 }: {
     objectType: BetrayalConfigReviewType;
     objectId: string;
@@ -189,6 +203,7 @@ function buildRow({
     values: Partial<Record<BetrayalConfigReviewFieldKey, unknown>>;
     sourceContexts: string[];
     root: string;
+    fieldPathOverrides?: Partial<BetrayalConfigReviewFieldPaths>;
 }): BetrayalConfigReviewRow {
     const normalizedValues = {
         category: groupName,
@@ -203,7 +218,10 @@ function buildRow({
         displayName,
         values: normalizedValues,
         sourceContexts,
-        fieldPaths: allFieldPaths(root),
+        fieldPaths: {
+            ...allFieldPaths(root),
+            ...fieldPathOverrides,
+        },
         searchText: [
             objectType,
             objectId,
@@ -252,6 +270,45 @@ function buildStartingRoomRow(room: BetrayalRoomSeed): BetrayalConfigReviewRow {
             FIELD_EVIDENCE.setupAudit,
         ],
         root: `legacy.betrayal.scenarioConfig.BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout.${room.id}`,
+    });
+}
+
+function buildExplorerRows(): BetrayalConfigReviewRow[] {
+    return BETRAYAL_EXPLORER_CATALOG.map((explorer) => {
+        const tokenAsset = explorer.tokenAsset ?? '';
+        const tokenCompressedAsset = tokenAsset
+            ? `public/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/${explorer.explorerId}.webp`
+            : '';
+
+        return buildRow({
+            objectType: 'explorer',
+            objectId: explorer.explorerId,
+            groupName: '探索者角色',
+            displayName: explorer.displayName,
+            values: {
+                explorerId: explorer.explorerId,
+                panelAsset: explorer.portraitAsset,
+                panelSourceFile: `public/assets/i18n/zh-CN/${explorer.portraitAsset}.png`,
+                mapTokenAsset: tokenAsset,
+                mapTokenSourceFile: tokenAsset ? `public/assets/i18n/zh-CN/${tokenAsset}.png` : '',
+                mapTokenCompressedAsset: tokenCompressedAsset,
+                assetUsageContract: '玩家面板使用 panelAsset / portraitAsset；地图房间角色 token 使用 mapTokenAsset / tokenAsset；两者不能互相替代',
+                reviewStatus: tokenAsset ? 'locked' : 'blocked',
+            },
+            sourceContexts: [
+                FIELD_EVIDENCE.scenarioConfig,
+                FIELD_EVIDENCE.intakeContract,
+                FIELD_EVIDENCE.runtimeResourceMap,
+                FIELD_EVIDENCE.assetManifest,
+            ],
+            root: `legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.${explorer.explorerId}`,
+            fieldPathOverrides: {
+                explorerId: `legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.${explorer.explorerId}.explorerId`,
+                name: `legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.${explorer.explorerId}.displayName`,
+                panelAsset: `legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.${explorer.explorerId}.portraitAsset`,
+                mapTokenAsset: `legacy.betrayal.scenarioConfig.BETRAYAL_EXPLORER_CATALOG.${explorer.explorerId}.tokenAsset`,
+            },
+        });
     });
 }
 
@@ -395,6 +452,76 @@ export const BETRAYAL_CONFIG_REVIEW_FIELD_DEFINITIONS: readonly BetrayalConfigRe
         meaning: '玩家可见对象名称',
         evidence: [FIELD_EVIDENCE.scenarioConfig],
         getValue: (row) => row.values.name,
+    },
+    {
+        key: 'explorerId',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: false,
+        requiredForAudit: true,
+        meaning: '探索者唯一配置 ID，用于关联玩家面板资源和地图 token',
+        evidence: [FIELD_EVIDENCE.scenarioConfig],
+        getValue: (row) => row.values.explorerId,
+    },
+    {
+        key: 'panelAsset',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: true,
+        requiredForAudit: true,
+        meaning: '玩家面板 / 角色板资源；左上玩家面板读取这个字段',
+        evidence: [FIELD_EVIDENCE.scenarioConfig, FIELD_EVIDENCE.intakeContract],
+        getValue: (row) => row.values.panelAsset,
+    },
+    {
+        key: 'panelSourceFile',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: false,
+        requiredForAudit: true,
+        meaning: '玩家面板资源源文件路径，用于人工核对角色板 / 肖像',
+        evidence: [FIELD_EVIDENCE.intakeContract, FIELD_EVIDENCE.assetManifest],
+        getValue: (row) => row.values.panelSourceFile,
+    },
+    {
+        key: 'mapTokenAsset',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: true,
+        requiredForAudit: true,
+        meaning: '地图房间内角色 token 资源；地图 token 渲染读取这个字段',
+        evidence: [FIELD_EVIDENCE.scenarioConfig, FIELD_EVIDENCE.runtimeResourceMap],
+        getValue: (row) => row.values.mapTokenAsset,
+    },
+    {
+        key: 'mapTokenSourceFile',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: false,
+        requiredForAudit: true,
+        meaning: '地图角色 token 源图路径，用于人工核对正式 token',
+        evidence: [FIELD_EVIDENCE.runtimeResourceMap, FIELD_EVIDENCE.assetManifest],
+        getValue: (row) => row.values.mapTokenSourceFile,
+    },
+    {
+        key: 'mapTokenCompressedAsset',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: false,
+        requiredForAudit: true,
+        meaning: '地图角色 token 压缩运行时资源路径',
+        evidence: [FIELD_EVIDENCE.intakeContract, FIELD_EVIDENCE.assetManifest],
+        getValue: (row) => row.values.mapTokenCompressedAsset,
+    },
+    {
+        key: 'assetUsageContract',
+        valueKind: 'string',
+        applicability: 'explorer',
+        editable: false,
+        requiredForAudit: true,
+        meaning: '玩家面板和地图 token 的职责边界，防止两类资源串用',
+        evidence: [FIELD_EVIDENCE.intakeContract, FIELD_EVIDENCE.runtimeResourceMap],
+        getValue: (row) => row.values.assetUsageContract,
     },
     {
         key: 'floor',
@@ -645,6 +772,7 @@ export function isBetrayalConfigReviewFieldApplicable(
 ): boolean {
     const applicability = getBetrayalConfigReviewFieldDefinition(fieldKey).applicability;
     if (applicability === 'all') return true;
+    if (applicability === 'explorer') return row.objectType === 'explorer';
     if (applicability === 'room') return row.objectType === 'starting-room' || row.objectType === 'room-template';
     if (applicability === 'scenario') return row.objectType === 'scenario-card' || row.objectType === 'scenario-config';
     if (applicability === 'haunt') return row.objectType === 'scenario-card' || row.objectType === 'haunt-static';
@@ -653,6 +781,7 @@ export function isBetrayalConfigReviewFieldApplicable(
 
 export function buildBetrayalConfigReviewTable(): BetrayalConfigReviewTable {
     const rows: BetrayalConfigReviewRow[] = [
+        ...buildExplorerRows(),
         ...BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout.map(buildStartingRoomRow),
         ...Object.entries(BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor).flatMap(([floor, rooms]) => (
             rooms.map((room) => buildRoomTemplateRow(floor as BetrayalRoomFloor, room))

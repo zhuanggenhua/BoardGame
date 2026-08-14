@@ -15,8 +15,8 @@
 ## 权威来源
 
 - 本项目 `AGENTS.md`
-- `docs/ai-rules/testing-audit.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/testing-audit.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - 当前实现代码本身（本地房间、联机房间、LocalGameProvider、GameProvider）
 
 ## 审计维度

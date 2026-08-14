@@ -230,7 +230,7 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
    - 确认技能按钮在攻击发起后被禁用
 
 5. **[ ] 文档更新**
-   - 更新 `docs/ai-rules/engine-systems.md` 中的验证规范
+   - 更新 `.spec/knowledge/standards/engine-systems.md` 中的验证规范
    - 记录此次修复的教训
 
 ---

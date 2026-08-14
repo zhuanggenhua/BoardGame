@@ -1079,7 +1079,7 @@
   - `manual-boundary-user-city-name-smoke-unique-20260530`
   当前 `region-boundary-mask.png` 都仍只有 `6,917 px`，属于旧编辑态或烟雾验证态，不能当完整边界本体。
 - 本轮已补 UI 告警，默认页会明确提示“当前红线只是自动反推显示层，不是真实手工边界图”。
-- 后续若继续清理旧 overlay、旧截图或旧工作区，先按 `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` 的分类核对引用，再决定归档或删除。
+- 后续若继续清理旧 overlay、旧截图或旧工作区，先按 `docs/games/qidahen/records/qidahen-region-mask-truth-sources.md` 的分类核对引用，再决定归档或删除。
     - `region-graph.json`：`22` 个节点 / `44` 条边，节点名包含 `测试城`；
     - `region-mask.png`：`545,101` 个不透明像素，`22` 个唯一颜色；
     - 刷新回读后 UI 显示 `22` 个区域输入、`22` 个地图中心点、`中心 22 / 通路 44`；

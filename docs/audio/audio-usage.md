@@ -1,15 +1,15 @@
-# 音频资源使用合同
+# 音频资源使用参考
 
-> 本文承载 BoardGame 音频资源的目录、生成命令、查找/试听、BGM 分配和项目接入合同。
-> 跨游戏运行时架构、共享音频包路径和音效触发时机主源是 `.spec/knowledge/standards/audio-assets.md`；执行型 workflow 走系统 skill：`D:\codex-home\skills\audio-integration\SKILL.md`。
-> 如果任务是“对接音效 / 查匹配 key / 新增素材 / 补预加载 / 做试听收口”，先走该 skill，再回到本文查具体项目合同。
+> 本文只承载 BoardGame 音频资源的目录、生成命令、查找/试听、BGM 分配和项目接入参考。
+> 跨游戏运行时架构、共享音频包路径和音效触发时机主源是 `.spec/knowledge/standards/audio-assets.md`；执行型 workflow 走项目 skill：`.spec/skills/audio-integration/SKILL.md`。
+> 如果任务是“对接音效 / 查匹配 key / 新增素材 / 补预加载 / 做试听收口”，先走该 skill，再回到本文查具体命令、目录和示例。
 
 ## 0. 文档分工
 
-- `D:\codex-home\skills\audio-integration\SKILL.md`
+- `.spec/skills/audio-integration/SKILL.md`
   承担执行步骤、查找链路、汇报模板、/dev/audio 收口动作
 - `docs/audio/add-audio.md`
-  承担新增外部音频素材的目录、命名、产物和验收合同
+  承担新增外部音频素材的目录、命名、产物和示例
 - `docs/audio/audio-catalog.md`
   承担语义目录检索入口
 - `docs/audio/registry.ai.json`
@@ -244,7 +244,7 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 - 用户手势解锁处理器必须在 `ctx.resume().then()` 回调中继续播放
 - 单独的 AudioContext 也要遵守同样规则
 
-详细代码示例见 `docs/ai-rules/golden-rules.md`。
+详细代码示例见 `.spec/knowledge/standards/golden-rules.md`。
 
 ## 8. 已安装包 / 本地包 / 共享音频路径合同入口
 

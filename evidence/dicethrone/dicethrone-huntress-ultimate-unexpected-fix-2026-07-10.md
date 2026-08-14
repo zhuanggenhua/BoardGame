@@ -109,7 +109,7 @@
 
 ### 5.3 文档
 
-- `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`
+- `.spec/skills/dicethrone-hero-intake/SKILL.md`
   - 新头像图集必须维护完整的“角色 ID -> 从 0 开始的索引”表。
   - 每个角色必须锁定图集来源和精确裁切位置，禁止通过旧图集或 `?? 0` 静默兜底。
 - `docs/games/dicethrone/card-timing-terms.md`

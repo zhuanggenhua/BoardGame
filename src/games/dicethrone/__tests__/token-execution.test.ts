@@ -1104,7 +1104,7 @@ describe('伏击 (Sneak Attack) 执行逻辑', () => {
         expect(handler).toBeDefined();
     });
 
-    it('伏击确认奖励骰后，才按最终骰面增加伤害', () => {
+    it('伏击普通确认右侧奖励骰盘后，才按最终骰面增加伤害', () => {
         const handler = getCustomActionHandler('shadow_thief-sneak-attack-use')!;
         expect(handler).toBeDefined();
 

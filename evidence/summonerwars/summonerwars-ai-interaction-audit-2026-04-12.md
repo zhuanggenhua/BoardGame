@@ -13,11 +13,11 @@
 - `src/games/summonerwars/ui/useGameEvents.ts`
 - `src/games/summonerwars/ui/useCellInteraction.ts`
 - `src/games/summonerwars/ui/useEventCardModes.ts`
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
 
 ## 权威来源
 1. 当前仓库实现（以上源码文件）
-2. 审计规范：`docs/ai-rules/testing-audit.md`
+2. 审计规范：`.spec/knowledge/standards/testing-audit.md`
 
 ## 审计方法与限制
 - 本轮包含**静态代码审计 + Phase A/B 迁移落地 + 验证**。

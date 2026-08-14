@@ -20,7 +20,7 @@
 - `src/engine/transport/server.ts`
 
 ## 2. 权威来源
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
 - 当前仓库源码与现有测试
 - 既有证据：
   - `evidence/dicethrone/dicethrone-ai-interaction-audit-2026-04-12.md`

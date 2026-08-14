@@ -133,14 +133,14 @@
 这部分不能跟 Fantasy Realms 本体一起“整份带回”，必须以根目录当前版本为基底做人工吸收：
 
 - `AGENTS.md`
-- `docs/ai-rules/doc-index.md`
-- `docs/ai-rules/document-consolidation.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/README.md`
+- `.spec/decisions/document-consolidation.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/e2e-testing-guide.md`
 - `docs/testing-best-practices.md`
-- `docs/ai-rules/animation-effects.md`
+- `.spec/knowledge/standards/animation-effects.md`
 - `design-system/game-ui/MASTER.md`
 
 这批文件的具体吸收策略，见：

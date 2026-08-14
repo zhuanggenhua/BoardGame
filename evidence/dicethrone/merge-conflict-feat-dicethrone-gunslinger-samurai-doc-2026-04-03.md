@@ -8,10 +8,10 @@
 - 触发命令: `git cherry-pick 2f34142a`
 
 ## 2. 冲突文件
-- `docs/ai-rules/asset-pipeline.md`
+- `.spec/knowledge/standards/asset-pipeline.md`
 
 ## 3. 解决策略
-### `docs/ai-rules/asset-pipeline.md`
+### `.spec/knowledge/standards/asset-pipeline.md`
 - 策略：合并双方内容，不丢任一侧规则。
 - 合并要点：
   - 保留主线已有的 `R2 / CDN 上传收口规则`。

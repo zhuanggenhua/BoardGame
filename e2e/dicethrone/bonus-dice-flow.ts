@@ -8,6 +8,10 @@ type RightTrayBonusDiceOptions = {
     sourceAbilityId?: string;
 };
 
+type RightTrayBonusDiceReviewOptions = {
+    expectedValues?: number[];
+};
+
 const readPendingBonusSettlement = async (readState: ReadGameState) => {
     const state = await readState();
     return state?.pendingBonusDiceSettlement
@@ -119,11 +123,43 @@ export const expectRightTrayBonusDiceAwaitingResponse = async (
 };
 
 /**
+ * 独立展示 / complete 奖励骰普通确认后，右侧骰盘必须留下最终骰面只读回看。
+ *
+ * 父链临时骰确认后会恢复攻击 / 防御等父骰盘；调用方只有在该奖励骰确认为
+ * 独立展示型时才应使用这个断言。
+ */
+export const expectRightTrayBonusDiceReadOnlyReview = async (
+    page: Page,
+    { expectedValues }: RightTrayBonusDiceReviewOptions = {},
+): Promise<void> => {
+    await closeDebugPanelIfVisible(page);
+
+    const { diceTray } = rightTrayRail(page);
+    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+    await expect(diceTray).toBeVisible({ timeout: 10000 });
+
+    if (expectedValues) {
+        await expect.poll(async () => (
+            diceTray.locator('[data-testid^="die-button-"]').evaluateAll((nodes) => (
+                nodes.map((node) => Number((node as HTMLElement).dataset.displayValue))
+            ))
+        ), { timeout: 10000 }).toEqual(expectedValues);
+    }
+
+    await expect.poll(async () => (
+        diceTray.locator('[data-testid^="die-button-"]').evaluateAll((nodes) => (
+            nodes.every((node) => (node as HTMLElement).dataset.clickable === 'false')
+        ))
+    ), { timeout: 10000 }).toBe(true);
+};
+
+/**
  * 走完当前临时骰的正式玩家入口。
  *
  * 卡牌/技能 E2E 只声明“哪一个效果已产生临时骰”和“收口后的专属结果”；
- * 右侧骰盘、确认按钮和 pending 清理由这里统一承接。流程 UI 变更时只改这里
- * 及专门的临时骰生命周期 E2E，不复制到每个效果用例。
+ * 右侧骰盘、确认按钮和 pending 清理由这里统一承接。确认后的去向由 settlement
+ * continuation 决定：父链临时骰恢复父骰盘，独立展示型保留只读回看。
  */
 export const settleCurrentBonusDice = async (
     page: Page,

@@ -15,13 +15,19 @@ import type {
     PendingBonusDiceSettlement,
 } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
-import { TOKEN_IDS } from '../domain/ids';
+import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { canAdvancePhase, checkPlayCard } from '../domain/rules';
+import { registerDiceDefinition } from '../domain/diceRegistry';
+import { monkDiceDefinition } from '../heroes/monk/diceConfig';
+import { zhanshujiaDiceDefinition } from '../heroes/zhanshujia/diceConfig';
 import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../heroes/zhanshujia/tokens';
 import { createCompareRollContext, createEvasionRollContext, createMainRollContext } from '../domain/rollContext';
+import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 
 initializeCustomActions();
+registerDiceDefinition(monkDiceDefinition);
+registerDiceDefinition(zhanshujiaDiceDefinition);
 
 const queuedRandom = (values: number[]): RandomFn => {
     let index = 0;
@@ -90,7 +96,14 @@ const roll = (
     timestamp: 1,
 } as DiceThroneEvent);
 
-const createBonusSettlement = (): PendingBonusDiceSettlement => ({
+const applyEvents = (
+    state: DiceThroneCore,
+    events: DiceThroneEvent[],
+): DiceThroneCore => events.reduce((current, event) => reduce(current, event), state);
+
+const createBonusSettlement = (
+    overrides: Partial<PendingBonusDiceSettlement> = {},
+): PendingBonusDiceSettlement => ({
     id: 'bonus-test-1',
     sourceAbilityId: 'test-bonus',
     attackerId: '0',
@@ -106,6 +119,7 @@ const createBonusSettlement = (): PendingBonusDiceSettlement => ({
     rerollCount: 0,
     readyToSettle: false,
     allowDiceModification: true,
+    ...overrides,
 });
 
 describe('DiceThrone 单槽当前骰区', () => {
@@ -227,15 +241,26 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(modified.dice[0].value).toBe(1);
     });
 
-    it('奖励骰确认后保留最终骰面作为右侧只读回看，不恢复被挂起的主攻击骰', () => {
+    it('攻击型临时奖励骰确认后恢复被挂起的主攻击骰', () => {
         const settlement: PendingBonusDiceSettlement = {
             ...createBonusSettlement(),
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
             dice: [
                 ...createBonusSettlement().dice,
                 { index: 1, value: 4, face: 'sabre', effectParams: { value: 4 } },
             ],
         };
-        const parent = roll(createCore(), [1, 2, 3, 4, 5]);
+        const parent = {
+            ...roll(createCore(), [1, 2, 3, 4, 5]),
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                isDefendable: true,
+                damage: 5,
+                sourceAbilityId: 'parent-attack',
+                bonusDamage: 0,
+            },
+        } as DiceThroneCore;
         const opened = reduce(parent, {
             type: 'BONUS_DICE_REROLL_REQUESTED',
             payload: { settlement },
@@ -262,20 +287,430 @@ describe('DiceThrone 单槽当前骰区', () => {
 
         expect(settled.pendingBonusDiceSettlement).toBeUndefined();
         expect(settled.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(settled.pendingAttack?.bonusDiceResolved).toBe(true);
+        expect(settled.pendingAttack?.settlementStage).toBe('preDamage');
+        expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
+    });
+
+    it('嵌套奖励骰确认后只恢复上一层奖励骰，不恢复主攻击骰', () => {
+        const parentSettlement = createBonusSettlement({
+            id: 'parent-bonus',
+            dice: [{ index: 0, value: 4, face: 'sabre' }],
+        });
+        const childSettlement = createBonusSettlement({
+            id: 'child-bonus',
+            dice: [{ index: 0, value: 6, face: 'banner' }],
+        });
+        const parentOpened = reduce(roll(createCore(), [1, 2, 3, 4, 5]), {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement: parentSettlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const childOpened = reduce(parentOpened, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement: childSettlement },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        expect(childOpened.currentRollContext).toMatchObject({
+            id: 'bonus:child-bonus',
+            kind: 'bonus',
+            suspendedParent: {
+                id: 'bonus:parent-bonus',
+                kind: 'bonus',
+                dice: [{ value: 4 }],
+            },
+        });
+
+        const childSettled = reduce(childOpened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(childSettled.pendingBonusDiceSettlement).toMatchObject({
+            id: 'parent-bonus',
+        });
+        expect(childSettled.currentRollContext).toMatchObject({
+            id: 'bonus:parent-bonus',
+            kind: 'bonus',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 4 }],
+            suspendedParent: {
+                kind: 'offensive',
+                dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+            },
+        });
+    });
+
+    it('complete 奖励骰确认后不恢复旧进攻骰，避免阻塞阶段继续', () => {
+        const settlement = createBonusSettlement({
+            continuation: { kind: 'complete' },
+            dice: [
+                { index: 0, value: 6, face: 'sabre' },
+                { index: 1, value: 4, face: 'banner' },
+            ],
+        });
+        const parent = roll(createCore(), [1, 2, 3, 4, 5]);
+        const opened = reduce(parent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        expect(settled.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.currentRollContext).toMatchObject({
             id: `bonus:${settlement.id}`,
             kind: 'bonus',
-            ownerPlayerId: '0',
             status: 'settled',
             policy: {
                 modifiableBy: 'none',
                 rerollableBy: 'none',
-                allowPassiveReroll: false,
                 allowDiceCardTargeting: false,
                 blocksPhaseFlow: false,
             },
             display: { replayOnly: true },
             dice: [{ value: 6 }, { value: 4 }],
         });
+        expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
+    });
+
+    it('重复或迟到的奖励骰结算事件不应清掉已结算的右侧骰盘回看', () => {
+        const settlement = createBonusSettlement({
+            dice: [{ index: 0, value: 6, face: 'sabre' }],
+        });
+        const opened = reduce(createCore(), {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+        const duplicateSettle = reduce(settled, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(duplicateSettle.currentRollContext).toMatchObject({
+            id: `bonus:${settlement.id}`,
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            dice: [{ value: 6 }],
+        });
+    });
+
+    it('奖励骰普通确认进入 main2 后仍保留右侧骰盘只读回看', () => {
+        const settlement = createBonusSettlement({
+            dice: [
+                { index: 0, value: 6, face: 'sabre' },
+                { index: 1, value: 4, face: 'banner' },
+            ],
+        });
+        const opened = reduce(createCore(), {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        const main2 = reduce(settled, {
+            type: FLOW_EVENTS.PHASE_CHANGED,
+            payload: { from: 'offensiveRoll', to: 'main2', activePlayerId: '0' },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(main2.pendingBonusDiceSettlement).toBeUndefined();
+        expect(main2.currentRollContext).toMatchObject({
+            id: `bonus:${settlement.id}`,
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            policy: {
+                modifiableBy: 'none',
+                rerollableBy: 'none',
+                allowDiceCardTargeting: false,
+            },
+            dice: [{ value: 6 }, { value: 4 }],
+        });
+    });
+
+    it('奖励骰普通确认后的只读回看应穿过非投掷阶段切换，直到下一次投掷覆盖', () => {
+        const settlement = createBonusSettlement({
+            dice: [
+                { index: 0, value: 6, face: 'sabre' },
+                { index: 1, value: 4, face: 'banner' },
+            ],
+        });
+        const opened = reduce(createCore(), {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        const discard = reduce(settled, {
+            type: FLOW_EVENTS.PHASE_CHANGED,
+            payload: { from: 'main2', to: 'discard', activePlayerId: '0' },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(discard.currentRollContext).toMatchObject({
+            id: `bonus:${settlement.id}`,
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            dice: [{ value: 6 }, { value: 4 }],
+        });
+
+        const nextRoll = roll(discard, [1, 2, 3, 4, 5]);
+
+        expect(nextRoll.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(nextRoll.rollCount).toBe(1);
+        expect(nextRoll.rollDiceCount).toBe(5);
+    });
+
+    it('奖励骰普通确认后的只读回看应穿过新掷骰阶段进入，直到真实 DICE_ROLLED 覆盖', () => {
+        const core = createCore();
+        const coreWithoutRegisteredDice = {
+            ...core,
+            players: {
+                ...core.players,
+                '1': { ...core.players['1'], characterId: 'unselected' },
+            },
+        };
+        const settlement = createBonusSettlement({
+            dice: [{ index: 0, value: 6, face: 'sabre' }],
+        });
+        const opened = reduce(coreWithoutRegisteredDice, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        const targetingEntered = reduce(settled, {
+            type: FLOW_EVENTS.PHASE_CHANGED,
+            payload: { from: 'offensiveRoll', to: 'targetingRoll', activePlayerId: '1' },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(targetingEntered.currentRollContext).toMatchObject({
+            id: `bonus:${settlement.id}`,
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            dice: [{ value: 6 }],
+        });
+        expect(targetingEntered.rollDiceCount).toBe(1);
+
+        const targetingRolled = reduce(targetingEntered, {
+            type: 'DICE_ROLLED',
+            payload: { results: [2], rollerId: '1', phase: 'targetingRoll' },
+            timestamp: 6,
+        } as DiceThroneEvent);
+
+        expect(targetingRolled.currentRollContext).toMatchObject({
+            kind: 'targeting',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 2 }],
+        });
+    });
+
+    it('奖励骰普通确认后的只读回看应穿过进攻掷骰阶段进入，直到真实进攻投掷覆盖', () => {
+        const settlement = createBonusSettlement({
+            dice: [{ index: 0, value: 6, face: 'sabre' }],
+        });
+        const opened = reduce(createCore(), {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        const offensiveEntered = reduce(settled, {
+            type: FLOW_EVENTS.PHASE_CHANGED,
+            payload: { from: 'main2', to: 'offensiveRoll', activePlayerId: '0' },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(offensiveEntered.currentRollContext).toMatchObject({
+            id: `bonus:${settlement.id}`,
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            dice: [{ value: 6 }],
+        });
+        expect(offensiveEntered.rollDiceCount).toBe(5);
+        expect(offensiveEntered.rollConfirmed).toBe(false);
+
+        const offensiveRolled = reduce(offensiveEntered, {
+            type: 'DICE_ROLLED',
+            payload: { results: [2, 2, 2, 2, 2], rollerId: '0', phase: 'offensiveRoll' },
+            timestamp: 6,
+        } as DiceThroneEvent);
+
+        expect(offensiveRolled.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 2 }, { value: 2 }, { value: 2 }, { value: 2 }, { value: 2 }],
+        });
+    });
+
+    it('死亡盛放 II 攻击型奖励骰确认后恢复父攻击骰，攻击收口后清理骰区', () => {
+        const settlement = createBonusSettlement({
+            id: 'death-blossom-2-test',
+            sourceAbilityId: 'death-blossom-2',
+            customResolutionId: 'ninja-death-blossom-2',
+            resolutionMode: 'attackBonus',
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
+            dice: [
+                { index: 0, value: 6, face: NINJA_DICE_FACE_IDS.MASK },
+                { index: 1, value: 6, face: NINJA_DICE_FACE_IDS.MASK },
+                { index: 2, value: 1, face: NINJA_DICE_FACE_IDS.KATANA },
+                { index: 3, value: 4, face: NINJA_DICE_FACE_IDS.SHURIKEN },
+                { index: 4, value: 4, face: NINJA_DICE_FACE_IDS.SHURIKEN },
+            ],
+        });
+        const parent = {
+            ...roll(createCore(), [1, 2, 3, 4, 5]),
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'death-blossom-2',
+                isDefendable: true,
+                damage: 20,
+                bonusDamage: 0,
+            },
+        } as DiceThroneCore;
+        const opened = reduce(parent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const events = buildBonusDiceSettlementEvents({
+            state: opened,
+            settlement: opened.pendingBonusDiceSettlement!,
+            random: queuedRandom([1]),
+            timestamp: 4,
+            sourceCommandType: 'TEST_CONFIRM_TEMPORARY_DIE',
+        });
+        const settled = applyEvents(opened, events);
+
+        expect(settled.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(settled.pendingAttack?.bonusDiceResolved).toBe(true);
+        expect(settled.pendingAttack?.settlementStage).toBe('preDamage');
+
+        const attackResolved = reduce(settled, {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'death-blossom-2',
+                totalDamage: 25,
+            },
+            sourceCommandType: 'TEST',
+            timestamp: 5,
+        } as DiceThroneEvent);
+        const main2 = reduce(attackResolved, {
+            type: FLOW_EVENTS.PHASE_CHANGED,
+            payload: { from: 'offensiveRoll', to: 'main2', activePlayerId: '0' },
+            timestamp: 6,
+        } as DiceThroneEvent);
+
+        expect(attackResolved.currentRollContext).toBeUndefined();
+        expect(main2.currentRollContext).toBeUndefined();
+    });
+
+    it('普通确认命令结算攻击型奖励骰后恢复父攻击骰', () => {
+        const settlement = createBonusSettlement({
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
+            dice: [{ index: 0, value: 6, face: 'sabre', effectParams: { value: 6 } }],
+        });
+        const parent = {
+            ...roll(createCore(), [1, 2, 3, 4, 5]),
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'parent-attack',
+                isDefendable: true,
+                damage: 5,
+                bonusDamage: 0,
+                settlementStage: 'preDamage',
+            },
+        } as DiceThroneCore;
+        const opened = reduce(parent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+
+        const events = execute({
+            core: opened,
+            sys: { phase: 'offensiveRoll' },
+        }, {
+            type: 'SKIP_BONUS_DICE_REROLL',
+            playerId: '0',
+            payload: {},
+            timestamp: 4,
+        } as any, queuedRandom([1]));
+        const settled = applyEvents(opened, events);
+
+        expect(events.map((event) => event.type)).toContain('BONUS_DICE_SETTLED');
+        expect(settled.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            display: { replayOnly: false },
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(settled.pendingAttack?.bonusDiceResolved).toBe(true);
+        expect(settled.pendingAttack?.settlementStage).toBe('postDamagePending');
         expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
     });
 

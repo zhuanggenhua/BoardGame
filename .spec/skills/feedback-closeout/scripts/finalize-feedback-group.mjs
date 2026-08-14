@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+    DEFAULT_BOARD_PATH,
+    feedbackIdsForGroup,
+    normalizeStringArray,
+    syncBoardFromSummaryFile,
+    updateBoardItems,
+    writeBoard,
+} from './lib/status-board.mjs';
 
 const VALID_STATUSES = new Set(['resolved', 'closed']);
 
@@ -14,6 +22,10 @@ function parseArgs(argv) {
         updateDuplicates: true,
         closedReason: '',
         resolvedMethod: '',
+        boardPath: DEFAULT_BOARD_PATH,
+        evidence: [],
+        verification: [],
+        screenshots: [],
     };
 
     const positional = [];
@@ -33,6 +45,22 @@ function parseArgs(argv) {
         }
         if (arg === '--resolved-method') {
             options.resolvedMethod = argv[++index] || '';
+            continue;
+        }
+        if (arg === '--board') {
+            options.boardPath = argv[++index] || options.boardPath;
+            continue;
+        }
+        if (arg === '--evidence') {
+            options.evidence.push(argv[++index] || '');
+            continue;
+        }
+        if (arg === '--verification') {
+            options.verification.push(argv[++index] || '');
+            continue;
+        }
+        if (arg === '--screenshot') {
+            options.screenshots.push(argv[++index] || '');
             continue;
         }
         if (arg === '--keep-duplicates-open') {
@@ -62,7 +90,12 @@ function parseArgs(argv) {
         throw new Error('closed 状态必须提供面向用户的 --closed-reason');
     }
 
-    return options;
+    return {
+        ...options,
+        evidence: normalizeStringArray(options.evidence),
+        verification: normalizeStringArray(options.verification),
+        screenshots: normalizeStringArray(options.screenshots),
+    };
 }
 
 function normalizeBaseUrl(baseUrl) {
@@ -127,14 +160,35 @@ async function main() {
         }
     }
 
+    const localIds = feedbackIdsForGroup(group, options.updateDuplicates);
+    const { board, boardPath } = await syncBoardFromSummaryFile(resolvedSummaryPath, options.boardPath);
+    const mirrorEvidence = options.evidence.length > 0
+        ? options.evidence
+        : [`online-feedback-status:${baseUrl}/admin/feedback/${options.feedbackId}/status`];
+    const mirrorVerification = options.verification.length > 0
+        ? options.verification
+        : ['线上反馈状态回写成功后同步本地状态镜像'];
+    updateBoardItems(board, localIds, {
+        status: options.status,
+        owner: 'codex',
+        closedReason: options.closedReason,
+        resolvedMethod: options.resolvedMethod,
+        evidence: mirrorEvidence,
+        verification: mirrorVerification,
+        screenshots: options.screenshots,
+    });
+    await writeBoard(boardPath, board);
+
     const result = {
         summaryPath: resolvedSummaryPath,
+        localBoardPath: boardPath,
         feedbackId: options.feedbackId,
         finalStatus: primary.status,
         duplicateCount: Array.isArray(group.duplicateIds) ? group.duplicateIds.length : 0,
         updateDuplicates: options.updateDuplicates,
         duplicateFinalStatus: options.updateDuplicates ? options.status : null,
         duplicates: duplicateResults,
+        localMirrorIds: localIds,
     };
 
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

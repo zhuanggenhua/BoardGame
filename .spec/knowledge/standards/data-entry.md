@@ -1,3 +1,11 @@
+---
+name: data-entry
+description: 数据录入标准：规则、图片、OCR、配置字段和核对口径——录入规则或资源数据时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 数据录入规范
 
 > **适用范围**：所有基于图片、规则书、Wiki、官方 PDF、截图或用户提供素材的业务数据录入任务。
@@ -9,9 +17,9 @@
 - 项目内默认优先通过 `.spec/skills/data-entry-workflow/SKILL.md` 进入录入流程。
 - 这个 skill 只负责通用门禁和 workflow 路由，不替代本文件。
 - 目前已接入的专用 workflow：
-  - `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`
-  - `docs/games/smashup/workflows/smashup-faction-intake.md`
-  - `docs/games/summonerwars/workflows/summonerwars-faction-intake.md`
+  - `.spec/skills/dicethrone-hero-intake/SKILL.md`
+  - `.spec/skills/smashup-faction-intake/SKILL.md`
+  - `.spec/skills/summonerwars-faction-intake/SKILL.md`
 
 ## 一、通用原则
 

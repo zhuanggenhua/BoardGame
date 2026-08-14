@@ -1,14 +1,21 @@
 #!/usr/bin/env node
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {
+    DEFAULT_BOARD_PATH,
+    normalizeBoardPath,
+    normalizeStringArray,
+    readJson,
+    syncBoardFromSummaryFile,
+    updateBoardItems,
+    writeBoard,
+} from './lib/status-board.mjs';
 
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed', 'blocked']);
-const DEFAULT_BOARD_PATH = 'temp/feedback-closeout/status-board.json';
 
 function parseArgs(argv) {
     const options = {
         boardPath: DEFAULT_BOARD_PATH,
-        id: '',
+        summaryPath: '',
+        ids: [],
         status: '',
         owner: '',
         notes: '',
@@ -25,8 +32,12 @@ function parseArgs(argv) {
             options.boardPath = argv[++index] || options.boardPath;
             continue;
         }
+        if (arg === '--summary') {
+            options.summaryPath = argv[++index] || '';
+            continue;
+        }
         if (arg === '--id') {
-            options.id = argv[++index] || '';
+            options.ids.push(argv[++index] || '');
             continue;
         }
         if (arg === '--status') {
@@ -64,7 +75,8 @@ function parseArgs(argv) {
         throw new Error(`未知参数: ${arg}`);
     }
 
-    if (!options.id) {
+    options.ids = normalizeStringArray(options.ids);
+    if (options.ids.length === 0) {
         throw new Error('缺少 --id');
     }
     if (!VALID_STATUSES.has(options.status)) {
@@ -73,90 +85,24 @@ function parseArgs(argv) {
 
     return {
         ...options,
-        boardPath: path.resolve(options.boardPath),
-        evidence: options.evidence.filter(Boolean),
-        verification: options.verification.filter(Boolean),
-        screenshots: options.screenshots.filter(Boolean),
+        boardPath: normalizeBoardPath(options.boardPath),
+        evidence: normalizeStringArray(options.evidence),
+        verification: normalizeStringArray(options.verification),
+        screenshots: normalizeStringArray(options.screenshots),
     };
-}
-
-async function readJson(filePath) {
-    const raw = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(raw);
-}
-
-function mergeUnique(existing, incoming) {
-    const merged = [...existing, ...incoming].filter(
-        (item) => typeof item === 'string' && item.trim().length > 0,
-    );
-    return Array.from(new Set(merged));
-}
-
-function assertItemCanUseStatus(item) {
-    if (item.status === 'resolved') {
-        if (!Array.isArray(item.evidence) || item.evidence.length === 0) {
-            throw new Error('resolved 状态至少需要 1 条 evidence');
-        }
-        if (!Array.isArray(item.verification) || item.verification.length === 0) {
-            throw new Error('resolved 状态至少需要 1 条 verification');
-        }
-        const hasResolvedMethod = typeof item.resolvedMethod === 'string' && item.resolvedMethod.trim().length > 0;
-        const hasLegacyNotes = typeof item.notes === 'string' && item.notes.trim().length > 0;
-        if (!hasResolvedMethod && !hasLegacyNotes) {
-            throw new Error('resolved 状态至少需要 resolvedMethod（旧数据可临时用 notes 兼容）');
-        }
-    }
-
-    if (item.status === 'closed') {
-        const hasClosedReason = typeof item.closedReason === 'string' && item.closedReason.trim().length > 0;
-        const hasNotes = typeof item.notes === 'string' && item.notes.trim().length > 0;
-        const hasEvidence = Array.isArray(item.evidence) && item.evidence.length > 0;
-        if (!hasClosedReason && !hasNotes && !hasEvidence) {
-            throw new Error('closed 状态至少需要 closedReason、notes 或 evidence');
-        }
-    }
 }
 
 async function main() {
     const options = parseArgs(process.argv.slice(2));
-    const board = await readJson(options.boardPath);
-    if (!Array.isArray(board.items)) {
-        throw new Error('状态板缺少 items 数组');
-    }
+    const board = options.summaryPath
+        ? (await syncBoardFromSummaryFile(options.summaryPath, options.boardPath)).board
+        : await readJson(options.boardPath);
 
-    const item = board.items.find((entry) => entry.id === options.id || entry.feedbackId === options.id);
-    if (!item) {
-        throw new Error(`状态板中未找到反馈: ${options.id}`);
-    }
-
-    const nextEvidence = mergeUnique(Array.isArray(item.evidence) ? item.evidence : [], options.evidence);
-    const nextVerification = mergeUnique(
-        Array.isArray(item.verification) ? item.verification : [],
-        options.verification,
+    const updatedItems = updateBoardItems(board, options.ids, options);
+    await writeBoard(options.boardPath, board);
+    process.stdout.write(
+        `feedback-status-board: updated ${updatedItems.map((item) => item.id).join(', ')} -> ${options.status}\n`,
     );
-    const nextScreenshots = mergeUnique(
-        Array.isArray(item.screenshots) ? item.screenshots : [],
-        options.screenshots,
-    );
-    const nextItem = {
-        ...item,
-        status: options.status,
-        updatedAt: new Date().toISOString(),
-        owner: options.owner || item.owner || '',
-        notes: options.notes || item.notes || '',
-        closedReason: options.closedReason || item.closedReason || '',
-        resolvedMethod: options.resolvedMethod || item.resolvedMethod || '',
-        evidence: nextEvidence,
-        verification: nextVerification,
-        screenshots: nextScreenshots,
-    };
-
-    assertItemCanUseStatus(nextItem);
-    Object.assign(item, nextItem);
-
-    board.updatedAt = new Date().toISOString();
-    await fs.writeFile(options.boardPath, `${JSON.stringify(board, null, 2)}\n`, 'utf8');
-    process.stdout.write(`feedback-status-board: updated ${item.id} -> ${item.status}\n`);
 }
 
 main().catch((error) => {

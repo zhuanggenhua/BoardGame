@@ -183,8 +183,8 @@
 
 **流程更新**
 
-- 已更新 `docs/ai-rules/testing-audit-dimensions.md`：D5 明确“可选主效果与可选子动作”必须拆审；D6 明确自伤/代价伤害/消灭等副作用必须传播到死亡后处理和后续被动；D18 明确“跳过整个效果”“不做子动作但继续主效果”“已死亡对象不再被后续效果作用”要分开覆盖。
-- 已更新 `docs/ai-rules/testing-audit-dimensions-semantics-interaction.md`：新增 D5 子项“可选主效果与可选子动作拆分”和 D6 子项“副作用死亡后的连锁传播”。
+- 已更新 `.spec/knowledge/standards/testing-audit-dimensions.md`：D5 明确“可选主效果与可选子动作”必须拆审；D6 明确自伤/代价伤害/消灭等副作用必须传播到死亡后处理和后续被动；D18 明确“跳过整个效果”“不做子动作但继续主效果”“已死亡对象不再被后续效果作用”要分开覆盖。
+- 已更新 `.spec/knowledge/standards/testing-audit-dimensions-semantics-interaction.md`：新增 D5 子项“可选主效果与可选子动作拆分”和 D6 子项“副作用死亡后的连锁传播”。
 
 ## 逐项结论：莫古重核录入批次清单
 
@@ -285,8 +285,8 @@
 
 ## 规范回代
 
-- 已回代录入规范：`.spec/skills/data-entry-workflow/SKILL.md`、`docs/ai-rules/data-entry.md` 增加“缩略图/降采样图不得定稿字段”。
-- 已回代审计规范：`.spec/skills/game-audit-workflow/SKILL.md`、`docs/ai-rules/testing-audit-core-principles.md` 增加“系统交互存在不等于真实 UI 可点”，要求 simple-choice/prompt/横幅继续证明真实按钮或候选入口。
+- 已回代录入规范：`.spec/skills/data-entry-workflow/SKILL.md`、`.spec/knowledge/standards/data-entry.md` 增加“缩略图/降采样图不得定稿字段”。
+- 已回代审计规范：`.spec/skills/game-audit-workflow/SKILL.md`、`.spec/knowledge/standards/testing-audit-core-principles.md` 增加“系统交互存在不等于真实 UI 可点”，要求 simple-choice/prompt/横幅继续证明真实按钮或候选入口。
 - 已补审计后自检脚本：`scripts/verify/audit-evidence-completeness.mjs` 增加“或者/or/二选一”“可以/至多/任意数量”“阶段结束/simple-choice/prompt”“系统交互可见 UI”的留档检查；该自检不接发布门禁，只在审计后自检运行。
 - 旧莫古收口文档已降级：`evidence/summonerwars/summonerwars-mogu-full-implementation-2026-07-12.md`。
 - 后续重核录入必须先裁完整单卡主裁图到 `temp/**`，再把每张卡标成 `locked / blocked / disputed`；不能直接靠本文件把录入视为完成。

@@ -254,5 +254,5 @@ npm run check:all && npm run test && npm run test:e2e:ci
 
 - [测试最佳实践](./testing-best-practices.md)
 - [自动化测试指南](./automated-testing.md)
-- [Golden Rules](./ai-rules/golden-rules.md)
+- [Golden Rules](../.spec/knowledge/standards/golden-rules.md)
 - [Git 合并检查清单](./git-merge-checklist.md)

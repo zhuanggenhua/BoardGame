@@ -1,3 +1,11 @@
+---
+name: tutorial-design
+description: 教程设计标准：教学目标、提示、截图和交互顺序——改新手引导时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 教程与新手引导设计规范
 
 > 适用于 `tutorial / onboarding / 新手引导 / 教学步骤`。本文件约束“教什么”，不是只约束“怎么点”。

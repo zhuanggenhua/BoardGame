@@ -155,7 +155,13 @@ describe('炽天使领域行为', () => {
         );
         expect(confirmed.success).toBe(true);
         if (!confirmed.success) return;
-        expect(confirmed.state.core.currentRollContext).toBeUndefined();
+        expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(confirmed.state.core.currentRollContext).toMatchObject({
+            kind: 'bonus',
+            status: 'settled',
+            display: { replayOnly: true },
+            dice: [{ value: 6 }, { value: 1 }],
+        });
     });
 
     it('智天使升级卡的费用应与卡面一致，为 3 CP', () => {
@@ -1053,7 +1059,7 @@ describe('炽天使领域行为', () => {
         expect(settled.state.core.players['0'].tokens[TOKEN_IDS.PURIFY] ?? 0).toBe(0);
     });
 
-    it('至高圣洁没有可用改骰牌时也必须确认奖励骰后结算', () => {
+    it('至高圣洁没有可用改骰牌时也必须普通确认右侧奖励骰盘后结算', () => {
         const state = createTianshiState();
         const supremeHoliness = TIANSHI_CARDS.find(entry => entry.id === 'card-tianshi-supreme-holiness');
         if (!supremeHoliness) throw new Error('缺少至高圣洁卡牌定义');

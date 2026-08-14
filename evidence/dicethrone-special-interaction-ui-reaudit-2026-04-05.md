@@ -16,7 +16,7 @@
 
 - `src/games/dicethrone/heroes/gunslinger/abilities.ts`
 - `src/games/dicethrone/rule/枪手录入核对.md`
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
 
 ## 审计方法
 

@@ -203,8 +203,8 @@ POD commit 删除了大量包含 `pendingAttack` 的代码行，因为 POD 参�
 
 ## 相关文档
 
-- `docs/ai-rules/testing-audit.md` - 测试审计规范
-- `docs/ai-rules/engine-systems.md` - 引擎系统文档
+- `.spec/knowledge/standards/testing-audit.md` - 测试审计规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统文档
 - `evidence/p2-manual-verification-summary.md` - P2 验证总结
 - `evidence/_shared/p2-restoration-plan.md` - P2 恢复计划
 

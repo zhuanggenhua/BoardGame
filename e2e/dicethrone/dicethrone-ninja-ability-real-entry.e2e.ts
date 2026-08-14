@@ -678,7 +678,7 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
     test('死亡盛放 II 应从真实槽位进入右侧奖励骰盘并收口', async ({ browser }, testInfo) => {
         test.setTimeout(150000);
         const match = await setupNinjaMatch(browser, testInfo.project.use.baseURL as string | undefined);
-        const testName = '死亡盛放 II 应从真实槽位触发奖励骰特写并收口';
+        const testName = '死亡盛放 II 应从真实槽位进入右侧奖励骰盘并收口';
 
         try {
             await setNinjaScenario(match, [1, 2, 3, 4, 5], {

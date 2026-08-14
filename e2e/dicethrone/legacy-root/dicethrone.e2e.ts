@@ -553,17 +553,23 @@ test.describe('DiceThrone E2E', () => {
         await advanceToStep('main2-intro', 30000);
         await clickNextOverlayStep();
 
-        // enlightenment-play：真实点击手牌，覆盖奖励骰特写不能阻塞后续交互的回归
+        // enlightenment-play：真实点击手牌，覆盖奖励骰必须停在右侧 2D 骰盘并由普通确认收口
         await advanceToStep('enlightenment-play', 15000);
         await clickHandCard('card-enlightenment');
-        const bonusDieOverlay = page.getByTestId('bonus-die-overlay');
-        await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
-        await expect(bonusDieOverlay).not.toContainText('bonusDie.effect.', { timeout: 5000 });
+        const rightDiceTray = page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
+        const rightDiceRail = rightDiceTray.locator('xpath=ancestor::*[@data-player-seat-anchor][1]');
+        const rightDiceConfirmButton = rightDiceRail.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
+        await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+        await expect(rightDiceTray).toBeVisible({ timeout: 10000 });
+        await expect(rightDiceTray.getByTestId('dice-2d')).toHaveCount(1, { timeout: 10000 });
+        await expect(rightDiceConfirmButton).toBeVisible({ timeout: 10000 });
+        await rightDiceConfirmButton.click();
 
-        // inner-peace：点下一张牌区域时，奖励骰特写应先被关闭，而不是继续卡死
+        // inner-peace：右侧骰盘确认后，下一张牌区域不应被旧中央奖励骰展示卡死
         await advanceToStep('inner-peace', 15000);
         await clickHandCardArea('card-inner-peace');
-        await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+        await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
         await clickHandCard('card-inner-peace');
 
         // ai-turn 步骤有大量 aiActions，教学系统自动执行，结束后应进入击倒说明

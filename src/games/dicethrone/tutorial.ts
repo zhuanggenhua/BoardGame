@@ -85,6 +85,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             aiActions: [
                 { commandType: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'monk', initialDeckCardIds: TUTORIAL_INITIAL_DECK } },
                 { commandType: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: 'monk', initialDeckCardIds: AI_TUTORIAL_DECK } },
+                { commandType: 'PLAYER_READY', playerId: '1', payload: {} },
                 { commandType: 'HOST_START_GAME', playerId: '0', payload: {} },
             ],
             advanceOnEvents: [
@@ -280,9 +281,20 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END', 'SKIP_BONUS_DICE_REROLL'],
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
             advanceOnEvents: [
                 { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-enlightenment' } },
+            ],
+        },
+        {
+            id: 'enlightenment-confirm',
+            content: 'game-dicethrone:tutorial.steps.enlightenmentConfirm',
+            highlightTarget: 'dice-confirm-button',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: ['SKIP_BONUS_DICE_REROLL'],
+            advanceOnEvents: [
+                { type: 'BONUS_DICE_SETTLED' },
             ],
         },
         {
@@ -291,7 +303,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END', 'SKIP_BONUS_DICE_REROLL'],
+            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
             advanceOnEvents: [
                 { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
             ],

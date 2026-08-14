@@ -1,4 +1,0 @@
-interface:
-  display_name: "Skill Governance"
-  short_description: "新建或更新 skill 前先判断全局和项目落点边界"
-  default_prompt: "Use $skill-governance to decide where a new or updated skill belongs before editing global or project instructions."

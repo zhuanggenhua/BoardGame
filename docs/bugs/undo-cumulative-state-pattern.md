@@ -237,4 +237,4 @@ const dealt = Math.max(0, dealtFromSameBatchShield - fixedShieldAbsorbed);  // �
 
 - [护盾日志撤回问题修复](./dicethrone/dicethrone-shield-undo-fix.md)
 - [护盾减伤日志修复总结](./dicethrone/dicethrone-shield-logging-fix-summary.md)
-- [撤回自动推进问题](../ai-rules/undo-auto-advance.md)
+- [撤回自动推进问题](../../.spec/knowledge/standards/undo-auto-advance.md)

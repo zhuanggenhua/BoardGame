@@ -39,7 +39,7 @@
 > - `e2e/dicethrone/artificer-intake.e2e.ts`
 > - `e2e/dicethrone/artificer-full-audit.e2e.ts`
 >
-> 当前结果为：领域测试 `78/78 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `28/28 passed`。对“开局合成器数量”“高级电能机器人降级/消失”“升级高级机器人合成器成本”“机器人被清除/转移指示物误处理”“扳手攻击 II 只加 3 伤害不走后续”，以及后续补报的“机器人可跳过”“治疗机器人真实受击响应”“纳米机器人 upkeep 可点击”“不可防御伤害下仍可打受击响应牌”等问题，当前证据已闭环；按 `.spec/skills/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 的门禁，本轮工匠对象级录入、机制、审计与真实入口验证已收口完成。
+> 当前结果为：领域测试 `78/78 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `28/28 passed`。对“开局合成器数量”“高级电能机器人降级/消失”“升级高级机器人合成器成本”“机器人被清除/转移指示物误处理”“扳手攻击 II 只加 3 伤害不走后续”，以及后续补报的“机器人可跳过”“治疗机器人真实受击响应”“纳米机器人 upkeep 可点击”“不可防御伤害下仍可打受击响应牌”等问题，当前证据已闭环；按 `.spec/skills/add-new-faction/SKILL.md` 与 `.spec/skills/dicethrone-hero-intake/SKILL.md` 的门禁，本轮工匠对象级录入、机制、审计与真实入口验证已收口完成。
 
 ## 1. 基本信息
 

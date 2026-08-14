@@ -1,9 +1,6 @@
 ---
 name: planning-with-files
 description: '文件式长期计划入口。用于复杂任务拆解、task_plan.md/findings.md/progress.md 和 /clear 后恢复。'
-allowed-tools: "Read, Write, Edit, Bash, Glob, Grep"
-metadata:
-  version: "2.21.0"
 ---
 
 # Planning with Files

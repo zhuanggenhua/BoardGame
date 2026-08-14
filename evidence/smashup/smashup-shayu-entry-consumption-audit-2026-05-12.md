@@ -5,7 +5,7 @@
 - **本轮不是抽样**：这是对 shayu 三派系新增对象的“第一入口是否被 handler 直接消费”专项全量重审。
 - **审计问题定性**：此前全量矩阵偏 L1 静态判断，能发现 `playNeedsBase/playNeedsMinion` 与文案错配，但没有逐项证明 handler 是否直接消费第一入口，导致 `mythic_greeks_favor_of_zeus`、`tornados_carried_away` 这类“第一入口已确定但又二次选择同类对象”的问题漏掉。
 - **当前完成等级**：本专项达到 **L2 行为验证通过**；本轮额外复跑了 3 条真实入口 E2E，覆盖 `tornados_carried_away` 新入口、`tornados_not_in_kansas` 基地替换、`base_tornado_alley` 首次/二次移入链路，因此这些被复跑链路具备本轮 L3 截图证据。未逐对象新增 E2E 的条目仍不得升级为 L3。
-- **通用门禁已补强**：`docs/ai-rules/testing-audit.md` 的交互入口语义矩阵新增最低门禁：如果第一入口已由命令 payload / UI 点击对象确定，handler 必须直接消费该入口；不得再创建同 targetType 的二次选择 prompt。
+- **通用门禁已补强**：`.spec/knowledge/standards/testing-audit.md` 的交互入口语义矩阵新增最低门禁：如果第一入口已由命令 payload / UI 点击对象确定，handler 必须直接消费该入口；不得再创建同 targetType 的二次选择 prompt。
 
 ## 审计方法
 
@@ -92,7 +92,7 @@
 - `npx vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts src/games/smashup/__tests__/shayuEntryConsumption.test.ts` → 2 files passed，27 tests passed。
 - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "直接入口字段|控制者约束"` → 2 passed / 24 skipped。
 - `npm run typecheck` → passed。
-- `git diff --check -- docs/ai-rules/testing-audit.md src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/abilities/tornados.ts src/games/smashup/domain/index.ts src/games/smashup/__tests__/shayuEntryConsumption.test.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts e2e/src/games/smashup/__tests__/shayuFactionAbilities.test.ts` → passed，仅 line-ending warning。
+- `git diff --check -- .spec/knowledge/standards/testing-audit.md src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/abilities/tornados.ts src/games/smashup/domain/index.ts src/games/smashup/__tests__/shayuEntryConsumption.test.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts e2e/src/games/smashup/__tests__/shayuFactionAbilities.test.ts` → passed，仅 line-ending warning。
 
 ## 仍不得偷换的范围
 

@@ -1,7 +1,7 @@
 {
   "schema": "mage-wars.grid-atlas.v1",
   "gameId": "mage-wars",
-  "status": "runtime-reference-ready/first-batch-source-card-frames-integrated",
+  "status": "design-asset-ready/runtime-reference-pending",
   "sourceContracts": [
     "docs/games/mage-wars/rule/apprentice-card-atlas-contract.md",
     "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
@@ -621,21 +621,6 @@
         "height": 0.25
       }
     },
-    "2218": {
-      "atlas": "spell-conjuration-core-atlas",
-      "cardId": 2218,
-      "name": "巢穴",
-      "deck": 22,
-      "slot": 18,
-      "col": 5,
-      "row": 3,
-      "normalized": {
-        "left": 0.571429,
-        "top": 0.5,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
     "2224": {
       "atlas": "spell-conjuration-core-atlas",
       "cardId": 2224,
@@ -991,21 +976,6 @@
       "row": 2,
       "normalized": {
         "left": 0,
-        "top": 0.25,
-        "width": 0.142857,
-        "height": 0.25
-      }
-    },
-    "2908": {
-      "atlas": "spell-creature-core-b-atlas",
-      "cardId": 2908,
-      "name": "乌鸦魔宠胡金",
-      "deck": 29,
-      "slot": 8,
-      "col": 2,
-      "row": 2,
-      "normalized": {
-        "left": 0.142857,
         "top": 0.25,
         "width": 0.142857,
         "height": 0.25

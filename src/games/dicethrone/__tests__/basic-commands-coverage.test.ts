@@ -4189,17 +4189,17 @@ describe('作弊发牌 atlas 索引保护', () => {
         ];
     })(['0', '1'], fixedRandom);
 
-    it('gunslinger slot 24 现在只对应 upgrade-take-cover-2，按 atlas index 应可唯一发牌', () => {
+    it('gunslinger slot 23 现在只对应 upgrade-take-cover-2，按 atlas index 应可唯一发牌', () => {
         const state = createUpgradeAtlasState();
-        const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 24);
+        const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 23);
 
         expect(nextCore.players['0'].hand.map((card) => card.id)).toEqual(['upgrade-take-cover-2']);
         expect(nextCore.players['0'].deck).toHaveLength(state.core.players['0'].deck.length - 1);
     });
 
-    it('gunslinger slot 26 现在只对应 upgrade-deadeye-2，按 atlas index 应可唯一发牌', () => {
+    it('gunslinger slot 24 现在只对应 upgrade-deadeye-2，按 atlas index 应可唯一发牌', () => {
         const state = createUpgradeAtlasState();
-        const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 26);
+        const nextCore = diceThroneCheatModifier.dealCardByAtlasIndex!(state.core, '0', 24);
 
         expect(nextCore.players['0'].hand.map((card) => card.id)).toEqual(['upgrade-deadeye-2']);
         expect(nextCore.players['0'].deck).toHaveLength(state.core.players['0'].deck.length - 1);

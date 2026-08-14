@@ -1,3 +1,11 @@
+---
+name: home-v2-design
+description: 首页设计标准：Home V2 信息架构和 UI 边界——改首页时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # Home V2 移动横屏设计规范
 
 > 适用范围：仅约束 Home V2 首页、详情页、登录/创建房间/密码弹窗在移动横屏书本界面中的实现与验收。它不是全项目通用 UI 规范。

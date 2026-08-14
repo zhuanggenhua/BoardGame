@@ -46,7 +46,7 @@
 - `docs/testing-best-practices.md`
   - 完整流程默认拆成组合矩阵
   - 旧 UI 文案退场后，不得靠反向断言制造遗留
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/ui-ux.md`
   - 同一游戏跨断点不得分裂成两套独立 UI 家族
   - 正式视觉稿不自动包含交互合同
   - 交互模式必须有来源表
@@ -54,14 +54,14 @@
   - 正规流程优先于临时收口
   - 固定牌桌类游戏的 PC live 默认禁止页面级滚动
   - 固定牌桌类游戏不得用禁用主按钮充当步骤提示
-- `docs/ai-rules/generated-design-implementation.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
   - 正式视觉稿不自动包含交互合同
   - 交互模式必须先锁来源
   - 规则语义优先于美术发挥
   - 复刻失败必须降级，不得堆装饰硬凑
-- `docs/ai-rules/animation-effects.md`
+- `.spec/knowledge/standards/animation-effects.md`
   - 对象转移动效只绑定变化对象
-- `docs/ai-rules/e2e-verification.md`
+- `.spec/knowledge/standards/e2e-verification.md`
   - 桥接式组合验证
 
 ### 5. 根目录误落 `Board` 价值审计已完成
@@ -122,10 +122,10 @@
 当前已经把 worktree 里的以下项目级规则文件，对齐到根目录 `main` 当前版本：
 
 - `design-system/game-ui/MASTER.md`
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 
 含义不是“这些文件要跟专项一起提交”，而是：
@@ -153,10 +153,10 @@
 
 当前两边都在 `git diff --name-only` 里出现的路径是：
 
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 - `src/games/fantasyrealms/Board.tsx`
 - `src/games/fantasyrealms/__tests__/Board.foundation.test.tsx`
@@ -165,10 +165,10 @@
 
 #### 1. 项目级规则文档 5 个
 
-- `docs/ai-rules/animation-effects.md`
-- `docs/ai-rules/e2e-verification.md`
-- `docs/ai-rules/generated-design-implementation.md`
-- `docs/ai-rules/ui-ux.md`
+- `.spec/knowledge/standards/animation-effects.md`
+- `.spec/knowledge/standards/e2e-verification.md`
+- `.spec/knowledge/standards/generated-design-implementation.md`
+- `.spec/knowledge/standards/ui-ux.md`
 - `docs/testing-best-practices.md`
 
 裁决：

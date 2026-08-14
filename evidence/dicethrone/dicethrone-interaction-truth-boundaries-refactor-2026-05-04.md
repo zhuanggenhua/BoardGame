@@ -74,8 +74,8 @@
 
 ### 6. 规范更新
 
-- `docs/ai-rules/global-systems.md`
-- `docs/ai-rules/engine-systems.md`
+- `.spec/knowledge/standards/global-systems.md`
+- `.spec/knowledge/standards/engine-systems.md`
 
 新增通用约束：
 

@@ -140,4 +140,4 @@ Test Files  1 passed (1)
 
 - AI Agent (Kiro)
 - 审计框架: D1-D47 全维度审计规范
-- 参考文档: `docs/ai-rules/testing-audit.md`
+- 参考文档: `.spec/knowledge/standards/testing-audit.md`

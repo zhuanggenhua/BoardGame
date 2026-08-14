@@ -1,0 +1,512 @@
+{
+  "generatedAt": "2026-08-14T06:06:30.010Z",
+  "purpose": "山屋杰克之灵移动骰开放骰盘光晕、canvas、骰子投影和插件物理边界诊断",
+  "screenshots": {
+    "rolling": "evidence/betrayal-first-scenario-jack-spirit-movement-roll/00-山屋惊魂-第一剧本-杰克之灵移动骰滚动中.jpg",
+    "settled": "evidence/betrayal-first-scenario-jack-spirit-movement-roll/01-山屋惊魂-第一剧本-杰克之灵移动骰后.jpg",
+    "settledDelayed": "evidence/betrayal-first-scenario-jack-spirit-movement-roll/01b-山屋惊魂-第一剧本-杰克之灵移动骰停稳2秒后.jpg"
+  },
+  "snapshots": [
+    {
+      "phase": "rolling",
+      "groupRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "highlightRect": {
+        "left": 536,
+        "top": 356,
+        "right": 1216,
+        "bottom": 614,
+        "width": 680,
+        "height": 258
+      },
+      "canvasRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "resultStageRect": {
+        "left": 526,
+        "top": 644,
+        "right": 1226,
+        "bottom": 736,
+        "width": 700,
+        "height": 92
+      },
+      "resultTotalRect": {
+        "left": 1064.2,
+        "top": 664,
+        "right": 1214,
+        "bottom": 716,
+        "width": 149.8,
+        "height": 52
+      },
+      "canvasClientWidth": 700,
+      "canvasClientHeight": 278,
+      "worldBounds": {
+        "width": 700,
+        "height": 278
+      },
+      "inferredPhysicsWall": {
+        "x": 651,
+        "y": 258.54
+      },
+      "continueButtonRect": {
+        "left": 792,
+        "top": 752,
+        "right": 960,
+        "bottom": 794,
+        "width": 168,
+        "height": 42
+      },
+      "boundaryMatchesGroup": false,
+      "canvasMatchesBoundary": false,
+      "canvasMatchesGroup": true,
+      "highlightInsideGroup": true,
+      "dicePhysicsSourceFilter": "none",
+      "diceGroupBackgroundImage": "none",
+      "diceGroupBoxShadow": "none",
+      "highlightBackgroundImage": "none",
+      "highlightBoxShadow": "none",
+      "highlightInsetFromGroup": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 10
+      },
+      "resultClearsBoundary": true,
+      "continueButtonInsideViewport": true,
+      "continueButtonClearsResult": true,
+      "minDiceCanvasEdgeMargin": 22.74,
+      "diceCount": 3,
+      "dice": [
+        {
+          "index": 0,
+          "value": 3,
+          "bodyPosition": {
+            "x": 225.05,
+            "y": -201.48,
+            "z": 49.72
+          },
+          "viewportBox": {
+            "left": 958.3,
+            "top": 555.64,
+            "right": 1003.93,
+            "bottom": 601.26,
+            "width": 45.63,
+            "height": 45.62
+          },
+          "canvasBox": {
+            "left": 432.3,
+            "top": 209.64,
+            "right": 477.93,
+            "bottom": 255.26,
+            "width": 45.63,
+            "height": 45.62
+          },
+          "canvasEdgeMargin": 22.74,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 1,
+          "value": 3,
+          "bodyPosition": {
+            "x": -245.49,
+            "y": 68.81,
+            "z": 64.18
+          },
+          "viewportBox": {
+            "left": 733.73,
+            "top": 427.63,
+            "right": 787.35,
+            "bottom": 477.25,
+            "width": 53.62,
+            "height": 49.62
+          },
+          "canvasBox": {
+            "left": 207.73,
+            "top": 81.63,
+            "right": 261.35,
+            "bottom": 131.25,
+            "width": 53.62,
+            "height": 49.62
+          },
+          "canvasEdgeMargin": 81.63,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 2,
+          "value": 1,
+          "bodyPosition": {
+            "x": -502.17,
+            "y": -125.66,
+            "z": 41.29
+          },
+          "viewportBox": {
+            "left": 618.52,
+            "top": 519.01,
+            "right": 668.05,
+            "bottom": 567.95,
+            "width": 49.53,
+            "height": 48.94
+          },
+          "canvasBox": {
+            "left": 92.52,
+            "top": 173.01,
+            "right": 142.05,
+            "bottom": 221.95,
+            "width": 49.53,
+            "height": 48.94
+          },
+          "canvasEdgeMargin": 56.05,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        }
+      ]
+    },
+    {
+      "phase": "settled",
+      "groupRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "highlightRect": {
+        "left": 536,
+        "top": 356,
+        "right": 1216,
+        "bottom": 614,
+        "width": 680,
+        "height": 258
+      },
+      "canvasRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "resultStageRect": {
+        "left": 526,
+        "top": 644,
+        "right": 1226,
+        "bottom": 736,
+        "width": 700,
+        "height": 92
+      },
+      "resultTotalRect": {
+        "left": 1064.2,
+        "top": 664,
+        "right": 1214,
+        "bottom": 716,
+        "width": 149.8,
+        "height": 52
+      },
+      "canvasClientWidth": 700,
+      "canvasClientHeight": 278,
+      "worldBounds": {
+        "width": 700,
+        "height": 278
+      },
+      "inferredPhysicsWall": {
+        "x": 651,
+        "y": 258.54
+      },
+      "continueButtonRect": {
+        "left": 792,
+        "top": 752,
+        "right": 960,
+        "bottom": 794,
+        "width": 168,
+        "height": 42
+      },
+      "boundaryMatchesGroup": false,
+      "canvasMatchesBoundary": false,
+      "canvasMatchesGroup": true,
+      "highlightInsideGroup": true,
+      "dicePhysicsSourceFilter": "none",
+      "diceGroupBackgroundImage": "none",
+      "diceGroupBoxShadow": "none",
+      "highlightBackgroundImage": "none",
+      "highlightBoxShadow": "none",
+      "highlightInsetFromGroup": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 10
+      },
+      "resultClearsBoundary": true,
+      "continueButtonInsideViewport": true,
+      "continueButtonClearsResult": true,
+      "minDiceCanvasEdgeMargin": 37.5,
+      "diceCount": 3,
+      "dice": [
+        {
+          "index": 0,
+          "value": 3,
+          "bodyPosition": {
+            "x": 540.52,
+            "y": -154.28,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 1101.97,
+            "top": 537.17,
+            "right": 1147.95,
+            "bottom": 575.5,
+            "width": 45.98,
+            "height": 38.33
+          },
+          "canvasBox": {
+            "left": 575.97,
+            "top": 191.17,
+            "right": 621.95,
+            "bottom": 229.5,
+            "width": 45.98,
+            "height": 38.33
+          },
+          "canvasEdgeMargin": 48.5,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 1,
+          "value": 3,
+          "bodyPosition": {
+            "x": -53.63,
+            "y": -171.67,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 829.96,
+            "top": 542.28,
+            "right": 871.84,
+            "bottom": 586.5,
+            "width": 41.88,
+            "height": 44.22
+          },
+          "canvasBox": {
+            "left": 303.96,
+            "top": 196.28,
+            "right": 345.84,
+            "bottom": 240.5,
+            "width": 41.88,
+            "height": 44.22
+          },
+          "canvasEdgeMargin": 37.5,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 2,
+          "value": 1,
+          "bodyPosition": {
+            "x": -507.99,
+            "y": -119.08,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 615.89,
+            "top": 518.04,
+            "right": 667.96,
+            "bottom": 562.39,
+            "width": 52.07,
+            "height": 44.36
+          },
+          "canvasBox": {
+            "left": 89.89,
+            "top": 172.04,
+            "right": 141.96,
+            "bottom": 216.39,
+            "width": 52.07,
+            "height": 44.36
+          },
+          "canvasEdgeMargin": 61.61,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        }
+      ]
+    },
+    {
+      "phase": "settled-plus-2s",
+      "groupRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "highlightRect": {
+        "left": 536,
+        "top": 356,
+        "right": 1216,
+        "bottom": 614,
+        "width": 680,
+        "height": 258
+      },
+      "canvasRect": {
+        "left": 526,
+        "top": 346,
+        "right": 1226,
+        "bottom": 624,
+        "width": 700,
+        "height": 278
+      },
+      "resultStageRect": {
+        "left": 526,
+        "top": 644,
+        "right": 1226,
+        "bottom": 736,
+        "width": 700,
+        "height": 92
+      },
+      "resultTotalRect": {
+        "left": 1064.2,
+        "top": 664,
+        "right": 1214,
+        "bottom": 716,
+        "width": 149.8,
+        "height": 52
+      },
+      "canvasClientWidth": 700,
+      "canvasClientHeight": 278,
+      "worldBounds": {
+        "width": 700,
+        "height": 278
+      },
+      "inferredPhysicsWall": {
+        "x": 651,
+        "y": 258.54
+      },
+      "continueButtonRect": {
+        "left": 792,
+        "top": 752,
+        "right": 960,
+        "bottom": 794,
+        "width": 168,
+        "height": 42
+      },
+      "boundaryMatchesGroup": false,
+      "canvasMatchesBoundary": false,
+      "canvasMatchesGroup": true,
+      "highlightInsideGroup": true,
+      "dicePhysicsSourceFilter": "none",
+      "diceGroupBackgroundImage": "none",
+      "diceGroupBoxShadow": "none",
+      "highlightBackgroundImage": "none",
+      "highlightBoxShadow": "none",
+      "highlightInsetFromGroup": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 10
+      },
+      "resultClearsBoundary": true,
+      "continueButtonInsideViewport": true,
+      "continueButtonClearsResult": true,
+      "minDiceCanvasEdgeMargin": 37.5,
+      "diceCount": 3,
+      "dice": [
+        {
+          "index": 0,
+          "value": 3,
+          "bodyPosition": {
+            "x": 540.52,
+            "y": -154.28,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 1101.97,
+            "top": 537.17,
+            "right": 1147.95,
+            "bottom": 575.5,
+            "width": 45.98,
+            "height": 38.33
+          },
+          "canvasBox": {
+            "left": 575.97,
+            "top": 191.17,
+            "right": 621.95,
+            "bottom": 229.5,
+            "width": 45.98,
+            "height": 38.33
+          },
+          "canvasEdgeMargin": 48.5,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 1,
+          "value": 3,
+          "bodyPosition": {
+            "x": -53.63,
+            "y": -171.67,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 829.96,
+            "top": 542.28,
+            "right": 871.84,
+            "bottom": 586.5,
+            "width": 41.88,
+            "height": 44.22
+          },
+          "canvasBox": {
+            "left": 303.96,
+            "top": 196.28,
+            "right": 345.84,
+            "bottom": 240.5,
+            "width": 41.88,
+            "height": 44.22
+          },
+          "canvasEdgeMargin": 37.5,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        },
+        {
+          "index": 2,
+          "value": 1,
+          "bodyPosition": {
+            "x": -507.99,
+            "y": -119.08,
+            "z": 33.21
+          },
+          "viewportBox": {
+            "left": 615.89,
+            "top": 518.04,
+            "right": 667.96,
+            "bottom": 562.39,
+            "width": 52.07,
+            "height": 44.36
+          },
+          "canvasBox": {
+            "left": 89.89,
+            "top": 172.04,
+            "right": 141.96,
+            "bottom": 216.39,
+            "width": 52.07,
+            "height": 44.36
+          },
+          "canvasEdgeMargin": 61.61,
+          "projectedInsideCanvas": true,
+          "bodyInsideInferredWall": true
+        }
+      ]
+    }
+  ]
+}

@@ -1539,7 +1539,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
                 value: 5,
                 face: 'gear',
                 effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
-                effectParams: { value: 5, synth: 3 },
+                effectParams: { value: 5, synth: 3, synthGain: 3 },
             }],
         });
         expect(played.state.core.players['0'].tokens[TOKEN_IDS.SYNTH] ?? 0).toBe(0);
@@ -1587,7 +1587,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
                 value: 5,
                 face: 'gear',
                 effectKey: 'bonusDie.effect.artificerPerfectlyCalibrated',
-                effectParams: { value: 5, synth: 3 },
+                effectParams: { value: 5, synth: 3, synthGain: 3 },
             }],
         });
         expect(played.state.core.players['1'].hand.map(card => card.id)).not.toContain('card-artificer-perfectly-calibrated');
@@ -2044,6 +2044,175 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(secondResolution.nextState.pendingAttack?.settlementStage).toBe('preDamage');
     });
 
+    it('超频运行 II 在正式命令链中第一次激活后会继续请求第二个不同机器人', () => {
+        const playerIds: PlayerId[] = ['0', '1'];
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+
+        state.sys = createInitialSystemState(playerIds, testSystems, undefined);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = true;
+        setArtificerAbilityLevel(state.core, 'overclock', 2);
+        state.core.players['0'].upgradeCardByAbilityId = {
+            ...(state.core.players['0'].upgradeCardByAbilityId ?? {}),
+            overclock: { cardId: 'upgrade-artificer-overclock-2', cpCost: 2 },
+        };
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        state.core.players['0'].hand = [];
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT);
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+        state.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] = 2;
+        state.core.dice = [
+            { id: 0, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 1, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 2, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 3, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 4, definitionId: 'artificer-die', value: 1, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+        ];
+
+        const selected = executePipeline(
+            pipelineConfig,
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'overclock-2-main' }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack?.sourceAbilityId).toBe('overclock-2-main');
+
+        const advanced = executePipeline(
+            pipelineConfig,
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(advanced.success).toBe(true);
+        const firstPrompt = getSimpleChoicePrompt(advanced.state, 'overclock-2-main');
+        const firstLabels = firstPrompt.options.map(option => option.labelKey);
+        expect(firstLabels).toEqual(expect.arrayContaining([
+            'choices.artificerBotActivation.activateNanobotFree',
+            'choices.artificerBotActivation.activateShockBotFree',
+            'choices.artificerBotActivation.skip',
+        ]));
+
+        const shockOption = firstPrompt.options.find(option => (
+            option.labelKey === 'choices.artificerBotActivation.activateShockBotFree'
+        ));
+        expect(shockOption).toBeDefined();
+        if (!shockOption) return;
+
+        const afterShock = respondToPrompt(
+            advanced.state,
+            shockOption.id,
+            '0',
+            fixedRandom,
+            playerIds,
+        );
+
+        expect(afterShock.success).toBe(true);
+        const secondPrompt = getSimpleChoicePrompt(afterShock.state, 'overclock-2-main');
+        expect(secondPrompt.options.map(option => option.labelKey)).toEqual([
+            'choices.artificerBotActivation.activateNanobotFree',
+            'choices.artificerBotActivation.skip',
+        ]);
+        expect(afterShock.state.core.players['0'].artificerBotState?.[TOKEN_IDS.SHOCK_BOT]).toMatchObject({
+            built: true,
+            upgraded: false,
+            activationsUsedThisTurn: 1,
+        });
+        expect(afterShock.state.core.pendingAttack?.bonusDamage).toBe(3);
+    });
+
+    it('超频运行 II 先激活治疗机器人时，奖励骰确认后仍会继续请求第二个不同机器人', () => {
+        const playerIds: PlayerId[] = ['0', '1'];
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+
+        state.sys = createInitialSystemState(playerIds, testSystems, undefined);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = true;
+        setArtificerAbilityLevel(state.core, 'overclock', 2);
+        state.core.players['0'].upgradeCardByAbilityId = {
+            ...(state.core.players['0'].upgradeCardByAbilityId ?? {}),
+            overclock: { cardId: 'upgrade-artificer-overclock-2', cpCost: 2 },
+        };
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 40;
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        state.core.players['0'].hand = [];
+        setArtificerBot(state.core, '0', TOKEN_IDS.HEAL_BOT);
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+        state.core.dice = [
+            { id: 0, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 1, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 2, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 3, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 4, definitionId: 'artificer-die', value: 1, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+        ];
+
+        const selected = executePipeline(
+            pipelineConfig,
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'overclock-2-main' }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+
+        const advanced = executePipeline(
+            pipelineConfig,
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(advanced.success).toBe(true);
+        const firstPrompt = getSimpleChoicePrompt(advanced.state, 'overclock-2-main');
+        const healOption = firstPrompt.options.find(option => (
+            option.labelKey === 'choices.artificerBotActivation.activateHealBotFree'
+        ));
+        expect(healOption).toBeDefined();
+        if (!healOption) return;
+
+        const afterHeal = respondToPrompt(
+            advanced.state,
+            healOption.id,
+            '0',
+            createQueuedRandom([4]),
+            playerIds,
+        );
+        expect(afterHeal.success).toBe(true);
+        expect(afterHeal.state.core.pendingBonusDiceSettlement).toMatchObject({
+            customResolutionId: 'artificer-heal-bot-use',
+        });
+        expect(afterHeal.state.core.players['0'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
+            built: true,
+            upgraded: false,
+            activationsUsedThisTurn: 1,
+        });
+
+        const confirmedHeal = executePipeline(
+            pipelineConfig,
+            afterHeal.state,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(confirmedHeal.success).toBe(true);
+        const secondPrompt = getSimpleChoicePrompt(confirmedHeal.state, 'overclock-2-main');
+        expect(secondPrompt.options.map(option => option.labelKey)).toEqual([
+            'choices.artificerBotActivation.activateShockBotFree',
+            'choices.artificerBotActivation.skip',
+        ]);
+        expect(confirmedHeal.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(42);
+    });
+
     it('单次机器人激活窗口也应允许跳过，并在跳过后继续伤害前链路', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
@@ -2265,7 +2434,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         });
     });
 
-    it('治疗机器人通过正式响应命令掷骰后，需普通确认奖励骰再治疗并释放攻击流程', () => {
+    it('治疗机器人通过正式响应命令掷骰后，需普通确认右侧奖励骰盘再治疗并释放攻击流程', () => {
         const playerIds: PlayerId[] = ['0', '1'];
         const state = createHeroMatchup('artificer', 'monk')(playerIds, fixedRandom);
         state.sys = createInitialSystemState(playerIds, testSystems, undefined);
@@ -2311,7 +2480,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
                 value: 4,
                 face: 'gear',
                 effectKey: 'bonusDie.effect.artificerHealBot',
-                effectParams: { value: 4, heal: 2 },
+                effectParams: { value: 4, heal: 2, healAmount: 2 },
             }],
         });
         expect(used.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(40);

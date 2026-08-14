@@ -2,7 +2,7 @@
 
 ## Overview
 
-本任务列表基于 requirements.md 和 design.md，系统性地审计 Cardia 游戏 Deck I (card01-card16) 的所有卡牌效果实现和 E2E 测试覆盖。审计基于 `docs/ai-rules/testing-audit.md` 的 D1-D49 维度框架，分为三个主要阶段：准备工作、实现审计、测试审计、报告生成。
+本任务列表基于 requirements.md 和 design.md，系统性地审计 Cardia 游戏 Deck I (card01-card16) 的所有卡牌效果实现和 E2E 测试覆盖。审计基于 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 维度框架，分为三个主要阶段：准备工作、实现审计、测试审计、报告生成。
 
 ## Tasks
 
@@ -275,7 +275,7 @@
 
 ## Notes
 
-- 本审计系统基于 `docs/ai-rules/testing-audit.md` 的 D1-D49 维度框架
+- 本审计系统基于 `.spec/knowledge/standards/testing-audit.md` 的 D1-D49 维度框架
 - 实现审计重点关注 D1（语义保真）、D2（边界完整）、D3（数据流闭环）
 - 测试审计重点关注 D47（E2E 测试覆盖完整性）
 - 问题分级标准：P0（阻塞功能）、P1（影响质量）、P2（改进项）

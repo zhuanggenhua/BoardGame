@@ -49,7 +49,7 @@ className={`${focusedHandCardUid ? 'relative z-[260]' : ''} flex flex-shrink-0 i
 
 ## 层级规范
 
-根据 `docs/ai-rules/ui-ux.md` 的层级规范：
+根据 `.spec/knowledge/standards/ui-ux.md` 的层级规范：
 
 - 提示 UI: `z-[100-150]`
 - 交互 UI: `z-[150-200]`

@@ -14,7 +14,7 @@ import {
     waitForHomeGameList,
 } from './helpers/common';
 import { selectCharacter, waitForCharacterSelection } from './helpers/dicethrone';
-import { waitForFactionDraft, selectFaction, waitForSmashUpUI } from './helpers/smashup';
+import { waitForFactionDraft, waitForSmashUpUI } from './helpers/smashup';
 import { getMatchState } from './helpers/state-injection';
 import {
     getPlayerStatusCard,
@@ -140,22 +140,6 @@ function buildManualAiSeatControllers(playerIds: string[]): ManualAiSeatControll
             } satisfies ManualAiSeatController,
         ]),
     );
-}
-
-async function waitForOnlineAiSeatBridgeReady(page: Page, playerId: string) {
-    await expect.poll(async () => {
-        return page.evaluate((targetPlayerId) => {
-            const debugApi = (window as Window & {
-                __BG_ONLINE_AI_DEBUG__?: {
-                    getSeatLatestState?: (pid: string) => unknown;
-                };
-            }).__BG_ONLINE_AI_DEBUG__;
-            return Boolean(debugApi?.getSeatLatestState?.(targetPlayerId));
-        }, playerId);
-    }, {
-        timeout: 20000,
-        message: `等待在线 AI seat ${playerId} 的桥接客户端就绪`,
-    }).toBe(true);
 }
 
 async function selectSmashUpFactionById(page: Page, factionId: string) {
@@ -334,9 +318,6 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
             await waitForFactionDraft(page);
             await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
-            await waitForOnlineAiSeatBridgeReady(page, '1');
-            await waitForOnlineAiSeatBridgeReady(page, '2');
-            await waitForOnlineAiSeatBridgeReady(page, '3');
             await installSmashUpFactionDraftRemountProbe(page);
 
             const draftSequence = ['aliens', 'ninjas', 'robots', 'wizards', 'tricksters', 'zombies', 'dinosaurs', 'pirates'];
@@ -507,7 +488,6 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.goto(`/play/summonerwars/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
             await waitForFactionSelectionReady(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
-            await waitForOnlineAiSeatBridgeReady(page, '1');
 
             await selectFactionById(page, 'necromancer');
             await expect.poll(async () => {
@@ -608,7 +588,6 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await page.goto(`/play/dicethrone/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
             await waitForCharacterSelection(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
-            await waitForOnlineAiSeatBridgeReady(page, '1');
 
             await selectCharacter(page, 'samurai');
             await expect.poll(async () => {

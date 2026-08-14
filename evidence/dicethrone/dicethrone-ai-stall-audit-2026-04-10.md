@@ -8,7 +8,7 @@
 - **核心链路**：`CHOICE_REQUESTED → InteractionSystem(simple-choice) → SYS_INTERACTION_RESPOND → SYS_INTERACTION_CANCELLED → DiceThroneEventSystem → flowHooks/advancePhase`。
 
 ## 2. 权威来源
-- 项目交互/审计规范：`docs/ai-rules/testing-audit.md`
+- 项目交互/审计规范：`.spec/knowledge/standards/testing-audit.md`
 - DiceThrone 领域实现：
   - `src/games/dicethrone/domain/systems.ts`
   - `src/games/dicethrone/domain/flowHooks.ts`

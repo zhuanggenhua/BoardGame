@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | 全局 UI 设计链路 | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | 卡面已有字段不得复写成 UI chip；看不清应放大、hover / focus 或详情检视 |
 | 项目桌游 UI 出稿门禁 | `.spec/skills/boardgame-ui-imagegen/SKILL.md` | 当前可执行卡必须可读；卡牌浏览区要区分当前可执行、可浏览候选和归档入口 |
-| 项目 UI 门禁 | `docs/ai-rules/ui-change-gates.md` | 卡面已有字段不得复写成标签墙；不可用小牌墙冒充主交互 |
-| 项目 UI/UX | `docs/ai-rules/ui-ux.md` | 正式素材已含信息时不得复读；重复信息不能靠填充制造“信息更满” |
+| 项目 UI 门禁 | `.spec/knowledge/standards/ui-change-gates.md` | 卡面已有字段不得复写成标签墙；不可用小牌墙冒充主交互 |
+| 项目 UI/UX | `.spec/knowledge/standards/ui-ux.md` | 正式素材已含信息时不得复读；重复信息不能靠填充制造“信息更满” |
 | 法术书组成真相 | `docs/games/mage-wars/rule/apprentice-spellbooks.md` | 学徒法术书来自规则第 5 页；卡牌名和数量已有组成合同 |
 | 区域锚点合同 | `docs/games/mage-wars/design/implementable/apprentice-zone-layout-contract.md` | 场上卡必须保持唯一所属区域，v56 不能为放大牌区牺牲区域锚点 |
 | DiceThrone 参考 | `src/games/dicethrone/ui/HandArea.tsx`、`CardSpotlightOverlay.tsx`、`DiscardPile.tsx`、`CardPreview.tsx` | 成熟做法是卡图本体承载印刷字段，外部只补费用可支付、可用、inspect / spotlight 等运行态 |

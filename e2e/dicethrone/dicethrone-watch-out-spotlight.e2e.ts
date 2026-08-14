@@ -27,7 +27,13 @@ import {
     waitForGameBoard,
 } from '../helpers/dicethrone';
 import { setChineseLocale, waitForTestHarness } from '../helpers/common';
-import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
+import {
+    expectRightTrayBonusDiceConfirmation,
+    expectRightTrayBonusDiceReadOnlyReview,
+    getRightTrayDiceTray,
+    getRightTrayDie,
+    settleCurrentBonusDice,
+} from './bonus-dice-flow';
 
 const DICETHRONE_OPEN_TIMEOUT_MS = 180000;
 const DICETHRONE_TEST_TIMEOUT_MS = 300000;
@@ -1817,7 +1823,7 @@ async function waitForHandCardFrontFacesReady(
     }, { count: expectedCount, assetFragment: expectedAssetFragment }, { timeout: 10000, polling: 100 });
 }
 
-test('self watch out should show bonus die spotlight', async ({ page, game }, testInfo) => {
+test('self watch out should show right-tray bonus dice confirmation', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
     await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
@@ -1845,6 +1851,33 @@ test('self watch out should show bonus die spotlight', async ({ page, game }, te
                 { id: 3, value: 4, isKept: false },
                 { id: 4, value: 5, isKept: false },
             ],
+            currentRollContext: {
+                id: 'roll:offensive:0:1',
+                kind: 'offensive',
+                ownerPlayerId: '0',
+                targetPlayerId: '1',
+                phase: 'offensiveRoll',
+                dice: [1, 2, 3, 4, 5].map((value, index) => ({
+                    id: index,
+                    definitionId: 'moon_elf-dice',
+                    value,
+                    symbol: null,
+                    symbols: [],
+                    isKept: false,
+                    ownerId: '0',
+                })),
+                status: 'settling',
+                policy: {
+                    modifiableBy: 'owner',
+                    rerollableBy: 'owner',
+                    allowPassiveReroll: true,
+                    allowDiceCardTargeting: true,
+                    ultimateLocked: false,
+                    blocksPhaseFlow: true,
+                },
+                settlement: { mode: 'selectAttack' },
+                display: { surface: 'diceTray', replayOnly: false },
+            },
             pendingAttack: {
                 attackerId: '0',
                 defenderId: '1',
@@ -1871,12 +1904,13 @@ test('self watch out should show bonus die spotlight', async ({ page, game }, te
 
     const watchOutCard = page.locator('[data-card-id="watch-out"]').first();
     await watchOutCard.waitFor({ state: 'visible', timeout: 10000 });
-    await watchOutCard.click();
+    await dragHandCardToPlay(page, 'watch-out');
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 2000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+    const rightTray = getRightTrayDiceTray(page);
+    await expect(rightTray.getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
     await page.waitForTimeout(400);
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 1000 });
+    await expect(rightTray).toBeVisible({ timeout: 1000 });
 
     const afterClickState = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
@@ -1889,16 +1923,7 @@ test('self watch out should show bonus die spotlight', async ({ page, game }, te
         };
     });
 
-    const expectedOverlayTextByEffectKey: Record<string, RegExp> = {
-        'bonusDie.effect.watchOut.bow': /(bonusDie\.effect\.watchOut\.bow|Bow.*\+2 Damage|\+2\s*Damage|弓.*伤害\+2|伤害\+2)/i,
-        'bonusDie.effect.watchOut.foot': /(bonusDie\.effect\.watchOut\.foot|Foot.*Inflict Entangle|Inflict Entangle|Entangle|脚.*缠绕|施加缠绕|缠绕)/i,
-        'bonusDie.effect.watchOut.moon': /(bonusDie\.effect\.watchOut\.moon|Moon.*Inflict Blinded|Inflict Blinded|Blinded|月.*致盲|施加致盲|致盲)/i,
-    };
-
     expect(afterClickState.bonusDieEffectKey).toMatch(/^bonusDie\.effect\.watchOut\.(bow|foot|moon)$/);
-    await expect(
-        bonusDieOverlay,
-    ).toContainText(expectedOverlayTextByEffectKey[afterClickState.bonusDieEffectKey], { timeout: 5000 });
 
     await game.screenshot('02-after-play-card', testInfo);
     await game.screenshot('03-final-state', testInfo);
@@ -2069,7 +2094,7 @@ test('gunslinger hand area should recover after first atlas load failure without
     );
 });
 
-test('bonus die spotlight should close on backdrop click before confirm interaction', async ({ page, game }, testInfo) => {
+test('bonus die right tray should ignore backdrop click and settle only on ordinary confirm', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
     await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
@@ -2089,7 +2114,7 @@ test('bonus die spotlight should close on backdrop click before confirm interact
             selectedCharacters: { '0': 'moon_elf', '1': 'barbarian' },
             hostStarted: true,
             rollCount: 1,
-            rollConfirmed: false,
+            rollConfirmed: true,
             dice: [
                 { id: 0, value: 1, isKept: false },
                 { id: 1, value: 2, isKept: false },
@@ -2097,6 +2122,33 @@ test('bonus die spotlight should close on backdrop click before confirm interact
                 { id: 3, value: 4, isKept: false },
                 { id: 4, value: 5, isKept: false },
             ],
+            currentRollContext: {
+                id: 'roll:offensive:0:1',
+                kind: 'offensive',
+                ownerPlayerId: '0',
+                targetPlayerId: '1',
+                phase: 'offensiveRoll',
+                dice: [1, 2, 3, 4, 5].map((value, index) => ({
+                    id: index,
+                    definitionId: 'moon_elf-dice',
+                    value,
+                    symbol: null,
+                    symbols: [],
+                    isKept: false,
+                    ownerId: '0',
+                })),
+                status: 'settling',
+                policy: {
+                    modifiableBy: 'owner',
+                    rerollableBy: 'owner',
+                    allowPassiveReroll: true,
+                    allowDiceCardTargeting: true,
+                    ultimateLocked: false,
+                    blocksPhaseFlow: true,
+                },
+                settlement: { mode: 'selectAttack' },
+                display: { surface: 'diceTray', replayOnly: false },
+            },
             pendingAttack: {
                 attackerId: '0',
                 defenderId: '1',
@@ -2112,34 +2164,49 @@ test('bonus die spotlight should close on backdrop click before confirm interact
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
         return state?.sys?.phase === 'offensiveRoll'
             && state?.core?.activePlayerId === '0'
-            && state?.core?.rollConfirmed === false
+            && state?.core?.rollConfirmed === true
             && state?.core?.players?.['0']?.hand?.some((card: any) => card.id === 'watch-out');
     }, { timeout: 10000 });
 
     const watchOutCard = page.locator('[data-card-id="watch-out"]').first();
     await watchOutCard.waitFor({ state: 'visible', timeout: 10000 });
-    await watchOutCard.click();
+    await dragHandCardToPlay(page, 'watch-out');
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 3000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
 
     await page.waitForTimeout(250);
     await page.mouse.click(40, 40);
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return state?.core?.pendingBonusDiceSettlement ?? null;
+    }, { timeout: 5000 }).not.toBeNull();
 
-    const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
-    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-    await confirmButton.click();
+    await settleCurrentBonusDice(page, () => game.getState(), {});
 
-    await page.waitForFunction(() => {
-        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
-        return state?.core?.rollConfirmed === true;
-    }, { timeout: 5000 });
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+            currentRollKind: state?.core?.currentRollContext?.kind ?? null,
+            currentRollStatus: state?.core?.currentRollContext?.status ?? null,
+            replayOnly: state?.core?.currentRollContext?.display?.replayOnly ?? null,
+            settlementStage: state?.core?.pendingAttack?.settlementStage ?? null,
+            bonusDiceResolved: state?.core?.pendingAttack?.bonusDiceResolved ?? false,
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        pendingBonusDiceSettlement: null,
+        currentRollKind: 'offensive',
+        replayOnly: false,
+        settlementStage: 'readyToResolve',
+        bonusDiceResolved: true,
+    });
 
-    await game.screenshot('04-bonus-die-spotlight-backdrop-close-then-confirm', testInfo);
+    await expect(page.getByRole('button', { name: '结算攻击' })).toBeVisible({ timeout: 10000 });
+
+    await game.screenshot('04-bonus-die-right-tray-backdrop-ignored-then-confirm', testInfo);
 });
 
-test('bonus die spotlight should close on content click in display mode', async ({ page, game }, testInfo) => {
+test('bonus die right tray should settle on ordinary confirm in display mode', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
     await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -2188,36 +2255,28 @@ test('bonus die spotlight should close on content click in display mode', async 
 
     const watchOutCard = page.locator('[data-card-id="watch-out"]').first();
     await watchOutCard.waitFor({ state: 'visible', timeout: 10000 });
-    await watchOutCard.click();
+    await dragHandCardToPlay(page, 'watch-out');
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 3000 });
-    await saveLocatorEvidenceScreenshot(
-        bonusDieOverlay,
-        testInfo,
-        'bonus-die-spotlight-should-close-on-content-click-in-display-mode',
-        '05-bonus-die-spotlight-overlay-visible-before-click-close.png',
-    );
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
     await savePageEvidenceScreenshot(
         page,
         testInfo,
-        'bonus-die-spotlight-should-close-on-content-click-in-display-mode',
-        '05-bonus-die-spotlight-visible-before-click-close.png',
+        'bonus-die-right-tray-should-confirm-in-display-mode',
+        '05-bonus-die-right-tray-visible-before-confirm.png',
     );
 
     await page.waitForTimeout(250);
-    await bonusDieOverlay.click();
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+    await settleCurrentBonusDice(page, () => game.getState(), {});
 
     await savePageEvidenceScreenshot(
         page,
         testInfo,
-        'bonus-die-spotlight-should-close-on-content-click-in-display-mode',
-        '06-bonus-die-spotlight-click-close.png',
+        'bonus-die-right-tray-should-confirm-in-display-mode',
+        '06-bonus-die-right-tray-after-confirm.png',
     );
 });
 
-test('opponent display-only bonus settlement should not duplicate bonus overlay when card spotlight already shows dice', async ({ page, game }, testInfo) => {
+test('opponent display-only bonus settlement should keep old bonus overlay absent when card spotlight already shows dice', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -2618,10 +2677,9 @@ test.skip('samurai righteousness should resolve a visible bonus-die branch again
     await expect(activeBadgeEarly).toBeVisible({ timeout: 5000 });
     await game.screenshot('09-samurai-righteousness-badge-after-play', testInfo);
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
-    await game.screenshot('09-samurai-righteousness-bonus-die-overlay', testInfo);
-    await expect(bonusDieOverlay).toContainText(/samuraiRighteousnessKatana|武士刀：\+2 伤害|\+2\s*伤害/i, { timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'card-righteousness' });
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
+    await game.screenshot('09-samurai-righteousness-bonus-die-right-tray', testInfo);
 
     await page.waitForFunction(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
@@ -2674,15 +2732,14 @@ test.skip('samurai zanshin should show 5-die settlement and mixed samurai effect
 
     await dragHandCardToPlay(page, 'card-zanshin');
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'card-zanshin' });
 
     await page.waitForFunction(() => {
         const settlement = (window as any).__BG_TEST_HARNESS__?.state?.get()?.core?.pendingBonusDiceSettlement;
         return settlement?.displayOnly === true && settlement?.dice?.length === 5;
     }, { timeout: 10000, polling: 200 });
 
-    await expect(bonusDieOverlay).toContainText(/Dice Results/i, { timeout: 5000 });
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(5, { timeout: 5000 });
 
     const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
     await expect(activeBadge).toBeVisible({ timeout: 5000 });
@@ -2757,31 +2814,19 @@ test('pyromancer pyro blast II should show and close a two-dice display-only bon
             && state?.core?.pendingBonusDiceSettlement?.sourceAbilityId === 'pyro-blast';
     }, { timeout: 10000, polling: 200 });
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
-    await expect(bonusDieOverlay).toContainText(/Dice Results|投掷结果/i, { timeout: 5000 });
-    await expect(page.getByTestId('bonus-die-multi-reroll-spotlight')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('bonus-die-reroll-option-1')).toBeVisible({ timeout: 5000 });
-    await game.screenshot('11-pyromancer-pyro-blast-2-display-overlay', testInfo);
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'pyro-blast' });
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(2, { timeout: 5000 });
+    await game.screenshot('11-pyromancer-pyro-blast-2-display-right-tray', testInfo);
     await savePageEvidenceScreenshot(
         page,
         testInfo,
         'pyromancer-pyro-blast-2-display-page',
-        '11-pyromancer-pyro-blast-2-display-overlay-page.png',
-    );
-    await saveLocatorEvidenceScreenshot(
-        bonusDieOverlay,
-        testInfo,
-        'pyromancer-pyro-blast-2-display-bonus-dice-detail',
-        '11-pyromancer-pyro-blast-2-display-overlay-detail.png',
+        '11-pyromancer-pyro-blast-2-display-right-tray-page.png',
     );
 
-    const pyroBlastBonusDieCloseButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
-    await expect(pyroBlastBonusDieCloseButton).toBeVisible({ timeout: 5000 });
-    await pyroBlastBonusDieCloseButton.click();
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
-    await game.screenshot('11-pyromancer-pyro-blast-2-display-closed', testInfo);
+    await settleCurrentBonusDice(page, () => game.getState(), { sourceAbilityId: 'pyro-blast' });
+    await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [1, 6] });
+    await game.screenshot('11-pyromancer-pyro-blast-2-display-confirmed-review', testInfo);
 
     await expect.poll(async () => {
         const state = await game.getState();
@@ -2821,11 +2866,10 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     await dragHandCardToPlay(page, 'card-righteousness');
     await closeCardSpotlightByRealClickIfVisible(page);
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'card-righteousness' });
     await page.waitForTimeout(250);
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 1000 });
-    await game.screenshot('09-samurai-righteousness-bonus-die-overlay', testInfo);
+    await expect(getRightTrayDiceTray(page)).toBeVisible({ timeout: 1000 });
+    await game.screenshot('09-samurai-righteousness-bonus-die-right-tray', testInfo);
 
     // 攻击修正徽章应在打出卡牌后出现（效果提示）
     const activeBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
@@ -2870,16 +2914,9 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     expect(stateAfterPlay.shame).toBe(0);
     expect(stateAfterPlay.samuraiRetribution).toBe(0);
 
-    const bonusDieCloseButton = page.getByLabel(/关闭特写|Close Spotlight/i);
-    await expect(bonusDieCloseButton).toBeVisible({ timeout: 5000 });
-    await bonusDieCloseButton.click();
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
-    await game.screenshot('09-samurai-righteousness-bonus-die-closed', testInfo);
-
-    await expect.poll(async () => {
-        const state = await game.getState();
-        return state?.core?.pendingBonusDiceSettlement ?? null;
-    }, { timeout: 5000 }).toBeNull();
+    await settleCurrentBonusDice(page, () => game.getState(), { sourceAbilityId: 'card-righteousness' });
+    await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [1] });
+    await game.screenshot('09-samurai-righteousness-bonus-die-confirmed-review', testInfo);
     await game.screenshot('09-samurai-righteousness-settled', testInfo);
 
     await game.screenshot('09-samurai-righteousness-vs-monk', testInfo);
@@ -3081,24 +3118,15 @@ test('samurai zanshin should settle 5 bonus dice and synchronize effects against
     await expect(activeBadgeEarly).toBeVisible({ timeout: 5000 });
     await game.screenshot('10-samurai-zanshin-badge-after-play', testInfo);
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState(), { sourceAbilityId: 'card-zanshin' });
 
     await page.waitForFunction(() => {
         const settlement = (window as any).__BG_TEST_HARNESS__?.state?.get()?.core?.pendingBonusDiceSettlement;
         return settlement?.displayOnly === true && settlement?.dice?.length === 5;
     }, { timeout: 10000, polling: 200 });
 
-    await expect(bonusDieOverlay).toContainText(/Dice Results|投掷结果/i, { timeout: 5000 });
-    await expect(bonusDieOverlay).toContainText(/(\+2|2).*(耻辱|Shame).*1.*(反击|Back Strike)/i, { timeout: 5000 });
-    // 必须等到“骰子停止 + 汇总文案出现”后再截图，否则看不到最终描述文案
-    await page.waitForFunction(() => {
-        const overlay = document.querySelector('[data-testid="bonus-die-overlay"]');
-        if (!overlay) return false;
-        // 多骰：每颗骰子停止后都会出现 glow ring（class=animate-pulse）
-        return overlay.querySelectorAll('.animate-pulse').length >= 5;
-    }, { timeout: 12000, polling: 100 });
-    await game.screenshot('10-samurai-zanshin-bonus-die-overlay', testInfo);
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(5, { timeout: 5000 });
+    await game.screenshot('10-samurai-zanshin-bonus-die-right-tray', testInfo);
 
     const stateAfterPlay = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
@@ -3153,17 +3181,10 @@ test('samurai zanshin should settle 5 bonus dice and synchronize effects against
     await expect(activeBadge).toBeVisible({ timeout: 5000 });
     await expect(activeBadge).toContainText(/攻击修正\s*\+2|Attack Modifier\s*\+2/i, { timeout: 5000 });
 
-    // displayOnly 特写：真实点击关闭按钮，证明可收口
-    const zanshinBonusDieCloseButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
-    await expect(zanshinBonusDieCloseButton).toBeVisible({ timeout: 5000 });
-    await zanshinBonusDieCloseButton.click();
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
-    await game.screenshot('10-samurai-zanshin-bonus-die-closed', testInfo);
-
-    await expect.poll(async () => {
-        const state = await game.getState();
-        return state?.core?.pendingBonusDiceSettlement ?? null;
-    }, { timeout: 5000 }).toBeNull();
+    // displayOnly 奖励骰：通过右侧骰盘普通确认收口，旧特写关闭按钮不再是正式入口。
+    await settleCurrentBonusDice(page, () => game.getState(), { sourceAbilityId: 'card-zanshin' });
+    await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [1, 4, 6, 6, 1] });
+    await game.screenshot('10-samurai-zanshin-bonus-die-confirmed-review', testInfo);
     await game.screenshot('10-samurai-zanshin-settled', testInfo);
 
     await page.waitForTimeout(400);
@@ -3250,11 +3271,8 @@ test('gunslinger loaded token should open single-die spotlight after real choice
     await page.waitForTimeout(800);
     await game.screenshot('21-gunslinger-loaded-after-choice-click', testInfo);
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
-    await expect(singleDieSpotlight).toBeVisible({ timeout: 5000 });
-    await expect(bonusDieOverlay).toContainText(/装填|Loaded|伤害|\+1/i, { timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
 
     const stateAfterUse = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3287,7 +3305,7 @@ test('gunslinger loaded token should open single-die spotlight after real choice
     expect(stateAfterUse.settlement?.dieValue).toBe(1);
     expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
 
-    await game.screenshot('22-gunslinger-loaded-single-die-spotlight', testInfo);
+    await game.screenshot('22-gunslinger-loaded-single-die-right-tray', testInfo);
 });
 
 test('gunslinger quick draw II should make loaded spotlight rerollable after real choice click', async ({ page, game }, testInfo) => {
@@ -3307,10 +3325,8 @@ test('gunslinger quick draw II should make loaded spotlight rerollable after rea
 
     await loadedLabel.locator('..').click();
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
-    await expect(singleDieSpotlight).toBeVisible({ timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
 
     const stateAfterUse = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3342,7 +3358,7 @@ test('gunslinger quick draw II should make loaded spotlight rerollable after rea
     expect(stateAfterUse.settlement?.dieValue).toBe(1);
     expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
 
-    await game.screenshot('24-gunslinger-quick-draw-2-loaded-rerollable-spotlight', testInfo);
+    await game.screenshot('24-gunslinger-quick-draw-2-loaded-rerollable-right-tray', testInfo);
 });
 
 test('gunslinger fill em with lead should make sourced loaded spotlight rerollable', async ({ page, game }, testInfo) => {
@@ -3362,10 +3378,8 @@ test('gunslinger fill em with lead should make sourced loaded spotlight rerollab
 
     await loadedLabel.locator('..').click();
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
-    await expect(singleDieSpotlight).toBeVisible({ timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(1, { timeout: 5000 });
 
     const stateAfterUse = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3397,7 +3411,7 @@ test('gunslinger fill em with lead should make sourced loaded spotlight rerollab
     expect(stateAfterUse.settlement?.dieValue).toBe(1);
     expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
 
-    await game.screenshot('26-gunslinger-fill-em-with-lead-loaded-rerollable-spotlight', testInfo);
+    await game.screenshot('26-gunslinger-fill-em-with-lead-loaded-rerollable-right-tray', testInfo);
 });
 
 test('gunslinger spin the chamber should grant loaded from real hand play', async ({ page, game }, testInfo) => {
@@ -3456,8 +3470,8 @@ test('gunslinger eat my lead should roll five bonus dice from real hand play', a
     await game.screenshot('29-gunslinger-eat-my-lead-before-play', testInfo);
     await dragHandCardToPlay(page, 'card-eat-my-lead');
 
-    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
-    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expectRightTrayBonusDiceConfirmation(page, () => game.getState());
+    await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(5, { timeout: 5000 });
 
     await page.waitForFunction(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3468,7 +3482,7 @@ test('gunslinger eat my lead should roll five bonus dice from real hand play', a
             && (state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0) === 1;
     }, { timeout: 15000, polling: 200 });
 
-    await game.screenshot('30-gunslinger-eat-my-lead-bonus-dice-overlay', testInfo);
+    await game.screenshot('30-gunslinger-eat-my-lead-bonus-dice-right-tray', testInfo);
 
     const stateAfterPlay = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3497,15 +3511,8 @@ test('gunslinger eat my lead should roll five bonus dice from real hand play', a
     expect(stateAfterPlay.totalBonusDamage).toBe(5);
     expect(stateAfterPlay.knockdown).toBe(1);
 
-    const closeButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
-    await expect(closeButton).toBeVisible({ timeout: 5000 });
-    await closeButton.click();
-    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
-
-    await page.waitForFunction(() => {
-        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-        return !state?.core?.pendingBonusDiceSettlement;
-    }, { timeout: 5000, polling: 200 });
+    await settleCurrentBonusDice(page, () => game.getState(), {});
+    await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [1, 1, 1, 1, 1] });
     await game.screenshot('31-gunslinger-eat-my-lead-after-closeout', testInfo);
 });
 

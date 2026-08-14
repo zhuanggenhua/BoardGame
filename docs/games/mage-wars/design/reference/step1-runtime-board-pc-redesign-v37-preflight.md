@@ -7,7 +7,7 @@
 | 项 | 锁定结果 |
 | --- | --- |
 | 问题对象 | Mage Wars 学徒模式 PC Open Design Step 1 主界面设计稿，v36 因卡面字段复写、确认/结算混态和动作链拆散被用户否决 |
-| 真相来源 | 本轮重读 AGENTS、skill-governance、ui-design-pipeline、game-design UCD/Hick/Fitts/player-error、ui-ux-pro-max、boardgame-ui-imagegen、ui-change-gates、ui-ux、学徒法术书、逐卡字段、区域合同和外部范式基线 |
+| 真相来源 | 本轮重读 AGENTS、spec-steward、ui-design-pipeline、game-design UCD/Hick/Fitts/player-error、ui-ux-pro-max、boardgame-ui-imagegen、ui-change-gates、ui-ux、学徒法术书、逐卡字段、区域合同和外部范式基线 |
 | 目标入口 / 环境 | Open Design artifact 代码设计稿：`D:\codex-home\tools\open-design\.od\projects\mage-wars-ui-design\mage-wars-step1-runtime-board-v37.html`；`mediaGenerate=false` |
 | 验收口径 | 先 AI 图面核验；只有 AI PASS 才允许打开给用户人工验收。用户批准前实现、真实页面 E2E 和移动端继续冻结 |
 

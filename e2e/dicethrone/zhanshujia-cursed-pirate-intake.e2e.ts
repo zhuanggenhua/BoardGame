@@ -47,7 +47,11 @@ import {
     STRATEGIC_SHIFT_2,
     WAR_MONGER_2,
 } from '../../src/games/dicethrone/heroes/zhanshujia/abilities';
-import { settleCurrentBonusDice } from './bonus-dice-flow';
+import {
+    expectRightTrayBonusDiceConfirmation,
+    getRightTrayDiceTray,
+    settleCurrentBonusDice,
+} from './bonus-dice-flow';
 
 type JsonRecord = Record<string, unknown>;
 type MatchSetup = NonNullable<Awaited<ReturnType<typeof setupOnlineMatch>>>;
@@ -551,6 +555,30 @@ const readServerCore = async (matchId: string, page: Page): Promise<JsonRecord> 
     const state = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(state.G ?? state);
     return asRecord(root.core);
+};
+
+const readServerCoreForPage = (match: MatchSetup, page: Page) => () =>
+    readServerCore(match.matchId, page);
+
+const expectRightTrayBonusDiceOnPage = async (
+    match: MatchSetup,
+    page: Page,
+    options: { diceCount?: number; sourceAbilityId?: string } = {},
+): Promise<void> => {
+    await expectRightTrayBonusDiceConfirmation(page, readServerCoreForPage(match, page), {
+        sourceAbilityId: options.sourceAbilityId,
+    });
+    if (typeof options.diceCount === 'number') {
+        await expect(getRightTrayDiceTray(page).getByTestId('dice-2d')).toHaveCount(options.diceCount, { timeout: 10000 });
+    }
+};
+
+const settleBonusDiceOnPage = async (
+    match: MatchSetup,
+    page: Page,
+    options: { sourceAbilityId?: string } = {},
+): Promise<void> => {
+    await settleCurrentBonusDice(page, readServerCoreForPage(match, page), options);
 };
 
 const readServerRoot = async (matchId: string, page: Page): Promise<{ core: JsonRecord; sys: JsonRecord }> => {
@@ -4789,7 +4817,6 @@ const playHeftyUntilLoot = async (
     heftyCard: JsonRecord,
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     for (let attempt = 1; attempt <= 8; attempt += 1) {
         await setupHeftyScenario(match, heftyCard);
         await dismissCardSpotlightIfPresent(match.hostPage);
@@ -4802,10 +4829,9 @@ const playHeftyUntilLoot = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
-        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-die-loot');
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
+        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-die-right-tray-loot');
+        await settleBonusDiceOnPage(match, match.guestPage);
 
         let lootResolved = true;
         try {
@@ -4838,7 +4864,6 @@ const playBlusterUntilCutlass = async (
     drawCards: JsonRecord[],
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -4854,7 +4879,7 @@ const playBlusterUntilCutlass = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.guestPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -4872,11 +4897,10 @@ const playBlusterUntilCutlass = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '95-guest-bluster-bonus-die-cutlass');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '95-guest-bluster-bonus-die-right-tray-cutlass');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.guestPage);
         await waitForDiscardContains(match.matchId, match.guestPage, '1', BLUSTER_CARD_ID);
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
@@ -4903,7 +4927,6 @@ const playBlusterUntilLoot = async (
     drawCards: JsonRecord[],
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -4919,7 +4942,7 @@ const playBlusterUntilLoot = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.guestPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -4937,11 +4960,10 @@ const playBlusterUntilLoot = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.LOOT) {
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '149-guest-bluster-bonus-die-loot');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '149-guest-bluster-bonus-die-right-tray-loot');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.guestPage);
         await waitForDiscardContains(match.matchId, match.guestPage, '1', BLUSTER_CARD_ID);
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.LOOT) {
@@ -4967,7 +4989,6 @@ const playBlusterUntilSkull = async (
     drawCards: JsonRecord[],
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -4983,7 +5004,7 @@ const playBlusterUntilSkull = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.guestPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -5001,11 +5022,10 @@ const playBlusterUntilSkull = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '151-guest-bluster-bonus-die-skull');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '151-guest-bluster-bonus-die-right-tray-skull');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.guestPage);
         await waitForDiscardContains(match.matchId, match.guestPage, '1', BLUSTER_CARD_ID);
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
@@ -5095,7 +5115,6 @@ const playGainUpperHandUntilMedal = async (
     drawCard: JsonRecord,
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.hostPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -5113,7 +5132,7 @@ const playGainUpperHandUntilMedal = async (
         });
 
         await dismissCardSpotlightIfPresent(match.hostPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.hostPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -5131,11 +5150,10 @@ const playGainUpperHandUntilMedal = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace === ZHANSHUJIA_DICE_FACE_IDS.MEDAL) {
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '72-host-gain-upper-hand-bonus-die-medal');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '72-host-gain-upper-hand-bonus-die-right-tray-medal');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.hostPage);
         await waitForDiscardContains(match.matchId, match.hostPage, '0', GAIN_UPPER_HAND_CARD_ID);
 
         if (rolledFace === ZHANSHUJIA_DICE_FACE_IDS.MEDAL) {
@@ -5164,7 +5182,6 @@ const playMarkedForDeathBonusBranch = async (
     hostCursedCoin: number;
     hostHp: number;
 }> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const markedForDeathSlot = match.guestPage
         .locator('[data-testid="player-board-surface"] [data-resolved-ability-id="marked-for-death"]')
         .first();
@@ -5180,8 +5197,8 @@ const playMarkedForDeathBonusBranch = async (
     await expect(advanceButton).toBeEnabled({ timeout: 10000 });
     await advanceButton.click();
 
-    await expect(overlay).toBeVisible({ timeout: 10000 });
-    await saveEvidenceScreenshot(match.guestPage, testInfo, '33-guest-marked-for-death-bonus-dice');
+    await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 4 });
+    await saveEvidenceScreenshot(match.guestPage, testInfo, '33-guest-marked-for-death-bonus-dice-right-tray');
 
     await expect.poll(async () => {
         const core = await readServerCore(match.matchId, match.guestPage);
@@ -5200,8 +5217,7 @@ const playMarkedForDeathBonusBranch = async (
     const lootCount = dice.filter(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.LOOT).length;
     const skullCount = dice.filter(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.SKULL).length;
 
-    await overlay.click({ force: true });
-    await expect(overlay).toBeHidden({ timeout: 5000 });
+    await settleBonusDiceOnPage(match, match.guestPage);
 
     await expect.poll(async () => {
         const core = await readServerCore(match.matchId, match.guestPage);
@@ -5246,7 +5262,6 @@ const playFlayBonusBranch = async (
     hostPowderKeg: number;
     guestCp: number;
 }> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     await setupFlayScenario(match, flayCard);
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
@@ -5258,8 +5273,8 @@ const playFlayBonusBranch = async (
     });
 
     await dismissCardSpotlightIfPresent(match.guestPage);
-    await expect(overlay).toBeVisible({ timeout: 10000 });
-    await saveEvidenceScreenshot(match.guestPage, testInfo, '31-guest-flay-bonus-dice');
+    await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 5 });
+    await saveEvidenceScreenshot(match.guestPage, testInfo, '31-guest-flay-bonus-dice-right-tray');
 
     await expect.poll(async () => {
         const core = await readServerCore(match.matchId, match.guestPage);
@@ -5276,8 +5291,7 @@ const playFlayBonusBranch = async (
     const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
     const cutlassCount = dice.filter(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS).length;
 
-    await overlay.click({ force: true });
-    await expect(overlay).toBeHidden({ timeout: 5000 });
+    await settleBonusDiceOnPage(match, match.guestPage);
 
     await expect.poll(async () => {
         const core = await readServerCore(match.matchId, match.guestPage);
@@ -5320,8 +5334,10 @@ const playWarMonger2BonusBranch = async (
     guestHp: number;
     extraAttackAttackerId: string | null;
     pendingAttackSourceId: string | null;
+    pendingAttackDamage: number;
+    pendingAttackIsDefendable: boolean | null;
+    phase: string | null;
 }> => {
-    const overlay = match.hostPage.getByTestId('bonus-die-overlay');
     const warMongerSlot = match.hostPage.locator('[data-testid="player-board-surface"] [data-ability-slot="sky"]').first();
     await setupWarMonger2Scenario(match, drawCard);
     await setHarnessRandomQueue(match.hostPage, repeatRandomValue(0.99, 8));
@@ -5342,15 +5358,20 @@ const playWarMonger2BonusBranch = async (
     await expect(advanceButton).toBeEnabled({ timeout: 10000 });
     await advanceButton.click();
 
-    await expect(overlay).toBeVisible({ timeout: 10000 });
-    await saveEvidenceScreenshot(match.hostPage, testInfo, '29-host-war-monger-2-bonus-die-branch');
-    await overlay.click({ force: true });
-    await expect(overlay).toBeHidden({ timeout: 5000 });
+    await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1, sourceAbilityId: 'war-monger' });
+    await saveEvidenceScreenshot(match.hostPage, testInfo, '29-host-war-monger-2-bonus-die-right-tray-branch');
+    const pendingBonusCore = await readServerCore(match.matchId, match.hostPage);
+    const pendingBonusSettlement = asRecord(pendingBonusCore.pendingBonusDiceSettlement);
+    const pendingBonusDice = Array.isArray(pendingBonusSettlement.dice) ? pendingBonusSettlement.dice as JsonRecord[] : [];
+    const pendingBonusDie = asRecord(pendingBonusDice[0]);
+    const bonusRollValue = Number(pendingBonusDie.value ?? 0);
+    const bonusSettlementSourceAbilityId = String(pendingBonusSettlement.sourceAbilityId ?? 'war-monger');
+    await settleBonusDiceOnPage(match, match.hostPage, { sourceAbilityId: 'war-monger' });
 
     const deadline = Date.now() + 5000;
     let lastSnapshot: JsonRecord | null = null;
     while (Date.now() < deadline) {
-        const { core } = await readServerRoot(match.matchId, match.hostPage);
+        const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
         const players = asRecordMap(core.players);
         const host = asRecord(players['0']);
         const guest = asRecord(players['1']);
@@ -5359,27 +5380,30 @@ const playWarMonger2BonusBranch = async (
         const guestResources = asRecord(guest.resources);
         const extraAttack = asRecord(core.extraAttackInProgress);
         const pendingAttack = asRecord(core.pendingAttack);
-        const extraRoll = asRecord(pendingAttack.extraRoll);
         lastSnapshot = {
             handIds: hostHand.map(card => card.id),
             extraAttackAttackerId: extraAttack.attackerId ?? null,
             pendingAttack,
             hostTacticalAdvantage: hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0,
             guestHp: guestResources[RESOURCE_IDS.HP] ?? 0,
+            phase: sys.phase ?? core.phase ?? null,
+            bonusRollValue,
         };
-        const extraRollValue = extraRoll.value;
-        if (typeof extraRollValue === 'number') {
-            if (extraRollValue === 6 && extraAttack.attackerId !== '0') {
+        if (bonusRollValue > 0) {
+            if (bonusRollValue === 6 && extraAttack.attackerId !== '0') {
                 await match.hostPage.waitForTimeout(250);
                 continue;
             }
             return {
-                extraRollValue,
+                extraRollValue: bonusRollValue,
                 hostHandIds: hostHand.map(card => card.id as string),
                 hostTacticalAdvantage: Number(hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0),
                 guestHp: Number(guestResources[RESOURCE_IDS.HP] ?? 0),
                 extraAttackAttackerId: typeof extraAttack.attackerId === 'string' ? extraAttack.attackerId : null,
-                pendingAttackSourceId: typeof pendingAttack.sourceAbilityId === 'string' ? pendingAttack.sourceAbilityId : null,
+                pendingAttackSourceId: typeof pendingAttack.sourceAbilityId === 'string' ? pendingAttack.sourceAbilityId : bonusSettlementSourceAbilityId,
+                pendingAttackDamage: Number(pendingAttack.damage ?? 0),
+                pendingAttackIsDefendable: typeof pendingAttack.isDefendable === 'boolean' ? pendingAttack.isDefendable : null,
+                phase: typeof (sys.phase ?? core.phase) === 'string' ? String(sys.phase ?? core.phase) : null,
             };
         }
         await match.hostPage.waitForTimeout(250);
@@ -5399,8 +5423,10 @@ const playWarMongerBonusBranch = async (
     guestHp: number;
     extraAttackAttackerId: string | null;
     pendingAttackSourceId: string | null;
+    pendingAttackDamage: number;
+    pendingAttackIsDefendable: boolean | null;
+    phase: string | null;
 }> => {
-    const overlay = match.hostPage.getByTestId('bonus-die-overlay');
     const warMongerSlot = match.hostPage.locator('[data-testid="player-board-surface"] [data-ability-slot="sky"]').first();
     await setupWarMongerScenario(match, drawCard);
     await dismissCardSpotlightIfPresent(match.hostPage);
@@ -5420,15 +5446,20 @@ const playWarMongerBonusBranch = async (
     await expect(advanceButton).toBeEnabled({ timeout: 10000 });
     await advanceButton.click();
 
-    await expect(overlay).toBeVisible({ timeout: 10000 });
-    await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-war-monger-bonus-die-branch');
-    await overlay.click({ force: true });
-    await expect(overlay).toBeHidden({ timeout: 5000 });
+    await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1, sourceAbilityId: 'war-monger' });
+    await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-war-monger-bonus-die-right-tray-branch');
+    const pendingBonusCore = await readServerCore(match.matchId, match.hostPage);
+    const pendingBonusSettlement = asRecord(pendingBonusCore.pendingBonusDiceSettlement);
+    const pendingBonusDice = Array.isArray(pendingBonusSettlement.dice) ? pendingBonusSettlement.dice as JsonRecord[] : [];
+    const pendingBonusDie = asRecord(pendingBonusDice[0]);
+    const bonusRollValue = Number(pendingBonusDie.value ?? 0);
+    const bonusSettlementSourceAbilityId = String(pendingBonusSettlement.sourceAbilityId ?? 'war-monger');
+    await settleBonusDiceOnPage(match, match.hostPage, { sourceAbilityId: 'war-monger' });
 
     const deadline = Date.now() + 5000;
     let lastSnapshot: JsonRecord | null = null;
     while (Date.now() < deadline) {
-        const { core } = await readServerRoot(match.matchId, match.hostPage);
+        const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
         const players = asRecordMap(core.players);
         const host = asRecord(players['0']);
         const guest = asRecord(players['1']);
@@ -5437,23 +5468,26 @@ const playWarMongerBonusBranch = async (
         const guestResources = asRecord(guest.resources);
         const extraAttack = asRecord(core.extraAttackInProgress);
         const pendingAttack = asRecord(core.pendingAttack);
-        const extraRoll = asRecord(pendingAttack.extraRoll);
         lastSnapshot = {
             handIds: hostHand.map(card => card.id),
             extraAttackAttackerId: extraAttack.attackerId ?? null,
             pendingAttack,
             hostTacticalAdvantage: hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0,
             guestHp: guestResources[RESOURCE_IDS.HP] ?? 0,
+            phase: sys.phase ?? core.phase ?? null,
+            bonusRollValue,
         };
-        const extraRollValue = extraRoll.value;
-        if (typeof extraRollValue === 'number') {
+        if (bonusRollValue > 0) {
             return {
-                extraRollValue,
+                extraRollValue: bonusRollValue,
                 hostHandIds: hostHand.map(card => card.id as string),
                 hostTacticalAdvantage: Number(hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0),
                 guestHp: Number(guestResources[RESOURCE_IDS.HP] ?? 0),
                 extraAttackAttackerId: typeof extraAttack.attackerId === 'string' ? extraAttack.attackerId : null,
-                pendingAttackSourceId: typeof pendingAttack.sourceAbilityId === 'string' ? pendingAttack.sourceAbilityId : null,
+                pendingAttackSourceId: typeof pendingAttack.sourceAbilityId === 'string' ? pendingAttack.sourceAbilityId : bonusSettlementSourceAbilityId,
+                pendingAttackDamage: Number(pendingAttack.damage ?? 0),
+                pendingAttackIsDefendable: typeof pendingAttack.isDefendable === 'boolean' ? pendingAttack.isDefendable : null,
+                phase: typeof (sys.phase ?? core.phase) === 'string' ? String(sys.phase ?? core.phase) : null,
             };
         }
         await match.hostPage.waitForTimeout(250);
@@ -5468,7 +5502,6 @@ const playWeighAnchorUntilSkull = async (
     drawCard: JsonRecord,
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -5485,7 +5518,7 @@ const playWeighAnchorUntilSkull = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.guestPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -5503,11 +5536,10 @@ const playWeighAnchorUntilSkull = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '74-guest-weigh-anchor-bonus-die-skull');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '74-guest-weigh-anchor-bonus-die-right-tray-skull');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.guestPage);
         await waitForDiscardContains(match.matchId, match.guestPage, '1', WEIGH_ANCHOR_CARD_ID);
 
         if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
@@ -5529,7 +5561,6 @@ const playWeighAnchorUntilDraw = async (
     drawCard: JsonRecord,
     testInfo: TestInfo,
 ): Promise<void> => {
-    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
     const rolledFaces: string[] = [];
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
@@ -5546,7 +5577,7 @@ const playWeighAnchorUntilDraw = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
         await expect.poll(async () => {
             const core = await readServerCore(match.matchId, match.guestPage);
             const settlement = asRecord(core.pendingBonusDiceSettlement);
@@ -5564,11 +5595,10 @@ const playWeighAnchorUntilDraw = async (
         rolledFaces.push(rolledFace || '<empty>');
 
         if (rolledFace !== CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '143-guest-weigh-anchor-bonus-die-draw');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '143-guest-weigh-anchor-bonus-die-right-tray-draw');
         }
 
-        await overlay.click({ force: true });
-        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await settleBonusDiceOnPage(match, match.guestPage);
         await waitForDiscardContains(match.matchId, match.guestPage, '1', WEIGH_ANCHOR_CARD_ID);
 
         if (rolledFace !== CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
@@ -5726,17 +5756,55 @@ const playPowderKegUpkeepTransfer = async (
     await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.applied);
 };
 
-const finishWarMongerDefenseAndWaitForExtraAttack = async (match: MatchSetup) => {
+const enterWarMongerMedalExtraAttackPhase = async (match: MatchSetup) => {
+    let lastSnapshot: JsonRecord | null = null;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+        const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+        const extraAttack = asRecord(core.extraAttackInProgress);
+        lastSnapshot = {
+            phase: sys.phase ?? core.phase ?? null,
+            activePlayerId: core.activePlayerId ?? null,
+            extraAttackAttackerId: extraAttack.attackerId ?? null,
+            extraAttackPhaseEntered: extraAttack.phaseEntered ?? null,
+            hasPendingAttack: Boolean(core.pendingAttack),
+        };
+
+        if (
+            lastSnapshot.phase === 'offensiveRoll'
+            && lastSnapshot.activePlayerId === '0'
+            && lastSnapshot.extraAttackAttackerId === '0'
+            && lastSnapshot.extraAttackPhaseEntered === true
+            && lastSnapshot.hasPendingAttack === false
+        ) {
+            return;
+        }
+
+        await advancePhaseForActivePlayer(match);
+    }
+
+    throw new Error(`战争贩子勋章分支未进入额外进攻投掷阶段: ${JSON.stringify(lastSnapshot)}`);
+};
+
+const finishWarMongerSabreDefenseAndReturnGuestHp = async (
+    match: MatchSetup,
+    expectedDamage: number,
+): Promise<number> => {
     await expect.poll(async () => {
         const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
         const pendingAttack = asRecord(core.pendingAttack);
         return {
             phase: sys.phase ?? core.phase ?? null,
             defenderId: pendingAttack.defenderId ?? null,
+            sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+            damage: Number(pendingAttack.damage ?? 0),
+            isDefendable: pendingAttack.isDefendable ?? null,
         };
     }, { timeout: 10000 }).toMatchObject({
         phase: 'defensiveRoll',
         defenderId: '1',
+        sourceAbilityId: 'war-monger',
+        damage: expectedDamage,
+        isDefendable: true,
     });
 
     await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
@@ -5744,8 +5812,9 @@ const finishWarMongerDefenseAndWaitForExtraAttack = async (match: MatchSetup) =>
         const core = asRecord(root.core);
         root.core = {
             ...core,
-            dice: buildDiceForValues('cursed_pirate-dice', [4, 4, 4, 4], {
+            dice: buildDiceForValues('cursed_pirate-dice', [6, 4, 4, 4], {
                 4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                6: CURSED_PIRATE_DICE_FACE_IDS.SKULL,
             }),
             rollCount: 1,
             rollLimit: 1,
@@ -5763,24 +5832,25 @@ const finishWarMongerDefenseAndWaitForExtraAttack = async (match: MatchSetup) =>
 
     await closeCombatChainUntilSettled(match, match.hostPage, 10);
 
-    await expect.poll(async () => {
+    return expect.poll(async () => {
         const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
         const players = asRecordMap(core.players);
-        const host = asRecord(players['0']);
-        const hostHand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
-        const extraAttack = asRecord(core.extraAttackInProgress);
+        const guest = asRecord(players['1']);
+        const guestResources = asRecord(guest.resources);
         return {
             phase: sys.phase ?? core.phase ?? null,
-            activePlayerId: core.activePlayerId ?? null,
-            extraAttackAttackerId: extraAttack.attackerId ?? null,
             hasPendingAttack: Boolean(core.pendingAttack),
-            hostHandIds: hostHand.map(card => card.id),
+            guestHp: Number(guestResources[RESOURCE_IDS.HP] ?? 0),
         };
     }, { timeout: 15000 }).toMatchObject({
-        phase: 'offensiveRoll',
-        activePlayerId: '0',
-        extraAttackAttackerId: '0',
+        phase: 'main2',
         hasPendingAttack: false,
+    }).then(async () => {
+        const { core } = await readServerRoot(match.matchId, match.hostPage);
+        const players = asRecordMap(core.players);
+        const guest = asRecord(players['1']);
+        const guestResources = asRecord(guest.resources);
+        return Number(guestResources[RESOURCE_IDS.HP] ?? 0);
     });
 };
 
@@ -5801,7 +5871,7 @@ const playWarMonger2UntilMedalBranch = async (
         const branch = await playWarMonger2BonusBranch(match, drawCard, testInfo);
         lastBranch = branch;
         if (branch.extraRollValue === 6) {
-            await finishWarMongerDefenseAndWaitForExtraAttack(match);
+            await enterWarMongerMedalExtraAttackPhase(match);
             const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
             const players = asRecordMap(core.players);
             const host = asRecord(players['0']);
@@ -6406,14 +6476,10 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 payload: { cardId: HOST_CARD_ID },
             });
             await dismissCardSpotlightIfPresent(match.hostPage);
-            const bonusDieOverlay = match.hostPage.getByTestId('bonus-die-overlay');
-            await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
-            await expect(match.hostPage.getByTestId('bonus-die-spotlight-content')).toHaveAttribute('data-is-rolling', 'false', { timeout: 10000 });
-            await expect(bonusDieOverlay).toContainText('作战室', { timeout: 10000 });
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '18-host-war-room-bonus-die-spotlight');
+            await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '18-host-war-room-bonus-die-right-tray');
 
-            await bonusDieOverlay.click({ force: true });
-            await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+            await settleBonusDiceOnPage(match, match.hostPage);
             await waitForTokenAtLeast(match.matchId, match.hostPage, '0', TOKEN_IDS.TACTICAL_ADVANTAGE, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '19-host-war-room-tactical-advantage-applied');
         } finally {
@@ -8206,9 +8272,8 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             });
             await dragHandCardToPlay(match.hostPage, DISENGAGE_CARD_ID);
 
-            const overlay = match.hostPage.getByTestId('bonus-die-overlay');
-            await expect(overlay).toBeVisible({ timeout: 10000 });
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '70-host-disengage-bonus-die');
+            await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '70-host-disengage-bonus-die-right-tray');
 
             await expect.poll(async () => {
                 const core = await readServerCore(match.matchId, match.hostPage);
@@ -8235,8 +8300,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
             ]).toContain(rolledFace);
 
-            await overlay.click({ force: true });
-            await expect(overlay).toBeHidden({ timeout: 5000 });
+            await settleBonusDiceOnPage(match, match.hostPage);
 
             const rejected = await match.hostPage.evaluate(() => {
                 return (window as Window & { __BG_LAST_COMMAND_REJECTED__?: unknown }).__BG_LAST_COMMAND_REJECTED__ ?? null;
@@ -9201,9 +9265,8 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             await hostModal.getByRole('button', { name: /不获得火药桶|roll 1 die/i }).click();
 
-            const overlay = match.hostPage.getByTestId('bonus-die-overlay');
-            await expect(overlay).toBeVisible({ timeout: 10000 });
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '40-host-sip-bonus-die');
+            await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '40-host-sip-bonus-die-right-tray');
 
             await expect.poll(async () => {
                 const core = await readServerCore(match.matchId, match.hostPage);
@@ -9217,8 +9280,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
             const rolledValue = Number(asRecord(dice[0]).value ?? 0);
 
-            await overlay.click({ force: true });
-            await expect(overlay).toBeHidden({ timeout: 5000 });
+            await settleBonusDiceOnPage(match, match.hostPage);
             await waitForDiscardContains(match.matchId, match.hostPage, '1', SIP_CARD_ID);
 
             if (rolledValue >= 3) {
@@ -9253,7 +9315,12 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 expect(branch.hostTacticalAdvantage).toBe(5);
                 expect(branch.extraAttackAttackerId).toBeNull();
             } else {
-                expect(branch.guestHp).toBe(44);
+                expect(branch.phase).toBe('defensiveRoll');
+                expect(branch.pendingAttackDamage).toBe(6);
+                expect(branch.pendingAttackIsDefendable).toBe(true);
+                expect(branch.guestHp).toBe(50);
+                const guestHpAfterDefense = await finishWarMongerSabreDefenseAndReturnGuestHp(match, 6);
+                expect(guestHpAfterDefense).toBe(46);
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '30-host-war-monger-2-branch-applied');
         } finally {
@@ -9274,14 +9341,22 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             expect(branch.pendingAttackSourceId).toBe('war-monger');
             if (branch.extraRollValue === 6) {
+                expect(branch.extraAttackAttackerId).toBe('0');
                 expect(branch.hostHandIds).toContain(STRATEGIC_DEFENSE_CARD_ID);
             } else if (branch.extraRollValue === 4 || branch.extraRollValue === 5) {
                 expect(branch.hostTacticalAdvantage).toBe(5);
             } else {
-                expect(branch.guestHp).toBe(45);
+                expect(branch.phase).toBe('defensiveRoll');
+                expect(branch.pendingAttackDamage).toBe(5);
+                expect(branch.pendingAttackIsDefendable).toBe(true);
+                expect(branch.guestHp).toBe(50);
+                const guestHpAfterDefense = await finishWarMongerSabreDefenseAndReturnGuestHp(match, 5);
+                expect(guestHpAfterDefense).toBe(47);
             }
 
-            await finishWarMongerDefenseAndWaitForExtraAttack(match);
+            if (branch.extraRollValue === 6) {
+                await enterWarMongerMedalExtraAttackPhase(match);
+            }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '79-host-war-monger-extra-attack-phase');
         } finally {
             await cleanupDTMatch(match);
@@ -10626,7 +10701,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
-    test('真实入口应在火药桶维持阶段投出 1 时先展示奖励骰特写再正常结算', async ({ browser }, testInfo) => {
+    test('真实入口应在火药桶维持阶段投出 1 时先展示右侧奖励骰骰盘再正常结算', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupNewHeroMatch(browser, baseURL);
@@ -10644,25 +10719,16 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 payload: {},
             });
 
-            const overlay = match.hostPage.getByTestId('bonus-die-overlay');
-            await expect(overlay).toBeVisible({ timeout: 10000 });
-            const guestOverlay = match.guestPage.getByTestId('bonus-die-overlay');
-            await expect(guestOverlay).toBeVisible({ timeout: 10000 });
-
-            const spotlightContent = match.hostPage.getByTestId('bonus-die-spotlight-content').first();
-            await expect(spotlightContent).toHaveAttribute('data-is-rolling', 'false', { timeout: 10000 });
-
-            const die = spotlightContent.getByTestId('dice-2d').first();
+            await expectRightTrayBonusDiceOnPage(match, match.hostPage, { diceCount: 1 });
+            await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
+            const die = getRightTrayDiceTray(match.hostPage).getByTestId('dice-2d').first();
             await expect(die).toBeVisible({ timeout: 10000 });
             await expect(die).toHaveAttribute('data-sprite-ready', 'true', { timeout: 10000 });
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '223-host-powder-keg-upkeep-roll-1-bonus-die');
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '223b-guest-powder-keg-upkeep-roll-1-bonus-die');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '223-host-powder-keg-upkeep-roll-1-bonus-die-right-tray');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '223b-guest-powder-keg-upkeep-roll-1-bonus-die-right-tray');
 
-            await overlay.click({ force: true });
-            await guestOverlay.click({ force: true });
-            await expect(overlay).toBeHidden({ timeout: 5000 });
-            await expect(guestOverlay).toBeHidden({ timeout: 5000 });
+            await settleBonusDiceOnPage(match, match.hostPage);
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 47);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 0);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);

@@ -1,3 +1,11 @@
+---
+name: critical-image-gate
+description: 关键图片门禁：阻塞加载、失败提示和验收边界——改关键图片加载时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # CriticalImageGate 使用规则
 
 > 触发条件：修改 `CriticalImageGate`、调整对局首屏加载链路、排查“刷新进入对局很慢”，以及**任何游戏首屏依赖 atlas / 牌背 / 棋盘底图 / 角色立绘等正式图片资产**时必读。

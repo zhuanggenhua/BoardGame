@@ -1,3 +1,11 @@
+---
+name: animation-effects
+description: 动画与特效标准：FX、Shader、反馈包和性能边界——改视觉特效或动画系统时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 动画/动效完整规范
 
 > 本文档是 `AGENTS.md` 的补充，包含动效技术选型、Canvas 粒子引擎、特效组件的完整规范。
@@ -97,6 +105,8 @@
 ## 引擎级 FX 系统（强制）
 
 棋盘特效调度已迁移至引擎级 FX 系统（`src/engine/fx/`），提供 cue-based 的注册、调度与渲染框架。
+
+本节是 FX 特效系统的唯一 AI 规范入口。宿主旧规则入口不得复活；新增或审查特效时从本节、[`engine-visual-events`](engine-visual-events.md) 和命中的游戏 `fxSetup.ts` 继续下钻。
 
 ### 核心概念
 - **FxCue**：点分层级标识符（如 `fx.summon`、`fx.combat.shockwave`），支持通配符（`fx.combat.*`）

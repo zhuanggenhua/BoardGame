@@ -47,13 +47,14 @@ description: "BoardGame 新增派系/角色/英雄端到端流程。用于 Smash
 - 审计入口：`.spec/knowledge/standards/testing-audit.md`
 - 审计核心原则与矩阵：`.spec/knowledge/standards/testing-audit-core-principles.md`
 - 审计维度：`.spec/knowledge/standards/testing-audit-dimensions.md`
-- 测试规范：`docs/testing-best-practices.md`、`docs/automated-testing.md`
+- 测试与验收规范：`.spec/knowledge/standards/e2e-verification.md`、`.spec/knowledge/standards/testing-audit.md`
+- 测试工具参考：`docs/testing-best-practices.md`、`docs/automated-testing.md`
 - UI 改动：`.spec/knowledge/standards/ui-ux.md`
 
 ## 游戏专用路由
 
-- Smash Up 新派系：读 `docs/games/smashup/workflows/smashup-faction-intake.md`，若包含玩法实现再读 `docs/games/smashup/workflows/smashup-faction-implementation.md`。
-- Dice Throne 新英雄/角色：读 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`。
+- Smash Up 新派系：读 `.spec/skills/smashup-faction-intake/SKILL.md`，若包含玩法实现再读 `.spec/skills/smashup-faction-implementation/SKILL.md`。
+- Dice Throne 新英雄/角色：读 `.spec/skills/dicethrone-hero-intake/SKILL.md`。
 - 其他游戏暂无专用 workflow：以本 skill + `.spec/knowledge/standards/data-entry.md` + 该游戏 `rule/` 为准，并补专用 workflow，不要把临时口径写进项目全局规则。
 
 ## S0：范围与批次矩阵

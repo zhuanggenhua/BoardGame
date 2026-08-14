@@ -94,7 +94,7 @@
 
 ### D3/D33 守卫回写
 
-- 通用维度已补：`docs/ai-rules/testing-audit-dimensions.md` 和 `testing-audit-dimensions-semantics-interaction.md` 要求空 effects 能力必须分类为“已实现旁路消费 / 有意静态被动 / 真实占位”。
+- 通用维度已补：`.spec/knowledge/standards/testing-audit-dimensions.md` 和 `testing-audit-dimensions-semantics-interaction.md` 要求空 effects 能力必须分类为“已实现旁路消费 / 有意静态被动 / 真实占位”。
 - 机器守卫已补：`src/games/summonerwars/__tests__/entity-chain-integrity.test.ts` 新增实施中派系空 effects 分类测试，新增空效果能力未登记消费者和 evidence 时会失败。
 
 ## 逐项结论
@@ -148,11 +148,11 @@
 
 | 文档 | 更新点 |
 | --- | --- |
-| `docs/ai-rules/testing-audit-dimensions.md` | D8 增加真实 `ADVANCE_PHASE` / `onPhaseExit` 消费与死亡后处理检查；D55 增加 AI legal-actions、空牌库自动跳过、召唤阶段事件、召唤型特殊入口矩阵；D3/D33 增加 `effects: []` 旁路消费分类要求 |
-| `docs/ai-rules/testing-audit-dimensions-semantics-interaction.md` | 新增 D3 子项“静态定义与旁路消费一致性审计”，要求空 effects 能力分类为已实现旁路消费 / 有意静态被动 / 真实占位，并补 evidence 或机器守卫 |
-| `docs/ai-rules/testing-audit-dimensions-resource-timing.md` | 新增 D8 子项“阶段退出真实推进链”，要求所有 `onPhaseEnd` 定义必须接入阶段表或写明等价消费链 |
-| `docs/ai-rules/testing-audit-dimensions-state-pipeline.md` | 新增 D55 子项“AI 合法动作与自动跳过消费者一致性”，要求 validator/UI/AI/auto-continue 同审；召唤阶段全入口清单补入事件/持续事件；实施中批次补审必须覆盖批次全集并逐对象写不适用原因 |
-| `docs/ai-rules/testing-audit-core-principles.md` | 技能完整流程矩阵的“候选生成”加入 AI legal-actions 与自动推进消费者；“静态定义”加入空 effects 旁路消费证据映射；新增 / 实施中批次漏审时补审范围默认升级到批次对象全集 |
+| `.spec/knowledge/standards/testing-audit-dimensions.md` | D8 增加真实 `ADVANCE_PHASE` / `onPhaseExit` 消费与死亡后处理检查；D55 增加 AI legal-actions、空牌库自动跳过、召唤阶段事件、召唤型特殊入口矩阵；D3/D33 增加 `effects: []` 旁路消费分类要求 |
+| `.spec/knowledge/standards/testing-audit-dimensions-semantics-interaction.md` | 新增 D3 子项“静态定义与旁路消费一致性审计”，要求空 effects 能力分类为已实现旁路消费 / 有意静态被动 / 真实占位，并补 evidence 或机器守卫 |
+| `.spec/knowledge/standards/testing-audit-dimensions-resource-timing.md` | 新增 D8 子项“阶段退出真实推进链”，要求所有 `onPhaseEnd` 定义必须接入阶段表或写明等价消费链 |
+| `.spec/knowledge/standards/testing-audit-dimensions-state-pipeline.md` | 新增 D55 子项“AI 合法动作与自动跳过消费者一致性”，要求 validator/UI/AI/auto-continue 同审；召唤阶段全入口清单补入事件/持续事件；实施中批次补审必须覆盖批次全集并逐对象写不适用原因 |
+| `.spec/knowledge/standards/testing-audit-core-principles.md` | 技能完整流程矩阵的“候选生成”加入 AI legal-actions 与自动推进消费者；“静态定义”加入空 effects 旁路消费证据映射；新增 / 实施中批次漏审时补审范围默认升级到批次对象全集 |
 | `src/games/summonerwars/__tests__/entity-chain-integrity.test.ts` | 新增实施中派系空 effects 能力分类守卫，覆盖莫古、灰烬、永恒议会；新增空 effects 能力不登记消费者和 evidence 时失败 |
 
 ## 修订或失效记录

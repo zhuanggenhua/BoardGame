@@ -2,8 +2,8 @@
 
 - [x] 1.1 固化 `wangling.png / wangling_base.png` 的 truth-source 合同、atlas 几何与索引表
 - [x] 1.2 更新 `.spec/skills/data-entry-workflow/SKILL.md`，补齐 Smash Up 的 `intake` / `implementation` 分流规则
-- [x] 1.3 收紧 `docs/games/smashup/workflows/smashup-faction-intake.md` 为 intake-only 文档
-- [x] 1.4 新增 `docs/games/smashup/workflows/smashup-faction-implementation.md`，定义逐派系实施、验证与统一收口流程
+- [x] 1.3 收紧 `.spec/skills/smashup-faction-intake/SKILL.md` 为 intake-only 文档
+- [x] 1.4 新增 `.spec/skills/smashup-faction-implementation/SKILL.md`，定义逐派系实施、验证与统一收口流程
 
 ## 2. 运行时接入
 

@@ -6,7 +6,7 @@
 
 ## 通用规范变更
 
-- 变更文件：`docs/ai-rules/testing-audit.md`
+- 变更文件：`.spec/knowledge/standards/testing-audit.md`
 - 新增维度：**交互入口语义必须审计（强制）**。
 - 适用范围：所有规则、卡牌、技能、按钮描述中包含“选择 / 移动 / 打出到 / 从...到... / 另一个 / 你的 / 敌方 / 任意 / 至多 / 可以 / 然后 / choose / move / target”等动作链的对象。
 - 审计要求：拆出第一用户选择对象，核对 UI 入口、command payload、validator、resolver/handler 消费字段是否同一语义；后续目标不能误当前置入口；后续选择必须携带前置上下文。

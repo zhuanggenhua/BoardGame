@@ -202,7 +202,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                         : [];
                 const allowedDieIds = rawAllowedDieIds.length > 0
                     ? Array.from(new Set(rawAllowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
-                    : getActiveDice(normalizedCore).map(die => die.id);
+                    : getActiveDice(normalizedCore, phase).map(die => die.id);
                 const completedDieIds = Array.isArray(data.completedDieIds)
                     ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
                     : [];

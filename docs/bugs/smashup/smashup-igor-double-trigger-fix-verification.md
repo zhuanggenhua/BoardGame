@@ -97,4 +97,4 @@ for (const e of newDestroyEvents) {
 
 - `docs/bugs/smashup/smashup-igor-double-trigger-investigation.md` — 完整调查过程
 - `docs/bugs/smashup/smashup-igor-double-trigger-root-cause-summary.md` — 根因总结
-- `docs/ai-rules/testing-audit.md` — 审计文档（已更新 D9 和新增 D40）
+- `.spec/knowledge/standards/testing-audit.md` — 审计文档（已更新 D9 和新增 D40）

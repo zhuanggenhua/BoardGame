@@ -96,6 +96,7 @@ import {
     resolveRecentRollRerollSelectableDieIndices,
     type BetrayalDeckKind,
     type BetrayalCore,
+    type UseEffectProfile,
 } from '../game';
 import {
     BETRAYAL_DISCOVERY_POOLS,
@@ -117,6 +118,31 @@ function findTestExplorer(core: BetrayalCore, playerId: string) {
         throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
     }
     return explorer;
+}
+
+function finalizePendingEventRollForTest(core: BetrayalCore): BetrayalCore {
+    const pending = core.pendingEventRollResolution;
+    expect(pending).toBeTruthy();
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+        pending!.playerId,
+        { rollId: pending!.rollId },
+    );
+}
+
+function markRecentEventRollPendingFinalizationForTest(
+    core: BetrayalCore,
+    effect: UseEffectProfile = { mode: 'none', recommendedAction: 'endTurn' },
+): void {
+    expect(core.recentRoll).toBeTruthy();
+    expect(core.recentRoll?.kind === 'eventTraitCheck' || core.recentRoll?.kind === 'eventDiceRoll').toBe(true);
+    core.pendingEventRollResolution = {
+        rollId: core.recentRoll!.id,
+        playerId: core.recentRoll!.playerId,
+        sourceTitle: core.recentRoll!.sourceTitle,
+        effect,
+    };
 }
 
 function selectDefaultOpeningExplorers(core: BetrayalCore): BetrayalCore {
@@ -939,6 +965,14 @@ function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCor
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    if (core.pendingEventRollResolution) {
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.pendingEventRollResolution.rollId },
+        );
+    }
     return acknowledgePendingCardResolutions(core);
 }
 
@@ -1441,10 +1475,9 @@ describe('Betrayal first scenario runtime', () => {
             }
         }
 
-        expect(catalogByExplorerId.get('jaden-jones')!.tokenAsset).toBe('betrayal/tokens/explorers/jaden-jones');
-        expect(catalogByExplorerId.get('father-warren-leung')!.tokenAsset).toBe('betrayal/tokens/explorers/father-warren-leung');
-        expect(catalogByExplorerId.get('michelle-monroe')!.tokenAsset).toBe('betrayal/tokens/explorers/michelle-monroe');
-        expect(catalogByExplorerId.get('stephanie-richter')!.tokenAsset).toBe('betrayal/tokens/explorers/stephanie-richter');
+        for (const explorerId of Object.keys(expectedTraitsByExplorerId)) {
+            expect(catalogByExplorerId.get(explorerId)!.tokenAsset).toBe(`betrayal/tokens/explorers/${explorerId}`);
+        }
         expect(catalogByExplorerId.get('josef-hooper')!.traitTracks.might.values.slice(2, 4)).toEqual([5, 5]);
     });
 
@@ -3921,7 +3954,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.speed).toBe(3);
     });
 
-    it('即时事件效果只由翻牌玩家确认，确认后不再等待其他座位', () => {
+    it('即时事件效果进入全员确认队列，所有玩家确认前不放行行动', () => {
         let core = createStartedFirstScenarioCore(['0', '1']);
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -3947,6 +3980,7 @@ describe('Betrayal first scenario runtime', () => {
         }))).toEqual([
             { kind: 'event-effect', text: '事件效果：知识检定 6：获得 1 点知识；知识 +1' },
         ]);
+        const requiredPlayerIds = [...core.playerIds];
         expect(core.pendingCardResolutionQueue).toHaveLength(1);
         expect(core.pendingCardResolutionQueue[0]).toMatchObject({
             deckKind: 'event',
@@ -3954,6 +3988,8 @@ describe('Betrayal first scenario runtime', () => {
             stepKind: 'event-effect',
             index: 1,
             total: 1,
+            requiredPlayerIds,
+            acknowledgedPlayerIds: [],
         });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -3967,11 +4003,26 @@ describe('Betrayal first scenario runtime', () => {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
 
-        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            requiredPlayerIds,
+            acknowledgedPlayerIds: ['0'],
+        });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
-        ).valid).toBe(true);
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+
+        for (const playerId of requiredPlayerIds.slice(1)) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, playerId, {
+                resolutionId: core.pendingCardResolutionQueue[0]!.id,
+            });
+        }
+
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
@@ -4442,19 +4493,28 @@ describe('Betrayal first scenario runtime', () => {
             { accept: true },
             100,
             createBetrayalScriptedRandom(3, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.summary).toBe('大口吸入芳香');
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 4');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
         expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
-        expect(core.pendingEventChoice?.sourceTitle).toBe('肉质苔癣');
-        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventChoice).toBeNull();
+        expect(core.pendingEventRollResolution?.sourceTitle).toBe('肉质苔癣');
+        expect(core.pendingEventRollResolution?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventRollResolution?.nextPendingEventChoice?.effect.mode).toBe('chosenTrait');
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
         const knowledgePositionBeforeMossReward = traitTrackPosition(core, '0', 'knowledge');
+
+        core = finalizePendingEventRollForTest(core);
+
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.pendingEventChoice?.sourceTitle).toBe('肉质苔癣');
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
 
         core = applyBetrayalCommand(
             core,
@@ -4552,11 +4612,14 @@ describe('Betrayal first scenario runtime', () => {
             { accept: true },
             100,
             createBetrayalScriptedRandom(3, 3),
+            false,
         );
 
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
-        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventChoice).toBeNull();
+        expect(core.pendingEventRollResolution?.nextPendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventRollResolution?.effect.mode).toBe('chosenTrait');
         expect(core.recentRoll?.latestLabel).toContain('获得 1 点任意属性');
 
         core = applyBetrayalCommand(
@@ -4566,15 +4629,23 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             101,
             createBetrayalScriptedRandom(3),
+            false,
         );
 
         expect(core.recentRoll?.dice).toEqual([2, 2]);
-        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventChoice).toBeNull();
+        expect(core.pendingEventRollResolution?.nextPendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventRollResolution?.effect.mode).toBe('chosenTrait');
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
         expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
         const knowledgePositionBeforeRabbitMossReward = traitTrackPosition(core, '0', 'knowledge');
+
+        core = finalizePendingEventRollForTest(core);
+
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
 
         core = applyBetrayalCommand(
             core,
@@ -21931,13 +22002,15 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(1, 1, 1),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点知识');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper - 1);
-        expect(core.currentExplorer.traits.knowledge).toBe(2);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([0, 0, 0]);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: -1 });
 
         core = applyBetrayalCommand(
             core,
@@ -21946,13 +22019,20 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             100,
             createBetrayalScriptedRandom(3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 2');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点知识');
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
+        expect(core.recentRoll?.dice).toEqual([2, 0, 0]);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: -1 });
+
+        core = finalizePendingEventRollForTest(core);
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper - 1);
         expect(core.currentExplorer.traits.knowledge).toBe(2);
-        expect(core.recentRoll?.dice).toEqual([2, 0, 0]);
         expect(core.usedCardIdsThisTurn).toContain('rope');
 
         const secondUse = BetrayalDomain.validate(
@@ -21962,7 +22042,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(secondUse.valid).toBe(false);
     });
 
-    it('兔脚重掷后若跨过事件检定阈值，会撤销旧分支并应用新分支', () => {
+    it('兔脚重掷事件骰后，只在确认最终结果时结算最终分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -22003,12 +22083,14 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(1, 1, 1, 1, 1),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold - 1);
-        expect(core.currentExplorer.traits.knowledge).toBe(2);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([0, 0, 0, 0, 0]);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: -1 });
 
         core = applyBetrayalCommand(
             core,
@@ -22017,11 +22099,12 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             100,
             createBetrayalScriptedRandom(3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 2');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold - 1);
-        expect(core.currentExplorer.traits.knowledge).toBe(2);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
 
         core.recentRoll = {
             ...core.recentRoll!,
@@ -22029,9 +22112,13 @@ describe('Betrayal first scenario runtime', () => {
             dice: [2, 2, 2, 0, 0],
             latestLabel: '被低语扰乱，失去 1 点知识',
         };
-        core.currentExplorer.traits.knowledge = 2;
+        core.pendingEventRollResolution = {
+            ...core.pendingEventRollResolution!,
+            effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+        };
+        core.currentExplorer.traits.knowledge = 3;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        setTestTraitTrack(core, '0', 'knowledge', [1, 2, 3, 4, 5], 1, 2);
+        setTestTraitTrack(core, '0', 'knowledge', [1, 2, 3, 4, 5], 2, 2);
         core.usedCardIdsThisTurn = [];
         core = applyBetrayalCommand(
             core,
@@ -22040,15 +22127,28 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 3 },
             100,
             createBetrayalScriptedRandom(3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 8');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点知识');
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: 1 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.recentRoll?.id },
+        );
+
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
     });
 
-    it('恐怖玩偶会重掷刚刚事件属性检定的所有骰子，并回写原事件分支结算', () => {
+    it('恐怖玩偶重掷事件属性检定后，确认前不结算、确认后才应用最终分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -22086,11 +22186,13 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(1, 1, 1),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点知识');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll - 1);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([0, 0, 0]);
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'scary-doll')).toBe(true);
         expect(resolveRecentRollRerollSelectableDieIndices(core.recentRoll!, 'scary-doll')).toEqual([0, 1, 2]);
@@ -22108,20 +22210,88 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'scary-doll', dieIndex: 1 },
             101,
             createBetrayalScriptedRandom(3, 3, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 6');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点知识');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll + 1);
-        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([2, 2, 2]);
         expect(core.usedCardIdsThisTurn).toContain('scary-doll');
+
+        const otherPlayerFinalization = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', { rollId: core.recentRoll?.id }),
+        );
+        expect(otherPlayerFinalization.valid).toBe(false);
+
+        const blockedTurnEnd = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        );
+        expect(blockedTurnEnd.valid).toBe(false);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.recentRoll?.id },
+        );
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll + 1);
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
 
         const secondUse = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM, '0', { cardId: 'scary-doll', dieIndex: 0 }),
         );
         expect(secondUse.valid).toBe(false);
+    });
+
+    it('作祟检定只在确认最终结果后进入灰尘剧本', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+            { id: 'dog', name: '狗', kind: 'omen' },
+            { id: 'mask', name: '面具', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { accept: true },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+            false,
+        );
+
+        expect(core.phase).toBe('preHaunt');
+        expect(core.scenarioRuntime.dust).toBeUndefined();
+        expect(core.pendingEventRollResolution).toMatchObject({
+            hauntTriggered: true,
+            hauntCardNumber: 3,
+            hauntTriggerLabel: 'A Dusty Vial',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.pendingEventRollResolution?.rollId },
+        );
+
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.dust).toBeDefined();
     });
 
     it('幸运硬币只重掷刚刚属性检定的空白骰，重投后空白会生成精神伤害分配', () => {
@@ -22146,6 +22316,7 @@ describe('Betrayal first scenario runtime', () => {
             latestLabel: '属性检定空白骰',
             consumedRabbitFootCardIds: [],
         } as BetrayalCore['recentRoll'];
+        markRecentEventRollPendingFinalizationForTest(core);
 
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'lucky-coin')).toBe(true);
         expect(resolveRecentRollRerollSelectableDieIndices(core.recentRoll!, 'lucky-coin')).toEqual([0, 2]);
@@ -22197,6 +22368,7 @@ describe('Betrayal first scenario runtime', () => {
             latestLabel: '属性检定空白骰',
             consumedRabbitFootCardIds: [],
         } as BetrayalCore['recentRoll'];
+        markRecentEventRollPendingFinalizationForTest(core);
 
         core = applyBetrayalCommand(
             core,
@@ -22253,6 +22425,7 @@ describe('Betrayal first scenario runtime', () => {
             latestLabel: '属性检定',
             consumedRabbitFootCardIds: [],
         } as BetrayalCore['recentRoll'];
+        markRecentEventRollPendingFinalizationForTest(core);
 
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'scary-doll')).toBe(true);
         expect(resolveRecentRollRerollSelectableDieIndices(core.recentRoll!, 'scary-doll')).toEqual([0, 1, 2]);
@@ -22264,6 +22437,7 @@ describe('Betrayal first scenario runtime', () => {
             id: 'trait-check-without-blanks',
             dice: [1, 2, 1],
         } as BetrayalCore['recentRoll'];
+        markRecentEventRollPendingFinalizationForTest(core);
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'lucky-coin')).toBe(false);
         expect(resolveRecentRollRerollSelectableDieIndices(core.recentRoll!, 'lucky-coin')).toEqual([]);
 
@@ -22278,6 +22452,7 @@ describe('Betrayal first scenario runtime', () => {
             latestLabel: '房间回合末属性检定',
             consumedRabbitFootCardIds: [],
         } as BetrayalCore['recentRoll'];
+        core.pendingEventRollResolution = null;
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'scary-doll')).toBe(true);
         expect(resolveRecentRollRerollSelectableDieIndices(core.recentRoll!, 'scary-doll')).toEqual([0, 1, 2]);
         expect(canUseRecentRollRerollItemForRecentRoll(core, '0', 'lucky-coin')).toBe(true);
@@ -22318,14 +22493,16 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(1, 1),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点力量');
-        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling - 1);
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([0, 0]);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'might', amount: -1 });
 
         core = applyBetrayalCommand(
             core,
@@ -22334,18 +22511,25 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             100,
             createBetrayalScriptedRandom(6),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 2');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点神志');
         expect(core.latestDiscovery?.tone).toBe('warning');
         expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
-        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling - 1);
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling);
         expect(core.recentRoll?.dice).toEqual([2, 0]);
+        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'sanity', amount: -1 });
+
+        core = finalizePendingEventRollForTest(core);
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling - 1);
         expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
-    it('兔脚可以重掷标本剥制力量检定，并撤销失败分支的伤害和障碍物', () => {
+    it('兔脚可以重掷标本剥制力量检定，并在最终确认时只应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -22372,12 +22556,13 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(1, 1, 1, 1),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('力量检定 0');
-        expect(core.currentExplorer.traits.might).toBe(3);
+        expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(4);
-        expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('obstacle');
+        expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
 
         core.recentRoll = {
             ...core.recentRoll!,
@@ -22393,17 +22578,24 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 3 },
             100,
             createBetrayalScriptedRandom(3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('力量检定 8');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点神志');
+        expect(core.currentExplorer.traits.might).toBe(4);
+        expect(core.currentExplorer.traits.sanity).toBe(4);
+        expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
+
+        core = finalizePendingEventRollForTest(core);
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(5);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
         expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
-    it('兔脚重掷电话铃声时会撤销旧骰数伤害并应用新分支', () => {
+    it('兔脚重掷电话铃声时会在最终确认时应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -22433,11 +22625,12 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(2, 2, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的精神伤害');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll - 2);
-        expect(core.currentExplorer.traits.knowledge).toBe(2);
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll);
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(4);
 
         core = applyBetrayalCommand(
@@ -22447,17 +22640,24 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             100,
             createBetrayalScriptedRandom(6),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 3');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点知识');
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll);
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.currentExplorer.traits.sanity).toBe(4);
+
+        core = finalizePendingEventRollForTest(core);
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
-    it('兔脚重掷小机器人时会撤销旧抽牌并应用新分支', () => {
+    it('兔脚重掷小机器人时会在最终确认时应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -22487,12 +22687,13 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(3, 2, 2, 2),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 5');
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
-        expect(core.currentExplorer.inventory).toHaveLength(2);
-        expect(core.deckCounts.item).toBe(itemDeckBefore - 1);
+        expect(core.currentExplorer.inventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
+        expect(core.deckCounts.item).toBe(itemDeckBefore);
 
         core = applyBetrayalCommand(
             core,
@@ -22501,10 +22702,20 @@ describe('Betrayal first scenario runtime', () => {
             { cardId: 'rope', dieIndex: 0 },
             100,
             createBetrayalScriptedRandom(1, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 3');
         expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        expect(core.currentExplorer.inventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
+        expect(core.currentExplorerInventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
+        expect(core.deckCounts.item).toBe(itemDeckBefore);
+        expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotReroll);
+        expect(core.currentExplorer.traits.might).toBe(4);
+        expect(core.currentExplorer.traits.speed).toBe(4);
+
+        core = finalizePendingEventRollForTest(core);
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.inventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
         expect(core.currentExplorerInventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
         expect(core.deckCounts.item).toBe(itemDeckBefore);

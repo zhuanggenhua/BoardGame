@@ -88,8 +88,8 @@
     "mage-wars/apprentice-spell-atlases": {
       "variants": {
         "json": {
-          "sha256": "986321f8875beca0d13d900cd736c76c3cac449085fb27f4b76f8cbf52561f54",
-          "bytes": 34309,
+          "sha256": "a2b697ec039e127ecf7008cb73539563d486cfbda8bfde8109969c237bf5732b",
+          "bytes": 32202,
           "mime": "application/json"
         }
       }
@@ -97,8 +97,8 @@
     "mage-wars/mages-core-atlas": {
       "variants": {
         "json": {
-          "sha256": "c9ed6f6402c7851b317e8c6d16479d119f2be1dd15af6432f01aeadafa922b16",
-          "bytes": 2956,
+          "sha256": "6aeaf2de9d1cf47f992a55724b4a0da91e70f0cbba0e362c9c0c50c2ff34a1a4",
+          "bytes": 2825,
           "mime": "application/json"
         }
       }

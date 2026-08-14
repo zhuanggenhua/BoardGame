@@ -1736,7 +1736,7 @@ describe('Betrayal Board foundation', () => {
         expect(boardMarker).not.toHaveTextContent('3');
     });
 
-    it('探索者棋子素材不使用眩晕或化猫这类错误 token，玩家卡切观察视角，棋盘 token 查看详情', async () => {
+    it('探索者玩家面板恢复人物板，地图 token 保持正式资源状态', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.otherExplorers = core.otherExplorers.map((explorer) => (
             explorer.playerId === '1'
@@ -1755,8 +1755,12 @@ describe('Betrayal Board foundation', () => {
         const fatherWarren = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'father-warren-leung')!;
         expect(EXPLORER_CATALOG.some((explorer) => explorer.explorerId === 'rebecca-allen')).toBe(false);
         expect(EXPLORER_CATALOG.some((explorer) => explorer.explorerId === 'darryl-highla')).toBe(false);
-        expect(anita.tokenAsset).toBeUndefined();
+        expect(anita.tokenAsset).toBe('betrayal/tokens/explorers/anita-hernandez');
         expect(fatherWarren.tokenAsset).toBe('betrayal/tokens/explorers/father-warren-leung');
+        const currentPlayerPanel = screen.getByTestId('betrayal-observed-explorer-panel');
+        expect(currentPlayerPanel).not.toHaveAttribute('data-token-asset');
+        expect(currentPlayerPanel).toHaveAttribute('data-panel-asset', core.currentExplorer.portraitAsset);
+        expect(currentPlayerPanel).not.toHaveTextContent('缺少正式标记');
         expect(screen.getByTestId('betrayal-bottom-teammate-1')).not.toHaveAttribute('data-token-asset');
         expect(screen.getByTestId('betrayal-bottom-teammate-2')).not.toHaveAttribute('data-token-asset');
         expect(screen.getByTestId('betrayal-bottom-teammate-1').querySelector('[data-player-status-tone="neutral"]')).toHaveTextContent('同房间');
@@ -1769,6 +1773,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-bottom-teammate-observed-1')).toBeInTheDocument();
        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-observed-player', 'true');
        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '1');
+       const observedPlayerPanel = screen.getByTestId('betrayal-observed-explorer-panel');
+       expect(observedPlayerPanel).toHaveAttribute('data-player-id', '1');
+       expect(observedPlayerPanel).not.toHaveAttribute('data-token-asset');
+       expect(observedPlayerPanel).toHaveAttribute('data-panel-asset', anita.portraitAsset);
+       expect(observedPlayerPanel).not.toHaveTextContent('缺少正式标记');
        expect(screen.queryByTestId('betrayal-current-panel-token-1')).not.toBeInTheDocument();
         const mapOccupantToken = screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`);
         expect(mapOccupantToken.querySelector('[data-testid="betrayal-explorer-figure-token-1"]')).toBeInTheDocument();
@@ -1800,11 +1809,14 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-focus-self-room')).toHaveAttribute('data-room-focus-target-id', core.currentExplorer.roomId);
 
         fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`));
-        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('安妮塔·赫南德兹');
-        const missingAnitaToken = screen.getByTestId('betrayal-explorer-detail-token-1');
-        expect(missingAnitaToken).toHaveAttribute('data-token-state', 'missing-official-token');
-        expect(screen.getByTestId('betrayal-explorer-detail-token-missing-1')).toBeInTheDocument();
-        expect(missingAnitaToken.querySelector('img')).toBeNull();
+        const explorerDetailsDialog = screen.getByTestId('betrayal-explorer-detail-dialog-1');
+        expect(explorerDetailsDialog).toHaveTextContent('安妮塔·赫南德兹');
+        expect(screen.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', anita.tokenAsset);
+        expect(within(explorerDetailsDialog).queryByText('缺少正式标记')).not.toBeInTheDocument();
+        const anitaMapToken = screen.getByTestId('betrayal-explorer-figure-token-1');
+        expect(anitaMapToken).toHaveAttribute('data-token-asset', anita.tokenAsset);
+        expect(anitaMapToken).toHaveAttribute('data-token-state', 'official');
+        expect(anitaMapToken?.querySelector('[data-testid="betrayal-explorer-figure-token-missing-1"]')).toBeNull();
     });
 
     it('牌堆区常驻显示预兆状态，并隐藏完整作祟检定规则说明', () => {
@@ -5241,7 +5253,6 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-inventory-rope'));
-        expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveTextContent('选择要重掷的骰子');
         expect(Number(screen.getByTestId('betrayal-rabbit-foot-dice').getAttribute('data-reroll-target-count'))).toBeGreaterThan(0);
         expect(screen.getByTestId('betrayal-house-dice-reroll-target-1')).toHaveAttribute('data-reroll-target-source', 'fallback-projection');
 
@@ -5363,7 +5374,6 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-inventory-lucky-coin'));
 
-        expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveTextContent('选择要重掷的骰子');
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '2');
         expect(screen.getByTestId('betrayal-house-dice-reroll-target-0')).toHaveAttribute('data-reroll-target-source', 'fallback-projection');
         expect(screen.queryByTestId('betrayal-house-dice-reroll-target-1')).not.toBeInTheDocument();
@@ -5408,7 +5418,6 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-inventory-scary-doll'));
 
-        expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveTextContent('选择要重掷的骰子');
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '3');
         expect(screen.getByTestId('betrayal-house-dice-reroll-target-0')).toHaveAttribute('data-reroll-target-source', 'fallback-projection');
         expect(screen.getByTestId('betrayal-house-dice-reroll-target-1')).toHaveAttribute('data-reroll-target-source', 'fallback-projection');

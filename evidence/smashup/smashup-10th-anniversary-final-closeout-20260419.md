@@ -106,7 +106,7 @@
    - `interactionCompletenessAudit` 改为“历史 orphan 基线白名单 + 新增漂移阻断”模式。
 4. 工作流完善：
    - `.windsurf/skills/data-entry-workflow/SKILL.md` 补充 S4 审计基线治理规则。
-   - `docs/games/smashup/workflows/smashup-faction-implementation.md` 补充审计执行矩阵与基线策略。
+   - `.spec/skills/smashup-faction-implementation/SKILL.md` 补充审计执行矩阵与基线策略。
 
 ## 验证结果
 

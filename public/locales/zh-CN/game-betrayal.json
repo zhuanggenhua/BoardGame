@@ -4,10 +4,10 @@
   "configReview": {
     "back": "返回",
     "title": "小黑屋配置表",
-    "description": "当前值来自 {{source}}。这里可以核对房间门位、旋转连通、剧本候选和首剧本配置；编辑只生成字段级修正提案，不会在浏览器里直接改正式源。",
+    "description": "当前值来自 {{source}}。这里可以核对探索者玩家面板资源、地图角色 Token、房间门位、旋转连通、剧本候选和首剧本配置；编辑只生成字段级修正提案，不会在浏览器里直接改正式源。",
     "clearDrafts": "清空草稿",
     "submitEdits": "提交修正（{{count}}）",
-    "searchPlaceholder": "搜索房间、剧本、门位、来源...",
+    "searchPlaceholder": "搜索探索者、玩家面板、Token、房间、剧本、门位、来源...",
     "rowSummary": "当前 {{filtered}} 行 / 全部 {{total}} 行；无效草稿 {{invalid}} 个",
     "pendingEdits": "已暂存 {{count}} 个字段修改；提交后会作为“配置修正提案”保存，正式合入仍需要回写代码并验证。",
     "auditCoverage": "字段覆盖由配置适配器统一定义：{{count}} 个必审字段。表格不会展示独立配置副本；来源文档和核对证据只用于审查。",

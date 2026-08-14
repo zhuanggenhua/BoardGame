@@ -22,8 +22,8 @@
   - 新增 `smashup-10th-anniversary-factions`
 - Affected code / docs:
   - `.spec/skills/data-entry-workflow/SKILL.md`
-  - `docs/games/smashup/workflows/smashup-faction-intake.md`
-  - `docs/games/smashup/workflows/smashup-faction-implementation.md`（新增）
+  - `.spec/skills/smashup-faction-intake/SKILL.md`
+  - `.spec/skills/smashup-faction-implementation/SKILL.md`（新增）
   - `src/games/smashup/domain/{ids,atlasCatalog}.ts`
   - `src/games/smashup/data/**`
   - `src/games/smashup/abilities/**`

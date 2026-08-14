@@ -414,6 +414,6 @@ feedbackResolver: (event) => {
 
 ### D. 相关规范
 
-- `docs/ai-rules/asset-pipeline.md` — 音频资源引用规范
-- `docs/ai-rules/engine-systems.md` — 引擎系统规范
-- `docs/ai-rules/ui-ux.md` — UI/UX 规范
+- `.spec/knowledge/standards/asset-pipeline.md` — 音频资源引用规范
+- `.spec/knowledge/standards/engine-systems.md` — 引擎系统规范
+- `.spec/knowledge/standards/ui-ux.md` — UI/UX 规范

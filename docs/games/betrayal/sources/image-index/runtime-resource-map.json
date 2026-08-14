@@ -240,27 +240,75 @@
     "status": "runtime"
   },
   {
-    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/jaden-jones.png",
-    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084.png",
-    "meaning": "地图玩家指示物：Jaden Jones / 杰登·琼斯；来自 384x336 token 组，不能用探索者整板代替",
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/isa-valencia.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200719894AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Isa Valencia / 伊莎·瓦伦西亚；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/anita-hernandez.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820073198B1C899FC54A12B01B46328B8645965EF84820A5.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Anita Hernandez / 安妮塔·赫南德兹；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/father-warren-leung.png",
-    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006328914A4B043295BFE8DC0F1BA33DC55F98DF2D030B.png",
-    "meaning": "地图玩家指示物：Father Warren Leung / 神父梁沃伦；来自 384x336 token 组，不能用探索者整板代替",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200705071552C929FC70CBA75EFEAE873B8A027E6510A60.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Father Warren Leung / 神父梁沃伦；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/dan-nguyen-md.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820071214B70CAE6075AEE1070830AD79EDF55B44EE2998E.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Dan Nguyen, M.D. / 阮单 医学博士；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/michelle-monroe.png",
-    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006176F92CB356076A3D52EE2EC3176CA4FAB154384393.png",
-    "meaning": "地图玩家指示物：Michelle Monroe / 米歇尔·梦露；从旧错名 darryl-highla 迁入正式语义路径，旧路径仅保留作历史别名证据。",
+    "sourceFile": "darryl-highla.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Michelle Monroe / 米歇尔·梦露；从旧错名 darryl-highla 迁入正式语义路径，旧路径仅保留作历史别名证据。仅用于地图房间内角色 token；玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/beat-box-bowen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200610455963F811E1050949F60D543AAC3B3C5629AF986.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Brittani “Beat Box” Bowen / 布里塔妮 “B-BOX” 鲍温；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/josef-hooper.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820062522F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Josef “Brosef” Hooper / 约瑟夫 “铁子” 霍珀；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/oliver-swift.png",
+    "sourceFile": "historical-wrong-name/father-warren-leung.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Oliver Swift / 奥利弗·斯威夫特；从历史错名 father-warren-leung 迁入正式语义路径。仅用于地图房间内角色 token；玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/stephanie-richter.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92.png",
-    "meaning": "地图玩家指示物：Stephanie Richter / 斯蒂芬妮·里克特；从旧错名 rebecca-allen 迁入正式语义路径，旧路径仅保留作历史别名证据。",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Stephanie Richter / 斯蒂芬妮·里克特；从旧错名 rebecca-allen 迁入正式语义路径，旧路径仅保留作历史别名证据。仅用于地图房间内角色 token；玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/persephone-puleri.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182005639809347EDD838C02BDBD328B19A0E4109A23D0E5C.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Persephone Puleri / 珀尔塞福涅·普拉里；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/sammy-angler.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820059573B63D75D14CC4B00164909AF53B667598F2B7FB9.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Sammy Angler / 塞米·昂勒尔；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/jaden-jones.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084.png",
+    "meaning": "地图玩家 Token / 对局玩家棋子：Jaden Jones / 杰登·琼斯；来自 384x336 token 组，仅用于地图房间内角色 token。玩家面板使用对应 portraitAsset 角色板 / 肖像资源，不能复用 token 或 token 缺图诊断语义。",
     "status": "runtime"
   },
   {

@@ -170,4 +170,4 @@ console.log('[DEBUG] handleCardClick:', {
 - `src/games/smashup/Board.tsx` (line 1228, 1049-1067)
 - `e2e/smashup-afterscoring-card-play.e2e.ts`
 - `AGENTS.md` (测试编写规范 + E2E 测试三板斧)
-- `docs/ai-rules/golden-rules.md` (React Hooks 规范)
+- `.spec/knowledge/standards/golden-rules.md` (React Hooks 规范)

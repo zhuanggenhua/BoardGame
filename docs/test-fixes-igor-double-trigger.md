@@ -77,4 +77,4 @@
 
 - `docs/bugs/smashup/smashup-igor-fix-summary.md` — 修复总结
 - `docs/bugs/smashup/smashup-igor-double-trigger-reflection.md` — 反思
-- `docs/ai-rules/testing-audit.md` — D44：测试设计反模式检测
+- `.spec/knowledge/standards/testing-audit.md` — D44：测试设计反模式检测

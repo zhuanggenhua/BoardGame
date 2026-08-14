@@ -1,3 +1,11 @@
+---
+name: testing-audit-dimensions-deferred-interaction
+description: 延迟交互审计维度：deferred、finalize 和后续选择链——审计延迟结算时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # 测试审计 D 维度细则：延迟交互
 
 > 来源：从 .spec/knowledge/standards/testing-audit-dimensions.md 无损拆出。交互上下文快照、延迟事件补发和跨阶段交互收口相关细则；正文可引用其他 D 编号作为交叉门禁。

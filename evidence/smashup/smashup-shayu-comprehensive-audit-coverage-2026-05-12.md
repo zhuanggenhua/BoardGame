@@ -21,7 +21,7 @@
 修复与新增证据：
 
 - 修复证据见 `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
-- 新通用门禁已写入 `docs/ai-rules/testing-audit.md`：所有游戏审计必须先拆规则文本子句，任一子句缺实现/证据时，整对象不得标 `passed`。
+- 新通用门禁已写入 `.spec/knowledge/standards/testing-audit.md`：所有游戏审计必须先拆规则文本子句，任一子句缺实现/证据时，整对象不得标 `passed`。
 - 本文后续读取时，`mythic_greeks_argonaut` 的旧 L2/L3/L4 结论必须按 2026-05-15 修复后的证据重新理解；不能再引用 2026-05-12 的对象级 pass 作为完整证明。
 
 ## 2026-05-23 +08 失效结论回写：Mako 暴露 destroyerId 共享消费合同漏审

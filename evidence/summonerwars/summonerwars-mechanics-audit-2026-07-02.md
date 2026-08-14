@@ -990,7 +990,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 ### 38.2 已更新的流程入口
 
 - 已更新 `.spec/skills/game-audit-workflow/SKILL.md`：新增“录入合同状态先于审计路线”门禁。
-- 已更新 `docs/ai-rules/testing-audit.md`：在“第零步：锁定权威描述”下新增“录入合同承接门禁”。
+- 已更新 `.spec/knowledge/standards/testing-audit.md`：在“第零步：锁定权威描述”下新增“录入合同承接门禁”。
 - 新门禁明确：
   - `locked` 对象继续实现对照、测试补证、真实入口证据和 L3/L4，不重新 OCR 或重录。
   - `blocked` 对象只登记真相源缺口，不写机制修复或规则断言测试。
@@ -1553,7 +1553,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 ### 57.1 本轮纠偏
 
 - 用户明确纠偏：当前阶段不是反复重新读图或重新录入已锁对象；但数据录入必须先做扎实，否则后续实现审计会继续跑偏。
-- 已同步更新 `.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/game-audit-workflow/SKILL.md` 和 `docs/ai-rules/testing-audit.md`。
+- 已同步更新 `.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/game-audit-workflow/SKILL.md` 和 `.spec/knowledge/standards/testing-audit.md`。
 - 更新后的口径是：`locked` 不是跳过录入质量，而是录入质量已达标后的承接状态；后续继续时进入实现对照、测试补证或缺口登记。
 
 ### 57.2 继续规则
@@ -2476,7 +2476,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 
 本轮响应“数据录入就要做好，后面才不会出问题”的纠偏，先把 `locked` 前最小字段清单写回数据录入与审计 workflow，然后继续消费已 `locked` 合同做实现补证；没有重新读图片/OCR，没有重新录入规则，也没有修改机制实现。
 
-- 规则更新：`.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/game-audit-workflow/SKILL.md`、`docs/ai-rules/data-entry.md` 已补强 `locked` 最小字段清单：对象/实体标识、主真相源定位、完整单对象图或可读裁图、对象归属、规则原文、原子子句、索引/atlas/槽位入口、对照源差异、未决项和状态。缺任一项不得标 `locked`，后续续跑也不得用实现字段、旧测试或 OCR 临时补规则结论。
+- 规则更新：`.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/game-audit-workflow/SKILL.md`、`.spec/knowledge/standards/data-entry.md` 已补强 `locked` 最小字段清单：对象/实体标识、主真相源定位、完整单对象图或可读裁图、对象归属、规则原文、原子子句、索引/atlas/槽位入口、对照源差异、未决项和状态。缺任一项不得标 `locked`，后续续跑也不得用实现字段、旧测试或 OCR 临时补规则结论。
 - 已锁合同：静态数值读取代表链继续消费 `life_up`、`radiant_shot`、`frost_bolt`、`greater_frost_bolt`、`fortress_elite` 的已锁合同；`power_boost`、`power_up`、`rage` 保留 B6 首轮证明，不因本轮代表链重做录入。
 - 本轮新增证据：`entity-chain-integrity.test.ts` 新增静态数值 L4 断言，覆盖「寒冰箭」只统计相邻友方建筑，敌方建筑和非相邻建筑不计入；「高阶寒冰箭」只统计 2 格内友方建筑，敌方建筑和超 2 格友方建筑不计入；「城塞精英」只统计 2 格内友方城塞单位，敌方城塞、超距城塞和非城塞友方不计入；「光辉射击」当前魔力 5 只 +2、当前魔力 1 不加成；「生命强化」按当前充能动态读取有效生命且最多 +5。
 - 验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/entity-chain-integrity.test.ts --configLoader native -t "radiant_shot|frost_bolt|greater_frost_bolt|fortress_elite|life_up|静态数值|辉光射击|寒冰箭|高阶寒冰箭|城塞精英|生命强化"` 通过，1 个测试文件通过，9 passed / 90 skipped。
@@ -2696,7 +2696,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 本节回应“数据录入要做好，后面才不会出问题”的纠偏：录入质量门禁必须发生在合同进入 `locked` 之前；对象已经 `locked` 且正式实现矩阵存在后，普通续跑不得重新读图片、不得 OCR、不得重新录入，只能先做合同字段完整性检查，再进入实现层补证。
 
 - 本轮未重新读图、未 OCR、未 atlas 裁图、未重新抄录规则；只核对了规范、正式矩阵和续跑状态。
-- 已更新并核对的规范入口：`.spec/skills/game-audit-workflow/SKILL.md`、`.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/safe-image-reading/SKILL.md`、`docs/ai-rules/data-entry.md` 均已写入 `locked` 后续跑不得无故回录入层的规则。
+- 已更新并核对的规范入口：`.spec/skills/game-audit-workflow/SKILL.md`、`.spec/skills/data-entry-workflow/SKILL.md`、`.spec/skills/safe-image-reading/SKILL.md`、`.spec/knowledge/standards/data-entry.md` 均已写入 `locked` 后续跑不得无故回录入层的规则。
 - 当前正式矩阵扫描结果：`evidence/summonerwars/*implementation-diff-matrix-2026-07-02.md` 中非 L4 的正式矩阵行为 0。
 - 原保留争议已在第 147 节裁定并最小修复：史米革保留「凶猛」（`ferocity`），部落投石手不承载；城塞骑士只承载「守卫」（`guardian`），不承载 `entangle`。
 - 后续续跑口径：若继续召唤师战争审计，优先从正式矩阵或残余队列中找已 `locked/已裁定` 且需要真实入口/UI/eventStream 证据的对象；不得把“数据录入要做好”解释成对已 `locked/已裁定` 对象重读图片。
@@ -2780,7 +2780,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 
 本节纠正第 147 节和 C80 的错误口径：官方在线文本包、Wiki、网页文本或旧脚本 bundle 不能在实现审计阶段高于本地清晰卡图/已锁录入合同；这类来源只能作为录入阶段的对照源或候选线索。此前把官方在线文本包用于直接裁定史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）归属，并据此写成“已裁定/已修复”，属于审计阶段越权。
 
-- 规范回写：已更新 `.spec/skills/game-audit-workflow/SKILL.md`、`.spec/skills/data-entry-workflow/SKILL.md` 和 `docs/ai-rules/testing-audit.md`，明确审计阶段不得临时查 Wiki、网页资料、在线文本包、旧脚本 bundle 或第三方数据库来裁定卡面规则、对象归属，且不得把这些来源排到本地清晰卡图之上。
+- 规范回写：已更新 `.spec/skills/game-audit-workflow/SKILL.md`、`.spec/skills/data-entry-workflow/SKILL.md` 和 `.spec/knowledge/standards/testing-audit.md`，明确审计阶段不得临时查 Wiki、网页资料、在线文本包、旧脚本 bundle 或第三方数据库来裁定卡面规则、对象归属，且不得把这些来源排到本地清晰卡图之上。
 - 状态纠正：`ferocity` 与 `entangle` 不再按“官方在线文本包已裁定”计为已锁/已裁定对象；当前应降回 `disputed-待本地卡图合同裁定`。
 - 代码边界：`goblin.ts`、`paladin.ts`、`abilities-goblin.ts`、`abilities-paladin.ts`、`validate.ts` 中相关改动不能继续汇报为已证实修复；在本地清晰卡图/已锁合同未裁定前，只能视为待裁定候选改动。
 - 后续要求：若要重新确认这两项，只对史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）做**定向合同裁定**：用本地清晰卡图、完整单对象图、用户当轮截图或用户明确指定的权威来源裁定对象归属。这里不是全量重新录入，也不是让普通续跑退回图片/OCR；裁定前不得写“修复已完成”或把测试通过当作规则归属证明。
@@ -2813,13 +2813,13 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 已找到的录入入口：`evidence/summonerwars/data-entry-source-map-2026-07-02.md` 与 `evidence/summonerwars/data-entry-crop-manifest-2026-07-02.md` 已登记史米革、部落投石手、城塞骑士、掷术师的 atlas 图源、spriteIndex、裁图入口和合同状态。
 - 已找到的规则原文矩阵：`b5-p2-rule-text-lock-matrix-2026-07-02.md` 已锁城塞骑士「守卫」（`guardian`）官方 `Protect` 原文；`b7-p3-movement-and-adjacency-rule-text-lock-matrix-2026-07-02.md` 已锁掷术师「缠斗」（`rebound`）官方 `Engage` 原文。
 - 当前正确结论：史米革/部落投石手「凶猛」（`ferocity`）和城塞骑士「缠斗」（`entangle`）不是“没录入”，而是已有录入入口和候选线索，但合同状态仍为对象归属争议；普通机制审计不得把它们自动拉回重录，也不得把候选改动汇报成已证实修复。
-- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“先查已有录入合同，不得默认判没录入”门禁。
+- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `.spec/knowledge/standards/testing-audit.md` 已新增“先查已有录入合同，不得默认判没录入”门禁。
 
 ## 155. C90 中文录入优先中文汇报（2026-07-03）
 
 本节补齐 C89 后的汇报口径：召唤师战争录入和本地对象命名以中文为主，后续审计与修复汇报必须优先给用户可直接核对的中文对象、中文能力名和中文规则描述/合同原文；英文官方名、英文原文、能力 id 与代码标识只能作为附证或定位。
 
-- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“中文录入优先中文汇报”门禁。
+- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `.spec/knowledge/standards/testing-audit.md` 已新增“中文录入优先中文汇报”门禁。
 - 汇报格式：表格默认列为“对象 / 能力 / 中文规则描述或合同状态 / 英文附证 / 现有实现 / 本轮改动 / 状态”，不得只列英文或 id。
 - 本轮适用对象：史米革/部落投石手「凶猛」、城塞骑士「缠斗」、城塞骑士「守卫」、掷术师「缠斗」。
 
@@ -2827,6 +2827,6 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 
 本节纠正 C90 表格仍使用“已有录入入口 / 合同未锁定 / 是否承载未锁成可修复合同”这类状态句顶替原文的问题。后续表格中凡列名包含“规则原文 / 合同原文 / 中文规则描述 / 能力描述”，只能填逐字原文；没有找到逐字原文就写“未找到原文记录”，再另列合同状态和已查入口。
 
-- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `docs/ai-rules/testing-audit.md` 已新增“原文列必须填原文，不得用状态句顶替”门禁。
+- 规范回写：`.spec/skills/game-audit-workflow/SKILL.md` 与 `.spec/knowledge/standards/testing-audit.md` 已新增“原文列必须填原文，不得用状态句顶替”门禁。
 - 本轮表格重列口径：史米革/部落投石手「凶猛」若在现有合同中没有逐字中文原文，原文列写“未找到中文原文记录”；英文候选 `Relentless` 原文只能放在英文附证列，不能冒充中文原文或归属裁定。
 - 城塞骑士「守卫」和掷术师「缠斗」已有英文原文；中文规则描述必须根据已锁子句给出，不得只贴英文或 id。

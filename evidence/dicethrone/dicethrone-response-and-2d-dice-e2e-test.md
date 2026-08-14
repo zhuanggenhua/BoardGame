@@ -55,4 +55,4 @@ negative_impact_checks:
 
 ## 规范落点
 
-`docs/ai-rules/ui-change-gates.md` 是本次回归约束的唯一规范正文：删除可选 UI 前必须拆清可选分支专属职责与默认态共用职责，禁止误删默认 2D 骰图加载、旧动效、尺寸、命中区或截图合同。`docs/ai-rules/e2e-verification.md` 同步规定动态回归必须断言实际动画状态并给出同链路中间态与停稳态截图；`docs/ai-rules/doc-index.md` 只承担路由入口，明确该规则同样适用于删除可选 3D/实验 UI。
+`.spec/knowledge/standards/ui-change-gates.md` 是本次回归约束的唯一规范正文：删除可选 UI 前必须拆清可选分支专属职责与默认态共用职责，禁止误删默认 2D 骰图加载、旧动效、尺寸、命中区或截图合同。`.spec/knowledge/standards/e2e-verification.md` 同步规定动态回归必须断言实际动画状态并给出同链路中间态与停稳态截图；`.spec/knowledge/README.md` 只承担路由入口，明确该规则同样适用于删除可选 3D/实验 UI。

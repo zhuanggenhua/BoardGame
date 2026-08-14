@@ -549,6 +549,16 @@ export interface ValidationResult {
     error?: string;
 }
 
+export interface PostProcessSystemEventsOptions {
+    /**
+     * 输入事件是否已经由 pipeline 正式 reduce 到传入的 state。
+     *
+     * true：命令主事件已经落地，领域后处理只能追加派生事件，不能把输入事件当作待落地事件再次补链。
+     * false/undefined：afterEvents / beforeCommand 产生的领域事件尚未落地，领域后处理可按待落地事件生成补链。
+     */
+    inputEventsAlreadyReduced?: boolean;
+}
+
 /**
  * 领域内核定义（每个游戏实现）
  */
@@ -589,7 +599,13 @@ export interface DomainCore<
      * 允许领域层追加派生事件（如 trigger 回调产生的额外事件）。
      * 返回值可以是事件数组（向后兼容），也可以是 { events, matchState } 对象（支持状态变更）。
      */
-    postProcessSystemEvents?(state: TState, events: TEvent[], random: RandomFn, matchState?: MatchState<TState>): TEvent[] | { events: TEvent[]; matchState?: MatchState<TState> };
+    postProcessSystemEvents?(
+        state: TState,
+        events: TEvent[],
+        random: RandomFn,
+        matchState?: MatchState<TState>,
+        options?: PostProcessSystemEventsOptions,
+    ): TEvent[] | { events: TEvent[]; matchState?: MatchState<TState> };
 
     /**
      * 可选：reduce 前的单事件拦截/替换

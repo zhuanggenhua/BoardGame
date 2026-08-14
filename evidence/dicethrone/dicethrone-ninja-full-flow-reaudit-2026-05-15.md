@@ -23,7 +23,7 @@
 
 本次已补强通用审计规则：
 
-- `docs/ai-rules/testing-audit.md`：新增“技能/卡牌必须审查完整流程，禁止只测触发点”与通用技能完整流程矩阵。
+- `.spec/knowledge/standards/testing-audit.md`：新增“技能/卡牌必须审查完整流程，禁止只测触发点”与通用技能完整流程矩阵。
 - `DiceThrone 新英雄 intake / add-new-faction workflow`：新增派系/角色接入时，机制实现与审计 evidence 必须包含逐对象完整流程矩阵，并强制把旧文档里的高风险正文行同步回写，不允许只在文首加失效声明。
 
 本次重审范围只覆盖 Ninja，不把 Treant 或共享 DiceThrone 系统重新宣称为已全面审计。

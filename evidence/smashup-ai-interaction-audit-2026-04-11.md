@@ -11,7 +11,7 @@
 > 说明：本审计只覆盖 Smash Up AI 交互链，不代表另外两个游戏已收口。
 
 ## 权威来源 / 审计依据
-- `docs/ai-rules/testing-audit.md`
+- `.spec/knowledge/standards/testing-audit.md`
 - `docs/automated-testing.md`
 - `src/games/smashup/rule/*.md`
 

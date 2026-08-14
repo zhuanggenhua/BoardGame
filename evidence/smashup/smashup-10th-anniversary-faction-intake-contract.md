@@ -187,6 +187,6 @@
 2. `World Champs` 同名卡是否可以直接绑定到现有 handler，仍需逐张核对当前实现语义，而不是仅凭名字判断。
 3. 本轮 workflow/skill 改造应落在：
    - `.windsurf/skills/data-entry-workflow/SKILL.md`
-   - `docs/games/smashup/workflows/smashup-faction-intake.md`
-   - 新增 `docs/games/smashup/workflows/smashup-faction-implementation.md`
+   - `.spec/skills/smashup-faction-intake/SKILL.md`
+   - 新增 `.spec/skills/smashup-faction-implementation/SKILL.md`
    该方向已基本确定，但仍待与正式 OpenSpec proposal 对齐。

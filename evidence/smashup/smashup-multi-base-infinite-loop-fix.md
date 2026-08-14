@@ -210,9 +210,9 @@ registerInteractionHandler('pirate_first_mate_choose_base', (state, _playerId, v
 
 ## 相关文档
 
-- `docs/ai-rules/testing-audit.md` - D40 子项：后处理循环事件去重完整性
+- `.spec/knowledge/standards/testing-audit.md` - D40 子项：后处理循环事件去重完整性
 - `AGENTS.md` - 多 afterScoring 交互链式传递（已修复 bug）
-- `docs/ai-rules/engine-systems.md` - 引擎系统规范
+- `.spec/knowledge/standards/engine-systems.md` - 引擎系统规范
 
 ## 总结
 

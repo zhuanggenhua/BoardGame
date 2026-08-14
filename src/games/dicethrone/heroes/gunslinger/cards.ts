@@ -220,8 +220,8 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true, requireLoaded: true },
         effects: [
-            // 说明：这里的“该骰子”指的是你后续花费 Loaded 时触发的“装填奖励骰特写”中的那颗骰子（不是主攻击骰盘）。
-            // 注意：本效果挂载到“装填奖励骰特写（bonus die spotlight）”的后续结算上；卡面描述不强调“下一次”，这里保持与 i18n 文案一致，避免双源漂移。
+            // 说明：这里的“该骰子”指的是你后续花费 Loaded 时触发的装填奖励骰结算中的那颗骰子（不是主攻击骰盘）。
+            // 注意：本效果挂载到装填奖励骰的后续结算上；玩家交互由右侧 2D 骰盘承接，卡面描述不强调“下一次”，这里保持与 i18n 文案一致，避免双源漂移。
             custom('gunslinger-card-wild-west', cardText('card-wild-west', 'description')),
         ],
     },

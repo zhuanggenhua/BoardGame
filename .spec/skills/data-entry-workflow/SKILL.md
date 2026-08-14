@@ -81,10 +81,10 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 - **仅 intake / 仅录入资源**
   - 适用：用户只要求核图、切 atlas、录静态数据、补 locale、补 faction metadata、上传资源。
-  - 读 `docs/games/smashup/workflows/smashup-faction-intake.md`。
+  - 读 `.spec/skills/smashup-faction-intake/SKILL.md`。
 - **intake + 派系玩法实施**
   - 适用：用户明确要求“把新派系做进游戏”“继续实现玩法”“从图片一路做到正式可玩”。
-  - 先读 `docs/games/smashup/workflows/smashup-faction-intake.md`，收口后继续读 `docs/games/smashup/workflows/smashup-faction-implementation.md`。
+  - 先读 `.spec/skills/smashup-faction-intake/SKILL.md`，收口后继续读 `.spec/skills/smashup-faction-implementation/SKILL.md`。
 - **旧派系 / 新派系整批重审、重录、补证**
   - 继续走 Smash Up 专项 workflow，并套用上面的“批量任务门禁”。
 - **禁止误路由**
@@ -94,13 +94,13 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 ### Summoner Wars / 召唤师战争
 
-- 新派系、重录派系、卡图数值核对、提示板核对：读 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md`。
+- 新派系、重录派系、卡图数值核对、提示板核对：读 `.spec/skills/summonerwars-faction-intake/SKILL.md`。
 - 单卡费用、生命、战力、攻击类型或牌组符号疑似错录时，先回完整单卡 / 召唤师图，不得用旧 evidence、代码静态值或测试期望覆盖卡图。
 - 如果命中同一派系同一批次的版式误读，回到该派系全卡重录合同，不能只点改一张。
 
 ### Dice Throne
 
-- 单角色 / 新英雄的图片、骰面、Token、卡牌、裁图、资源上传、规则文档录入：读 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`。
+- 单角色 / 新英雄的图片、骰面、Token、卡牌、裁图、资源上传、规则文档录入：读 `.spec/skills/dicethrone-hero-intake/SKILL.md`。
 
 ### 其他游戏
 

@@ -1,3 +1,11 @@
+---
+name: ui-ux
+description: UI/UX 总原则：审美、可读性、焦点和组件边界——做界面设计或审查时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
 # UI/UX 完整规范
 
 > 本文档是 `AGENTS.md` 的补充，包含 UI/UX 设计范式、布局策略、游戏 UI 特化规范。

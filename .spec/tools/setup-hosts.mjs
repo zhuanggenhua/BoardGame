@@ -1,35 +1,49 @@
 #!/usr/bin/env node
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const skills = join(root, '.spec', 'skills')
-const marker = '.generated-from-spec'
+const agents = join(root, '.spec', 'agents')
 const dryRun = process.argv.includes('--dry-run')
 const hosts = [
-  [join(root, '.codex', 'skill'), skills],
-  [join(root, '.agents', 'skills'), skills],
-  [join(root, '.claude', 'skills'), skills],
+  { target: join(root, '.codex', 'skill'), source: skills },
+  { target: join(root, '.agents', 'skills'), source: skills },
+  { target: join(root, '.claude', 'skills'), source: skills },
+  { target: join(root, '.claude', 'agents'), source: agents },
 ]
 
-for (const [target, source] of hosts) {
-  if (!existsSync(source)) throw new Error(`Canonical source missing: ${relative(root, source)}`)
-  const markerPath = join(target, marker)
-  if (existsSync(target) && !existsSync(markerPath)) {
-    throw new Error(`Refusing to replace non-generated host path: ${relative(root, target)}`)
+function normalizedRealPath(path) {
+  const real = realpathSync.native(path)
+  return process.platform === 'win32' ? real.toLowerCase() : real
+}
+
+function pointsToCanonical(target, source) {
+  if (!existsSync(target)) return false
+  try {
+    return normalizedRealPath(target) === normalizedRealPath(source)
+  } catch {
+    return false
   }
-  if (existsSync(markerPath) && readFileSync(markerPath, 'utf8').trim() !== relative(root, source)) {
-    throw new Error(`Host marker mismatch: ${relative(root, target)}`)
+}
+
+for (const { target, source } of hosts) {
+  if (!existsSync(source)) throw new Error(`Canonical source missing: ${relative(root, source)}`)
+  if (pointsToCanonical(target, source)) {
+    console.log(`LINK_OK ${relative(root, target)} -> ${relative(root, source)}`)
+    continue
+  }
+  if (existsSync(target)) {
+    throw new Error(`Refusing to replace non-link host path: ${relative(root, target)}`)
   }
   if (dryRun) {
-    console.log(`WOULD_SYNC ${relative(root, source)} -> ${relative(root, target)}`)
+    console.log(`WOULD_LINK ${relative(root, target)} -> ${relative(root, source)}`)
     continue
   }
   rmSync(target, { recursive: true, force: true })
-  mkdirSync(target, { recursive: true })
-  cpSync(source, target, { recursive: true })
-  writeFileSync(markerPath, `${relative(root, source)}\n`, 'utf8')
-  console.log(`SYNCED ${relative(root, source)} -> ${relative(root, target)}`)
+  mkdirSync(dirname(target), { recursive: true })
+  symlinkSync(source, target, process.platform === 'win32' ? 'junction' : 'dir')
+  console.log(`LINKED ${relative(root, target)} -> ${relative(root, source)}`)
 }

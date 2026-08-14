@@ -25,6 +25,7 @@ import {
 } from './publish-primary-assets.mjs';
 import { resolveActiveAssetSet } from './active-server-assets.mjs';
 import { selectRetainedReleaseIds } from './release-retention.mjs';
+import { refreshAndroidPackageIndexesForPublishedAssets } from './server-android-package-refresh.mjs';
 
 const MANAGED_PUBLISH_PREFIXES = [
     'official/app-updates/',
@@ -209,7 +210,17 @@ if (existsSync(currentLink)) {
         encoding: 'utf8',
     });
     if (clone.status !== 0) {
-        throw new Error(`克隆当前服务器 release 失败: ${clone.stderr || clone.stdout}`);
+        rmSync(releaseDir, { recursive: true, force: true });
+        mkdirSync(releaseDir, { recursive: true });
+        const fallbackClone = spawnSync('cp', ['-a', `${currentRelease}/.`, `${releaseDir}/`], {
+            encoding: 'utf8',
+        });
+        if (fallbackClone.status !== 0) {
+            throw new Error(
+                `克隆当前服务器 release 失败: hardlink=${clone.stderr || clone.stdout}; `
+                + `copy=${fallbackClone.stderr || fallbackClone.stdout}`,
+            );
+        }
     }
 }
 
@@ -223,10 +234,19 @@ for (const object of manifest.objects) {
     copyFileSync(sourcePath, destinationPath);
 }
 
+const androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
+    releaseDir,
+    publishedKeys: manifest.objects.map((object) => object.key),
+});
+const publishedAndGeneratedKeys = new Set([
+    ...manifest.objects.map((object) => object.key),
+    ...androidPackageRefresh.objects.map((object) => object.key),
+]);
+
 if (!preserveExistingAssets) {
     await pruneInactiveManagedObjects(
         releaseDir,
-        new Set(manifest.objects.map((object) => object.key)),
+        publishedAndGeneratedKeys,
     );
 }
 
@@ -235,6 +255,12 @@ if (!assetIndex) {
     assetIndex = await buildAssetIndex(releaseDir);
 }
 for (const object of manifest.objects) {
+    assetIndex[object.key] = {
+        size: object.size,
+        sha256: object.sha256,
+    };
+}
+for (const object of androidPackageRefresh.objects) {
     assetIndex[object.key] = {
         size: object.size,
         sha256: object.sha256,
@@ -263,6 +289,15 @@ const auditEntry = {
     source: publishSource,
     preserveExistingAssets,
     bytes: publishBytes,
+    androidPackageRefresh: {
+        gameIds: androidPackageRefresh.gameIds,
+        channels: androidPackageRefresh.channels,
+        objects: androidPackageRefresh.objects.map((object) => ({
+            key: object.key,
+            size: object.size,
+            sha256: object.sha256,
+        })),
+    },
     objects: manifest.objects.map((object) => ({
         key: object.key,
         size: object.size,
@@ -296,6 +331,9 @@ if (!preserveExistingAssets) {
 
 console.log(`serverPrimaryRelease=${releaseId}`);
 console.log(`serverPrimaryObjects=${manifest.objects.length}`);
+console.log(`androidPackageRefreshGames=${androidPackageRefresh.gameIds.join(',') || 'none'}`);
+console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join(',') || 'none'}`);
+console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
 console.log(`serverPrimaryIndexObjects=${Object.keys(assetIndex).length}`);
 console.log(`serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size} deleted=${deletedReleaseIds.length}`);
 console.log('assetBackupQueue=disabled');

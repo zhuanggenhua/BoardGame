@@ -46,5 +46,5 @@
   - `src/games/qidahen/domain/turnActionInteractionBuilders.ts`
   - `public/locales/{zh-CN,en}/game-qidahen.json`
   - `e2e/qidahen/qidahen-closeout.e2e.ts`
-  - `docs/games/qidahen/workflows/qidahen-primary-interaction-audit.md`
-  - `docs/games/qidahen/workflows/qidahen-tutorial-coverage-matrix.md`
+  - `docs/games/qidahen/records/qidahen-primary-interaction-audit.md`
+  - `docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md`

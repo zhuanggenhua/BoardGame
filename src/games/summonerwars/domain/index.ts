@@ -4,7 +4,7 @@
  * 入口文件，组装 execute/reduce/validate 并导出 DomainCore
  */
 
-import type { DomainCore, GameEvent, MatchState, RandomFn } from '../../../engine/types';
+import type { DomainCore, GameEvent, MatchState, RandomFn, PostProcessSystemEventsOptions } from '../../../engine/types';
 import type {
   SummonerWarsCore,
   PlayerId,
@@ -107,10 +107,10 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
     core: SummonerWarsCore,
     events: GameEvent[],
     _random: RandomFn,
-    matchState?: MatchState<SummonerWarsCore>,
+    _matchState?: MatchState<SummonerWarsCore>,
+    options?: PostProcessSystemEventsOptions,
   ): GameEvent[] => {
-    const sys = matchState?.sys as { _ppseInputEventsReduced?: boolean } | undefined;
-    if (sys?._ppseInputEventsReduced) return events;
+    if (options?.inputEventsAlreadyReduced) return events;
     const processedEvents = postProcessDeathChecks(events, core);
     const timestamp = processedEvents.at(-1)?.timestamp ?? 0;
     const existingBloodMagicCharges = processedEvents.filter((event) => (

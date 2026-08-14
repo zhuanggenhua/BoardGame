@@ -189,10 +189,27 @@ describe('DiceThrone 工匠机器人持久化与使用次数', () => {
             payload: { tokenId: TOKEN_IDS.HEAL_BOT, amount: 1 },
             timestamp: 105,
         }, createQueuedRandom([1]));
-        const next = applyEvents(state.core, events);
+        const pending = applyEvents(state.core, events);
 
-        expect(next.players['1'].tokens[TOKEN_IDS.HEAL_BOT]).toBe(1);
-        expect(next.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+        expect(pending.pendingBonusDiceSettlement).toMatchObject({
+            attackerId: '1',
+            targetId: '1',
+            sourceAbilityId: 'artificer-heal-bot-use',
+        });
+        expect(pending.players['1'].tokens[TOKEN_IDS.HEAL_BOT]).toBe(1);
+        expect(pending.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+
+        const settleEvents = execute({
+            core: pending,
+            sys: { phase: 'defensiveRoll' },
+        } as any, {
+            type: 'SKIP_BONUS_DICE_REROLL',
+            playerId: '1',
+            payload: {},
+            timestamp: 106,
+        } as any, fixedRandom);
+        const next = applyEvents(pending, settleEvents);
+
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(41);
         expect(next.players['1'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
             built: true,

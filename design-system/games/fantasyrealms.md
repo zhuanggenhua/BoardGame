@@ -2,7 +2,7 @@
 
 > gameId：`fantasyrealms`
 >
-> 基于：`design-system/game-ui/MASTER.md`、`design-system/styles/classic-parchment.md`、`docs/ai-rules/ui-ux.md`
+> 基于：`design-system/game-ui/MASTER.md`、`design-system/styles/classic-parchment.md`、`.spec/knowledge/standards/ui-ux.md`
 >
 > 产出日期：`2026-06-05`
 

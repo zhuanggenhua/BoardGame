@@ -32,7 +32,7 @@
   - `src/games/dicethrone/heroes/**/tokens.ts`
   - `src/games/dicethrone/domain/sharedTokens.ts`
 - 审计规范：
-  - `docs/ai-rules/testing-audit.md`
+  - `.spec/knowledge/standards/testing-audit.md`
 
 ## 审计方法
 

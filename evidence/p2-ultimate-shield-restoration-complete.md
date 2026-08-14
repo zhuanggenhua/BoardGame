@@ -134,7 +134,7 @@ Test Files  1 passed (1)
 - `evidence/p2-ultimate-shield-immunity-loss.md` - 问题详细分析
 - `evidence/p2-manual-verification-summary.md` - P2 验证总结
 - `evidence/_shared/p2-restoration-plan.md` - P2 恢复计划
-- `docs/ai-rules/testing-audit.md` - 测试审计规范
+- `.spec/knowledge/standards/testing-audit.md` - 测试审计规范
 
 ## 总结
 

@@ -37,7 +37,7 @@ export const shouldRequireAbilityReselectionForCurrentRoll = (
     phase: TurnPhase,
 ): boolean => (
     phase === 'offensiveRoll'
-    && state.pendingAttack !== null
+    && typeof state.pendingAttack?.sourceAbilityId === 'string'
     && resolveCurrentRollContext(state, phase)?.kind === 'offensive'
 );
 

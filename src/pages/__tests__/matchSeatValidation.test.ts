@@ -72,10 +72,6 @@ import {
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../onlineAiRecovery';
-import {
-    releaseConfirmedOnlineAiAttempt,
-    resolveOnlineAiActivePlayerId,
-} from '../useOnlineAiSeatAutoDispatch';
 import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
@@ -2924,32 +2920,6 @@ describe('submitOnlineAiResolution', () => {
         }));
     });
 
-    it('custom current-player seam 变化时，应按 seam-aware current player 识别 active ai seat', () => {
-        const sharedState = buildOnlineAiSeatState({
-            nextId: 33,
-            phase: 'defensiveRoll',
-            currentPlayerId: '0',
-        });
-        (sharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
-
-        expect(resolveOnlineAiActivePlayerId({
-            sharedState,
-            seatControllers: {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
-        })).toBeNull();
-
-        expect(resolveOnlineAiActivePlayerId({
-            sharedState,
-            seatControllers: {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
-            engineConfig: createOnlineAiMarkerEngineConfig(),
-        })).toBe('1');
-    });
-
     it('custom current-player seam 变化时，manual setup bridge 应按 seam-aware current player 接管 AI 座位', () => {
         const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
             gameId: 'custom-manual-setup-game',
@@ -5073,122 +5043,6 @@ describe('AI attemptKey 预占位', () => {
 
         releaseAiAttemptKeyIfMatches(ref, 'attempt-2');
         expect(ref.current).toBeNull();
-    });
-});
-
-describe('online-ai confirmed attempt release', () => {
-    it('shared state 已吸收 manual setup 结果时，不应因缺少 engineConfig 而在 release 阶段抛错', () => {
-        const sharedState = {
-            core: {
-                factionSelection: {
-                    takenFactions: ['pirates', 'robots'],
-                    playerSelections: {
-                        '0': ['pirates'],
-                        '1': ['robots'],
-                    },
-                    completedPlayers: [],
-                },
-            },
-            sys: {
-                phase: 'factionSelect',
-            },
-        } as MatchState<unknown>;
-        const activeAiAttemptRef = {
-            current: {
-                attemptKey: 'attempt-release-1',
-                playerId: '1',
-                reservedAt: Date.now(),
-                sharedMarker: 'shared-marker',
-                seatMarker: null,
-                actionKind: 'select-faction',
-                pendingSelectionId: 'robots',
-            },
-        };
-        const aiSeatDecisionDebugRef = { current: {} as Record<string, Record<string, unknown>> };
-        const clearActiveAiAttemptIfMatches = vi.fn((attemptKey: string) => {
-            if (activeAiAttemptRef.current?.attemptKey === attemptKey) {
-                activeAiAttemptRef.current = null;
-            }
-        });
-
-        expect(() => releaseConfirmedOnlineAiAttempt({
-            engineConfig: { gameId: 'smashup' },
-            sharedState,
-            activeAiAttemptRef,
-            aiSeatDecisionDebugRef,
-            getEffectiveSeatState: () => sharedState,
-            getSeatClient: () => null,
-            requestSeatResync: vi.fn(),
-            clearActiveAiAttemptIfMatches,
-        })).not.toThrow();
-
-        expect(clearActiveAiAttemptIfMatches).toHaveBeenCalledWith('attempt-release-1');
-        expect(activeAiAttemptRef.current).toBeNull();
-        expect(aiSeatDecisionDebugRef.current['1']?.stage).toBe('shared-faction-select-confirmed');
-    });
-
-    it('游戏自定义的角色选择确认规则已命中时，应释放对应 AI attempt', () => {
-        const sharedState = {
-            core: {
-                draftSetupSelections: {
-                    '0': 'cleric',
-                    '1': 'ranger',
-                },
-            },
-            sys: {
-                phase: 'setup',
-            },
-        } as MatchState<unknown>;
-        const activeAiAttemptRef = {
-            current: {
-                attemptKey: 'attempt-custom-character-release',
-                playerId: '1',
-                reservedAt: Date.now(),
-                sharedMarker: 'shared-marker',
-                seatMarker: null,
-                actionKind: 'setup-select-character',
-                pendingSelectionId: 'ranger',
-            },
-        };
-        const aiSeatDecisionDebugRef = { current: {} as Record<string, Record<string, unknown>> };
-        const clearActiveAiAttemptIfMatches = vi.fn((attemptKey: string) => {
-            if (activeAiAttemptRef.current?.attemptKey === attemptKey) {
-                activeAiAttemptRef.current = null;
-            }
-        });
-
-        releaseConfirmedOnlineAiAttempt({
-            engineConfig: {
-                gameId: 'custom-manual-setup-game',
-                onlineAiRecovery: {
-                    shouldReleaseManualSetupAttemptFromSharedState: ({
-                        sharedState: candidateState,
-                        playerId,
-                        actionKind,
-                        selectionId,
-                    }) => {
-                        if (actionKind !== 'setup-select-character') {
-                            return undefined;
-                        }
-                        const selectedByPlayer = (candidateState.core as {
-                            draftSetupSelections?: Record<string, unknown>;
-                        } | undefined)?.draftSetupSelections;
-                        return selectedByPlayer?.[playerId] === selectionId;
-                    },
-                },
-            },
-            sharedState,
-            activeAiAttemptRef,
-            aiSeatDecisionDebugRef,
-            getEffectiveSeatState: () => null,
-            getSeatClient: () => null,
-            requestSeatResync: vi.fn(),
-            clearActiveAiAttemptIfMatches,
-        });
-
-        expect(clearActiveAiAttemptIfMatches).toHaveBeenCalledWith('attempt-custom-character-release');
-        expect(activeAiAttemptRef.current).toBeNull();
-        expect(aiSeatDecisionDebugRef.current['1']?.stage).toBe('shared-faction-select-confirmed');
     });
 });
 
