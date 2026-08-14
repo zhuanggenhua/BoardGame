@@ -1,26 +1,30 @@
 # Change: 收敛 SmashUp 计分结算链并稳定多重 afterScoring 场景
 
 ## Why
-SmashUp 当前 `scoreBases` 结算链同时分散在 `scoreOneBase()`、`registerMultiBaseScoringInteractionHandler()`、`onPhaseExit('scoreBases')`、`onAutoContinueCheck()`、`SmashUpEventSystem.afterEvents()` 与 `InteractionSystem.resolveInteraction()` 中推进。多基地计分、afterScoring 响应窗口、链式交互与延迟 `BASE_CLEARED/BASE_REPLACED` 事件依赖多个隐式 flag（如 `_deferredPostScoringEvents`、`scoredBaseIndices`、`afterScoringInitialPowers`、`flowHalted`、`_waitForPostScoringReduce`）共同维持，已经反复引发重复计分、漏计分、交互链中断与“大副未触发”类回归。
+Phase 1 audit confirmed that SmashUp already has partial `ScoringSession`, stable base refs, and resolution-frame deferred payload infrastructure. However, `scoreBases` progression is still split across `onPhaseEnter/onPhaseExit('scoreBases')`, `onAutoContinueCheck()`, `scoreOneBase()`, the `multi_base_scoring` prompt handler, `SmashUpEventSystem.afterEvents()`, `ReactionSession`, `ResponseWindowSystem`, and compatibility flags such as `flowHalted`, `_waitForScoreBasesInteractionReduce`, and `_waitForPostScoringReduce`.
 
-继续在现结构上补点修复，无法稳定收敛计分链。需要把 SmashUp 计分阶段重构为单一的“计分会话（scoring session）”驱动器，消除跨系统分散推进和游戏专属逻辑侵入引擎层的问题。
+This change remains deliberately narrower than the original broad refactor: it represents the current SmashUp scoring rule step authoritatively in the existing `ScoringSession` / resolution frame, while preserving existing continuation mechanisms as compatibility paths.
+
+Phase 1 also confirmed the #128 cleanup/discard-trigger timing bug. Its ordering fix was rebased and established first, before the semantic scoring-session stages were applied in this cumulative branch.
 
 ## What Changes
-- 新增 SmashUp 专用 `scoring session` 语义，作为 `scoreBases` 阶段唯一结算权威。
-- 将“多基地顺序选择 / beforeScoring / BASE_SCORED / afterScoring 触发 / afterScoring 响应窗口 / 延迟清场与换基地 / 重算同一基地 / 继续下一个基地”统一收敛到同一状态机推进。
-- 取消由 `InteractionSystem` 和通用交互 handler 传播、补发 `_deferredPostScoringEvents` 的做法；改为由 SmashUp session 驱动器统一决定何时补发且只补发一次。
-- 收紧交互 handler 职责：交互 handler 只返回该步领域结果，不再自己判断“是否最后一个交互”、不再直接驱动多基地后续链路。
-- 为多基地计分与 afterScoring 组合场景补齐领域测试与 E2E 证据，覆盖大副、侦察兵、母舰、托尔图加、刚柔流寺庙等代表性链路。
+- Clarify `ScoringSession` as the global `scoreBases` progression owner: current base, semantic rule step, blocker/suspension reason, current-base completion, and transition to the next base.
+- Distinguish semantic rule progression from temporary blockers/waits. A blocker can pause the current rule step, but it must not become a second authoritative state machine.
+- Keep `scoreOneBase()` / future local step executors from reading global `ScoringSession` to decide what to do. The scoring driver reads session state and passes explicit inputs to the executor.
+- Preserve existing compatibility flags and shadow-reduce behavior during this PR; do not delete them merely because the new semantic representation exists.
+- Keep deferred `BASE_CLEARED / BASE_REPLACED` finalization substantially centralized in the Flow / `finalizeCurrentScoringBase()` path, and add tests that finalization still happens exactly once.
+- Execute `before-scoring`, `when-scoring`, `award-vp`, and `after-scoring` through an explicit single-step executor; the driver loops synchronously only while no child blocker or pipeline boundary exists.
+- Add behavior tests proving interaction/response-window suspension does not restart scoring, rule-step advancement is single-owner, VP is not repeated, and finalization is not repeated.
 
 ## Impact
 - Affected specs:
-  - `smashup-scoring-session`（新增）
-  - `interaction-system`（新增 opaque continuation context 约束）
+  - `smashup-scoring-session`
 - Affected code:
+  - `src/games/smashup/domain/scoringSession.ts`
   - `src/games/smashup/domain/index.ts`
   - `src/games/smashup/domain/systems.ts`
-  - `src/games/smashup/domain/baseAbilities.ts`
-  - `src/games/smashup/domain/baseAbilities_expansion.ts`
-  - `src/games/smashup/abilities/pirates.ts`
-  - `src/engine/systems/InteractionSystem.ts`
   - SmashUp 相关 scoring / afterScoring 测试与 E2E 证据文件
+- Explicitly out of scope for this PR:
+  - Generic engine rewrites, including `InteractionSystem`, `ResponseWindowSystem`, and resolution-stack redesign.
+  - Further cleanup of the already-established #128 ordering fix.
+  - Decomposition of `finalize-base` / `complete-base`, shadow-reduce removal, or unrelated ability rewrites.

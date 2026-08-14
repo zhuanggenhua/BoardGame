@@ -1,50 +1,49 @@
 ## ADDED Requirements
-### Requirement: SmashUp scoreBases session SHALL be the single settlement authority
-SmashUp SHALL use a dedicated scoring session, stored as the metadata and step of its `smashup:score-bases` resolution frame, to drive the full `scoreBases` settlement chain, including locked eligible bases, current base, remaining bases, completion state, deferred post-scoring events, and re-entry after interactions or response windows.
+### Requirement: SmashUp scoreBases session SHALL own settlement and semantic progression
+SmashUp SHALL use a dedicated scoring session, stored as the metadata and step of its `smashup:score-bases` resolution frame, to own locked eligible bases, the current base, completion state, deferred post-scoring events, and re-entry after interactions or response windows. The session SHALL represent the current game-rule step authoritatively. Temporary blockers or waits SHALL explain why that semantic rule step cannot currently advance, but SHALL NOT become a second independently writable progression authority.
 
-#### Scenario: 多基地计分在同一 session 中推进
-- **GIVEN** `scoreBases` 阶段有多个已锁定的达标基地
-- **WHEN** 玩家选择一个基地开始计分并在其 `afterScoring` 链中产生交互
-- **THEN** 当前结算进度 MUST 保存在同一 scoring session 中
-- **AND** 交互解决后 MUST 从该 session 继续当前基地或后续基地的结算
-- **AND** MUST NOT 通过重新拼接 `flowHalted`、`scoredBaseIndices`、`multi_base_scoring` 队列来猜测下一步
+#### Scenario: interaction blocks but does not advance the semantic rule step
+- **GIVEN** the current scoring base is in the `after-scoring` semantic rule step
+- **AND** an after-scoring interaction is opened for that same base
+- **WHEN** the interaction is resolved
+- **THEN** the scoring blocker/wait state MUST be cleared or updated
+- **AND** the semantic rule step MUST remain `after-scoring` until the scoring driver explicitly advances it
 
-#### Scenario: 单基地计分不再依赖全局回跳补链
-- **GIVEN** `scoreBases` 阶段仅有一个基地达标
-- **WHEN** 该基地的 `beforeScoring`、`afterScoring`、响应窗口与延迟清场链路发生暂停与恢复
-- **THEN** 恢复逻辑 MUST 由同一 scoring session 驱动
-- **AND** MUST NOT 依赖多个系统各自决定是否再次进入 `onPhaseExit('scoreBases')`
+#### Scenario: response window blocks but does not advance the semantic rule step
+- **GIVEN** the current scoring base is in the `after-scoring` semantic rule step
+- **AND** an after-scoring response window is open
+- **WHEN** all responders pass and the response window closes
+- **THEN** the response-window blocker/wait state MUST be cleared or updated
+- **AND** the semantic rule step MUST remain `after-scoring` until the scoring driver explicitly advances it
 
-### Requirement: Deferred post-scoring cleanup SHALL be emitted exactly once by the scoring session
-SmashUp SHALL let the scoring session own deferred `BASE_CLEARED` / `BASE_REPLACED` style post-scoring events and emit them exactly once after the current base has completed all `afterScoring` interactions, response windows, and required re-scoring.
+### Requirement: SmashUp scoring driver SHALL be the only semantic rule-step advancer
+SmashUp SHALL centralize semantic scoring rule-step advancement in the scoring driver. Child operations such as interaction resolution, ReactionSession completion, ResponseWindow close/pass handling, and EventSystem after-events handling MAY signal that a blocker is gone, but SHALL NOT independently advance from one semantic scoring rule step to the next unless that operation is explicitly part of the scoring driver.
 
-#### Scenario: 链式 afterScoring 交互结束后只补发一次延迟事件
-- **GIVEN** 某个基地计分后产生多个链式 `afterScoring` 交互
-- **WHEN** 最后一个交互解决完成
-- **THEN** scoring session MUST 补发一次且仅一次该基地对应的 deferred post-scoring events
-- **AND** MUST NOT 由具体交互 handler 自行判断“最后一个交互”后补发
-- **AND** MUST NOT 由通用 `InteractionSystem` 自动传递或补发游戏专属 deferred payload
+#### Scenario: child operation resolves before driver advances
+- **GIVEN** a child interaction, reaction, or response window was blocking the current scoring rule step
+- **WHEN** the child operation completes
+- **THEN** it MAY clear or report the blocker
+- **AND** it MUST NOT independently decide that scoring has moved to the next semantic rule step
+- **AND** the next semantic transition MUST be made by the scoring driver
 
-#### Scenario: afterScoring 响应窗口关闭后再执行 deferred cleanup
-- **GIVEN** 某个基地在 `BASE_SCORED` 后打开了 afterScoring 响应窗口
-- **WHEN** 响应窗口关闭且当前基地无需再重算
-- **THEN** scoring session MUST 在窗口关闭之后再补发 deferred post-scoring cleanup
-- **AND** MUST 保证清场/换基地不会早于该窗口结束
+### Requirement: Local scoring step executors SHALL receive explicit inputs
+SmashUp local scoring step executors, including `scoreOneBase()` while it remains in use, SHALL NOT read global `ScoringSession` state to discover which base is current, which semantic rule step is current, or how the overall `scoreBases` transaction should continue. The scoring driver SHALL pass required local inputs explicitly and receive an explicit local result.
 
-### Requirement: AfterScoring response and rescoring SHALL stay in the same current-base session
-SmashUp SHALL keep the post-score response window, power snapshot comparison, rescoring, and final cleanup inside the same current-base scoring session.
+#### Scenario: executor is invoked for a requested local step
+- **GIVEN** the scoring driver has read the current scoring session
+- **AND** it has selected a current base reference and semantic rule step
+- **WHEN** it invokes a local scoring executor
+- **THEN** the executor MUST receive those inputs explicitly
+- **AND** the executor MUST NOT independently consult global scoring-session state to decide global continuation
 
-#### Scenario: afterScoring 改变力量后在同一 session 中重算
-- **GIVEN** afterScoring 响应窗口中的行动改变了当前计分基地的玩家力量
-- **WHEN** 响应窗口关闭
-- **THEN** scoring session MUST 重新计算同一基地的计分结果后再决定是否进入 deferred cleanup
-- **AND** MUST NOT 将这次重算当作一个全新的 scoreBases 流程重新启动
+### Requirement: Deferred post-scoring cleanup SHALL be emitted exactly once by the scoring driver path
+SmashUp SHALL keep deferred `BASE_CLEARED` / `BASE_REPLACED` style post-scoring events in the scoring resolution frame and emit them exactly once through the scoring driver / Flow finalization path after the current base is ready to finalize.
 
-#### Scenario: afterScoring 未改变力量时直接进入 cleanup
-- **GIVEN** afterScoring 响应窗口关闭后，当前基地力量对比没有变化
-- **WHEN** scoring session 继续推进
-- **THEN** session MUST 直接进入当前基地的 deferred cleanup
-- **AND** MUST NOT 再额外发出重复的 `BASE_SCORED`
+#### Scenario: deferred payload is consumed once
+- **GIVEN** a scoring frame contains deferred `BASE_CLEARED` and `BASE_REPLACED` payloads for the current base
+- **WHEN** the scoring driver finalizes that base
+- **THEN** those deferred events MUST be emitted once
+- **AND** the payload MUST be consumed so a later scoreBases resume cannot replay the same cleanup
 
 ### Requirement: SmashUp scoring session SHALL use stable base references across replacement
 SmashUp SHALL track the current and remaining scoring targets with stable scoring references so that base replacement during settlement does not corrupt continuation logic.

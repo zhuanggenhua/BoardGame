@@ -1,107 +1,148 @@
 ## Context
-SmashUp 的计分阶段已经不是单个函数能描述的线性流程，而是一个跨多基地、多类触发源、多轮交互、多轮响应窗口的长事务。当前代码把这条事务拆散在多个系统中：
+Phase 1 audit was accepted on the latest `upstream/main` baseline. It found that SmashUp already has partial scoring-session infrastructure:
 
-- FlowHooks 负责进入与退出 `scoreBases`
-- `scoreOneBase()` 内部既做 beforeScoring、计分、afterScoring，又决定是否打开响应窗口和延迟清场
-- `multi_base_scoring` handler 一边补链，一边继续推进剩余基地
-- `SmashUpEventSystem.afterEvents()` 再次兜底 deferred events、flowHalted 与 post-scoring pending actions
-- `InteractionSystem.resolveInteraction()` 还内嵌了 SmashUp 专属 `_deferredPostScoringEvents` 传递逻辑
+- `ScoringSession` lives in the `smashup:score-bases` resolution frame.
+- Stable base refs already use `baseInstanceId` when available, with `slotIndex + baseDefId` fallback.
+- Deferred post-scoring payloads already live on the scoring resolution frame.
+- `finalizeCurrentScoringBase()` and the Flow path are the main clear/replace finalization owners.
 
-这导致同一语义在不同层反复出现，任何一处新增“提前 return / halt / queue next interaction / auto continue”都可能破坏整条链。
+The remaining issue is not absence of infrastructure. Global `scoreBases` progression is still distributed across the scoring driver, `scoreOneBase()`, technical wait flags, EventSystem recovery logic, ReactionSession, and ResponseWindow close/pass paths.
+
+Phase 1 also confirmed the #128 gameplay bug: `onMinionDiscardedFromBase` could be collected from `scoringBase.minions` before actual `BASE_CLEARED`, so a First Mate that moved during After Scoring could still be treated as if it was later cleared/discarded. The ordering fix is now part of the upstream baseline and remains a prerequisite invariant for the semantic scoring stages.
 
 ## Goals / Non-Goals
-- Goals:
-  - 用单一状态机驱动 SmashUp `scoreBases` 结算链
-  - 明确延迟清场/换基地事件的唯一所有者和唯一补发点
-  - 让 afterScoring 响应窗口与重算流程回到同一会话，而不是依赖分散 flag 回跳
-  - 让具体交互 handler（如大副、母舰、寺庙）只关心本步业务，不再负责全局续链
-  - 移除引擎层对 SmashUp 专属 continuation payload 的认知
-- Non-Goals:
-  - 不改变 SmashUp 规则语义本身（结算先后、可选与强制效果仍按当前规则）
-  - 不把通用引擎改造成“所有游戏都必须有 scoring session”
-  - 不顺手重写无关的 response window / prompt UI 渲染逻辑
+- Goals for the completed Stage 1-6 stabilization:
+  - Represent the current SmashUp scoring rule step authoritatively in existing `ScoringSession` / resolution-frame state.
+  - Represent blocker/wait information separately from semantic rule progression.
+  - Keep `currentBaseRef` ownership in `ScoringSession`.
+  - Ensure only the scoring driver advances semantic rule steps.
+  - Keep local scoring executors from reading global session state to decide global continuation.
+  - Preserve existing continuation flags and shadow-reduce behavior as compatibility paths while adding the semantic representation.
+- Non-Goals for the completed Stage 1-6 stabilization:
+  - Do not further redesign the established #128 cleanup ordering.
+  - Do not remove shadow reduce or core rollback yet.
+  - Do not rewrite `ResponseWindowSystem`, merge it with `ReactionSession`, or redesign the generic engine.
+  - Do not delete `beforeScoringTriggeredBases`, `whenScoringTriggeredBases`, `afterScoringTriggeredBases`, `flowHalted`, or `_waitFor...` flags merely because the new representation exists.
+  - Do not decompose `finalize-base` or `complete-base` in this stage.
+  - Do not change card behavior, scoring rules, or unrelated ability handlers.
 
-## Decisions
+## Completed Stabilization Decisions
 
-### Decision 1: 引入 SmashUp 专用 `scoring session` 作为唯一结算权威
-`scoring session` 不是第二个 session 栈：它必须是 `smashup:score-bases` resolution frame 的唯一业务元数据，并由该 frame 的 `step` 表示当前规则阶段。这样仍符合 resolution frame stack 是跨系统主控制流唯一权威的既有合同。
+### Decision 1: Dependency direction is driver -> explicit executor input
+`scoreOneBase()` must not become a reader of global `ScoringSession` state. The scoring driver reads `ScoringSession`, determines `currentBaseRef`, semantic rule step, and blocker/suspension reason, then invokes a local scoring step executor with explicit inputs.
 
-该 session 至少显式保存：
-- 锁定的待计分基地集合
-- 当前正在结算的基地引用
-- 已完成基地集合
-- 当前规则阶段（`SELECTED → BEFORE_MANDATORY → BEFORE_OPTIONAL → AWARD_VP → AFTER_MANDATORY → AFTER_OPTIONAL → CLEAR_BASE → CLEAR_REACTIONS → REPLACE_BASE → REVEAL_REACTIONS → DONE`）
-- 当前基地的延迟 post-scoring 事件
-- 当前基地的 afterScoring 初始力量快照
+Allowed direction:
 
-每个阶段只能：发出正式领域事件后推进、创建子 frame 后暂停、或无副作用地推进到下一阶段。之后所有“继续同一基地 / 继续下一个基地 / 等待交互 / 等待 response window / 恢复清场换基地”都只读写这份 session，不再靠多个松散 flag 拼接。
+```text
+Scoring driver
+  -> reads ScoringSession
+  -> determines currentBaseRef, ruleStep, blocker
+  -> calls executeScoringStep(state, currentBaseRef, ruleStep, ...)
+  -> receives explicit result
+```
 
-### Decision 2: 延迟 `BASE_CLEARED/BASE_REPLACED` 只由 SmashUp session 驱动器补发
-`_deferredPostScoringEvents` 仍可作为 session 内部过渡数据，但：
-- `InteractionSystem` 不再感知并转移该字段
-- 具体交互 handler 不再判断“是否最后一个交互”或直接 append deferred events
-- `SmashUpEventSystem.afterEvents()` 不再兼任 deferred events 的最终补发器
+Disallowed direction:
 
-唯一允许补发 deferred post-scoring events 的地方，是 scoring session 驱动器在确认：
-1. 当前基地的 afterScoring 交互链全部结束
-2. 当前基地的 afterScoring 响应窗口已结束
-3. 如果需要重算，也已经完成重算
+```text
+scoreOneBase() / executor
+  -> reads global ScoringSession
+  -> decides current base or global continuation
+```
 
-### Decision 3: 用稳定的基地引用替代长链上的裸 `baseIndex`
-多基地计分会跨 `BASE_CLEARED/BASE_REPLACED`，单纯持有 `baseIndex` 很容易在“旧基地 / 新基地 / replacement target / pending action”之间混淆。实现期应改为使用稳定 session 引用（如 slot-based ref，或 `slotIndex + expectedBaseDefId` 组合），确保：
-- 当前正在计分的是哪个槽位
-- 延迟动作作用于“原计分基地”还是“替换后新基地”
-- 多基地剩余列表不会因为中途替换而误判成新目标
+### Decision 2: Use one authoritative semantic rule progression plus blocker state
+The representation distinguishes where the scoring transaction is in SmashUp game rules from why execution is temporarily blocked.
 
-### Decision 4: `scoreOneBase()` 退化为单基地步骤执行器，不再负责全局续链
-重构后 `scoreOneBase()` 应只处理“当前基地下一步能推进到哪里”，而不再同时承担：
-- 多基地总控
-- deferred event 分发
-- auto-continue 回跳策略
-- 交互链续接
+```text
+currentBaseRef = Tortuga
+ruleStep = after-scoring
+blocker = interaction i-123
+```
 
-多基地推进、halt/恢复、响应窗口关闭后继续等逻辑都交给 scoring session driver。
+The transaction remains in After Scoring until the scoring driver advances it. Resolving an interaction clears or updates the blocker; it does not independently advance `ruleStep`.
 
-### Decision 5: 交互系统只保留通用职责，continuationContext 视为 opaque 数据
-引擎层交互系统只能做：
-- 出队 / 选项刷新 / 交互切换
-- 保持 `data.continuationContext` 原样透传
+`currentStep` may remain temporarily as compatibility/derived state, but it must not become a second independently writable authority beside `ruleStep`.
 
-禁止在交互系统里写入、合并或解释 SmashUp 专属 `_deferredPostScoringEvents` 之类字段，避免游戏规则再次侵入通用引擎。
+### Decision 3: #128 cleanup ordering is a prerequisite invariant
+The semantic refactor builds on the upstream invariant:
 
-### Decision 6: 权威 core 只由 pipeline 正式归约事件修改
-`scoreOneBase()`、reaction queue、interaction handler 与 `SmashUpEventSystem.afterEvents()` 可以计算“下一步要发什么”，但不得把临时 `reduce()` 的结果写回权威 `MatchState.core`，也不得在之后回滚 core、手工挑字段拼回 handler 的 core。
+```text
+VP
+  -> all After Scoring resolution
+  -> actual BASE_CLEARED
+  -> derive discard/leave triggers from cards that actually left
+```
 
-若某一步需要基于尚未正式归约的事件决定后续内容，驱动器必须把该工作拆到下一轮已归约的 frame step；只有可证明纯粹、只用于本地计算且绝不回写 `MatchState` 的 projection 才可存在。`buildPreviewStateWithPendingDomainEvents()`、`mergePromptResultCoreWithPreEventState()` 和“先内部 reduce 再恢复 preScoreCore”的模式均是迁移后应删除的旧机制。
+The semantic-session stages must preserve this ordering and must use the shared `scoringFinalization.ts` implementation rather than duplicate cleanup collection or finalization in `index.ts`.
 
-### Decision 7: SmashUp reaction session 是 Me First!/After Scoring 的唯一 responder 权威
-SmashUp 的 reaction frame/session 单独拥有响应者顺序、当前响应者、已 pass 的玩家、行动后新一轮及关闭条件。通用 `ResponseWindowSystem` 不再为 SmashUp 建立镜像窗口，也不再把 `RESPONDER_CHANGED` / `CLOSED` 反向翻译成 SmashUp pass。
+### Decision 4: Deferred finalization remains driver/Flow-owned in Stage 1-6
+Deferred finalization remains centralized through `finalizeCurrentScoringBase()` and its scoring driver/Flow path. Stage 1-6 does not move finalization into interaction handlers, ReactionSession, or the generic engine. Exactly-once consume/emit behavior remains covered by tests.
 
-这不是将所有游戏的 response window 改成 SmashUp 模型。其它游戏继续使用通用系统；SmashUp 仅使用现有 resolution frame + interaction 协议承接其专用反应轮。`hasRespondableContent()` 与实际可选项必须共用同一候选构建/合法性入口，禁止保留“是否可响应”和“实际能打什么”两套 probe。
+### Decision 5: Existing flags remain compatibility paths
+`flowHalted`, `_waitForScoreBasesInteractionReduce`, `_waitForPostScoringReduce`, triggered-base arrays, reaction/session state, and response-window state still protect resume-order behavior. Stage 1-6 may map them into blocker/wait information, but does not delete them as a side effect of introducing semantic rule steps.
 
-### Decision 8: 清场必须先成为事实，清场反应只从已清场事件产生
-`onMinionDiscardedFromBase`、leave-play 和 discard 触发不得在 `BASE_SCORED` 后预测性入队。`BASE_CLEARED` 正式归约后，后处理只对该事件实际移入弃牌堆的对象生成反应，并携带所需 LKI。这样被 After Scoring 移走的 First Mate 不会获得从未发生的弃牌触发，抽牌/洗牌类效果也能看到已更新的区域状态。
+### Decision 6: Semantic rule execution uses a local synchronous driver loop
+`driveScoreBasesSession()` reads the authoritative `ruleStep` and calls `executeCurrentScoringRuleStep()` with that explicit step. The executor returns its preview core, events, next semantic step, and any pipeline-yield/deferred-finalization request. The driver alone applies the returned session progression.
 
-### Decision 9: pipeline 轮次和视觉延迟不得成为规则阶段语义
-`_waitForPostScoringReduce`、`_waitForScoreBasesInteractionReduce`、`_waitForStartTurnInteractionReduce` 不得作为 SmashUp 规则恢复条件。frame 只在事件正式归约后才被下一轮驱动器消费，不需要游戏层猜测“已进入第几轮 afterEvents”。
+The driver may synchronously continue through `before-scoring`, `when-scoring`, `award-vp`, and `after-scoring` while no child interaction, ReactionSession, or pipeline-yield boundary exists. This preserves the existing combined event batch and one shadow-core rollback. Trigger queues that require the outer pipeline to materialize a child prompt yield before advancing the current semantic step.
 
-基地 reveal 的两秒表现延迟从规则 frame 移出：领域事件一次性完成清场与换基地，客户端按事件流播放动画并在本地锁住相关输入。刷新、联机恢复和 AI 不再读取墙上时钟来决定规则是否继续。
+The public `scoreOneBase()` remains a compatibility wrapper for direct callers and loops over the same explicit step executor. It does not make runtime base-selection or global continuation decisions.
+
+## Follow-Up Architecture Decisions
+
+The decisions below remain the target of later stages. They are not claims about the completed Stage 1-6 implementation.
+
+### Decision 7: The scoring frame becomes the complete settlement authority
+The `smashup:score-bases` resolution frame should eventually own the complete rule progression, including locked scoring targets, the current base, completed bases, deferred post-scoring events, initial After Scoring power snapshots, cleanup, replacement, reveal reactions, and completion.
+
+Each future frame step may emit formally reduced domain events, open a child frame and pause, or advance without side effects. Once migrated, continuation should no longer be reconstructed from loose flags.
+
+### Decision 8: Deferred cleanup has one frame-owned emission point
+After the follow-up migration, only the scoring frame driver may emit deferred `BASE_CLEARED` / `BASE_REPLACED` events. Interaction handlers and `SmashUpEventSystem.afterEvents()` must not determine whether they are the last continuation point, and the generic InteractionSystem must treat continuation context as opaque data.
+
+### Decision 9: Stable base references remain mandatory across replacement
+Long-running scoring state must distinguish the original scoring target, its slot, and the replacement base. Bare `baseIndex` values are insufficient for continuation across `BASE_CLEARED` / `BASE_REPLACED`.
+
+### Decision 10: Authoritative core changes only through formal pipeline reduction
+Future decomposition must remove preview core writeback and rollback. `scoreOneBase()`, reaction queues, interaction handlers, and `afterEvents()` may plan events, but must not persist temporary `reduce()` results and later restore or manually merge core fields.
+
+If a step depends on state changed by pending events, the driver must yield and resume after those events are formally reduced. `buildPreviewStateWithPendingDomainEvents()`, `mergePromptResultCoreWithPreEventState()`, and the `preScoreCore` rollback pattern remain migration targets.
+
+### Decision 11: SmashUp reaction state becomes the sole responder authority
+For SmashUp Me First and After Scoring windows, one reaction frame/session should eventually own responder order, current responder, passes, action-reset behavior, and closure. Generic `ResponseWindowSystem` state must not mirror or drive the same SmashUp window. Other games may continue using the generic system.
+
+Availability checks and displayed reaction options must share one candidate builder and legality path.
+
+### Decision 12: Clearing reactions originate from actual clearing
+Discard and leave-play reactions must be derived after `BASE_CLEARED` formally moves the relevant objects. This preserves the #128 invariant and ensures follow-up effects see updated zones and correct last-known information.
+
+### Decision 13: Pipeline rounds and visual delays are not rule semantics
+Technical `_waitFor...Reduce` flags should eventually stop acting as rule continuation conditions. Reveal animation delay should move to the client event-presentation layer so refresh, reconnect, and AI recovery do not depend on wall-clock deadlines to advance game rules.
 
 ## Risks / Trade-offs
-- 这是高耦合链路重构，短期改动面会明显大于“修一个触发器”。
-- 需要同步改测试，否则旧测试会继续固化旧式 flag 行为。
-- 重构过程中，最容易回归的是“单基地正常计分”和“afterScoring 响应窗口关闭后的自动推进”。
+- Introducing `ruleStep` while old wait flags remain creates temporary duplication. The mitigation is to keep old `currentStep`/wait values compatibility-only, not independent authorities.
+- If local executors read `ScoringSession`, the refactor only hides global control behind a new API. Explicit executor inputs and focused tests enforce the intended dependency direction.
+- Shadow reduce and core rollback remain in Stage 1-6, so the completed work improves ownership without yet simplifying event reduction.
+- The follow-up architecture has a larger behavioral blast radius and requires transaction-level and real-entry validation before compatibility paths can be removed.
 
 ## Migration Plan
-1. 先补事务级特征测试：阶段单调推进、事件只正式归约一次、清场事实后才产生 discard 反应，以及 reaction options 与“可响应”完全一致。
-2. 将 scoring session 收敛为 `smashup:score-bases` resolution frame 的完整规则步骤，不改变现有卡牌语义；先迁移单基地，后迁移多基地。
-3. 将 deferred cleanup、replacement 与 reveal 收回到该 frame；删除 InteractionSystem / handler / EventSystem 的续链所有权。
-4. 将 SmashUp response 改为 reaction frame 的单一控制器，删除 ResponseWindow 镜像与双向 pass 桥接。
-5. 删除影子 reduce、core restore/merge、pipeline 轮次 flag 和规则层动画 delay；只在删除后跑过特征测试才移除对应事故回归中的旧状态断言。
-6. 用领域测试和 E2E 逐步锁定回归：单基地 → 多基地 → 链式 afterScoring → afterScoring response window → 重算 → First Mate/弃牌区快照。
+
+### Completed Stage 1-6 baseline
+1. Establish the #128 cleanup-ordering invariant before semantic-session production changes.
+2. Add semantic `ruleStep` and blocker/wait representation to existing scoring-session frame metadata, with compatibility mapping for `currentStep`.
+3. Move global progression into `driveScoreBasesSession()`.
+4. Decompose the four executable scoring rule steps behind explicit executor input and driver-owned progression.
+5. Preserve existing flags, marker arrays, deferred finalization, and shadow reduce while adding tests around interaction/response suspension and exactly-once advancement/finalization.
+
+### Follow-up migration
+1. Add transaction-level characterization for formally reduced events, actual-clear reactions, and shared reaction-option construction.
+2. Expand the scoring frame through cleanup, replacement, reveal reactions, and completion.
+3. Remove continuation ownership from interaction handlers, EventSystem recovery, and generic InteractionSystem payload handling.
+4. Make the SmashUp reaction frame the only responder authority and remove mirrored generic response-window progression.
+5. Remove shadow reduce/core restore, technical pipeline-round flags, and rule-layer visual delay only after the replacement flow is proven.
+6. Validate progressively from single-base through multi-base, chained After Scoring, rescoring, and First Mate/discard-zone behavior.
 
 ## Open Questions
-- session 状态最终是挂在 `sys.smashupScoring` 还是更通用命名下，但仅 SmashUp 使用？
-- 稳定基地引用最终采用“槽位引用”还是“槽位 + 原基地 defId 校验”？
-- `pendingPostScoringActions` 是否直接并入 scoring session，而不是继续留在 core？
-- 现有 reveal 动画在客户端以哪一组领域事件作为开始/结束信号，是否已有可复用 visual-event consumer？
+- When should marker arrays that remain as replay protection be removed?
+- What dedicated migration can remove shadow reduce/core rollback without changing outer pipeline event ordering?
+- Should pending post-scoring actions move fully into scoring-frame metadata?
+- Which domain events should anchor the client-only reveal animation lifecycle?

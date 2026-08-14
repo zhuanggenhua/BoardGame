@@ -4873,11 +4873,22 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENT_TYPES.BEFORE_SCORING_BASE_ABILITY_QUEUED: {
+            const { baseIndex } = event.payload as { baseIndex: number };
+            const existing = state.beforeScoringBaseAbilityQueuedBases ?? [];
+            if (existing.includes(baseIndex)) return state;
+            return {
+                ...state,
+                beforeScoringBaseAbilityQueuedBases: [...existing, baseIndex],
+            };
+        }
+
         case SU_EVENT_TYPES.BEFORE_SCORING_CLEARED: {
             // 计分阶段结束时清空标记，准备下一轮计分
             return {
                 ...state,
                 beforeScoringTriggeredBases: undefined,
+                beforeScoringBaseAbilityQueuedBases: undefined,
             };
         }
 

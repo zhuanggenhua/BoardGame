@@ -35,6 +35,8 @@ import {
     isScoringSessionAwaitingDeferredResolution,
     replaceDeferredPostScoringReplacementBase,
     updateScoringSession,
+    withScoringSessionProgress,
+    isScoringSessionWaitingForPostReduce,
 } from './scoringSession';
 import {
     DIRECT_SCORING_DEFERRED_FINALIZE_KEY,
@@ -380,11 +382,8 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
             // 本轮开始时再清掉阻塞标记，允许 FlowSystem 继续自动推进。
             if ((newState.sys as any)[pendingReduceFlag]) {
                 newState = updateScoringSession(newState, (scoringSession) => (
-                    scoringSession?.currentStep === 'awaiting-post-reduce'
-                        ? {
-                            ...scoringSession,
-                            currentStep: 'idle',
-                        }
+                    isScoringSessionWaitingForPostReduce(scoringSession)
+                        ? withScoringSessionProgress(scoringSession, 'select-base')
                         : scoringSession
                 ));
                 newState = {

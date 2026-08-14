@@ -27,7 +27,10 @@ import {
     consumeScoringFrameDeferredPayload,
     createScoringBaseRef,
     createScoringSession,
+    getRemainingScoringBaseRefs,
+    markScoringBaseCompleted,
     replaceDeferredPostScoringReplacementBase,
+    resolveScoringBaseRefSlotIndex,
     setScoringSession,
 } from '../domain/scoringSession';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
@@ -281,6 +284,119 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         expect(finalCore.bases[0].minions.map(minion => minion.uid)).toEqual(['dk1']);
         expect(finalCore.bases[1].minions).toHaveLength(0);
         expect(finalCore.players['0'].deck).toHaveLength(0);
+    });
+
+    it('延迟清场 payload 被 consume 后，重复 scoreBases exit 不应再次补发清场换基地', () => {
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_greenhouse', {
+                    minions: [makeMinion('m1', '0', 5, 'alien_collector')],
+                }),
+            ],
+            baseDeck: ['base_secret_garden'],
+        }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                timestamp: 2500,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_greenhouse',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2500,
+            },
+        ]);
+
+        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
+            state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2500 } as any,
+            random: defaultTestRandom,
+        });
+        expect((beginDelay as any)?.events ?? []).toEqual([]);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: (beginDelay as any)?.updatedState ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4500 } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+        ]);
+
+        const replay = smashUpFlowHooks.onPhaseExit?.({
+            state: (finalize as any)?.updatedState ?? (beginDelay as any)?.updatedState ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4501 } as any,
+            random: defaultTestRandom,
+        });
+        const replayEvents = Array.isArray(replay) ? replay : (replay as any)?.events ?? [];
+        expect(replayEvents.filter((event: SmashUpEvent) =>
+            event.type === SU_EVENTS.BASE_CLEARED || event.type === SU_EVENTS.BASE_REPLACED,
+        )).toHaveLength(0);
+    });
+
+    it('同槽位替换后的新基地不应因旧基地 completed ref 被误判为已完成', () => {
+        const initialState = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_greenhouse', { instanceId: 'base-old-1' }),
+            ],
+            baseDeck: ['base_secret_garden'],
+        }));
+        const oldBaseRef = createScoringBaseRef(initialState.core, 0);
+        if (!oldBaseRef) {
+            throw new Error('无法构造旧基地 ref');
+        }
+
+        let state = setScoringSession(initialState, {
+            ...createScoringSession(initialState.core, [0]),
+            currentBaseRef: oldBaseRef,
+            currentStep: 'resolving-base',
+        });
+        state = markScoringBaseCompleted(state, oldBaseRef);
+
+        const replacedState = {
+            ...state,
+            core: {
+                ...state.core,
+                bases: [
+                    makeBase('base_secret_garden', { instanceId: 'base-new-1' }),
+                ],
+            },
+        };
+        const newBaseRef = createScoringBaseRef(replacedState.core, 0);
+        if (!newBaseRef) {
+            throw new Error('无法构造新基地 ref');
+        }
+
+        const refreshedState = setScoringSession(replacedState, {
+            ...getScoringSession(state)!,
+            lockedBaseRefs: [newBaseRef],
+            currentBaseRef: undefined,
+            currentStep: 'idle',
+        });
+
+        expect(resolveScoringBaseRefSlotIndex(refreshedState, oldBaseRef)).toBeUndefined();
+        expect(getRemainingScoringBaseRefs(refreshedState)).toEqual([newBaseRef]);
     });
 
     it('base_tortuga: session 模式下点选随从后，后续 scoreBases 收尾仍应把随从移到替换基地', () => {
@@ -903,9 +1019,11 @@ describe('scoreBases 延迟清场 / 最终化', () => {
 
         const emittedEvents = result.events as SmashUpEvent[];
         expect(emittedEvents.map(event => event.type)).toContain(SU_EVENTS.BASE_SCORED);
+        expect(emittedEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
         expect(result.halt).toBe(true);
         const reactionChoice = getReactionPrompt(result.updatedState!);
         expect(reactionChoice).toBeTruthy();
+        expect(getScoringSession(result.updatedState!)?.ruleStep).toBe('after-scoring');
         expect(getScoringSession(result.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
         expect(getScoringSession(result.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
     });

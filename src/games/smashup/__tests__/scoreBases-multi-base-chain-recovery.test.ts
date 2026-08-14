@@ -29,6 +29,8 @@ import {
 import { smashUpSystemsForTest } from '../game';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { getSmashUpReactionSession } from '../domain/reactionSession';
+import { getScoringSession } from '../domain/scoringSession';
+import { reduce } from '../domain/reducer';
 import { defaultTestRandom, runCommand } from './testRunner';
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
@@ -494,6 +496,40 @@ describe('scoreBases 多基地计分链恢复', () => {
         };
     }
 
+    function createPirateKingBroodHiveBeforeScoringSetup(): MatchState<SmashUpCore> {
+        const core: SmashUpCore = {
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.EXTRAMORPHS],
+                    deck: [makeCard('brood-top-0', 'extramorphs_chestbreaker', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_brood_hive', [
+                    makeMinion('brood-power-0', 'test_minion', '0', 22),
+                ]),
+                makeBase('base_the_jungle', [
+                    makeMinion('king-0', 'pirate_king', '0', 5),
+                ]),
+            ],
+            baseDeck: ['base_central_brain'],
+            factionSelection: undefined,
+            scoringEligibleBases: undefined,
+        };
+
+        return {
+            core,
+            sys: {
+                ...createInitialSystemState(smashUpSystemsForTest, ['0', '1']),
+                phase: 'playCards',
+            },
+        };
+    }
+
     function createPirateKingFirstMateWithHandSpecialSetup(): MatchState<SmashUpCore> {
         const state = createPirateKingFirstMateEndToEndSetup();
         state.core.players['0'].hand = [
@@ -775,6 +811,227 @@ describe('scoreBases 多基地计分链恢复', () => {
             chain.finalState,
             [...advance.events, ...chain.chainEvents] as SmashUpEvent[],
         );
+    });
+
+    it('海盗王阻塞恢复后，育巢 beforeScoring 仍应执行且两者都只触发一次', () => {
+        const initialState = createPirateKingBroodHiveBeforeScoringSetup();
+        const allEvents: SmashUpEvent[] = [];
+        const observedPromptSources: string[] = [];
+
+        const advance = runCommand(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        });
+        expect(advance.success).toBe(true);
+        allEvents.push(...(advance.events as SmashUpEvent[]));
+
+        const pirateKingPrompt = getActiveSimpleChoice(advance.finalState);
+        expect(pirateKingPrompt?.sourceId).toBe('pirate_king_move');
+        observedPromptSources.push(pirateKingPrompt!.sourceId);
+        expect(getScoringSession(advance.finalState)?.ruleStep).toBe('before-scoring');
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_TRIGGERED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
+
+        const stayPirateKing = findOption(
+            pirateKingPrompt,
+            (option: any) => option.value?.move === false,
+        );
+        const resolvePirateKing = runCommand(
+            advance.finalState,
+            respondCommand(stayPirateKing, pirateKingPrompt!.playerId),
+        );
+        expect(resolvePirateKing.success).toBe(true);
+        allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
+
+        const broodHivePrompt = getActiveSimpleChoice(resolvePirateKing.finalState);
+        expect(broodHivePrompt?.sourceId).toBe('base_brood_hive');
+        observedPromptSources.push(broodHivePrompt!.sourceId);
+        expect(getScoringSession(resolvePirateKing.finalState)?.ruleStep).toBe('before-scoring');
+        expect(resolvePirateKing.finalState.core.beforeScoringBaseAbilityQueuedBases).toContain(0);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
+
+        const skipBroodHive = findOption(
+            broodHivePrompt,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const resolveBroodHive = runCommand(
+            resolvePirateKing.finalState,
+            respondCommand(skipBroodHive, broodHivePrompt!.playerId),
+        );
+        expect(resolveBroodHive.success).toBe(true);
+        allEvents.push(...(resolveBroodHive.events as SmashUpEvent[]));
+
+        const finalState = drainScoreBasesDelayUntilPromptOrIdle(
+            resolveBroodHive.finalState,
+            runCommand,
+            allEvents,
+        );
+        expectNoPrompt(finalState);
+
+        const queuedTriggers = allEvents.flatMap((event: any) =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED ? event.payload?.triggers ?? [] : [],
+        );
+        expect(queuedTriggers.filter((trigger: any) =>
+            trigger.timing === 'beforeScoring' && trigger.sourceDefId === 'pirate_king',
+        )).toHaveLength(1);
+        expect(queuedTriggers.filter((trigger: any) =>
+            trigger.timing === 'beforeScoring' && trigger.sourceDefId === 'base_brood_hive',
+        )).toHaveLength(1);
+        expect(observedPromptSources).toEqual(['pirate_king_move', 'base_brood_hive']);
+        expect(observedPromptSources.filter(sourceId => sourceId === 'pirate_king_move')).toHaveLength(1);
+        expect(observedPromptSources.filter(sourceId => sourceId === 'base_brood_hive')).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_TRIGGERED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
+    });
+
+    it('BEFORE_SCORING_CLEARED 会同时清理 beforeScoring 基地能力入队标记', () => {
+        const initialCore: SmashUpCore = {
+            ...createPirateKingBroodHiveBeforeScoringSetup().core,
+            beforeScoringTriggeredBases: [0],
+        };
+        const markerEvent = {
+            type: SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED,
+            payload: { baseIndex: 0 },
+            timestamp: 1000,
+        } as SmashUpEvent;
+        const markedOnce = reduce(initialCore, markerEvent);
+        const markedTwice = reduce(markedOnce, markerEvent);
+
+        expect(markedTwice.beforeScoringBaseAbilityQueuedBases).toEqual([0]);
+
+        const cleared = reduce(markedTwice, {
+            type: SU_EVENTS.BEFORE_SCORING_CLEARED,
+            payload: {},
+            timestamp: 1000,
+        } as SmashUpEvent);
+
+        expect(cleared.beforeScoringTriggeredBases).toBeUndefined();
+        expect(cleared.beforeScoringBaseAbilityQueuedBases).toBeUndefined();
+    });
+
+    it('一个基地的 beforeScoring 入队标记不会抑制另一计分基地', () => {
+        const initialState = createPirateKingBroodHiveBeforeScoringSetup();
+        initialState.core.bases = [
+            makeBase('base_brood_hive', [
+                makeMinion('brood-power-0', 'test_minion', '0', 22),
+            ]),
+            makeBase('base_brood_hive', [
+                makeMinion('brood-power-1', 'test_minion', '0', 22),
+            ]),
+        ];
+        initialState.core.baseDeck = ['base_central_brain', 'base_the_jungle'];
+        const allEvents: SmashUpEvent[] = [];
+
+        const advance = runCommand(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        });
+        expect(advance.success).toBe(true);
+        allEvents.push(...(advance.events as SmashUpEvent[]));
+
+        const firstBaseChoice = getActiveSimpleChoice(advance.finalState);
+        expect(firstBaseChoice?.sourceId).toBe('multi_base_scoring');
+        const chooseFirstBase = findOption(
+            firstBaseChoice,
+            (option: any) => option.value?.baseIndex === 0,
+        );
+        const firstBaseSelected = runCommand(
+            advance.finalState,
+            respondCommand(chooseFirstBase, firstBaseChoice!.playerId),
+        );
+        expect(firstBaseSelected.success).toBe(true);
+        allEvents.push(...(firstBaseSelected.events as SmashUpEvent[]));
+
+        const firstBroodHive = getActiveSimpleChoice(firstBaseSelected.finalState);
+        expect(firstBroodHive?.sourceId).toBe('base_brood_hive');
+        const skipFirst = findOption(
+            firstBroodHive,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const firstBroodHiveResolved = runCommand(
+            firstBaseSelected.finalState,
+            respondCommand(skipFirst, firstBroodHive!.playerId),
+        );
+        expect(firstBroodHiveResolved.success).toBe(true);
+        allEvents.push(...(firstBroodHiveResolved.events as SmashUpEvent[]));
+
+        let secondBaseState = drainScoreBasesDelayUntilPromptOrIdle(
+            firstBroodHiveResolved.finalState,
+            runCommand,
+            allEvents,
+        );
+        const possibleSecondBaseChoice = getActiveSimpleChoice(secondBaseState);
+        if (possibleSecondBaseChoice?.sourceId === 'multi_base_scoring') {
+            const chooseSecondBase = findOption(
+                possibleSecondBaseChoice,
+                (option: any) => option.value?.baseIndex === 1,
+            );
+            const secondBaseSelected = runCommand(
+                secondBaseState,
+                respondCommand(chooseSecondBase, possibleSecondBaseChoice.playerId),
+            );
+            expect(secondBaseSelected.success).toBe(true);
+            allEvents.push(...(secondBaseSelected.events as SmashUpEvent[]));
+            secondBaseState = secondBaseSelected.finalState;
+        }
+
+        const secondBroodHive = getActiveSimpleChoice(secondBaseState);
+        expect(secondBroodHive?.sourceId).toBe('base_brood_hive');
+        const skipSecond = findOption(
+            secondBroodHive,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const secondBroodHiveResolved = runCommand(
+            secondBaseState,
+            respondCommand(skipSecond, secondBroodHive!.playerId),
+        );
+        expect(secondBroodHiveResolved.success).toBe(true);
+        allEvents.push(...(secondBroodHiveResolved.events as SmashUpEvent[]));
+
+        drainScoreBasesDelayUntilPromptOrIdle(
+            secondBroodHiveResolved.finalState,
+            runCommand,
+            allEvents,
+        );
+        const queuedBaseTriggers = allEvents.flatMap((event: any) =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED ? event.payload?.triggers ?? [] : [],
+        ).filter((trigger: any) =>
+            trigger.timing === 'beforeScoring' && trigger.sourceDefId === 'base_brood_hive',
+        );
+
+        expect(queuedBaseTriggers).toHaveLength(2);
+        expect(allEvents.filter(
+            event => event.type === SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED,
+        )).toHaveLength(2);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(2);
+    });
+
+    it('没有 eligible beforeScoring 基地能力时不会写入基地能力入队标记', () => {
+        const initialState = createPirateKingBroodHiveBeforeScoringSetup();
+        initialState.core.bases = [
+            makeBase('base_the_jungle', [
+                makeMinion('plain-power-0', 'test_minion', '0', 22),
+            ]),
+            makeBase('base_central_brain'),
+        ];
+
+        const advance = runCommand(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        });
+
+        expect(advance.success).toBe(true);
+        expect(advance.events.filter(
+            event => event.type === SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED,
+        )).toHaveLength(0);
     });
 
     it('反馈 69a27d：海盗王移动到托尔图加后，计分交互链结束应退出 scoreBases 而不是卡死', () => {

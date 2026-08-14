@@ -145,6 +145,7 @@ export const SU_EVENTS = defineEvents({
   'su:action_return_to_hand_option_armed': 'silent',
   'su:scoring_eligible_bases_locked': 'silent',  // 进入 scoreBases 阶段时锁定 eligible 基地列表
   'su:before_scoring_triggered': 'silent',  // 标记基地已触发 beforeScoring（防止重复触发）
+  'su:before_scoring_base_ability_queued': 'silent',  // 标记基地 beforeScoring 基地能力已入队（防止恢复后重复入队）
   'su:before_scoring_cleared': 'silent',  // 清空 beforeScoring 触发标记（计分阶段结束）
   'su:after_scoring_triggered': 'silent',  // 标记基地已触发 afterScoring（防止重复触发）
   'su:after_scoring_cleared': 'silent',  // 清空 afterScoring 触发标记（计分阶段结束）
@@ -264,6 +265,7 @@ export const SU_EVENT_TYPES = {
   ACTION_RETURN_TO_HAND_OPTION_ARMED: SU_EVENTS['su:action_return_to_hand_option_armed'].type,
   SCORING_ELIGIBLE_BASES_LOCKED: SU_EVENTS['su:scoring_eligible_bases_locked'].type,
   BEFORE_SCORING_TRIGGERED: SU_EVENTS['su:before_scoring_triggered'].type,
+  BEFORE_SCORING_BASE_ABILITY_QUEUED: SU_EVENTS['su:before_scoring_base_ability_queued'].type,
   BEFORE_SCORING_CLEARED: SU_EVENTS['su:before_scoring_cleared'].type,
   WHEN_SCORING_TRIGGERED: SU_EVENTS['su:when_scoring_triggered'].type,
   WHEN_SCORING_CLEARED: SU_EVENTS['su:when_scoring_cleared'].type,

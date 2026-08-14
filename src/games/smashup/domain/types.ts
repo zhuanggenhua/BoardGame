@@ -1018,6 +1018,12 @@ export interface SmashUpCore {
      */
     beforeScoringTriggeredBases?: number[];
     /**
+     * 本次计分阶段中已入队过 beforeScoring 基地能力的基地索引列表。
+     * 只表示基地能力 TRIGGER_QUEUED 已经产生，不表示该能力已经完全结算。
+     * 在 scoreBases 阶段结束时随 BEFORE_SCORING_CLEARED 清空。
+     */
+    beforeScoringBaseAbilityQueuedBases?: number[];
+    /**
      * 本次计分阶段中已触发过 whenScoring 的基地索引列表。
      * 用于防止交互解决后重新进入 scoreBase 时重复触发 whenScoring。
      * 在 scoreBases 阶段结束时清空。
@@ -1840,6 +1846,7 @@ export type SmashUpEvent =
     | SpecialAfterScoringArmedEvent
     | SpecialAfterScoringConsumedEvent
     | ActionReturnToHandOptionArmedEvent
+    | BeforeScoringBaseAbilityQueuedEvent
     | AbilityFeedbackEvent
     | AbilityTriggeredEvent
     | BaseAbilitySuppressedEvent
@@ -2720,6 +2727,13 @@ export interface ActionReturnToHandOptionArmedEvent extends GameEvent<typeof SU_
         defId: string;
         ownerId: PlayerId;
         reason: string;
+    };
+}
+
+/** 内部标记：当前计分基地的 beforeScoring 基地能力 trigger 已经入队。 */
+export interface BeforeScoringBaseAbilityQueuedEvent extends GameEvent<typeof SU_EVENTS.BEFORE_SCORING_BASE_ABILITY_QUEUED> {
+    payload: {
+        baseIndex: number;
     };
 }
 
