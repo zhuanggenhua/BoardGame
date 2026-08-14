@@ -356,11 +356,12 @@ fxBus.pushSequence([
 
 ## 阶段推进权限的 UI 消费（强制）
 
-- 领域层 `rules.ts` 定义 `canAdvancePhase(core, phase)` 做规则校验
-- FlowSystem 通过 `flowHooks.canAdvance` 调用，作为服务端兜底
-- UI 层禁止重复实现领域校验，应复用领域层函数
-- 正确模式：游戏状态 Hook 中计算 `canAdvancePhase`（领域校验 + `!hasPendingInteraction`），Board 叠加 `isFocusPlayer`
-- **参考**：`dicethrone/hooks/useDiceThroneState.ts`
+- 阶段推进是规则动作，不是焦点动作。必须先按 `.spec/knowledge/standards/rule-driven-interaction-design.md` 推导“本阶段推进者是谁、哪些窗口会阻塞推进、关闭后进入哪里”。
+- 领域层 `rules.ts` 或等价规则 helper 定义阶段推进规则校验；FlowSystem 通过 `flowHooks.canAdvance` 调用，作为服务端兜底。
+- UI 层禁止重复实现领域校验，但也不能只叠加 `isFocusPlayer`、当前视角玩家或当前回合玩家。正确模式是复用同一个“手动阶段推进权限”查询：领域可推进 + 当前玩家是规则推导出的阶段推进者 + 无活动交互 / 响应窗口 / 延迟收口阻塞。
+- 响应窗口、simple-choice、奖励骰、伤害响应、私有 prompt 或 deferred/finalize 存在时，阶段按钮默认不可见或不可用；只有权限矩阵明确允许时才开放。
+- UI、命令验证、AI legal-actions、自动推进 / watchdog 必须消费同一份阶段推进授权真相；禁止 UI 一套条件、validate 一套条件、AI 再一套条件。
+- 任何修复“某视角下误露结束阶段 / 结算攻击 / 结束防御”后，必须补负向断言：当前决策者或响应者即使是焦点，也不能获得阶段推进权。
 
 ---
 

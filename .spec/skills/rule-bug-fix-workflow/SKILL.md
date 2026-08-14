@@ -5,10 +5,11 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
 
 # 规则 Bug 修复流程
 
-## 渐进式披露入口
+## 路由边界
 
-先读 ./.spec/skills/game-audit-workflow/references/reading-map.md，按反馈对象选择下面的规范，不要把所有审计分卷默认全文加载。
-本 skill 负责规则 bug 的执行顺序；规则合同、回归收口和审计维度仍以对应 .spec/knowledge 主源为准。
+本 skill 已是规则 bug 的执行入口；不要再先回读 `game-audit-workflow/references/reading-map.md` 形成循环路由。
+本 skill 只负责规则 bug 的执行顺序；规则合同、交互权限、回归收口和审计维度仍以 `.spec/knowledge/README.md` 命中的主源为准。
+如果当前目标不是规则 bug，或用户要求“全面审计 / 为什么审计没审出来 / 审计收口”，再进入 `game-audit-workflow/references/reading-map.md` 重新分流。
 
 ## 按需读取
 
@@ -19,6 +20,7 @@ description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token�
 
 按命中情况追加：
 
+- 反馈涉及响应窗口、阶段按钮、结算攻击、结束防御、视角 / 焦点玩家、AI 合法动作或自动推进：读取 .spec/knowledge/standards/rule-driven-interaction-design.md。
 - 用户要求“全面审计 / 为什么没审出来”：进入 .spec/skills/game-audit-workflow/SKILL.md，由其 reading-map 选择审计主源和 D 维度。
 - 规则合同缺失、图片/卡图/规则书冲突或对象归属未锁：进入 .spec/skills/data-entry-workflow/SKILL.md，并读取 .spec/knowledge/standards/data-entry.md。
 - 反馈涉及真实 UI 入口、按钮、提示、截图或 E2E：读取 .spec/knowledge/standards/e2e-verification.md，必要时读取 .spec/knowledge/standards/ui-change-gates.md。

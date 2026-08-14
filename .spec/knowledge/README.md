@@ -40,6 +40,7 @@ metadata:
 | [`golden-rules.md`](standards/golden-rules.md) | 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查 |
 | [`home-v2-design.md`](standards/home-v2-design.md) | 首页设计标准：Home V2 信息架构和 UI 边界——改首页时查 |
 | [`regression-closeout.md`](standards/regression-closeout.md) | 回归收口标准：症状保真、红测、同类扩审和证据口径——修回归问题时查 |
+| [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：从规则文本推导玩家权限、响应窗口和 UI 按钮——新游戏、卡牌效果和特殊响应设计时查 |
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |
 | [`shared-refactor-guard.md`](standards/shared-refactor-guard.md) | 共享重构护栏：共享层影响面、代表场景和防误伤验收——改公共代码时查 |
 | [`testing-audit-core-principles.md`](standards/testing-audit-core-principles.md) | 测试审计核心原则：fail-close、深审流程和交互矩阵——做深度审计时查 |

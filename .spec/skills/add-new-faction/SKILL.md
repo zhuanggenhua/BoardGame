@@ -9,7 +9,7 @@ description: "BoardGame 新增派系/角色/英雄端到端流程。用于 Smash
 
 - 本 skill 是 `workflow`：只承载已有游戏新增派系/角色/英雄的端到端执行顺序。
 - 新游戏从零创建走 `.spec/skills/create-new-game/SKILL.md`；单个大杀四方派系适配走 `.spec/skills/smashup-faction-addition/SKILL.md`。
-- 数据录入、资源链、审计和 E2E 标准正文分别以 `.spec/knowledge/standards/data-entry.md`、`.spec/knowledge/standards/asset-pipeline.md`、`.spec/knowledge/standards/testing-audit.md`、`.spec/knowledge/standards/e2e-verification.md` 为主源。
+- 数据录入、资源链、审计和 E2E 标准正文分别以 `.spec/knowledge/standards/data-entry.md`、`.spec/knowledge/standards/asset-pipeline.md`、`.spec/knowledge/standards/testing-audit.md`、`.spec/knowledge/standards/e2e-verification.md` 为主源；其它命中标准从 `.spec/knowledge/README.md` 选择。
 - 本 skill 不复制这些标准为第二份规范；冲突时先改主源，再同步 workflow。
 
 ## 核心原则
@@ -18,7 +18,7 @@ description: "BoardGame 新增派系/角色/英雄端到端流程。用于 Smash
 
 1. **数据录入完成**：逐对象真相源、结构化字段、i18n、代码定义都可追溯。
 2. **资源链完成**：正式资源压缩、manifest、运行时引用、服务器素材主源发布和远端回查完成。
-3. **机制完成**：规则文本中的技能、Token、状态、卡牌效果、时机、目标、可选/强制语义已实现或明确冻结；规则文本必须先拆成可编号子句，不能用对象级一句“已实现”覆盖多句能力。
+3. **机制完成**：规则文本中的技能、Token、状态、卡牌效果、时机、目标、可选/强制语义已实现或明确冻结；规则文本必须先拆成可编号子句，不能用对象级一句“已实现”覆盖多句能力。含响应、打断、特殊行动、替代、防止、延迟、额外行动或阶段按钮影响的对象，必须同步建立权限矩阵。
 4. **审计完成**：`evidence/<gameId>/` 有逐项审计文档，且按本轮已锁定对象范围执行对象级审计。范围内每个对象都必须有独立矩阵行、规则子句表、L0/L1/L2/L3/L4 结论、测试/截图证据与残余范围；只有在已经登记为“共享链路完全同构，仅配置不同”的合法复用时，才允许复用另一对象的 L3/L4，且必须写清复用对象与判等依据。
 5. **端到端完成**：真实入口 E2E 覆盖新增对象可选、可初始化、关键 UI 可见，涉及交互的机制有成功路径截图链；凡是“你可以 / 可选 / 至多 / 任意数量”的对象，必须额外补一条合法候选存在时的跳过/空选否定路径，证明“能做”也“能不做”。只要本轮出现**新的交互类型**或**新的 UI 表现 / 新的交互组件 / 新的操作方式**，必须至少补 `1` 条该新类型 / 新 UI 的 direct E2E，不得只借旧对象 shared 证据代替首条真实入口验证。
 6. **剩余风险清空或显式冻结**：任何未实现/未验证项都必须写成 `blocked` 或 `scoped-debt`，不得混入“完成”结论。
@@ -162,6 +162,7 @@ description: "BoardGame 新增派系/角色/英雄端到端流程。用于 Smash
 从真相源逐项裁定：
 
 - 子句：每一句/每个分号/每个“特殊能力、持续、否则、而不是、额外、每回合一次、其余、任意顺序”都必须拆成独立验收项。
+- 交互权限：命中玩家操作、响应、特殊行动或系统按钮的子句，必须裁定授权玩家、第一入口、允许命令和禁止命令；响应 / 打断 / 特殊行动 / 替代 / 防止 / 延迟 / 额外行动不能借普通阶段按钮或焦点玩家权限。
 - 目标：self/opponent/any/player/unit/card/base 等。
 - 时机：打出时、结算前、防御前、结算后、回合结束、响应窗。
 - 强制/可选：必须有对应交互或自动结算理由。

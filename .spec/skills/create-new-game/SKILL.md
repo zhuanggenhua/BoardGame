@@ -14,7 +14,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 ## 新游戏第一门禁索引
 
-> 详细红线已无损搬到 `references/intake-redlines.md`。主 `SKILL.md` 只保留入口；执行新游戏前必须先读该 reference。
+> 详细红线见 `references/intake-redlines.md`；执行新游戏前必须先读该 reference。
 
 最小执行口径：
 - 阶段之间独立验收，不留 TODO 缺口。
@@ -24,10 +24,10 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 ## 流程边界、现场锁定与 OpenSpec
 
-> 详细规则已拆到 `references/workflow-boundaries.md`。进入 proposal/spec/design/tasks、创建新游戏 worktree、处理主工作区与游戏 worktree 分线、或判断是否上升总框架/百游戏模式时，先读该 reference。
+> 详细规则见 `references/workflow-boundaries.md`。进入 proposal/spec/design/tasks、申请新游戏 worktree、处理主工作区与游戏 worktree 分线、或判断是否上升总框架/百游戏模式时，先读该 reference。
 
 最小执行口径：
-- 新游戏默认独立 worktree，除非用户明确要求留在当前工作区。
+- 新游戏默认建议独立 worktree；创建、切换或派生分支前必须取得用户当轮明确授权。
 - 一旦选定 worktree，后续读写、验证、截图和 OpenSpec 更新都必须落在同一执行现场。
 - 共享基线改动和单游戏实现必须分线收口，不能混成一次无边界提交。
 - create-new-game 只管通用流程；进入具体游戏方案、布局、runtime 边界或任务拆分时，切到 OpenSpec。
@@ -112,7 +112,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 > 详细规则见 `references/preflight-gates.md`、`references/asset-intake.md` 与 `references/mechanics-data-design.md`。新增游戏不能先做低保真 Board 再事后补素材；必须先把规则对象和运行时素材需求锁住。
 
-本阶段主 skill 只保留入口骨架；详细清单和一票否决见 `references/intake-redlines.md`，来源确认、素材矩阵、PDF/图片 intake 细则见 `references/preflight-gates.md` 与 `references/asset-intake.md`。
+本阶段入口索引指向 `references/intake-redlines.md`；来源确认、素材矩阵、PDF / 图片 intake 细则见 `references/preflight-gates.md` 与 `references/asset-intake.md`。
 
 最小执行口径：
 - 阶段 0 是新增游戏第一批实际工作，不是验收时补写说明。
@@ -327,6 +327,7 @@ npm run dev                   # 编译无报错（游戏可在大厅列表看到
 
 最小执行口径：
 - 先建立“基础规则语义覆盖矩阵”，把规则动作、玩家决策点、随机/进度关系、属性/资源轨、空间放置/朝向、模式/剧本选择逐条映射到状态、事件、命令、UI 承接和验证证据；矩阵未闭合前不得进入基础版完成判断。
+- 权限矩阵要求由 `references/mechanics-data-design.md` 承接；主 workflow 不重复展开交互标准。
 - 多剧本 / 多模式 / 多场景游戏必须额外建立“子规则账本索引”：每个剧本、关卡、作祟、boss、任务或模式都要有源段、公开信息、私密信息、setup、目标、特殊规则、特殊行动、token/对象、空间要求、终局和验证状态；代表链只证明代表链本身。
 - 先把规则动作拆成机制、状态、事件、命令和 UI 承接，再映射到现有引擎原语。
 - 数据结构设计要区分正式真相、系统状态、派生读模型和纯 UI 状态。
