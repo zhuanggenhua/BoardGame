@@ -32,7 +32,7 @@
 
 - **Status:** active-rule-gap-implementation
 - 2026-07-27 +08：按用户纠偏重锁目标：当前不是“山屋惊魂全面端到端出图 / 全游戏重做”，而是作祟 3「灰尘」在当前剧本和当前已接入卡牌范围内的规则补漏实现。端到端截图只作为玩家可见规则的验收手段，不能替代领域规则覆盖。
-- 2026-07-27 +08：当前正式计划入口已改为 `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md` 和本文件顶部会话；旧 `山屋惊魂可玩性全面重审计` 段落降为历史背景，不再自动接管本轮任务。
+- 2026-07-27 +08：当前正式计划入口已改为 `docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md` 和本文件顶部会话；旧 `山屋惊魂可玩性全面重审计` 段落降为历史背景，不再自动接管本轮任务。
 - 2026-07-27 +08：当前已确认的下一步实现顺序是：先继续补 `通用发现结算队列产品化`，把即时事件效果、选择型事件效果和房间文字逐步纳入结构化确认队列；再补灰尘终局边界矩阵；随后回到当前持有牌 / 攻击武器 / 主动牌的玩家可见 UI 与 E2E 缺口。
 - 2026-07-27 +08：已完成的事实只能按专项计划里的状态汇报：预兆发现已拆成“获得预兆 + 作祟检定”两步确认；灰尘两个 setup 人工确认项已落到正式命令和牌桌按钮；这些都不能外推成“完整规则完成”。
 - 2026-07-27 +08：按用户纠偏补齐基础规则证据口径。用户点名的四项不是“都没做”：开局五张剧本卡选择 / 共同确认、属性轨按位置步进且重复数值不吞位置、作祟风险按全员预兆数量展示、探索放置面板由玩家旋转并把所选新房间朝向交给正式探索命令，当前均已有定向领域或 Board 证据。新增房间朝向 Board 单条 1 passed / 106 skipped；基础规则领域组合 6 passed / 403 skipped；基础规则 Board 组合 6 passed / 101 skipped；`Board.foundation.test.tsx` ESLint 0 errors。边界：这是基础规则补证，不代表灰尘作祟、所有卡牌或完整真实页面 E2E 完成。
@@ -74,14 +74,14 @@
 - 2026-07-15 +08：补齐《肉质苔癣》“先选择是否吸入 -> 再投 2 颗骰 -> 成功后再选择奖励属性 -> 结算 -> 关闭回牌桌”的完整链。领域层修正为接受可选事件不再提前要求属性，吸入后若命中奖励分支会保留待选属性并保留同源骰盘；定向 `npx vitest run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts -t "肉质苔癣" --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 2 passed；真实页面 E2E `npm run test:e2e:ci:file -- e2e/betrayal/event-choice-coverage.e2e.ts "肉质苔癣真实链路从探索翻牌到选择吸入投骰再选属性结算关闭"` 为 1 passed。截图在 `evidence/山屋惊魂-事件牌页面承接E2E/肉质苔癣-完整链路-01-探索前.jpg` 到 `06-关闭后回牌桌.jpg`。边界：这只收口肉质苔癣，不代表其它可选事件或山屋整体完成。
 - 2026-07-15 +08：BTR-06 物品使用完整链路已按“整个链路”口径收口本对象：E2E 从真实牌桌代表态起跑，依次点击急救包本体、地图队友 token、使用按钮，断言急救包从当前玩家持有区消失、治疗反馈可见、物品选择器和治疗目标选择器清空；截图在 `evidence/山屋惊魂-物品使用完整链路/01-使用前牌桌可操作.jpg` 到 `06-物品使用后回牌桌状态清空.jpg`，命令 `npm run test:e2e:ci:file -- e2e/betrayal/first-scenario-use-possession.e2e.ts "真实页面选择急救包、选队友目标并完成治疗收口"` 通过。边界：这只收口急救包代表物品使用链，不代表骰盘全家族或山屋整体完成。
 - 2026-07-15 +08：BTR-07 交易完整链路已按“整个链路”口径收口本对象：代码层在确认交易后清空已选持有物和已选交易目标；E2E 从真实牌桌代表态起跑，依次点击兔脚本体、地图队友 token、确认交易，断言兔脚从当前玩家持有区移到队友持有区、日志/反馈可见、临时选择和目标高亮清空；截图在 `evidence/山屋惊魂-交易完整链路/01-交易前牌桌可操作.jpg` 到 `06-交易后回牌桌状态清空.jpg`，命令 `npm run test:e2e:ci:file -- e2e/betrayal/first-scenario-trade-interaction.e2e.ts "真实页面可选物品、选目标并确认交易"` 通过。边界：这只收口交易，不代表物品使用或骰盘全家族完成。
-- 2026-07-15 +08：继续按“正确端到端应该怎么做”的反馈补强通用 E2E 规范：`docs/ai-rules/e2e-verification.md` 的“流程截图证据链”现在要求六段证据同时登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，并明确滚动、选项尺寸、背景框、属性颜色、骰子重叠、效果触发等视觉/交互目标必须进入同一条主链。边界：这是规范硬门槛；当前驱魔失败、物品使用和交易已有各自链路，仍不代表骰盘全家族已经收口。
+- 2026-07-15 +08：继续按“正确端到端应该怎么做”的反馈补强通用 E2E 规范：`.spec/knowledge/standards/e2e-verification.md` 的“流程截图证据链”现在要求六段证据同时登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，并明确滚动、选项尺寸、背景框、属性颜色、骰子重叠、效果触发等视觉/交互目标必须进入同一条主链。边界：这是规范硬门槛；当前驱魔失败、物品使用和交易已有各自链路，仍不代表骰盘全家族已经收口。
 - 2026-07-15 +08：BTR-04 驱魔失败死亡链已补领域回归和真实页面六段 E2E：最终驱魔失败只让每名存活英雄各承受 1 点身体伤害，安全属性英雄不死，濒死英雄只有触及当前模型死亡边界才死亡，全部英雄死亡才叛徒终局；真实页面链从驱魔前、选择杰克之灵房间、失败骰盘、伤害结果、关闭前到关闭后回牌桌。截图在 `evidence/山屋惊魂-驱魔失败伤害链/`。边界：这只收口 BTR-04，不代表骰盘全家族完成。
 - 2026-07-15 +08：推进 BTR-05 山屋骰盘，不写完成：已定位并修复一个共享基础设施问题，原先所有山屋物理骰盘都共用 `betrayal-house-dice-box-canvas` 调试键，旧实例销毁也不清理 registry，导致多骰不重叠门禁可能读错骰盘。当前已改为每个 `RecentRollPanel` 按 `roll.id` 使用独立调试键，E2E helper 从当前面板内读取快照，`DiceBoxThreeEngine.destroy()` 清理本实例调试函数；`npx eslint src\games\betrayal\Board.tsx e2e\betrayal\betrayalTestHelpers.ts e2e\betrayal\non-p0-representative.e2e.ts src\lib\dice-box-threejs\engine.ts` 通过；普通投骰事件代表链 E2E 通过。砍刀攻击代表链第一次仍失败于当前 panel 无 Three.js 快照，补上 fallback 后复跑被全局 E2E 重任务守卫拦截，原因是同仓库 `e2e/summonerwars/summonerwars-mogu.e2e.ts` 仍在运行；当前 BTR-05 只能记为进行中，不能写骰盘已收口。
-- 2026-07-15 +08：按用户“整个链路：牌翻出来、选择、结算、关闭”的反馈，补强山屋专项审计文档 `docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md`。现在“正确端到端”不只写六段，还要求每段都有 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`；缺任一段只能降级为阶段承接或待补完整链路，不能写完整通过。
+- 2026-07-15 +08：按用户“整个链路：牌翻出来、选择、结算、关闭”的反馈，补强山屋专项审计文档 `docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md`。现在“正确端到端”不只写六段，还要求每段都有 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`；缺任一段只能降级为阶段承接或待补完整链路，不能写完整通过。
 - 2026-07-15 +08：BTR-01 haunt 阶段禁探索当前工作树复验通过：`npx eslint src\games\betrayal\game.ts src\games\betrayal\__tests__\firstScenarioRuntime.test.ts` 为 0 errors / 5 个既有 warning；`npx vitest run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts -t "haunt 阶段即使走本地测试通道也不能继续探索新房间" --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 1 passed；`npm run test:e2e:ci:file -- e2e/betrayal/haunt-no-explore.e2e.ts "haunt 阶段真实页面不暴露探索入口并拒绝探索命令"` 为 1 passed。截图在 `evidence/山屋惊魂-haunt阶段禁探索/01-haunt阶段-牌桌无探索入口.jpg` 与 `02-haunt阶段-探索命令被拒绝.jpg`。边界：这只证明 BTR-01；其它对象必须看各自链路证据。
 - 2026-07-14 +08：同步 BTR-02 当前边界：圣符作祟判定底层、Board 显示回归和真实页面六段 E2E 均已通过；可以说“圣符从翻出到作祟判定再关闭回牌桌的端到端已收口”。截至 2026-07-15，BTR-01 haunt 禁探索也已有独立负向链；截至 2026-07-15，BTR-04 驱魔失败、BTR-06 物品使用和 BTR-07 交易已有各自链路；仍不能说骰盘全家族或山屋整体已收口。
 - 2026-07-14 +08：BTR-02 圣符六段链证据已落盘：`e2e/betrayal/holy-symbol-haunt-roll.e2e.ts` 通过，截图为 `evidence/山屋惊魂-圣符作祟判定/01-圣符作祟判定-探索前.jpg` 到 `06-圣符作祟判定-关闭后回牌桌.jpg`。
-- 2026-07-14 +08：已把“整个链路”明确成项目硬门槛：牌翻出类流程必须证明 `触发前 -> 对象亮相 -> 选择/投骰 -> 结算 -> 关闭/回牌桌`，且截图/断言必须来自同一真实页面规则链。当前已更新 `docs/ai-rules/e2e-verification.md`、`docs/testing-best-practices.md`、`docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`、`task_plan.md`、`findings.md` 与本进度入口。边界：这只是规范和当前任务入口收口；各对象是否修复必须看各自 E2E 与 evidence，当前仍不代表骰盘全家族完成。
+- 2026-07-14 +08：已把“整个链路”明确成项目硬门槛：牌翻出类流程必须证明 `触发前 -> 对象亮相 -> 选择/投骰 -> 结算 -> 关闭/回牌桌`，且截图/断言必须来自同一真实页面规则链。当前已更新 `.spec/knowledge/standards/e2e-verification.md`、`docs/testing-best-practices.md`、`docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`、`task_plan.md`、`findings.md` 与本进度入口。边界：这只是规范和当前任务入口收口；各对象是否修复必须看各自 E2E 与 evidence，当前仍不代表骰盘全家族完成。
 - 2026-07-14 +08：完成 BTR-03 “结算房间”文案修正。前提锁定为：规则动作是结束回合，房间停留效果只在结束回合前提示并在结束回合后结算。已改 `public/locales/zh-CN/game-betrayal.json`、`public/locales/en/game-betrayal.json`，并同步更新 `Board.foundation.test.tsx` 与 `room-effect-representative.e2e.ts` 负向断言，防止“结算房间”再次外露为按钮。验证：Board 定向用例通过；火炉房真实页面 E2E 通过并刷新 `evidence/betrayal-room-effect-representatives/03-火炉房-结束回合前提示.jpg`、`04-火炉房-结算后反馈.jpg`。边界：这只解决 BTR-03，不代表山屋整体收口。
 
 ---
@@ -1007,7 +1007,7 @@
 - 2026-05-17 09:08 +08：已按新截图规范清理 `test-results` 七大恨旧图；`2026-05-16` 两张旧截图曾移到 `temp/qidahen-archived-test-results-2026-05-17/`，后续 10:07 按新临时截图规则删除。当前证据文档：`evidence/qidahen/qidahen-board-ui-playable-rework-2026-05-17.md`。
 - 2026-05-17 09:22 +08：按最新截图继续修左上轮盘残留痕迹：移除大面积浅色圆环/扇区 overlay，只保留红色当前位圆点、`行` 标记和轮盘移动按钮。复跑通过：`npx eslint src/games/qidahen/Board.tsx src/games/qidahen/__tests__/Board.test.ts e2e/qidahen-basic-flow.e2e.ts`、`npx vitest run src/games/qidahen/__tests__/Board.test.ts`、`e2e/qidahen-basic-flow.e2e.ts` 单用例。两张稳定截图已覆盖为当前版本。
 - 2026-05-17 09:35 +08：完成 active goal 收口审计复跑：`npx eslint src/games/qidahen/Board.tsx src/games/qidahen/domain/types.ts src/games/qidahen/domain/commands.ts src/games/qidahen/domain/index.ts src/games/qidahen/__tests__/Board.test.ts e2e/qidahen-basic-flow.e2e.ts` 通过；`npx vitest run src/games/qidahen/__tests__/Board.test.ts` 为 28 passed；`npx tsc --noEmit --pretty false` 通过；`create-new-game` 与 `boardgame-ui-imagegen` quick_validate 均为 `Skill is valid!`。E2E 第一次复跑遇到瞬时 `.tmp/boardgame-e2e/runtime-registry.json.lock` EPERM，已核实 lock 文件不存在、相关进程退出、6800/22100/23100 无占用后原命令重跑通过，稳定截图更新时间为 09:34。
-- 2026-05-16 11:03 +08：已读取实施阶段必需输入：`AGENTS.md`、`openspec/AGENTS.md`、`docs/ai-rules/ui-ux.md`、`docs/ai-rules/asset-pipeline.md`、`design-system/game-ui/MASTER.md`、`.windsurf/skills/boardgame-ui-imagegen/SKILL.md`、`design-system/games/qidahen.md`、`src/games/qidahen/rule/七大恨规则.md`、`src/games/qidahen/rule/七大恨素材接入清单.md`、`C:\Users\zhuagenbao\.spec\skillss\planning-with-files\SKILL.md`。
+- 2026-05-16 11:03 +08：已读取实施阶段必需输入：`AGENTS.md`、`openspec/AGENTS.md`、`.spec/knowledge/standards/ui-ux.md`、`.spec/knowledge/standards/asset-pipeline.md`、`design-system/game-ui/MASTER.md`、`.windsurf/skills/boardgame-ui-imagegen/SKILL.md`、`design-system/games/qidahen.md`、`src/games/qidahen/rule/七大恨规则.md`、`src/games/qidahen/rule/七大恨素材接入清单.md`、`C:\Users\zhuagenbao\.spec\skillss\planning-with-files\SKILL.md`。
 - 2026-05-16 11:05 +08：已确认当前 worktree 根目录的 `task_plan.md / findings.md / progress.md` 就是七大恨任务上下文，继续沿用，不接管其他任务计划。
 - 2026-05-16 11:09 +08：已直接查看冻结设计图 `temp/qidahen-ui-imagegen-review/final-design.png` 与 `v56-overview-1400.jpg`。当前目标切片是“势力行动已选具体叶子动作后的支付态”，不是旧代码里的通用战斗/日志界面。
 - 2026-05-16 11:12 +08：已审查 `src/games/qidahen/Board.tsx`、`manifest.ts`、`criticalImageResolver.ts`、`domain/index.ts`、`domain/types.ts`。结论：Board 仍是占位版，主冲突在左侧年度/势力大面板、右侧待处理/战斗/日志三连板、底部确认/结束行动区，以及与冻结设计不符的占位数据。
@@ -1020,7 +1020,7 @@
   - `D:\gongzuo\webgame\BoardGame\.worktrees\qidahen\test-results\evidence-screenshots\_shared\qidahen-board-mobile-landscape-2026-05-16.png`
 - 2026-05-16 15:44 +08：肉眼核对结论：桌面结构已基本贴近冻结稿，但仍保留原始版图杂讯；手机横屏仍像桌面缩略版，不足以宣称完全收口。已把结果落到 `evidence/qidahen/qidahen-board-ui-implementation-2026-05-16.md`。
 - 2026-05-14 08:41 +08：按用户最新反馈重构 `boardgame-ui-imagegen` 为通用 skill；七大恨专属口径不再写进通用 skill，只保留在 `design-system/games/qidahen.md`。
-- 已对照 `docs/ai-rules/ui-ux.md`：主界面只展示当前决策/执行对象，动态提示用 叠层稿，不挤压布局；视觉态与触发方式分离；卡牌/地图实体优先直接操控。
+- 已对照 `.spec/knowledge/standards/ui-ux.md`：主界面只展示当前决策/执行对象，动态提示用 叠层稿，不挤压布局；视觉态与触发方式分离；卡牌/地图实体优先直接操控。
 - `boardgame-ui-imagegen` 已通过 `quick_validate.py`；专属词扫描无命中。
 - 已生成 v14 UI 指导图并完成压缩/局部看图：
   - `temp/qidahen-ui-imagegen-review/v14-final.png`
@@ -1158,11 +1158,11 @@
   - `C:/Users/zhuagenbao/.spec/skillss/planning-with-files/SKILL.md`
   - `.windsurf/skills/game-audit-workflow/SKILL.md`
   - `.windsurf/skills/add-new-faction/SKILL.md`
-  - `docs/ai-rules/testing-audit.md`
-  - `docs/ai-rules/engine-systems.md`
+  - `.spec/knowledge/standards/testing-audit.md`
+  - `.spec/knowledge/standards/engine-systems.md`
   - `docs/testing-best-practices.md`
   - `docs/automated-testing.md`
-  - `docs/ai-rules/data-entry.md`
+  - `.spec/knowledge/standards/data-entry.md`
   - `docs/temp-files-management.md`
 - 已创建 guard：`temp/smashup-shayu-full-audit-2026-05-12.json`。
 - 当前动作：补强通用矩阵，随后生成 39 卡 + 6 基地全量清单并逐项 P0/P1 审计。
@@ -1177,8 +1177,8 @@
   - `openspec/AGENTS.md`
   - `C:\Users\zhuagenbao\.spec\skillss\planning-with-files\SKILL.md`
   - `.windsurf/skills/create-new-game/SKILL.md`
-  - `docs/ai-rules/asset-pipeline.md`
-  - `docs/ai-rules/data-entry.md`
+  - `.spec/knowledge/standards/asset-pipeline.md`
+  - `.spec/knowledge/standards/data-entry.md`
   - `docs/temp-files-management.md`
   - `D:\codex-home\skills\.system\skill-creator\SKILL.md`
 - 已确认本轮不创建/切换分支，先做规则转档、素材入库、资源闭环、可行性分析与 skill 优化。
@@ -1241,10 +1241,10 @@
 - 已读取：
   - `AGENTS.md`
   - `.windsurf/skills/data-entry-workflow/SKILL.md`
-  - `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`
-  - `docs/ai-rules/data-entry.md`
-  - `docs/ai-rules/asset-pipeline.md`
-  - `docs/ai-rules/testing-audit.md`
+  - `.spec/skills/dicethrone-hero-intake/SKILL.md`
+  - `.spec/knowledge/standards/data-entry.md`
+  - `.spec/knowledge/standards/asset-pipeline.md`
+  - `.spec/knowledge/standards/testing-audit.md`
   - `docs/testing-best-practices.md`
 - 已创建 detached worktree，没有新建分支。
 - 新 worktree 初始不含用户提供的 `treant` / `ninja` 图片，已从主工作树复制到：
@@ -1261,7 +1261,7 @@
 ## Addendum: 2026-05-07 审计流程已升级为“深度审计流程”硬门禁
 
 - 已回写并更新审计规范：
-  - `docs/ai-rules/testing-audit.md`
+  - `.spec/knowledge/standards/testing-audit.md`
 - 本轮不是只补 `D37` / `D40` 两个维度说明，而是把“执行层级不够深”正式改成可执行流程：
   - 审计前必须先建对象清单，并给每个对象标 `L0/L1/L2/L3/L4`
   - 每个对象必须串完整链路：`规则语义 -> 静态定义 -> validator -> command/reducer -> afterEvents/postProcess -> UI 出口 -> 真实入口验证`
@@ -1874,7 +1874,7 @@
   - Next: 补 workflow / evidence 文档并回填计划文件
 
 - **[12:50] Action**: 沉淀 workflow / contract / E2E evidence 文档
-  - Result: 已新增 `docs/games/smashup/workflows/smashup-faction-intake.md`、`evidence/smashup/smashup-oops-faction-intake-contract.md`、`evidence/smashup/smashup-oops-faction-intake-e2e-test.md`
+  - Result: 已新增 `.spec/skills/smashup-faction-intake/SKILL.md`、`evidence/smashup/smashup-oops-faction-intake-contract.md`、`evidence/smashup/smashup-oops-faction-intake-e2e-test.md`
   - Next: 整理最终交付摘要
 
 ### Phase: gameplay proposal
@@ -2070,7 +2070,7 @@
   - Next: 回填三派系审计证据文档，继续长期任务直到最终汇总。
 
 - **[2026-04-23 09:03:12] Action**: 回写派系实施 workflow 门禁，沉淀可复用流程
-  - Result: `docs/games/smashup/workflows/smashup-faction-implementation.md` 已新增 `targetType: 'generic'` 强制补记规则（`REQUIRED_SOURCE_CONFIGS + APPROVED_GENERIC_SOURCE_REASONS` 双登记），将本次踩坑前置为流程约束。
+  - Result: `.spec/skills/smashup-faction-implementation/SKILL.md` 已新增 `targetType: 'generic'` 强制补记规则（`REQUIRED_SOURCE_CONFIGS + APPROVED_GENERIC_SOURCE_REASONS` 双登记），将本次踩坑前置为流程约束。
   - Next: 进入本轮长期任务最终收口准备（等待你要求最终总汇报时一次性给出）。
 
 ## Session: 2026-04-22 Dicethrone critical 反馈补强（69c3c83e / 69cba605）
@@ -2122,7 +2122,7 @@
   - Next: 回写审计文档中的最新门禁与资源状态，保证证据链完整。
 
 - **[2026-04-24 22:16:00] Action**: 强化通用数据录入与 SmashUp 实施 workflow
-  - Result: 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则（S0→S4 持续推进，continue 默认推进下一批执行）。
+  - Result: 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `.spec/skills/smashup-faction-implementation/SKILL.md`，新增“长期任务连续执行”强制规则（S0→S4 持续推进，continue 默认推进下一批执行）。
   - Next: 继续执行三派系审计/实施批次，保持“不中途收口”节奏。
 
 - **[2026-04-24 22:24:00] Action**: 回写两条 SmashUp 反馈审计文档的当日复核补记
@@ -2484,11 +2484,11 @@
       - 新增“批量派系重审附加门禁”
       - 强制“当前批次未清空不得停”
       - 强制 `defId` 真值预检
-    - 更新 `docs/games/smashup/workflows/smashup-faction-implementation.md`：
+    - 更新 `.spec/skills/smashup-faction-implementation/SKILL.md`：
       - 新增“批量派系重审 / 重录模式”
       - 新增 `L0-L4` 分层验收
       - 新增 `reaction session` 抽样门禁
-    - 更新 `docs/ai-rules/testing-audit.md`：
+    - 更新 `.spec/knowledge/standards/testing-audit.md`：
       - 新增“批量重审对象清单”
       - 新增“E2E 场景真值 defId 预检”
       - 新增“reaction session 不得被单测观察面替代”
@@ -3011,7 +3011,7 @@
 ## 2026-05-10 16:35 +08 用户复盘后重新打开
 
 - 用户指出“数据录入、上传素材、审计、端到端全流程都没做好”，确认前一轮确实把 L1/L2 接入 + 选角 E2E 误报成全流程完成。
-- 裁定：不改长期任务 skill；已补强项目内 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`，新增禁止提前收口、批次矩阵、L0-L4、资源/上传/审计/E2E 门禁。
+- 裁定：不改长期任务 skill；已补强项目内 `.spec/skills/dicethrone-hero-intake/SKILL.md`，新增禁止提前收口、批次矩阵、L0-L4、资源/上传/审计/E2E 门禁。
 - 下一步继续回到实际任务：按新门禁复核 treant/ninja 数据录入完整性、机制 L2/L3/L4 缺口、资源忽略文件清单和 evidence。
 
 ## 2026-05-10 重来启动
@@ -3068,7 +3068,7 @@
   - `npx tsc --noEmit --pretty false` -> passed
   - `npm run i18n:check` -> passed
   - `PW_PORT=6473 PW_GAME_SERVER_PORT=20300 PW_API_SERVER_PORT=21300 PW_WORKERS=1 npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts` -> 4 passed
-- 已补强 docs/ai-rules/testing-audit.md：新增通用交互入口语义矩阵。
+- 已补强 .spec/knowledge/standards/testing-audit.md：新增通用交互入口语义矩阵。
 - 已新增 evidence/smashup/smashup-shayu-full-chain-audit-2026-05-12.md，覆盖 39 张卡 + 6 基地 P0/P1 对象矩阵。
 - 已回写 evidence/smashup/smashup-shayu-faction-audit.md，限定旧结论不能解释为逐对象全量 L3 E2E。
 
@@ -3086,7 +3086,7 @@
 
 ## 2026-05-12 08:15 +08 Shayu 再次抽样调查
 
-- 读取 `AGENTS.md`、`docs/ai-rules/testing-audit.md` 交互入口矩阵、`docs/temp-files-management.md` 与既有 shayu evidence。
+- 读取 `AGENTS.md`、`.spec/knowledge/standards/testing-audit.md` 交互入口矩阵、`docs/temp-files-management.md` 与既有 shayu evidence。
 - 抽样复审 5 个高风险对象：危险水域、气旋、赫尔墨斯的恩惠、宙斯的恩惠、特洛伊木马。
 - 发现 `mythic_greeks_favor_of_zeus` 二次 base prompt：命令 payload 已有 `targetBaseIndex`，旧 handler 又弹 `greekBasePromptProgram`；已改为直接消费 `ctx.targetBaseIndex ?? ctx.baseIndex`。
 - 新增/更新：`evidence/smashup/smashup-shayu-strict-sample-audit-2026-05-12.md`、`shayuFactionAbilities.test.ts` 5 条抽样 L2 行为测试、`testing-audit.md` 通用直接入口消费门禁。
@@ -3095,7 +3095,7 @@
 ## Addendum（2026-05-12 08:38 +08）：shayu 第一入口直接消费专项重审
 
 - [x] 承认并修正审计缺口：此前全量矩阵偏静态，没有强制检查“payload/UI 已确定第一入口后 handler 是否直接消费”。
-- [x] 通用规范补强：`docs/ai-rules/testing-audit.md` 新增“第一入口已确定时不得二次创建同 targetType prompt”的最低门禁。
+- [x] 通用规范补强：`.spec/knowledge/standards/testing-audit.md` 新增“第一入口已确定时不得二次创建同 targetType prompt”的最低门禁。
 - [x] 专项全量清单已落地：`evidence/smashup/smashup-shayu-entry-consumption-audit-2026-05-12.md` 覆盖 39 卡 + 6 基地的入口来源、第一入口、handler 消费结论与证据等级。
 - [x] 已修复 3 个本轮发现项：宙斯的恩惠二次 base prompt、卷走二次 minion prompt、不在堪萨斯替换后误触发新基地 onActionPlayed。
 - [x] 已补 L2 验证：新增 `shayuEntryConsumption.test.ts`，并更新 `shayuFactionAbilities.test.ts` 的卷走真实入口用例。
@@ -3110,7 +3110,7 @@
 
 ## Addendum（2026-05-12）：审计默认口径升级为全面审计
 
-- [x] 已更新 `docs/ai-rules/testing-audit.md`：未限定的“审计”默认等于全面审计；抽样/专项/L1 必须显式标注，不得简称“已审计”。
+- [x] 已更新 `.spec/knowledge/standards/testing-audit.md`：未限定的“审计”默认等于全面审计；抽样/专项/L1 必须显式标注，不得简称“已审计”。
 - [x] 已建立 shayu 全面审计 guard：`temp/smashup-shayu-comprehensive-audit-2026-05-12.json`。
 - [x] 已建立 45 对象覆盖矩阵：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
 - [ ] 当前仍未完成：全量 L2、全交互 L3、全部时序/窗口/队列 L4 还要继续补。
@@ -3439,7 +3439,7 @@
 ## 2026-05-17 20:25 +08 风格统一与 skill 门禁补强
 
 - 已按用户最新反馈把问题从“继续调布局”切回“风格如何定义、如何确认、如何防止后续新游戏重犯”。
-- 已读并执行：`docs/ai-rules/ui-ux.md`、`docs/temp-files-management.md`、`design-system/game-ui/MASTER.md`、`design-system/styles/classic-parchment.md`、`.windsurf/skills/boardgame-ui-imagegen/SKILL.md`。
+- 已读并执行：`.spec/knowledge/standards/ui-ux.md`、`docs/temp-files-management.md`、`design-system/game-ui/MASTER.md`、`design-system/styles/classic-parchment.md`、`.windsurf/skills/boardgame-ui-imagegen/SKILL.md`。
 - 已补强通用 skill：新增风格确认门禁，要求风格名、参考来源、核心色板、材质语法、组件族语法、状态语法、禁用风格、至少 3 类真实素材取样、通用 UI 建议采纳/拒绝裁决、截图横向对照。
 - 已补强七大恨专属设计系统：`design-system/games/qidahen.md` 现在明确 **明末纸本军议 UI**，用 `paper / paperLight / paperDeep / ink / mutedInk / bronze / cinnabar / oldGold / shadow` 固化风格，不再用“像素材/高级/统一”这类形容词验收。
 - 已改 `src/games/qidahen/Board.tsx`：前端新增 UI 外壳统一走 `UI_STYLE` token；卡牌容器底色、舞台文字色也回到 token，避免硬编码色值绕开风格合同。
@@ -11224,7 +11224,7 @@
   - `public/locales/zh-CN/game-betrayal.json`
   - `public/locales/en/game-betrayal.json`
   - `e2e/betrayal/first-scenario-exorcism-failure.e2e.ts`
-  - `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `temp/betrayal-playability-overhaul-2026-07-14.json`
 - 已完成验证：
@@ -11360,7 +11360,7 @@
   - `public/locales/zh-CN/game-betrayal.json`
   - `public/locales/en/game-betrayal.json`
   - `docs/testing-best-practices.md`
-  - `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `temp/betrayal-playability-overhaul-2026-07-14.json`
 - 本轮推进内容：
@@ -11398,7 +11398,7 @@
 - 当前任务口径已重锁为作祟 3「灰尘」规则补漏，不是全面端到端出图。
 - 本轮新增领域断言：灰尘非叛徒死亡时不会触发死亡叛徒专属掩埋和狂热病患化，尸体保留物品 / 预兆，同房间存活探索者仍可按通用搜尸规则拿走 1 件。
 - 已同步账本：
-  - `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md`
+  - `docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md`
   - `docs/games/betrayal/haunts/03-the-dust.md`
 - 已完成验证：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "灰尘非叛徒死亡时不会掩埋遗物"` 为 `1 passed / 410 skipped`。\n  - 整份 `firstScenarioRuntime.test.ts` 为 `411 passed`。\n  - `npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 为 0 errors。

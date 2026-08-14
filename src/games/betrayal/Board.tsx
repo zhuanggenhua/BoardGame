@@ -20834,4 +20834,3 @@ export default function BetrayalBoard({
     </div>
   );
 }
-

@@ -45,7 +45,7 @@
 目标对象：召唤师瑟伦达、3 张英雄、4 类士兵、4 张事件、起始城门、预构筑牌组、暗影精灵派系目录与其图集。
 真相来源：`public/assets/i18n/zh-CN/summonerwars/hero/shadow/` 用户指定素材；`evidence/summonerwars/shadow-faction-intake.md` 记录的素材与规则合同；当前工作区召唤师战争运行时消费代码。
 目标入口/环境：`D:\gongzuo\webgame\BoardGame` 的 `main` 工作区，召唤师战争派系选择、开局部署、牌组/卡图和领域机制链。
-验收口径：以 `.spec/skills/add-new-faction/SKILL.md` 与 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md` 为准，分开报告数据、资源、机制、审计与 E2E；保留同工作区其它未提交改动。
+验收口径：以 `.spec/skills/add-new-faction/SKILL.md` 与 `.spec/skills/summonerwars-faction-intake/SKILL.md` 为准，分开报告数据、资源、机制、审计与 E2E；保留同工作区其它未提交改动。
 
 ## 当前任务拆解
 
@@ -94,7 +94,7 @@
 
 ## 当前任务拆解
 
-- [x] 建立当前专项计划和进度表：`docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md`。
+- [x] 建立当前专项计划和进度表：`docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md`。
 - [x] 重锁任务边界：当前是“规则补漏实现”，不是“全面端到端出图”；端到端只作为玩家可见规则的验收手段。
 - [x] 收口已知 P0：事件牌池数量口径、灰尘死亡来源矩阵、当前 23 张事件牌与灰尘死亡保护交叉。
 - [ ] 推进 P1：通用发现结算队列产品化。已完成预兆“获得预兆 + 作祟检定”两步确认、无需后续玩家选择的即时事件效果确认步骤；当前事件池中会进入玩家选择的 11 张事件已由领域测试覆盖最终事件效果确认，包含《说“茄子”！》《吊死鬼》《脑状食品》《上古旧宅》《肉质苔癣》《夜幕众星》《一抹鲜红》《一瓶微尘》《大宅饿了》《一条秘密通道》《蜘蛛！》；玩家可见 Board 确认合同已覆盖这 11 张选择型事件，完成玩家选择后都会保留发现面板并显示“事件效果 / 确认 1/1”，其中《蜘蛛！》保留点击真实相邻房间本体提交；旧房间效果 / 作祟检定 / 动态探索领域回归已适配“翻牌后先确认结算”的新时序；房间文字直接效果已从礼拜堂代表链扩展到当前全部直接效果矩阵：礼拜堂、图书馆、书房、体育馆、储物间、杂物间都会先进入 `room-effect` 确认队列，房间效果不继承同房间事件 / 物品 / 预兆牌堆标签；新增终局代表链后整份 `firstScenarioRuntime.test.ts` 已重跑为 409 passed，当前定向终局组合为 18 passed / 391 skipped；下一步优先补完整真实页面 E2E 缺口和终局 / 持有牌边界。
@@ -118,10 +118,10 @@
 
 - [ ] 2026-07-18 +08：重新进入“全部正式玩家流程 UI 审计”。此前剧本 1/3/12/33 的四条作祟操作链只证明局部交互，不代表全部流程用户友好；最终必须以桌面/移动流程矩阵逐项全绿、真实整屏截图肉眼通过为准，之后才允许一次性用 PureRef 打开最终端到端原图。本轮按用户要求不发布截图站。
 - [ ] 2026-07-18 +08：额外剧本阅读器当前判定 `REVISE`。剧本 3/12/33 虽有正文和翻页状态，但仍挂在通用参考卡 `MagnifyOverlay`，底部页码错误串用参考卡总页数，末页出现无语义空白；必须统一到独立剧本阅读器，并对剧本 1/3/12/33 分别完成首页、翻页中、末页和关闭回牌桌的真实截图验收。
-- [x] 建立山屋专项计划：`docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`。
-- [x] 补强项目 E2E 规范：`docs/ai-rules/e2e-verification.md` 已明确“牌翻出类流程”必须覆盖翻出前、翻出后、选择/投骰、结算、关闭回牌桌六段。
+- [x] 建立山屋专项计划：`docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`。
+- [x] 补强项目 E2E 规范：`.spec/knowledge/standards/e2e-verification.md` 已明确“牌翻出类流程”必须覆盖翻出前、翻出后、选择/投骰、结算、关闭回牌桌六段。
 - [x] 继续加硬通用 E2E 证据模板：每段必须登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，且滚动、选项尺寸、背景框、属性颜色、骰子重叠等用户点名目标必须在同一条主链里证明。
-- [x] 补强山屋专项端到端审计表：`docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md` 已把每一段收口成 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，防止只拿中间态或结果态冒充完整链。
+- [x] 补强山屋专项端到端审计表：`docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md` 已把每一段收口成 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，防止只拿中间态或结果态冒充完整链。
 - [x] 建立当前 evidence 入口：`evidence/betrayal-playability-overhaul-2026-07-14.md`，当前结论保持“仍有残余范围”。
 - [x] 修正 BTR-03 “结算房间”无规则动作名：玩家按钮回到“结束回合”，房间停留效果只作为结束回合前提示；已通过 Board 定向测试和火炉房真实页面 E2E。
 - [x] 收口 BTR-01 haunt 阶段禁探索：规则层已禁止本地测试通道越过 haunt 禁探索，真实页面 E2E 已证明 haunt 阶段牌桌无探索新房间入口且强制探索命令被拒绝；命令 `npm run test:e2e:ci:file -- e2e/betrayal/haunt-no-explore.e2e.ts "haunt 阶段真实页面不暴露探索入口并拒绝探索命令"` 通过。
@@ -1118,7 +1118,7 @@
 - [x] 已完成当前轮验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/payment-selection.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 通过；`npm run test:e2e:ci:file -- e2e/qidahen-basic-flow.e2e.ts` 通过。
 - [x] 已实际看图确认：`qidahen-board-wheel-flow-current.png` 中支付提示变为 `需弃 1 / 已选 1`，被选手牌显示 `已选`；`test-results` 已清理回只保留 `_shared` 下两张稳定 current 图。
 - [x] 已按用户最新反馈重构通用 `boardgame-ui-imagegen`：通用 skill 只保留规则拆解、素材所有权、商业游戏直接操控、缩放视野补偿、UI/UX 门禁与看图自检；不再写入七大恨专属槽位/按钮/区域名。
-- [x] 已按 `docs/ai-rules/ui-ux.md` 对齐通用口径：主界面只展示当前可决策/可执行元素，动态提示不挤压核心布局，视觉态与触发方式分离，固定构图类 UI 默认 2D 同构并考虑移动端。
+- [x] 已按 `.spec/knowledge/standards/ui-ux.md` 对齐通用口径：主界面只展示当前可决策/可执行元素，动态提示不挤压核心布局，视觉态与触发方式分离，固定构图类 UI 默认 2D 同构并考虑移动端。
 - [x] 已确认七大恨专属内容保留在 `design-system/games/qidahen.md`：底部居中手牌、拖拽/上滑/armed 出牌、合法落点/目标高亮、按钮降级为 fallback。
 - [x] 已生成 v14 UI 指导图并完成压缩/局部裁图审计；v14 当前判定达标：2D 版图完整、手牌底部居中、事件牌拖拽路径和目标高亮清楚、无抽象动作按钮墙。
 - [x] 已进一步按规则反查修正 v14 缺口：新增手牌上限、轮盘待处理摘要、目标 `控制/人口/部队`、运行时 token、可实现性门禁与固定版图文字保真门禁。
@@ -1341,7 +1341,7 @@
 ## Acceptance Checklist
 
 - [x] S0 读取规范与项目 skill：game-audit-workflow、add-new-faction、testing-audit、engine-systems、testing-best-practices、automated-testing、data-entry。
-- [x] S1 补强 `docs/ai-rules/testing-audit.md`：交互入口语义矩阵、目标归属、数量/可选、动作链、上下文携带、自动执行 vs 玩家选择。
+- [x] S1 补强 `.spec/knowledge/standards/testing-audit.md`：交互入口语义矩阵、目标归属、数量/可选、动作链、上下文携带、自动执行 vs 玩家选择。
 - [x] S2 建立 shayu 39 卡 + 6 基地对象清单，标 L0-L4 与 P0/P1 风险。
 - [x] S3 对每个对象做 P0/P1 重审：描述动作链、第一入口、数据字段、UI/validator/handler/reducer 链路、上下文与可选/数量语义。
 - [x] S4 修复或登记发现项；同步测试与旧 evidence 回写。
@@ -1379,7 +1379,7 @@
 - 不擅自创建、切换、重建或删除分支；`create-new-game` 的正式建游戏分支要求等待用户明确授权。
 - 本轮先做规则/资源/可行性前置，不直接创建完整游戏骨架。
 - 主真相源：用户提供的中文规则 PDF 与中文 mod 图片目录。
-- 图片正式资源必须遵循 `docs/ai-rules/asset-pipeline.md`：运行时资源落 `public/assets/i18n/zh-CN/<gameId>/...` 或过渡期等价路径，路径语义化，后续代码引用不写 `compressed/`。
+- 图片正式资源必须遵循 `.spec/knowledge/standards/asset-pipeline.md`：运行时资源落 `public/assets/i18n/zh-CN/<gameId>/...` 或过渡期等价路径，路径语义化，后续代码引用不写 `compressed/`。
 - 录入中间产物、OCR/核对图、识别清单放 `temp/`，不混入正式资源树。
 
 ## Acceptance Checklist
@@ -1464,7 +1464,7 @@
 | ---------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 项目通用 skill `.windsurf/skills/add-new-faction/SKILL.md` | passed | `PYTHONUTF8=1 python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .windsurf\skills\add-new-faction` -> `Skill is valid!` |
 | `data-entry-workflow` 路由到通用新增派系 skill             | passed | `.windsurf/skills/data-entry-workflow/SKILL.md` 已包含“通用新增派系 / 新增角色 / 新增英雄”路由                                                   |
-| DiceThrone hero intake 门禁补强                            | passed | `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 已增加禁止提前收口、批次矩阵、L0-L4 与资源/E2E/审计门禁                              |
+| DiceThrone hero intake 门禁补强                            | passed | `.spec/skills/dicethrone-hero-intake/SKILL.md` 已增加禁止提前收口、批次矩阵、L0-L4 与资源/E2E/审计门禁                              |
 
 ### Treant / Ninja 重审批次矩阵（当前真状态）
 
@@ -1533,7 +1533,7 @@
   - `长舟` 已按用户澄清重新定位为 SmashUp `base_drakkar`（德拉卡尔号 / Drakkar），不是 SummonerWars；根因是 2026-05-08 引入的运行时 `effectContract` 漏 `playLimits` / `discardState` / `opensInteraction` 后误拦截合法基地能力
   - 已补 `PLAY_MINION -> base_drakkar` 真实触发链回归，聚焦 `base_drakkar` 测试 4 passed
 - [x] 审计流程已按“执行层级不够深”的复盘结论升级
-  - 已更新 `docs/ai-rules/testing-audit.md`，新增“深度审计流程（强制）”
+  - 已更新 `.spec/knowledge/standards/testing-audit.md`，新增“深度审计流程（强制）”
   - 已把对象清单、完整链路、真实入口、共享根因扩审、旧结论失效回写，改成统一深审门禁
   - 已明确把 `D37` 与 `D40` 标为本轮漏审复盘中的高风险专项
 - [x] 生产反馈真源已恢复可读
@@ -1896,7 +1896,7 @@
 - [x] 2026-04-24 再次复跑并同步最新口径：`newFactionAbilities = 168 passed / 1 skipped`、4 审计套件全绿、`smashup.e2e.ts = 3 passed`、横幅截图时间更新为 `2026-04-24 09:08`
 - [x] 2026-04-24 追加静态覆盖复核：`registerAbility` 对照 `newFactionAbilities.test.ts`，三派系总计 `40` 条能力、缺口 `0`
 - [x] 2026-04-24 复跑 OpenSpec + R2 回查：`openspec validate add-smashup-oops-faction-gameplay` 通过，`wangling.webp / wangling_base.webp` HEAD 均为 `200`
-- [x] 2026-04-24 强化通用工作流：更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则
+- [x] 2026-04-24 强化通用工作流：更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `.spec/skills/smashup-faction-implementation/SKILL.md`，新增“长期任务连续执行”强制规则
 - [x] 2026-04-24 同步两条 watchdog 反馈审计文档复核补记（`69db57c`、`69daa51e`），与主线 E2E `3 passed` 口径对齐
 - [x] 2026-04-24 同步 Android 内置 SmashUp locale：删除 `faction_implementation_in_progress_hint`，并复跑 `assets:upload`（上传 `0` / 跳过 `530` / 失败 `0`）
 - [x] 2026-04-25 完成两条 watchdog 反馈定向 E2E 复测：`69db57c` 1 条、`69daa51e` 2 条，均通过并回写证据截图路径
@@ -1911,7 +1911,7 @@
 - [x] 2026-04-29 补《塞壬的歌声 / 他们出来了》L3：把 `Mermaids` 的“来源基地过滤 + 逐段移动”与 `Skeletons` 的“选基地后多张挖掘”补到浏览器级真实入口，并显式修掉一次 E2E 场景误用不存在 card def 的低级错误
 - [x] 2026-04-29 补《墓园》L3：把 `Skeletons` 的“场上持续牌天赋 -> 挖掘 -> 可选 +1 指示物”从 L2 扩到浏览器级真实入口，并同步回写累计对象证据口径
 - [x] 2026-04-29 补《骸骨之王》L3：把 `Skeletons` 的“场上 minion 天赋 -> 挖掘这里任意埋葬牌 -> 先经 reaction session 再进 +1 后续交互”从 L2 扩到浏览器级真实入口，并同步回写累计对象证据口径
-- [x] 2026-04-29 回写长期任务 / 派系重审 workflow 门禁：把“批量派系重审批次清单”“E2E 场景 defId 预检”“L0-L4 分层验收”“reaction session 抽样门禁”补进 `.windsurf/skills/data-entry-workflow/SKILL.md`、`docs/games/smashup/workflows/smashup-faction-implementation.md`、`docs/ai-rules/testing-audit.md`
+- [x] 2026-04-29 回写长期任务 / 派系重审 workflow 门禁：把“批量派系重审批次清单”“E2E 场景 defId 预检”“L0-L4 分层验收”“reaction session 抽样门禁”补进 `.windsurf/skills/data-entry-workflow/SKILL.md`、`.spec/skills/smashup-faction-implementation/SKILL.md`、`.spec/knowledge/standards/testing-audit.md`
 - [x] 2026-04-30 收口《墓地爆发》L3，并修复 `scoreBases` 交互事件在 reduce 前被提前计分的时序缺口；定向 E2E `1 passed`，回归 Vitest `2 passed`
 - [x] 2026-04-30 补《塞壬 / 诱惑者 / 无人岛》L3，并修复 `BaseZone` 分数徽章绕过 `getPlayerEffectivePowerOnBase(...)` 的 UI 口径缺口；3 条定向 E2E、`ongoingModifiers` 聚焦回归 `6 passed`、`typecheck` 全绿
 - [x] 2026-04-30 补《武士 陈》正路径 L3，并收口 `World Champs` 最后一个对象级冻结点；定向 E2E `1 passed`，聚焦 Vitest `2 passed`
@@ -2177,7 +2177,7 @@
 ## Addendum（2026-05-12 08:38 +08）：shayu 第一入口直接消费专项重审
 
 - [x] 承认并修正审计缺口：此前全量矩阵偏静态，没有强制检查“payload/UI 已确定第一入口后 handler 是否直接消费”。
-- [x] 通用规范补强：`docs/ai-rules/testing-audit.md` 新增“第一入口已确定时不得二次创建同 targetType prompt”的最低门禁。
+- [x] 通用规范补强：`.spec/knowledge/standards/testing-audit.md` 新增“第一入口已确定时不得二次创建同 targetType prompt”的最低门禁。
 - [x] 专项全量清单已落地：`evidence/smashup/smashup-shayu-entry-consumption-audit-2026-05-12.md` 覆盖 39 卡 + 6 基地的入口来源、第一入口、handler 消费结论与证据等级。
 - [x] 已修复 3 个本轮发现项：宙斯的恩惠二次 base prompt、卷走二次 minion prompt、不在堪萨斯替换后误触发新基地 onActionPlayed。
 - [x] 已补 L2 验证：新增 `shayuEntryConsumption.test.ts`，并更新 `shayuFactionAbilities.test.ts` 的卷走真实入口用例。
@@ -2192,7 +2192,7 @@
 
 ## Addendum（2026-05-12）：审计默认口径升级为全面审计
 
-- [x] 已更新 `docs/ai-rules/testing-audit.md`：未限定的“审计”默认等于全面审计；抽样/专项/L1 必须显式标注，不得简称“已审计”。
+- [x] 已更新 `.spec/knowledge/standards/testing-audit.md`：未限定的“审计”默认等于全面审计；抽样/专项/L1 必须显式标注，不得简称“已审计”。
 - [x] 已建立 shayu 全面审计 guard：`temp/smashup-shayu-comprehensive-audit-2026-05-12.json`。
 - [x] 已建立 45 对象覆盖矩阵：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
 - [ ] 当前仍未完成：全量 L2、全交互 L3、全部时序/窗口/队列 L4 还要继续补。
@@ -6979,7 +6979,7 @@
   - `public/locales/zh-CN/game-betrayal.json`
   - `public/locales/en/game-betrayal.json`
   - `e2e/betrayal/first-scenario-exorcism-failure.e2e.ts`
-  - `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `temp/betrayal-playability-overhaul-2026-07-14.json`
 - [x] 本轮已锁定并验证的 current truth：
@@ -7005,7 +7005,7 @@
   - `public/locales/zh-CN/game-betrayal.json`
   - `public/locales/en/game-betrayal.json`
   - `docs/testing-best-practices.md`
-  - `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `temp/betrayal-playability-overhaul-2026-07-14.json`
 - [x] 本轮已锁定并验证的 current truth：
@@ -7026,9 +7026,9 @@
 - [x] 山屋惊魂《大宅饿了》已补真实页面六段 E2E：
   - `e2e/betrayal/event-choice-coverage.e2e.ts`
   - `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`
-  - `docs/ai-rules/e2e-verification.md`
-  - `docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md`
-  - `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`
+  - `.spec/knowledge/standards/e2e-verification.md`
+  - `docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `temp/betrayal-playability-overhaul-2026-07-14.json`
 - [x] 本轮已锁定并验证的 current truth：
@@ -7093,7 +7093,7 @@
   - `e2e/betrayal/event-choice-coverage.e2e.ts`
   - `src/games/betrayal/Board.tsx`
   - `src/games/betrayal/__tests__/Board.foundation.test.tsx`
-  - `docs/games/betrayal/workflows/betrayal-playability-audit-2026-07-14.md`
+  - `docs/games/betrayal/records/betrayal-playability-audit-2026-07-14.md`
   - `evidence/betrayal-playability-overhaul-2026-07-14.md`
   - `progress.md`
   - `findings.md`

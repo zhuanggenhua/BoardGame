@@ -75,7 +75,7 @@
 
 ## 当前已确认事实
 
-- 用户最新纠偏后的当前目标是“实现漏掉的规则”，不是“做全面端到端出图”。因此当前真相源是 `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md`、灰尘子账本、总规则拆解、覆盖矩阵和当前源码 / 测试，而不是旧截图清单或旧可玩性计划。
+- 用户最新纠偏后的当前目标是“实现漏掉的规则”，不是“做全面端到端出图”。因此当前真相源是 `docs/games/betrayal/records/betrayal-dust-rule-gap-plan-2026-07-26.md`、灰尘子账本、总规则拆解、覆盖矩阵和当前源码 / 测试，而不是旧截图清单或旧可玩性计划。
 - 用户最初点名的四类基础规则不是“都没做”。当前证据显示：开局五张剧本卡选择和共同确认已有 Board 覆盖；属性提升 / 伤害会按属性轨位置移动，重复数值不会吞掉位置变化，且 Board 角色板按轨道位置显示；作祟判定风险按全员预兆数量显示，圣符预兆翻出后同屏展示作祟检定；新房间放置面板已补 Board 回归，玩家旋转后确认会把所选朝向交给正式探索命令。对应验证为房间朝向 Board 单条 1 passed / 106 skipped、基础规则领域组合 6 passed / 403 skipped、基础规则 Board 组合 6 passed / 101 skipped、`Board.foundation.test.tsx` ESLint 0 errors。该结论只证明这些基础规则链路，不代表灰尘作祟或所有卡牌规则完成。
 - 当前不是只补用户最初点名的几项。计划文件已经记录了额外缺口：无需后续玩家选择的即时事件效果已进入通用发现结算队列；当前事件池中会进入玩家选择的 11 张事件已由领域测试覆盖最终事件效果确认，Board 确认合同也已覆盖这 11 张选择型事件完成玩家选择后的 `事件效果 / 确认 1/1`；房间文字直接效果已从礼拜堂代表链扩展到当前全部直接效果领域矩阵；完整真实页面 E2E 仍待继续补齐。灰尘终局边界矩阵已补兔脚窗口优先级、兔脚成功回滚终局死亡后的后继死亡叛徒胜利代表链、狂热病患怪物攻击击倒最后一名非叛徒后的叛徒胜利代表链、《标本剥制》真实事件副作用致死、兔脚成功回滚、兔脚仍失败后的叛徒胜利代表链、火炉房伤害临界终局时兔脚成功先回滚死亡并交接回合、兔脚仍失败后触发叛徒胜利的代表链，以及倒塌房间坠落伤害临界终局时兔脚成功先回滚死亡但保留坠落位置、兔脚仍失败后保留坠落位置并触发叛徒胜利的代表链，其它终局优先级仍待补；当前三把攻击武器已有 Board 可见代表链，但当前持有牌与灰尘交叉仍缺主动牌交易 / 埋葬 UI、兔脚更多组合和必要 E2E；其它作祟 setup 命令化和段落级秘密可见性仍未完成。
 - 已完成的部分必须按边界汇报：预兆发现已拆成“获得预兆 + 作祟检定”两步确认；无需后续玩家选择的即时事件效果已进入确认队列并由 Board 显示单条“事件效果”步骤；当前 11 张选择型事件《说“茄子”！》《吊死鬼》《脑状食品》《上古旧宅》《肉质苔癣》《夜幕众星》《一抹鲜红》《一瓶微尘》《大宅饿了》《一条秘密通道》《蜘蛛！》完成玩家选择后已有领域测试证明会进入事件效果确认队列，且 Board 确认合同已锁定它们会显示“事件效果 / 确认 1/1”；当前全部直接房间文字效果（礼拜堂、图书馆、书房、体育馆、储物间、杂物间）已被领域矩阵锁定为先进入 `room-effect` 确认队列，且房间效果步骤不会再显示成事件 / 物品 / 预兆牌堆步骤；灰尘两个 setup 人工确认项已落到正式命令和牌桌按钮；当前 23 张事件牌与灰尘死亡保护、当前 23 张运行持有牌的领域代表链已有大量覆盖；砍刀、匕首、指环已由 Board 测试锁住攻击武器选择区、禁用原因和伤害分配面板。但这些都不能外推成“灰尘完整作祟完成”或“山屋规则完整”。
@@ -115,7 +115,7 @@
 
 - 2026-07-15 +08：肉质苔癣已补真实页面六段链，并修正领域时序：翻出事件牌后先选择是否大口吸入，选择吸入后才投 2 颗骰；若总点数 3+，才进入奖励属性选择，选择知识后结算知识 +1 并关闭回牌桌。该链同时断言选择前没有骰盘和属性选项、吸入后才出现骰盘与属性选项、选项尺寸/开放式面板/属性颜色/滚动容器/骰盘分离均命中用户目标。边界：这只证明肉质苔癣，不证明说“茄子”！、一抹鲜红、一瓶微尘、大宅饿了或吊死鬼。
 
-- 2026-07-14 +08：正确的山屋端到端不能只看 pending、按钮、阶段承接或两张前后图。凡是牌翻出类、发现类、物品/圣符/交易/驱魔等阻塞流程，必须在同一真实页面规则链里证明：触发前可操作、对象亮相、选择/投骰时序正确、结算后果可见、关闭后回到牌桌并清掉临时状态。该口径已写入 `docs/ai-rules/e2e-verification.md` 与 `docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`。
+- 2026-07-14 +08：正确的山屋端到端不能只看 pending、按钮、阶段承接或两张前后图。凡是牌翻出类、发现类、物品/圣符/交易/驱魔等阻塞流程，必须在同一真实页面规则链里证明：触发前可操作、对象亮相、选择/投骰时序正确、结算后果可见、关闭后回到牌桌并清掉临时状态。该口径已写入 `.spec/knowledge/standards/e2e-verification.md` 与 `docs/games/betrayal/records/betrayal-playability-overhaul-plan-2026-07-14.md`。
 - 2026-07-14 +08：规范继续补硬到“缺段必须降级登记”：六段里缺任一真实页面截图或目标断言时，只能登记为阶段承接/待补完整链路，不能写成已修、已跑通或已可玩。
 - 2026-07-14 +08：当前数据合同里“先选择属性再投检定”的事件是上古旧宅、夜幕众星；蜘蛛！不是这一路线，它是先神志检定，结果达标后才选择奖励属性和相邻房间。
 - 2026-07-14 +08：BTR-03 “结算房间”不是规则动作，应回到玩家现实动作“结束回合”。当前运行时文案已改为按钮显示“结束回合”，提示说明“结束回合并处理房间效果”；`Board.foundation.test.tsx` 定向用例通过，`room-effect-representative.e2e.ts` 火炉房真实页面链通过。该结论只覆盖房间停留效果文案，不覆盖其它山屋残余项。
@@ -736,7 +736,7 @@
 
 ## 2026-05-14 通用 skill 边界重构
 
-已按 `docs/ai-rules/ui-ux.md` 重新梳理通用 skill 的写法：
+已按 `.spec/knowledge/standards/ui-ux.md` 重新梳理通用 skill 的写法：
 
 - 主界面只展示当前用户马上能决策或执行的元素，不把流程说明、实现分层或装饰标签放进主 UI。
 - 视觉态与触发方式分离：可用、armed、可落点、目标高亮来自规则/领域语义；拖拽、上滑、点击 armed 只是触发方式。
@@ -1352,7 +1352,7 @@ v12 达标点：
 - 本轮结论不是“审计完全没维度”，而是：
   - 一部分维度口径需要补硬，典型是 `D37`
   - 更大的问题是执行层级停在 `L1/L2`，没有稳定打到 `L3/L4`
-- 已在 `docs/ai-rules/testing-audit.md` 新增“深度审计流程（强制）”章节，核心变化：
+- 已在 `.spec/knowledge/standards/testing-audit.md` 新增“深度审计流程（强制）”章节，核心变化：
   - 审计前先建对象清单并标层级，不再允许模糊汇报“这一批差不多审过了”
   - 每个对象必须串完整链路，不能只核对 validator 或只跑单测
   - reaction / response window / afterScoring / onDestroy / 动态候选 / 恢复态 / 同批事件后处理，全部改成真实入口强制核对项
@@ -2083,9 +2083,9 @@ v12 达标点：
 ## Requirements Checklist
 
 - [x] 使用中文沟通与文档
-- [x] 涉及图片资源时遵循 `docs/ai-rules/asset-pipeline.md`
-- [x] 涉及图片驱动录入时遵循 `docs/ai-rules/data-entry.md`
-- [x] 涉及审计时先遵循 `docs/ai-rules/testing-audit.md`
+- [x] 涉及图片资源时遵循 `.spec/knowledge/standards/asset-pipeline.md`
+- [x] 涉及图片驱动录入时遵循 `.spec/knowledge/standards/data-entry.md`
+- [x] 涉及审计时先遵循 `.spec/knowledge/standards/testing-audit.md`
 - [x] 涉及自动化测试与 E2E 时遵循 `docs/testing-best-practices.md` 与 `docs/automated-testing.md`
 - [x] 本次任务需要独立 worktree、OpenSpec、可复刻工作流文档、Vitest、E2E、evidence
 
@@ -2388,9 +2388,9 @@ v12 达标点：
 关键规范：
 - AGENTS.md
 - openspec/AGENTS.md
-- docs/ai-rules/asset-pipeline.md
-- docs/ai-rules/data-entry.md
-- docs/ai-rules/testing-audit.md
+- .spec/knowledge/standards/asset-pipeline.md
+- .spec/knowledge/standards/data-entry.md
+- .spec/knowledge/standards/testing-audit.md
 - docs/testing-best-practices.md
 - docs/automated-testing.md
 
@@ -2405,7 +2405,7 @@ v12 达标点：
 最终 evidence：
 - D:\gongzuo\webgame\BoardGame-wt-smashup-base-faction-assets\evidence\smashup\smashup-oops-faction-intake-contract.md
 - D:\gongzuo\webgame\BoardGame-wt-smashup-base-faction-assets\evidence\smashup\smashup-oops-faction-intake-e2e-test.md
-- D:\gongzuo\webgame\BoardGame-wt-smashup-base-faction-assets\docs\games\smashup\workflows\smashup-faction-intake.md
+- D:\gongzuo\webgame\BoardGame-wt-smashup-base-faction-assets\.spec\skills\smashup-faction-intake\SKILL.md
 ```
 
 ## 2026-03-31 feedback closeout
@@ -2496,7 +2496,7 @@ v12 达标点：
 
 ## 2026-04-23 Workflow 升级补记（派系实施流程）
 
-- 已在 `docs/games/smashup/workflows/smashup-faction-implementation.md` 增补强制门禁：凡新增 `targetType: 'generic'` 的 `sourceId`，必须同步更新 `interactionTargetTypeAudit` 的 `REQUIRED_SOURCE_CONFIGS` 与 `APPROVED_GENERIC_SOURCE_REASONS`。
+- 已在 `.spec/skills/smashup-faction-implementation/SKILL.md` 增补强制门禁：凡新增 `targetType: 'generic'` 的 `sourceId`，必须同步更新 `interactionTargetTypeAudit` 的 `REQUIRED_SOURCE_CONFIGS` 与 `APPROVED_GENERIC_SOURCE_REASONS`。
 - 这次补记把“审计规则”前置到 workflow，避免后续新增派系时再次踩到“实现对了但审计登记漏了”的回归坑。
 
 ## 2026-04-24 SmashUp 三派系持续审计 Findings
@@ -2525,7 +2525,7 @@ v12 达标点：
 - 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md`：
   - 新增“长期任务连续执行模式”强制门禁（S0→S4 连续推进，不得中间收口）；
   - 明确 `continue` 的默认语义是“推进下一批执行”，不是重复汇报。
-- 已更新 `docs/games/smashup/workflows/smashup-faction-implementation.md`：
+- 已更新 `.spec/skills/smashup-faction-implementation/SKILL.md`：
   - 新增“长期任务连续执行（强制）”章节；
   - 约束在无硬阻塞时持续执行，且每次推进必须回填可复查证据与 planning 文件。
 - 已同步 Android 内置 locale：
@@ -2965,8 +2965,8 @@ v12 达标点：
   2. E2E 场景真值与 `reaction session` 审计维度还没被现有 workflow 明确提升到强制级。
 - 已回写到项目内 skill / workflow：
   - `.windsurf/skills/data-entry-workflow/SKILL.md`
-  - `docs/games/smashup/workflows/smashup-faction-implementation.md`
-  - `docs/ai-rules/testing-audit.md`
+  - `.spec/skills/smashup-faction-implementation/SKILL.md`
+  - `.spec/knowledge/standards/testing-audit.md`
 - 新增的强制点：
   - 批量派系重审必须先建对象清单，并持续推进到当前批次清空
   - `continue` 在这类任务里默认表示“继续下一个未完成对象”，不是“补 1-2 张后停下汇报”
@@ -3273,7 +3273,7 @@ v12 达标点：
 ## 2026-05-12 审计口径修正：未限定“审计”必须等于全面审计
 
 - 用户指出“审计默认指全面审计”成立；此前把专项/抽样/静态矩阵简称审计，是执行口径错误。
-- 已把规则写入 `docs/ai-rules/testing-audit.md`：抽样、专项、L1 静态必须显式命名，不能冒充全面审计。
+- 已把规则写入 `.spec/knowledge/standards/testing-audit.md`：抽样、专项、L1 静态必须显式命名，不能冒充全面审计。
 - shayu 当前真实状态：第一入口直接消费专项完成；三派系整体全面审计未完成。
 - 新总入口：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
 

@@ -27,7 +27,10 @@
       "Bash(npm exec:*)",
       "Bash(npm install:*)",
       "Bash(ANDROID_WEBVIEW_MODE=embedded npm run mobile:android:doctor)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(awk '{print $NF}')",
+      "Bash(awk '$1==\"??\"{print $2}')",
+      "Bash(rg -v '^\\\\+\\\\s*$|^\\\\-\\\\s*$')"
     ]
   }
 }
