@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -7,13 +6,13 @@ import { SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { ActionCardDef, MinionCardDef } from '../domain/types';
 import { isFactionImplementationInProgress } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const LONGZU_CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/longzu.png';
 const LONGZU_CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/longzu.webp';
 const LONGZU_BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/longzu.png';
 const LONGZU_BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/longzu.webp';
 
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 describe('SmashUp longzu 三派系接入合同', () => {
     it('longzu 卡图 atlas 已登记为三派系运行时入口', () => {
@@ -30,15 +29,22 @@ describe('SmashUp longzu 三派系接入合同', () => {
     it('cards/longzu 已进入根级与游戏级 manifest，base/longzu 不再保留在正式资源树', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
-
-        expect(rootManifest.files['zh-CN/smashup/cards/longzu'].variants.png.sha256)
-            .toBe(sha256(LONGZU_CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/longzu'].variants.webp.sha256)
-            .toBe(sha256(LONGZU_CARD_WEBP));
-        expect(gameManifest.files['cards/longzu'].variants.png.sha256)
-            .toBe(sha256(LONGZU_CARD_PNG));
-        expect(gameManifest.files['cards/compressed/longzu'].variants.webp.sha256)
-            .toBe(sha256(LONGZU_CARD_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/longzu',
+            gameKey: 'cards/longzu',
+            variant: 'png',
+            localPath: LONGZU_CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/longzu',
+            gameKey: 'cards/compressed/longzu',
+            variant: 'webp',
+            localPath: LONGZU_CARD_WEBP,
+        });
 
         expect(rootManifest.files['zh-CN/smashup/base/longzu']).toBeUndefined();
         expect(rootManifest.files['zh-CN/smashup/base/compressed/longzu']).toBeUndefined();

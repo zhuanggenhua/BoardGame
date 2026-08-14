@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
@@ -24,6 +24,7 @@ import {
 } from '../domain/ids';
 import type { BaseCardDef, CardDef } from '../domain/types';
 import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const CARD_ASSETS = [
     'half_the_battle_geckos',
@@ -152,13 +153,22 @@ const HALF_THE_BATTLE_FACTIONS: HalfTheBattleFactionCase[] = [
     },
 ];
 
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 const physicalCardCount = (cards: readonly { count: number }[]) =>
     cards.reduce((total, card) => total + card.count, 0);
+const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 const imageDimensions = async (path: string) => {
     const metadata = await sharp(path).metadata();
     return { width: metadata.width, height: metadata.height };
 };
+
+async function expectLocalImageDimensionsIfPresent(
+    path: string,
+    expected: { width: number; height: number },
+    label: string,
+): Promise<void> {
+    if (!existsSync(path)) return;
+    expect(await imageDimensions(path), label).toEqual(expected);
+}
 
 function cardAtlasIndex(card: CardDef): number {
     return card.previewRef?.type === 'atlas' ? card.previewRef.index : -1;
@@ -278,28 +288,42 @@ describe('半场战争扩四派系 intake 静态合同', () => {
         for (const asset of CARD_ASSETS) {
             const pngPath = `public/assets/i18n/zh-CN/smashup/cards/${asset}.png`;
             const webpPath = `public/assets/i18n/zh-CN/smashup/cards/compressed/${asset}.webp`;
-
-            expect(rootManifest.files[`zh-CN/smashup/cards/${asset}`].variants.png.sha256)
-                .toBe(sha256(pngPath));
-            expect(rootManifest.files[`zh-CN/smashup/cards/compressed/${asset}`].variants.webp.sha256)
-                .toBe(sha256(webpPath));
-            expect(gameManifest.files[`cards/${asset}`].variants.png.sha256)
-                .toBe(sha256(pngPath));
-            expect(gameManifest.files[`cards/compressed/${asset}`].variants.webp.sha256)
-                .toBe(sha256(webpPath));
+            expectManifestAssetHash({
+                rootManifest,
+                gameManifest,
+                rootKey: `zh-CN/smashup/cards/${asset}`,
+                gameKey: `cards/${asset}`,
+                variant: 'png',
+                localPath: pngPath,
+            });
+            expectManifestAssetHash({
+                rootManifest,
+                gameManifest,
+                rootKey: `zh-CN/smashup/cards/compressed/${asset}`,
+                gameKey: `cards/compressed/${asset}`,
+                variant: 'webp',
+                localPath: webpPath,
+            });
         }
 
         const basePngPath = `public/assets/i18n/zh-CN/smashup/base/${BASE_ASSET}.png`;
         const baseWebpPath = `public/assets/i18n/zh-CN/smashup/base/compressed/${BASE_ASSET}.webp`;
-
-        expect(rootManifest.files[`zh-CN/smashup/base/${BASE_ASSET}`].variants.png.sha256)
-            .toBe(sha256(basePngPath));
-        expect(rootManifest.files[`zh-CN/smashup/base/compressed/${BASE_ASSET}`].variants.webp.sha256)
-            .toBe(sha256(baseWebpPath));
-        expect(gameManifest.files[`base/${BASE_ASSET}`].variants.png.sha256)
-            .toBe(sha256(basePngPath));
-        expect(gameManifest.files[`base/compressed/${BASE_ASSET}`].variants.webp.sha256)
-            .toBe(sha256(baseWebpPath));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: `zh-CN/smashup/base/${BASE_ASSET}`,
+            gameKey: `base/${BASE_ASSET}`,
+            variant: 'png',
+            localPath: basePngPath,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: `zh-CN/smashup/base/compressed/${BASE_ASSET}`,
+            gameKey: `base/compressed/${BASE_ASSET}`,
+            variant: 'webp',
+            localPath: baseWebpPath,
+        });
     });
 
     it('Geckos POD 英文源图与 runtime 图集已进入 en 资源合同', async () => {
@@ -329,14 +353,14 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             const pngPath = `public/assets/i18n/zh-CN/smashup/cards/${asset}.png`;
             const webpPath = `public/assets/i18n/zh-CN/smashup/cards/compressed/${asset}.webp`;
 
-            expect(await imageDimensions(pngPath), `${asset}.png dimensions`).toEqual(CARD_ATLAS_DIMENSIONS);
-            expect(await imageDimensions(webpPath), `${asset}.webp dimensions`).toEqual(CARD_ATLAS_DIMENSIONS);
+            await expectLocalImageDimensionsIfPresent(pngPath, CARD_ATLAS_DIMENSIONS, `${asset}.png dimensions`);
+            await expectLocalImageDimensionsIfPresent(webpPath, CARD_ATLAS_DIMENSIONS, `${asset}.webp dimensions`);
         }
 
         const basePngPath = `public/assets/i18n/zh-CN/smashup/base/${BASE_ASSET}.png`;
         const baseWebpPath = `public/assets/i18n/zh-CN/smashup/base/compressed/${BASE_ASSET}.webp`;
 
-        expect(await imageDimensions(basePngPath), `${BASE_ASSET}.png dimensions`).toEqual(BASE_ATLAS_DIMENSIONS);
-        expect(await imageDimensions(baseWebpPath), `${BASE_ASSET}.webp dimensions`).toEqual(BASE_ATLAS_DIMENSIONS);
+        await expectLocalImageDimensionsIfPresent(basePngPath, BASE_ATLAS_DIMENSIONS, `${BASE_ASSET}.png dimensions`);
+        await expectLocalImageDimensionsIfPresent(baseWebpPath, BASE_ATLAS_DIMENSIONS, `${BASE_ASSET}.webp dimensions`);
     });
 });

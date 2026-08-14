@@ -1,15 +1,13 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { getFactionCards } from '../data/cards';
 import { SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const MARVEL_CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/marvel_wave_one.png';
 const MARVEL_CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/marvel_wave_one.webp';
-
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 describe('SmashUp 漫威四派系资源合同', () => {
     it('marvel_wave_one 卡图 atlas 已登记为 9 x 6 共享运行时入口', () => {
@@ -25,14 +23,22 @@ describe('SmashUp 漫威四派系资源合同', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
-        expect(rootManifest.files['zh-CN/smashup/cards/marvel_wave_one'].variants.png.sha256)
-            .toBe(sha256(MARVEL_CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/marvel_wave_one'].variants.webp.sha256)
-            .toBe(sha256(MARVEL_CARD_WEBP));
-        expect(gameManifest.files['cards/marvel_wave_one'].variants.png.sha256)
-            .toBe(sha256(MARVEL_CARD_PNG));
-        expect(gameManifest.files['cards/compressed/marvel_wave_one'].variants.webp.sha256)
-            .toBe(sha256(MARVEL_CARD_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/marvel_wave_one',
+            gameKey: 'cards/marvel_wave_one',
+            variant: 'png',
+            localPath: MARVEL_CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/marvel_wave_one',
+            gameKey: 'cards/compressed/marvel_wave_one',
+            variant: 'webp',
+            localPath: MARVEL_CARD_WEBP,
+        });
     });
 
     it('四个漫威派系都使用共享 atlas，且各自实体牌数量为 20', () => {

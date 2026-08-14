@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -13,13 +12,12 @@ import {
 } from '../data/factions/international_incident';
 import { SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/international_incident.png';
 const CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/international_incident.webp';
 const BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/international_incident_bases.png';
 const BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/international_incident_bases.webp';
-
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 function physicalCardCount(cards: Array<{ count: number }>): number {
     return cards.reduce((total, card) => total + card.count, 0);
@@ -47,23 +45,38 @@ describe('国际事件四派系资源与静态合同', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
-        expect(rootManifest.files['zh-CN/smashup/cards/international_incident'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/international_incident'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(rootManifest.files['zh-CN/smashup/base/international_incident_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(rootManifest.files['zh-CN/smashup/base/compressed/international_incident_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
-
-        expect(gameManifest.files['cards/international_incident'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(gameManifest.files['cards/compressed/international_incident'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(gameManifest.files['base/international_incident_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(gameManifest.files['base/compressed/international_incident_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/international_incident',
+            gameKey: 'cards/international_incident',
+            variant: 'png',
+            localPath: CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/international_incident',
+            gameKey: 'cards/compressed/international_incident',
+            variant: 'webp',
+            localPath: CARD_WEBP,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/international_incident_bases',
+            gameKey: 'base/international_incident_bases',
+            variant: 'png',
+            localPath: BASE_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/compressed/international_incident_bases',
+            gameKey: 'base/compressed/international_incident_bases',
+            variant: 'webp',
+            localPath: BASE_WEBP,
+        });
     });
 
     it('四个派系各自注册为 20 张实体牌并只消费 playable 槽位 0-50', () => {

@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -15,13 +14,12 @@ import {
 import { SMASHUP_ATLAS_DEFINITIONS, getSmashUpAtlasImageById } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { FACTION_METADATA } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/excellent_movies_teens.png';
 const CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/excellent_movies_teens.webp';
 const BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/excellent_movies_teens_bases.png';
 const BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/excellent_movies_teens_bases.webp';
-
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 function physicalCardCount(cards: ReadonlyArray<{ count: number }>): number {
     return cards.reduce((total, card) => total + card.count, 0);
@@ -61,22 +59,38 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
-        expect(rootManifest.files['zh-CN/smashup/cards/excellent_movies_teens'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/excellent_movies_teens'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(rootManifest.files['zh-CN/smashup/base/excellent_movies_teens_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(rootManifest.files['zh-CN/smashup/base/compressed/excellent_movies_teens_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
-        expect(gameManifest.files['cards/excellent_movies_teens'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(gameManifest.files['cards/compressed/excellent_movies_teens'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(gameManifest.files['base/excellent_movies_teens_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(gameManifest.files['base/compressed/excellent_movies_teens_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/excellent_movies_teens',
+            gameKey: 'cards/excellent_movies_teens',
+            variant: 'png',
+            localPath: CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/excellent_movies_teens',
+            gameKey: 'cards/compressed/excellent_movies_teens',
+            variant: 'webp',
+            localPath: CARD_WEBP,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/excellent_movies_teens_bases',
+            gameKey: 'base/excellent_movies_teens_bases',
+            variant: 'png',
+            localPath: BASE_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/compressed/excellent_movies_teens_bases',
+            gameKey: 'base/compressed/excellent_movies_teens_bases',
+            variant: 'webp',
+            localPath: BASE_WEBP,
+        });
     });
 
     it('五个派系各自注册 20 张实体牌，且只消费槽位 0-65', () => {
