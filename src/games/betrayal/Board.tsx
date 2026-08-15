@@ -5396,25 +5396,26 @@ function BetrayalHouseDice3DGroup({
   rerollSelection?: RecentRollRerollSelection | null;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
-  const diceSignature = roll.dice.join(",");
+  const rollDice = roll.dice;
+  const diceSignature = rollDice.join(",");
   const diceInputs = React.useMemo(
     () =>
-      roll.dice.map((pip, index) => ({
+      rollDice.map((pip, index) => ({
         id: index + 1,
         value: resolveBetrayalHouseD6Face(pip),
       })),
-    [diceSignature],
+    [rollDice],
   );
   const physicalD6Faces = React.useMemo(
-    () => roll.dice.map(resolveBetrayalHouseD6Face),
-    [diceSignature],
+    () => rollDice.map(resolveBetrayalHouseD6Face),
+    [rollDice],
   );
   const dieSkins = React.useMemo(
     () =>
-      roll.dice.map((pip) =>
+      rollDice.map((pip) =>
         createBetrayalHouseDiceSkin(normalizeBetrayalHouseRuleValue(pip)),
       ),
-    [diceSignature],
+    [rollDice],
   );
   const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
   const rerollingDiceIds = React.useMemo(
@@ -5431,14 +5432,14 @@ function BetrayalHouseDice3DGroup({
   }, [diceSignature, roll.id]);
   const visibleRuleValues = React.useMemo(
     () =>
-      roll.dice.map((pip, index) => {
+      rollDice.map((pip, index) => {
         const physicalValue = physicsStates[index]?.value;
         return physicalValue
           ? (BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE[physicalValue] ??
               normalizeBetrayalHouseRuleValue(pip))
           : normalizeBetrayalHouseRuleValue(pip);
       }),
-    [physicsStates, diceSignature],
+    [physicsStates, rollDice],
   );
   const allowedRerollDieIndices = rerollSelection?.allowedDieIndices;
   const selectableDiceTargets = React.useMemo(() => {
@@ -5454,7 +5455,7 @@ function BetrayalHouseDice3DGroup({
       .filter(
         (target) =>
           target.dieIndex >= 0 &&
-          target.dieIndex < roll.dice.length &&
+          target.dieIndex < rollDice.length &&
           (!allowedDieIndexSet || allowedDieIndexSet.has(target.dieIndex)),
       );
 
@@ -5463,8 +5464,8 @@ function BetrayalHouseDice3DGroup({
     }
 
     const spacing = 82;
-    const totalWidth = Math.max(0, (roll.dice.length - 1) * spacing);
-    return roll.dice
+    const totalWidth = Math.max(0, (rollDice.length - 1) * spacing);
+    return rollDice
       .map((_, dieIndex) => ({
         dieIndex,
         layout: {
@@ -5490,7 +5491,7 @@ function BetrayalHouseDice3DGroup({
       .filter(
         (target) => !allowedDieIndexSet || allowedDieIndexSet.has(target.dieIndex),
       );
-  }, [allowedRerollDieIndices, physicsStates, diceSignature]);
+  }, [allowedRerollDieIndices, physicsStates, rollDice]);
   const handleRerollTargetKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>, dieIndex: number) => {
       if (!rerollSelection) return;
@@ -7953,17 +7954,10 @@ export default function BetrayalBoard({
     runtimeViewport.safeArea.top,
     runtimeViewport.width,
   ]);
-  const inventoryGroups = React.useMemo(
-    () => ({
-      item: visibleInventoryCards.filter(
-        (item) => item.kind === "item",
-      ),
-      omen: visibleInventoryCards.filter(
-        (item) => item.kind === "omen",
-      ),
-    }),
-    [visibleInventoryCards],
-  );
+  const inventoryGroups = {
+    item: visibleInventoryCards.filter((item) => item.kind === "item"),
+    omen: visibleInventoryCards.filter((item) => item.kind === "omen"),
+  };
   const visibleActivityEntries = React.useMemo(
     () =>
       core.activityLog.filter(
@@ -9226,6 +9220,7 @@ export default function BetrayalBoard({
     selectedCardCanUseRecentRollRerollItem && selectedInventoryCard
       ? selectedInventoryCard
       : null;
+  const selectedRollModifierCardId = selectedRollModifierCard?.id ?? null;
   const selectedRollModifierDieIndex = previewState.selectedRollModifierDieIndex;
   const selectedRollModifierCanConfirm = Boolean(
     selectedRollModifierCard &&
@@ -9233,11 +9228,11 @@ export default function BetrayalBoard({
       selectedCardRecentRollRerollDieIndices.includes(selectedRollModifierDieIndex),
   );
   const confirmSelectedRollModifier = React.useCallback(() => {
-    if (!selectedRollModifierCard || selectedRollModifierDieIndex === null) {
+    if (selectedRollModifierCardId === null || selectedRollModifierDieIndex === null) {
       return;
     }
     dispatchCommand(BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM, {
-      cardId: selectedRollModifierCard.id,
+      cardId: selectedRollModifierCardId,
       dieIndex: selectedRollModifierDieIndex,
     });
     setInventoryPreviewCardId(null);
@@ -9248,7 +9243,7 @@ export default function BetrayalBoard({
     }));
   }, [
     dispatchCommand,
-    selectedRollModifierCard,
+    selectedRollModifierCardId,
     selectedRollModifierDieIndex,
   ]);
   const finalizePendingEventRoll = React.useCallback(() => {
@@ -9260,20 +9255,16 @@ export default function BetrayalBoard({
       rollId: pending.rollId,
     });
   }, [core.pendingEventRollResolution, dispatchCommand]);
-  const rollModifierCardIds = React.useMemo(
-    () =>
-      new Set(
-        visibleInventoryCards
-          .filter((card) =>
-            canUseRecentRollRerollItemForRecentRoll(
-              core,
-              inventoryActionPlayerId,
-              card.id,
-            ),
-          )
-          .map((card) => card.id),
-      ),
-    [core, inventoryActionPlayerId, visibleInventoryCards],
+  const rollModifierCardIds = new Set(
+    visibleInventoryCards
+      .filter((card) =>
+        canUseRecentRollRerollItemForRecentRoll(
+          core,
+          inventoryActionPlayerId,
+          card.id,
+        ),
+      )
+      .map((card) => card.id),
   );
   const selectedCardNeedsTargetRoom =
     selectedInventoryUseEffectMode === "moveOthersInRoom";
@@ -11079,6 +11070,7 @@ export default function BetrayalBoard({
     core.scenarioRuntime.hauntTriggered,
     core.scenarioRuntime.triggeringOmenId,
     hauntRevealAutoOpenKey,
+    hauntRevealDiscoveryKey,
     referenceOpen,
     scenarioReaderOpen,
     shouldShowHauntRevealCue,
@@ -11563,7 +11555,7 @@ export default function BetrayalBoard({
   const renderLatestDiscoveryContinueButton = (
     actionPosition: "panel-corner" | "bottom",
     className: string,
-    options: { disabledWhilePendingRoll?: boolean } = {},
+    _options: { disabledWhilePendingRoll?: boolean } = {},
   ) => (
     <button
       type="button"
