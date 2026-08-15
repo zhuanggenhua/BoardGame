@@ -2003,6 +2003,10 @@
       "name": "Kaiju",
       "description": "Devastate bases with titan support, play-on-base actions, and breakpoint pressure."
     },
+    "kaiju_pod": {
+      "name": "Kaiju (POD)",
+      "description": "A POD-ready Kaiju deck with its own card atlas while sharing the ordinary Kaiju gameplay, bases, and titan."
+    },
     "magical_girls": {
       "name": "Magical Girls",
       "description": "Scale talents and recovery effects with the number of your minions at a base."
@@ -2163,6 +2167,10 @@
       "name": "Anansi Tales",
       "description": "Give stories and cards away, then profit when those borrowed gifts travel through other players' hands."
     },
+    "anansi_tales_pod": {
+      "name": "Anansi Tales (POD)",
+      "description": "The POD card set with its own atlas, sharing the classic Anansi Tales card-gifting gameplay and bases."
+    },
     "grimms_fairy_tales": {
       "name": "Grimms' Fairy Tales",
       "description": "Pair storybook characters, chain names, and turn classic duos into extra plays."
@@ -2170,6 +2178,10 @@
     "russian_fairy_tales": {
       "name": "Russian Fairy Tales",
       "description": "Transform minions through decks, retrieve story counterparts, and recycle threats at tricky timings."
+    },
+    "russian_fairy_tales_pod": {
+      "name": "Russian Fairy Tales (POD)",
+      "description": "The POD card set with its own atlas, sharing the classic transformation gameplay and bases."
     },
     "ancient_incas": {
       "name": "Ancient Incas",
@@ -2306,6 +2318,10 @@
     "action_heroes": {
       "name": "Action Heroes",
       "description": "Big solo minions, one-minion bases, and breakpoint pressure."
+    },
+    "action_heroes_pod": {
+      "name": "Action Heroes (POD)",
+      "description": "A standalone POD atlas and base identity for Action Heroes, sharing the classic big-solo-minion and breakpoint-pressure gameplay."
     },
     "backtimers": {
       "name": "Backtimers",
@@ -6787,6 +6803,62 @@
       "name": "Kaijookey",
       "abilityText": "Ongoing: This minion has +1 power for each of your actions played on this base."
     },
+    "kaiju_stomp_pod": {
+      "name": "Stomp",
+      "effectText": "Play on a base. Reduce its breakpoint by 3 until the end of the turn. Ongoing: You gain +2 power here."
+    },
+    "kaiju_radioactive_breath_pod": {
+      "name": "Radioactive Breath",
+      "effectText": "Play on a base. Destroy any number of minions here of power 2 or less. Ongoing: You gain +3 power here."
+    },
+    "kaiju_tail_smash_pod": {
+      "name": "Tail Smash",
+      "effectText": "Play on a base. Destroy a minion you don’t control here of power 3 or less. Ongoing: You gain +4 power here."
+    },
+    "kaiju_wade_through_the_buildings_pod": {
+      "name": "Wade Through the Buildings",
+      "effectText": "Play on a base. Destroy all other players’ actions on this base. Ongoing: You gain +4 power here."
+    },
+    "kaiju_oh_no_pod": {
+      "name": "Oh, No!",
+      "effectText": "Play on a base. Play or move Gorgodzolla to here. Ongoing: You gain +2 power here."
+    },
+    "kaiju_pick_up_a_bus_pod": {
+      "name": "Pick Up a Bus",
+      "effectText": "Choose an action in your discard pile that can be played on a base and place it into your hand."
+    },
+    "kaiju_the_folly_of_men_pod": {
+      "name": "The Folly of Men",
+      "effectText": "Play on a base. Ongoing: Your minions and other actions on this base cannot be destroyed by other players' cards. You gain +2 power here."
+    },
+    "kaiju_kaiju_conflict_pod": {
+      "name": "Kaiju Conflict",
+      "effectText": "Play two extra actions."
+    },
+    "kaiju_there_goes_tokyo_pod": {
+      "name": "There Goes Tokyo",
+      "effectText": "If Gorgodzolla is in play, destroy its base. Move Gorgodzolla to another base and replace the destroyed base normally."
+    },
+    "kaiju_they_say_hes_got_to_go_pod": {
+      "name": "They Say He’s Got to Go",
+      "effectText": "Move a titan to another base."
+    },
+    "kaiju_kaiju_alliance_pod": {
+      "name": "Kaiju Alliance",
+      "effectText": "Reduce the breakpoint of all bases by 4 until the end of the turn."
+    },
+    "kaiju_johnny_pod": {
+      "name": "Johnny",
+      "abilityText": "You may return one of your actions on a base to your hand and play it here as an extra action."
+    },
+    "kaiju_tiny_priestesses_pod": {
+      "name": "Tiny Priestesses",
+      "abilityText": "Play or move Gorgodzolla to here."
+    },
+    "kaiju_kaijookey_pod": {
+      "name": "Kaijookey",
+      "abilityText": "Ongoing: This minion has +1 power for each of your actions played on this base."
+    },
     "base_akihabara_high": {
       "name": "Akihabara High",
       "abilityText": "After you play a minion here, your other minions here gain +1 power until the end of the turn."
@@ -6800,6 +6872,10 @@
       "abilityText": "After you play an action on this base, you gain +3 power here until the end of the turn."
     },
     "base_kaiju_island": {
+      "name": "Kaiju Island",
+      "abilityText": "Titans here do not make other titans leave. Each titan here adds +3 power to its controller’s power here."
+    },
+    "base_kaiju_island_pod": {
       "name": "Kaiju Island",
       "abilityText": "Titans here do not make other titans leave. Each titan here adds +3 power to its controller’s power here."
     },
@@ -8844,6 +8920,122 @@
       "abilityText": "You may give control of this minion to another player to shuffle another one of their minions here into its owner’s deck."
     },
     "russian_fairy_tales_mass_transformation": {
+      "name": "Mass Transformation",
+      "effectText": "Each player places their hand on the bottom of their deck and draws an equal number of cards."
+    },
+    "anansi_tales_anansi_the_spider_pod": {
+      "name": "Anansi the Spider",
+      "abilityText": "Talent: Search your deck for a standard action and play it as an extra action. Then place it into another player’s hand instead of where it would normally go. You cannot play any copy of that action again this turn."
+    },
+    "anansi_tales_osebo_the_leopard_pod": {
+      "name": "Osebo the Leopard",
+      "abilityText": "Ongoing: After you place a card into another player’s hand, place a +1 power counter on this minion."
+    },
+    "anansi_tales_onini_the_python_pod": {
+      "name": "Onini the Python",
+      "abilityText": "Ongoing: After another player plays or discards a card they don't own from a hand or deck, you may place a +1 power counter on one of your minions."
+    },
+    "anansi_tales_akye_the_turtle_pod": {
+      "name": "Akye the Turtle",
+      "abilityText": "You may place a card from your hand into another player’s hand to draw two cards."
+    },
+    "anansi_tales_mboro_hornet_pod": {
+      "name": "Mboro Hornet",
+      "abilityText": "Special: After another player plays or discards a card they don't own from a hand or deck, you may play this minion as an extra minion."
+    },
+    "anansi_tales_the_perfect_gift_pod": {
+      "name": "The Perfect Gift",
+      "effectText": "Search your deck for a standard action and play it as an extra action. Then place it into another player’s hand instead of where it would normally go."
+    },
+    "anansi_tales_pot_of_beans_pod": {
+      "name": "Pot of Beans",
+      "effectText": "Place two +1 power counters total on minions. Place this card into another player’s hand."
+    },
+    "anansi_tales_collecting_stories_pod": {
+      "name": "Collecting Stories",
+      "effectText": "Look at another player’s hand. You may play a card you own from their hand as an extra card."
+    },
+    "anansi_tales_ear_of_corn_pod": {
+      "name": "Ear of Corn",
+      "effectText": "Shuffle up to three actions from your discard pile into your deck and play an extra action. Place this card into another player’s hand."
+    },
+    "anansi_tales_pot_of_wisdom_pod": {
+      "name": "Pot of Wisdom",
+      "effectText": "Draw a card for each other player, then place a card from your hand into each other player’s hand. Play an extra action."
+    },
+    "anansi_tales_trading_stories_pod": {
+      "name": "Trading Stories",
+      "effectText": "You may place up to three cards from your hand into other players’ hands. For each one placed, draw a card."
+    },
+    "anansi_tales_let_it_be_full_and_eat_pod": {
+      "name": "Let it be Full and Eat",
+      "effectText": "Draw two cards. Place this card into another player’s hand."
+    },
+    "anansi_tales_feather_gifts_pod": {
+      "name": "Feather Gifts",
+      "effectText": "Move one of your minions to another base. Place this card into another player’s hand."
+    },
+    "russian_fairy_tales_the_birch_woman_pod": {
+      "name": "The Birch Woman",
+      "abilityText": "Ongoing: After this minion goes to the discard pile from play, you may search your hand, deck, and/or discard pile for The Birch, and add it to your hand or play it as an extra minion."
+    },
+    "russian_fairy_tales_finist_the_falcon_pod": {
+      "name": "Finist the Falcon",
+      "abilityText": "Special: Before a base scores, you may move this minion to there, or return this minion from there to your hand and play it on another base as an extra minion."
+    },
+    "russian_fairy_tales_baba_yaga_pod": {
+      "name": "Baba Yaga",
+      "abilityText": "Talent: Place another minion here on the bottom of its owner’s deck to have them play a minion off the top of their deck here as an extra minion, then shuffle their deck."
+    },
+    "russian_fairy_tales_the_frog_princess_pod": {
+      "name": "The Frog Princess",
+      "effectText": "Play on one of your minions. Talent: Place this minion on the bottom of its owner’s deck to play a minion off the top of your deck here as an extra minion and transfer this action to it, then shuffle your deck."
+    },
+    "russian_fairy_tales_the_water_of_life_pod": {
+      "name": "The Water of Life",
+      "effectText": "Place a minion from your discard pile on top of your deck. You may play an extra action."
+    },
+    "russian_fairy_tales_fetch_i_know_not_what_pod": {
+      "name": "Fetch I Know Not What",
+      "effectText": "Reveal cards from your deck until you reveal two actions. You may place any number of those actions into your hand. Shuffle the rest into your deck."
+    },
+    "russian_fairy_tales_go_i_know_not_whither_pod": {
+      "name": "Go I Know Not Whither",
+      "effectText": "Choose a base. Shuffle a random minion there controlled by each other player into its owner’s deck."
+    },
+    "russian_fairy_tales_go_see_my_sister_pod": {
+      "name": "Go See My Sister",
+      "effectText": "Play on a base. Ongoing: After you play or move one of your minions to here, you may draw a card."
+    },
+    "russian_fairy_tales_bewitched_pod": {
+      "name": "Bewitched",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. When this minion leaves play, transfer this action to another minion."
+    },
+    "russian_fairy_tales_transformation_pod": {
+      "name": "Transformation",
+      "effectText": "Place a minion on the bottom of its owner’s deck to have them play a minion off the top of their deck there as an extra minion, then shuffle their deck."
+    },
+    "russian_fairy_tales_the_birch_pod": {
+      "name": "The Birch",
+      "abilityText": "Ongoing: At the start of your turn, you may destroy this minion to search your hand, deck, and/or discard pile for The Birch Woman, and add it to your hand or play it here as an extra minion."
+    },
+    "russian_fairy_tales_tsar_eagle_pod": {
+      "name": "Tsar Eagle",
+      "abilityText": "Draw a card OR place a minion from another player’s discard pile on top of their deck."
+    },
+    "russian_fairy_tales_the_gray_wolf_pod": {
+      "name": "The Gray Wolf",
+      "abilityText": "Talent: Place this minion on top of its owner’s deck to play an extra minion here and place a +1 power counter on it."
+    },
+    "russian_fairy_tales_foolish_magician_pod": {
+      "name": "Foolish Magician",
+      "abilityText": "Draw three cards, then place three cards from your hand on the top and/or bottom of your deck in any order."
+    },
+    "russian_fairy_tales_toad_pod": {
+      "name": "Toad",
+      "abilityText": "You may give control of this minion to another player to shuffle another one of their minions here into its owner’s deck."
+    },
+    "russian_fairy_tales_mass_transformation_pod": {
       "name": "Mass Transformation",
       "effectText": "Each player places their hand on the bottom of their deck and draws an equal number of cards."
     },
@@ -10927,6 +11119,74 @@
       "effectText": "Play an extra minion on a base where you have no minions. Play an extra action."
     },
     "action_heroes_walk_away_slowly": {
+      "name": "Walk Away... Slowly",
+      "effectText": "Special: Play after a base scores. Return one of your minions there to its owner's hand."
+    },
+    "action_heroes_commandbro_pod": {
+      "name": "Commandbro",
+      "abilityText": "Ongoing: At the end of your turn, if this is your only minion here, draw a card."
+    },
+    "action_heroes_gracie_brones_pod": {
+      "name": "Gracie Brones",
+      "abilityText": "Ongoing: At the start of your turn, if this is your only minion here, you may place a +1 power counter on this minion and give it an additional +1 power until the end of the turn for each +1 power counter on it."
+    },
+    "action_heroes_kickboxbro_pod": {
+      "name": "Kickboxbro",
+      "abilityText": "Ongoing: At the end of your turn, you may store a card from your hand under this card. Talent: Play an action stored under this card as an extra action. Special: Before this base scores, if this is your only minion here, you may use this minion's talent."
+    },
+    "action_heroes_robobro_pod": {
+      "name": "Robobro",
+      "abilityText": "Ongoing: After another player plays or moves a minion to here, you may place a +1 power counter on this minion."
+    },
+    "action_heroes_rumbro_pod": {
+      "name": "Rumbro",
+      "abilityText": "Ongoing: During your turn, if this is your only minion here, the breakpoint of this base is reduced by 4."
+    },
+    "action_heroes_warbro_pod": {
+      "name": "Warbro",
+      "abilityText": "Talent: Reduce the breakpoint of a different base where you have exactly one minion by 3 until the end of the turn."
+    },
+    "action_heroes_all_out_of_bubblegum_pod": {
+      "name": "All Out of Bubblegum",
+      "effectText": "Give one of your minions +2 power until the end of the turn. If it is your only minion at that base, you may play an extra action."
+    },
+    "action_heroes_collateral_damage_pod": {
+      "name": "Collateral Damage",
+      "effectText": "Reduce the breakpoint of a base by 5 until the end of the turn."
+    },
+    "action_heroes_final_stand_pod": {
+      "name": "Final Stand",
+      "effectText": "Special: Play before a base scores where you have exactly one minion. Destroy a minion of printed power 3 or less there controlled by each other player."
+    },
+    "action_heroes_friends_through_eternity_pod": {
+      "name": "Friends Through Eternity",
+      "effectText": "Discard a card to play two extra actions."
+    },
+    "action_heroes_get_to_the_choppa_pod": {
+      "name": "Get to the Choppa!",
+      "effectText": "Move one of your minions from one base to another. If it is your only minion there, you may play an extra action."
+    },
+    "action_heroes_hostage_rescue_pod": {
+      "name": "Hostage Rescue",
+      "effectText": "Search your deck for a minion and place it on top of your deck."
+    },
+    "action_heroes_lone_wolf_pod": {
+      "name": "Lone Wolf",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. If it is your only minion here, it has +4 power instead."
+    },
+    "action_heroes_pushing_the_limit_pod": {
+      "name": "Pushing the Limit",
+      "effectText": "For each base where you have exactly one minion, either place two +1 power counters on that minion or draw a card."
+    },
+    "action_heroes_slo_mo_attack_pod": {
+      "name": "Slo-Mo Attack",
+      "effectText": "Play on a base. Talent: If you have exactly one minion here, reduce this base's breakpoint by 3 until the end of the turn. Ongoing: Your minions here are not affected by other players' actions."
+    },
+    "action_heroes_the_right_person_pod": {
+      "name": "The Right Person",
+      "effectText": "Play an extra minion on a base where you have no minions. Play an extra action."
+    },
+    "action_heroes_walk_away_slowly_pod": {
       "name": "Walk Away... Slowly",
       "effectText": "Special: Play after a base scores. Return one of your minions there to its owner's hand."
     },

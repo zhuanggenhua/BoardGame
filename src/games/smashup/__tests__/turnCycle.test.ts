@@ -1113,13 +1113,14 @@ describe('手牌超限弃牌', () => {
 // ============================================================================
 
 describe('≥15 VP 胜利检查', () => {
-    it('基地计分完成后进入 draw 时，VP >= VP_TO_WIN 触发游戏结束', () => {
-        // 选秀后注入高 VP
+    it('VP 达标后会先结算 endTurn 能力，再锁定游戏结束', () => {
         const runner1 = createRunner();
         const draftResult = runner1.run({
             name: '选秀',
             commands: DRAFT_COMMANDS,
         });
+        const base0 = draftResult.finalState.core.bases[0];
+        const startingHandSize = draftResult.finalState.core.players['0'].hand.length;
         const modifiedState: MatchState<SmashUpCore> = {
             ...draftResult.finalState,
             core: {
@@ -1131,28 +1132,58 @@ describe('≥15 VP 胜利检查', () => {
                         vp: VP_TO_WIN,
                     },
                 },
+                bases: [
+                    {
+                        ...base0,
+                        minions: [
+                            ...base0.minions,
+                            {
+                                uid: 'victory-de-minion',
+                                defId: 'steampunk_steam_man',
+                                controller: '0',
+                                owner: '0',
+                                power: 2,
+                                powerCounters: 0,
+                                powerModifier: 0,
+                                tempPowerModifier: 0,
+                                attachedActions: [],
+                            },
+                        ],
+                        ongoingActions: [
+                            ...base0.ongoingActions,
+                            {
+                                uid: 'victory-de-ongoing',
+                                defId: 'steampunk_difference_engine',
+                                ownerId: '0',
+                                metadata: {},
+                            },
+                        ],
+                    },
+                    ...draftResult.finalState.core.bases.slice(1),
+                ],
             },
         };
 
         const runner2 = createRunner(() => modifiedState);
         const result = runner2.run({
-            name: 'VP 达标游戏结束',
+            name: 'VP 达标后先结算回合结束能力',
             commands: [
-        // P0 回合：playCards → 多轮自动推进（计分完成后进入 draw 时即可检查 isGameOver）
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
             ] as any[],
         });
 
-        // isGameOver 应该在基地计分链结束后检测到 P0 VP >= 15
         const core = result.finalState.core;
         expect(core.players['0'].vp).toBeGreaterThanOrEqual(VP_TO_WIN);
+        // 正常 draw 2 张 + Difference Engine 在 endTurn 再抽 1 张，证明没有在 draw 阶段抢跑。
+        expect(core.players['0'].hand.length).toBe(startingHandSize + DRAW_PER_TURN + 1);
+        expect(result.finalState.sys.phase).toBe('endTurn');
+        expect(core.currentPlayerIndex).toBe(0);
+        expect(core.gameResult?.winner).toBe('0');
+        expect(result.finalState.sys.gameover?.winner).toBe('0');
 
-        // GameTestRunner 在 isGameOver 返回结果时 break，
-        // 验证 isGameOver 确实返回了胜利结果
         const gameOver = SmashUpDomain.isGameOver!(core);
         expect(gameOver).toBeDefined();
         expect(gameOver!.winner).toBe('0');
-        expect(gameOver!.scores).toBeDefined();
         expect(gameOver!.scores!['0']).toBeGreaterThanOrEqual(VP_TO_WIN);
     });
 
@@ -1178,13 +1209,13 @@ describe('≥15 VP 胜利检查', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(1);
     });
 
-    it('未到基地计分完成后的结算时机时，即使 VP 达标也不应提前结束', () => {
+    it('运行态只接受 endTurn 已锁定的 gameResult，不在 draw/endTurn 直接按 VP 抢跑', () => {
         const runner = createRunner();
         const draftResult = runner.run({
             name: 'draft',
             commands: DRAFT_COMMANDS,
         });
-        const core = {
+        const core: SmashUpCore = {
             ...draftResult.finalState.core,
             turnPhase: 'playCards',
             players: {
@@ -1202,8 +1233,15 @@ describe('≥15 VP 胜利检查', () => {
         expect(SmashUpDomain.isGameOver!(core)).toBeUndefined();
 
         core.turnPhase = 'draw';
-        const gameOver = SmashUpDomain.isGameOver!(core);
-        expect(gameOver).toBeDefined();
-        expect(gameOver!.winner).toBe('0');
+        expect(SmashUpDomain.isGameOver!(core)).toBeUndefined();
+
+        core.turnPhase = 'endTurn';
+        expect(SmashUpDomain.isGameOver!(core)).toBeUndefined();
+
+        core.gameResult = {
+            winner: '0',
+            scores: { '0': VP_TO_WIN, '1': 0 },
+        };
+        expect(SmashUpDomain.isGameOver!(core)).toEqual(core.gameResult);
     });
 });

@@ -1961,6 +1961,10 @@
       "name": "怪兽",
       "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
     },
+    "kaiju_pod": {
+      "name": "怪兽（POD）",
+      "description": "POD 版怪兽，使用独立卡图，并沿用普通怪兽的玩法、基地与泰坦。"
+    },
     "magical_girls": {
       "name": "魔法少女",
       "description": "依靠同基地随从数量放大天赋、回收与移动效果。"
@@ -2121,6 +2125,10 @@
       "name": "阿南西传说",
       "description": "把故事与手牌送给别人，再借由外来卡牌流转、抽牌和力量指示物获得收益。"
     },
+    "anansi_tales_pod": {
+      "name": "阿南西传说（POD）",
+      "description": "使用独立 POD 卡图，并沿用经典阿南西传说的赠牌玩法与基地池。"
+    },
     "grimms_fairy_tales": {
       "name": "格林童话",
       "description": "让童话角色成双成对登场，通过名称关联、配对增益和额外打出编织连锁。"
@@ -2128,6 +2136,10 @@
     "russian_fairy_tales": {
       "name": "俄罗斯童话",
       "description": "把随从送回牌库、翻出新的故事角色，并用变形与检索在关键时机重塑局面。"
+    },
+    "russian_fairy_tales_pod": {
+      "name": "俄罗斯童话（POD）",
+      "description": "使用独立 POD 卡图，并沿用经典俄罗斯童话的变形玩法与基地池。"
     },
     "ancient_incas": {
       "name": "古代印加人",
@@ -2264,6 +2276,10 @@
     "action_heroes": {
       "name": "动作英雄",
       "description": "高战力单兵、单基地独行和临界点压低。"
+    },
+    "action_heroes_pod": {
+      "name": "动作英雄（POD）",
+      "description": "动作英雄 POD 版，使用独立卡图与基地身份，并沿用高战力单兵、单基地独行和临界点压低的经典打法。"
     },
     "backtimers": {
       "name": "返时者",
@@ -6737,6 +6753,62 @@
       "name": "怪兽奇曲",
       "abilityText": "持续：此随从所在基地上每有一张你打出的法术，它便获得 +1 力量。"
     },
+    "kaiju_stomp_pod": {
+      "name": "践踏",
+      "effectText": "对一个基地打出。将其摧毁点减少 3 点，直到回合结束。持续：你在这里获得 +2 力量。"
+    },
+    "kaiju_radioactive_breath_pod": {
+      "name": "放射性吐息",
+      "effectText": "对一个基地打出。摧毁这里任意数量力量 2 或更低的随从。持续：你在这里获得 +3 力量。"
+    },
+    "kaiju_tail_smash_pod": {
+      "name": "尾击",
+      "effectText": "对一个基地打出。摧毁这里一个不由你控制、力量 3 或更低的随从。持续：你在这里获得 +4 力量。"
+    },
+    "kaiju_wade_through_the_buildings_pod": {
+      "name": "蹚过建筑",
+      "effectText": "对一个基地打出。摧毁这个基地上所有其他玩家的法术。持续：你在这里获得 +4 力量。"
+    },
+    "kaiju_oh_no_pod": {
+      "name": "哦，不！",
+      "effectText": "对一个基地打出。打出或移动哥佐拉到这里。持续：你在这里获得 +2 力量。"
+    },
+    "kaiju_pick_up_a_bus_pod": {
+      "name": "拾起一辆巴士",
+      "effectText": "从你的弃牌堆中选择一张可打在基地上的法术，并将其加入手牌。"
+    },
+    "kaiju_the_folly_of_men_pod": {
+      "name": "人类的愚蠢",
+      "effectText": "对一个基地打出。持续：你在此基地的随从和其他法术不会被其他玩家的卡牌摧毁。你在这里获得 +2 力量。"
+    },
+    "kaiju_kaiju_conflict_pod": {
+      "name": "怪兽冲突",
+      "effectText": "额外打出 2 个法术。"
+    },
+    "kaiju_there_goes_tokyo_pod": {
+      "name": "东京毁灭",
+      "effectText": "如果哥佐拉在场上，摧毁它所在的基地。将哥佐拉移动到另一个基地，并照常补出替换该基地的新基地。"
+    },
+    "kaiju_they_say_hes_got_to_go_pod": {
+      "name": "他们说它该走了",
+      "effectText": "把一个泰坦移动到另一个基地。"
+    },
+    "kaiju_kaiju_alliance_pod": {
+      "name": "怪兽联盟",
+      "effectText": "将所有基地的摧毁点减少 4 点，直到回合结束。"
+    },
+    "kaiju_johnny_pod": {
+      "name": "约翰",
+      "abilityText": "你可以将一个打在基地上的己方法术返回手牌，并将其作为额外法术打在这里。"
+    },
+    "kaiju_tiny_priestesses_pod": {
+      "name": "小祭女",
+      "abilityText": "打出或移动哥佐拉到本基地。"
+    },
+    "kaiju_kaijookey_pod": {
+      "name": "怪兽奇曲",
+      "abilityText": "持续：此随从所在基地上每有一张你打出的法术，它便获得 +1 力量。"
+    },
     "base_akihabara_high": {
       "name": "秋叶原",
       "abilityText": "在你打出一个随从到这里后，你在这里的其他随从直到回合结束获得 +1 力量。"
@@ -6750,6 +6822,10 @@
       "abilityText": "在你于本基地打出一个法术后，你在这里直到回合结束获得 +3 力量。"
     },
     "base_kaiju_island": {
+      "name": "怪兽岛",
+      "abilityText": "这里的泰坦不会让其他泰坦离场。这里的每个泰坦都会让其控制者在这里获得 +3 力量。"
+    },
+    "base_kaiju_island_pod": {
       "name": "怪兽岛",
       "abilityText": "这里的泰坦不会让其他泰坦离场。这里的每个泰坦都会让其控制者在这里获得 +3 力量。"
     },
@@ -8802,6 +8878,122 @@
       "abilityText": "你可以将此随从的控制权交给另一名玩家，以将他们在这里的另一个随从洗入其拥有者的牌库。"
     },
     "russian_fairy_tales_mass_transformation": {
+      "name": "弥撒变化",
+      "effectText": "每名玩家将其手牌放到其牌库底，然后抽同等数量的牌。"
+    },
+    "anansi_tales_anansi_the_spider_pod": {
+      "name": "蜘蛛阿南西",
+      "abilityText": "天赋：从你的牌库中搜索一张标准行动并作为额外行动打出。然后将其放入另一名玩家手中，而不是放到它通常会去的地方。本回合你不能再次打出任何同名行动。"
+    },
+    "anansi_tales_osebo_the_leopard_pod": {
+      "name": "奥塞波豹",
+      "abilityText": "持续：你将一张牌放入另一名玩家手中后，在此随从上放置一个 +1 力量指示物。"
+    },
+    "anansi_tales_onini_the_python_pod": {
+      "name": "奥尼尼巨蟒",
+      "abilityText": "持续：另一名玩家从手牌或牌库打出或弃置一张不属于他们的牌后，你可以在你的一个随从上放置一个 +1 力量指示物。"
+    },
+    "anansi_tales_akye_the_turtle_pod": {
+      "name": "阿克耶海龟",
+      "abilityText": "你可以将你手中的一张牌放入另一名玩家手中，以抽两张牌。"
+    },
+    "anansi_tales_mboro_hornet_pod": {
+      "name": "马布罗大黄蜂",
+      "abilityText": "特殊：另一名玩家从手牌或牌库打出或弃置一张不属于他们的牌后，你可以将此随从作为额外随从打出。"
+    },
+    "anansi_tales_the_perfect_gift_pod": {
+      "name": "完美的礼物",
+      "effectText": "从你的牌库中搜索一张标准行动并作为额外行动打出。然后将其放入另一名玩家手中，而不是放到它通常会去的地方。"
+    },
+    "anansi_tales_pot_of_beans_pod": {
+      "name": "一锅豆子",
+      "effectText": "在随从上合计放置两个 +1 力量指示物。将此牌放入另一名玩家手中。"
+    },
+    "anansi_tales_collecting_stories_pod": {
+      "name": "收集故事",
+      "effectText": "查看另一名玩家的手牌。你可以从其手牌中将一张你拥有的牌作为额外牌打出。"
+    },
+    "anansi_tales_ear_of_corn_pod": {
+      "name": "玉米穗",
+      "effectText": "将你的弃牌堆中至多三张行动洗回你的牌库，并打出一个额外行动。将此牌放入另一名玩家手中。"
+    },
+    "anansi_tales_pot_of_wisdom_pod": {
+      "name": "智慧之锅",
+      "effectText": "每有一名其他玩家便抽一张牌，然后将你手中的一张牌放入每名其他玩家手中。打出一个额外行动。"
+    },
+    "anansi_tales_trading_stories_pod": {
+      "name": "交易故事",
+      "effectText": "你可以将你手中的至多三张牌放入其他玩家手中。每放入一张，抽一张牌。"
+    },
+    "anansi_tales_let_it_be_full_and_eat_pod": {
+      "name": "让它吃饱",
+      "effectText": "抽两张牌。将此牌放入另一名玩家手中。"
+    },
+    "anansi_tales_feather_gifts_pod": {
+      "name": "羽毛礼物",
+      "effectText": "移动你的一个随从到另一个基地。将此牌放入另一名玩家手中。"
+    },
+    "russian_fairy_tales_the_birch_woman_pod": {
+      "name": "白桦木女神",
+      "abilityText": "持续：此随从从场上进入弃牌堆后，你可以搜索你的手牌、牌库和/或弃牌堆寻找白桦木，并将其加入手牌或作为额外随从打出。"
+    },
+    "russian_fairy_tales_finist_the_falcon_pod": {
+      "name": "芬尼斯特猎鹰",
+      "abilityText": "特殊：基地计分前，你可以将此随从移动到那里，或者将此随从从那里返回你的手牌并作为额外随从打到另一个基地。"
+    },
+    "russian_fairy_tales_baba_yaga_pod": {
+      "name": "芭芭雅嘎",
+      "abilityText": "天赋：将这里另一个随从放到其拥有者的牌库底，让其将其牌库顶的一张随从作为额外随从打到这里，然后洗其牌库。"
+    },
+    "russian_fairy_tales_the_frog_princess_pod": {
+      "name": "青蛙公主",
+      "effectText": "打在你的一个随从上。天赋：将此随从放到其拥有者的牌库底，从你的牌库顶将一个随从作为额外随从打到这里并将此行动转移给它，然后洗你的牌库。"
+    },
+    "russian_fairy_tales_the_water_of_life_pod": {
+      "name": "生命之水",
+      "effectText": "将你弃牌堆中的一个随从放到你的牌库顶。你可以打出一个额外行动。"
+    },
+    "russian_fairy_tales_fetch_i_know_not_what_pod": {
+      "name": "我不知道要拿什么",
+      "effectText": "从你的牌库展示牌，直到展示出两张行动。你可以将其中任意数量的行动加入手牌。将其余牌洗回你的牌库。"
+    },
+    "russian_fairy_tales_go_i_know_not_whither_pod": {
+      "name": "我不知道去何处",
+      "effectText": "选择一个基地。将那里每名其他玩家控制的随机一个随从洗入其拥有者的牌库。"
+    },
+    "russian_fairy_tales_go_see_my_sister_pod": {
+      "name": "去看看我妹妹",
+      "effectText": "打在一个基地上。持续：你将你的一个随从打出或移动到这里后，你可以抽一张牌。"
+    },
+    "russian_fairy_tales_bewitched_pod": {
+      "name": "着魔",
+      "effectText": "打在一个随从上。持续：此随从获得 +2 力量。当此随从离场时，将此行动转移给另一个随从。"
+    },
+    "russian_fairy_tales_transformation_pod": {
+      "name": "变化",
+      "effectText": "将一个随从放到其拥有者的牌库底，让其从其牌库顶将一个随从作为额外随从打到那里，然后洗其牌库。"
+    },
+    "russian_fairy_tales_the_birch_pod": {
+      "name": "白桦木",
+      "abilityText": "持续：在你的回合开始时，你可以摧毁此随从，搜索你的手牌、牌库和/或弃牌堆寻找白桦木女神，并将其加入手牌或作为额外随从打到这里。"
+    },
+    "russian_fairy_tales_tsar_eagle_pod": {
+      "name": "沙皇之鹰",
+      "abilityText": "抽一张牌；或者将另一名玩家弃牌堆中的一个随从放到其牌库顶。"
+    },
+    "russian_fairy_tales_the_gray_wolf_pod": {
+      "name": "灰色之狼",
+      "abilityText": "天赋：将此随从放到其拥有者的牌库顶，以在这里打出一个额外随从并在其上放置一个 +1 力量指示物。"
+    },
+    "russian_fairy_tales_foolish_magician_pod": {
+      "name": "愚蠢的魔术师",
+      "abilityText": "抽三张牌，然后将你手中的三张牌以任意顺序放在你的牌库顶和/或牌库底。"
+    },
+    "russian_fairy_tales_toad_pod": {
+      "name": "蟾蜍",
+      "abilityText": "你可以将此随从的控制权交给另一名玩家，以将他们在这里的另一个随从洗入其拥有者的牌库。"
+    },
+    "russian_fairy_tales_mass_transformation_pod": {
       "name": "弥撒变化",
       "effectText": "每名玩家将其手牌放到其牌库底，然后抽同等数量的牌。"
     },
@@ -10885,6 +11077,74 @@
       "effectText": "在一个你没有佣兵的基地打出 1 个额外佣兵。打出 1 张额外行动。"
     },
     "action_heroes_walk_away_slowly": {
+      "name": "慢慢走开……",
+      "effectText": "特殊：一个基地计分后打出。将你在那里的 1 个佣兵返回其拥有者手牌。"
+    },
+    "action_heroes_commandbro_pod": {
+      "name": "突击兄弟",
+      "abilityText": "持续：在你的回合结束时，若这是你在此处唯一的佣兵，抓 1 张牌。"
+    },
+    "action_heroes_gracie_brones_pod": {
+      "name": "格蕾西·布朗斯",
+      "abilityText": "持续：在你的回合开始时，若这是你在此处唯一的佣兵，你可以在此佣兵上放置 1 个 +1 战力标记；此佣兵直到回合结束额外获得等同于其 +1 战力标记数量的战力。"
+    },
+    "action_heroes_kickboxbro_pod": {
+      "name": "踢拳兄弟",
+      "abilityText": "持续：在你的回合结束时，你可以将 1 张手牌储存于此牌下方。天赋：将储存在此牌下方的 1 张行动作为额外行动打出。特殊：本基地计分前，若这是你在此处唯一的佣兵，你可以使用此佣兵的天赋。"
+    },
+    "action_heroes_robobro_pod": {
+      "name": "机械兄弟",
+      "abilityText": "持续：另一位玩家打出或移动一个佣兵到此处后，你可以在此佣兵上放置 1 个 +1 战力标记。"
+    },
+    "action_heroes_rumbro_pod": {
+      "name": "乱斗兄弟",
+      "abilityText": "持续：你的回合中，若这是你在此处唯一的佣兵，本基地临界点降低 4。"
+    },
+    "action_heroes_warbro_pod": {
+      "name": "战争兄弟",
+      "abilityText": "天赋：选择另一个你恰好有 1 个佣兵的基地，其临界点降低 3 直到回合结束。"
+    },
+    "action_heroes_all_out_of_bubblegum_pod": {
+      "name": "泡泡糖用完了",
+      "effectText": "令你的 1 个佣兵获得 +2 战力直到回合结束。若它是你在该基地唯一的佣兵，你可以打出 1 张额外行动。"
+    },
+    "action_heroes_collateral_damage_pod": {
+      "name": "附带伤害",
+      "effectText": "选择一个基地，其临界点降低 5 直到回合结束。"
+    },
+    "action_heroes_final_stand_pod": {
+      "name": "最后一搏",
+      "effectText": "特殊：在一个你恰好有 1 个佣兵的基地计分前打出。摧毁其他每位玩家各自控制的 1 个印制力量 3 或更低的佣兵。"
+    },
+    "action_heroes_friends_through_eternity_pod": {
+      "name": "永恒挚友",
+      "effectText": "弃 1 张牌，以打出 2 张额外行动。"
+    },
+    "action_heroes_get_to_the_choppa_pod": {
+      "name": "快上直升机！",
+      "effectText": "将你的 1 个佣兵从一个基地移动到另一个基地。若它是你在目的基地唯一的佣兵，你可以打出 1 张额外行动。"
+    },
+    "action_heroes_hostage_rescue_pod": {
+      "name": "人质救援",
+      "effectText": "从你的牌库中检索 1 张佣兵，并将其置于你的牌库顶。"
+    },
+    "action_heroes_lone_wolf_pod": {
+      "name": "独狼",
+      "effectText": "打出到一个佣兵上。持续：此佣兵 +2 战力。若它是你在此处唯一的佣兵，改为 +4 战力。"
+    },
+    "action_heroes_pushing_the_limit_pod": {
+      "name": "突破极限",
+      "effectText": "你每有一个恰好有 1 个佣兵的基地，选择在该佣兵上放置 2 个 +1 战力标记，或抓 1 张牌。"
+    },
+    "action_heroes_slo_mo_attack_pod": {
+      "name": "慢动作攻击",
+      "effectText": "打出到一个基地上。天赋：若你在此处恰好有 1 个佣兵，本基地临界点降低 3 直到回合结束。持续：你在此处的佣兵不受其他玩家行动影响。"
+    },
+    "action_heroes_the_right_person_pod": {
+      "name": "正确人选",
+      "effectText": "在一个你没有佣兵的基地打出 1 个额外佣兵。打出 1 张额外行动。"
+    },
+    "action_heroes_walk_away_slowly_pod": {
       "name": "慢慢走开……",
       "effectText": "特殊：一个基地计分后打出。将你在那里的 1 个佣兵返回其拥有者手牌。"
     },

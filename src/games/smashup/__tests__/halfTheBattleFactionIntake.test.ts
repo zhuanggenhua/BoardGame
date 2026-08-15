@@ -34,6 +34,10 @@ const CARD_ASSETS = [
 const BASE_ASSET = 'half_the_battle_bases';
 const CARD_ATLAS_DIMENSIONS = { width: 4320, height: 4864 };
 const BASE_ATLAS_DIMENSIONS = { width: 4864, height: 1728 };
+const ENGLISH_GECKOS_ASSET = 'half_the_battle_geckos';
+const ENGLISH_GECKOS_ATLAS_DIMENSIONS = { width: 1876, height: 2100 };
+const ENGLISH_GECKOS_PNG_SHA256 = '071489bdcf5675347c52354acf3cf0eb00eac8c170ef2dba458e85a51fcbd19e';
+const ENGLISH_GECKOS_WEBP_SHA256 = '2e7b19c01ae4ad5f30fcb40ce571ad6930221f3457b09c1147541d1efaea9edd';
 
 type HalfTheBattleFactionCase = {
     factionId: string;
@@ -296,6 +300,28 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             .toBe(sha256(basePngPath));
         expect(gameManifest.files[`base/compressed/${BASE_ASSET}`].variants.webp.sha256)
             .toBe(sha256(baseWebpPath));
+    });
+
+    it('Geckos POD 英文源图与 runtime 图集已进入 en 资源合同', async () => {
+        const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
+        const gameManifest = JSON.parse(readFileSync('public/assets/i18n/en/smashup/assets-manifest.json', 'utf8'));
+        const pngPath = `public/assets/i18n/en/smashup/cards/${ENGLISH_GECKOS_ASSET}.png`;
+        const webpPath = `public/assets/i18n/en/smashup/cards/compressed/${ENGLISH_GECKOS_ASSET}.webp`;
+
+        expect(rootManifest.basePrefix).toBe('official/i18n/');
+        expect(gameManifest.basePrefix).toBe('official/i18n/en/smashup/');
+        expect(sha256(pngPath)).toBe(ENGLISH_GECKOS_PNG_SHA256);
+        expect(sha256(webpPath)).toBe(ENGLISH_GECKOS_WEBP_SHA256);
+        expect(rootManifest.files[`en/smashup/cards/${ENGLISH_GECKOS_ASSET}`].variants.png.sha256)
+            .toBe(ENGLISH_GECKOS_PNG_SHA256);
+        expect(rootManifest.files[`en/smashup/cards/compressed/${ENGLISH_GECKOS_ASSET}`].variants.webp.sha256)
+            .toBe(ENGLISH_GECKOS_WEBP_SHA256);
+        expect(gameManifest.files[`cards/${ENGLISH_GECKOS_ASSET}`].variants.png.sha256)
+            .toBe(ENGLISH_GECKOS_PNG_SHA256);
+        expect(gameManifest.files[`cards/compressed/${ENGLISH_GECKOS_ASSET}`].variants.webp.sha256)
+            .toBe(ENGLISH_GECKOS_WEBP_SHA256);
+        expect(await imageDimensions(pngPath)).toEqual(ENGLISH_GECKOS_ATLAS_DIMENSIONS);
+        expect(await imageDimensions(webpPath)).toEqual(ENGLISH_GECKOS_ATLAS_DIMENSIONS);
     });
 
     it('半场战争扩 runtime WebP 保持源 PNG 尺寸，未被展示图压缩误降采样', async () => {

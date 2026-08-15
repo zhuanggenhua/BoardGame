@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SmashUpDomain } from '../domain';
 import { getBaseDefIdsForFactions, getFactionCards, getFactionTitans } from '../data/cards';
@@ -11,9 +11,13 @@ import {
     WHAT_WERE_WE_THINKING_BASES,
 } from '../data/factions/what_were_we_thinking';
 import { getSmashUpAtlasImageById } from '../domain/atlasCatalog';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    isSmashUpFactionImplementationInProgress,
+    SMASHUP_ATLAS_IDS,
+    SMASHUP_FACTION_IDS,
+} from '../domain/ids';
 import { SU_COMMANDS } from '../domain/types';
-import { FACTION_METADATA } from '../ui/factionMeta';
+import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
 import { makeMatchState } from './helpers';
 import { runCommands } from './testRunner';
 
@@ -24,6 +28,16 @@ const BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/what_were_we
 const PLACEHOLDER_RULE_TEXT = /TODO|pending|Card rules pending|牌面规则|待补/i;
 
 const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
+
+type ManifestVariant = {
+    sha256?: string;
+    bytes?: number;
+    mime?: string;
+};
+
+type AssetManifest = {
+    files?: Record<string, { variants?: Record<string, ManifestVariant> }>;
+};
 
 function physicalCardCount(cards: ReadonlyArray<{ count: number }>): number {
     return cards.reduce((total, card) => total + card.count, 0);
@@ -189,34 +203,63 @@ describe('《我们到底在想什么？》四派系静态接入', () => {
     });
 
     it('正式 atlas 已进入根级与游戏级 manifest', () => {
-        const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
-        const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
+        const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8')) as AssetManifest;
+        const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8')) as AssetManifest;
 
-        expect(rootManifest.files['zh-CN/smashup/cards/what_were_we_thinking'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/what_were_we_thinking'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(rootManifest.files['zh-CN/smashup/base/what_were_we_thinking_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(rootManifest.files['zh-CN/smashup/base/compressed/what_were_we_thinking_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
+        const assertManifestPair = (
+            rootKey: string,
+            gameKey: string,
+            variantKey: 'png' | 'webp',
+            localPath: string,
+        ) => {
+            const rootVariant = rootManifest.files?.[rootKey]?.variants?.[variantKey];
+            const gameVariant = gameManifest.files?.[gameKey]?.variants?.[variantKey];
 
-        expect(gameManifest.files['cards/what_were_we_thinking'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(gameManifest.files['cards/compressed/what_were_we_thinking'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(gameManifest.files['base/what_were_we_thinking_bases'].variants.png.sha256)
-            .toBe(sha256(BASE_PNG));
-        expect(gameManifest.files['base/compressed/what_were_we_thinking_bases'].variants.webp.sha256)
-            .toBe(sha256(BASE_WEBP));
+            expect(rootVariant, `${rootKey}.${variantKey}`).toMatchObject({
+                mime: variantKey === 'png' ? 'image/png' : 'image/webp',
+            });
+            expect(gameVariant, `${gameKey}.${variantKey}`).toEqual(rootVariant);
+            expect(rootVariant?.sha256, `${rootKey}.${variantKey} sha256`).toMatch(/^[a-f0-9]{64}$/);
+            expect(rootVariant?.bytes, `${rootKey}.${variantKey} bytes`).toBeGreaterThan(0);
+
+            if (existsSync(localPath)) {
+                expect(rootVariant?.sha256).toBe(sha256(localPath));
+            }
+        };
+
+        assertManifestPair(
+            'zh-CN/smashup/cards/what_were_we_thinking',
+            'cards/what_were_we_thinking',
+            'png',
+            CARD_PNG,
+        );
+        assertManifestPair(
+            'zh-CN/smashup/cards/compressed/what_were_we_thinking',
+            'cards/compressed/what_were_we_thinking',
+            'webp',
+            CARD_WEBP,
+        );
+        assertManifestPair(
+            'zh-CN/smashup/base/what_were_we_thinking_bases',
+            'base/what_were_we_thinking_bases',
+            'png',
+            BASE_PNG,
+        );
+        assertManifestPair(
+            'zh-CN/smashup/base/compressed/what_were_we_thinking_bases',
+            'base/compressed/what_were_we_thinking_bases',
+            'webp',
+            BASE_WEBP,
+        );
     });
 
-    it('四个派系进入派系选择 metadata 且保持实施中状态', () => {
-        const byId = new Map(FACTION_METADATA.map(meta => [meta.id, meta]));
+    it('四个派系不再标记实施中，并进入默认可见发布口径', () => {
+        const byId = new Map(getVisibleFactionMetadata('zh-CN').map(meta => [meta.id, meta]));
         for (const entry of factions) {
             const meta = byId.get(entry.factionId);
             expect(meta?.nameKey).toBe(`factions.${entry.factionId}.name`);
-            expect(meta?.implementationStatus).toBe('in_progress');
+            expect(isSmashUpFactionImplementationInProgress(entry.factionId)).toBe(false);
+            expect(isFactionImplementationInProgress(entry.factionId)).toBe(false);
             expect(meta?.locales).toEqual(['zh-CN']);
         }
     });

@@ -49,6 +49,7 @@ const MARVEL_POD_DEFAULT_OVERRIDES = {
 } satisfies Partial<Record<SmashUpVariantSurface, SmashUpVariantRelation>>;
 
 export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantProfile[] = [
+    createVariantProfile(SMASHUP_FACTION_IDS.ACTION_HEROES, SMASHUP_FACTION_IDS.ACTION_HEROES_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.ALIENS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.PIRATES_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.NINJAS, SMASHUP_FACTION_IDS.NINJAS_POD, {
@@ -126,6 +127,7 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     }),
     createVariantProfile(SMASHUP_FACTION_IDS.VIKINGS, SMASHUP_FACTION_IDS.VIKINGS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.ITTY_CRITTERS, SMASHUP_FACTION_IDS.ITTY_CRITTERS_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.KAIJU, SMASHUP_FACTION_IDS.KAIJU_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.TIME_TRAVELERS, SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.EXPLORERS, SMASHUP_FACTION_IDS.EXPLORERS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.STAR_ROAMERS, SMASHUP_FACTION_IDS.STAR_ROAMERS_POD),
@@ -143,6 +145,18 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     }),
     createVariantProfile(SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.SHARKS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.TORNADOS, SMASHUP_FACTION_IDS.TORNADOS_POD),
+    createVariantProfile(
+        SMASHUP_FACTION_IDS.ANANSI_TALES,
+        SMASHUP_FACTION_IDS.ANANSI_TALES_POD,
+        undefined,
+        { basePool: 'shared' },
+    ),
+    createVariantProfile(
+        SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES,
+        SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES_POD,
+        undefined,
+        { basePool: 'shared' },
+    ),
 ];
 
 const profileByFactionId = new Map<string, SmashUpFactionVariantProfile>();

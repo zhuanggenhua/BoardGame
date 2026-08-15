@@ -30,3 +30,5 @@
 - SmashUp：`docs/games/smashup/user-stories/body-shop-sentence-boundary-2026-05-23.md`
 - SmashUp：`docs/games/smashup/user-stories/controller-does-not-transfer-ownership-2026-06-06.md`
 - SmashUp：`docs/games/smashup/user-stories/bear-necessities-minions-and-base-actions-2026-06-07.md`
+- SmashUp：`docs/games/smashup/user-stories/geckos-pod-english-atlas-2026-08-11.md`
+- SmashUp：`docs/games/smashup/user-stories/marvel-pod-independent-english-atlases-2026-08-12.md`

@@ -62,31 +62,22 @@ function optionHasMinionMove(option: InteractionOption, minionUid: string, toBas
     && (value as { toBaseIndex?: unknown }).toBaseIndex === toBaseIndex;
 }
 
-async function assertAtlasLoaded(page: Page, atlasId: string, minCardCount: number): Promise<void> {
-  await expect.poll(async () => page.evaluate((expectedAtlasId) => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(
-      `[data-card-atlas-id="${expectedAtlasId}"]`,
-    ));
+async function assertFactionPreviewCardsLoaded(page: Page, expectedCardCount = 12): Promise<void> {
+  await expect(page.getByTestId('faction-preview-grid')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('faction-preview-card')).toHaveCount(expectedCardCount);
+
+  await expect.poll(async () => page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="faction-preview-card"]'));
     return {
-      count: nodes.length,
-      shimmerCount: nodes.filter(node => node.classList.contains('atlas-shimmer')).length,
-      loadedCount: nodes.filter(node => Boolean(node.style.backgroundImage)).length,
+      count: cards.length,
+      imageCount: cards.filter(card => !!card.querySelector('img[src]')).length,
+      shimmerCount: cards.filter(card => !!card.querySelector('.atlas-shimmer')).length,
     };
-  }, atlasId), { timeout: 20000 }).toMatchObject({
+  }), { timeout: 20000 }).toEqual({
+    count: expectedCardCount,
+    imageCount: expectedCardCount,
     shimmerCount: 0,
   });
-
-  const summary = await page.evaluate((expectedAtlasId) => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>(
-      `[data-card-atlas-id="${expectedAtlasId}"]`,
-    ));
-    return {
-      count: nodes.length,
-      loadedCount: nodes.filter(node => Boolean(node.style.backgroundImage)).length,
-    };
-  }, atlasId);
-  expect(summary.count).toBeGreaterThanOrEqual(minCardCount);
-  expect(summary.loadedCount).toBe(summary.count);
 }
 
 async function assertNoAtlasShimmer(
@@ -104,6 +95,15 @@ async function assertNoAtlasShimmer(
         title: node.title || null,
       }))
   ), trackedAtlasIds), { timeout }).toEqual([]);
+}
+
+async function assertFactionReleasedInSelection(page: Page, factionId: string): Promise<void> {
+  await expect(page.getByTestId(`faction-implementation-banner-${factionId}`)).toHaveCount(0);
+}
+
+async function assertFocusedFactionReleased(page: Page): Promise<void> {
+  await expect(page.getByTestId('faction-detail-implementation-banner')).toHaveCount(0);
+  await expect(page.getByTestId('faction-detail-implementation-banner-label')).toHaveCount(0);
 }
 
 async function closeFactionDetailIfPresent(page: Page): Promise<void> {
@@ -145,9 +145,11 @@ async function pickFaction(
   const faction = page.getByTestId(`faction-option-${options.factionId}`);
   await faction.scrollIntoViewIfNeeded({ timeout: 15000 });
   await expect(faction).toBeVisible({ timeout: 15000 });
+  await assertFactionReleasedInSelection(page, options.factionId);
   await faction.click();
   await expect(page.getByTestId('faction-detail-panel')).toBeVisible({ timeout: 10000 });
-  await assertAtlasLoaded(page, WHAT_WERE_WE_THINKING_ATLAS_ID, 12);
+  await assertFocusedFactionReleased(page);
+  await assertFactionPreviewCardsLoaded(page);
   await options.beforeConfirm?.();
 
   const confirmButton = page.getByTestId('faction-confirm-button');
@@ -272,8 +274,11 @@ test.describe('大杀四方《我们到底在想什么？》四派系真实入�
       const option = page.getByTestId(`faction-option-${factionId}`);
       await option.scrollIntoViewIfNeeded({ timeout: 15000 });
       await expect(option).toBeVisible({ timeout: 15000 });
+      await assertFactionReleasedInSelection(page, factionId);
       await option.click();
-      await assertAtlasLoaded(page, WHAT_WERE_WE_THINKING_ATLAS_ID, 12);
+      await expect(page.getByTestId('faction-detail-panel')).toBeVisible({ timeout: 10000 });
+      await assertFocusedFactionReleased(page);
+      await assertFactionPreviewCardsLoaded(page);
       await option.screenshot({ path: testInfo.outputPath(`what-were-we-thinking-faction-option-${factionId}.png`) });
     }
 

@@ -1,0 +1,98 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "smashup",
+  "basePrefix": "official/i18n/en/smashup/",
+  "files": {
+    "cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_geckos": {
+      "variants": {
+        "webp": {
+          "sha256": "2e7b19c01ae4ad5f30fcb40ce571ad6930221f3457b09c1147541d1efaea9edd",
+          "bytes": 1518200,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/half_the_battle_geckos": {
+      "variants": {
+        "png": {
+          "sha256": "071489bdcf5675347c52354acf3cf0eb00eac8c170ef2dba458e85a51fcbd19e",
+          "bytes": 4959241,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/marvel_villains_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/marvel_wave_one_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_villains_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/marvel_wave_one_pod": {
+      "variants": {
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

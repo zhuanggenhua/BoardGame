@@ -168,14 +168,16 @@ describe('direct trigger caller contract', () => {
 
   it('deferred cleanup 和 replacement 只能由 scoring frame 驱动器补发', () => {
     const indexPath = join(SMASHUP_ROOT, 'domain', 'index.ts');
+    const scoringFinalizationPath = join(SMASHUP_ROOT, 'domain', 'scoringFinalization.ts');
     const systemsPath = join(SMASHUP_ROOT, 'domain', 'systems.ts');
     const interactionSystemPath = join(__dirname, '..', '..', '..', 'engine', 'systems', 'InteractionSystem.ts');
     const indexText = readFileSync(indexPath, 'utf8');
+    const scoringFinalizationText = readFileSync(scoringFinalizationPath, 'utf8');
     const systemsText = readFileSync(systemsPath, 'utf8');
     const interactionText = readFileSync(interactionSystemPath, 'utf8');
 
-    expect(indexText).toContain('function finalizeCurrentScoringBase');
-    expect(indexText).toContain('consumeScoringFrameDeferredPayload(state)');
+    expect(scoringFinalizationText).toContain('function finalizeCurrentScoringBase');
+    expect(scoringFinalizationText).toContain('consumeScoringFrameDeferredPayload(state)');
     expect(indexText).toContain("currentStep === 'awaiting-post-scoring-finalize'");
 
     expect(systemsText).not.toContain('getDeferredPostScoringEvents');

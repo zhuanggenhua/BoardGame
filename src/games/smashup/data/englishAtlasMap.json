@@ -2690,5 +2690,13 @@
   "base_faceless_city_pod": {
     "atlasId": "smashup:base9",
     "index": 5
+  },
+  "base_building_rooftop_pod": {
+    "atlasId": "smashup:excellent-movies-teens-bases",
+    "index": 0
+  },
+  "base_jungle_camp_pod": {
+    "atlasId": "smashup:excellent-movies-teens-bases",
+    "index": 1
   }
 }

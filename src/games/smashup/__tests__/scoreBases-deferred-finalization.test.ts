@@ -35,7 +35,9 @@ import { getScoringSession } from '../domain/scoringSession';
 import { defaultTestRandom } from './testRunner';
 import {
     expectNoPrompt,
+    getOptionalSimpleChoicePrompt,
     getPromptHandlerData,
+    getPromptOptions,
     getReactionPrompt,
     getSimpleChoicePrompt,
     withOnlyCurrentPrompt,
@@ -147,6 +149,19 @@ function withDeferredScoringFrame(
     });
 
     return nextState;
+}
+
+function findPromptOptionId(
+    prompt: any,
+    predicate: (option: any) => boolean,
+    message: string,
+) {
+    const options = getPromptOptions(prompt);
+    const option = options.find(predicate);
+    if (!option) {
+        throw new Error(`${message}: ${JSON.stringify(options.map((item: any) => item.id))}`);
+    }
+    return option.id;
 }
 
 describe('scoreBases 延迟清场 / 最终化', () => {
@@ -1305,5 +1320,146 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         expect(baseReplacementWarnings, baseReplacementWarningStacks.join('\n')).toHaveLength(0);
         expect(resolved.events.some(event => event.type === INTERACTION_EVENTS.RESOLVED)).toBe(true);
         expectNoPrompt(runner.getState());
+    });
+
+    it('afterScoring 移走的大副不应再触发计分清场弃牌能力，剩余己方随从仍会各自触发', () => {
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems: smashUpSystemsForTest,
+            playerIds: ['0', '1'],
+            setup: (playerIds, _random) => {
+                const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
+                sys.phase = 'scoreBases';
+
+                return {
+                    sys,
+                    core: makeCore({
+                        players: {
+                            '0': makePlayer('0', {
+                                factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.PIRATES],
+                            }),
+                            '1': makePlayer('1'),
+                        },
+                        bases: [
+                            makeBase('base_tar_pits', {
+                                minions: [
+                                    makeMinion('mate', '0', 2, 'pirate_first_mate'),
+                                    makeMinion('ally-a', '0', 4, 'samurai_ronin'),
+                                    makeMinion('ally-b', '0', 4, 'samurai_ronin'),
+                                    makeMinion('enemy', '1', 10, 'ninja_shinobi'),
+                                ],
+                            }),
+                            makeBase('base_the_jungle', {
+                                minions: [
+                                    makeMinion('shogun', '0', 5, 'samurai_shogun'),
+                                ],
+                            }),
+                        ],
+                        baseDeck: [
+                            'base_secret_garden',
+                            'base_secret_garden',
+                            'base_secret_garden',
+                            'base_secret_garden',
+                        ],
+                        scoringEligibleBaseIndices: [0],
+                    }),
+                };
+            },
+        });
+
+        const initialCore = runner.getState().core;
+        const eventLog: SmashUpEvent[] = [];
+        const scored = runner.dispatch('ADVANCE_PHASE', { playerId: '0', timestamp: 4100 });
+        expect(scored.success).toBe(true);
+        eventLog.push(...scored.events);
+
+        let firstMatePrompt = getOptionalSimpleChoicePrompt(runner.getState(), 'pirate_first_mate_choose_base');
+        if (!firstMatePrompt) {
+            const reactionPrompt = getOptionalSimpleChoicePrompt(runner.getState(), 'smashup_reaction_choose');
+            expect(reactionPrompt).toBeTruthy();
+            const reactionState = runner.getState();
+            const triggerById = new Map((reactionState.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+            const chooseFirstMate = runner.resolveInteraction(reactionPrompt!.playerId ?? '0', {
+                optionId: findPromptOptionId(
+                    reactionPrompt,
+                    option => triggerById.get(option.value?.triggerId)?.sourceDefId === 'pirate_first_mate',
+                    '找不到大副 afterScoring 触发选项',
+                ),
+            });
+            expect(chooseFirstMate.success).toBe(true);
+            eventLog.push(...chooseFirstMate.events);
+            firstMatePrompt = getSimpleChoicePrompt(runner.getState(), 'pirate_first_mate_choose_base');
+        }
+
+        const moveMate = runner.resolveInteraction(firstMatePrompt!.playerId ?? '0', {
+            optionId: findPromptOptionId(
+                firstMatePrompt,
+                option => option.value?.baseIndex === 1,
+                '找不到大副移动到另一个基地的选项',
+            ),
+        });
+        expect(moveMate.success).toBe(true);
+        eventLog.push(...moveMate.events);
+
+        if (!moveMate.events.some(event => event.type === SU_EVENTS.BASE_REPLACED)) {
+            const activePlayerId = runner.getState().core.turnOrder[runner.getState().core.currentPlayerIndex]!;
+            const finalized = runner.dispatch('ADVANCE_PHASE', {
+                playerId: activePlayerId,
+                timestamp: 4101,
+            });
+            expect(finalized.success).toBe(true);
+            eventLog.push(...finalized.events);
+        }
+
+        for (let guard = 0; guard < 3; guard++) {
+            const reactionPrompt = getOptionalSimpleChoicePrompt(runner.getState(), 'smashup_reaction_choose');
+            if (!reactionPrompt) {
+                break;
+            }
+            const reactionState = runner.getState();
+            const triggerById = new Map((reactionState.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+            const resolveShogun = runner.resolveInteraction(reactionPrompt.playerId ?? '0', {
+                optionId: findPromptOptionId(
+                    reactionPrompt,
+                    option => triggerById.get(option.value?.triggerId)?.sourceDefId === 'samurai_shogun',
+                    '找不到 Shogun 清场弃牌触发选项',
+                ),
+            });
+            expect(resolveShogun.success).toBe(true);
+            eventLog.push(...resolveShogun.events);
+        }
+
+        const shogunCounterEvents = eventLog.filter(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'shogun',
+        );
+        expect(shogunCounterEvents).toHaveLength(2);
+
+        const queuedShogunTriggers = eventLog
+            .flatMap((event: any) => event.type === SU_EVENTS.TRIGGER_QUEUED ? event.payload?.triggers ?? [] : [])
+            .filter((trigger: any) =>
+                trigger.timing === 'onMinionDiscardedFromBase'
+                && trigger.sourceDefId === 'samurai_shogun'
+                && trigger.sourceCardUid === 'shogun');
+        expect(queuedShogunTriggers.map((trigger: any) => trigger.triggerMinionUid)).not.toContain('mate');
+        const allyShogunTriggers = queuedShogunTriggers.filter((trigger: any) =>
+            ['ally-a', 'ally-b'].includes(trigger.triggerMinionUid));
+        expect(allyShogunTriggers).toHaveLength(2);
+        expect(new Set(allyShogunTriggers.map((trigger: any) => trigger.id)).size).toBe(2);
+        expect(new Set(allyShogunTriggers.map((trigger: any) => trigger.sourceEventId)).size).toBe(2);
+        expect(new Set(allyShogunTriggers.map((trigger: any) => trigger.frameId)).size).toBe(1);
+
+        const baseReplacedEventIndex = eventLog.findIndex(event => event.type === SU_EVENTS.BASE_REPLACED);
+        expect(baseReplacedEventIndex).toBeGreaterThan(0);
+        const cleanupState = eventLog.slice(0, baseReplacedEventIndex + 1).reduce(
+            (core, event) => reduce(core, event),
+            initialCore,
+        );
+        const playerDiscardUids = cleanupState.players['0'].discard.map(card => card.uid);
+        expect(playerDiscardUids).not.toContain('mate');
+        expect(playerDiscardUids).toEqual(expect.arrayContaining(['ally-a', 'ally-b']));
+        expect(cleanupState.bases.some(base =>
+            base.minions.some(minion => minion.uid === 'mate'),
+        )).toBe(true);
     });
 });

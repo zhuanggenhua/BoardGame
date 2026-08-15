@@ -13,6 +13,51 @@
         }
       }
     },
+    "en/smashup/base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "f901157e1f01d33bf47024dc42c58b49974df40e988620510c9ba644b94dfeea",
+          "bytes": 1016654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/base/compressed/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "0702bbada2cf35f45d46f55754a47a400ca57753bf3d00a4ecb6e311528367d4",
+          "bytes": 1064666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/base/disney_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "ef0b81fe9a25314903a5e22901f96639d3543cee9ff1c599f724326c16240572",
+          "bytes": 3224843,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "en/smashup/base/disney_four_faction_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "00e533350eac1b5dfe81ba891aa6e188e86697bbf50212d4524cff9b8958730d",
+          "bytes": 3341993,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "en/smashup/cards/action_heroes_pod": {
+      "variants": {
+        "png": {
+          "sha256": "eda3c17d9c5483e0930ab5d8cdfb3ae632c6d1004699c98b79298302d21954bc",
+          "bytes": 7080408,
+          "mime": "image/png"
+        }
+      }
+    },
     "en/smashup/cards/anansi_tales_pod": {
       "variants": {
         "png": {
@@ -28,6 +73,15 @@
           "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
           "bytes": 6565353,
           "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/action_heroes_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "ac94ce38b8e1522f01a2544dceeb91284199be50b446d866c5ef88030dc0c721",
+          "bytes": 1877054,
+          "mime": "image/webp"
         }
       }
     },
@@ -49,6 +103,24 @@
         }
       }
     },
+    "en/smashup/cards/compressed/disney": {
+      "variants": {
+        "webp": {
+          "sha256": "79f07743e43de2f380d1abc37ab202a436915ae247e8adaebfd02093216cffb8",
+          "bytes": 3992798,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "15fa5154e7b88c59a913aeb7277950475e55c288e835bd43e9ddc3c47de19f11",
+          "bytes": 3795192,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/dragons_pod": {
       "variants": {
         "webp": {
@@ -63,6 +135,15 @@
         "webp": {
           "sha256": "b3fab24752d42c0c3892bedd7c0ee7398738b8cb4323fed6480df8944f9da033",
           "bytes": 1734512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/half_the_battle_geckos": {
+      "variants": {
+        "webp": {
+          "sha256": "2e7b19c01ae4ad5f30fcb40ce571ad6930221f3457b09c1147541d1efaea9edd",
+          "bytes": 1518200,
           "mime": "image/webp"
         }
       }
@@ -90,6 +171,24 @@
         "webp": {
           "sha256": "e5e0f01b554373e27cd20d81693f4c7a7b4fcf1a60a52b6277927f951cbbed62",
           "bytes": 712978,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/marvel_villains_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/marvel_wave_one_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
           "mime": "image/webp"
         }
       }
@@ -2425,6 +2524,24 @@
         }
       }
     },
+    "en/smashup/cards/disney": {
+      "variants": {
+        "png": {
+          "sha256": "ab35ed10b863de226c3bdda0e391ddb5e4f9a01ed666a6867fd5280e67b0915d",
+          "bytes": 33283832,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/disney_four_factions": {
+      "variants": {
+        "png": {
+          "sha256": "daad522f77d5e4b256aad3f23fe22f76860ec0183cfa137f1f4305c03ae54406",
+          "bytes": 34764781,
+          "mime": "image/png"
+        }
+      }
+    },
     "en/smashup/cards/dragons_pod": {
       "variants": {
         "png": {
@@ -2439,6 +2556,15 @@
         "png": {
           "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
           "bytes": 6223028,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/half_the_battle_geckos": {
+      "variants": {
+        "png": {
+          "sha256": "071489bdcf5675347c52354acf3cf0eb00eac8c170ef2dba458e85a51fcbd19e",
+          "bytes": 4959241,
           "mime": "image/png"
         }
       }
@@ -2466,6 +2592,24 @@
         "png": {
           "sha256": "5a9458c4a338dc4d0c3f542bf098f20b5619373d9309735223f72fbdfb8af7d2",
           "bytes": 6451853,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/marvel_villains_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/marvel_wave_one_pod": {
+      "variants": {
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
           "mime": "image/png"
         }
       }
@@ -14352,6 +14496,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/kaiju_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f178424b2bb49012fb67ffa743fdad657e18cf1c3967b0965c7abe0e6a839df1",
+          "bytes": 1393084,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/kitty_cats_pod": {
       "variants": {
         "webp": {
@@ -14906,6 +15059,15 @@
         "png": {
           "sha256": "b6650817dad672723aadcc792d6d8af5ec07f4891760715b5300f9a1fe17de19",
           "bytes": 5208504,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/kaiju_pod": {
+      "variants": {
+        "png": {
+          "sha256": "887f27dde9579b9ba77e1c67653f9f29a2da33f76899cbbc479419ad52c901e3",
+          "bytes": 5928968,
           "mime": "image/png"
         }
       }
@@ -18373,24 +18535,6 @@
           "bytes": 295968,
           "mime": "image/png"
         }
-      }
-    }
-  },
-  "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
-    "variants": {
-      "webp": {
-        "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
-        "bytes": 2640142,
-        "mime": "image/webp"
-      }
-    }
-  },
-  "zh-CN/qidahen/cards/atlases/ordinary-hand-atlas05": {
-    "variants": {
-      "jpg": {
-        "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
-        "bytes": 4138087,
-        "mime": "image/jpeg"
       }
     }
   }

@@ -1445,7 +1445,7 @@ function hornetTrigger(ctx: TriggerContext): AbilityResult {
         playerId: ctx.sourceControllerId,
         now: ctx.now,
         cardUid: ctx.sourceCardUid,
-        defId: 'anansi_tales_mboro_hornet',
+        defId: ctx.sourceDefId ?? 'anansi_tales_mboro_hornet',
         ownerId: ctx.sourceOwnerPlayerId ?? ctx.sourceControllerId,
     });
 }

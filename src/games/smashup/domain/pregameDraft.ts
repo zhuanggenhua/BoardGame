@@ -8,6 +8,7 @@ import {
 } from '../data/cards';
 import {
     buildFactionSelectionIdentitySet,
+    isSmashUpDiyFaction,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './ids';
@@ -286,9 +287,11 @@ export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: Playe
         return { valid: false, error: '玩家不存在' };
     }
 
-    if (
-        !isSmashUpFactionAvailableForParticipation(factionId, core.enabledExpansions ?? DEFAULT_EXPANSIONS)
-    ) {
+    const enabledExpansions = core.enabledExpansions ?? DEFAULT_EXPANSIONS;
+    if (isSmashUpDiyFaction(factionId) && !enabledExpansions.includes('diy')) {
+        return { valid: false, error: '该 DIY 派系未开启' };
+    }
+    if (!isSmashUpFactionAvailableForParticipation(factionId, enabledExpansions)) {
         return { valid: false, error: '该派系尚未接入完成' };
     }
 
@@ -353,9 +356,11 @@ export function canSmashUpPlayerBanFaction(core: SmashUpCore, playerId: PlayerId
         return { valid: false, error: 'player_mismatch' };
     }
 
-    if (
-        !isSmashUpFactionAvailableForParticipation(factionId, core.enabledExpansions ?? DEFAULT_EXPANSIONS)
-    ) {
+    const enabledExpansions = core.enabledExpansions ?? DEFAULT_EXPANSIONS;
+    if (isSmashUpDiyFaction(factionId) && !enabledExpansions.includes('diy')) {
+        return { valid: false, error: '该 DIY 派系未开启' };
+    }
+    if (!isSmashUpFactionAvailableForParticipation(factionId, enabledExpansions)) {
         return { valid: false, error: '该派系尚未接入完成' };
     }
 
