@@ -60,10 +60,11 @@ function advancePostScoringDelay(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
 ) {
     const state = runner.getState();
-    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-    expect(typeof delayUntil).toBe('number');
+    if (state.sys.phase !== 'scoreBases') {
+        return state;
+    }
     const playerId = state.core.turnOrder[state.core.currentPlayerIndex]!;
-    const result = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
+    const result = runner.dispatch('ADVANCE_PHASE', { playerId });
     expect(result.success).toBe(true);
     return result.finalState;
 }
@@ -76,8 +77,7 @@ function drainScoreBasesDelayUntilPromptOrIdle(
         if (state.sys.phase !== 'scoreBases') {
             break;
         }
-        const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-        if (getSimpleChoicePromptMaybe(state) || typeof delayUntil !== 'number') {
+        if (getSimpleChoicePromptMaybe(state)) {
             break;
         }
         state = advancePostScoringDelay(runner);

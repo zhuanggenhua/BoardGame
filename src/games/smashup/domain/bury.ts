@@ -1,21 +1,15 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import type { SmashUpCore, SmashUpEvent, BuriedCardOnBase, MinionPlayedEvent } from './types';
+import type { SmashUpCore, SmashUpEvent, BuriedCardOnBase, MinionPlayedEvent, OngoingAttachedEvent } from './types';
 import { SU_EVENTS } from './types';
 import { registerInteractionHandler, type InteractionHandler } from './abilityInteractionHandlers';
 import { getBaseDef, getCardDef } from '../data/cards';
-import {
-    requireOnPlay,
-    requireSpecial,
-    resolveOnPlay,
-    resolveOnUncover,
-    resolveSpecial,
-} from './abilityRegistry';
+import { resolveOnUncover } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import { collectTriggers } from './ongoingEffects';
 import { buildMinionTargetOptions, buildSemanticOngoingAttachEvents } from './abilityHelpers';
-import { reduce } from './reducer';
+import { appendResolvedActionAbility } from './externalActionPlay';
 
 type UncoverChoiceValue = { cardUid: string; baseIndex: number } | { skip: true };
 
@@ -53,28 +47,6 @@ type ExecuteUncoveredActionParams = {
     targetMinionUid?: string;
     targetBaseIndex?: number;
 };
-
-function requireUncoveredActionExecutor(
-    defId: string,
-    subtype: string,
-): NonNullable<ReturnType<typeof resolveOnPlay> | ReturnType<typeof resolveSpecial>> {
-    if (subtype === 'special') {
-        if (resolveSpecial(defId)) return requireSpecial(defId, 'bury.executeUncoveredAction');
-        return requireOnPlay(defId, 'bury.executeUncoveredAction');
-    }
-    return requireOnPlay(defId, 'bury.executeUncoveredAction');
-}
-
-function previewEventsOnMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    if (events.length === 0) return matchState;
-    return {
-        ...matchState,
-        core: events.reduce((core, event) => reduce(core, event), matchState.core),
-    };
-}
 
 type BuildBuriedCardReturnedToHandEventParams = {
     core: SmashUpCore;
@@ -280,7 +252,6 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
     if (!actionDef || actionDef.type !== 'action') return { state: matchState, events: [], discardWithoutPlay: true };
 
     const events: SmashUpEvent[] = [];
-    let currentState = matchState;
     const subtype = actionDef.subtype as string;
     const isOngoing = subtype === 'ongoing';
 
@@ -303,7 +274,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                 timestamp: now,
             } as OngoingAttachedEvent);
         } else {
-            const minionCandidates = currentState.core.bases.flatMap((entry, candidateBaseIndex) => {
+            const minionCandidates = matchState.core.bases.flatMap((entry, candidateBaseIndex) => {
                 const baseName = getBaseDef(entry.defId)?.name ?? `基地 ${candidateBaseIndex + 1}`;
                 return entry.minions.map((minion) => ({
                     uid: minion.uid,
@@ -313,12 +284,12 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                 }));
             });
             const options = buildMinionTargetOptions(minionCandidates, {
-                state: currentState.core,
+                state: matchState.core,
                 sourcePlayerId: playerId,
                 sourceDefId: buried.defId,
             }).map(option => ({ ...option, displayMode: 'card' as const }));
             if (!targetMinionUid && options.length === 0) {
-                return { state: currentState, events: [], discardWithoutPlay: true };
+                return { state: matchState, events: [], discardWithoutPlay: true };
             }
             if (!targetMinionUid && options.length > 1) {
                 const interaction = createSimpleChoice(
@@ -333,14 +304,14 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                     },
                 );
                 (interaction.data as any).continuationContext = { cardUid: buried.uid, defId: buried.defId, baseIndex };
-                return { state: queueInteraction(currentState, interaction), events };
+                return { state: queueInteraction(matchState, interaction), events };
             }
 
             const resolvedTarget = targetMinionUid
                 ? {
                     targetMinionUid,
                     targetBaseIndex: targetBaseIndex
-                        ?? currentState.core.bases.findIndex(entry => entry.minions.some(minion => minion.uid === targetMinionUid)),
+                        ?? matchState.core.bases.findIndex(entry => entry.minions.some(minion => minion.uid === targetMinionUid)),
                 }
                 : (() => {
                     const singleValue = options[0]?.value as { minionUid?: string; baseIndex?: number } | undefined;
@@ -355,7 +326,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
             }
             resolvedActionTargetMinionUid = resolvedTarget.targetMinionUid;
             resolvedActionTargetBaseIndex = resolvedTarget.targetBaseIndex;
-            events.push(...buildSemanticOngoingAttachEvents(currentState, {
+            events.push(...buildSemanticOngoingAttachEvents(matchState, {
                 cardUid: buried.uid,
                 defId: buried.defId,
                 ownerId: buried.trueOwnerId,
@@ -378,30 +349,21 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
         targetBaseIndex: isOngoing ? resolvedActionTargetBaseIndex : targetBaseIndex,
         targetMinionUid: isOngoing ? resolvedActionTargetMinionUid : targetMinionUid,
         timestamp: now,
-    }));
+        }));
 
-    if (subtype !== 'ongoing' || resolveOnPlay(buried.defId)) {
-        const executor = subtype === 'ongoing'
-            ? requireOnPlay(buried.defId, 'bury.executeUncoveredAction.ongoing')
-            : requireUncoveredActionExecutor(buried.defId, subtype);
-        const previewState = previewEventsOnMatchState(currentState, events);
-        const ctx: AbilityContext = {
-            state: previewState.core,
-            matchState: previewState,
-            playerId,
-            cardUid: buried.uid,
-            defId: buried.defId,
-            baseIndex: resolvedActionTargetBaseIndex,
-            targetMinionUid: resolvedActionTargetMinionUid,
-            random,
-            now,
-        };
-        const result = executor(ctx);
-        events.push(...result.events);
-        if (result.matchState) currentState = previewEventsOnMatchState(result.matchState, result.events);
-    }
-
-    return { state: currentState, events };
+    return appendResolvedActionAbility({
+        state: matchState,
+        events,
+        playerId,
+        cardUid: buried.uid,
+        defId: buried.defId,
+        random,
+        timestamp: now,
+        baseIndex: resolvedActionTargetBaseIndex,
+        targetBaseIndex: isOngoing ? resolvedActionTargetBaseIndex : targetBaseIndex,
+        targetMinionUid: isOngoing ? resolvedActionTargetMinionUid : targetMinionUid,
+        fromBuried: true,
+    });
 }
 
 function isSpecialTimingAllowed(
@@ -469,29 +431,19 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
         }),
     ];
 
-    let currentState = state;
-    const executor = resolveOnPlay(ctx.defId);
-    if (executor) {
-        const previewState = previewEventsOnMatchState(currentState, events);
-        const abilityCtx: AbilityContext = {
-            state: previewState.core,
-            matchState: previewState,
-            playerId,
-            cardUid: ctx.cardUid,
-            defId: ctx.defId,
-            baseIndex: targetBaseIndex,
-            targetMinionUid,
-            random,
-            now,
-        };
-        const result = executor(abilityCtx);
-        events.push(...result.events);
-        if (result.matchState) {
-            currentState = previewEventsOnMatchState(result.matchState, result.events);
-        }
-    }
-
-    return { state: currentState, events };
+    return appendResolvedActionAbility({
+        state,
+        events,
+        playerId,
+        cardUid: ctx.cardUid,
+        defId: ctx.defId,
+        random,
+        timestamp: now,
+        baseIndex: targetBaseIndex,
+        targetBaseIndex,
+        targetMinionUid,
+        fromBuried: true,
+    });
 };
 
 

@@ -27,7 +27,14 @@ SmashUp 当前 `scoreBases` 结算链同时分散在 `scoreOneBase()`、`registe
 - 已删除 Geeks Griefer 多对手续链的 `simulateMatchState()`：ability runtime 在“领域事件 + 后续 program”之间发出内部 continuation 事件，等待 pipeline 正式归约后再恢复下一段 program；Griefer 只记录下一位对手起点，恢复后用已落地 core 重新生成候选。
 - 已扩展 ability runtime continuation：continuation context 可声明恢复时需要 pipeline 当前随机源；Marvel / Avengers / Marvel Villains 的剩余 runtime 卡牌级投影已迁为“先提交领域事件，正式归约后恢复 program/prompt”，覆盖 Cosmic Knowledge、Shield Rescue Mission、Hawkeye’s Arrows、Hawkeye、J.A.R.V.I.S.、Red Skull、Hail Hydra、Baron Strucker 和 Kree Prepare to Engage。
 - 已迁移 Anansi / Russian Fairy Tales 的手写 interaction 卡牌级投影：抽牌后 prompt、destroy 后 search、transformation 后 attach、赠牌后抽牌/标记、加指示物/移动/洗回后赠牌等链路均改为“先提交领域事件，正式归约后恢复 continuation/prompt”；`src/games/smashup/abilities` 与 `src/games/smashup/domain` 当前已无 `simulateMatchState()` 同名残留。
-- 尚未完成彻底迁移：非暂停执行路径仍允许 reaction trigger / reaction command 后处理按旧方式立即应用事件，`postProcessSystemEvents()` 内部仍有局部 tempCore 构造用于触发收集，ReactionSession / ResponseWindow 双控制器和规则层视觉 delay 仍需后续移除。
+- 已删除 Flow 自动推进对 Smash Up 私有 pipeline 轮次 flag 的依赖：`_waitForPostScoringReduce`、`_waitForScoreBasesInteractionReduce`、`_waitForStartTurnInteractionReduce` 不再作为规则续链职责；共享 FlowSystem 通过 pipeline 显式 pending-after-events 上下文等待正式归约。
+- 已把 post-scoring reveal 的两秒视觉 delay 移出规则状态：生产代码不再写入 `_smashupPostScoringBaseRevealDelayUntil` 或 `awaiting-post-scoring-delay`，AI recovery / domain flow 不再读取该视觉 deadline。
+- 已收口 Me First / After Scoring 的“是否有可响应内容”判断：`game.ts` 与 `MeFirstOverlay` 复用 ReactionSession 的真实选项生成入口，UI 点击手牌/基地/目标时优先走 `smashup_reaction_choose` live option，不再在通用 ResponseWindow 配置或 UI 文案层保留第二套手牌/基地/限制判断。
+- 已将通用 ResponseWindow 事件到 SmashUp reaction pass 的兼容逻辑集中成薄 adapter：AI recovery 和共享传输仍可发 `RESPONSE_PASS`，但该桥只翻译到 ReactionSession，不再持有响应规则或候选判断。
+- 已让 reaction presentation、Smash Up AI 的结束阶段与相对效用判断直接尊重 live ReactionSession：镜像 responseWindow 丢失时，不再因为展示壳缺失而误暴露 `advance-phase`。
+- 已将真人 UI 与 Smash Up AI 的正常 reaction pass 迁到 `su:reaction_pass`：live pass 请求只由 live optional ReactionSession 当前响应者发起和消费，`REACTION_PASS_REQUESTED` 不参与通用 post-process 派生链；手动 pass 后只推进一名响应者，不再由空 afterEvents 轮继续自动代 pass。旧 `RESPONSE_PASS` 仍保留为恢复/共享传输/legacy adapter。
+- 已删除 live ReactionSession 写入通用 ResponseWindow 镜像的生产路径：`setSmashUpReactionSession()` 只维护 reaction frame/session，并清掉旧的 `smashup_reaction_choose` 镜像壳；UI/AI 展示从 live session 读取当前响应者。
+- 尚未完成彻底迁移：非暂停执行路径仍允许 reaction trigger / reaction command 后处理按旧方式立即应用事件，`postProcessSystemEvents()` 内部仍有局部 tempCore 构造用于触发收集；外部 `RESPONSE_PASS` 兼容桥和 legacy responseWindow fallback 仍存在，但已被收窄，后续需按消费者矩阵迁出。
 
 ## Impact
 - Affected specs:
@@ -36,8 +43,12 @@ SmashUp 当前 `scoreBases` 结算链同时分散在 `scoreOneBase()`、`registe
 - Affected code:
   - `src/engine/types.ts`
   - `src/engine/pipeline.ts`
+  - `src/engine/systems/FlowSystem.ts`
   - `src/games/smashup/domain/index.ts`
   - `src/games/smashup/domain/systems.ts`
+  - `src/games/smashup/domain/reactionSession.ts`
+  - `src/games/smashup/game.ts`
+  - `src/games/smashup/Board.tsx`
   - `src/games/smashup/domain/baseAbilities.ts`
   - `src/games/smashup/domain/baseAbilities_expansion.ts`
   - `src/games/smashup/abilities/pirates.ts`

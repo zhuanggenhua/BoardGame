@@ -6,6 +6,7 @@ import { assertSafeE2EServerMode, resolveUseDevServers } from '../scripts/infra/
 import { withWindowsHide } from '../scripts/infra/windows-hide.js';
 import {
     cleanupAllWorkerPortFiles,
+    loadWorkerPorts,
     reserveAvailablePorts,
     reservePorts,
     saveWorkerPorts,
@@ -41,12 +42,21 @@ const useDevServers = resolveUseDevServers(process.env);
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
 const shouldStartServers = forceStartServers || !useDevServers;
 const shouldReuseExistingServers = process.env.PW_REUSE_EXISTING_SERVERS === 'true';
-const singleWorkerPorts = useDevServers ? DEV_SERVER_PORTS : E2E_SINGLE_WORKER_PORTS;
 const runtimeNode = process.env.PW_NODE_BINARY || process.execPath;
 const isStandardEntry = process.env.PW_E2E_STANDARD_ENTRY === 'true';
 const bootstrapMode = process.env.PW_E2E_BOOTSTRAP_MODE?.trim() || '';
 const allowLegacyGlobalBootstrap = process.env.PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP === 'true';
 const isListOnly = process.env.PW_E2E_LIST_ONLY === 'true';
+
+function resolveSingleWorkerPorts() {
+    if (useDevServers) {
+        return DEV_SERVER_PORTS;
+    }
+
+    return loadWorkerPorts(0) ?? E2E_SINGLE_WORKER_PORTS;
+}
+
+const singleWorkerPorts = resolveSingleWorkerPorts();
 
 function getRuntimeMetadata() {
     return {

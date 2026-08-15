@@ -1,6 +1,6 @@
 # 新游戏收尾与启用清单
 
-> 来源：从 `SKILL.md` 无损拆出。本文档承载 i18n、教学、音频、关键图片预加载、debug 配置、资源落盘和最终验证。
+本文档承载 i18n、教学、音频、关键图片预加载、debug 配置、资源落盘和最终验证。
 
 ## 完成判断前置门禁（强制）
 
@@ -50,16 +50,16 @@
 ### 6.3 音频配置（已重构，避免重复造轮子）
 
 **强制先读**（权威单一来源，避免本文档过时）：
-- `AGENTS.md`「音频资源架构（强制）」
-- `.spec/knowledge/standards/asset-pipeline.md`「🔊 音频资源规范」
-- 项目 skill `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）；`docs/audio/audio-usage.md` 与 `docs/audio/add-audio.md` 只作命令、目录和产物示例参考
+- `.spec/knowledge/standards/audio-assets.md`（运行时主合同）
+- `.spec/skills/audio-integration/SKILL.md`（执行 workflow）
+- `docs/audio/audio-usage.md` 与 `docs/audio/add-audio.md` 只作命令、目录和产物示例参考
 
 **你在新游戏里只需要做这些（最小闭环）**：
 1. 创建 `src/games/<gameId>/audio.config.ts`，导出 `GameAudioConfig`：
    - `feedbackResolver(event): SoundKey | null`：无动画事件返回 SoundKey；有动画事件返回 `null`，音效交给动画层 `onImpact()` 播放
    - `criticalSounds`：进入游戏后立即预加载的高频音效 key（建议 5~15）
    - （可选）`contextualPreloadKeys`：根据上下文增量预热
-   - BGM 列表按 `.spec/skills/audio-integration/SKILL.md` 配置；既有命令和目录示例可参考 `docs/audio/audio-usage.md`
+   - BGM 列表按音频 workflow 配置；既有命令和目录示例可参考 `docs/audio/audio-usage.md`
 2. **音效 key 的唯一来源**：`public/assets/common/audio/registry.json`。
    - 禁止在游戏层声明 `basePath/sounds`
    - 禁止手写 `compressed/`

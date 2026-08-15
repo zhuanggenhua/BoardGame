@@ -345,7 +345,6 @@ async function main() {
   const remoteInventory = uploadUrl
     ? await fetchAssetPublishInventory({
       uploadUrl,
-      allowUnauthenticated: process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1',
     })
     : null;
 

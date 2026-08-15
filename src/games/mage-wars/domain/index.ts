@@ -7,10 +7,10 @@ import {
 } from './ids';
 import {
     getFormalArenaZonesFromConfig,
+    getFormalStartingMageIdFromConfig,
     getFormalStartingZoneIdFromConfig,
-    getApprenticeMageOrderFromConfig,
-    getApprenticeMageSetupFromConfig,
-    getApprenticeSpellbookCountFromConfig,
+    getPresetMageSetupFromConfig,
+    getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { executeCommand } from './execute';
 import { reduceEvent } from './reducer';
@@ -22,9 +22,8 @@ function normalizePlayerIds(playerIds: PlayerId[]): PlayerId[] {
 }
 
 function createPlayerState(playerId: PlayerId, seatIndex: number, mageZoneId: ArenaZoneId): MageWarsPlayerState {
-    const mageOrder = getApprenticeMageOrderFromConfig();
-    const mageId = mageOrder[seatIndex] ?? mageOrder[0];
-    const setup = getApprenticeMageSetupFromConfig(mageId);
+    const mageId = getFormalStartingMageIdFromConfig(seatIndex);
+    const setup = getPresetMageSetupFromConfig(mageId);
 
     return {
         id: playerId,
@@ -39,7 +38,7 @@ function createPlayerState(playerId: PlayerId, seatIndex: number, mageZoneId: Ar
         guarding: false,
         statusTokens: {},
         mageZoneId,
-        spellbookCount: getApprenticeSpellbookCountFromConfig(mageId),
+        spellbookCount: getPresetSpellbookCountFromConfig(mageId),
         preparedSpellSlots: 0,
         preparedSpellCardIds: [],
         discardSpellCardIds: [],

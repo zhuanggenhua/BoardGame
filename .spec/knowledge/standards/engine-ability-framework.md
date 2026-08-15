@@ -8,8 +8,6 @@ metadata:
 
 # 引擎通用能力框架
 
-> 来源：从 `.spec/knowledge/standards/engine-systems.md` 无损拆出。本文档承载通用能力框架、能力约束系统和相关历史债务；`engine-systems.md` 只保留入口摘要。
-
 ## 通用能力框架（强制）
 
 ### 核心组件（`engine/primitives/ability.ts`）

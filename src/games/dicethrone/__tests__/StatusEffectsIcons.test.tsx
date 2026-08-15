@@ -29,7 +29,7 @@ import {
     setAssetsBaseUrl,
     setGameAssetBaseOverride,
 } from '../../../core';
-import { setAssetHashesForTesting } from '../../../core/AssetLoader';
+import { __resetAssetLoaderCachesForTests, markImageLoaded, setAssetHashesForTesting } from '../../../core/AssetLoader';
 
 registerDiceDefinition(moonElfDiceDefinition);
 
@@ -38,6 +38,7 @@ describe('StatusEffectsIcons', () => {
         setAssetsBaseUrl('/assets');
         setAssetHashesForTesting({});
         clearGameAssetBaseOverrides();
+        __resetAssetLoaderCachesForTests();
         __resetStatusEffectImageCachesForTests();
     });
 
@@ -182,7 +183,7 @@ describe('StatusEffectsIcons', () => {
 
         await waitFor(() => {
             const img = first.container.querySelector('img');
-            expect(img?.getAttribute('src')).toBe(sourceUrl);
+            expect(img?.getAttribute('src')).toBe('blob:status-atlas');
             expect(img?.getAttribute('data-status-source-url')).toBe(sourceUrl);
             expect(fetchMock).toHaveBeenCalledWith(localUrl, { mode: 'cors', credentials: 'omit' });
             expect(fetchMock).toHaveBeenCalledWith(sourceUrl, { mode: 'cors', credentials: 'omit' });
@@ -200,10 +201,99 @@ describe('StatusEffectsIcons', () => {
 
         await waitFor(() => {
             const img = second.container.querySelector('img');
-            expect(img?.getAttribute('src')).toBe(sourceUrl);
+            expect(img?.getAttribute('src')).toBe('blob:status-atlas');
             expect(img?.getAttribute('data-status-source-url')).toBe(sourceUrl);
         });
         expect(fetchMock).toHaveBeenCalledTimes(fetchCountAfterFirstRender);
+    });
+
+    it('旧本地图集缓存提示存在时仍应自检并回退官方 WebP', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        const atlas: StatusIconAtlasConfig = {
+            imageW: 800,
+            imageH: 400,
+            frames: {
+                loaded: { x: 0, y: 0, w: 400, h: 400 },
+            },
+            imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+        };
+        const localUrl = '/assets/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp';
+        const remoteUrl = 'https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp';
+        const staleLocalImage = document.createElement('img') as HTMLImageElement;
+        Object.defineProperty(staleLocalImage, 'naturalWidth', { value: 800, configurable: true });
+        Object.defineProperty(staleLocalImage, 'naturalHeight', { value: 400, configurable: true });
+        Object.defineProperty(staleLocalImage, 'src', { value: localUrl, configurable: true });
+        Object.defineProperty(staleLocalImage, 'currentSrc', { value: localUrl, configurable: true });
+        markImageLoaded(localUrl, undefined, staleLocalImage, localUrl);
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === localUrl) {
+                return {
+                    ok: true,
+                    blob: async () => new Blob(['<!doctype html>'], { type: 'text/html' }),
+                };
+            }
+            if (url === remoteUrl) {
+                return {
+                    ok: true,
+                    blob: async () => new Blob(['webp'], { type: 'image/webp' }),
+                };
+            }
+            return {
+                ok: false,
+                blob: async () => new Blob([]),
+            };
+        });
+        const RealURL = URL;
+        class MockURL extends RealURL {
+            static createObjectURL = vi.fn(() => 'blob:cached-remote-status-atlas');
+            static revokeObjectURL = vi.fn();
+        }
+        class MockImage {
+            onload: null | (() => void) = null;
+            onerror: null | (() => void) = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                if (value === 'blob:cached-remote-status-atlas') {
+                    this.naturalWidth = 800;
+                    this.naturalHeight = 400;
+                    queueMicrotask(() => this.onload?.());
+                    return;
+                }
+                queueMicrotask(() => this.onerror?.());
+            }
+        }
+        vi.stubGlobal('URL', MockURL as unknown as typeof URL);
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+        vi.stubGlobal('fetch', fetchMock);
+
+        const { container } = render(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.LOADED, atlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER },
+                'zh-CN',
+                'normal',
+                { [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: atlas },
+            ),
+        );
+
+        await waitFor(() => {
+            const img = container.querySelector('img');
+            expect(img?.getAttribute('src')).toBe('blob:cached-remote-status-atlas');
+            expect(img?.getAttribute('data-status-source-url')).toBe(remoteUrl);
+            expect(fetchMock).toHaveBeenCalledWith(localUrl, { mode: 'cors', credentials: 'omit' });
+            expect(fetchMock).toHaveBeenCalledWith(remoteUrl, { mode: 'cors', credentials: 'omit' });
+        });
     });
 
     it('普通 /assets 返回 HTML 时状态图集应回退官方 WebP', async () => {
@@ -282,7 +372,7 @@ describe('StatusEffectsIcons', () => {
 
         await waitFor(() => {
             const img = container.querySelector('img');
-            expect(img?.getAttribute('src')).toBe(remoteUrl);
+            expect(img?.getAttribute('src')).toBe('blob:remote-status-atlas');
             expect(img?.getAttribute('data-status-source-url')).toBe(remoteUrl);
             expect(fetchMock).toHaveBeenCalledWith(remoteUrl, { mode: 'cors', credentials: 'omit' });
         });

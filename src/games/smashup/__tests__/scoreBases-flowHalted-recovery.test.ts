@@ -2,7 +2,8 @@
  * scoreBases flowHalted 恢复合同
  *
  * 锁定 `onPhaseExit('scoreBases')` 在 flowHalted 场景下的恢复语义：
- * - 若当前交互已解决，应清除 flowHalted，并进入 awaiting-post-reduce 收尾
+ * - 若当前交互已解决，应清除 flowHalted，先发出计分事件并等待正式 reduce
+ * - 计分事件落地后，再继续 After Scoring 并进入后续收尾
  *   此时 BASE_CLEARED / BASE_REPLACED 仍保留在后续 continuation，而不是在本次恢复里立刻发出
  * - 若当前交互仍在进行，应继续 halt，不能越过交互
  *
@@ -11,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { smashUpFlowHooks } from '../domain';
+import { reduce } from '../domain/reduce';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
 import { createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
@@ -78,13 +80,12 @@ describe('scoreBases flowHalted 恢复', () => {
         expect(Array.isArray(result)).toBe(false);
         expect(result).toMatchObject({ halt: true });
 
-        // 当前实现会先恢复计分主事件，然后把清场/换基地延后到后续 continuation
+        // 当前实现会先恢复计分主事件；After Scoring 必须等这些事件由 pipeline 正式落地后再继续。
         const events = Array.isArray(result) ? result : result.events ?? [];
         expect(events.map((event) => event.type)).toEqual([
             'su:before_scoring_triggered',
             'su:when_scoring_triggered',
             'su:base_scored',
-            'su:after_scoring_triggered',
         ]);
 
         const baseScoredEvent = events.find((e) => e.type === 'su:base_scored');
@@ -102,7 +103,35 @@ describe('scoreBases flowHalted 恢复', () => {
             expectNoPrompt(result.updatedState);
             expect(result.updatedState.sys.responseWindow?.current).toBeUndefined();
             expect(getScoringSession(result.updatedState)).toMatchObject({
-                currentStep: 'awaiting-post-scoring-delay',
+                currentStep: 'awaiting-score-award-reduce',
+                lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
+                completedBaseRefs: [],
+            });
+        }
+
+        const firstResult = result as Exclude<typeof result, unknown[]>;
+        const committedState = {
+            ...firstResult.updatedState!,
+            core: events.reduce((core, event) => reduce(core, event), firstResult.updatedState!.core),
+        };
+
+        const continued = smashUpFlowHooks.onPhaseExit!({
+            state: committedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', timestamp: 1000 },
+            random: () => 0.5,
+        });
+
+        expect(Array.isArray(continued)).toBe(false);
+        expect(continued).toMatchObject({ halt: true });
+        const continuedEvents = Array.isArray(continued) ? continued : continued.events ?? [];
+        expect(continuedEvents.map((event) => event.type)).toEqual([
+            'su:after_scoring_triggered',
+        ]);
+        if (typeof continued === 'object' && continued && 'updatedState' in continued && continued.updatedState) {
+            expect(getScoringSession(continued.updatedState)).toMatchObject({
+                currentStep: 'awaiting-post-scoring-finalize',
                 lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
                 completedBaseRefs: [],
             });

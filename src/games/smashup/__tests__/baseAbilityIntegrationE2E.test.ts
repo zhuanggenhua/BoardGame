@@ -39,6 +39,7 @@ import type { SmashUpCore, SmashUpCommand, CardInstance } from '../domain/types'
 import type { MatchState, RandomFn, Command } from '../../../engine/types';
 import type { PhaseExitResult, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { getScoringSession } from '../domain/scoringSession';
 import {
     expectNoPrompt,
     makePlayer,
@@ -137,20 +138,45 @@ function callOnPhaseEnterStartTurn(ms: MatchState<SmashUpCore>) {
 
 /** 调用 onPhaseExit('scoreBases')，返回事件列表 */
 function callOnPhaseExitScoreBases(ms: MatchState<SmashUpCore>) {
-    const result = smashUpFlowHooks.onPhaseExit!({
-        state: ms, from: 'scoreBases', to: 'draw',
-        command: mockCommand, random: dummyRandom,
-    });
-    const events = Array.isArray(result) ? result : (result as PhaseExitResult).events ?? [];
-    if (events.length > 0) {
-        ms.core = applyEvents(ms.core, events as any);
+    const allEvents: any[] = [];
+    let result: ReturnType<NonNullable<typeof smashUpFlowHooks.onPhaseExit>> | undefined;
+
+    for (let step = 0; step < 8; step += 1) {
+        result = smashUpFlowHooks.onPhaseExit!({
+            state: ms, from: 'scoreBases', to: 'draw',
+            command: mockCommand, random: dummyRandom,
+        });
+        const events = Array.isArray(result) ? result : (result as PhaseExitResult).events ?? [];
+        allEvents.push(...events);
+        if (events.length > 0) {
+            ms.core = applyEvents(ms.core, events as any);
+        }
+        // Fix 2 后 onPhaseExit 返回 PhaseExitResult.updatedState 而非变异 ms.sys
+        // 将 updatedState 的 sys 同步回 ms，保持测试兼容
+        if (!Array.isArray(result) && (result as PhaseExitResult).updatedState) {
+            ms.sys = (result as PhaseExitResult).updatedState!.sys;
+        }
+
+        if (ms.sys.interaction?.current || (ms.sys.interaction?.queue?.length ?? 0) > 0) {
+            break;
+        }
+
+        const currentStep = getScoringSession(ms)?.currentStep;
+        const awaitingFormalCommit =
+            currentStep === 'awaiting-before-scoring-reduce'
+            || currentStep === 'awaiting-before-reaction-reduce'
+            || currentStep === 'awaiting-before-response-window'
+            || currentStep === 'awaiting-when-scoring-reduce'
+            || currentStep === 'awaiting-when-reaction-reduce'
+            || currentStep === 'awaiting-after-scoring-reduce'
+            || currentStep === 'awaiting-after-reaction-reduce'
+            || currentStep === 'awaiting-score-award-reduce';
+        if (!awaitingFormalCommit) {
+            break;
+        }
     }
-    // Fix 2 后 onPhaseExit 返回 PhaseExitResult.updatedState 而非变异 ms.sys
-    // 将 updatedState 的 sys 同步回 ms，保持测试兼容
-    if (!Array.isArray(result) && (result as PhaseExitResult).updatedState) {
-        ms.sys = (result as PhaseExitResult).updatedState!.sys;
-    }
-    return { events, result };
+
+    return { events: allEvents, result };
 }
 
 /** 检查 Interaction 是否包含指定 sourceId */

@@ -88,6 +88,7 @@ export const expectRightTrayBonusDiceConfirmation = async (
 
     const { diceTray, rail } = rightTrayRail(page);
     const confirmButton = rail.locator('[data-tutorial-id="dice-confirm-button"]').first();
+    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
@@ -116,6 +117,7 @@ export const expectRightTrayBonusDiceAwaitingResponse = async (
     await closeDebugPanelIfVisible(page);
 
     const { diceTray, rail } = rightTrayRail(page);
+    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
@@ -135,6 +137,7 @@ export const expectRightTrayBonusDiceReadOnlyReview = async (
     await closeDebugPanelIfVisible(page);
 
     const { diceTray } = rightTrayRail(page);
+    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
     await expect(diceTray).toBeVisible({ timeout: 10000 });

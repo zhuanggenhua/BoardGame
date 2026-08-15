@@ -35,8 +35,8 @@ import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbil
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 import { validateActionPlaySemantics } from '../domain/playLegality';
-import { reduce } from '../domain/reduce';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     actionLikeNeedsPlayBase,
@@ -2498,28 +2498,19 @@ function buildDiscardActionPlayEvents(params: {
         }));
     }
 
-    const executor = resolveOnPlay(card.defId);
-    if (!executor) return { state, events };
-
-    let simCore = state.core;
-    for (const event of events) {
-        simCore = reduce(simCore, event);
-    }
-    const result = executor({
-        state: simCore,
-        matchState: { ...state, core: simCore },
+    return appendResolvedActionAbility({
+        state,
+        events,
         playerId,
         cardUid: card.uid,
         defId: card.defId,
+        random,
+        timestamp,
         baseIndex: targetBaseIndex ?? 0,
         targetBaseIndex,
         targetMinionUid,
-        random,
-        now: timestamp,
-        handSizeAfterPlay: simCore.players[playerId]?.hand.length ?? 0,
+        fromDiscard: true,
     });
-    events.push(...result.events);
-    return { state: result.matchState ?? state, events };
 }
 
 function resolveItsAstoundingAction(

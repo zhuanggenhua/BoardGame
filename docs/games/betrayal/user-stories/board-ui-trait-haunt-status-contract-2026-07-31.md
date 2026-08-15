@@ -95,7 +95,7 @@
 | 本地实体素材 | `D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Images` | 已扫描到 `0-9` 长条进度素材；当前实现按该实体素材和 9 张预兆牌库对齐。 |
 | 运行牌库 | `src/games/betrayal/scenarioConfig.ts` | 当前预兆牌库共 9 张，因此状态条端点为 `9`，刻度显示 `0..9`。 |
 | UI 总规范 | `design-system/game-ui/MASTER.md` | 卡图本体优先、常驻文案最小化、重大阶段信息渐进披露。 |
-| UI 审计 | `D:\codex-home\skills\ui-audit-loop\SKILL.md` | 最终截图必须来自当前真实入口并通过玩家视角图面审计。 |
+| UI 审计 | `.spec/skills/ui-audit-loop/SKILL.md` | 最终截图必须来自当前真实入口并通过玩家视角图面审计。 |
 
 ## 验收标准
 

@@ -10,6 +10,7 @@ import { registerInteractionHandler } from '../domain/abilityInteractionHandlers
 import { registerActiveBaseAbility, registerBaseAbility, type BaseAbilityContext, type BaseAbilityResult } from '../domain/baseAbilities';
 import {
     addTempPower,
+    appendMinionPlayedTriggersAfterEvents,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
@@ -17,7 +18,6 @@ import {
     buildValidatedMoveEvents,
     canControllerPlayTitan,
     createSkipOption,
-    fireMinionPlayedTriggers,
     inspectDeck,
     peekDeckTop,
     playTitan,
@@ -26,7 +26,6 @@ import {
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { appendPendingPostScoringActions, getDeferredReplacementBaseDefId } from '../domain/scoringSession';
 import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
-import { reduce } from '../domain/reduce';
 import { SU_EVENTS } from '../domain/types';
 import type {
     CardInstance,
@@ -162,28 +161,13 @@ function buildPlayTopDeckMinionResult(
     if (!isMinionCard(peek.card)) return { events };
     const played = playMinionEventFromCard(state, playerId, peek.card, baseIndex, now, { fromDeck: true, reason });
     if (!played) return { events };
-
     events.push(played);
-    if (!matchState) return { events };
-
-    const coreAfterPlayed = reduce(state, played);
-    const triggerResult = fireMinionPlayedTriggers({
-        core: coreAfterPlayed,
-        matchState: { ...matchState, core: coreAfterPlayed },
-        playerId,
-        cardUid: played.payload.cardUid,
-        defId: played.payload.defId,
-        baseIndex: played.payload.baseIndex,
-        power: played.payload.power,
-        random,
-        now,
+    return appendMinionPlayedTriggersAfterEvents({
+        state: matchState,
+        events,
         playedEvt: played,
+        random,
     });
-
-    return {
-        events: [...events, ...triggerResult.events],
-        ...(triggerResult.matchState ? { matchState: triggerResult.matchState } : {}),
-    };
 }
 
 function buildPlayDeckMinionsFromOrderedDeckEvents(
@@ -393,16 +377,15 @@ function secretMission(ctx: AbilityContext): AbilityResult {
 
 function theHatching(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-    return {
-        events: buildPlayTopDeckMinionEvents(
-            ctx.state,
-            ctx.playerId,
-            baseIndex,
-            ctx.random,
-            ctx.now,
-            'penguins_the_hatching',
-        ),
-    };
+    return buildPlayTopDeckMinionResult(
+        ctx.state,
+        ctx.matchState,
+        ctx.playerId,
+        baseIndex,
+        ctx.random,
+        ctx.now,
+        'penguins_the_hatching',
+    );
 }
 
 function regurgitatingPenguin(ctx: AbilityContext): AbilityResult {

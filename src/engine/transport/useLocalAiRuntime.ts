@@ -42,6 +42,7 @@ export function useLocalAiRuntime(args: {
     randomRef: RefBox<LocalProviderRandom>;
     setupPlayerIds: string[];
     onCommandRejectedRef: RefBox<((commandType: string, error: string) => void) | undefined>;
+    automationDisabled?: boolean;
 }) {
     const {
         state,
@@ -132,9 +133,10 @@ export function useLocalAiRuntime(args: {
                 lastVisibleAiActionAtRef,
                 aiCommandEffectByTokenRef,
                 onRetry: scheduleAiRetry,
+                automationDisabled: args.automationDisabled,
             });
         });
-    }, [localPregameControlledPlayerId, scheduleAiRetry, seatControllers]);
+    }, [args.automationDisabled, localPregameControlledPlayerId, scheduleAiRetry, seatControllers]);
 
     useEffect(() => {
         return startLocalAiAutomationEffect({
@@ -158,9 +160,11 @@ export function useLocalAiRuntime(args: {
                 lastVisibleAiActionAtRef.current = timestamp;
             },
             idleRetryMs: LOCAL_AI_IDLE_RETRY_MS,
+            automationDisabled: args.automationDisabled,
         });
     }, [
         aiRetryVersion,
+        args.automationDisabled,
         config,
         localPregameControlledPlayerId,
         seatControllers,

@@ -15,7 +15,7 @@
 
 | 层级 | 文件 | 角色 | 本轮动作 |
 | --- | --- | --- | --- |
-| 全局 skill | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | `canonical-source` | 已补“地图 / 棋盘 / 牌桌底图默认是最低层承载，不是必须完整避让的前景主体” |
+| 项目 skill | `.spec/skills/ui-design-pipeline/SKILL.md` | `canonical-source` | 已补“地图 / 棋盘 / 牌桌底图默认是最低层承载，不是必须完整避让的前景主体” |
 | 项目 skill | `.spec/skills/boardgame-ui-imagegen/SKILL.md` | `adapter` | 只引用全局底图最低层裁决，并把可读面积定义为规则格、对象、token、骰子和关键印刷信息 |
 | 本文件 | `docs/games/mage-wars/design/reference/step1-annotated-saturated-v52-preflight.md` | `evidence / task-contract` | 记录 v52 如何消费该裁决；不作为跨项目规范来源 |
 | v52 审计 / README | `docs/games/mage-wars/design/generated/**`、`docs/games/mage-wars/design/README.md` | `evidence / index` | 只记录截图证据和当前状态，不创造新规则 |

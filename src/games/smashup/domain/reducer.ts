@@ -22,7 +22,7 @@
  * 所有触发链（onPlay / onMinionPlayed / ongoing triggers）必须在
  * postProcessSystemEvents 中统一处理，避免重复触发。
  * 
- * 详见：docs/ai-rules/engine-systems.md「领域层职责边界」节
+ * 详见：.spec/knowledge/standards/engine-systems.md「领域层职责边界」节
  */
 
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -43,6 +43,7 @@ import type {
     MinionMovedEvent,
     MinionReturnedEvent,
     MinionControlChangedEvent,
+    BuriedCardReturnedToHandEvent,
     CardRecoveredFromDiscardEvent,
     OngoingDetachedEvent,
     TalentUsedEvent,
@@ -55,8 +56,10 @@ import type {
     CardToDeckBottomEvent,
     CardTransferredEvent,
     SpecialAfterScoringArmedEvent,
+    ReactionPassRequestedEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    DeckInspectedEvent,
     MunchkinMonsterDefeatedEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
@@ -80,10 +83,21 @@ import { triggerActiveBaseAbility } from './baseAbilities';
 import { collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
-import { maybeResolveReactionQueue } from './reactionQueue';
+import { maybeResolveReactionQueueSuspendingDomainEvents } from './reactionQueue';
+import { applyTriggerQueueFactEvent } from './triggerQueueFacts';
+import { doesDestroyedMinionEnterOwnerDiscard } from './destroyFacts';
+import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent';
 import { canPlayFromDiscard } from './discardPlayability';
 import { canPlayActionFromDiscard } from './discardActionPlayability';
-import { reduce } from './reduce';
+import {
+    reduceBuriedCardReturnedToHandEvent,
+    reduceCardRecoveredFromDiscardEvent,
+    reduceCardTransferredEvent,
+    reduceDeckInspectionFactEvent,
+    reduceMinionMovedEvent,
+    reduceMinionReturnedEvent,
+    reduceOngoingDetachedEvent,
+} from './reduce';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import {
@@ -200,6 +214,10 @@ export function execute(
     // 通过引用赋值将 sys 更新传递给 pipeline
     if (updatedState) {
         state.sys = updatedState.sys;
+    }
+
+    if (command.type === SU_COMMANDS.REACTION_PASS) {
+        return events;
     }
 
     // 后处理：onDestroy 触发 → onMove 触发（循环直到稳定）→ onAffected 触发
@@ -454,6 +472,19 @@ function executeCommand(
                 payload: {
                     playerId: command.playerId,
                     cardUids: command.payload.cardUids,
+                },
+                sourceCommandType: command.type,
+                timestamp: now,
+            };
+            return { events: [event] };
+        }
+
+        case SU_COMMANDS.REACTION_PASS: {
+            const event: ReactionPassRequestedEvent = {
+                type: SU_EVENTS.REACTION_PASS_REQUESTED,
+                payload: {
+                    playerId: command.playerId,
+                    reason: command.payload.reason,
                 },
                 sourceCommandType: command.type,
                 timestamp: now,
@@ -979,7 +1010,7 @@ function filterProtectedMinionEvents(
 
     const flushPendingEvents = () => {
         for (const pendingEvent of pendingEvents) {
-            workingCore = reduce(workingCore, pendingEvent);
+            workingCore = applyPostProcessPrefixEvent(workingCore, pendingEvent);
         }
         pendingEvents = [];
         pendingSourceKey = undefined;
@@ -992,7 +1023,7 @@ function filterProtectedMinionEvents(
             pendingEvents.push(event);
             return;
         }
-        workingCore = reduce(workingCore, event);
+        workingCore = applyPostProcessPrefixEvent(workingCore, event);
     };
 
     for (const e of events) {
@@ -1091,7 +1122,7 @@ export function processClydeDetachChoices(
     for (const event of events) {
         if (event.type !== SU_EVENTS.ONGOING_DETACHED) {
             result.push(event);
-            const advancedCore = reduce(matchState.core, event);
+            const advancedCore = applyPostProcessPrefixEvent(matchState.core, event);
             if (advancedCore !== matchState.core) {
                 matchState = { ...matchState, core: advancedCore };
             }
@@ -1102,7 +1133,7 @@ export function processClydeDetachChoices(
         const context = findClydeDetachChoiceContext(matchState.core, detached);
         if (!context) {
             result.push(event);
-            const advancedCore = reduce(matchState.core, event);
+            const advancedCore = reduceOngoingDetachedEvent(matchState.core, detached);
             if (advancedCore !== matchState.core) {
                 matchState = { ...matchState, core: advancedCore };
             }
@@ -1169,7 +1200,7 @@ export function processDestroyTriggers(
     playerId: PlayerId,
     random: RandomFn,
     now: number,
-    options?: { skipDestroyEventKeys?: Set<string> }
+    options?: { skipDestroyEventKeys?: Set<string>; skipReactionQueueResolution?: boolean }
 ): PostProcessResult {
     const core = state.core;
     // 保护检查：过滤掉受保护的随从的消灭事件
@@ -1214,7 +1245,10 @@ export function processDestroyTriggers(
             .filter(event => event.type !== SU_EVENTS.MINION_DESTROYED);
         if (prefixEvents.length > 0) {
             const stateBeforePrefix = ms ?? state;
-            const advancedCore = prefixEvents.reduce((acc, event) => reduce(acc, event), stateBeforePrefix.core);
+            const advancedCore = prefixEvents.reduce(
+                (acc, event) => applyPostProcessPrefixEvent(acc, event),
+                stateBeforePrefix.core,
+            );
             if (advancedCore !== stateBeforePrefix.core) {
                 ms = {
                     ...stateBeforePrefix,
@@ -1390,8 +1424,7 @@ export function processDestroyTriggers(
             if (queuedDestroyReactions) {
                 localEvents.push(queuedDestroyReactions);
             }
-            const discardCore = reduce(phase2Core, de);
-            const didEnterOwnerDiscard = discardCore.players[ownerId]?.discard?.some(card => card.uid === minionUid) ?? false;
+            const didEnterOwnerDiscard = doesDestroyedMinionEnterOwnerDiscard(phase2Core, de);
             if (didEnterOwnerDiscard) {
                 const discardSourceEventId = `minion-discarded-from-base:${minionUid}:${fromBaseIndex}:${now}`;
                 const discardFrameId = `minion-discarded-from-base-frame:${minionUid}:${fromBaseIndex}:${now}`;
@@ -1444,7 +1477,10 @@ export function processDestroyTriggers(
         // 否则像“双小鬼同时被消灭”会重复抽到同一张牌、重复弃同一张牌，第二次实际落不下去。
         if (filteredLocal.length > 0) {
             const stateBeforeAdvance = ms ?? currentState;
-            const advancedCore = filteredLocal.reduce((acc, event) => reduce(acc, event), stateBeforeAdvance.core);
+            const advancedCore = filteredLocal.reduce(
+                (acc, event) => applyPostProcessPrefixEvent(acc, event),
+                stateBeforeAdvance.core,
+            );
             if (advancedCore !== stateBeforeAdvance.core) {
                 ms = {
                     ...stateBeforeAdvance,
@@ -1500,7 +1536,7 @@ export function processDestroyTriggers(
     let coreForQueue = (ms ?? state).core;
     for (const e of combined) {
         if (e.type === SU_EVENTS.TRIGGER_QUEUED || e.type === SU_EVENTS.TRIGGER_CONSUMED) {
-            coreForQueue = reduce(coreForQueue, e);
+            coreForQueue = applyTriggerQueueFactEvent(coreForQueue, e);
         }
     }
     const baseMS = ms ?? state;
@@ -1508,9 +1544,11 @@ export function processDestroyTriggers(
     if (hasImmediateExtraPlay) {
         return { events: combined, matchState: msForQueue };
     }
-    const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    if (rq) {
-        return { events: [...combined, ...rq.events], matchState: rq.state };
+    if (!options?.skipReactionQueueResolution) {
+        const rq = maybeResolveReactionQueueSuspendingDomainEvents(msForQueue, random, now);
+        if (rq) {
+            return { events: [...combined, ...rq.events], matchState: rq.state };
+        }
     }
 
     return { events: combined, matchState: ms };
@@ -1607,7 +1645,7 @@ export function processMoveTriggers(
         const stateBeforeMove = ms ?? state;
         const coreBeforeMove = stateBeforeMove.core;
         if (event.type !== SU_EVENTS.MINION_MOVED) {
-            ms = { ...stateBeforeMove, core: reduce(coreBeforeMove, event) };
+            ms = { ...stateBeforeMove, core: applyPostProcessPrefixEvent(coreBeforeMove, event) };
             continue;
         }
         const me = event as MinionMovedEvent;
@@ -1615,7 +1653,7 @@ export function processMoveTriggers(
         const simultaneousMoveBatchMinionUids = me.payload.batchId
             ? moveBatchUidsByBatchId.get(me.payload.batchId)
             : undefined;
-        const advancedCore = reduce(coreBeforeMove, me);
+        const advancedCore = reduceMinionMovedEvent(coreBeforeMove, me);
         const advancedMatchState = { ...stateBeforeMove, core: advancedCore };
         const sourceEventId = `minion-moved:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
         const frameId = `minion-moved-frame:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
@@ -1913,7 +1951,7 @@ export function processReturnToHandTriggers(
                     continue;
                 }
             }
-            const advancedCore = reduce(coreBeforeReturn, event);
+            const advancedCore = reduceMinionReturnedEvent(coreBeforeReturn, event as MinionReturnedEvent);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             const dedupKey = buildReturnToHandDedupKey(event);
             if (dedupKey && processedReturnToHandEventKeys.has(dedupKey)) {
@@ -1989,7 +2027,7 @@ export function processReturnToHandTriggers(
         if (event.type === SU_EVENTS.CARD_TRANSFERRED) {
             const payload = (event as CardTransferredEvent).payload;
             const transferredMinionLki = findTransferredMinionLkiFromPlay(coreBeforeReturn, event as CardTransferredEvent);
-            const advancedCore = reduce(coreBeforeReturn, event);
+            const advancedCore = reduceCardTransferredEvent(coreBeforeReturn, event as CardTransferredEvent);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             const transferFrameId = `card-transferred-frame:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
             const transferSourceEventId = `card-transferred:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
@@ -2099,7 +2137,7 @@ export function processReturnToHandTriggers(
 
         if (event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD) {
             const payload = (event as CardRecoveredFromDiscardEvent).payload;
-            const advancedCore = reduce(coreBeforeReturn, event);
+            const advancedCore = reduceCardRecoveredFromDiscardEvent(coreBeforeReturn, event as CardRecoveredFromDiscardEvent);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             if ((payload.cardUids?.length ?? 0) === 0) {
                 retainedEvents.push(event);
@@ -2138,7 +2176,7 @@ export function processReturnToHandTriggers(
 
         if (event.type === SU_EVENTS.BURIED_CARD_RETURNED_TO_HAND) {
             const payload = (event as any).payload as { playerId: PlayerId; cardUid: string; baseIndex: number; reason?: string };
-            const advancedCore = reduce(coreBeforeReturn, event);
+            const advancedCore = reduceBuriedCardReturnedToHandEvent(coreBeforeReturn, event as BuriedCardReturnedToHandEvent);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             const dedupKey = buildReturnToHandDedupKey(event);
             if (dedupKey && processedReturnToHandEventKeys.has(dedupKey)) {
@@ -2187,7 +2225,7 @@ export function processReturnToHandTriggers(
         // 同批次里前置的非回手事件也可能改写 source controller / base 现场。
         // 若这里不顺序推进现场，后续 return carrier 仍会按旧 core 收集 queued trigger。
         retainedEvents.push(event);
-        ms = { ...stateBeforeReturn, core: reduce(coreBeforeReturn, event) };
+        ms = { ...stateBeforeReturn, core: applyPostProcessPrefixEvent(coreBeforeReturn, event) };
     }
 
     if (extraEvents.length > 0) {
@@ -2213,7 +2251,7 @@ export function processDestroyMoveCycle(
     playerId: PlayerId,
     random: RandomFn,
     now: number,
-    options?: { skipDestroyEventKeys?: Set<string> }
+    options?: { skipDestroyEventKeys?: Set<string>; skipReactionQueueResolution?: boolean }
 ): PostProcessResult {
     let currentEvents = events;
     let ms: MatchState<SmashUpCore> | undefined;
@@ -2447,7 +2485,7 @@ export function processAffectTriggers(
             if (queuedBase) extraEvents.push(queuedBase);
         }
 
-        const advancedCore = reduce(coreBeforeAffect, event);
+        const advancedCore = applyPostProcessPrefixEvent(coreBeforeAffect, event);
         if (advancedCore !== coreBeforeAffect) {
             ms = {
                 ...stateBeforeAffect,
@@ -2479,7 +2517,7 @@ export function processDeckInspectionTriggers(
         const stateBeforeInspection = ms ?? state;
         const coreBeforeInspection = stateBeforeInspection.core;
         if (evt.type !== SU_EVENTS.REVEAL_HAND && evt.type !== SU_EVENTS.REVEAL_DECK_TOP && evt.type !== SU_EVENTS.DECK_INSPECTED) {
-            ms = { ...stateBeforeInspection, core: reduce(coreBeforeInspection, evt) };
+            ms = { ...stateBeforeInspection, core: applyPostProcessPrefixEvent(coreBeforeInspection, evt) };
             continue;
         }
 
@@ -2494,7 +2532,10 @@ export function processDeckInspectionTriggers(
         const inspectionCausePlayerId = (isReveal ? payload.sourcePlayerId : payload.inspectorPlayerId) ?? playerId;
         const sourceEventId = `deck-inspected:${evt.type}:${inspectionZone}:${targetPlayerIds.join(',')}:${eventIndex}:${now}`;
         const frameId = `deck-inspected-frame:${evt.type}:${inspectionZone}:${targetPlayerIds.join(',')}:${eventIndex}:${now}`;
-        const advancedCore = reduce(coreBeforeInspection, evt);
+        const advancedCore = reduceDeckInspectionFactEvent(
+            coreBeforeInspection,
+            evt as RevealHandEvent | RevealDeckTopEvent | DeckInspectedEvent,
+        );
         const advancedMatchState = { ...stateBeforeInspection, core: advancedCore };
 
         const queued = collectTriggers(advancedCore, 'onDeckInspected', {

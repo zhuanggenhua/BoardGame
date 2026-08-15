@@ -84,6 +84,8 @@ const ACTION_LOG_ALLOWLIST = [
     'REROLL_BONUS_DIE',
     // 确认投掷：记录最终骰面结果
     'CONFIRM_ROLL',
+    // 确认对掷：记录双方骰面与胜负结果
+    'CONFIRM_COMPARE_ROLL',
     // 交互确认会承载关键选择结果（如暴击/精准），需要进入操作日志
     'SYS_INTERACTION_RESPOND',
 ] as const;
@@ -981,13 +983,16 @@ function formatDiceThroneActionEntry({
 
         if (event.type === 'DIE_MODIFIED') {
             const modEvent = event as DieModifiedEvent;
-            const { dieId, oldValue, newValue, playerId, sourceCardId } = modEvent.payload;
+            const { dieId, oldValue, newValue, playerId, sourceCardId, target } = modEvent.payload;
             const card = sourceCardId ? findDiceThroneCard(core, sourceCardId, playerId) : undefined;
             const cardName = card?.name ?? sourceCardId;
             const isCardI18n = cardName?.includes('.');
+            const modifiedKey = target === 'pendingBonusDie'
+                ? 'actionLog.bonusDieModified'
+                : 'actionLog.dieModified';
             
             const segments: ActionLogSegment[] = [
-                i18nSeg('actionLog.dieModified', { 
+                i18nSeg(modifiedKey, {
                     dieId: dieId + 1, 
                     oldValue, 
                     newValue 

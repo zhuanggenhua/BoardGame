@@ -329,4 +329,148 @@ describe('Vikings abilities', () => {
             expect.objectContaining({ uid: 'borrowed-action', owner: '1' }),
         );
     });
+
+    it('vikings_raiding_party 打出揭示随从时，应先正式转移再由 MINION_PLAYED 落地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('raiding-party-1', 'vikings_raiding_party', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('stolen-raptor', 'dino_war_raptor', 'minion', '1'),
+                        makeCard('deck-rest', 'dino_armor_stego', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'raiding-party-1' },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const playerPrompt = getSimpleChoicePrompt(played.finalState, 'vikings_raiding_party_player');
+        const chooseP1 = getPromptOption(playerPrompt, option => option.value?.targetPlayerId === '1', 'target player 1 option');
+        const afterPlayerChoice = respondToPrompt(played.finalState, chooseP1.id, '0', defaultTestRandom);
+
+        const choicePrompt = getSimpleChoicePrompt(afterPlayerChoice.finalState, 'vikings_raiding_party_choice');
+        const chooseRaptor = getPromptOption(choicePrompt, option => option.value?.cardUid === 'stolen-raptor', 'revealed raptor option');
+        const resolved = respondToPrompt(afterPlayerChoice.finalState, chooseRaptor.id, '0', defaultTestRandom);
+
+        const transferIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.CARD_TRANSFERRED
+            && (event as any).payload.cardUid === 'stolen-raptor',
+        );
+        const reorderIndex = resolved.events.findIndex(event => event.type === SU_EVENTS.DECK_REORDERED);
+        const playedIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.MINION_PLAYED
+            && (event as any).payload.cardUid === 'stolen-raptor',
+        );
+
+        expect(transferIndex).toBeGreaterThanOrEqual(0);
+        expect(reorderIndex).toBeGreaterThan(transferIndex);
+        expect(playedIndex).toBeGreaterThan(reorderIndex);
+        expect(resolved.events[playedIndex]).toEqual(expect.objectContaining({
+            payload: expect.objectContaining({
+                playerId: '0',
+                ownerId: '1',
+                baseIndex: 0,
+                consumesNormalLimit: false,
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions).toContainEqual(
+            expect.objectContaining({ uid: 'stolen-raptor', owner: '1', controller: '0' }),
+        );
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['deck-rest']);
+    });
+
+    it('vikings_raiding_party 打出揭示持续行动时，应由正式 ACTION_PLAYED 和 ONGOING_ATTACHED 落地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('raiding-party-2', 'vikings_raiding_party', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('stolen-preserve', 'dino_wildlife_preserve', 'action', '1'),
+                        makeCard('deck-rest-2', 'dino_armor_stego', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'raiding-party-2' },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const playerPrompt = getSimpleChoicePrompt(played.finalState, 'vikings_raiding_party_player');
+        const chooseP1 = getPromptOption(playerPrompt, option => option.value?.targetPlayerId === '1', 'target player 1 option');
+        const afterPlayerChoice = respondToPrompt(played.finalState, chooseP1.id, '0', defaultTestRandom);
+
+        const choicePrompt = getSimpleChoicePrompt(afterPlayerChoice.finalState, 'vikings_raiding_party_choice');
+        const choosePreserve = getPromptOption(choicePrompt, option => option.value?.cardUid === 'stolen-preserve', 'revealed preserve option');
+        const afterCardChoice = respondToPrompt(afterPlayerChoice.finalState, choosePreserve.id, '0', defaultTestRandom);
+
+        const basePrompt = getSimpleChoicePrompt(afterCardChoice.finalState, 'vikings_raiding_party_action_base');
+        const chooseBase = getPromptOption(basePrompt, option => option.value?.baseIndex === 0, 'target base option');
+        const resolved = respondToPrompt(afterCardChoice.finalState, chooseBase.id, '0', defaultTestRandom);
+
+        const transferIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.CARD_TRANSFERRED
+            && (event as any).payload.cardUid === 'stolen-preserve',
+        );
+        const actionIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.ACTION_PLAYED
+            && (event as any).payload.cardUid === 'stolen-preserve',
+        );
+        const attachIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload.cardUid === 'stolen-preserve',
+        );
+
+        expect(transferIndex).toBeGreaterThanOrEqual(0);
+        expect(actionIndex).toBeGreaterThan(transferIndex);
+        expect(attachIndex).toBeGreaterThan(actionIndex);
+        expect(resolved.events[actionIndex]).toEqual(expect.objectContaining({
+            payload: expect.objectContaining({
+                playerId: '0',
+                ownerId: '1',
+                isExtraAction: true,
+                targetBaseIndex: 0,
+            }),
+        }));
+        expect(resolved.events[attachIndex]).toEqual(expect.objectContaining({
+            payload: expect.objectContaining({
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetBaseIndex: 0,
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].ongoingActions).toContainEqual(
+            expect.objectContaining({ uid: 'stolen-preserve', ownerId: '1' }),
+        );
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['deck-rest-2']);
+    });
 });

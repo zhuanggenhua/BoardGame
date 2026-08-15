@@ -17,6 +17,7 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -46,13 +47,12 @@ import { validateActionPlaySemantics } from '../domain/playLegality';
 import { registerTitanSpecialValidator } from '../domain/titanAbilityValidators';
 import {
     type ActionCardDef,
-    type ActionPlayedEvent,
     type CardInstance,
     type CardsDrawnEvent,
     type DeckReorderedEvent,
+    type FusionCardDef,
     type MinionPlayedEvent,
     type SmashUpCore,
-    type SmashUpCommand,
     type SmashUpEvent,
     type TalentUsedEvent,
     type TitanMetadataUpdatedEvent,
@@ -60,9 +60,9 @@ import {
     SU_EVENTS,
 } from '../domain/types';
 import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from '../domain/utils';
-import { execute } from '../domain/reducer';
-import { reduce } from '../domain/reduce';
 import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 
 type MinionChoice = {
     minionUid?: string;
@@ -167,18 +167,6 @@ function createHuluwawaPromptContext<TExtra extends Record<string, unknown> = Re
         now,
         ...(extra ?? {} as TExtra),
     };
-}
-
-function cloneSysForSimulatedExecute(state: MatchState<SmashUpCore>) {
-    return {
-        ...state.sys,
-        interaction: state.sys.interaction
-            ? {
-                ...state.sys.interaction,
-                queue: [...(state.sys.interaction.queue ?? [])],
-            }
-            : { queue: [] },
-    } as MatchState<SmashUpCore>['sys'];
 }
 
 function queueOrSetCurrentInteraction(
@@ -407,80 +395,81 @@ function playCardAsExtra(
     now: number,
     prefixEvents: SmashUpEvent[] = [],
 ): { matchState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    let simulatedCore = state.core;
-    for (const event of prefixEvents) {
-        simulatedCore = reduce(simulatedCore, event);
-    }
-    const simulatedPlayer = simulatedCore.players[playerId];
-    if (simulatedPlayer) {
-        simulatedCore = {
-            ...simulatedCore,
-            players: {
-                ...simulatedCore.players,
-                [playerId]: {
-                    ...simulatedPlayer,
-                    minionLimit: chosenCard.type === 'minion'
-                        ? Math.max(simulatedPlayer.minionLimit, simulatedPlayer.minionsPlayed + 1)
-                        : simulatedPlayer.minionLimit,
-                    actionLimit: chosenCard.type === 'action'
-                        ? Math.max(simulatedPlayer.actionLimit, simulatedPlayer.actionsPlayed + 1)
-                        : simulatedPlayer.actionLimit,
-                },
-            },
+    if (chosenCard.type === 'minion') {
+        const baseIndex = targets.baseIndex ?? 0;
+        const minionDef = getMinionDef(chosenCard.defId);
+        return {
+            matchState: state,
+            events: [
+                ...prefixEvents,
+                {
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: chosenCard.uid,
+                        defId: chosenCard.defId,
+                        ownerId: chosenCard.owner,
+                        baseIndex,
+                        baseDefId: state.core.bases[baseIndex]?.defId,
+                        power: minionDef?.power ?? 0,
+                        consumesNormalLimit: false,
+                    },
+                    sourceCommandType: SU_COMMANDS.PLAY_MINION,
+                    timestamp: now,
+                } as MinionPlayedEvent,
+            ],
         };
     }
-    const simulatedState: MatchState<SmashUpCore> = {
-        ...state,
-        core: simulatedCore,
-        sys: cloneSysForSimulatedExecute(state),
-    };
 
-    const command: SmashUpCommand = chosenCard.type === 'minion'
-        ? {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId,
-            payload: { cardUid: chosenCard.uid, baseIndex: targets.baseIndex ?? 0 },
-        }
-        : {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId,
-            payload: {
-                cardUid: chosenCard.uid,
-                ...(targets.targetBaseIndex !== undefined ? { targetBaseIndex: targets.targetBaseIndex } : {}),
-                ...(targets.targetMinionUid ? { targetMinionUid: targets.targetMinionUid } : {}),
-            },
-        };
+    if (chosenCard.type !== 'action') {
+        return { matchState: state, events: prefixEvents };
+    }
 
-    const playEvents = execute(simulatedState, command, random).map((event) => {
-        if (event.type === SU_EVENTS.MINION_PLAYED && chosenCard.type === 'minion') {
-            const minionEvent = event as MinionPlayedEvent;
-            if (minionEvent.payload.cardUid !== chosenCard.uid) return event;
-            return {
-                ...minionEvent,
-                payload: { ...minionEvent.payload, consumesNormalLimit: false },
-            } as SmashUpEvent;
-        }
-        if (event.type === SU_EVENTS.ACTION_PLAYED && chosenCard.type === 'action') {
-            const actionEvent = event as ActionPlayedEvent;
-            if (actionEvent.payload.cardUid !== chosenCard.uid) return event;
-            return {
-                ...actionEvent,
-                payload: { ...actionEvent.payload, isExtraAction: true },
-            } as SmashUpEvent;
-        }
-        return event;
+    const actionDef = getCardDef(chosenCard.defId) as ActionCardDef | FusionCardDef | undefined;
+    const actionSubtype = actionDef?.type === 'fusion' ? actionDef.actionSubtype : actionDef?.subtype;
+    const actionEvents: SmashUpEvent[] = [
+        ...prefixEvents,
+        buildActionPlayedEvent({
+            playerId,
+            cardUid: chosenCard.uid,
+            defId: chosenCard.defId,
+            ownerId: chosenCard.owner,
+            isExtraAction: true,
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            sourceCommandType: SU_COMMANDS.PLAY_ACTION,
+            timestamp: now,
+        }) as SmashUpEvent,
+    ];
+
+    if (actionSubtype === 'ongoing' && targets.targetBaseIndex !== undefined) {
+        actionEvents.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: chosenCard.uid,
+            defId: chosenCard.defId,
+            ownerId: chosenCard.owner,
+            ...(chosenCard.owner !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourceKind: 'action',
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now,
+        }));
+    }
+
+    const appended = appendResolvedActionAbility({
+        state,
+        events: actionEvents,
+        playerId,
+        cardUid: chosenCard.uid,
+        defId: chosenCard.defId,
+        random,
+        timestamp: now,
+        baseIndex: targets.targetBaseIndex ?? targets.baseIndex ?? 0,
+        targetBaseIndex: targets.targetBaseIndex,
+        targetMinionUid: targets.targetMinionUid,
     });
 
-    const currentInteractionId = state.sys.interaction?.current?.id;
-    const nextInteractionId = simulatedState.sys.interaction?.current?.id;
-    const hasNewInteraction = (
-        !!nextInteractionId && nextInteractionId !== currentInteractionId
-    ) || ((simulatedState.sys.interaction?.queue?.length ?? 0) > (state.sys.interaction?.queue?.length ?? 0));
-
-    return {
-        matchState: hasNewInteraction ? { ...state, sys: simulatedState.sys } : state,
-        events: [...prefixEvents, ...playEvents],
-    };
+    return { matchState: appended.state, events: appended.events };
 }
 
 function huluwawaDaWaTalent(ctx: AbilityContext): AbilityResult {

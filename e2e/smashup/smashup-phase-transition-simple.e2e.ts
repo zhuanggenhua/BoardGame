@@ -2576,6 +2576,7 @@ test('在线 AI 持有隐藏交互时应自动 batch 响应并推进状态', asy
                         'rejected',
                         'duplicate-attempt-suppressed',
                         'stale-attempt-released',
+                        'server-authority-observed',
                     ].includes(stage ?? ''),
                 };
             });

@@ -3,12 +3,14 @@ import type { RandomFn } from '../../../../engine/types';
 
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../../domain/abilityRuntime';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { isSpecialLimitBlocked } from '../../domain/abilityHelpers';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import { runCommand } from '../testRunner';
 import {
     applyEvents,
     invokeRegisteredAbilityContract,
@@ -28,6 +30,17 @@ function randomSequence(values: number[]): RandomFn {
         d: () => 1,
         range: (min: number) => min,
     };
+}
+
+function resumeFirstRuntimeContinuation(state: ReturnType<typeof makeState>, events: unknown[], random: RandomFn) {
+    const domainEvents = events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+    const continuation = events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+    if (!continuation) throw new Error('Expected Smash Up ability runtime continuation event.');
+    return resumeAbilityRuntimeContinuationEvent(
+        makeMatchState(applyEvents(state, domainEvents as any)),
+        continuation as any,
+        random,
+    );
 }
 
 beforeEach(() => {
@@ -108,20 +121,20 @@ describe('哥布林能力', () => {
     it('谁放的屁：连续正面会放置指示物，第一次反面后给额外行动并停止', () => {
         const target = makeMinion('target-1', 'robot_zapbot', '0', 2);
         const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('smelt-it', 'goblins_he_who_smelt_it', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
             bases: [makeBase({ defId: 'base_goblin_town', minions: [target], ongoingActions: [] })],
         });
 
-        const result = invokeRegisteredAbilityContract('goblins_he_who_smelt_it', 'onPlay', {
-            state,
-            matchState: makeMatchState(state),
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
-            cardUid: 'smelt-it',
-            defId: 'goblins_he_who_smelt_it',
-            baseIndex: 0,
-            targetMinionUid: 'target-1',
-            random: randomSequence([0.9, 0.8, 0.1]),
-            now: 1000,
-        });
+            payload: { cardUid: 'smelt-it', targetBaseIndex: 0, targetMinionUid: 'target-1' },
+        }, randomSequence([0.9, 0.8, 0.1]));
 
         const counters = result.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(counters).toHaveLength(2);
@@ -224,28 +237,25 @@ describe('哥布林能力', () => {
 
     it('占卜师：同回合可弃一张手牌把明确偏好的硬币结果改成正面', () => {
         const diviner = makeMinion('diviner-1', 'goblins_diviner', '0', 4);
-        const played = makeMinion('new-minion', 'goblins_gobbo', '0', 2);
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
-                    hand: [makeCard('discard-me', 'robot_zapbot', 'minion', '0')],
+                    hand: [
+                        makeCard('new-minion', 'robot_zapbot', 'minion', '0'),
+                        makeCard('discard-me', 'robot_zapbot', 'minion', '0'),
+                    ],
                     deck: [makeCard('draw-1', 'robot_zapbot', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase({ defId: 'base_goblin_town', minions: [diviner, played], ongoingActions: [] })],
+            bases: [makeBase({ defId: 'base_goblin_town', minions: [diviner], ongoingActions: [] })],
         });
 
-        const result = triggerBaseAbility('base_goblin_town', 'onMinionPlayed', {
-            state,
-            matchState: makeMatchState(state),
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            baseIndex: 0,
-            baseDefId: 'base_goblin_town',
-            minionUid: 'new-minion',
-            random: randomSequence([0.1]),
-            now: 1000,
-        } as any);
+            payload: { cardUid: 'new-minion', baseIndex: 0 },
+        }, randomSequence([0.1]));
 
         expect(result.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARDS_DISCARDED,
@@ -270,6 +280,7 @@ describe('哥布林能力', () => {
                 makeBase({ defId: 'base_round_table', minions: [], ongoingActions: [] }),
             ],
         });
+        const random = randomSequence([0.1]);
 
         const result = invokeRegisteredAbilityContract('goblins_blaster', 'special', {
             state,
@@ -279,11 +290,12 @@ describe('哥布林能力', () => {
             defId: 'goblins_blaster',
             baseIndex: 0,
             targetBaseIndex: 2,
-            random: randomSequence([0.1]),
+            random,
             now: 1000,
         } as any);
+        const resumed = resumeFirstRuntimeContinuation(state, result.events, random);
 
-        expect(result.events).toContainEqual(expect.objectContaining({
+        expect(resumed?.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.MINION_MOVED,
             payload: expect.objectContaining({
                 minionUid: 'blaster-1',

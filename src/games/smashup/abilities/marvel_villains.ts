@@ -22,6 +22,7 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
@@ -42,7 +43,6 @@ import {
     type RestrictionCheckContext,
     type TriggerContext,
 } from '../domain/ongoingEffects';
-import { reduce } from '../domain/reduce';
 import type {
     CardInstance,
     CardToDeckBottomEvent,
@@ -95,6 +95,18 @@ type VillainPromptContext = {
     selectedOngoingOwnerId?: PlayerId;
     selectedOngoingBaseIndex?: number;
     revealedCardUids?: string[];
+};
+
+type VillainDrawContinuationContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    random: RandomFn;
+    drawCount: number;
+};
+
+type VillainPromptAfterEventsContext = VillainPromptContext & {
+    leadingEvents: SmashUpEvent[];
 };
 
 type MinionChoice = {
@@ -161,17 +173,6 @@ function runtimeToAbilityResult(result: {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
     };
-}
-
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    let core = matchState.core;
-    for (const event of events) {
-        core = reduce(core, event);
-    }
-    return { ...matchState, core };
 }
 
 function findMinion(
@@ -477,6 +478,18 @@ function extraLowPowerMinions(
     ];
 }
 
+const villainDrawAfterCommittedProgram = createEffectProgram<VillainDrawContinuationContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.drawCount,
+            context.random,
+            context.now,
+        ),
+    }),
+);
+
 function runDestroyFollowup(
     context: VillainPromptContext,
     state: MatchState<SmashUpCore>,
@@ -484,7 +497,7 @@ function runDestroyFollowup(
     choice: MinionChoice | undefined,
     random: RandomFn,
     timestamp: number,
-): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
+): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore>; context?: unknown; nextProgram?: unknown } {
     if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
     const live = state.core.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid);
     if (!live) return { events: [] };
@@ -510,10 +523,9 @@ function runDestroyFollowup(
     switch (context.sourceDefId) {
         case 'hydra_red_skull':
             return {
-                events: [
-                    ...destroyEvents,
-                    ...buildStandardDrawEvents(simulateMatchState(state, destroyEvents).core, playerId, 1, random, timestamp),
-                ],
+                events: destroyEvents,
+                context: { matchState: state, playerId, now: timestamp, random, drawCount: 1 },
+                nextProgram: villainDrawAfterCommittedProgram,
             };
         case 'hydra_madame_hydra':
             return {
@@ -532,10 +544,9 @@ function runDestroyFollowup(
             };
         case 'hydra_hail_hydra':
             return {
-                events: [
-                    ...destroyEvents,
-                    ...buildStandardDrawEvents(simulateMatchState(state, destroyEvents).core, playerId, powerBeforeDestroy, random, timestamp),
-                ],
+                events: destroyEvents,
+                context: { matchState: state, playerId, now: timestamp, random, drawCount: powerBeforeDestroy },
+                nextProgram: villainDrawAfterCommittedProgram,
             };
         case 'hydra_two_more_shall_take_its_place':
             return {
@@ -545,16 +556,16 @@ function runDestroyFollowup(
                 ],
             };
         case 'hydra_baron_strucker': {
-            const nextState = simulateMatchState(state, destroyEvents);
-            const movePrompt = executeAbilityProgram(villainPromptProgram, {
-                ...context,
-                matchState: nextState,
-                mode: 'moveOwnMinion',
-                targetBaseIndex: context.sourceBaseIndex,
-            });
             return {
                 events: destroyEvents,
-                ...(movePrompt.matchState ? { matchState: movePrompt.matchState } : {}),
+                context: {
+                    ...context,
+                    matchState: state,
+                    now: timestamp,
+                    mode: 'moveOwnMinion',
+                    targetBaseIndex: context.sourceBaseIndex,
+                },
+                nextProgram: villainPromptProgram,
             };
         }
         case 'masters_of_evil_acceptable_losses':
@@ -1154,6 +1165,17 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
     },
 });
 
+const villainPromptAfterEventsProgram = createEffectProgram<VillainPromptAfterEventsContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const { leadingEvents: _leadingEvents, ...promptContext } = context;
+        return {
+            events: context.leadingEvents,
+            context: promptContext,
+            nextProgram: villainPromptProgram,
+        };
+    },
+);
+
 function prompt(context: VillainPromptContext): AbilityResult {
     return runtimeToAbilityResult(executeAbilityProgram(villainPromptProgram, context));
 }
@@ -1309,8 +1331,8 @@ function kreePrepareToEngage(ctx: AbilityContext): AbilityResult {
         revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, ctx.defId, ctx.now, ctx.playerId),
     ];
     if (ctx.matchState) {
-        const prompted = executeAbilityProgram(villainPromptProgram, {
-            matchState: simulateMatchState(ctx.matchState, revealEvents),
+        return runtimeToAbilityResult(executeAbilityProgram(villainPromptAfterEventsProgram, {
+            matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             mode: 'kreePrepareToEngage',
@@ -1318,11 +1340,8 @@ function kreePrepareToEngage(ctx: AbilityContext): AbilityResult {
             sourceCardUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
             revealedCardUids: revealed.map(card => card.uid),
-        });
-        return {
-            events: [...revealEvents, ...prompted.events],
-            ...(prompted.matchState ? { matchState: prompted.matchState } : {}),
-        };
+            leadingEvents: revealEvents,
+        }));
     }
     const picked = revealed.filter(card => getCardDef(card.defId)?.type === 'action').slice(0, 2);
     const remaining = revealed.filter(card => !picked.some(hit => hit.uid === card.uid));

@@ -207,6 +207,7 @@ const ACTION_KINDS = {
     LOOT_CORPSE: 'loot-corpse',
     USE_RABBIT_FOOT: 'use-rabbit-foot',
     USE_ROOM_EFFECT: 'use-room-effect',
+    ACKNOWLEDGE_EVENT_ROLL: 'acknowledge-event-roll',
     ACKNOWLEDGE_CARD_RESOLUTION: 'acknowledge-card-resolution',
     END_TURN: 'end-turn',
     ACKNOWLEDGE_TURN_END_ROLL: 'acknowledge-turn-end-roll',
@@ -1540,6 +1541,37 @@ function buildCardResolutionAcknowledgementActions(
     return action ? [action] : [];
 }
 
+function buildEventRollFinalizationActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.pendingEventRollResolution;
+    const requiredPlayerIds = pending?.requiredPlayerIds?.length
+        ? pending.requiredPlayerIds
+        : pending
+            ? state.core.playerIds
+            : [];
+    const acknowledgedPlayerIds = pending?.acknowledgedPlayerIds ?? [];
+    if (!pending || !requiredPlayerIds.includes(playerId) || acknowledgedPlayerIds.includes(playerId)) {
+        return [];
+    }
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+        payload: { rollId: pending.rollId },
+        kind: ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL,
+        label: `确认事件投骰结果：${pending.sourceTitle}`,
+        metadata: {
+            strategicScore: 1190,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
 function buildBetrayalAiLegalActions(
     validate: BetrayalAiValidator,
     args: {
@@ -1564,6 +1596,11 @@ function buildBetrayalAiLegalActions(
     const eventChoiceActions = buildEventChoiceActions(validate, state, args.playerId);
     if (eventChoiceActions.length > 0) {
         return eventChoiceActions;
+    }
+
+    const eventRollFinalizationActions = buildEventRollFinalizationActions(validate, state, args.playerId);
+    if (eventRollFinalizationActions.length > 0) {
+        return eventRollFinalizationActions;
     }
 
     const cardResolutionAcknowledgementActions = buildCardResolutionAcknowledgementActions(validate, state, args.playerId);
@@ -1809,6 +1846,8 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 900;
         case ACTION_KINDS.USE_RABBIT_FOOT:
             return strategicScore;
+        case ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL:
+            return strategicScore;
         case ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION:
             return strategicScore;
         case ACTION_KINDS.USE_ROOM_EFFECT:
@@ -1889,6 +1928,7 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.RESOLVE_TRADE_AGREEMENT,
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
+                ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,
                 ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,
                 ACTION_KINDS.USE_ROOM_EFFECT,

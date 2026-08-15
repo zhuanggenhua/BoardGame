@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
@@ -79,53 +79,6 @@ async function claimSeatViaApi(args: {
         throw new Error(`未能为 SmashUp 的 ${args.playerId} 号位领取凭据`);
     }
     return data.playerCredentials;
-}
-
-async function seedAiSeatCredentials(
-    target: BrowserContext | Page,
-    matchId: string,
-    aiSeatCredentials: Record<string, string>,
-) {
-    await target.addInitScript(
-        ({ targetMatchId, targetSeatCredentials }) => {
-            localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetSeatCredentials));
-            window.dispatchEvent(new Event('match-credentials-changed'));
-        },
-        { targetMatchId: matchId, targetSeatCredentials: aiSeatCredentials },
-    );
-}
-
-async function waitForAiSeatCredentials(page: Page, matchId: string, expectedSeatIds: string[]) {
-    await expect.poll(async () => {
-        return page.evaluate((targetMatchId) => {
-            const raw = localStorage.getItem(`match_ai_creds_${targetMatchId}`);
-            if (!raw) return [];
-            try {
-                return Object.keys(JSON.parse(raw) as Record<string, string>).sort();
-            } catch {
-                return ['parse-error'];
-            }
-        }, matchId);
-    }, {
-        timeout: 10000,
-        message: `等待 ${matchId} 的 AI 座位凭据写入本地`,
-    }).toEqual([...expectedSeatIds].sort());
-}
-
-async function waitForOnlineAiSeatBridgeReady(page: Page, playerId: string) {
-    await expect.poll(async () => {
-        return page.evaluate((targetPlayerId) => {
-            const debugApi = (window as Window & {
-                __BG_ONLINE_AI_DEBUG__?: {
-                    getSeatLatestState?: (pid: string) => unknown;
-                };
-            }).__BG_ONLINE_AI_DEBUG__;
-            return Boolean(debugApi?.getSeatLatestState?.(targetPlayerId));
-        }, playerId);
-    }, {
-        timeout: 20000,
-        message: `等待在线 AI seat ${playerId} 的桥接客户端就绪`,
-    }).toBe(true);
 }
 
 async function selectSmashUpFactionById(page: Page, factionId: string) {
@@ -225,18 +178,6 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
 
         await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
         await waitForFactionDraft(page);
-        const credentialStartAt = Date.now();
-        await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
-        const credentialsElapsedMs = Date.now() - credentialStartAt;
-        console.log(JSON.stringify({
-            matchId,
-            phase: 'credentials-ready',
-            credentialsElapsedMs,
-        }));
-        await waitForOnlineAiSeatBridgeReady(page, '1');
-        await waitForOnlineAiSeatBridgeReady(page, '2');
-        await waitForOnlineAiSeatBridgeReady(page, '3');
-
         await selectSmashUpFactionById(page, 'aliens');
         const aiStartAt = Date.now();
 
@@ -353,10 +294,6 @@ test('SmashUp 在线 AI 选派系共享 HUD 换位：应显示入口并与 AI �
 
         await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
         await waitForFactionDraft(page);
-        await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
-        await waitForOnlineAiSeatBridgeReady(page, '1');
-        await waitForOnlineAiSeatBridgeReady(page, '2');
-        await waitForOnlineAiSeatBridgeReady(page, '3');
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, page);

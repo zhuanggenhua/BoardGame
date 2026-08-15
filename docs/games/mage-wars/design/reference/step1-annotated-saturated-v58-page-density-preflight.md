@@ -14,10 +14,10 @@ v57 撤销通过不是因为某个坐标微调，而是三条设计前提失败�
 
 | 类型 | 来源 | 直接结论 |
 | --- | --- | --- |
-| 通用设计链路 | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | 规则对象先有唯一实体锚点；选中态不得新增第二实体或改变常驻布局占位；大集合可分页 / 抽屉，但入口要显示数量和可恢复路径 |
-| UI 审计链路 | `D:\codex-home\skills\ui-audit-loop\SKILL.md` | 用户指出新口径后旧图必须重新归类；几何无重叠不能替代玩家视角容量和密度验证 |
-| 游戏 UI 设计 | `D:\codex-home\skills\game-design\SKILL.md` | 当前玩家任务是从法术书 / 已计划法术 / 场上目标里作选择；界面必须服务决策数量和翻页成本 |
-| Skill 治理 | `D:\codex-home\skills\spec-steward\SKILL.md` | “选中态不得改变布局”作为通用设计不变量写入 `ui-design-pipeline`；本文件只承载 Mage Wars v58 具体裁决 |
+| 通用设计链路 | `.spec/skills/ui-design-pipeline/SKILL.md` | 规则对象先有唯一实体锚点；选中态不得新增第二实体或改变常驻布局占位；大集合可分页 / 抽屉，但入口要显示数量和可恢复路径 |
+| UI 审计链路 | `.spec/skills/ui-audit-loop/SKILL.md` | 用户指出新口径后旧图必须重新归类；几何无重叠不能替代玩家视角容量和密度验证 |
+| 游戏 UI 设计 | `.spec/skills/game-design/SKILL.md` | 当前玩家任务是从法术书 / 已计划法术 / 场上目标里作选择；界面必须服务决策数量和翻页成本 |
+| Skill 治理 | `.spec/skills/spec-steward/SKILL.md` | “选中态不得改变布局”作为通用设计不变量写入 `ui-design-pipeline`；本文件只承载 Mage Wars v58 具体裁决 |
 | 学徒法术书真相 | `docs/games/mage-wars/rule/apprentice-spellbooks.md` | 兽王 33 张，女祭司 / 邪术师 / 巫师各 30 张；规则对象是法术书、已计划法术、弃牌堆，不是手牌 |
 | v57 原图复核 | `docs/games/mage-wars/design/generated/step1-annotated-saturated-opendesign-artifact-v57.png` | 法术书仅 4 张、页码 `1 / 5`、左右特大牌与右下大计划区导致布局失真 |
 

@@ -32,13 +32,20 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : handleDiscardStripSelectCard}');
     });
 
-    it('计分响应里手牌后点基地应优先回到 smashup_reaction_choose 的统一响应入口', () => {
+    it('计分响应里的手牌/基地点击应优先走 smashup_reaction_choose live option', () => {
         const source = readBoardSource();
-        expect(source).toContain("if (currentPrompt?.sourceId === 'smashup_reaction_choose')");
-        expect(source).toContain("value?.kind === 'play_action'");
-        expect(source).toContain('value.cardUid === meFirstPendingCard.cardUid');
-        expect(source).toContain('value.targetBaseIndex === index');
-        expect(source).toContain('respondCurrentPrompt({ optionId: reactionOption.id })');
+        expect(source).toContain('const findReactionPlayOptionId = useCallback');
+        expect(source).toContain('const respondReactionPlayOption = useCallback');
+        expect(source).toContain("if (currentPrompt?.sourceId !== 'smashup_reaction_choose') return undefined");
+        expect(source).toContain("if (value?.kind !== params.kind || value.cardUid !== params.cardUid) return false");
+        expect(source).toContain("if (params.kind === 'play_minion')");
+        expect(source).toContain('respondCurrentPrompt({ optionId })');
+        expect(source).toContain("respondReactionPlayOption({ kind: 'play_minion', cardUid, baseIndex })");
+        expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex })");
+        expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex, targetMinionUid: minionUid })");
+        expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid: card.uid })");
+        expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid: meFirstPendingCard.cardUid, baseIndex: index })");
+        expect(source).not.toContain('respondCurrentPrompt({ optionId: reactionOption.id })');
     });
 
     it('弃牌横条应把 discardActionPlayProvider 结果映射成点随从模式', () => {

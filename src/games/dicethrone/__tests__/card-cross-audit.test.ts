@@ -9,10 +9,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { AbilityCard } from '../domain/types';
+import { executePipeline } from '../../../engine/pipeline';
+import type { PlayerId } from '../../../engine/types';
+import { DiceThroneDomain } from '../domain';
+import type { AbilityCard, DiceThroneCommand } from '../domain/types';
 import type { AbilityDef, AbilityEffect } from '../domain/combat';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import { getCustomActionHandler } from '../domain/effects';
+import { RESOURCE_IDS } from '../domain/resources';
+import { checkPlayUpgradeCard } from '../domain/rules';
+import { HEROES_DATA } from '../heroes';
 
 // 各英雄卡牌
 import { MONK_CARDS } from '../heroes/monk/cards';
@@ -26,6 +32,7 @@ import { SAMURAI_CARDS } from '../heroes/samurai/cards';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { DICETHRONE_CARD_ATLAS_IDS } from '../domain/ids';
 import { getBaseAbilityId } from '../ui/abilitySlotMapping';
+import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
 
 // i18n
 import zhCN from '../../../../public/locales/zh-CN/game-dicethrone.json';
@@ -35,14 +42,34 @@ import en from '../../../../public/locales/en/game-dicethrone.json';
 // 辅助
 // ============================================================================
 
+const playerIds: PlayerId[] = ['0', '1'];
+
+const FORBIDDEN_UPGRADE_RUNTIME_EVENTS = new Set([
+    'TOKEN_GRANTED',
+    'STATUS_APPLIED',
+    'DAMAGE_DEALT',
+    'HEAL_APPLIED',
+    'INTERACTION_REQUESTED',
+    'CHOICE_REQUESTED',
+    'BONUS_DICE_REROLL_REQUESTED',
+    'BONUS_DIE_ROLLED',
+]);
+
+function getAllHeroCardEntries(): Array<[string, AbilityCard[]]> {
+    return Object.entries(HEROES_DATA).map(([heroId, data]) => [heroId, data.cards as AbilityCard[]]);
+}
+
+function createAuditHeroState(heroId: string) {
+    const opponentHeroId = heroId === 'monk' ? 'barbarian' : 'monk';
+    return createHeroMatchup(heroId, opponentHeroId)(playerIds, createQueuedRandom([1]));
+}
+
 /** 所有英雄专属卡 + 通用卡（去重） */
 function getAllUniqueCards(): AbilityCard[] {
     const seen = new Set<string>();
     const result: AbilityCard[] = [];
     const all = [
-        ...MONK_CARDS, ...BARBARIAN_CARDS, ...PYROMANCER_CARDS,
-        ...SHADOW_THIEF_CARDS, ...MOON_ELF_CARDS, ...PALADIN_CARDS,
-        ...GUNSLINGER_CARDS, ...SAMURAI_CARDS,
+        ...Object.values(HEROES_DATA).flatMap((hero) => hero.cards as AbilityCard[]),
         ...COMMON_CARDS,
     ];
     for (const card of all) {
@@ -52,6 +79,22 @@ function getAllUniqueCards(): AbilityCard[] {
         }
     }
     return result;
+}
+
+function getUpgradeShellCards(): Array<{ heroId: string; card: AbilityCard }> {
+    return getAllHeroCardEntries()
+        .flatMap(([heroId, cards]) => cards.map((card) => ({ heroId, card })))
+        .filter(({ card }) => card.type === 'upgrade')
+        .filter(({ card }) => card.effects?.some((effect) => effect.action?.type === 'replaceAbility') ?? false);
+}
+
+function getResponseOnlyUpgradeCards(): Array<{ heroId: string; card: AbilityCard }> {
+    return getAllHeroCardEntries()
+        .flatMap(([heroId, cards]) => cards.map((card) => ({ heroId, card })))
+        .filter(({ card }) => (
+            card.type === 'upgrade'
+            && !(card.effects?.some((effect) => effect.action?.type === 'replaceAbility') ?? false)
+        ));
 }
 
 /** 收集所有英雄的所有技能定义（含升级） */
@@ -416,58 +459,63 @@ describe('枪手 / 武士卡图接线一致性', () => {
         }
     });
 
-    it('所有英雄升级卡都必须命中基础技能，而不是技能变体或技能子集', () => {
-        const verifyUpgradeTarget = (cards: AbilityCard[], heroId: string) => {
-            const violations: string[] = [];
+    it('所有普通技能升级牌都必须命中基础技能，而不是技能变体或技能子集', () => {
+        const violations: string[] = [];
 
-            for (const card of cards) {
-                if (card.type !== 'upgrade' || !card.effects) continue;
-                const replaceAction = card.effects.find((effect) => effect.action?.type === 'replaceAbility')?.action;
-                if (replaceAction?.type !== 'replaceAbility') {
-                    violations.push(`[${heroId}/${card.id}] 缺少 replaceAbility`);
-                    continue;
-                }
-
-                const targetAbilityId = replaceAction.targetAbilityId;
-                const newAbilityId = replaceAction.newAbilityDef?.id;
-                if (!targetAbilityId || !newAbilityId) {
-                    violations.push(`[${heroId}/${card.id}] 缺少 targetAbilityId 或 newAbilityDef.id`);
-                    continue;
-                }
-
-                if (getBaseAbilityId(targetAbilityId) !== targetAbilityId) {
-                    violations.push(`[${heroId}/${card.id}] targetAbilityId=${targetAbilityId} 不是基础技能 ID`);
-                }
-                if (newAbilityId !== targetAbilityId) {
-                    violations.push(`[${heroId}/${card.id}] newAbilityDef.id=${newAbilityId} 与 targetAbilityId=${targetAbilityId} 不一致`);
-                }
+        for (const { heroId, card } of getUpgradeShellCards()) {
+            const replaceAction = card.effects?.find((effect) => effect.action?.type === 'replaceAbility')?.action;
+            if (replaceAction?.type !== 'replaceAbility') {
+                violations.push(`[${heroId}/${card.id}] 缺少 replaceAbility`);
+                continue;
             }
 
-            expect(violations).toEqual([]);
-        };
+            const targetAbilityId = replaceAction.targetAbilityId;
+            const newAbilityId = replaceAction.newAbilityDef?.id;
+            if (!targetAbilityId || !newAbilityId) {
+                violations.push(`[${heroId}/${card.id}] 缺少 targetAbilityId 或 newAbilityDef.id`);
+                continue;
+            }
 
-        verifyUpgradeTarget(MONK_CARDS, 'monk');
-        verifyUpgradeTarget(BARBARIAN_CARDS, 'barbarian');
-        verifyUpgradeTarget(PYROMANCER_CARDS, 'pyromancer');
-        verifyUpgradeTarget(SHADOW_THIEF_CARDS, 'shadow_thief');
-        verifyUpgradeTarget(MOON_ELF_CARDS, 'moon_elf');
-        verifyUpgradeTarget(PALADIN_CARDS, 'paladin');
-        verifyUpgradeTarget(GUNSLINGER_CARDS, 'gunslinger');
-        verifyUpgradeTarget(SAMURAI_CARDS, 'samurai');
+            if (getBaseAbilityId(targetAbilityId) !== targetAbilityId) {
+                violations.push(`[${heroId}/${card.id}] targetAbilityId=${targetAbilityId} 不是基础技能 ID`);
+            }
+            if (newAbilityId !== targetAbilityId) {
+                violations.push(`[${heroId}/${card.id}] newAbilityDef.id=${newAbilityId} 与 targetAbilityId=${targetAbilityId} 不一致`);
+            }
+        }
+
+        expect(violations).toEqual([]);
+    });
+
+    it('非 replaceAbility 的特殊升级牌必须显式限制为响应窗口卡牌，不能走 PLAY_UPGRADE_CARD', () => {
+        const responseOnlyUpgrades = getResponseOnlyUpgradeCards();
+        const violations: string[] = [];
+
+        expect(responseOnlyUpgrades.map(({ heroId, card }) => `${heroId}/${card.id}`)).toEqual([
+            'artificer/upgrade-artificer-shock-bot-2',
+        ]);
+
+        for (const { heroId, card } of responseOnlyUpgrades) {
+            if (!card.playCondition?.pendingDamage) {
+                violations.push(`[${heroId}/${card.id}] 非 replaceAbility 升级牌缺少 pendingDamage 响应窗口限制`);
+            }
+            if (card.timing !== 'instant') {
+                violations.push(`[${heroId}/${card.id}] 非 replaceAbility 升级牌 timing=${card.timing}，应只作为 instant 响应牌`);
+            }
+
+            const state = createAuditHeroState(heroId);
+            state.sys.phase = 'main1';
+            state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+            expect(checkPlayUpgradeCard(state.core, '0', card, 'non-shell-upgrade', 'main1')).toEqual({
+                ok: false,
+                reason: 'upgradeCardCannotPlay',
+            });
+        }
+
+        expect(violations).toEqual([]);
     });
 
     it('所有英雄都必须区分 升级卡=替换技能 与 行动卡=直接结算效果', () => {
-        const heroCardsMap: Record<string, AbilityCard[]> = {
-            monk: MONK_CARDS,
-            barbarian: BARBARIAN_CARDS,
-            pyromancer: PYROMANCER_CARDS,
-            shadow_thief: SHADOW_THIEF_CARDS,
-            moon_elf: MOON_ELF_CARDS,
-            paladin: PALADIN_CARDS,
-            gunslinger: GUNSLINGER_CARDS,
-            samurai: SAMURAI_CARDS,
-        };
-
         const directEffectBaselines = [
             'monk/card-buddha-light',
             'monk/card-palm-strike',
@@ -482,18 +530,21 @@ describe('枪手 / 武士卡图接线一致性', () => {
         ];
         const violations: string[] = [];
 
-        for (const [heroId, cards] of Object.entries(heroCardsMap)) {
+        for (const [heroId, cards] of getAllHeroCardEntries()) {
             for (const card of cards) {
                 const replaceEffects = card.effects?.filter((effect) => effect.action?.type === 'replaceAbility') ?? [];
                 const nonReplaceEffects = card.effects?.filter((effect) => effect.action?.type !== 'replaceAbility') ?? [];
 
                 if (card.type === 'upgrade') {
+                    const isResponseOnlyUpgrade = replaceEffects.length === 0 && !!card.playCondition?.pendingDamage;
                     if (replaceEffects.length === 0) {
-                        violations.push(
-                            `[${heroId}/${card.id}] type=upgrade 但没有 replaceAbility；老派系升级基线=${upgradeBaselines.join(', ')}`
-                        );
+                        if (!isResponseOnlyUpgrade) {
+                            violations.push(
+                                `[${heroId}/${card.id}] type=upgrade 但没有 replaceAbility，也不是已声明的响应窗口升级牌；老派系升级基线=${upgradeBaselines.join(', ')}`
+                            );
+                        }
                     }
-                    if (nonReplaceEffects.length > 0) {
+                    if (!isResponseOnlyUpgrade && nonReplaceEffects.length > 0) {
                         violations.push(
                             `[${heroId}/${card.id}] type=upgrade 但混入了直接效果；老派系升级基线=${upgradeBaselines.join(', ')}`
                         );
@@ -512,6 +563,58 @@ describe('枪手 / 武士卡图接线一致性', () => {
                         );
                     }
                 }
+            }
+        }
+
+        expect(violations).toEqual([]);
+    });
+
+    it('所有普通技能升级牌通过 PLAY_UPGRADE_CARD 打出时只执行升级壳，不自动结算技能效果', () => {
+        const violations: string[] = [];
+
+        for (const { heroId, card } of getUpgradeShellCards()) {
+            const replaceAction = card.effects?.find((effect) => effect.action?.type === 'replaceAbility')?.action;
+            if (replaceAction?.type !== 'replaceAbility' || !replaceAction.targetAbilityId) {
+                violations.push(`[${heroId}/${card.id}] 缺少可执行的 replaceAbility`);
+                continue;
+            }
+
+            const state = createAuditHeroState(heroId);
+            state.sys.phase = 'main1';
+            state.core.players['0'].hand = [card];
+            state.core.players['0'].resources[RESOURCE_IDS.CP] = 99;
+
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                {
+                    type: 'PLAY_UPGRADE_CARD',
+                    playerId: '0',
+                    payload: { cardId: card.id, targetAbilityId: replaceAction.targetAbilityId },
+                    timestamp: 100,
+                } as DiceThroneCommand,
+                createQueuedRandom([1, 2, 3, 4, 5, 6]),
+                playerIds,
+            );
+
+            if (!result.success) {
+                violations.push(`[${heroId}/${card.id}] PLAY_UPGRADE_CARD 失败: ${result.error}`);
+                continue;
+            }
+
+            const eventTypes = result.events.map((event) => event.type);
+            const forbiddenEvents = eventTypes.filter((eventType) => FORBIDDEN_UPGRADE_RUNTIME_EVENTS.has(eventType));
+            if (!eventTypes.includes('ABILITY_REPLACED')) {
+                violations.push(`[${heroId}/${card.id}] 打出后没有产生 ABILITY_REPLACED`);
+            }
+            if (forbiddenEvents.length > 0) {
+                violations.push(`[${heroId}/${card.id}] 打出升级牌时自动产生了技能效果事件: ${forbiddenEvents.join(', ')}`);
+            }
+            if (result.state.sys.interaction.current) {
+                violations.push(`[${heroId}/${card.id}] 打出升级牌后残留交互: ${result.state.sys.interaction.current.kind}`);
+            }
+            if (result.state.core.players['0'].upgradeCardByAbilityId[replaceAction.targetAbilityId]?.cardId !== card.id) {
+                violations.push(`[${heroId}/${card.id}] 未写入对应升级槽 ${replaceAction.targetAbilityId}`);
             }
         }
 

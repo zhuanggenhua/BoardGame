@@ -23,7 +23,6 @@ import {
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { registerBaseAbilitySuppression, registerBaseVpModifier, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { validateActionPlaySemantics } from '../domain/playLegality';
-import { reduce } from '../domain/reduce';
 import { createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import type { ActionCardDef, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
@@ -107,24 +106,6 @@ type FlankAttackPromptContext = {
     replayDefId?: string;
     replayOwnerId?: string;
 };
-
-function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    let nextCore = core;
-    for (const event of events) {
-        nextCore = reduce(nextCore, event);
-    }
-    return nextCore;
-}
-
-function withSimulatedMatchState(
-    matchState: AbilityContext['matchState'],
-    events: SmashUpEvent[],
-): AbilityContext['matchState'] {
-    return {
-        ...matchState,
-        core: simulateCore(matchState.core, events),
-    };
-}
 
 function removeFirstDefId(defIds: string[], targetDefId: string): string[] {
     const index = defIds.indexOf(targetDefId);
@@ -619,11 +600,10 @@ const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPrompt
             }
         }
 
-        const promptState = withSimulatedMatchState(state, events);
         return {
             events,
             context: {
-                matchState: promptState,
+                matchState: state,
                 playerId,
                 now: timestamp,
                 replayCardUid: selected.cardUid,

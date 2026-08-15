@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     acknowledgePendingCardResolutions,
+    acknowledgePendingEventRollResolution,
     applyBetrayalCommand,
     BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
@@ -123,12 +124,7 @@ function findTestExplorer(core: BetrayalCore, playerId: string) {
 function finalizePendingEventRollForTest(core: BetrayalCore): BetrayalCore {
     const pending = core.pendingEventRollResolution;
     expect(pending).toBeTruthy();
-    return applyBetrayalCommand(
-        core,
-        BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-        pending!.playerId,
-        { rollId: pending!.rollId },
-    );
+    return acknowledgePendingEventRollResolution(core);
 }
 
 function markRecentEventRollPendingFinalizationForTest(
@@ -966,12 +962,7 @@ function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCor
         createBetrayalScriptedRandom(3, 3, 3),
     );
     if (core.pendingEventRollResolution) {
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '0',
-            { rollId: core.pendingEventRollResolution.rollId },
-        );
+        core = acknowledgePendingEventRollResolution(core);
     }
     return acknowledgePendingCardResolutions(core);
 }
@@ -22136,12 +22127,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: 1 });
 
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '0',
-            { rollId: core.recentRoll?.id },
-        );
+        core = finalizePendingEventRollForTest(core);
 
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold + 1);
@@ -22224,7 +22210,20 @@ describe('Betrayal first scenario runtime', () => {
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', { rollId: core.recentRoll?.id }),
         );
-        expect(otherPlayerFinalization.valid).toBe(false);
+        expect(otherPlayerFinalization.valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '1',
+            { rollId: core.recentRoll?.id },
+            100,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+        expect(core.pendingEventRollResolution?.acknowledgedPlayerIds).toContain('1');
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
 
         const blockedTurnEnd = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -22232,12 +22231,7 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(blockedTurnEnd.valid).toBe(false);
 
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '0',
-            { rollId: core.recentRoll?.id },
-        );
+        core = finalizePendingEventRollForTest(core);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
@@ -22282,12 +22276,7 @@ describe('Betrayal first scenario runtime', () => {
             hauntTriggerLabel: 'A Dusty Vial',
         });
 
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '0',
-            { rollId: core.pendingEventRollResolution?.rollId },
-        );
+        core = finalizePendingEventRollForTest(core);
 
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.phase).toBe('haunt');

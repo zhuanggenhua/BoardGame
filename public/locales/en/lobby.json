@@ -62,7 +62,7 @@
           "summary": "Build your deck in a magical card world and fight for glory."
         },
         "mage-wars": {
-          "summary": "Plan spells, manage mana, and present every cast through event-driven effects in the apprentice arena."
+          "summary": "Plan spells, manage mana, and present every cast through event-driven effects in the standard arena."
         },
         "dicethrone": {
           "summary": "Claim the throne, battle for honor, and rule the realm."
@@ -487,7 +487,7 @@
     },
     "mage-wars": {
       "title": "Mage Wars",
-      "description": "A 2-player spell tactics game. The current foundation locks apprentice arena state, mage boards, spellbook zones, and event-driven spell effects.",
+      "description": "A 2-player spell tactics game. The current foundation locks the standard arena state, mage boards, spellbook zones, and event-driven spell effects.",
       "players": "2 Players"
     },
     "qidahen": {

@@ -1174,6 +1174,8 @@ export const SU_COMMANDS = {
     PLAY_MINION: 'su:play_minion',
     PLAY_ACTION: 'su:play_action',
     DISCARD_TO_LIMIT: 'su:discard_to_limit',
+    /** Smash Up 反应轮让过：由 ReactionSession 作为唯一规则权威推进。 */
+    REACTION_PASS: 'su:reaction_pass',
     // === 新增 ===
     SELECT_FACTION: 'su:select_faction',
     DESELECT_FACTION: 'su:deselect_faction',
@@ -1225,6 +1227,13 @@ export interface PlayActionCommand extends Command<typeof SU_COMMANDS.PLAY_ACTIO
 export interface DiscardToLimitCommand extends Command<typeof SU_COMMANDS.DISCARD_TO_LIMIT> {
     payload: {
         cardUids: string[];
+    };
+}
+
+/** 当前响应者在 Smash Up 反应轮中让过 */
+export interface ReactionPassCommand extends Command<typeof SU_COMMANDS.REACTION_PASS> {
+    payload: {
+        reason?: 'player_pass' | 'ai_pass' | 'recovery_pass';
     };
 }
 
@@ -1322,6 +1331,7 @@ export type SmashUpCommand =
     | PlayMinionCommand
     | PlayActionCommand
     | DiscardToLimitCommand
+    | ReactionPassCommand
     | SelectFactionCommand
     | DeselectFactionCommand
     | BanFactionCommand
@@ -1567,6 +1577,13 @@ export interface BaseClearedEvent extends GameEvent<'su:base_cleared'> {
     };
 }
 
+export interface ReactionPassRequestedEvent extends GameEvent<typeof SU_EVENTS.REACTION_PASS_REQUESTED> {
+    payload: {
+        playerId: PlayerId;
+        reason?: 'player_pass' | 'ai_pass' | 'recovery_pass';
+    };
+}
+
 export interface VpAwardedEvent extends GameEvent<'su:vp_awarded'> {
     payload: {
         playerId: PlayerId;
@@ -1643,6 +1660,13 @@ export interface ExtraTurnQueuedEvent extends GameEvent<typeof SU_EVENTS.EXTRA_T
         playerId: PlayerId;
         returnToPlayerIndex: number;
         reason: string;
+    };
+}
+
+export interface DuelEndedEvent extends GameEvent<typeof SU_EVENTS.DUEL_ENDED> {
+    payload: {
+        duelId: string;
+        reason: 'resolved' | 'invalid';
     };
 }
 
@@ -1774,6 +1798,7 @@ export type SmashUpEvent =
     | TurnStartedEvent
     | TurnEndedEvent
     | ExtraTurnQueuedEvent
+    | DuelEndedEvent
     | BaseReplacedEvent
     | DeckReshuffledEvent
     | DeckReorderedEvent
@@ -1845,6 +1870,7 @@ export type SmashUpEvent =
     | BaseAbilitySuppressedEvent
     | CardSuppressedEvent
     | CardsSuppressedUntilTurnEndEvent
+    | ReactionPassRequestedEvent
     | BaseClearedEvent;
 
 // ============================================================================

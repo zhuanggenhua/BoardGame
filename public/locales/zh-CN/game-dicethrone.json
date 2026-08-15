@@ -683,6 +683,7 @@
     "cardChoiceResult": "选择结果：",
     "dieModified": "修改骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieModifiedSource": "（{{source}}）",
+    "bonusDieModified": "修改临时骰 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieRerolled": "重投骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieRerolledSource": "（{{source}}）",
     "bonusDieRolled": "奖励骰结果：{{value}}",
@@ -1676,7 +1677,7 @@
       "divinePurification": { "title": "神圣净化：选择一名玩家" },
       "gospelArrival": { "title": "福音临世：选择一名对手施加眩光" },
       "divineCommand": { "title": "神圣指令：选择一名对手承受 4 点不可防御伤害" },
-      "divineProtection": { "title": "神圣庇护：选择一名玩家获得 2 净化和 2 飞行" },
+      "divineProtection": { "title": "神之庇佑：选择一名玩家获得 2 净化和 2 飞行" },
       "takeoff": { "title": "起飞：选择一名玩家获得飞行并承受 3 点不可防御伤害" },
       "divineArbitrationDazzle": { "title": "神圣裁决：选择一名玩家获得眩光" },
       "divineArbitrationFlight": { "title": "神圣裁决：选择一名玩家获得 2 个飞行" },
@@ -4330,6 +4331,14 @@
       "description": "3/4/5 个炽炎剑：造成 5/7/9 点伤害；若投出 4 个相同数字，对一名对手施加眩光。",
       "effects": { "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "damage9": "造成 9 点伤害", "dazzleIfFourKind": "若投出 4 个相同数字，对一名对手施加 1 层眩光" }
     },
+    "cherub": {
+      "name": "智天使",
+      "description": "3 个炽炎剑 + 1 个圣洁吊坠：获得飞行和神圣降临。"
+    },
+    "cherub-2": {
+      "name": "智天使 II",
+      "description": "3 个炽炎剑 + 1 个圣洁吊坠：获得净化、飞行和神圣降临。"
+    },
     "holy-radiance": {
       "name": "圣洁光辉",
       "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 6 点伤害。",
@@ -4339,6 +4348,10 @@
       "name": "圣洁光辉 II",
       "description": "3 个炽炎剑 + 1 个双翼：获得 1 个飞行并造成 7 点伤害。",
       "effects": { "gainFlight": "获得 1 个飞行", "damage7": "造成 7 点伤害" }
+    },
+    "takeoff": {
+      "name": "起飞",
+      "description": "1 个炽炎剑 + 2 个双翼：选择 1 名玩家获得飞行，并对其造成 3 点不可防御伤害。"
     },
     "divine-purification": {
       "name": "神圣净化",
@@ -4360,6 +4373,10 @@
        "description": "至少各有 1 个炽炎剑、双翼、十字和圣洁吊坠：每个炽炎剑造成 2 点不可防御伤害，双翼获得飞行，十字获得净化，圣洁吊坠施加眩光。",
        "effects": { "resolve": "每个炽炎剑造成 2 点不可防御伤害；每个双翼获得飞行；每个十字获得净化；每个圣洁吊坠施加眩光。" }
     },
+    "divine-command": {
+      "name": "神圣指令",
+      "description": "3 个炽炎剑 + 1 个十字：治疗 1 点，并造成 4 点不可防御伤害。"
+    },
     "triumphant-return": {
       "name": "凯旋归来",
       "description": "小顺子：造成 6 点伤害，然后投 1 个奖励骰。",
@@ -4380,6 +4397,10 @@
       "description": "4 个圣洁吊坠：获得飞行、神圣降临并施加眩光，造成 10 点伤害。",
       "effects": { "gainFlight": "获得 1 个飞行", "gainDivineArrival": "获得 1 个神圣降临", "dazzle": "对手获得 1 个眩光", "damage10": "造成 10 点伤害" }
     },
+    "gospel-arrival": {
+      "name": "福音临世",
+      "description": "3 个圣洁吊坠：获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。"
+    },
     "archangel-resolve": {
       "name": "天使长之志",
       "description": "大顺子：获得飞行，对手获得眩光，造成 8 点伤害。",
@@ -4389,6 +4410,10 @@
       "name": "天使长之志 II",
       "description": "大顺子：获得飞行，对手获得眩光，造成 9 点伤害。",
       "effects": { "gainFlight": "获得 1 个飞行", "dazzle": "对手获得 1 个眩光", "damage9": "造成 9 点伤害" }
+    },
+    "divine-protection": {
+      "name": "神之庇佑",
+      "description": "1 个炽炎剑 + 2 个十字：选择 1 名玩家获得 2 个净化和 2 个飞行。"
     },
     "angelic-cloak": {
       "name": "天使斗篷",
@@ -5472,16 +5497,16 @@
     "upgrade-tianshi-supreme-power-2-gospel-arrival": { "name": "无上之力 II / 福音临世", "description": "上区：无上之力 II；下区：获得神圣降临、2 个飞行、2 个净化，并对一名对手施加眩光。" },
     "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "神圣惩戒 II / 神圣指令", "description": "上区：神圣惩戒 II；下区：治疗 1 点，并对一名对手造成 4 点不可防御伤害。" },
     "upgrade-tianshi-divine-purification-2": { "name": "神圣净化 II", "description": "升级神圣净化：对手伤害提升至 6 点，自己治疗提升至 5 点。" },
-    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "天使长之志 II / 神圣庇护", "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。" },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "天使长之志 II / 神之庇佑", "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。" },
     "upgrade-tianshi-angelic-cloak-3": { "name": "天使斗篷 III", "description": "防御投掷 1 骰；炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" },
     "upgrade-tianshi-angelic-cloak-2": { "name": "天使斗篷 II", "description": "防御投掷 1 骰；炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" },
     "upgrade-tianshi-triumphant-return-2": { "name": "凯旋归来 II", "description": "小顺子造成 8 点伤害；奖励骰：炽炎剑 +1、双翼 +2、十字 +3、圣洁吊坠使攻击不可防御。" },
     "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "圣洁光辉 II / 起飞", "description": "上区：圣洁光辉 II；下区：选择一名玩家获得飞行，并对其造成 3 点不可防御伤害。" },
-    "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "圣刃 III / 小天使 II", "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。" },
+    "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "圣刃 III / 智天使 II", "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。" },
     "card-tianshi-divine-arbitration": { "name": "神圣裁决！", "description": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" },
     "card-tianshi-supreme-holiness": { "name": "至高圣洁！", "description": "投 1 个奖励骰；圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" },
     "card-tianshi-ascension": { "name": "飞升！", "description": "选择一名玩家获得飞行。" },
-    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 小天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" }
+    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 智天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" }
   },
   "passive": {
     "tithes": {

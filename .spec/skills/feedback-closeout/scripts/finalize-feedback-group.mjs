@@ -9,6 +9,10 @@ import {
     updateBoardItems,
     writeBoard,
 } from './lib/status-board.mjs';
+import {
+    normalizeBaseUrl,
+    updateFeedbackStatusViaBestAvailableWriter,
+} from './lib/feedback-status-writer.mjs';
 
 const VALID_STATUSES = new Set(['resolved', 'closed']);
 
@@ -98,40 +102,9 @@ function parseArgs(argv) {
     };
 }
 
-function normalizeBaseUrl(baseUrl) {
-    return baseUrl.replace(/\/+$/, '');
-}
-
-async function updateFeedbackStatus(baseUrl, token, id, status, details = {}) {
-    const closedReason = typeof details.closedReason === 'string' ? details.closedReason.trim() : '';
-    const resolvedMethod = typeof details.resolvedMethod === 'string' ? details.resolvedMethod.trim() : '';
-    const response = await fetch(`${baseUrl}/admin/feedback/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            status,
-            ...(closedReason ? { closedReason } : {}),
-            ...(resolvedMethod ? { resolvedMethod } : {}),
-        }),
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`更新状态失败 ${response.status} ${response.statusText}: ${id} -> ${status}; ${text}`);
-    }
-
-    return response.json();
-}
-
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const baseUrl = normalizeBaseUrl(options.baseUrl);
-    if (!options.token) {
-        throw new Error('缺少反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
-    }
     const resolvedSummaryPath = path.resolve(options.summaryPath);
     const raw = await fs.readFile(resolvedSummaryPath, 'utf8');
     const summary = JSON.parse(raw);
@@ -146,28 +119,44 @@ async function main() {
         closedReason: options.closedReason,
         resolvedMethod: options.resolvedMethod,
     };
-    const primary = await updateFeedbackStatus(baseUrl, options.token, options.feedbackId, options.status, details);
+    const primary = await updateFeedbackStatusViaBestAvailableWriter({
+        baseUrl,
+        token: options.token,
+        id: options.feedbackId,
+        status: options.status,
+        ...details,
+    });
     const duplicateResults = [];
 
     if (options.updateDuplicates) {
         const duplicateIds = Array.isArray(group.duplicateIds) ? group.duplicateIds : [];
         for (const duplicateId of duplicateIds) {
-            const updated = await updateFeedbackStatus(baseUrl, options.token, duplicateId, options.status, details);
+            const updated = await updateFeedbackStatusViaBestAvailableWriter({
+                baseUrl,
+                token: options.token,
+                id: duplicateId,
+                status: options.status,
+                ...details,
+            });
             duplicateResults.push({
                 feedbackId: duplicateId,
                 status: updated.status,
+                writer: updated.writer,
             });
         }
     }
 
     const localIds = feedbackIdsForGroup(group, options.updateDuplicates);
     const { board, boardPath } = await syncBoardFromSummaryFile(resolvedSummaryPath, options.boardPath);
+    const writerEvidence = primary.writer === 'http'
+        ? `online-feedback-status:http:${baseUrl}/admin/feedback/${options.feedbackId}/status`
+        : `online-feedback-status:mongo-ssh:feedbacks/${options.feedbackId}`;
     const mirrorEvidence = options.evidence.length > 0
         ? options.evidence
-        : [`online-feedback-status:${baseUrl}/admin/feedback/${options.feedbackId}/status`];
+        : [writerEvidence];
     const mirrorVerification = options.verification.length > 0
         ? options.verification
-        : ['线上反馈状态回写成功后同步本地状态镜像'];
+        : [`线上反馈状态通过 ${primary.writer} 回写成功后同步本地状态镜像`];
     updateBoardItems(board, localIds, {
         status: options.status,
         owner: 'codex',
@@ -184,6 +173,8 @@ async function main() {
         localBoardPath: boardPath,
         feedbackId: options.feedbackId,
         finalStatus: primary.status,
+        writer: primary.writer,
+        writerReason: primary.reason,
         duplicateCount: Array.isArray(group.duplicateIds) ? group.duplicateIds.length : 0,
         updateDuplicates: options.updateDuplicates,
         duplicateFinalStatus: options.updateDuplicates ? options.status : null,

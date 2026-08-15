@@ -342,6 +342,48 @@ const gotoDTMatchRoom = async (
 // 游戏交互
 // ============================================================================
 
+export const dragDiceThroneHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
+    const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(handCard).toBeVisible({ timeout: 10000 });
+    await expect(handCard).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
+
+    const cardBox = await page.evaluate((nextCardId: string) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        const startX = rect.x + (rect.width / 2);
+        const startY = rect.y + (rect.height * 0.78);
+        const hit = document.elementFromPoint(startX, startY) as HTMLElement | null;
+        return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            hitCardId: hit?.closest('[data-card-id]')?.getAttribute('data-card-id') ?? null,
+        };
+    }, cardId);
+
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0 || cardBox.hitCardId !== cardId) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+
+    const draggedCardBox = await handCard.boundingBox();
+    if (!draggedCardBox || cardBox.y - draggedCardBox.y < 150) {
+        throw new Error(`手牌 ${cardId} 没有真正拖到打出距离`);
+    }
+
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+};
+
 export const waitForCharacterSelection = async (page: Page, timeout = 60000) => {
     // NOTE: 角色选择页标题在部分环境下可能出现偶发定位失败（疑似与文本/渲染时序有关）。
     // 这里改用更稳定的结构锚点：新组件使用 data-character-id，旧兼容组件仍使用 data-char-id。
@@ -952,10 +994,42 @@ export const ensureDebugControlsTab = async (page: Page) => {
     }
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const getMatchRoot = (state: unknown): Record<string, unknown> => {
+    if (isRecord(state) && isRecord(state.G)) return state.G;
+    return isRecord(state) ? state : {};
+};
+
+const readOnlineMatchId = async (page: Page): Promise<string | null> => page.evaluate(() => {
+    const match = window.location.pathname.match(/\/match\/([^/?#]+)/);
+    return match?.[1] ?? null;
+}).catch(() => null);
+
+const readHarnessMatchState = async (page: Page): Promise<Record<string, unknown> | null> => page.evaluate(() => {
+    const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+    return state && typeof state === 'object' ? state as Record<string, unknown> : null;
+}).catch(() => null);
+
 /**
- * 读取 core 状态
+ * 读取 core 状态。在线房间优先读服务器权威状态；本地代表态读 TestHarness；调试面板只作兼容兜底。
  */
 export const readCoreState = async (page: Page) => {
+    const onlineMatchId = await readOnlineMatchId(page);
+    if (onlineMatchId) {
+        const state = await getMatchState(onlineMatchId, page);
+        const root = getMatchRoot(state);
+        return root.core ?? root;
+    }
+
+    const harnessState = await readHarnessMatchState(page);
+    if (harnessState) {
+        const root = getMatchRoot(harnessState);
+        return root.core ?? root;
+    }
+
     await ensureDebugStateTab(page);
     const raw = await page.getByTestId('debug-state-json').innerText({ timeout: 5000 });
     const parsed = JSON.parse(raw);
@@ -963,6 +1037,17 @@ export const readCoreState = async (page: Page) => {
 };
 
 export const readMatchState = async (page: Page) => {
+    const onlineMatchId = await readOnlineMatchId(page);
+    if (onlineMatchId) {
+        const state = await getMatchState(onlineMatchId, page);
+        return getMatchRoot(state);
+    }
+
+    const harnessState = await readHarnessMatchState(page);
+    if (harnessState) {
+        return getMatchRoot(harnessState);
+    }
+
     await ensureDebugStateTab(page);
     const raw = await page.getByTestId('debug-state-json').innerText({ timeout: 5000 });
     const parsed = JSON.parse(raw);
@@ -979,9 +1064,95 @@ export const readEventStream = async (page: Page) => {
 };
 
 /**
- * 直接注入 core 状态（使用调试面板）
+ * 直接注入 core 状态。在线房间写服务器权威状态；本地代表态写 TestHarness；调试面板只作兼容兜底。
  */
 export const applyCoreStateDirect = async (page: Page, coreState: unknown) => {
+    const onlineMatchId = await readOnlineMatchId(page);
+    if (onlineMatchId) {
+        const currentState = await getMatchState(onlineMatchId, page) as Record<string, unknown>;
+        const root = getMatchRoot(currentState);
+        const currentCore = isRecord(root.core) ? root.core : {};
+        const nextCore = isRecord(coreState) ? { ...coreState } : coreState;
+        const nextCoreRecord = isRecord(nextCore) ? nextCore : {};
+        const players = isRecord(nextCoreRecord.players)
+            ? nextCoreRecord.players
+            : isRecord(currentCore.players)
+                ? currentCore.players
+                : {};
+        const sys = isRecord(root.sys) ? root.sys : {};
+        const turnOrder = Array.isArray(sys.turnOrder)
+            ? sys.turnOrder
+            : Array.isArray(nextCoreRecord.turnOrder)
+                ? nextCoreRecord.turnOrder
+                : Array.isArray(currentCore.turnOrder)
+                    ? currentCore.turnOrder
+                    : Object.keys(players);
+        const activePlayerId = typeof nextCoreRecord.activePlayerId === 'string'
+            ? nextCoreRecord.activePlayerId
+            : typeof currentCore.activePlayerId === 'string'
+                ? currentCore.activePlayerId
+                : typeof turnOrder[0] === 'string'
+                    ? turnOrder[0]
+                    : '0';
+        const phase = typeof nextCoreRecord.phase === 'string'
+            ? nextCoreRecord.phase
+            : typeof currentCore.phase === 'string'
+                ? currentCore.phase
+                : typeof sys.phase === 'string'
+                    ? sys.phase
+                    : 'main';
+        const nextState = {
+            ...root,
+            core: isRecord(nextCore)
+                ? {
+                    ...nextCore,
+                    phase,
+                }
+                : nextCore,
+            sys: {
+                ...sys,
+                turnOrder,
+                currentPlayerIndex: typeof sys.currentPlayerIndex === 'number'
+                    ? sys.currentPlayerIndex
+                    : Math.max(0, turnOrder.indexOf(activePlayerId)),
+                ...(typeof sys.phase === 'string' ? {} : { phase }),
+            },
+        };
+        await injectMatchState(onlineMatchId, nextState as never, page);
+        return;
+    }
+
+    const appliedViaHarness = await page.evaluate((nextCoreState) => {
+        const harness = (window as Window).__BG_TEST_HARNESS__;
+        const currentState = harness?.state?.get?.();
+        if (!currentState || !harness?.state?.set) return false;
+
+        const isObjectRecord = (value: unknown): value is Record<string, unknown> => (
+            typeof value === 'object' && value !== null && !Array.isArray(value)
+        );
+        if (isObjectRecord(currentState) && isObjectRecord(currentState.G)) {
+            harness.state.set({
+                ...currentState,
+                G: {
+                    ...currentState.G,
+                    core: nextCoreState,
+                },
+            });
+            return true;
+        }
+
+        harness.state.set({
+            ...(isObjectRecord(currentState) ? currentState : {}),
+            core: nextCoreState,
+        });
+        return true;
+    }, coreState).catch(() => false);
+
+    if (appliedViaHarness) {
+        await page.waitForTimeout(100);
+        return;
+    }
+
     await ensureDebugStateTab(page);
     const toggleBtn = page.getByTestId('debug-state-toggle-input');
     await toggleBtn.click({ timeout: 5000 });
@@ -1018,10 +1189,6 @@ export const setPlayerToken = async (page: Page, playerId: string, tokenId: stri
     state.players[playerId].tokens[tokenId] = amount;
     await applyCoreStateDirect(page, state);
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-);
 
 const applyDieValues = (
     dice: unknown,
@@ -1279,9 +1446,11 @@ export const dispatchLocalCommand = async (page: Page, type: string, payload?: u
  * 尝试点击 Pass 按钮（如果存在响应窗口）
  * @returns 是否点击了 Pass 按钮
  */
-export const maybePassResponse = async (page: Page): Promise<boolean> => {
-    const passButton = page.getByRole('button', { name: /^(Pass|跳过)$/i });
-    if (await passButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+export const maybePassResponse = async (page: Page, timeout = 1000): Promise<boolean> => {
+    const passButton = page.getByTestId('dicethrone-response-pass-button')
+        .or(page.getByRole('button', { name: /^(Pass|跳过|让过)$/i }))
+        .first();
+    if (await passButton.isVisible({ timeout }).catch(() => false)) {
         await passButton.click();
         await page.waitForTimeout(300);
         return true;

@@ -8,11 +8,9 @@ metadata:
 
 # 音频资源规范
 
-> 来源：从 `.spec/knowledge/standards/asset-pipeline.md` 无损拆出。本文档承载跨游戏音频运行时架构、共享音频包路径合同和音效触发路径；具体工作流优先走项目 [`audio-integration`](../../skills/audio-integration/SKILL.md)，命令、查找与试听入口见 `docs/audio/audio-usage.md`。
+## 适用范围
 
-## 音频资源规范
-
-> 音频 workflow 优先走项目 [`audio-integration`](../../skills/audio-integration/SKILL.md)；新增外部素材的产物合同详见：`docs/audio/add-audio.md`
+本文只承载运行时合同：共享音频包、registry、语义目录、触发路径和资源迁移策略。执行步骤、查找链路和新增外部素材产物不在本文重复定义。
 
 ### 音频架构 / 音频资源架构（强制）
 

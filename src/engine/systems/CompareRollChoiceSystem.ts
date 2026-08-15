@@ -57,7 +57,7 @@ export function createCompareRollChoiceSystem<TCore>(
             if (command.type === INTERACTION_COMMANDS.RESPOND) {
                 const payloadInteractionId = (command.payload as { interactionId?: unknown } | undefined)?.interactionId;
                 if (payloadInteractionId && payloadInteractionId !== data.id) {
-                    return { halt: true };
+                    return { halt: true, error: '交互已过期' };
                 }
                 const optionId = (command.payload as { optionId?: string })?.optionId;
                 if (!optionId || typeof optionId !== 'string') {
@@ -95,7 +95,7 @@ export function createCompareRollChoiceSystem<TCore>(
                 const payloadInteractionId = (command.payload as { interactionId?: unknown } | undefined)?.interactionId;
 
                 if (payloadInteractionId && payloadInteractionId !== data.id) {
-                    return { halt: true };
+                    return { halt: true, error: '交互已过期' };
                 }
                 if (data.confirmValue === undefined) {
                     return { halt: true, error: '当前交互不可确认' };

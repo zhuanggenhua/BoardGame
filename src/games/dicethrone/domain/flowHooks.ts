@@ -85,6 +85,18 @@ const TIANSHi_DAZZLE_CHECK_SETTLEMENT_ID = 'tianshi-dazzle-check';
 const STATUS_CHECK_ORDER_DAZZLE_FIRST = 'status-check-order-dazzle-first';
 const STATUS_CHECK_ORDER_BLINDED_FIRST = 'status-check-order-blinded-first';
 
+const isLegacySelectedHeroMissingInitialization = (
+    player: DiceThroneCore['players'][string] | undefined,
+    characterId: string | undefined,
+): boolean => {
+    if (!player || !characterId || characterId === 'unselected') return false;
+    if (player.hand.length > 0 || player.deck.length > 0) return false;
+
+    const hasInitializedAbilities = Array.isArray(player.abilities) && player.abilities.length > 0;
+
+    return !hasInitializedAbilities;
+};
+
 const formatSeatLabel = (playerId: string): string => {
     const seatNumber = Number.parseInt(playerId, 10) + 1;
     return Number.isFinite(seatNumber) ? `P${seatNumber}` : playerId;
@@ -2491,19 +2503,16 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
         }
 
-        // ========== 状态修复：检测并修复缺失手牌的玩家 ==========
+        // ========== 状态修复：检测并修复未完成英雄初始化的旧存档 ==========
         // 原因：旧版本的游戏状态可能在 HERO_INITIALIZED 事件添加前保存
-        // 症状：玩家已选择角色但 hand/deck 为空
+        // 症状：玩家已选择角色但仍缺技能定义；正常游戏中手牌/牌库打空不能重置英雄
         if (to === 'income' || to === 'main1') {
             const playerIds = Object.keys(core.players);
             for (const pid of playerIds) {
                 const player = core.players[pid];
                 const charId = core.selectedCharacters[pid];
 
-                // 检测条件：已选角色 + 手牌和牌库都为空
-                if (charId && charId !== 'unselected'
-                    && player.hand.length === 0
-                    && player.deck.length === 0) {
+                if (isLegacySelectedHeroMissingInitialization(player, charId)) {
                     // 生成 HERO_INITIALIZED 事件来修复状态
                     events.push({
                         type: 'HERO_INITIALIZED',

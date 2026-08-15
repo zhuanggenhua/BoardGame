@@ -17,7 +17,6 @@ import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbil
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getEffectivePower } from '../domain/ongoingModifiers';
-import { reduce } from '../domain/reduce';
 import { SU_EVENTS, type MinionOnBase, type SmashUpCore, type SmashUpEvent } from '../domain/types';
 
 const FAE_FIGHTER = 'munchkin_elves_fae_fighter';
@@ -155,11 +154,9 @@ function drawSequentially(
     now: number,
 ): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
-    let state = initialState;
     for (const playerId of playerIds) {
-        const next = buildStandardDrawEvents(state, playerId, countFor(playerId), random, now);
+        const next = buildStandardDrawEvents(initialState, playerId, countFor(playerId), random, now);
         events.push(...next);
-        for (const event of next) state = reduce(state, event);
     }
     return events;
 }
@@ -266,15 +263,30 @@ function afterYouOnPlay(ctx: AbilityContext): AbilityResult {
 
 function dancingRootOnPlay(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
-    let state = ctx.state;
+    let drawState = ctx.state;
     for (const player of Object.values(ctx.state.players)) {
         if (player.discard.length === 0) continue;
         const deckUids = ctx.random.shuffle([...player.deck, ...player.discard]).map(card => card.uid);
         const event = { type: SU_EVENTS.DECK_RESHUFFLED, payload: { playerId: player.id, deckUids }, timestamp: ctx.now } as SmashUpEvent;
         events.push(event);
-        state = reduce(state, event);
+        if (player.id === ctx.playerId) {
+            const cardsByUid = new Map([...player.deck, ...player.discard].map(card => [card.uid, card]));
+            drawState = {
+                ...drawState,
+                players: {
+                    ...drawState.players,
+                    [player.id]: {
+                        ...player,
+                        deck: deckUids
+                            .map(uid => cardsByUid.get(uid))
+                            .filter((card): card is NonNullable<typeof card> => !!card),
+                        discard: [],
+                    },
+                },
+            };
+        }
     }
-    const draw = buildStandardDrawEvents(state, ctx.playerId, 1, ctx.random, ctx.now);
+    const draw = buildStandardDrawEvents(drawState, ctx.playerId, 1, ctx.random, ctx.now);
     return { events: [...events, ...draw] };
 }
 

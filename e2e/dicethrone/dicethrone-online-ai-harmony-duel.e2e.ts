@@ -288,6 +288,7 @@ async function setupDTOnlineAiRoom(
     const hostContext = await browser.newContext({ baseURL });
     await initContext(hostContext, {
         storageKey: '__dicethrone_storage_reset_online_ai',
+        skipTutorial: false,
         skipImageGate: true,
         gameServerBaseURL: getGameServerBaseURL(),
     });
@@ -338,6 +339,25 @@ async function setupDTOnlineAiRoom(
         await hostContext.close();
         return null;
     }
+
+    const aiCredentials = await claimDTSeatViaAPI(hostPage, matchId, '1', {
+        guestId,
+        playerName: 'AI-Online-AI',
+        gameServerBaseURL: getGameServerBaseURL(),
+    });
+    if (!aiCredentials) {
+        await hostContext.close();
+        return null;
+    }
+    const aiSeatCredentials = { '1': aiCredentials };
+    await hostContext.addInitScript(({ targetMatchId, credentials }) => {
+        localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(credentials));
+        window.dispatchEvent(new Event('match-credentials-changed'));
+    }, { targetMatchId: matchId, credentials: aiSeatCredentials });
+    await hostPage.evaluate(({ targetMatchId, credentials }) => {
+        localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(credentials));
+        window.dispatchEvent(new Event('match-credentials-changed'));
+    }, { targetMatchId: matchId, credentials: aiSeatCredentials });
 
     await seedDTMatchCredentials(hostContext, matchId, '0', credentials);
     await hostPage.goto(`/play/dicethrone/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });

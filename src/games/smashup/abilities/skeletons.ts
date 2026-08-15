@@ -1,4 +1,4 @@
-import type { PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -7,9 +7,9 @@ import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
 import { addPowerCounter, buildAbilityFeedback, buildBaseTargetOptions, buildStandardDrawEvents, createSkipOption } from '../domain/abilityHelpers';
+import { createEffectProgram, executeAbilityProgram } from '../domain/abilityRuntime';
 import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilities';
 import { getBaseDef, getCardDef } from '../data/cards';
-import { reduce } from '../domain/reduce';
 import { SU_EVENTS } from '../domain/types';
 import type { CardInstance, CardsDiscardedEvent, DiscardAbilityUsedEvent, MinionCardDef, MinionMetadataUpdatedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 
@@ -18,6 +18,17 @@ type BaseChoice = { baseIndex?: number; skip?: boolean };
 type BuriedChoice = { cardUid?: string; defId?: string; baseIndex?: number; skip?: boolean };
 type ModeChoice = { mode?: 'bury' | 'uncover' | 'to_base' | 'from_base' | 'extra_bury'; skip?: boolean };
 type CounterChoice = { apply?: boolean; skip?: boolean };
+type GraveGoodsAfterFirstBuryContext = { matchState?: MatchState<SmashUpCore>; playerId: PlayerId; now: number };
+type GraveGoodsEmitFirstBuryContext = GraveGoodsAfterFirstBuryContext & { events: SmashUpEvent[] };
+type SequentialUncoverPick = { cardUid: string; baseIndex: number };
+type SequentialUncoverContext = {
+    matchState?: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    picks: SequentialUncoverPick[];
+    random?: TriggerContext['random'];
+    now: number;
+    reason: string;
+};
 
 const SKELETONS_REVENANT_USAGE_SOURCE = 'skeletons_revenant';
 const SKELETONS_GRAVETENDER_TRIGGERED_TURN_META = 'skeletonsGravetenderTriggeredTurn';
@@ -135,18 +146,57 @@ function buildDiscardBuryEvents(state: SmashUpCore, playerId: PlayerId, cardUid:
     });
 }
 
-function runSequentialUncover(matchState: any, playerId: PlayerId, picks: Array<{ cardUid: string; baseIndex: number }>, random: TriggerContext['random'], now: number, reason: string): AbilityResult {
-    let nextState = matchState;
-    const events: SmashUpEvent[] = [];
-    for (const pick of picks) {
-        const result = uncoverBuriedCard({ matchState: nextState, playerId, cardUid: pick.cardUid, baseIndex: pick.baseIndex, random, now, reason });
-        nextState = result.state;
-        for (const event of result.events) {
-            events.push(event);
-            nextState = { ...nextState, core: reduce(nextState.core, event) };
-        }
+const sequentialUncoverProgram = createEffectProgram<
+    SequentialUncoverContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('sequential uncover continuation 缺少正式 matchState');
     }
-    return { events, matchState: nextState };
+    if (!context.random) {
+        throw new Error('sequential uncover continuation 缺少随机源');
+    }
+    const [pick, ...remainingPicks] = context.picks;
+    if (!pick) return { events: [] };
+    const result = uncoverBuriedCard({
+        matchState: context.matchState,
+        playerId: context.playerId,
+        cardUid: pick.cardUid,
+        baseIndex: pick.baseIndex,
+        random: context.random,
+        now: context.now,
+        reason: context.reason,
+    });
+    return {
+        events: result.events,
+        matchState: result.state,
+        ...(remainingPicks.length > 0
+            ? {
+                context: {
+                    ...context,
+                    matchState: result.state,
+                    picks: remainingPicks,
+                } satisfies SequentialUncoverContext,
+                nextProgram: sequentialUncoverProgram,
+            }
+            : {}),
+    };
+});
+
+function runSequentialUncover(matchState: MatchState<SmashUpCore>, playerId: PlayerId, picks: SequentialUncoverPick[], random: TriggerContext['random'], now: number, reason: string): AbilityResult {
+    const result = executeAbilityProgram(sequentialUncoverProgram, {
+        matchState,
+        playerId,
+        picks,
+        random,
+        now,
+        reason,
+    });
+    return {
+        events: result.events as SmashUpEvent[],
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
 }
 
 function moveBuriedCards(state: any, sourceBaseIndex: number, targetBaseIndex: number, cardUids: string[]) {
@@ -198,6 +248,56 @@ function buildOptionalCounterPrompt(
     (interaction.data as any).continuationContext = { targetMinionUid, targetBaseIndex };
     return queueInteraction(matchState, interaction);
 }
+
+function queueSkeletonsGraveGoodsAfterFirstBury(state: MatchState<SmashUpCore>, playerId: PlayerId, now: number): MatchState<SmashUpCore> | undefined {
+    const remainingHand = getHandCards(state.core, playerId);
+    const buried = buildOwnedBuriedOptions(state.core, playerId);
+    const canExtraBury = remainingHand.length >= 2;
+    const canUncover = buried.length > 0;
+    if (!canExtraBury && !canUncover) return undefined;
+    if (canExtraBury && !canUncover) {
+        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_discard_title' });
+        return queueInteraction(state, interaction);
+    }
+    if (!canExtraBury && canUncover) {
+        const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buried, { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic', titleKey: 'ui.skeletons_grave_goods_uncover_title' });
+        return queueInteraction(state, interaction);
+    }
+    const interaction = createSimpleChoice(`skeletons_grave_goods_mode_${now}`, playerId, '殉葬品：你可以弃一张牌，再额外埋葬另一张牌，或挖掘一张你的埋葬牌', [
+        { id: 'extra-bury', label: '弃一张，再额外埋葬', labelKey: 'ui.skeletons_grave_goods_mode_extra_bury_option', value: { mode: 'extra_bury' }, displayMode: 'button' as const },
+        { id: 'uncover', label: '挖掘一张埋葬牌', labelKey: 'ui.skeletons_grave_goods_mode_uncover_option', value: { mode: 'uncover' }, displayMode: 'button' as const },
+    ], { sourceId: 'skeletons_grave_goods_mode', targetType: 'button', titleKey: 'ui.skeletons_grave_goods_mode_title' });
+    return queueInteraction(state, interaction);
+}
+
+const resolveGraveGoodsAfterFirstBuryProgram = createEffectProgram<
+    GraveGoodsAfterFirstBuryContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('skeletons_grave_goods continuation 缺少正式 matchState');
+    }
+    const matchState = queueSkeletonsGraveGoodsAfterFirstBury(context.matchState, context.playerId, context.now);
+    return {
+        events: [],
+        ...(matchState ? { matchState } : {}),
+    };
+});
+
+const emitGraveGoodsFirstBuryThenContinueProgram = createEffectProgram<
+    GraveGoodsEmitFirstBuryContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    context: {
+        matchState: context.matchState,
+        playerId: context.playerId,
+        now: context.now,
+    } satisfies GraveGoodsAfterFirstBuryContext,
+    nextProgram: resolveGraveGoodsAfterFirstBuryProgram,
+}));
 
 function skeletonsReturnedOneOnPlay(ctx: AbilityContext): AbilityResult {
     const options: any[] = [
@@ -629,28 +729,13 @@ const handleSkeletonsGraveGoodsBury: InteractionHandler = (state, playerId, valu
     const continuation = data?.continuationContext as { targetBaseIndex?: number } | undefined;
     if (!selected.cardUid || !selected.defId || continuation?.targetBaseIndex === undefined) return { state, events: [] };
     const firstEvents = buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: getHandCardOwner(state.core, playerId, selected.cardUid), buriedFrom: 'hand', reason: 'skeletons_grave_goods', random: _random, now });
-    let nextState = state;
-    for (const event of firstEvents) {
-        nextState = { ...nextState, core: reduce(nextState.core, event) };
-    }
-    const remainingHand = getHandCards(nextState.core, playerId);
-    const buried = buildOwnedBuriedOptions(nextState.core, playerId);
-    const canExtraBury = remainingHand.length >= 2;
-    const canUncover = buried.length > 0;
-    if (!canExtraBury && !canUncover) return { state, events: firstEvents };
-    if (canExtraBury && !canUncover) {
-        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_discard_title' });
-        return { state: queueInteraction(nextState, interaction), events: firstEvents };
-    }
-    if (!canExtraBury && canUncover) {
-        const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buried, { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic', titleKey: 'ui.skeletons_grave_goods_uncover_title' });
-        return { state: queueInteraction(nextState, interaction), events: firstEvents };
-    }
-    const interaction = createSimpleChoice(`skeletons_grave_goods_mode_${now}`, playerId, '殉葬品：你可以弃一张牌，再额外埋葬另一张牌，或挖掘一张你的埋葬牌', [
-        { id: 'extra-bury', label: '弃一张，再额外埋葬', labelKey: 'ui.skeletons_grave_goods_mode_extra_bury_option', value: { mode: 'extra_bury' }, displayMode: 'button' as const },
-        { id: 'uncover', label: '挖掘一张埋葬牌', labelKey: 'ui.skeletons_grave_goods_mode_uncover_option', value: { mode: 'uncover' }, displayMode: 'button' as const },
-    ], { sourceId: 'skeletons_grave_goods_mode', targetType: 'button', titleKey: 'ui.skeletons_grave_goods_mode_title' });
-    return { state: queueInteraction(nextState, interaction), events: firstEvents };
+    const result = executeAbilityProgram(emitGraveGoodsFirstBuryThenContinueProgram, {
+        matchState: state,
+        playerId,
+        now,
+        events: firstEvents,
+    });
+    return { state: result.matchState ?? state, events: result.events as SmashUpEvent[] };
 };
 
 const handleSkeletonsGraveGoodsDiscard: InteractionHandler = (state, playerId, value, _data, _random, now) => {

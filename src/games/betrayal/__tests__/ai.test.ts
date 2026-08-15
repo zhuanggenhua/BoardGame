@@ -23,6 +23,7 @@ import {
 } from '../visualTiming';
 import {
     applyBetrayalCommand,
+    BETRAYAL_FIXED_RANDOM,
     createBetrayalScriptedRandom,
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
@@ -428,6 +429,82 @@ describe('小黑屋本地 AI', () => {
                 timestamp: 1,
             } as BetrayalCommand,
         ).valid).toBe(true);
+    });
+
+    test('AI 会按投票制确认事件投骰，且全员确认前不会结算事件效果', () => {
+        let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: {
+                ...core.currentExplorer.traits,
+                knowledge: 3,
+            },
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.latestDiscovery = {
+            kind: 'event',
+            title: '墙中低语',
+            summary: '等待投票确认',
+            detail: '知识检定：等待全员确认最终结果',
+            tone: 'accent',
+        };
+        core.latestDiscoveryOwnerPlayerId = '0';
+        core.pendingEventRollResolution = {
+            rollId: 'ai-event-roll',
+            playerId: '0',
+            sourceTitle: '墙中低语',
+            requiredPlayerIds: [...core.playerIds],
+            acknowledgedPlayerIds: [],
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+        };
+
+        let state = stateOf(core, 'betrayal-ai-event-roll-ack');
+        const playerOneActions = buildActions(state, '1');
+        expect(playerOneActions).toHaveLength(1);
+        expect(playerOneActions[0]?.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL);
+        expect(playerOneActions[0]?.commands[0]).toEqual({
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            payload: { rollId: 'ai-event-roll' },
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '1',
+            { rollId: 'ai-event-roll' },
+            100,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+        expect(core.pendingEventRollResolution?.acknowledgedPlayerIds).toEqual(['1']);
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
+        state = stateOf(core, 'betrayal-ai-event-roll-ack-after-one');
+        expect(buildActions(state, '1')).toEqual([]);
+        expect(buildActions(state, '2')[0]?.kind).toBe(BETRAYAL_AI_ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '2',
+            { rollId: 'ai-event-roll' },
+            101,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+        expect(core.pendingEventRollResolution).toBeTruthy();
+        expect(core.currentExplorer.traits.knowledge).toBe(3);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: 'ai-event-roll' },
+            102,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
     });
 
     test('待分配伤害时必须生成并执行伤害分配动作，不能把阶段推进当成唯一动作', async () => {

@@ -1050,7 +1050,8 @@ export const GameHUD = ({
 
     // 5.5 强制操作（将强制结束 AI / 强制去弹窗合并到一个展开面板）
     // 注意：这里要放在撤回之后 push，反转渲染后才会出现在“撤回上面”。
-    const forceActionsItem: FabAction | null = !isSetupPhase && (canForceEndAiPhase || canForceDismissPopup)
+    const canShowForceActionsItem = canForceEndAiPhase || (!isSetupPhase && canForceDismissPopup);
+    const forceActionsItem: FabAction | null = canShowForceActionsItem
         ? {
             id: 'force-actions',
             icon: <AlertTriangle size={20} />,

@@ -7,9 +7,11 @@ import { getLazyRegistration } from '../../../components/common/media/cardAtlasR
 import { mageWarsCriticalImageResolver } from '../criticalImageResolver';
 import { MageWarsDomain } from '../domain';
 import {
-    getApprenticeMageOrderFromConfig,
-    getApprenticeSpellbookCountFromConfig,
-    getApprenticeSpellbookEntriesFromConfig,
+    getFormalStartingMageIdFromConfig,
+    getFormalStartingZoneIdFromConfig,
+    getPresetMageOrderFromConfig,
+    getPresetSpellbookCountFromConfig,
+    getPresetSpellbookEntriesFromConfig,
 } from '../data/configPackage';
 import { MAGE_IDS } from '../domain/ids';
 import {
@@ -63,7 +65,7 @@ describe('mage-wars foundation', () => {
         });
     });
 
-    test('setup creates two apprentice mages on the formal 4x3 arena contract', () => {
+    test('setup creates two configured mages on the formal 4x3 arena contract', () => {
         const core = MageWarsDomain.setup(['0', '1'], makeRandom());
 
         expect(core.playerOrder).toEqual(['0', '1']);
@@ -72,6 +74,10 @@ describe('mage-wars foundation', () => {
         expect(core.arena).toHaveLength(12);
         expect(core.objects).toEqual({});
         expect(core.arena.every((zone) => Array.isArray(zone.objectIds))).toBe(true);
+        expect(core.players['0'].mageId).toBe(getFormalStartingMageIdFromConfig(0));
+        expect(core.players['1'].mageId).toBe(getFormalStartingMageIdFromConfig(1));
+        expect(core.players['0'].mageZoneId).toBe(getFormalStartingZoneIdFromConfig(0));
+        expect(core.players['1'].mageZoneId).toBe(getFormalStartingZoneIdFromConfig(1));
         expect(core.players['0'].life).toBe(24);
         expect(core.players['0'].baseMeleeDice).toBe(3);
         expect(core.players['1'].mana).toBe(10);
@@ -105,27 +111,27 @@ describe('mage-wars foundation', () => {
         }
     });
 
-    test('apprentice spellbook data is sourced from the config package for all four page-5 mages', () => {
-        const apprenticeMageOrder = getApprenticeMageOrderFromConfig();
+    test('preset spellbook resources are sourced from the config package for all four page-5 mage assets', () => {
+        const presetMageOrder = getPresetMageOrderFromConfig();
 
-        expect(apprenticeMageOrder).toEqual([
+        expect(presetMageOrder).toEqual([
             MAGE_IDS.BEASTMASTER_APPRENTICE,
             MAGE_IDS.PRIESTESS_APPRENTICE,
             MAGE_IDS.WARLOCK_APPRENTICE,
             MAGE_IDS.WIZARD_APPRENTICE,
         ]);
 
-        expect(getApprenticeSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toBe(33);
-        expect(getApprenticeSpellbookCountFromConfig(MAGE_IDS.PRIESTESS_APPRENTICE)).toBe(30);
-        expect(getApprenticeSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)).toBe(30);
-        expect(getApprenticeSpellbookCountFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toBe(30);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toBe(33);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.PRIESTESS_APPRENTICE)).toBe(30);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)).toBe(30);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toBe(30);
 
-        for (const mageId of apprenticeMageOrder) {
-            expect(getApprenticeSpellbookEntriesFromConfig(mageId).every((entry) => entry.spellCardId > 0)).toBe(true);
+        for (const mageId of presetMageOrder) {
+            expect(getPresetSpellbookEntriesFromConfig(mageId).every((entry) => entry.spellCardId > 0)).toBe(true);
         }
     });
 
-    test('apprentice spell atlas preview refs are registered for all sourced cards', () => {
+    test('preset spell atlas preview refs are registered for all sourced cards', () => {
         const previewGetter = getCardPreviewGetter('mage-wars');
         expect(previewGetter).toBeDefined();
 
@@ -156,8 +162,8 @@ describe('mage-wars foundation', () => {
         });
 
         const spellbookCardIds = new Set<string>();
-        for (const mageId of getApprenticeMageOrderFromConfig()) {
-            for (const entry of getApprenticeSpellbookEntriesFromConfig(mageId)) {
+        for (const mageId of getPresetMageOrderFromConfig()) {
+            for (const entry of getPresetSpellbookEntriesFromConfig(mageId)) {
                 spellbookCardIds.add(String(entry.spellCardId));
             }
         }
@@ -168,14 +174,14 @@ describe('mage-wars foundation', () => {
             expect(previewGetter?.(cardId)).toMatchObject({ type: 'atlas' });
         }
 
-        // 同名多候选的旧版/对照 frame 保留在 atlas 合同中，但不是当前学徒法术书选用实例。
+        // 同名多候选的旧版/对照 frame 保留在 atlas 合同中，但不是当前预设法术书选用实例。
         for (const alternateCardId of ['1911', '3406', '3419']) {
             expect(spellbookCardIds.has(alternateCardId)).toBe(false);
             expect(getMageWarsSpellCardPreviewRef(alternateCardId)).toMatchObject({ type: 'atlas' });
         }
     });
 
-    test('apprentice mage atlas preview refs use the official mage atlas', () => {
+    test('preset mage atlas preview refs use the official mage atlas', () => {
         expect(getLazyRegistration(MAGE_WARS_MAGES_ATLAS_ID)).toMatchObject({
             image: 'mage-wars/cards/mages/mages-core-atlas',
             grid: { rows: 4, cols: 7 },

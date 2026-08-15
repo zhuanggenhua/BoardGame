@@ -21,6 +21,7 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpSystemsForTest } from '../game';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 import {
     expectNoPrompt,
     getPromptOption,
@@ -194,9 +195,10 @@ describe('Me First! 响应窗口', () => {
 
         // 应该停在 scoreBases，响应窗口打开
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.responseWindow.current).toBeTruthy();
-        expect(result.finalState.sys.responseWindow.current?.windowType).toBe('meFirst');
-        expect(result.finalState.sys.responseWindow.current?.responderQueue).toEqual(['0', '1']);
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation).toBeTruthy();
+        expect(presentation?.windowType).toBe('meFirst');
+        expect(presentation?.responderQueue).toEqual(['0', '1']);
     });
     it('有基地达标但无人有特殊行动卡时，响应窗口自动关闭并推进', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -212,10 +214,14 @@ describe('Me First! 响应窗口', () => {
             ] as any[],
         });
 
+        const eventTypes = result.steps.flatMap(step => step.events);
+        expect(eventTypes).toContain(SU_EVENTS.BASE_SCORED);
+        expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
+        expect(eventTypes).toContain(SU_EVENTS.BASE_REPLACED);
         expect(result.finalState.sys.responseWindow.current).toBeUndefined();
-        expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.flowHalted).toBe(true);
-        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
+        expect(result.finalState.sys.phase).toBe('playCards');
+        expect(result.finalState.sys.flowHalted).toBeFalsy();
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
     });
 
     it('有基地达标时跳过无特殊牌玩家，从有特殊牌玩家开始响应', () => {
@@ -232,11 +238,11 @@ describe('Me First! 响应窗口', () => {
             ] as any[],
         });
 
-        const window = result.finalState.sys.responseWindow.current;
-        expect(window).toBeTruthy();
-        expect(window?.responderQueue).toEqual(['0', '1']);
-        expect(window?.currentResponderIndex).toBe(1);
-        expect(window?.passedPlayers).toEqual([]);
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation).toBeTruthy();
+        expect(presentation?.responderQueue).toEqual(['0', '1']);
+        expect(presentation?.currentResponderIndex).toBe(1);
+        expect(presentation?.passedPlayers).toEqual([]);
         const choice = getSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose');
         expect(getPromptSourceId(choice)).toBe('smashup_reaction_choose');
         expect(getPromptPlayerId(choice)).toBe('1');
@@ -481,11 +487,11 @@ describe('Me First! 响应窗口', () => {
         });
 
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        const window = result.finalState.sys.responseWindow.current;
-        expect(window).toBeTruthy();
-        expect(window?.windowType).toBe('meFirst');
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation).toBeTruthy();
+        expect(presentation?.windowType).toBe('meFirst');
         // 关键断言：队列从 P1 开始
-        expect(window?.responderQueue).toEqual(['1', '0']);
+        expect(presentation?.responderQueue).toEqual(['1', '0']);
     });
 
     it('Me First! 窗口内打出带 interaction 的 special 卡，交互完成后响应窗口正确推进', () => {
@@ -530,8 +536,8 @@ describe('Me First! 响应窗口', () => {
             name: 'mandatory_reading: 进入 scoreBases',
             commands: [...BREAKPOINT_COMMANDS] as any[],
         });
-        expect(r1.finalState.sys.responseWindow.current?.windowType).toBe('meFirst');
-        expect(r1.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(0);
+        expect(getSmashUpReactionWindowPresentation(r1.finalState)?.windowType).toBe('meFirst');
+        expect(getSmashUpReactionWindowPresentation(r1.finalState)?.currentResponderIndex).toBe(0);
 
         // Step 2: P0 打出 mandatory_reading → 产生 interaction（选随从）
         const runner2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -584,7 +590,7 @@ describe('Me First! 响应窗口', () => {
         const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
         expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
         expect(getPromptPlayerId(resumedChoice)).toBe('1');
-        expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
+        expect(getSmashUpReactionWindowPresentation(r4.finalState)?.currentResponderIndex).toBe(1);
         // 疯狂卡已抽到 P0 手牌（defId 为 MADNESS_CARD_DEF_ID = 'special_madness'）
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(true);
     });
@@ -615,7 +621,7 @@ describe('Me First! 响应窗口', () => {
         const r1 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: setupSkip,
         }).run({ name: 'skip: 进入 scoreBases', commands: [...BREAKPOINT_COMMANDS] as any[] });
-        expect(r1.finalState.sys.responseWindow.current?.windowType).toBe('meFirst');
+        expect(getSmashUpReactionWindowPresentation(r1.finalState)?.windowType).toBe('meFirst');
 
         // P0 打出 mandatory_reading
         const r2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -659,7 +665,7 @@ describe('Me First! 响应窗口', () => {
         const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
         expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
         expect(getPromptPlayerId(resumedChoice)).toBe('1');
-        expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
+        expect(getSmashUpReactionWindowPresentation(r4.finalState)?.currentResponderIndex).toBe(1);
         // 没有疯狂卡被抽取
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(false);
     });

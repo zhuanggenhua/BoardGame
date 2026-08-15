@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { GameEvent, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
     createSimpleChoice,
     queueInteraction,
@@ -13,6 +13,7 @@ export interface AbilityRuntimeResult<TState, TEvent> {
     matchState?: MatchState<TState>;
     suspended?: boolean;
     continuationId?: string;
+    deferredContinuation?: boolean;
 }
 
 export interface AbilityRuntimeEffectResult<TContext, TState, TEvent>
@@ -91,8 +92,21 @@ export interface AbilityRuntimePromptResumeResult<TContext, TState, TEvent>
 export interface AbilityRuntimePromptContinuationData {
     context?: unknown;
     contextHasMatchState?: boolean;
+    contextHasRandom?: boolean;
     nextProgramId?: string;
 }
+
+const ABILITY_RUNTIME_CONTINUE_EVENT_TYPE = 'SYS_SMASHUP_ABILITY_RUNTIME_CONTINUE';
+
+export type AbilityRuntimeContinuationEvent = GameEvent<
+    typeof ABILITY_RUNTIME_CONTINUE_EVENT_TYPE,
+    {
+        sourceId?: string;
+        continuation: AbilityRuntimePromptContinuationData & {
+            nextProgramId: string;
+        };
+    }
+>;
 
 export type AbilityRuntimePromptResult = {
     state: MatchState<SmashUpCore>;
@@ -219,36 +233,147 @@ function serializeAbilityRuntimeContext(
         matchState: _matchState,
         core: _core,
         state: _state,
+        random: _random,
         ...rest
     } = record;
     const serializedContext = sanitizeRuntimeValue(rest);
     return {
         ...(serializedContext !== undefined ? { context: serializedContext } : {}),
         ...(Object.prototype.hasOwnProperty.call(record, 'matchState') ? { contextHasMatchState: true } : {}),
+        ...(Object.prototype.hasOwnProperty.call(record, 'random') ? { contextHasRandom: true } : {}),
     };
 }
 
 function rehydrateAbilityRuntimeContext<TState>(
     state: MatchState<TState>,
     continuation: AbilityRuntimePromptContinuationData | undefined,
+    random?: RandomFn,
 ): unknown {
     if (!continuation) {
         return undefined;
     }
 
     const baseContext = continuation.context;
-    if (!continuation.contextHasMatchState) {
+    if (!continuation.contextHasMatchState && !continuation.contextHasRandom) {
         return baseContext;
+    }
+    if (continuation.contextHasRandom && !random) {
+        throw new Error('SmashUp ability runtime continuation 需要随机源但恢复入口未提供 random');
     }
 
     const record = asPlainRecord(baseContext);
     if (!record) {
-        return { matchState: state };
+        return {
+            ...(continuation.contextHasMatchState ? { matchState: state } : {}),
+            ...(continuation.contextHasRandom ? { random } : {}),
+        };
     }
     return {
         ...record,
-        matchState: state,
+        ...(continuation.contextHasMatchState ? { matchState: state } : {}),
+        ...(continuation.contextHasRandom ? { random } : {}),
     };
+}
+
+function isRuntimeDomainEvent(event: unknown): boolean {
+    const record = asPlainRecord(event);
+    const type = record?.type;
+    return typeof type === 'string' && !type.startsWith('SYS_');
+}
+
+function hasRuntimeDomainEvents(events: readonly unknown[]): boolean {
+    return events.some(isRuntimeDomainEvent);
+}
+
+function getRuntimeContinuationTimestamp(events: readonly unknown[], context: unknown): number {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+        const timestamp = asPlainRecord(events[index])?.timestamp;
+        if (typeof timestamp === 'number') {
+            return timestamp;
+        }
+    }
+
+    const contextRecord = asPlainRecord(context);
+    const contextNow = contextRecord?.now;
+    if (typeof contextNow === 'number') {
+        return contextNow;
+    }
+
+    return 0;
+}
+
+function createAbilityRuntimeContinuationEvent<TContext, TState, TEvent>(
+    context: TContext,
+    nextProgram: AbilityProgram<TContext, TState, TEvent>,
+    timestamp: number,
+    sourceId?: string,
+): TEvent {
+    const continuation = {
+        ...serializeAbilityRuntimeContext(context),
+        nextProgramId: getAbilityProgramId(nextProgram),
+    };
+    return {
+        type: ABILITY_RUNTIME_CONTINUE_EVENT_TYPE,
+        payload: {
+            ...(sourceId ? { sourceId } : {}),
+            continuation,
+        },
+        timestamp,
+    } satisfies AbilityRuntimeContinuationEvent as unknown as TEvent;
+}
+
+function readAbilityRuntimeContinuationEvent(
+    event: unknown,
+): AbilityRuntimeContinuationEvent | undefined {
+    const record = asPlainRecord(event);
+    if (record?.type !== ABILITY_RUNTIME_CONTINUE_EVENT_TYPE) {
+        return undefined;
+    }
+
+    const payload = asPlainRecord(record.payload);
+    const continuation = asPlainRecord(payload?.continuation);
+    if (!continuation || typeof continuation.nextProgramId !== 'string') {
+        throw new Error('SmashUp ability runtime continuation 事件缺少 nextProgramId');
+    }
+
+    return event as AbilityRuntimeContinuationEvent;
+}
+
+export function isAbilityRuntimeContinuationEvent(
+    event: GameEvent,
+): event is AbilityRuntimeContinuationEvent {
+    return !!readAbilityRuntimeContinuationEvent(event);
+}
+
+function appendRemainingProgramToDeferredContinuation<TContext, TState, TEvent>(
+    events: readonly TEvent[],
+    remainingProgram: AbilityProgram<TContext, TState, TEvent>,
+): TEvent[] {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+        const continuationEvent = readAbilityRuntimeContinuationEvent(events[index]);
+        if (!continuationEvent) {
+            continue;
+        }
+
+        const currentProgram = requireAbilityProgramById<TContext, TState, TEvent>(
+            continuationEvent.payload.continuation.nextProgramId,
+        );
+        const combinedProgram = createSequenceProgram(currentProgram, remainingProgram);
+        const nextEvents = [...events];
+        nextEvents[index] = {
+            ...continuationEvent,
+            payload: {
+                ...continuationEvent.payload,
+                continuation: {
+                    ...continuationEvent.payload.continuation,
+                    nextProgramId: getAbilityProgramId(combinedProgram),
+                },
+            },
+        } as unknown as TEvent;
+        return nextEvents;
+    }
+
+    throw new Error('SmashUp ability runtime 缺少可追加的 deferred continuation 事件');
 }
 
 function getAbilityRuntimePromptMarker(
@@ -313,6 +438,41 @@ function updateInteractionForContinuation<TState>(
             },
         },
     };
+}
+
+export function appendAbilityRuntimeContinuationProgram<TState, TEvent>(
+    state: MatchState<TState>,
+    continuationId: string,
+    program: AbilityProgram<any, TState, TEvent>,
+    options: {
+        augmentContext?: (context: unknown) => unknown;
+        requiresMatchState?: boolean;
+        requiresRandom?: boolean;
+    } = {},
+): MatchState<TState> {
+    return updateInteractionForContinuation(state, continuationId, (marker) => {
+        const continuation = marker.continuation ?? {};
+        const existingProgram = continuation.nextProgramId
+            ? requireAbilityProgramById<any, TState, TEvent>(continuation.nextProgramId)
+            : undefined;
+        const combinedProgram = existingProgram
+            ? createSequenceProgram(existingProgram, program)
+            : program;
+        const augmentedContext = options.augmentContext
+            ? options.augmentContext(continuation.context)
+            : continuation.context;
+
+        return {
+            ...marker,
+            continuation: {
+                ...continuation,
+                ...(augmentedContext !== undefined ? { context: augmentedContext } : {}),
+                ...(options.requiresMatchState ? { contextHasMatchState: true } : {}),
+                ...(options.requiresRandom ? { contextHasRandom: true } : {}),
+                nextProgramId: getAbilityProgramId(combinedProgram),
+            },
+        };
+    });
 }
 
 export function createEffectProgram<TContext, TState, TEvent>(
@@ -387,7 +547,7 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
         const continuation = marker?.continuation;
         const legacyContinuationContext = asPlainRecord(interactionData?.continuationContext);
         const resolvedContext = marker
-            ? rehydrateAbilityRuntimeContext(state, continuation) as TContext
+            ? rehydrateAbilityRuntimeContext(state, continuation, random) as TContext
             : (() => {
                 if (!legacyContinuationContext) {
                     return undefined as TContext | undefined;
@@ -409,21 +569,43 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
             random,
             timestamp,
         });
-        const nextContext = resumeResult.context ?? resolvedContext as TContext;
-        const nextProgram = resumeResult.nextProgram
-            ?? (continuation?.nextProgramId
-                ? requireAbilityProgramById<TContext, TState, TEvent>(continuation.nextProgramId)
-                : undefined);
+        const nextContext = mergeRuntimeContinuationContext(
+            resolvedContext as TContext | undefined,
+            resumeResult.context ?? resolvedContext as TContext,
+        );
+        const continuationProgram = continuation?.nextProgramId
+            ? requireAbilityProgramById<TContext, TState, TEvent>(continuation.nextProgramId)
+            : undefined;
+        const nextProgram = resumeResult.nextProgram && continuationProgram
+            ? createSequenceProgram(resumeResult.nextProgram, continuationProgram)
+            : resumeResult.nextProgram ?? continuationProgram;
         let result: AbilityRuntimeResult<TState, TEvent> = {
             events: resumeResult.events,
             matchState: resumeResult.matchState ?? state,
+            ...(resumeResult.deferredContinuation ? { deferredContinuation: true } : {}),
         };
         if (nextProgram) {
-            const continuationState = prioritizeContinuationPromptState(result.matchState ?? state);
-            result = mergeRuntimeResults(
-                result,
-                executeAbilityProgram(nextProgram, withRuntimeMatchState(nextContext, continuationState)),
-            );
+            if (hasRuntimeDomainEvents(resumeResult.events)) {
+                result = {
+                    events: [
+                        ...resumeResult.events,
+                        createAbilityRuntimeContinuationEvent(
+                            nextContext,
+                            nextProgram,
+                            getRuntimeContinuationTimestamp(resumeResult.events, nextContext),
+                            marker?.sourceId ?? params.sourceId,
+                        ),
+                    ],
+                    matchState: resumeResult.matchState ?? state,
+                    deferredContinuation: true,
+                };
+            } else {
+                const continuationState = prioritizeContinuationPromptState(result.matchState ?? state);
+                result = mergeRuntimeResults(
+                    result,
+                    executeAbilityProgram(nextProgram, withRuntimeMatchState(nextContext, continuationState)),
+                );
+            }
         }
         return {
             state: (result.matchState ?? state) as MatchState<SmashUpCore>,
@@ -573,12 +755,28 @@ function mergeRuntimeResults<TState, TEvent>(
     return {
         events: [...left.events, ...right.events],
         matchState: right.matchState ?? left.matchState,
+        ...(right.deferredContinuation || left.deferredContinuation ? { deferredContinuation: true } : {}),
         ...(right.suspended
             ? { suspended: true, continuationId: right.continuationId }
             : left.suspended
                 ? { suspended: true, continuationId: left.continuationId }
                 : {}),
     };
+}
+
+function mergeRuntimeContinuationContext<TContext>(
+    previousContext: TContext | undefined,
+    nextContext: TContext,
+): TContext {
+    const previousRecord = asPlainRecord(previousContext);
+    const nextRecord = asPlainRecord(nextContext);
+    if (!previousRecord || !nextRecord) {
+        return nextContext;
+    }
+    return {
+        ...previousRecord,
+        ...nextRecord,
+    } as TContext;
 }
 
 function withRuntimeMatchState<TContext, TState>(
@@ -652,6 +850,23 @@ export function executeAbilityProgram<TContext, TState, TEvent>(
                 return normalized;
             }
             const nextContext = normalized.context ?? context;
+            if (hasRuntimeDomainEvents(normalized.events)) {
+                return {
+                    events: [
+                        ...normalized.events,
+                        createAbilityRuntimeContinuationEvent(
+                            nextContext,
+                            normalized.nextProgram,
+                            getRuntimeContinuationTimestamp(normalized.events, nextContext),
+                        ),
+                    ],
+                    matchState: normalized.matchState,
+                    ...(normalized.suspended
+                        ? { suspended: true as const, continuationId: normalized.continuationId }
+                        : {}),
+                    deferredContinuation: true,
+                };
+            }
             return mergeRuntimeResults(
                 {
                     events: normalized.events,
@@ -684,6 +899,32 @@ export function executeAbilityProgram<TContext, TState, TEvent>(
                 const step = program.steps[index];
                 const stepResult = executeAbilityProgram(step, context);
                 result = mergeRuntimeResults(result, stepResult);
+                if (hasRuntimeDomainEvents(stepResult.events)) {
+                    const remainingSteps = program.steps.slice(index + 1);
+                    if (remainingSteps.length > 0) {
+                        const remainingProgram = remainingSteps.length === 1
+                            ? remainingSteps[0]
+                            : createSequenceProgram(...remainingSteps);
+                        const continuationContext = stepResult.matchState
+                            ? withRuntimeMatchState(context, stepResult.matchState)
+                            : context;
+                        result = {
+                            ...result,
+                            events: stepResult.deferredContinuation
+                                ? appendRemainingProgramToDeferredContinuation(result.events, remainingProgram)
+                                : [
+                                    ...result.events,
+                                    createAbilityRuntimeContinuationEvent(
+                                        continuationContext,
+                                        remainingProgram,
+                                        getRuntimeContinuationTimestamp(stepResult.events, continuationContext),
+                                    ),
+                                ],
+                            deferredContinuation: true,
+                        };
+                    }
+                    return result;
+                }
                 if (stepResult.suspended) {
                     const remainingSteps = program.steps.slice(index + 1);
                     if (remainingSteps.length > 0 && stepResult.continuationId && stepResult.matchState) {
@@ -719,6 +960,28 @@ export function executeAbilityProgram<TContext, TState, TEvent>(
             throw new Error(`未知的 ability program 节点: ${String(exhaustiveCheck)}`);
         }
     }
+}
+
+export function resumeAbilityRuntimeContinuationEvent(
+    state: MatchState<SmashUpCore>,
+    event: GameEvent,
+    random?: RandomFn,
+): AbilityRuntimePromptResult {
+    const continuationEvent = readAbilityRuntimeContinuationEvent(event);
+    if (!continuationEvent) {
+        return undefined;
+    }
+
+    const continuation = continuationEvent.payload.continuation;
+    const program = requireAbilityProgramById<unknown, SmashUpCore, SmashUpEvent>(
+        continuation.nextProgramId,
+    );
+    const context = rehydrateAbilityRuntimeContext(state, continuation, random);
+    const result = executeAbilityProgram(program, context);
+    return {
+        state: (result.matchState ?? state) as MatchState<SmashUpCore>,
+        events: result.events as SmashUpEvent[],
+    };
 }
 
 export function executeAbilityRuntimeExecutor<TContext, TState, TEvent>(

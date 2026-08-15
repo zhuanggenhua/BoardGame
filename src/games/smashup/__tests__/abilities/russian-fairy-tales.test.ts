@@ -1,5 +1,9 @@
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { RUSSIAN_FAIRY_TALES_BASES, RUSSIAN_FAIRY_TALES_CARDS } from '../../data/factions/russian_fairy_tales';
+import {
+    isAbilityRuntimeContinuationEvent,
+    resumeAbilityRuntimeContinuationEvent,
+} from '../../domain/abilityRuntime';
 import { getMinionPower } from '../../domain/abilityHelpers';
 import { collectTriggers } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint } from '../../domain/ongoingModifiers';
@@ -237,6 +241,66 @@ describe('俄罗斯童话代表性玩法行为', () => {
 
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['action-1']);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['minion-1', 'minion-2', 'action-2', 'tail']);
+    });
+
+    it('愚蠢的魔术师先正式抽牌，再基于已落地手牌打开整理 prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hand-a', 'russian_fairy_tales_the_water_of_life', 'action', '0')],
+                    deck: [
+                        makeCard('draw-a', 'russian_fairy_tales_tsar_eagle', 'minion', '0'),
+                        makeCard('draw-b', 'russian_fairy_tales_toad', 'minion', '0'),
+                        makeCard('draw-c', 'russian_fairy_tales_baba_yaga', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('russian_fairy_tales_foolish_magician', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'foolish',
+            defId: 'russian_fairy_tales_foolish_magician',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 35,
+        });
+        const drawEvents = result.events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+        const continuation = result.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+
+        expect(drawEvents).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: expect.objectContaining({ cardUids: ['draw-a', 'draw-b', 'draw-c'] }),
+            }),
+        ]);
+        expect(continuation).toBeTruthy();
+        expect(result.matchState).toBeUndefined();
+
+        const resumed = resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, drawEvents as any)),
+            continuation as any,
+            FIXED_RANDOM,
+        );
+        const prompt = getSimpleChoicePrompt(resumed!.state, 'russian_fairy_tales_foolish_magician');
+        const promptCardUids = new Set(prompt.options.map((option: any) => option.value?.cardUid));
+        expect(promptCardUids).toEqual(new Set(['hand-a', 'draw-a', 'draw-b', 'draw-c']));
+
+        const selectedOptionIds = [
+            prompt.options.find((option: any) => option.value?.cardUid === 'hand-a' && option.value?.placement === 'top')!.id,
+            prompt.options.find((option: any) => option.value?.cardUid === 'draw-a' && option.value?.placement === 'bottom')!.id,
+            prompt.options.find((option: any) => option.value?.cardUid === 'draw-b' && option.value?.placement === 'bottom')!.id,
+        ];
+        const resolved = respondToPromptOptions(resumed!.state, selectedOptionIds, '0', FIXED_RANDOM);
+
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.CARD_TO_DECK_TOP, payload: expect.objectContaining({ cardUid: 'hand-a' }) }),
+            expect.objectContaining({ type: SU_EVENTS.CARD_TO_DECK_BOTTOM, payload: expect.objectContaining({ cardUid: 'draw-a' }) }),
+            expect.objectContaining({ type: SU_EVENTS.CARD_TO_DECK_BOTTOM, payload: expect.objectContaining({ cardUid: 'draw-b' }) }),
+        ]));
     });
 
     it('去看看我妹妹在己方随从打出到附着基地后可抽一张牌', () => {

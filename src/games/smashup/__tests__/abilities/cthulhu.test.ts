@@ -2115,17 +2115,18 @@ describe('cthulhu_servitor（仆人 talent）', () => {
             ],
         });
 
-        const matchState = makeMatchState(core);
-        const events = execute(matchState, {
+        const result = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         }, dummyRandom);
+        expect(result.success, result.error).toBe(true);
 
+        const events = result.events;
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.TALENT_USED);
         expect(types).toContain(SU_EVENTS.MINION_DESTROYED);
-        getSimpleChoicePrompt(matchState, 'cthulhu_servitor');
+        getSimpleChoicePrompt(result.finalState, 'cthulhu_servitor');
         expect(types).not.toContain(SU_EVENTS.DECK_RESHUFFLED);
 
         const destroyEvt = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED)!;
@@ -2236,14 +2237,14 @@ describe('cthulhu_servitor（仆人 talent）', () => {
             ],
         });
 
-        const matchState = makeMatchState(core);
-        execute(matchState, {
+        const result = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         }, dummyRandom);
+        expect(result.success, result.error).toBe(true);
 
-        const prompt = getSimpleChoicePrompt(matchState, 'cthulhu_servitor');
+        const prompt = getSimpleChoicePrompt(result.finalState, 'cthulhu_servitor');
         expect(getPromptSourceId(prompt)).toBe('cthulhu_servitor');
     });
 });

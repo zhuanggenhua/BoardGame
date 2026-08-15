@@ -125,6 +125,14 @@ const saveLocatorEvidenceScreenshot = async (
     return path;
 };
 
+const closeMagnifyPreviewIfOpen = async (page: Page) => {
+    const closeButton = page.getByRole('button', { name: /关闭预览|close preview/i }).last();
+    if (await closeButton.isVisible({ timeout: 500 }).catch(() => false)) {
+        await closeButton.click({ timeout: 1000 }).catch(() => undefined);
+        await expect(closeButton).toBeHidden({ timeout: 3000 }).catch(() => undefined);
+    }
+};
+
 const TRANSFER_STATUS_FATAL_ERROR_PATTERN = /Maximum update depth exceeded|Too many re-renders/i;
 const MOBILE_TRANSFER_CONTEXT_OPTIONS: BrowserContextOptions = {
     viewport: { width: 915, height: 412 },
@@ -441,7 +449,7 @@ const selectRecklessStrikeAbilityForDizzyFlow = async (page: Page) => {
     await dispatchHarnessCommand(page, 'SELECT_ABILITY', '0', { abilityId: DIZZY_ATTACK_ABILITY_ID });
 };
 
-async function waitForAiSeatCredential(
+async function waitForAiSeatReady(
     page: Page,
     matchId: string,
     playerId: string,
@@ -449,18 +457,26 @@ async function waitForAiSeatCredential(
     await expect.poll(async () => {
         return page.evaluate(({ targetMatchId, targetPlayerId }) => {
             const raw = localStorage.getItem(`match_ai_creds_${targetMatchId}`);
-            if (!raw) return null;
-            try {
-                const parsed = JSON.parse(raw) as Record<string, unknown>;
-                return typeof parsed[targetPlayerId] === 'string' ? parsed[targetPlayerId] as string : null;
-            } catch {
-                return null;
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw) as Record<string, unknown>;
+                    if (typeof parsed[targetPlayerId] === 'string') {
+                        return 'stored-seat-credential';
+                    }
+                } catch {
+                    // 继续检查当前服务端权威 AI 调试桥；旧凭据损坏不应让 E2E 永久等待。
+                }
             }
+
+            const debugApi = (window as any).__BG_ONLINE_AI_DEBUG__;
+            const latestState = debugApi?.getSeatLatestState?.(targetPlayerId);
+            const decisionState = debugApi?.getSeatDecisionState?.(targetPlayerId);
+            return latestState || decisionState ? 'server-authority-ai-seat' : null;
         }, { targetMatchId: matchId, targetPlayerId: playerId });
     }, {
         timeout: 20000,
-        message: `等待 DiceThrone AI seat ${playerId} 凭据超时`,
-    }).not.toBeNull();
+        message: `等待 DiceThrone AI seat ${playerId} 以本地旧凭据或服务端权威 AI 方式就绪超时`,
+    }).toMatch(/stored-seat-credential|server-authority-ai-seat/);
 }
 
 async function setupDTOnlineAiRoom(
@@ -2851,7 +2867,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -2949,7 +2965,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -3062,14 +3078,14 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
-            await selectCharacter(hostPage, 'moon_elf');
+            await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
                 const state = await getMatchState(matchId, hostPage);
                 const hostSelected = state.core?.selectedCharacters?.['0'];
                 const aiSelected = state.core?.selectedCharacters?.['1'];
-                return hostSelected === 'moon_elf'
+                return hostSelected === 'monk'
                     && aiSelected !== 'unselected'
                     && state.core?.readyPlayers?.['1'] === true;
             }, {
@@ -3077,9 +3093,42 @@ test.describe('DiceThrone Simple Start', () => {
                 message: '等待 DiceThrone host/AI 一起完成 off-turn defensiveRoll 真实触发测试前置条件',
             }).toBe(true);
 
-            const startButton = hostPage.locator('button').filter({ hasText: /开始游戏|Start Game|Press.*Start/i }).first();
-            await expect(startButton).toBeEnabled({ timeout: 10000 });
-            await startButton.click();
+            const preStartState = await getMatchState(matchId, hostPage);
+            if (preStartState.core?.hostStarted !== true) {
+                const hostDiagnostics = attachPageDiagnostics(hostPage);
+                const startButton = hostPage.locator('button').filter({ hasText: /开始游戏|Start Game|Press.*Start/i }).first();
+                try {
+                    await expect(startButton).toBeEnabled({ timeout: 10000 });
+                } catch (error) {
+                    const pageSnapshot = await hostPage.evaluate(() => ({
+                        url: window.location.href,
+                        title: document.title,
+                        bodyText: document.body?.innerText?.slice(0, 1000) ?? '',
+                        buttonTexts: Array.from(document.querySelectorAll('button'))
+                            .map((button) => button.textContent?.trim() ?? '')
+                            .filter(Boolean)
+                            .slice(0, 20),
+                        rootChildCount: document.getElementById('root')?.childElementCount ?? null,
+                    })).catch((snapshotError) => ({
+                        readError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError),
+                    }));
+
+                    throw new Error([
+                        'DiceThrone off-turn defensiveRoll E2E 无法从真实角色选择页点击开始游戏。',
+                        `页面现场: ${JSON.stringify(pageSnapshot, null, 2)}`,
+                        `状态现场: ${JSON.stringify({
+                            hostStarted: preStartState.core?.hostStarted,
+                            hostPlayerId: preStartState.core?.hostPlayerId,
+                            selectedCharacters: preStartState.core?.selectedCharacters,
+                            readyPlayers: preStartState.core?.readyPlayers,
+                            phase: preStartState.sys?.phase,
+                        }, null, 2)}`,
+                        `最近前端错误: ${hostDiagnostics.errors.slice(-8).join('\n') || '无'}`,
+                        `底层错误: ${error instanceof Error ? error.message : String(error)}`,
+                    ].join('\n'));
+                }
+                await startButton.click();
+            }
             await hostPage.waitForTimeout(500);
 
             await applyOnlineMatchState(matchId, hostPage, buildOnlineAiOffTurnDefensiveRollState);
@@ -3096,7 +3145,8 @@ test.describe('DiceThrone Simple Start', () => {
             }).toBe('ready');
 
             await clearEvidenceScreenshotsForTest(testInfo);
-            await saveEvidenceScreenshot(hostPage, testInfo, '05h-online-ai-offturn-defensive-before');
+            await closeMagnifyPreviewIfOpen(hostPage);
+            await saveEvidenceScreenshot(hostPage, testInfo, '05h-online-ai-offturn-defensive-entry-or-fast-resolved');
 
             await expect.poll(async () => {
                 const state = await getMatchState(matchId, hostPage);
@@ -3115,7 +3165,8 @@ test.describe('DiceThrone Simple Start', () => {
                 message: '等待 AI 在 off-turn defensiveRoll 至少完成掷骰',
             }).toMatch(/defensive-roll-observed|main2-resolved/);
 
-            await saveEvidenceScreenshot(hostPage, testInfo, '05i-online-ai-offturn-defensive-rolled');
+            await closeMagnifyPreviewIfOpen(hostPage);
+            await saveEvidenceScreenshot(hostPage, testInfo, '05i-online-ai-offturn-defensive-progress-or-fast-resolved');
 
             await expect.poll(async () => {
                 const state = await getMatchState(matchId, hostPage);
@@ -3136,7 +3187,8 @@ test.describe('DiceThrone Simple Start', () => {
             const stableMain2State = await getMatchState(matchId, hostPage);
             expect(stableMain2State.sys?.phase).toBe('main2');
             expect(stableMain2State.core?.activePlayerId).toBe('0');
-            await saveEvidenceScreenshot(hostPage, testInfo, '05j-online-ai-offturn-defensive-resolved');
+            await closeMagnifyPreviewIfOpen(hostPage);
+            await saveEvidenceScreenshot(hostPage, testInfo, '05j-online-ai-offturn-defensive-stable-main2');
         } finally {
             await setup.hostContext.close();
         }
@@ -3483,7 +3535,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -3643,7 +3695,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -3770,7 +3822,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -3901,7 +3953,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -4566,7 +4618,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
 
             await selectCharacter(hostPage, 'monk');
             await expect.poll(async () => {
@@ -6176,7 +6228,7 @@ test.describe('DiceThrone Simple Start', () => {
         try {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelection(hostPage, 20000);
-            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await waitForAiSeatReady(hostPage, matchId, '1');
             await installOnlineCommandRecorder(hostPage);
             await selectCharacter(hostPage, 'monk');
 

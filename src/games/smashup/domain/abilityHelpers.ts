@@ -16,6 +16,11 @@ import type {
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
+import {
+    appendAbilityRuntimeContinuationProgram,
+    createEffectProgram,
+    executeAbilityProgram,
+} from './abilityRuntime';
 import { buildOngoingDetachedEvent } from './ongoingDetach';
 import { getSmashUpRelationToPlayer } from './teamMode';
 import type { ProtectionType } from './ongoingEffects';
@@ -68,7 +73,6 @@ import type {
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
 import { collectTriggers } from './ongoingEffects';
-import { reduce } from './reduce';
 import { getCardDef, getMinionDef, getTitanDef } from '../data/cards';
 import { drawCards } from './utils';
 import { normalizeFactionSelectionId, SMASHUP_FACTION_IDS } from './ids';
@@ -1459,7 +1463,7 @@ export function peekDeckTop(
  * 
  * 调用方需自行构造 MINION_PLAYED 事件并传入 playedEvt。
  */
-export function fireMinionPlayedTriggers(params: {
+type FireMinionPlayedTriggerParams = {
     core: SmashUpCore;
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
@@ -1470,59 +1474,21 @@ export function fireMinionPlayedTriggers(params: {
     random: RandomFn;
     now: number;
     playedEvt: MinionPlayedEvent;
-}): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
+};
+
+function collectMinionPlayedFollowupTriggers(
+    params: FireMinionPlayedTriggerParams & { preOnPlayTriggerBaseMinionUids: Set<string> },
+): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     const { core, playerId, cardUid, defId, baseIndex, power, random, now } = params;
-    let matchState = params.matchState;
-    let triggerCore = core;
+    const { preOnPlayTriggerBaseMinionUids } = params;
     const events: SmashUpEvent[] = [];
-    const preOnPlayTriggerBaseMinionUids = new Set(core.bases[baseIndex]?.minions.map((minion) => minion.uid) ?? []);
 
-    // 注意：此函数被 postProcessSystemEvents 调用时，MINION_PLAYED 事件已经被 reduce 到 core 中
-    // 所以随从已经在基地上了，不需要再次 reduce
-
-    // 1. onPlay 能力触发
-    const executor = params.playedEvt.payload.skipOnPlayAbility ? undefined : resolveOnPlay(defId);
-    if (executor) {
-        const ctx: AbilityContext = {
-            state: core,
-            matchState,
-            playerId,
-            cardUid,
-            defId,
-            baseIndex,
-            fromDiscard: params.playedEvt.payload.fromDiscard === true,
-            fromDeck: params.playedEvt.payload.fromDeck === true,
-            fromStored: params.playedEvt.payload.fromStored === true,
-            fromBuried: params.playedEvt.payload.fromBuried === true,
-            random,
-            now,
-        };
-        const result = executor(ctx);
-        events.push(...result.events);
-        if (result.events.length > 0) {
-            for (const event of result.events) {
-                triggerCore = reduce(triggerCore, event);
-            }
-        }
-        if (result.matchState) {
-            matchState = {
-                ...result.matchState,
-                core: triggerCore,
-            };
-        } else if (triggerCore !== core) {
-            matchState = {
-                ...matchState,
-                core: triggerCore,
-            };
-        }
-    }
-
-    // 2. 基地能力触发 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
+    // 基地能力触发 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
     const minionDef = getMinionDef(defId);
     const sourceEventId = `minion-played:${cardUid}:${baseIndex}:${now}`;
     const frameId = `minion-played-frame:${cardUid}:${baseIndex}:${now}`;
     const queuedBase = collectBaseAbilityTriggers({
-        core: triggerCore,
+        core,
         timing: 'onMinionPlayed',
         ownerPlayerId: playerId,
         baseIndex,
@@ -1536,14 +1502,14 @@ export function fireMinionPlayedTriggers(params: {
     });
     if (queuedBase) events.push(queuedBase as unknown as SmashUpEvent);
 
-    // 3. ongoing 触发器 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
-    const playedMinion = triggerCore.bases[baseIndex]?.minions.find(m => m.uid === cardUid);
-    const suppressedSourceCardUids = (triggerCore.bases[baseIndex]?.minions ?? [])
+    // ongoing 触发器 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
+    const playedMinion = core.bases[baseIndex]?.minions.find(m => m.uid === cardUid);
+    const suppressedSourceCardUids = (core.bases[baseIndex]?.minions ?? [])
         .filter(minion => minion.uid !== cardUid && !preOnPlayTriggerBaseMinionUids.has(minion.uid))
         .map(minion => minion.uid);
-    const queued = collectTriggers(triggerCore, 'onMinionPlayed', {
-        state: triggerCore,
-        matchState,
+    const queued = collectTriggers(core, 'onMinionPlayed', {
+        state: core,
+        matchState: params.matchState,
         playerId,
         baseIndex,
         triggerMinionUid: cardUid,
@@ -1558,8 +1524,8 @@ export function fireMinionPlayedTriggers(params: {
     });
     if (queued) events.push(queued);
 
-    // 4. 消费 pendingMinionPlayEffects 队列（如 crack_of_dusk / its_alive 的打出后+1指示物）
-    const player = triggerCore.players[playerId];
+    // 消费 pendingMinionPlayEffects 队列（如 crack_of_dusk / its_alive 的打出后+1指示物）
+    const player = core.players[playerId];
     if (player?.pendingMinionPlayEffects && player.pendingMinionPlayEffects.length > 0) {
         const effect = player.pendingMinionPlayEffects[0];
         if (effect.effect === 'addPowerCounter') {
@@ -1585,7 +1551,260 @@ export function fireMinionPlayedTriggers(params: {
         } as SmashUpEvent);
     }
 
+    return { events };
+}
+
+interface MinionPlayedFollowupContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    random?: RandomFn;
+    playedEvt: MinionPlayedEvent;
+    preOnPlayTriggerBaseMinionUids: string[];
+}
+
+interface EmitMinionPlayedFollowupEventsThenContinueContext extends MinionPlayedFollowupContinuationContext {
+    events: SmashUpEvent[];
+}
+
+const resolveMinionPlayedFollowupTriggersAfterOnPlayProgram = createEffectProgram<
+    MinionPlayedFollowupContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('minion played followup continuation 缺少正式 matchState');
+    }
+    if (!context.random) {
+        throw new Error('minion played followup continuation 缺少随机源');
+    }
+
+    const { playedEvt } = context;
+    const payload = playedEvt.payload;
+    const result = collectMinionPlayedFollowupTriggers({
+        core: context.matchState.core,
+        matchState: context.matchState,
+        playerId: payload.playerId,
+        cardUid: payload.cardUid,
+        defId: payload.defId,
+        baseIndex: payload.baseIndex,
+        power: payload.power,
+        random: context.random,
+        now: playedEvt.timestamp,
+        playedEvt,
+        preOnPlayTriggerBaseMinionUids: new Set(context.preOnPlayTriggerBaseMinionUids),
+    });
+
+    return result.events;
+});
+
+const emitMinionPlayedFollowupEventsThenContinueProgram = createEffectProgram<
+    EmitMinionPlayedFollowupEventsThenContinueContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    matchState: context.matchState,
+    context: {
+        matchState: context.matchState,
+        random: context.random,
+        playedEvt: context.playedEvt,
+        preOnPlayTriggerBaseMinionUids: context.preOnPlayTriggerBaseMinionUids,
+    } satisfies MinionPlayedFollowupContinuationContext,
+    nextProgram: resolveMinionPlayedFollowupTriggersAfterOnPlayProgram,
+}));
+
+function appendMinionPlayedFollowupsAfterOnPlayEvents(params: {
+    state: MatchState<SmashUpCore>;
+    events: SmashUpEvent[];
+    playedEvt: MinionPlayedEvent;
+    random: RandomFn;
+    preOnPlayTriggerBaseMinionUids: Set<string>;
+}): AbilityResult {
+    const result = executeAbilityProgram(emitMinionPlayedFollowupEventsThenContinueProgram, {
+        matchState: params.state,
+        random: params.random,
+        events: params.events,
+        playedEvt: params.playedEvt,
+        preOnPlayTriggerBaseMinionUids: [...params.preOnPlayTriggerBaseMinionUids],
+    });
+    return {
+        events: result.events as SmashUpEvent[],
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
+}
+
+function appendMinionPlayedFollowupsToSuspendedOnPlayPrompt(params: {
+    state: MatchState<SmashUpCore>;
+    continuationId: string;
+    playedEvt: MinionPlayedEvent;
+    preOnPlayTriggerBaseMinionUids: Set<string>;
+}): MatchState<SmashUpCore> {
+    return appendAbilityRuntimeContinuationProgram(
+        params.state,
+        params.continuationId,
+        resolveMinionPlayedFollowupTriggersAfterOnPlayProgram,
+        {
+            requiresMatchState: true,
+            requiresRandom: true,
+            augmentContext: (context) => ({
+                ...((context && typeof context === 'object' && !Array.isArray(context))
+                    ? context as Record<string, unknown>
+                    : {}),
+                playedEvt: params.playedEvt,
+                preOnPlayTriggerBaseMinionUids: [...params.preOnPlayTriggerBaseMinionUids],
+            }),
+        },
+    );
+}
+
+export function fireMinionPlayedTriggers(
+    params: FireMinionPlayedTriggerParams,
+): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
+    const { core, playerId, cardUid, defId, baseIndex, random, now } = params;
+    let matchState = params.matchState;
+    const events: SmashUpEvent[] = [];
+    const preOnPlayTriggerBaseMinionUids = new Set(core.bases[baseIndex]?.minions.map((minion) => minion.uid) ?? []);
+
+    // 注意：此函数被 postProcessSystemEvents 调用时，MINION_PLAYED 事件已经被 reduce 到 core 中
+    // 所以随从已经在基地上了，不需要再次 reduce
+
+    // 1. onPlay 能力触发
+    const executor = params.playedEvt.payload.skipOnPlayAbility ? undefined : resolveOnPlay(defId);
+    if (executor) {
+        const ctx: AbilityContext = {
+            state: core,
+            matchState,
+            playerId,
+            cardUid,
+            defId,
+            baseIndex,
+            fromDiscard: params.playedEvt.payload.fromDiscard === true,
+            fromDeck: params.playedEvt.payload.fromDeck === true,
+            fromStored: params.playedEvt.payload.fromStored === true,
+            fromBuried: params.playedEvt.payload.fromBuried === true,
+            random,
+            now,
+        };
+        const result = executor(ctx);
+        events.push(...result.events);
+        if (result.matchState) {
+            matchState = result.events.length > 0
+                ? { ...result.matchState, core }
+                : result.matchState;
+        }
+        if (result.events.length === 0 && result.matchState && result.suspended && result.continuationId) {
+            const suspendedState = appendMinionPlayedFollowupsToSuspendedOnPlayPrompt({
+                state: result.matchState,
+                continuationId: result.continuationId,
+                playedEvt: params.playedEvt,
+                preOnPlayTriggerBaseMinionUids,
+            });
+            return {
+                events,
+                matchState: suspendedState,
+            };
+        }
+        if (result.events.length > 0) {
+            return appendMinionPlayedFollowupsAfterOnPlayEvents({
+                state: matchState,
+                events,
+                playedEvt: params.playedEvt,
+                random,
+                preOnPlayTriggerBaseMinionUids,
+            });
+        }
+    }
+
+    const followups = collectMinionPlayedFollowupTriggers({
+        ...params,
+        core: matchState.core,
+        matchState,
+        preOnPlayTriggerBaseMinionUids,
+    });
+    events.push(...followups.events);
+
     return matchState !== params.matchState ? { events, matchState } : { events };
+}
+
+interface MinionPlayedTriggerContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    random?: RandomFn;
+    playedEvt: MinionPlayedEvent;
+}
+
+interface EmitMinionPlayedEventsThenContinueContext extends MinionPlayedTriggerContinuationContext {
+    events: SmashUpEvent[];
+}
+
+const resolveMinionPlayedTriggersAfterEventsProgram = createEffectProgram<
+    MinionPlayedTriggerContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('minion played continuation 缺少正式 matchState');
+    }
+    if (!context.random) {
+        throw new Error('minion played continuation 缺少随机源');
+    }
+
+    const { playedEvt } = context;
+    const payload = playedEvt.payload;
+    const result = fireMinionPlayedTriggers({
+        core: context.matchState.core,
+        matchState: context.matchState,
+        playerId: payload.playerId,
+        cardUid: payload.cardUid,
+        defId: payload.defId,
+        baseIndex: payload.baseIndex,
+        power: payload.power,
+        random: context.random,
+        now: playedEvt.timestamp,
+        playedEvt,
+    });
+
+    return {
+        events: result.events,
+        ...(result.matchState
+            ? { matchState: { ...result.matchState, core: context.matchState.core } }
+            : {}),
+    };
+});
+
+const emitMinionPlayedEventsThenContinueProgram = createEffectProgram<
+    EmitMinionPlayedEventsThenContinueContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    matchState: context.matchState,
+    context: {
+        matchState: context.matchState,
+        random: context.random,
+        playedEvt: context.playedEvt,
+    } satisfies MinionPlayedTriggerContinuationContext,
+    nextProgram: resolveMinionPlayedTriggersAfterEventsProgram,
+}));
+
+export function appendMinionPlayedTriggersAfterEvents(params: {
+    state?: MatchState<SmashUpCore>;
+    events: SmashUpEvent[];
+    playedEvt: MinionPlayedEvent;
+    random: RandomFn;
+}): AbilityResult {
+    if (!params.state) {
+        return { events: params.events };
+    }
+
+    const result = executeAbilityProgram(emitMinionPlayedEventsThenContinueProgram, {
+        matchState: params.state,
+        random: params.random,
+        events: params.events,
+        playedEvt: params.playedEvt,
+    });
+    return {
+        events: result.events as SmashUpEvent[],
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
 }
 
 // ============================================================================
@@ -1933,13 +2152,6 @@ export function emitSpecialLimitUsed(
 }
 
 // ============================================================================
-// Me First! 响应窗口
-// ============================================================================
-
-import type { GameEvent } from '../../../engine/types';
-import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
-
-// ============================================================================
 // 疯狂牌库操作
 // ============================================================================
 
@@ -2039,78 +2251,6 @@ export function countMadnessCardsForPlayer(state: SmashUpCore, playerId: PlayerI
 export function madnessVpPenalty(madnessCount: number): number {
     return Math.floor(madnessCount / 2);
 }
-
-/**
- * 生成 Me First! 响应窗口打开事件
- * 
- * 规则：从当前玩家开始顺时针轮流，每人可打 1 张特殊牌或让过。
- * 所有人连续让过时终止。
- * 
- * @param triggerContext 触发上下文描述（如 "基地记分前"）
- * @param currentPlayerId 当前玩家（响应从此玩家开始）
- * @param turnOrder 玩家回合顺序
- * @param now 时间戳
- */
-export function openMeFirstWindow(
-    triggerContext: string,
-    currentPlayerId: PlayerId,
-    turnOrder: PlayerId[],
-    now: number
-): GameEvent {
-    // 构建响应者队列：从当前玩家开始顺时针
-    const startIdx = turnOrder.indexOf(currentPlayerId);
-    const responderQueue: PlayerId[] = [];
-    for (let i = 0; i < turnOrder.length; i++) {
-        responderQueue.push(turnOrder[(startIdx + i) % turnOrder.length]);
-    }
-
-    return {
-        type: RESPONSE_WINDOW_EVENTS.OPENED,
-        payload: {
-            windowId: `meFirst_${triggerContext}_${now}`,
-            responderQueue,
-            windowType: 'meFirst' as const,
-            sourceId: triggerContext,
-        },
-        timestamp: now,
-    };
-}
-
-/**
- * 打开计分后响应窗口（After Scoring）
- * 
- * 用于基地计分后，允许玩家打出 specialTiming: 'afterScoring' 的特殊行动卡
- * 
- * @param triggerContext 触发上下文（如 'scoreBases'）
- * @param currentPlayerId 当前玩家 ID
- * @param turnOrder 玩家回合顺序
- * @param now 时间戳
- */
-export function openAfterScoringWindow(
-    triggerContext: string,
-    currentPlayerId: PlayerId,
-    turnOrder: PlayerId[],
-    now: number
-): GameEvent {
-    // 构建响应者队列：从当前玩家开始顺时针
-    const startIdx = turnOrder.indexOf(currentPlayerId);
-    const responderQueue: PlayerId[] = [];
-    for (let i = 0; i < turnOrder.length; i++) {
-        responderQueue.push(turnOrder[(startIdx + i) % turnOrder.length]);
-    }
-
-    return {
-        type: RESPONSE_WINDOW_EVENTS.OPENED,
-        payload: {
-            windowId: `afterScoring_${triggerContext}_${now}`,
-            responderQueue,
-            windowType: 'afterScoring' as const,
-            sourceId: triggerContext,
-        },
-        timestamp: now,
-    };
-}
-
 
 // ============================================================================
 // 交互辅助函数（目标选择）

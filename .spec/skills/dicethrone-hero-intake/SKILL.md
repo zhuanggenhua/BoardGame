@@ -40,7 +40,7 @@ description: "Dice Throne 角色图片、骰面、Token、卡牌、裁图、资�
 - 升级牌覆盖槽位不能按 `abilities.ts` 里的基础技能英文名或旧共享槽位语义猜。必须逐张读取运行时升级牌的 `replaceAbility(targetAbilityId)`，再用升级牌中文名、目标技能 id、玩家板中文槽位标题三者对齐；三者缺一时合同只能标 `blocked/disputed`，不得标 `locked`。
 - 一旦发现某张升级牌盖错槽、点错槽或和底图标题不一致，默认必须横扫同英雄、同批次和同一共享槽位消费链的全部升级牌；最低覆盖 `cards.ts` 全部 `type='upgrade'` 且 `replaceAbility` 的条目、`abilityOverlayHelpers.ts` 覆盖槽、`abilitySlotMapping.ts` 点击/高亮反查槽，以及 E2E 真实升级稳定态。禁止只修用户点名的一张卡后收口。
 - 只要用户反馈的是“某张卡的图和效果对不上”“怀疑枪手/忍者这类角色卡牌录入错了”“怀疑 atlas/索引用错”，必须先直接打开对应 `ability-cards` 主真相源里的完整单卡，再去看 `cards.ts`、`abilities.ts`、AI、日志或测试。没完成这步前，只能说“代码层暂未发现分叉”，不能裁定“不是录入错误”。
-- “给用户看图”统一走项目 `show-image-to-user` 入口（`.spec/skills/show-image-to-user/SKILL.md`）；AI 看图验收按项目入口继承的区分口径执行。本流程只额外要求：Dice Throne 卡牌录入需要 AI 验收时，必须核对正式 `ability-cards` 主真相源，写出图面可见文字、分支结构、数值和当前实现差异后，才允许把合同标记为 `passed/locked`。
+- 给用户看图由项目开图入口承担；AI 看图验收按项目入口继承的区分口径执行。本流程只额外要求：Dice Throne 卡牌录入需要 AI 验收时，必须核对正式 `ability-cards` 主真相源，写出图面可见文字、分支结构、数值和当前实现差异后，才允许把合同标记为 `passed/locked`。
 - 对 Dice Throne 角色，`public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/ability-cards.webp` 或对应正式 atlas 永远是卡牌语义主真相源；`temp/dicethrone-intake/<hero>/ability-card-slots/*.webp` 之类临时裁片只能辅助读字，不能单独推翻正式 atlas 读法。
 - 桌游卡牌、玩家板和提示板默认存在唯一官方图面真相源。只要用户口径、现有实现、i18n、测试快照或旧 evidence 任意两者不一致，默认先判为“录入合同可能错或实现消费可能错”，必须回完整单卡/玩家板/提示板重新录入；禁止把用户随口提到的词直接写成官方卡名、分支名、规则字段或测试期望。
 - 重新录入前必须先形成最小字段合同：对象、正式图源路径、正式 atlas/index 或槽位、完整单对象裁图路径、图面可见原文、分支/槽位结构、当前实现差异、合同状态。缺这份合同时不得继续改运行时数据。

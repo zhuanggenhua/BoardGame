@@ -4,7 +4,7 @@
 
  */
 
-import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState, PostProcessSystemEventsOptions } from '../../../engine/types';
 import { createEntityId } from '../../../engine/primitives';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import {
@@ -32,6 +32,7 @@ import type {
     BaseScoredEvent,
     BaseClearedEvent,
     BaseReplacedEvent,
+    BaseDeckShuffledEvent,
     DeckReshuffledEvent,
     LimitModifiedEvent,
     ActionPlayedEvent,
@@ -45,6 +46,8 @@ import type {
     SpecialAfterScoringConsumedEvent,
     MunchkinTreasureRewardRevealedEvent,
     MunchkinTreasureRewardDistributedEvent,
+    MunchkinMonsterPlayedEvent,
+    MunchkinMonsterDefeatedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -59,7 +62,8 @@ import {
 } from './types';
 import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getRealtimeScoringEligibleBaseIndices, getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { collectTriggers, fireTriggerForSource, getModifiedBaseVp, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
-import { maybeResolveReactionQueue } from './reactionQueue';
+import { maybeResolveReactionQueue, maybeResolveReactionQueueSuspendingDomainEvents } from './reactionQueue';
+import { applyTriggerQueueFactEvent } from './triggerQueueFacts';
 import {
     getSmashUpReactionSession,
     registerSmashUpReactionPostProcessor,
@@ -69,7 +73,23 @@ import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
-import { execute, reduce } from './reducer';
+import { execute } from './reducer';
+import {
+    reduce,
+    reduceAfterScoringTriggeredEvent,
+    reduceBaseClearedEvent,
+    reduceBaseReplacedEvent,
+    reduceBeforeScoringTriggeredEvent,
+    reduceMinionPlayedEvent,
+    reduceMunchkinMonsterDefeatedEvent,
+    reduceMunchkinMonsterPlayedEvent,
+    reduceMunchkinTreasureRewardRevealedEvent,
+    reduceScoringEligibleBasesLockedEvent,
+    reduceSpecialAfterScoringConsumedEvent,
+    reduceTurnStartedEvent,
+    reduceWhenScoringTriggeredEvent,
+} from './reduce';
+import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent';
 import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
 import { getMunchkinSpecialCardDescriptor, isMunchkinUndeadMonster } from '../data/factions/munchkin';
  import {
@@ -79,7 +99,7 @@ import { getMunchkinSpecialCardDescriptor, isMunchkinUndeadMonster } from '../da
     getSmashUpSelectableFactionIds,
     resolveSmashUpSupportedBanPolicy,
  } from './pregameDraft';
-import { drawCards } from './utils';
+import { drawCards, resolveLiveBaseIndex } from './utils';
 import {
     countMadnessCardsForPlayer,
     grantExtraAction,
@@ -108,6 +128,7 @@ import {
     consumeScoringFrameDeferredPayload,
     createScoringBaseRef,
     createScoringSession,
+    getDeferredPostScoringEvents,
     getRemainingScoringBaseRefs,
     getScoringSession,
     isSameScoringBaseRef,
@@ -120,15 +141,8 @@ import {
 } from './scoringSession';
 import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
 
-const POST_SCORING_BASE_REVEAL_DELAY_MS = 2000;
-const POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY = '_smashupPostScoringBaseRevealDelayUntil';
-
 type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _smashupStartTurnWindowActive?: boolean;
-    _waitForStartTurnInteractionReduce?: boolean;
-    _waitForScoreBasesInteractionReduce?: boolean;
-    _waitForPostScoringReduce?: boolean;
-    _ppseInputEventsReduced?: boolean;
     _ppseImmediateStartTurnProcessedMinionUids?: string[];
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
@@ -145,6 +159,61 @@ function createReactionQueueFallbackState(core: SmashUpCore): MatchState<SmashUp
         sys: {
             interaction: { current: undefined, queue: [] },
         } as MatchState<SmashUpCore>['sys'],
+    };
+}
+
+function createUnreducedPostProcessEventPredicate(
+    alreadyReducedInputEvents: readonly SmashUpEvent[],
+    inputEventsAlreadyReduced: boolean,
+): (event: SmashUpEvent) => boolean {
+    if (!inputEventsAlreadyReduced) {
+        return () => true;
+    }
+
+    const remainingAlreadyReducedInputs = new Map<SmashUpEvent, number>();
+    for (const event of alreadyReducedInputEvents) {
+        remainingAlreadyReducedInputs.set(event, (remainingAlreadyReducedInputs.get(event) ?? 0) + 1);
+    }
+
+    return (event: SmashUpEvent): boolean => {
+        const remaining = remainingAlreadyReducedInputs.get(event) ?? 0;
+        if (remaining <= 0) {
+            return true;
+        }
+        if (remaining === 1) {
+            remainingAlreadyReducedInputs.delete(event);
+        } else {
+            remainingAlreadyReducedInputs.set(event, remaining - 1);
+        }
+        return false;
+    };
+}
+
+function materializeReturnedPostProcessEvents(
+    matchState: MatchState<SmashUpCore>,
+    baseCore: SmashUpCore,
+    returnedEvents: readonly SmashUpEvent[],
+    alreadyReducedInputEvents: readonly SmashUpEvent[],
+    inputEventsAlreadyReduced: boolean,
+): MatchState<SmashUpCore> {
+    const shouldApplyEvent = createUnreducedPostProcessEventPredicate(
+        alreadyReducedInputEvents,
+        inputEventsAlreadyReduced,
+    );
+    let materializedCore = baseCore;
+
+    for (const event of returnedEvents) {
+        if (!shouldApplyEvent(event)) continue;
+        materializedCore = applyPostProcessPrefixEvent(materializedCore, event);
+    }
+
+    if (materializedCore === matchState.core) {
+        return matchState;
+    }
+
+    return {
+        ...matchState,
+        core: materializedCore,
     };
 }
 
@@ -479,6 +548,40 @@ function buildMultiBaseScoringInteraction(
     );
 }
 
+function materializeScoringFrameDeferredEvent(
+    event: { type: string; payload: unknown; timestamp: number },
+): SmashUpEvent {
+    if (event.type !== SU_EVENTS.BASE_REPLACED) {
+        return {
+            type: event.type,
+            payload: event.payload,
+            timestamp: event.timestamp,
+        } as SmashUpEvent;
+    }
+
+    const payload = event.payload as BaseReplacedEvent['payload'] | undefined;
+    if (!payload || typeof payload.newBaseDefId !== 'string') {
+        return {
+            type: event.type,
+            payload: event.payload,
+            timestamp: event.timestamp,
+        } as SmashUpEvent;
+    }
+
+    // Scoring frame 里的 BASE_REPLACED 已经由 scoreBases 事务选定替换基地。
+    // 后处理会为了收集触发多次用前缀状态扫描同一批事件；此时基地牌库可能已经在前一次扫描中被消费。
+    // 因此这个合同只作用于 scoring-frame materialization：正式 reducer 看到牌还在牌库时仍会移除它，
+    // 但不会把“已被同一 scoring frame 预留/消费”误报成缺牌库。
+    return {
+        type: event.type,
+        payload: {
+            ...payload,
+            allowMissingFromBaseDeck: true,
+        },
+        timestamp: event.timestamp,
+    } as SmashUpEvent;
+}
+
 function finalizeCurrentScoringBase(
     state: MatchState<SmashUpCore>,
     now: number,
@@ -493,17 +596,14 @@ function finalizeCurrentScoringBase(
     const events: SmashUpEvent[] = [];
 
     const deferredEvents = consumedDeferred.deferredEvents;
+    let postDeferredCore = workingState.core;
     if (deferredEvents.length > 0) {
-        events.push(...deferredEvents.map((event) => ({
-            type: event.type,
-            payload: event.payload,
-            timestamp: event.timestamp,
-        })) as SmashUpEvent[]);
+        for (const deferredEvent of deferredEvents) {
+            const event = materializeScoringFrameDeferredEvent(deferredEvent);
+            events.push(event);
+            postDeferredCore = applyPostProcessPrefixEvent(postDeferredCore, event);
+        }
     }
-    const postDeferredCore = events.reduce(
-        (core, event) => reduce(core, event),
-        workingState.core,
-    );
 
     events.push(
         ...buildPendingPostScoringActionEvents(
@@ -518,7 +618,7 @@ function finalizeCurrentScoringBase(
         (currentSession) => currentSession
             ? {
                 ...currentSession,
-                currentStep: 'awaiting-post-reduce',
+                currentStep: events.length > 0 ? 'awaiting-post-reduce' : 'idle',
             }
             : currentSession,
     );
@@ -536,66 +636,543 @@ function finalizeCurrentScoringBase(
             }
             : currentSession);
     }
-    const awaitingReduceState = {
-        ...completedState,
-        sys: {
-            ...completedState.sys,
-            _waitForPostScoringReduce: true,
-        } as typeof completedState.sys,
-    };
-
     return {
-        updatedState: awaitingReduceState,
+        updatedState: completedState,
         events,
     };
 }
 
-function beginPostScoringBaseRevealDelay(
-    state: MatchState<SmashUpCore>,
-    now: number,
-): MatchState<SmashUpCore> {
-    const delayStart = now > 0 ? now : Date.now();
-    const delayedState = updateScoringSession(state, (session) => session
-        ? {
-            ...session,
-            currentStep: 'awaiting-post-scoring-delay',
-        }
-        : session,
-    );
-    return {
-        ...delayedState,
-        sys: {
-            ...delayedState.sys,
-            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS,
-        } as typeof delayedState.sys,
-    };
+function countDiscardedCardUid(cards: readonly CardInstance[], uid: string): number {
+    return cards.filter(card => card.uid === uid).length;
 }
 
-function isPostScoringBaseRevealDelayActive(
-    state: MatchState<SmashUpCore>,
-    now: number,
-): boolean {
-    const delayUntil = (state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY];
-    const currentTime = now > 0 ? now : Date.now();
-    return typeof delayUntil === 'number' && delayUntil > currentTime;
-}
-
-function clearPostScoringBaseRevealDelay(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
-    if ((state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY] === undefined) {
-        return state;
+function queueBaseClearedMinionDiscardTriggers(input: {
+    preClearCore: SmashUpCore;
+    postClearCore: SmashUpCore;
+    clearEvent: BaseClearedEvent;
+    random: RandomFn;
+    matchState?: MatchState<SmashUpCore>;
+}): { events: SmashUpEvent[]; core: SmashUpCore; matchState?: MatchState<SmashUpCore> } {
+    const { preClearCore, postClearCore, clearEvent, random } = input;
+    const baseIndex = clearEvent.payload.baseIndex;
+    const clearedBase = preClearCore.bases[baseIndex];
+    if (!clearedBase) {
+        return { events: [], core: postClearCore, matchState: input.matchState };
     }
-    return {
-        ...state,
-        sys: {
-            ...state.sys,
-            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: undefined,
-        } as typeof state.sys,
+
+    const events: SmashUpEvent[] = [];
+    let core = postClearCore;
+    let matchState = input.matchState ? { ...input.matchState, core } : undefined;
+    for (const minion of clearedBase.minions) {
+        const ownerDiscardBefore = preClearCore.players[minion.owner]?.discard ?? [];
+        const ownerDiscardAfter = postClearCore.players[minion.owner]?.discard ?? [];
+        if (countDiscardedCardUid(ownerDiscardAfter, minion.uid) <= countDiscardedCardUid(ownerDiscardBefore, minion.uid)) {
+            continue;
+        }
+
+        const sourceEventId = `base-cleared-minion-discarded:${baseIndex}:${minion.uid}:${clearEvent.timestamp}`;
+        const frameId = `base-cleared-minion-discarded-frame:${baseIndex}:${minion.uid}:${clearEvent.timestamp}`;
+        const queued = collectTriggers(preClearCore, 'onMinionDiscardedFromBase', {
+            state: preClearCore,
+            matchState,
+            playerId: minion.controller,
+            baseIndex,
+            triggerMinionUid: minion.uid,
+            triggerMinionDefId: minion.defId,
+            triggerMinionPower: getEffectivePower(preClearCore, minion, baseIndex),
+            triggerMinion: minion,
+            controllerId: minion.controller,
+            reason: 'base_cleared',
+            frameId,
+            sourceEventId,
+            random,
+            now: clearEvent.timestamp,
+        });
+        if (!queued) continue;
+        events.push(queued);
+        core = applyTriggerQueueFactEvent(core, queued);
+        if (matchState) {
+            matchState = { ...matchState, core };
+        }
+    }
+
+    return { events, core, matchState };
+}
+
+function buildDeferredPostScoringEvents(input: {
+    updatedCore: SmashUpCore;
+    scoringBase: BaseInPlay;
+    base: BaseInPlay;
+    baseIndex: number;
+    newBaseDeck: string[];
+    now: number;
+    random?: RandomFn;
+}): { postScoringEvents: SmashUpEvent[]; newBaseDeck: string[] } {
+    const {
+        updatedCore,
+        scoringBase,
+        base,
+        baseIndex,
+        now,
+        random,
+    } = input;
+    let newBaseDeck = [...(updatedCore.baseDeck ?? input.newBaseDeck)];
+    const postScoringEvents: SmashUpEvent[] = [];
+
+    if (updatedCore.pendingMunchkinTreasureReward) {
+        const distributeTreasureRewardEvt: MunchkinTreasureRewardDistributedEvent = {
+            type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED,
+            payload: {
+                baseIndex,
+                ...(scoringBase.instanceId ? { baseInstanceId: scoringBase.instanceId } : {}),
+                reason: 'munchkin_scoring_treasure_reward',
+            },
+            timestamp: now,
+        };
+        postScoringEvents.push(distributeTreasureRewardEvt);
+    }
+
+    const clearEvt: BaseClearedEvent = {
+        type: SU_EVENTS.BASE_CLEARED,
+        payload: { baseIndex, baseDefId: scoringBase.defId, baseInstanceId: scoringBase.instanceId },
+        timestamp: now,
     };
+    postScoringEvents.push(clearEvt);
+
+    if (newBaseDeck.length === 0) {
+        const pool = [...(updatedCore.baseDiscard ?? []), base.defId];
+        const rebuiltDeck = (random?.shuffle ? random.shuffle(pool) : [...pool]);
+        const shuffleEvt: BaseDeckShuffledEvent = {
+            type: SU_EVENTS.BASE_DECK_SHUFFLED,
+            payload: {
+                newBaseDeckDefIds: rebuiltDeck,
+                reason: 'base_deck_empty_reshuffle_discard',
+                clearBaseDiscard: true,
+            },
+            timestamp: now,
+        };
+        postScoringEvents.push(shuffleEvt);
+        newBaseDeck = rebuiltDeck;
+    }
+
+    if (newBaseDeck.length > 0) {
+        const newBaseDefId = newBaseDeck[0];
+        const replaceEvt: BaseReplacedEvent = {
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: {
+                baseIndex,
+                oldBaseDefId: scoringBase.defId,
+                newBaseDefId,
+                oldBaseInstanceId: scoringBase.instanceId,
+            },
+            timestamp: now,
+        };
+        postScoringEvents.push(replaceEvt);
+        newBaseDeck = newBaseDeck.slice(1);
+    }
+
+    return { postScoringEvents, newBaseDeck };
+}
+
+function ensureScoringFramePostScoringEventsRegistered(input: {
+    matchState: MatchState<SmashUpCore> | undefined;
+    currentBaseRef: SmashUpScoringBaseRef | undefined;
+    updatedCore: SmashUpCore;
+    scoringBase: BaseInPlay;
+    base: BaseInPlay;
+    baseIndex: number;
+    newBaseDeck: string[];
+    now: number;
+    random?: RandomFn;
+}): { matchState: MatchState<SmashUpCore> | undefined; newBaseDeck: string[]; registered: boolean } {
+    const { matchState, currentBaseRef } = input;
+    if (!matchState || !currentBaseRef) {
+        return { matchState, newBaseDeck: input.newBaseDeck, registered: false };
+    }
+    if ((getDeferredPostScoringEvents(matchState) ?? []).length > 0) {
+        return { matchState, newBaseDeck: input.newBaseDeck, registered: true };
+    }
+
+    const built = buildDeferredPostScoringEvents(input);
+    return {
+        matchState: appendScoringFrameDeferredPayload(matchState, {
+            deferredEvents: serializePostScoringEvents(built.postScoringEvents),
+        }),
+        newBaseDeck: built.newBaseDeck,
+        registered: true,
+    };
+}
+
+function continueScoringAfterAwardCommitted(input: {
+    events: SmashUpEvent[];
+    updatedCore: SmashUpCore;
+    scoringBase: BaseInPlay;
+    base: BaseInPlay;
+    baseDef: NonNullable<ReturnType<typeof getBaseDef>>;
+    baseIndex: number;
+    baseDeck: string[];
+    newBaseDeck: string[];
+    pid: PlayerId;
+    now: number;
+    rng: RandomFn;
+    random?: RandomFn;
+    matchState?: MatchState<SmashUpCore>;
+    currentBaseRef?: SmashUpScoringBaseRef;
+    rankings: BaseScoredEvent['payload']['rankings'];
+    hasAuthoritativeScoringSession: boolean;
+}): { events: SmashUpEvent[]; newBaseDeck: string[]; matchState?: MatchState<SmashUpCore> } {
+    const {
+        events,
+        base,
+        baseIndex,
+        pid,
+        now,
+        rng,
+        random,
+        currentBaseRef,
+        rankings,
+        hasAuthoritativeScoringSession,
+    } = input;
+    const { scoringBase } = input;
+    let { updatedCore, newBaseDeck } = input;
+    let ms = input.matchState;
+    const resolveScoringReactionQueue = (state: MatchState<SmashUpCore>) => (
+        hasAuthoritativeScoringSession
+            ? maybeResolveReactionQueueSuspendingDomainEvents(state, rng, now)
+            : maybeResolveReactionQueue(state, rng, now)
+    );
+
+    const scoringSessionAtEntry = ms ? getScoringSession(ms) : undefined;
+    const afterScoringCore = updatedCore;
+    const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
+    const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
+
+    const alreadyTriggeredAfterScoring = updatedCore.afterScoringTriggeredBases?.includes(baseIndex) ?? false;
+    const afterScoringFrameId = `score-after:${baseIndex}:${now}`;
+
+    if (
+        ms
+        && currentBaseRef
+        && (
+            scoringSessionAtEntry?.currentStep === 'awaiting-after-scoring-reduce'
+            || scoringSessionAtEntry?.currentStep === 'awaiting-after-reaction-reduce'
+        )
+    ) {
+        ms = updateScoringSession({ ...ms, core: updatedCore }, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: 'resolving-base',
+            }
+            : session,
+        );
+        const registeredPostScoring = ensureScoringFramePostScoringEventsRegistered({
+            matchState: ms,
+            currentBaseRef,
+            updatedCore,
+            scoringBase,
+            base,
+            baseIndex,
+            newBaseDeck,
+            now,
+            random,
+        });
+        ms = registeredPostScoring.matchState;
+        newBaseDeck = registeredPostScoring.newBaseDeck;
+        if (!getSmashUpReactionSession(ms)) {
+            ms = startSmashUpReactionSession(ms, {
+                frameId: afterScoringFrameId,
+                frameKind: 'score-after',
+                responseWindowType: 'afterScoring',
+            });
+        }
+        const resumedAfterScoring = resolveScoringReactionQueue(ms);
+        if (resumedAfterScoring) {
+            events.push(...resumedAfterScoring.events);
+            ms = resumedAfterScoring.state;
+            updatedCore = resumedAfterScoring.state.core;
+
+            if (hasAuthoritativeScoringSession && resumedAfterScoring.events.length > 0) {
+                ms = updateScoringSession(ms, (session) => session
+                    ? {
+                        ...session,
+                        currentBaseRef,
+                        currentStep: 'awaiting-after-reaction-reduce',
+                    }
+                    : session,
+                );
+                return { events, newBaseDeck, matchState: ms };
+            }
+        }
+        if (ms.sys.interaction?.current || getSmashUpReactionSession(ms)) {
+            ms = updateScoringSession(ms, (session) => session
+                ? {
+                    ...session,
+                    currentBaseRef,
+                    currentStep: getSmashUpReactionSession(ms!)
+                        ? 'awaiting-response-window'
+                        : 'awaiting-interactions',
+                }
+                : session,
+            );
+            // 不能在这里直接返回：清场 / 换基地的 deferred payload 也必须由
+            // scoring frame 在打开 After Scoring 反应窗口的这一轮登记。否则窗口
+            // 结束后虽然不会重复 BASE_SCORED，但也没有可执行的 BASE_CLEARED /
+            // BASE_REPLACED。
+        }
+    }
+
+    if (!alreadyTriggeredAfterScoring) {
+        const armedSpecials = (updatedCore.pendingAfterScoringSpecials ?? []).filter(
+            s => s.baseIndex === baseIndex
+        );
+
+        for (const armed of armedSpecials) {
+            if (hasRegisteredTrigger(armed.sourceDefId, 'afterScoring')) {
+                continue;
+            }
+            const feedbackEvt: AbilityFeedbackEvent = {
+                type: SU_EVENT_TYPES.ABILITY_FEEDBACK,
+                payload: {
+                    playerId: armed.playerId,
+                    sourceDefId: armed.sourceDefId,
+                    message: 'actionLog.ability_not_implemented',
+                },
+                timestamp: now,
+            };
+            events.push(feedbackEvt);
+
+            const consumedEvt: SpecialAfterScoringConsumedEvent = {
+                type: SU_EVENT_TYPES.SPECIAL_AFTER_SCORING_CONSUMED,
+                payload: {
+                    sourceDefId: armed.sourceDefId,
+                    playerId: armed.playerId,
+                    baseIndex,
+                    cardUid: armed.cardUid,
+                },
+                timestamp: now,
+            };
+            events.push(consumedEvt);
+            if (!hasAuthoritativeScoringSession) {
+                updatedCore = reduceSpecialAfterScoringConsumedEvent(updatedCore, consumedEvt);
+            }
+        }
+
+        const queuedAfterBase = collectBaseAbilityTriggers({
+            core: updatedCore,
+            timing: 'afterScoring',
+            ownerPlayerId: pid,
+            baseIndex,
+            rankings,
+            frameId: afterScoringFrameId,
+            sourceEventId: afterScoringFrameId,
+            now,
+        });
+        if (queuedAfterBase) {
+            events.push(queuedAfterBase as unknown as SmashUpEvent);
+            if (!hasAuthoritativeScoringSession) {
+                updatedCore = applyTriggerQueueFactEvent(updatedCore, queuedAfterBase as unknown as SmashUpEvent);
+                if (ms) ms = { ...ms, core: updatedCore };
+            }
+        }
+
+        const queuedAfterOngoing = collectTriggers(updatedCore, 'afterScoring', {
+            state: updatedCore,
+            playerId: pid,
+            baseIndex,
+            rankings,
+            matchState: ms,
+            frameId: afterScoringFrameId,
+            sourceEventId: afterScoringFrameId,
+            random: rng,
+            now,
+        });
+        if (queuedAfterOngoing) {
+            events.push(queuedAfterOngoing);
+            if (!hasAuthoritativeScoringSession) {
+                updatedCore = applyTriggerQueueFactEvent(updatedCore, queuedAfterOngoing as unknown as SmashUpEvent);
+                if (ms) ms = { ...ms, core: updatedCore };
+            }
+        }
+        const hasAfterScoringTriggerWork = armedSpecials.length > 0 || !!queuedAfterBase || !!queuedAfterOngoing;
+
+        const markEvent = {
+            type: SU_EVENT_TYPES.AFTER_SCORING_TRIGGERED,
+            payload: { baseIndex },
+            timestamp: now,
+        };
+        events.push(markEvent as unknown as SmashUpEvent);
+        if (hasAuthoritativeScoringSession && ms) {
+            const hasAfterScoringResponseCards =
+                getPlayersWithPlayableAfterScoringResponses({ ...ms, core: afterScoringCore }, now).length > 0;
+            if (hasAfterScoringTriggerWork || hasAfterScoringResponseCards) {
+                ms = updateScoringSession(ms, (session) => session
+                    ? {
+                        ...session,
+                        currentBaseRef,
+                        currentStep: 'awaiting-after-scoring-reduce',
+                    }
+                    : session,
+                );
+                const registeredPostScoring = ensureScoringFramePostScoringEventsRegistered({
+                    matchState: ms,
+                    currentBaseRef,
+                    updatedCore,
+                    scoringBase,
+                    base,
+                    baseIndex,
+                    newBaseDeck,
+                    now,
+                    random,
+                });
+                ms = registeredPostScoring.matchState;
+                newBaseDeck = registeredPostScoring.newBaseDeck;
+                return { events, newBaseDeck, matchState: ms };
+            }
+        }
+        if (!hasAuthoritativeScoringSession) {
+            updatedCore = reduceAfterScoringTriggeredEvent(updatedCore, markEvent as unknown as SmashUpEvent);
+            if (ms) ms = { ...ms, core: updatedCore };
+
+            if (ms) {
+                ms = { ...ms, core: updatedCore };
+                ms = startSmashUpReactionSession(ms, {
+                    frameId: afterScoringFrameId,
+                    frameKind: 'score-after',
+                    responseWindowType: 'afterScoring',
+                });
+                const rq = resolveScoringReactionQueue(ms);
+                if (rq) {
+                    events.push(...rq.events);
+                    ms = rq.state;
+                    updatedCore = rq.state.core;
+                }
+            }
+        }
+    }
+
+    const interactionAfter = ms?.sys?.interaction?.current?.id ?? null;
+    const queueLenAfter = ms?.sys?.interaction?.queue?.length ?? 0;
+    const afterScoringCreatedInteraction =
+        (interactionAfter !== null && interactionAfter !== interactionBeforeAfterScoring) ||
+        (queueLenAfter > queueLenBeforeAfterScoring) ||
+        !!(ms && getSmashUpReactionSession(ms));
+
+    const playersWithAfterScoringCards = ms
+        ? getPlayersWithPlayableAfterScoringResponses({ ...ms, core: afterScoringCore }, now)
+        : [];
+
+    const postScoringPayloadAlreadyRegistered = Boolean(ms && (getDeferredPostScoringEvents(ms) ?? []).length > 0);
+    const builtPostScoring = postScoringPayloadAlreadyRegistered
+        ? { postScoringEvents: [] as SmashUpEvent[], newBaseDeck }
+        : buildDeferredPostScoringEvents({
+            updatedCore,
+            scoringBase,
+            base,
+            baseIndex,
+            newBaseDeck,
+            now,
+            random,
+        });
+    const postScoringEvents = builtPostScoring.postScoringEvents;
+    newBaseDeck = builtPostScoring.newBaseDeck;
+
+    const shouldInlineStandalonePostScoring =
+        !hasAuthoritativeScoringSession
+        && !afterScoringCreatedInteraction
+        && playersWithAfterScoringCards.length === 0
+        && !ms?.sys?.interaction?.current
+        && !(ms && getSmashUpReactionSession(ms));
+    if (shouldInlineStandalonePostScoring && postScoringEvents.length > 0) {
+        let standaloneCore = updatedCore;
+        let standaloneMatchState: MatchState<SmashUpCore> | undefined = ms
+            ? { ...ms, core: standaloneCore }
+            : undefined;
+        let queuedPostScoringTriggers = false;
+        const ensureStandaloneMatchState = (): MatchState<SmashUpCore> => {
+            if (!standaloneMatchState) {
+                standaloneMatchState = createReactionQueueFallbackState(standaloneCore);
+            }
+            return standaloneMatchState;
+        };
+
+        for (const postEvent of postScoringEvents) {
+            if (postEvent.type === SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED) {
+                continue;
+            }
+            events.push(postEvent);
+            if (postEvent.type === SU_EVENTS.BASE_CLEARED) {
+                const preClearCore = standaloneCore;
+                standaloneCore = reduceBaseClearedEvent(standaloneCore, postEvent as BaseClearedEvent);
+                standaloneMatchState = { ...ensureStandaloneMatchState(), core: standaloneCore };
+                const queuedClearDiscard = queueBaseClearedMinionDiscardTriggers({
+                    preClearCore,
+                    postClearCore: standaloneCore,
+                    clearEvent: postEvent as BaseClearedEvent,
+                    random: rng,
+                    matchState: standaloneMatchState,
+                });
+                if (queuedClearDiscard.events.length > 0) {
+                    events.push(...queuedClearDiscard.events);
+                    queuedPostScoringTriggers = true;
+                    standaloneCore = queuedClearDiscard.core;
+                    standaloneMatchState = queuedClearDiscard.matchState ?? { ...standaloneMatchState, core: standaloneCore };
+                }
+                continue;
+            }
+            if (postEvent.type === SU_EVENTS.BASE_REPLACED) {
+                standaloneCore = reduceBaseReplacedEvent(standaloneCore, postEvent as BaseReplacedEvent);
+                if (standaloneMatchState) {
+                    standaloneMatchState = { ...standaloneMatchState, core: standaloneCore };
+                }
+                continue;
+            }
+
+            standaloneCore = applyPostProcessPrefixEvent(standaloneCore, postEvent);
+            if (standaloneMatchState) {
+                standaloneMatchState = { ...standaloneMatchState, core: standaloneCore };
+            }
+        }
+
+        if (queuedPostScoringTriggers) {
+            const rq = maybeResolveReactionQueue(ensureStandaloneMatchState(), rng, now);
+            if (rq) {
+                events.push(...rq.events);
+                standaloneMatchState = rq.state;
+            }
+            if (standaloneMatchState?.sys.interaction?.current || (standaloneMatchState && getSmashUpReactionSession(standaloneMatchState))) {
+                return { events, newBaseDeck, matchState: standaloneMatchState };
+            }
+        }
+
+        return { events, newBaseDeck, matchState: standaloneMatchState };
+    }
+
+    const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
+    if (ms && currentBaseRef) {
+        const waitingStep = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0
+            ? getSmashUpReactionSession(ms)
+                ? 'awaiting-response-window'
+                : 'awaiting-interactions'
+            : 'awaiting-post-scoring-finalize';
+        ms = updateScoringSession(ms, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: waitingStep,
+            }
+            : session,
+        );
+        ms = appendScoringFrameDeferredPayload(ms, {
+            deferredEvents: serializedDeferredEvents,
+        });
+    }
+    return { events, newBaseDeck, matchState: ms };
 }
 
 /**
 
- * 
+ *
 
  */
 export function scoreOneBase(
@@ -622,9 +1199,172 @@ export function scoreOneBase(
     };
     const events: SmashUpEvent[] = [];
     let ms = matchState;
+    const hasAuthoritativeScoringSession = !!(ms && getScoringSession(ms));
+    const resolveScoringReactionQueue = (state: MatchState<SmashUpCore>) => (
+        hasAuthoritativeScoringSession
+            ? maybeResolveReactionQueueSuspendingDomainEvents(state, rng, now)
+            : maybeResolveReactionQueue(state, rng, now)
+    );
+    let shouldOpenBeforeScoringWindow = false;
     const base = core.bases[baseIndex];
     const baseDef = getBaseDef(base.defId)!;
     const currentBaseRef = createScoringBaseRef(core, baseIndex);
+    const scoringSessionAtEntry = ms ? getScoringSession(ms) : undefined;
+    const beforeScoringFrameId = `score-before:${baseIndex}:${now}`;
+    const whenScoringFrameId = `score-when:${baseIndex}:${now}`;
+
+    if (scoringSessionAtEntry?.currentStep === 'awaiting-score-award-reduce') {
+        const scoringBase = core.bases[baseIndex] ?? base;
+        const finalPlayerPowers = collectQualifiedPlayerPowers(core, scoringBase, baseIndex);
+        const rankings = buildBaseRankings(core, baseIndex, baseDef, finalPlayerPowers);
+        const resumedState = currentBaseRef
+            ? updateScoringSession(ms!, (session) => session
+                ? {
+                    ...session,
+                    currentBaseRef,
+                    currentStep: 'resolving-base',
+                }
+                : session)
+            : ms;
+        return continueScoringAfterAwardCommitted({
+            events,
+            updatedCore: core,
+            scoringBase,
+            base,
+            baseDef,
+            baseIndex,
+            baseDeck,
+            newBaseDeck: baseDeck,
+            pid,
+            now,
+            rng,
+            random,
+            matchState: resumedState,
+            currentBaseRef,
+            rankings,
+            hasAuthoritativeScoringSession: true,
+        });
+    }
+
+    if (
+        scoringSessionAtEntry?.currentStep === 'awaiting-after-scoring-reduce'
+        || scoringSessionAtEntry?.currentStep === 'awaiting-after-reaction-reduce'
+    ) {
+        const scoringBase = core.bases[baseIndex] ?? base;
+        const finalPlayerPowers = collectQualifiedPlayerPowers(core, scoringBase, baseIndex);
+        const rankings = buildBaseRankings(core, baseIndex, baseDef, finalPlayerPowers);
+        return continueScoringAfterAwardCommitted({
+            events,
+            updatedCore: core,
+            scoringBase,
+            base,
+            baseDef,
+            baseIndex,
+            baseDeck,
+            newBaseDeck: baseDeck,
+            pid,
+            now,
+            rng,
+            random,
+            matchState: ms,
+            currentBaseRef,
+            rankings,
+            hasAuthoritativeScoringSession: true,
+        });
+    }
+
+    if (
+        ms
+        && currentBaseRef
+        && (
+            scoringSessionAtEntry?.currentStep === 'awaiting-before-scoring-reduce'
+            || scoringSessionAtEntry?.currentStep === 'awaiting-before-reaction-reduce'
+            || scoringSessionAtEntry?.currentStep === 'awaiting-before-response-window'
+        )
+    ) {
+        ms = updateScoringSession({ ...ms, core }, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: 'awaiting-before-response-window',
+            }
+            : session,
+        );
+
+        const resumedBeforeScoring = resolveScoringReactionQueue(ms);
+        if (resumedBeforeScoring) {
+            events.push(...resumedBeforeScoring.events);
+            ms = resumedBeforeScoring.state;
+            core = resumedBeforeScoring.state.core;
+
+            if (resumedBeforeScoring.events.length > 0) {
+                ms = updateScoringSession(ms, (session) => session
+                    ? {
+                        ...session,
+                        currentBaseRef,
+                        currentStep: 'awaiting-before-reaction-reduce',
+                    }
+                    : session,
+                );
+                return { events, newBaseDeck: baseDeck, matchState: ms };
+            }
+
+            if (ms.sys.interaction?.current || getSmashUpReactionSession(ms)) {
+                return { events, newBaseDeck: baseDeck, matchState: ms };
+            }
+        }
+
+        ms = updateScoringSession(ms, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: 'resolving-base',
+            }
+            : session,
+        );
+        shouldOpenBeforeScoringWindow = true;
+    }
+
+    if (
+        ms
+        && currentBaseRef
+        && (
+            scoringSessionAtEntry?.currentStep === 'awaiting-when-scoring-reduce'
+            || scoringSessionAtEntry?.currentStep === 'awaiting-when-reaction-reduce'
+        )
+    ) {
+        ms = updateScoringSession({ ...ms, core }, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: 'resolving-base',
+            }
+            : session,
+        );
+
+        const resumedWhenScoring = resolveScoringReactionQueue(ms);
+        if (resumedWhenScoring) {
+            events.push(...resumedWhenScoring.events);
+            ms = resumedWhenScoring.state;
+            core = resumedWhenScoring.state.core;
+
+            if (resumedWhenScoring.events.length > 0) {
+                ms = updateScoringSession(ms, (session) => session
+                    ? {
+                        ...session,
+                        currentBaseRef,
+                        currentStep: 'awaiting-when-reaction-reduce',
+                    }
+                    : session,
+                );
+                return { events, newBaseDeck: baseDeck, matchState: ms };
+            }
+
+            if (ms.sys.interaction?.current || getSmashUpReactionSession(ms)) {
+                return { events, newBaseDeck: baseDeck, matchState: ms };
+            }
+        }
+    }
 
     if (ms && currentBaseRef) {
         ms = updateScoringSession(ms, (session) => session
@@ -655,17 +1395,15 @@ export function scoreOneBase(
             timestamp: now,
         } as unknown as SmashUpEvent;
         events.push(currentBaseLockEvent);
-        core = reduce(core, currentBaseLockEvent);
-        ms = { ...ms, core };
+        if (!hasAuthoritativeScoringSession) {
+            core = reduceScoringEligibleBasesLockedEvent(core, currentBaseLockEvent);
+            ms = { ...ms, core };
+        }
     }
-    let newBaseDeck = baseDeck;
-
-    
+    const newBaseDeck = baseDeck;
 
     const alreadyTriggeredBeforeScoring = core.beforeScoringTriggeredBases?.includes(baseIndex) ?? false;
-    const beforeScoringFrameId = `score-before:${baseIndex}:${now}`;
-    
-    
+
     if (!alreadyTriggeredBeforeScoring) {
         const queuedBefore = collectTriggers(core, 'beforeScoring', {
             state: core,
@@ -679,17 +1417,37 @@ export function scoreOneBase(
         });
         if (queuedBefore) {
             events.push(queuedBefore);
-            core = reduce(core, queuedBefore as unknown as SmashUpEvent);
+            if (!hasAuthoritativeScoringSession) {
+                core = applyTriggerQueueFactEvent(core, queuedBefore as unknown as SmashUpEvent);
+            }
         }
 
-        // Try to resolve reaction queue now so scoreOneBase can halt on interactions.
-        const rq0 = maybeResolveReactionQueue(ms ? { ...ms, core } : createReactionQueueFallbackState(core), rng, now);
-        if (rq0) {
-            events.push(...rq0.events);
-            ms = rq0.state;
-            core = rq0.state.core;
+        const queuedBeforeBase = collectBaseAbilityTriggers({
+            core,
+            timing: 'beforeScoring',
+            ownerPlayerId: pid,
+            baseIndex,
+            frameId: beforeScoringFrameId,
+            sourceEventId: beforeScoringFrameId,
+            now,
+        });
+        if (queuedBeforeBase) {
+            events.push(queuedBeforeBase as unknown as SmashUpEvent);
+            if (!hasAuthoritativeScoringSession) {
+                core = applyTriggerQueueFactEvent(core, queuedBeforeBase as unknown as SmashUpEvent);
+            }
         }
-        
+        const hasBeforeScoringTriggerWork = !!queuedBefore || !!queuedBeforeBase;
+
+        // Try to resolve reaction queue now so scoreOneBase can halt on interactions.
+        if (!hasAuthoritativeScoringSession) {
+            const rq0 = maybeResolveReactionQueue(ms ? { ...ms, core } : createReactionQueueFallbackState(core), rng, now);
+            if (rq0) {
+                events.push(...rq0.events);
+                ms = rq0.state;
+                core = rq0.state.core;
+            }
+        }
 
         // 发送事件标记该基地已触发 beforeScoring
         const markEvent = {
@@ -698,19 +1456,32 @@ export function scoreOneBase(
             timestamp: now,
         };
         events.push(markEvent as unknown as SmashUpEvent);
-        
 
-        // 
+        if (hasAuthoritativeScoringSession && ms && hasBeforeScoringTriggerWork) {
+            ms = updateScoringSession(ms, (session) => session
+                ? {
+                    ...session,
+                    currentBaseRef,
+                    currentStep: 'awaiting-before-scoring-reduce',
+                }
+                : session,
+            );
+            return { events, newBaseDeck: baseDeck, matchState: ms };
+        }
+
+        //
 
         // 2. 杩欎簺浜嬩欢瑕佺瓑鍒版暣涓?onPhaseExit 杩斿洖鍚庯紝鎵嶄細琚?pipeline 閫愪釜 reduce
 
-        // 
+        //
 
-        // 
+        //
 
         // - 绗竴娆¤皟鐢細妫€鏌?beforeScoringTriggeredBases 鈫?undefined 鈫?瑙﹀彂 beforeScoring 鈫?鍒涘缓娴风洍鐜嬩氦浜?鈫?halt
 
-        core = reduce(core, markEvent as unknown as SmashUpEvent);
+        if (!hasAuthoritativeScoringSession) {
+            core = reduceBeforeScoringTriggeredEvent(core, markEvent as unknown as SmashUpEvent);
+        }
 
         if (ms?.sys?.interaction?.current) {
             return { events, newBaseDeck: baseDeck, matchState: ms };
@@ -719,38 +1490,41 @@ export function scoreOneBase(
 
     let updatedCore = core;
 
-    const queuedBeforeBase = collectBaseAbilityTriggers({
-        core: updatedCore,
-        timing: 'beforeScoring',
-        ownerPlayerId: pid,
-        baseIndex,
-        frameId: beforeScoringFrameId,
-        sourceEventId: beforeScoringFrameId,
-        now,
-    });
-    if (queuedBeforeBase) {
-        events.push(queuedBeforeBase as unknown as SmashUpEvent);
-        updatedCore = reduce(updatedCore, queuedBeforeBase as unknown as SmashUpEvent);
-        if (ms) ms = { ...ms, core: updatedCore };
-        if (ms?.sys?.interaction?.current) {
-            return { events, newBaseDeck: baseDeck, matchState: ms };
-        }
-    }
-
     // 计分前响应窗口：允许 beforeScoring 交互与响应窗口优先完成
-    if (!alreadyTriggeredBeforeScoring && ms) {
+    if ((!alreadyTriggeredBeforeScoring || shouldOpenBeforeScoringWindow) && ms) {
         ms = { ...ms, core: updatedCore };
+        if (shouldOpenBeforeScoringWindow && currentBaseRef) {
+            ms = updateScoringSession(ms, (session) => session
+                ? {
+                    ...session,
+                    currentBaseRef,
+                    currentStep: 'resolving-base',
+                }
+                : session,
+            );
+        }
         ms = startSmashUpReactionSession(ms, {
             frameId: beforeScoringFrameId,
             frameKind: 'score-before',
             responseWindowType: 'meFirst',
             sourceBaseIndex: baseIndex,
         });
-        const beforeSession = maybeResolveReactionQueue(ms, rng, now);
+        const beforeSession = resolveScoringReactionQueue(ms);
         if (beforeSession) {
             events.push(...beforeSession.events);
             ms = beforeSession.state;
             updatedCore = beforeSession.state.core;
+            if (hasAuthoritativeScoringSession && beforeSession.events.length > 0) {
+                ms = updateScoringSession(ms, (session) => session
+                    ? {
+                        ...session,
+                        currentBaseRef,
+                        currentStep: 'awaiting-before-reaction-reduce',
+                    }
+                    : session,
+                );
+                return { events, newBaseDeck: baseDeck, matchState: ms };
+            }
         }
         if (ms.sys.interaction?.current || getSmashUpReactionSession(ms)) {
             return { events, newBaseDeck: baseDeck, matchState: ms };
@@ -784,7 +1558,6 @@ export function scoreOneBase(
     const preliminaryRankings = buildBaseRankings(updatedCore, baseIndex, baseDef, playerPowers);
 
     const alreadyTriggeredWhenScoring = updatedCore.whenScoringTriggeredBases?.includes(baseIndex) ?? false;
-    const whenScoringFrameId = `score-when:${baseIndex}:${now}`;
     if (!alreadyTriggeredWhenScoring) {
         const queuedWhenScoringBase = collectBaseAbilityTriggers({
             core: updatedCore,
@@ -798,9 +1571,12 @@ export function scoreOneBase(
         });
         if (queuedWhenScoringBase) {
             events.push(queuedWhenScoringBase as unknown as SmashUpEvent);
-            updatedCore = reduce(updatedCore, queuedWhenScoringBase as unknown as SmashUpEvent);
-            if (ms) ms = { ...ms, core: updatedCore };
+            if (!hasAuthoritativeScoringSession) {
+                updatedCore = applyTriggerQueueFactEvent(updatedCore, queuedWhenScoringBase as unknown as SmashUpEvent);
+                if (ms) ms = { ...ms, core: updatedCore };
+            }
         }
+        const hasWhenScoringTriggerWork = !!queuedWhenScoringBase;
 
         const whenScoringTriggeredEvent = {
             type: SU_EVENT_TYPES.WHEN_SCORING_TRIGGERED,
@@ -808,15 +1584,28 @@ export function scoreOneBase(
             timestamp: now,
         };
         events.push(whenScoringTriggeredEvent as unknown as SmashUpEvent);
-        updatedCore = reduce(updatedCore, whenScoringTriggeredEvent as unknown as SmashUpEvent);
-        if (ms) {
+        if (hasAuthoritativeScoringSession && ms && hasWhenScoringTriggerWork) {
+            ms = updateScoringSession(ms, (session) => session
+                ? {
+                    ...session,
+                    currentBaseRef,
+                    currentStep: 'awaiting-when-scoring-reduce',
+                }
+                : session,
+            );
+            return { events, newBaseDeck: baseDeck, matchState: ms };
+        }
+        if (!hasAuthoritativeScoringSession) {
+            updatedCore = reduceWhenScoringTriggeredEvent(updatedCore, whenScoringTriggeredEvent as unknown as SmashUpEvent);
+        }
+        if (ms && !hasAuthoritativeScoringSession) {
             ms = { ...ms, core: updatedCore };
             ms = startSmashUpReactionSession(ms, {
                 frameId: whenScoringFrameId,
                 frameKind: 'score-when',
                 sourceBaseIndex: baseIndex,
             });
-            const whenSession = maybeResolveReactionQueue(ms, rng, now);
+            const whenSession = resolveScoringReactionQueue(ms);
             if (whenSession) {
                 events.push(...whenSession.events);
                 ms = whenSession.state;
@@ -867,32 +1656,6 @@ export function scoreOneBase(
     };
     events.push(scoreEvt);
 
-    for (const m of scoringBase.minions) {
-        const queued = collectTriggers(updatedCore, 'onMinionDiscardedFromBase', {
-            state: updatedCore,
-            matchState: ms,
-            playerId: m.controller,
-            baseIndex,
-            triggerMinionUid: m.uid,
-            triggerMinionDefId: m.defId,
-            triggerMinionPower: getEffectivePower(updatedCore, m, baseIndex),
-            triggerMinion: m,
-            random: rng,
-            now,
-        });
-        if (queued) {
-            events.push(queued);
-            updatedCore = reduce(updatedCore, queued as unknown as SmashUpEvent);
-            if (ms) ms = { ...ms, core: updatedCore };
-            const rq = maybeResolveReactionQueue(ms ? ms : createReactionQueueFallbackState(updatedCore), rng, now);
-            if (rq) {
-                events.push(...rq.events);
-                ms = rq.state;
-                updatedCore = rq.state.core;
-            }
-        }
-    }
-
     const monsterTreasureRewardCount = (scoringBase.monsters ?? []).reduce((sum, monster) => (
         sum + (getMunchkinSpecialCardDescriptor(monster.defId)?.treasureReward ?? 0)
     ), 0);
@@ -923,224 +1686,76 @@ export function scoreOneBase(
             timestamp: now,
         };
         events.push(revealEvent);
-        updatedCore = reduce(updatedCore, revealEvent);
-        if (ms) ms = { ...ms, core: updatedCore };
-    }
-
-    // 璁板綍 afterScoring 鍓嶇殑浜や簰鐘舵€侊紝鐢ㄤ簬鍒ゆ柇 afterScoring 鏄惁鏂板浜嗕氦浜?
-    const afterScoringCore = updatedCore;
-    const interactionBeforeAfterScoring = ms?.sys?.interaction?.current?.id ?? null;
-    const queueLenBeforeAfterScoring = ms?.sys?.interaction?.queue?.length ?? 0;
-
-    const alreadyTriggeredAfterScoring = updatedCore.afterScoringTriggeredBases?.includes(baseIndex) ?? false;
-    const afterScoringFrameId = `score-after:${baseIndex}:${now}`;
-
-    if (!alreadyTriggeredAfterScoring) {
-        // 统一 afterScoring special 已迁到 trigger 模型；这里只对漏注册条目做反馈并清理。
-        const armedSpecials = (updatedCore.pendingAfterScoringSpecials ?? []).filter(
-            s => s.baseIndex === baseIndex
-        );
-        
-        for (const armed of armedSpecials) {
-            if (hasRegisteredTrigger(armed.sourceDefId, 'afterScoring')) {
-                continue;
-            }
-            const feedbackEvt: AbilityFeedbackEvent = {
-                type: SU_EVENT_TYPES.ABILITY_FEEDBACK,
-                payload: {
-                    playerId: armed.playerId,
-                    sourceDefId: armed.sourceDefId,
-                    message: 'actionLog.ability_not_implemented',
-                },
-                timestamp: now,
-            };
-            events.push(feedbackEvt);
-            
-            // 鏍囪涓哄凡娑堣垂
-            const consumedEvt: SpecialAfterScoringConsumedEvent = {
-                type: SU_EVENT_TYPES.SPECIAL_AFTER_SCORING_CONSUMED,
-                payload: {
-                    sourceDefId: armed.sourceDefId,
-                    playerId: armed.playerId,
-                    baseIndex,
-                    cardUid: armed.cardUid,
-                },
-                timestamp: now,
-            };
-            events.push(consumedEvt);
-            updatedCore = reduce(updatedCore, consumedEvt);
-        }
-        
-        // Queue afterScoring base ability + ongoing afterScoring triggers into the same reaction window,
-        // so moving/destroying one trigger's source doesn't prevent the others from being queued.
-        const queuedAfterBase = collectBaseAbilityTriggers({
-            core: updatedCore,
-            timing: 'afterScoring',
-            ownerPlayerId: pid,
-            baseIndex,
-            rankings,
-            frameId: afterScoringFrameId,
-            sourceEventId: afterScoringFrameId,
-            now,
-        });
-        if (queuedAfterBase) {
-            events.push(queuedAfterBase as unknown as SmashUpEvent);
-            updatedCore = reduce(updatedCore, queuedAfterBase as unknown as SmashUpEvent);
+        if (!hasAuthoritativeScoringSession) {
+            updatedCore = reduceMunchkinTreasureRewardRevealedEvent(updatedCore, revealEvent);
             if (ms) ms = { ...ms, core: updatedCore };
         }
-
-        const queuedAfterOngoing = collectTriggers(updatedCore, 'afterScoring', {
-            state: updatedCore,
-            playerId: pid,
-            baseIndex,
-            rankings,
-            matchState: ms,
-            frameId: afterScoringFrameId,
-            sourceEventId: afterScoringFrameId,
-            random: rng,
-            now,
-        });
-        if (queuedAfterOngoing) {
-            events.push(queuedAfterOngoing);
-            updatedCore = reduce(updatedCore, queuedAfterOngoing as unknown as SmashUpEvent);
-            if (ms) ms = { ...ms, core: updatedCore };
-        }
-
-        // Mark afterScoring as triggered immediately (even if it creates an interaction),
-        // so re-entering scoreOneBase after resolving an interaction won't re-queue it.
-        const markEvent = {
-            type: SU_EVENT_TYPES.AFTER_SCORING_TRIGGERED,
-            payload: { baseIndex },
-            timestamp: now,
-        };
-        events.push(markEvent as unknown as SmashUpEvent);
-        updatedCore = reduce(updatedCore, markEvent as unknown as SmashUpEvent);
-        if (ms) ms = { ...ms, core: updatedCore };
-
-        if (ms) {
-            ms = { ...ms, core: updatedCore };
-            ms = startSmashUpReactionSession(ms, {
-                frameId: afterScoringFrameId,
-                frameKind: 'score-after',
-                responseWindowType: 'afterScoring',
-            });
-            const rq = maybeResolveReactionQueue(ms, rng, now);
-            if (rq) {
-                events.push(...rq.events);
-                ms = rq.state;
-                updatedCore = rq.state.core;
-            }
-        }
-        // NOTE: If an interaction was created here (e.g. smashup_reaction_choose),
-        // we must still continue so scoreOneBase can defer BASE_CLEARED/BASE_REPLACED into continuationContext.
     }
 
-    // 鍒ゆ柇 afterScoring 鏄惁鏂板浜嗕氦浜?
-    const interactionAfter = ms?.sys?.interaction?.current?.id ?? null;
-    const queueLenAfter = ms?.sys?.interaction?.queue?.length ?? 0;
-    const afterScoringCreatedInteraction =
-        (interactionAfter !== null && interactionAfter !== interactionBeforeAfterScoring) ||
-        (queueLenAfter > queueLenBeforeAfterScoring) ||
-        !!(ms && getSmashUpReactionSession(ms));
-
-    const playersWithAfterScoringCards = ms
-        ? getPlayersWithPlayableAfterScoringResponses({ ...ms, core: afterScoringCore }, now)
-        : [];
-    // afterScoring 可能已经通过 BASE_DECK_REORDERED / 其他补发事件改写了基地牌库；
-    // 后续换基地与空牌库 reshuffle 必须以最新 core 为准，而不是沿用函数入参的旧 baseDeck 快照。
-    newBaseDeck = [...(updatedCore.baseDeck ?? newBaseDeck)];
-
-    // 构建清场 + 换基地 + onBaseRevealed 触发队列（延迟到当前基地彻底结算后再补发）
-    const postScoringEvents: SmashUpEvent[] = [];
-    if (updatedCore.pendingMunchkinTreasureReward) {
-        const distributeTreasureRewardEvt: MunchkinTreasureRewardDistributedEvent = {
-            type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED,
-            payload: {
-                baseIndex,
-                ...(scoringBase.instanceId ? { baseInstanceId: scoringBase.instanceId } : {}),
-                reason: 'munchkin_scoring_treasure_reward',
-            },
-            timestamp: now,
-        };
-        postScoringEvents.push(distributeTreasureRewardEvt);
-    }
-    const clearEvt: BaseClearedEvent = {
-        type: SU_EVENTS.BASE_CLEARED,
-        payload: { baseIndex, baseDefId: scoringBase.defId, baseInstanceId: scoringBase.instanceId },
-        timestamp: now,
-    };
-    postScoringEvents.push(clearEvt);
-
-    if (newBaseDeck.length === 0) {
-        const pool = [...(core.baseDiscard ?? []), base.defId];
-        const rebuiltDeck = (random?.shuffle ? random.shuffle(pool) : [...pool]);
-        const shuffleEvt: BaseDeckShuffledEvent = {
-            type: SU_EVENTS.BASE_DECK_SHUFFLED,
-            payload: {
-                newBaseDeckDefIds: rebuiltDeck,
-                reason: 'base_deck_empty_reshuffle_discard',
-                clearBaseDiscard: true,
-            },
-            timestamp: now,
-        };
-        postScoringEvents.push(shuffleEvt);
-        newBaseDeck = rebuiltDeck;
-    }
-
-    if (newBaseDeck.length > 0) {
-        const newBaseDefId = newBaseDeck[0];
-        const replaceEvt: BaseReplacedEvent = {
-            type: SU_EVENTS.BASE_REPLACED,
-            payload: {
-                baseIndex,
-                oldBaseDefId: scoringBase.defId,
-                newBaseDefId,
-                oldBaseInstanceId: scoringBase.instanceId,
-            },
-            timestamp: now,
-        };
-        postScoringEvents.push(replaceEvt);
-        newBaseDeck = newBaseDeck.slice(1);
-        const revealCore = postScoringEvents.reduce(
-            (nextCore, event) => reduce(nextCore, event),
-            updatedCore,
-        );
-
-        const queuedReveal = collectExtendedBaseAbilityTriggers({
-            core: revealCore,
-            timing: 'onBaseRevealed',
-            ownerPlayerId: pid,
-            baseIndex,
-            now,
-        });
-        if (queuedReveal) {
-            postScoringEvents.push(queuedReveal as unknown as SmashUpEvent);
-        }
-    }
-
-    const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
-    if (ms && currentBaseRef) {
-        const waitingStep = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0
-            ? getSmashUpReactionSession(ms)
-                ? 'awaiting-response-window'
-                : 'awaiting-interactions'
-            : 'awaiting-post-scoring-delay';
+    if (hasAuthoritativeScoringSession && ms) {
         ms = updateScoringSession(ms, (session) => session
             ? {
                 ...session,
                 currentBaseRef,
-                currentStep: waitingStep,
+                currentStep: 'awaiting-score-award-reduce',
             }
             : session,
         );
-        ms = appendScoringFrameDeferredPayload(ms, {
-            deferredEvents: serializedDeferredEvents,
-        });
-        if (waitingStep === 'awaiting-post-scoring-delay') {
-            ms = beginPostScoringBaseRevealDelay(ms, now);
-        }
+        return { events, newBaseDeck, matchState: ms };
     }
-    return { events, newBaseDeck, matchState: ms };
+
+    return continueScoringAfterAwardCommitted({
+        events,
+        updatedCore,
+        scoringBase,
+        base,
+        baseDef,
+        baseIndex,
+        baseDeck,
+        newBaseDeck,
+        pid,
+        now,
+        rng,
+        random,
+        matchState: ms,
+        currentBaseRef,
+        rankings,
+        hasAuthoritativeScoringSession,
+    });
+}
+
+function scoreCurrentSessionBase(
+    state: MatchState<SmashUpCore>,
+    baseIndex: number,
+    pid: PlayerId,
+    now: number,
+    random?: RandomFn,
+): { events: SmashUpEvent[]; newBaseDeck: string[]; matchState?: MatchState<SmashUpCore> } {
+    const session = getScoringSession(state);
+    const currentBaseRef = session?.currentBaseRef;
+    if (!session || !currentBaseRef) {
+        throw new Error('SmashUp scoreBases 生产计分缺少当前 scoring session/baseRef');
+    }
+
+    const resolvedBaseIndex = resolveScoringBaseRefSlotIndex(state, currentBaseRef);
+    if (resolvedBaseIndex !== baseIndex) {
+        throw new Error('SmashUp scoreBases 生产计分 baseIndex 与当前 scoring session/baseRef 不一致');
+    }
+
+    const liveBaseRef = createScoringBaseRef(state.core, baseIndex);
+    if (!isSameScoringBaseRef(liveBaseRef, currentBaseRef)) {
+        throw new Error('SmashUp scoreBases 生产计分当前基地引用已失效');
+    }
+
+    return scoreOneBase(
+        state.core,
+        baseIndex,
+        state.core.baseDeck,
+        pid,
+        now,
+        random,
+        state,
+    );
 }
 
 export function registerMultiBaseScoringInteractionHandler(): void {
@@ -1173,34 +1788,385 @@ registerAbilityRuntimePrompt('multi_base_scoring', (state, _playerId, value) => 
     };
 });
 
-function applyEventsForStartTurnSimulation(
+function updateStartTurnFactPlayer(
     core: SmashUpCore,
-    events: SmashUpEvent[],
+    playerId: PlayerId,
+    update: (player: PlayerState) => PlayerState,
 ): SmashUpCore {
-    let nextCore = core;
-    for (const event of events) {
-        const intercepted = domainInterceptEvent(nextCore, event);
-        if (intercepted === null) continue;
-
-        const appliedEvents = Array.isArray(intercepted) ? intercepted : [intercepted];
-        for (const appliedEvent of appliedEvents) {
-            nextCore = reduce(nextCore, appliedEvent);
-        }
-    }
-    return nextCore;
+    const player = core.players[playerId];
+    if (!player) return core;
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [playerId]: update(player),
+        },
+    };
 }
 
-function findMinionOnBaseByUid(
-    core: SmashUpCore,
-    minionUid: string,
-): { baseIndex: number; minion: MinionOnBase } | undefined {
-    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex++) {
-        const minion = core.bases[baseIndex].minions.find(entry => entry.uid === minionUid);
-        if (minion) {
-            return { baseIndex, minion };
+function removeCardFromZones(cards: CardInstance[], cardUid: string): CardInstance[] {
+    return cards.filter(card => card.uid !== cardUid);
+}
+
+function findCardInPlayerZones(player: PlayerState, cardUid: string): CardInstance | undefined {
+    return player.hand.find(card => card.uid === cardUid)
+        ?? player.deck.find(card => card.uid === cardUid)
+        ?? player.discard.find(card => card.uid === cardUid)
+        ?? player.storedCards?.find(card => card.uid === cardUid);
+}
+
+function applyStartTurnFactCardsDrawn(core: SmashUpCore, event: CardsDrawnEvent): SmashUpCore {
+    return updateStartTurnFactPlayer(core, event.payload.playerId, (player) => {
+        const drawnCards: CardInstance[] = [];
+        let deck = [...player.deck];
+        for (const uid of event.payload.cardUids) {
+            const index = deck.findIndex(card => card.uid === uid);
+            if (index < 0) continue;
+            drawnCards.push(deck[index]);
+            deck = [...deck.slice(0, index), ...deck.slice(index + 1)];
+        }
+        if (drawnCards.length === 0) return player;
+        return {
+            ...player,
+            hand: [...player.hand, ...drawnCards],
+            deck,
+        };
+    });
+}
+
+function applyStartTurnFactDeckReshuffled(core: SmashUpCore, event: DeckReshuffledEvent): SmashUpCore {
+    return updateStartTurnFactPlayer(core, event.payload.playerId, (player) => {
+        const allCards = [...player.deck, ...player.discard];
+        const cardMap = new Map(allCards.map(card => [card.uid, card]));
+        const deckUidSet = new Set(event.payload.deckUids);
+        const referencedCards = event.payload.deckUids
+            .map(uid => cardMap.get(uid))
+            .filter((card): card is CardInstance => card !== undefined);
+        return {
+            ...player,
+            deck: [
+                ...player.deck.filter(card => !deckUidSet.has(card.uid)),
+                ...referencedCards,
+            ],
+            discard: player.discard.filter(card => !deckUidSet.has(card.uid)),
+        };
+    });
+}
+
+function applyStartTurnFactDeckReordered(core: SmashUpCore, event: SmashUpEvent): SmashUpCore {
+    const payload = event.payload as {
+        playerId: PlayerId;
+        sourcePlayerId?: PlayerId;
+        deckUids: string[];
+    };
+    const player = core.players[payload.playerId];
+    if (!player) return core;
+
+    const referencedUids = new Set(payload.deckUids);
+    const cardLookup = new Map<string, CardInstance>();
+    for (const card of [...player.hand, ...player.deck, ...player.discard]) {
+        if (referencedUids.has(card.uid) && !cardLookup.has(card.uid)) {
+            cardLookup.set(card.uid, card);
         }
     }
-    return undefined;
+
+    const sourcePlayer = payload.sourcePlayerId && payload.sourcePlayerId !== payload.playerId
+        ? core.players[payload.sourcePlayerId]
+        : undefined;
+    if (sourcePlayer) {
+        for (const card of [...sourcePlayer.hand, ...sourcePlayer.deck, ...sourcePlayer.discard]) {
+            if (referencedUids.has(card.uid) && !cardLookup.has(card.uid)) {
+                cardLookup.set(card.uid, card);
+            }
+        }
+    }
+
+    const reorderedDeck = payload.deckUids
+        .map(uid => cardLookup.get(uid))
+        .filter((card): card is CardInstance => card !== undefined);
+    const stripReferencedCards = (cards: CardInstance[]) => cards.filter(card => !referencedUids.has(card.uid));
+
+    const players = {
+        ...core.players,
+        [payload.playerId]: {
+            ...player,
+            hand: sourcePlayer ? stripReferencedCards(player.hand) : player.hand,
+            deck: reorderedDeck,
+            discard: stripReferencedCards(player.discard),
+        },
+    };
+    if (sourcePlayer && payload.sourcePlayerId) {
+        players[payload.sourcePlayerId] = {
+            ...sourcePlayer,
+            hand: stripReferencedCards(sourcePlayer.hand),
+            deck: stripReferencedCards(sourcePlayer.deck),
+            discard: stripReferencedCards(sourcePlayer.discard),
+        };
+    }
+
+    return { ...core, players };
+}
+
+function buildStartTurnFactPlayedMinion(event: MinionPlayedEvent): MinionOnBase {
+    const {
+        cardUid,
+        defId,
+        playerId,
+        ownerId,
+        power,
+        fromDiscard,
+        fromDeck,
+        fromBuried,
+        fromStored,
+    } = event.payload;
+    return {
+        uid: cardUid,
+        defId,
+        controller: playerId,
+        owner: ownerId ?? playerId,
+        basePower: power,
+        powerCounters: 0,
+        powerModifier: 0,
+        tempPowerModifier: 0,
+        talentUsed: false,
+        playedThisTurn: true,
+        attachedActions: [],
+        metadata: (fromDiscard || fromDeck || fromBuried || fromStored)
+            ? { playedFrom: fromDiscard ? 'discard' : fromDeck ? 'deck' : fromBuried ? 'buried' : 'stored' }
+            : undefined,
+    };
+}
+
+function applyStartTurnFactMinionPlayed(core: SmashUpCore, event: MinionPlayedEvent): SmashUpCore {
+    const player = core.players[event.payload.playerId];
+    if (!player) return core;
+    const resolvedBaseIndex = resolveLiveBaseIndex(core, event.payload.baseIndex, event.payload.baseDefId)
+        ?? event.payload.baseIndex;
+    if (!core.bases[resolvedBaseIndex]) return core;
+
+    const cardInHand = player.hand.some(card => card.uid === event.payload.cardUid);
+    const cardInDeck = player.deck.some(card => card.uid === event.payload.cardUid);
+    const shouldRemoveFromHand = !event.payload.fromDiscard
+        && !event.payload.fromBuried
+        && !event.payload.fromStored
+        && (!event.payload.fromDeck || cardInHand);
+    const nextPlayer: PlayerState = {
+        ...player,
+        hand: event.payload.allowImplicitSource || shouldRemoveFromHand
+            ? removeCardFromZones(player.hand, event.payload.cardUid)
+            : player.hand,
+        discard: event.payload.allowImplicitSource || event.payload.fromDiscard
+            ? removeCardFromZones(player.discard, event.payload.cardUid)
+            : player.discard,
+        deck: event.payload.allowImplicitSource || (event.payload.fromDeck && cardInDeck)
+            ? removeCardFromZones(player.deck, event.payload.cardUid)
+            : player.deck,
+        storedCards: event.payload.allowImplicitSource || event.payload.fromStored
+            ? removeCardFromZones(player.storedCards ?? [], event.payload.cardUid)
+            : player.storedCards,
+    };
+
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [event.payload.playerId]: nextPlayer,
+        },
+        bases: core.bases.map((base, index) => {
+            if (index !== resolvedBaseIndex) return base;
+            return {
+                ...base,
+                minions: [...base.minions, buildStartTurnFactPlayedMinion(event)],
+                buriedCards: event.payload.fromBuried
+                    ? (base.buriedCards ?? []).filter(card => card.uid !== event.payload.cardUid)
+                    : base.buriedCards,
+            };
+        }),
+    };
+}
+
+function applyStartTurnFactMinionDestroyed(core: SmashUpCore, event: MinionDestroyedEvent): SmashUpCore {
+    const { minionUid, minionDefId, fromBaseIndex, ownerId } = event.payload;
+    const base = core.bases[fromBaseIndex];
+    if (!base) return core;
+    const minion = base.minions.find(candidate => candidate.uid === minionUid);
+    const owner = core.players[ownerId];
+    if (!owner) return core;
+    const destroyedCard: CardInstance = {
+        uid: minionUid,
+        defId: minion?.defId ?? minionDefId,
+        type: 'minion',
+        owner: ownerId,
+    };
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [ownerId]: {
+                ...owner,
+                discard: owner.discard.some(card => card.uid === minionUid)
+                    ? owner.discard
+                    : [...owner.discard, destroyedCard],
+            },
+        },
+        bases: core.bases.map((entry, index) => index !== fromBaseIndex
+            ? entry
+            : { ...entry, minions: entry.minions.filter(candidate => candidate.uid !== minionUid) }),
+    };
+}
+
+function applyStartTurnFactMinionReturned(core: SmashUpCore, event: SmashUpEvent): SmashUpCore {
+    const payload = event.payload as {
+        minionUid: string;
+        minionDefId: string;
+        fromBaseIndex: number;
+        toPlayerId: PlayerId;
+    };
+    const base = core.bases[payload.fromBaseIndex];
+    const player = core.players[payload.toPlayerId];
+    if (!base || !player) return core;
+    const minion = base.minions.find(candidate => candidate.uid === payload.minionUid);
+    const returnedCard: CardInstance = {
+        uid: payload.minionUid,
+        defId: minion?.defId ?? payload.minionDefId,
+        type: 'minion',
+        owner: minion?.owner ?? payload.toPlayerId,
+    };
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [payload.toPlayerId]: {
+                ...player,
+                hand: player.hand.some(card => card.uid === payload.minionUid)
+                    ? player.hand
+                    : [...player.hand, returnedCard],
+            },
+        },
+        bases: core.bases.map((entry, index) => index !== payload.fromBaseIndex
+            ? entry
+            : { ...entry, minions: entry.minions.filter(candidate => candidate.uid !== payload.minionUid) }),
+    };
+}
+
+function applyStartTurnFactBuriedReturnedToHand(core: SmashUpCore, event: SmashUpEvent): SmashUpCore {
+    const payload = event.payload as {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        baseIndex: number;
+    };
+    const player = core.players[payload.playerId];
+    const base = core.bases[payload.baseIndex];
+    if (!player || !base) return core;
+    const buried = (base.buriedCards ?? []).find(card => card.uid === payload.cardUid);
+    const def = getCardDef(buried?.defId ?? payload.defId);
+    const returnedCard: CardInstance = {
+        uid: payload.cardUid,
+        defId: buried?.defId ?? payload.defId,
+        type: def?.type === 'minion' ? 'minion' : 'action',
+        owner: buried?.trueOwnerId ?? payload.playerId,
+    };
+    return {
+        ...core,
+        players: {
+            ...core.players,
+            [payload.playerId]: {
+                ...player,
+                hand: player.hand.some(card => card.uid === payload.cardUid)
+                    ? player.hand
+                    : [...player.hand, returnedCard],
+            },
+        },
+        bases: core.bases.map((entry, index) => index !== payload.baseIndex
+            ? entry
+            : { ...entry, buriedCards: (entry.buriedCards ?? []).filter(card => card.uid !== payload.cardUid) }),
+    };
+}
+
+function applyStartTurnFactMinionMoved(core: SmashUpCore, event: SmashUpEvent): SmashUpCore {
+    const payload = event.payload as {
+        minionUid: string;
+        minionDefId: string;
+        fromBaseIndex: number;
+        toBaseIndex: number;
+        toBaseDefId?: string;
+    };
+    const fromBase = core.bases[payload.fromBaseIndex];
+    const resolvedToBaseIndex = resolveLiveBaseIndex(core, payload.toBaseIndex, payload.toBaseDefId)
+        ?? payload.toBaseIndex;
+    const toBase = core.bases[resolvedToBaseIndex];
+    if (!fromBase || !toBase) return core;
+    const minion = fromBase.minions.find(candidate => candidate.uid === payload.minionUid);
+    if (!minion) return core;
+    return {
+        ...core,
+        bases: core.bases.map((base, index) => {
+            if (index === payload.fromBaseIndex) {
+                return { ...base, minions: base.minions.filter(candidate => candidate.uid !== payload.minionUid) };
+            }
+            if (index === resolvedToBaseIndex) {
+                return { ...base, minions: [...base.minions, minion] };
+            }
+            return base;
+        }),
+    };
+}
+
+function applyStartTurnFactCardToDeck(core: SmashUpCore, event: SmashUpEvent, placement: 'top' | 'bottom'): SmashUpCore {
+    const payload = event.payload as {
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+    };
+    return updateStartTurnFactPlayer(core, payload.ownerId, (player) => {
+        const existingCard = findCardInPlayerZones(player, payload.cardUid) ?? {
+            uid: payload.cardUid,
+            defId: payload.defId,
+            type: getCardDef(payload.defId)?.type === 'minion' ? 'minion' : 'action',
+            owner: payload.ownerId,
+        } satisfies CardInstance;
+        const withoutCard = {
+            ...player,
+            hand: removeCardFromZones(player.hand, payload.cardUid),
+            deck: removeCardFromZones(player.deck, payload.cardUid),
+            discard: removeCardFromZones(player.discard, payload.cardUid),
+            storedCards: removeCardFromZones(player.storedCards ?? [], payload.cardUid),
+        };
+        return {
+            ...withoutCard,
+            deck: placement === 'top'
+                ? [existingCard, ...withoutCard.deck]
+                : [...withoutCard.deck, existingCard],
+        };
+    });
+}
+
+function applyStartTurnFactEvent(core: SmashUpCore, event: SmashUpEvent): SmashUpCore {
+    switch (event.type) {
+        case SU_EVENTS.CARDS_DRAWN:
+            return applyStartTurnFactCardsDrawn(core, event as CardsDrawnEvent);
+        case SU_EVENTS.DECK_RESHUFFLED:
+            return applyStartTurnFactDeckReshuffled(core, event as DeckReshuffledEvent);
+        case SU_EVENTS.DECK_REORDERED:
+            return applyStartTurnFactDeckReordered(core, event);
+        case SU_EVENTS.MINION_PLAYED:
+            return applyStartTurnFactMinionPlayed(core, event as MinionPlayedEvent);
+        case SU_EVENTS.MINION_DESTROYED:
+            return applyStartTurnFactMinionDestroyed(core, event as MinionDestroyedEvent);
+        case SU_EVENTS.MINION_RETURNED:
+            return applyStartTurnFactMinionReturned(core, event);
+        case SU_EVENTS.BURIED_CARD_RETURNED_TO_HAND:
+            return applyStartTurnFactBuriedReturnedToHand(core, event);
+        case SU_EVENTS.MINION_MOVED:
+            return applyStartTurnFactMinionMoved(core, event);
+        case SU_EVENTS.CARD_TO_DECK_TOP:
+            return applyStartTurnFactCardToDeck(core, event, 'top');
+        case SU_EVENTS.CARD_TO_DECK_BOTTOM:
+            return applyStartTurnFactCardToDeck(core, event, 'bottom');
+        default:
+            return core;
+    }
 }
 
 function keepSysUpdatesOnly(
@@ -1244,14 +2210,14 @@ function processImmediateStartTurnMinionTriggers(
     processedPlayedUids: Set<string> = new Set(),
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     const finalEvents: SmashUpEvent[] = [];
-    let simulatedCore = startTurnCore;
+    let startTurnFactCore = startTurnCore;
     let currentMatchState = matchState ? { ...matchState, core: startTurnCore } : undefined;
 
     for (const event of events) {
         finalEvents.push(event);
-        simulatedCore = applyEventsForStartTurnSimulation(simulatedCore, [event]);
+        startTurnFactCore = applyStartTurnFactEvent(startTurnFactCore, event);
         if (currentMatchState) {
-            currentMatchState = { ...currentMatchState, core: simulatedCore };
+            currentMatchState = { ...currentMatchState, core: startTurnFactCore };
         }
 
         if (event.type === SU_EVENTS.MINION_RETURNED) {
@@ -1273,44 +2239,54 @@ function processImmediateStartTurnMinionTriggers(
         if (processedPlayedUids.has(playedEvent.payload.cardUid)) continue;
         processedPlayedUids.add(playedEvent.payload.cardUid);
 
-        const playedMinion = findMinionOnBaseByUid(simulatedCore, playedEvent.payload.cardUid);
-        if (!playedMinion || playedMinion.minion.controller !== currentPlayerId) continue;
+        const resolvedBaseIndex = resolveLiveBaseIndex(
+            startTurnFactCore,
+            playedEvent.payload.baseIndex,
+            playedEvent.payload.baseDefId,
+        ) ?? playedEvent.payload.baseIndex;
+        const playedMinion = startTurnFactCore.bases[resolvedBaseIndex]?.minions.find(
+            candidate => candidate.uid === playedEvent.payload.cardUid,
+        );
+        if (!playedMinion || playedMinion.controller !== currentPlayerId) continue;
 
         const immediateResult = fireTriggerForSource(
-            simulatedCore,
+            startTurnFactCore,
             playedEvent.payload.defId,
             'onTurnStart',
             {
-                state: simulatedCore,
+                state: startTurnFactCore,
                 matchState: currentMatchState,
                 playerId: currentPlayerId,
-                baseIndex: playedMinion.baseIndex,
-                triggerMinion: playedMinion.minion,
-                triggerMinionUid: playedMinion.minion.uid,
-                triggerMinionDefId: playedMinion.minion.defId,
+                baseIndex: resolvedBaseIndex,
+                triggerMinion: playedMinion,
+                triggerMinionUid: playedMinion.uid,
+                triggerMinionDefId: playedMinion.defId,
                 random,
                 now: event.timestamp,
             },
         );
 
         if (immediateResult.matchState) {
-            currentMatchState = { ...immediateResult.matchState, core: simulatedCore };
+            currentMatchState = { ...immediateResult.matchState, core: startTurnFactCore };
         }
         if (immediateResult.events.length === 0) continue;
 
         const processedImmediate = postProcessSystemEvents(
-            simulatedCore,
+            startTurnFactCore,
             immediateResult.events,
             random,
             currentMatchState,
-            { skipImmediateStartTurnMinionTriggers: true },
+            {
+                skipImmediateStartTurnMinionTriggers: true,
+                skipReactionQueueResolution: true,
+            },
         );
         const processedImmediateMatchState = processedImmediate.matchState
-            ? { ...processedImmediate.matchState, core: simulatedCore }
+            ? { ...processedImmediate.matchState, core: startTurnFactCore }
             : currentMatchState;
 
         const recursiveResult = processImmediateStartTurnMinionTriggers(
-            simulatedCore,
+            startTurnFactCore,
             processedImmediate.events,
             currentPlayerId,
             random,
@@ -1319,11 +2295,13 @@ function processImmediateStartTurnMinionTriggers(
         );
 
         finalEvents.push(...recursiveResult.events);
-        simulatedCore = applyEventsForStartTurnSimulation(simulatedCore, recursiveResult.events);
+        for (const recursiveEvent of recursiveResult.events) {
+            startTurnFactCore = applyStartTurnFactEvent(startTurnFactCore, recursiveEvent);
+        }
         if (recursiveResult.matchState) {
-            currentMatchState = { ...recursiveResult.matchState, core: simulatedCore };
+            currentMatchState = { ...recursiveResult.matchState, core: startTurnFactCore };
         } else if (currentMatchState) {
-            currentMatchState = { ...currentMatchState, core: simulatedCore };
+            currentMatchState = { ...currentMatchState, core: startTurnFactCore };
         }
     }
 
@@ -1750,7 +2728,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 events.push(queuedBaseTurnEnd as unknown as SmashUpEvent);
                 currentMatchState = {
                     ...currentMatchState,
-                    core: reduce(currentMatchState.core, queuedBaseTurnEnd as unknown as SmashUpEvent),
+                    core: applyTriggerQueueFactEvent(currentMatchState.core, queuedBaseTurnEnd as unknown as SmashUpEvent),
                 };
             }
             if (queuedTurnEnd) {
@@ -1759,7 +2737,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 // Seed an explicit turn-end reaction frame so onTurnEnd follows the same Step 3/4 session model as startTurn.
                 currentMatchState = {
                     ...currentMatchState,
-                    core: reduce(currentMatchState.core, queuedTurnEnd as unknown as SmashUpEvent),
+                    core: applyTriggerQueueFactEvent(currentMatchState.core, queuedTurnEnd as unknown as SmashUpEvent),
                 };
             }
 
@@ -1768,10 +2746,12 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     frameId: turnEndFrameId,
                     frameKind: 'turn-end',
                 });
-                const rq = maybeResolveReactionQueue(currentMatchState, random, now);
+                const rq = maybeResolveReactionQueueSuspendingDomainEvents(currentMatchState, random, now);
                 if (rq) {
                     // onTurnEnd 触发器可能产生 MINION_DESTROYED 等，需要经过 destroy→move 循环处理
-                    const afterDestroyMove = processDestroyMoveCycle(rq.events, rq.state, pid, random, now);
+                    const afterDestroyMove = processDestroyMoveCycle(rq.events, rq.state, pid, random, now, {
+                        skipReactionQueueResolution: true,
+                    });
                     events.push(...afterDestroyMove.events);
                     currentMatchState = afterDestroyMove.matchState ?? rq.state;
                 }
@@ -1838,11 +2818,8 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
             }
 
-            if (currentSession.currentStep === 'awaiting-post-scoring-delay') {
-                if (isPostScoringBaseRevealDelayActive(currentState, now)) {
-                    return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
-                }
-                const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(currentState), now);
+            if (currentSession.currentStep === 'awaiting-post-scoring-finalize') {
+                const finalized = finalizeCurrentScoringBase(currentState, now);
                 return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
             }
 
@@ -1850,12 +2827,8 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 currentSession.currentStep === 'awaiting-interactions'
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
-                const delayedState = beginPostScoringBaseRevealDelay(currentState, now);
-                if (!isPostScoringBaseRevealDelayActive(delayedState, now)) {
-                    const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(delayedState), now);
-                    return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
-                }
-                return { events: [], halt: true, updatedState: delayedState } as PhaseExitResult;
+                const finalized = finalizeCurrentScoringBase(currentState, now);
+                return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
             }
 
             if (!currentSession.currentBaseRef) {
@@ -1917,63 +2890,55 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 if (activeBaseRef) {
                     const missingBaseState = updateScoringSession(
                         markScoringBaseCompleted(currentState, activeBaseRef),
-                        (session) => session ? { ...session, currentStep: 'awaiting-post-reduce' } : session,
+                        (session) => session ? { ...session, currentStep: 'idle' } : session,
                     );
                     return {
                         events: [],
                         halt: true,
-                        updatedState: {
-                            ...missingBaseState,
-                            sys: {
-                                ...missingBaseState.sys,
-                                _waitForPostScoringReduce: true,
-                            } as typeof missingBaseState.sys,
-                        },
+                        updatedState: missingBaseState,
                     } as PhaseExitResult;
                 }
                 return events;
             }
 
-            const preScoreCore = currentState.core;
-            const result = scoreOneBase(
-                currentState.core,
-                activeBaseIndex,
-                currentState.core.baseDeck,
-                pid,
-                now,
-                random,
-                currentState,
-            );
-            const nextState = result.matchState ?? currentState;
-            // scoreOneBase / reaction queue 会在 matchState.core 上做内部 reduce 以便继续计算。
-            // 但这些领域事件同时会通过 result.events 交给 pipeline 再 reduce 一次。
-            // 这里必须把 updatedState.core 回退到“事件应用前”快照，避免 VP/计数类效果双重结算。
-            const pipelineReadyState = result.events.length > 0
-                ? { ...nextState, core: preScoreCore }
-                : nextState;
+            const result = scoreCurrentSessionBase(currentState, activeBaseIndex, pid, now, random);
+            const pipelineReadyState = result.matchState ?? currentState;
 
             if (pipelineReadyState.sys.interaction?.current || getSmashUpReactionSession(pipelineReadyState)) {
                 return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
             }
 
-            if (getScoringSession(pipelineReadyState)?.currentStep === 'awaiting-post-scoring-delay') {
+            if (getScoringSession(pipelineReadyState)?.currentStep === 'awaiting-post-scoring-finalize') {
+                return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
+            }
+
+            if (getScoringSession(pipelineReadyState)?.currentStep === 'awaiting-score-award-reduce') {
+                return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
+            }
+
+            const currentScoringStep = getScoringSession(pipelineReadyState)?.currentStep;
+            if (
+                currentScoringStep === 'awaiting-before-scoring-reduce'
+                || currentScoringStep === 'awaiting-before-reaction-reduce'
+                || currentScoringStep === 'awaiting-before-response-window'
+                || currentScoringStep === 'awaiting-when-scoring-reduce'
+                || currentScoringStep === 'awaiting-when-reaction-reduce'
+                || currentScoringStep === 'awaiting-after-scoring-reduce'
+                || currentScoringStep === 'awaiting-after-reaction-reduce'
+            ) {
                 return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
             }
 
             const completedState = updateScoringSession(
                 markScoringBaseCompleted(pipelineReadyState, activeBaseRef),
-                (session) => session ? { ...session, currentStep: 'awaiting-post-reduce' } : session,
+                (session) => session
+                    ? { ...session, currentStep: result.events.length > 0 ? 'awaiting-post-reduce' : 'idle' }
+                    : session,
             );
             return {
                 events: result.events,
                 halt: true,
-                updatedState: {
-                    ...completedState,
-                    sys: {
-                        ...completedState.sys,
-                        _waitForPostScoringReduce: true,
-                    } as typeof completedState.sys,
-                },
+                updatedState: completedState,
             } as PhaseExitResult;
         }
 
@@ -2031,7 +2996,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 timestamp: now,
             };
             events.push(turnStarted);
-            const startTurnCore = reduce(core, turnStarted);
+            const startTurnCore = reduceTurnStartedEvent(core, turnStarted);
             currentMatchState = { ...currentMatchState, core: startTurnCore };
 
             const startTurnTriggeredEvents: SmashUpEvent[] = [];
@@ -2052,7 +3017,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 startTurnTriggeredEvents.push(queuedBase as unknown as SmashUpEvent);
                 currentMatchState = {
                     ...currentMatchState,
-                    core: reduce(currentMatchState.core, queuedBase as unknown as SmashUpEvent),
+                    core: applyTriggerQueueFactEvent(currentMatchState.core, queuedBase as unknown as SmashUpEvent),
                 };
                 hasSysUpdate = true;
             }
@@ -2071,7 +3036,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 startTurnTriggeredEvents.push(queuedTurnStart);
                 currentMatchState = {
                     ...currentMatchState,
-                    core: reduce(currentMatchState.core, queuedTurnStart as unknown as SmashUpEvent),
+                    core: applyTriggerQueueFactEvent(currentMatchState.core, queuedTurnStart as unknown as SmashUpEvent),
                 };
                 hasSysUpdate = true;
             }
@@ -2082,7 +3047,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     frameId: startTurnFrameId,
                     frameKind: 'turn-start',
                 });
-                const rq = maybeResolveReactionQueue(currentMatchState, random, now);
+                const rq = maybeResolveReactionQueueSuspendingDomainEvents(currentMatchState, random, now);
                 if (rq) {
                     hasSysUpdate = hasSysUpdate || rq.state.sys !== currentMatchState.sys;
                     currentMatchState = rq.state;
@@ -2173,7 +3138,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         if (to === 'draw') {
             if (from === 'scoreBases' && exitEvents && exitEvents.length > 0) {
                 core = exitEvents.reduce(
-                    (currentCore, event) => reduce(currentCore, event as SmashUpEvent),
+                    (currentCore, event) => applyPostProcessPrefixEvent(currentCore, event as SmashUpEvent),
                     core,
                 );
             }
@@ -2210,7 +3175,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     sys: {
                         ...state.sys,
                         _smashupStartTurnWindowActive: undefined,
-                        _waitForStartTurnInteractionReduce: undefined,
                     } as SmashUpRuntimeSystemState,
                 },
             } as PhaseEnterResult;
@@ -2238,6 +3202,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 && (hand.length > 0 || deck.length > 0),
             );
         });
+        const hasLiveScoringOrReactionFrame = Boolean(
+            getSmashUpReactionSession(state)
+            || getScoringSession(state)?.currentBaseRef,
+        );
         const justResolvedSmashUpReactionChoice = events.some((event) => {
             if (event.type !== 'SYS_INTERACTION_RESOLVED' && event.type !== 'SYS_INTERACTION_CANCELLED') {
                 return false;
@@ -2245,11 +3213,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             const payload = event.payload as { sourceId?: unknown } | undefined;
             return payload?.sourceId === 'smashup_reaction_choose';
         });
-
-        const hasLiveScoringOrReactionFrame = Boolean(
-            getSmashUpReactionSession(state)
-            || getScoringSession(state)?.currentBaseRef,
-        );
 
         // factionSelect -> startTurn 不应被起手重抽 Prompt 卡住。
         // 选秀完成后先离开选秀阶段，后续再由 startTurn 等待重抽交互收口。
@@ -2268,12 +3231,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (hasLiveScoringOrReactionFrame) {
                 return undefined;
             }
-            if (getSmashUpRuntimeSys(state)._waitForStartTurnInteractionReduce) {
-                return undefined;
-            }
-            if (justResolvedSmashUpReactionChoice && getSmashUpRuntimeSys(state)._waitForStartTurnInteractionReduce) {
-                return undefined;
-            }
             if (hasPendingPhaseReactionFrame(core, phase, state)) {
                 return undefined;
             }
@@ -2281,28 +3238,15 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'scoreBases') {
-            if (isPostScoringBaseRevealDelayActive(state, Date.now())) {
-                return undefined;
-            }
             if (getSmashUpReactionSession(state)) {
                 return undefined;
             }
             if (getSmashUpReactionWindowContext(state)) {
                 return undefined;
             }
-            if (getSmashUpRuntimeSys(state)._waitForScoreBasesInteractionReduce) {
-                return undefined;
-            }
-
-            if (getSmashUpRuntimeSys(state)._waitForPostScoringReduce) {
-                return undefined;
-            }
 
             const scoringSession = getScoringSession(state);
             if (scoringSession?.currentStep === 'awaiting-post-reduce') {
-                if (getSmashUpRuntimeSys(state)._waitForPostScoringReduce) {
-                    return { autoContinue: true, playerId: pid };
-                }
                 return undefined;
             }
 
@@ -2685,7 +3629,7 @@ function resolveDeferredPecosBillClashEvents(
         if (clashResult.events.length > 0) {
             events.push(...clashResult.events);
             for (const clashEvent of clashResult.events) {
-                workingState = reduce(workingState, clashEvent);
+                workingState = applyPostProcessPrefixEvent(workingState, clashEvent);
             }
         }
 
@@ -2701,7 +3645,7 @@ function resolveDeferredPecosBillClashEvents(
                 timestamp: now,
             };
             events.push(clearedEvent);
-            workingState = reduce(workingState, clearedEvent);
+            workingState = applyPostProcessPrefixEvent(workingState, clearedEvent);
         }
     }
 
@@ -2717,11 +3661,16 @@ function postProcessSystemEvents(
     events: SmashUpEvent[],
     random: RandomFn,
     matchState?: MatchState<SmashUpCore>,
-    options?: {
+    options?: PostProcessSystemEventsOptions & {
         skipImmediateStartTurnMinionTriggers?: boolean;
         recordImmediateStartTurnProcessedMinionUids?: boolean;
+        skipReactionQueueResolution?: boolean;
     },
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
+
+    if (events.length > 0 && events.every(event => event.type === SU_EVENTS.REACTION_PASS_REQUESTED)) {
+        return { events, matchState };
+    }
 
     const now = events.length > 0 && typeof events[0].timestamp === 'number' ? events[0].timestamp : 0;
     // 当前玩家作为 trigger 的 sourcePlayerId
@@ -2732,16 +3681,7 @@ function postProcessSystemEvents(
     }
 
     let ms = matchState ?? createReactionQueueFallbackState(state);
-    const inputEventsAlreadyReduced = !!getSmashUpRuntimeSys(ms)._ppseInputEventsReduced;
-    if (inputEventsAlreadyReduced) {
-        ms = {
-            ...ms,
-            sys: {
-                ...ms.sys,
-                _ppseInputEventsReduced: undefined,
-            } as typeof ms.sys,
-        };
-    }
+    const inputEventsAlreadyReduced = !!options?.inputEventsAlreadyReduced;
 
     const destroySys = getSmashUpRuntimeSys(ms);
     if (!destroySys._processedDestroyEvents || !(destroySys._processedDestroyEvents instanceof Set)) {
@@ -2767,6 +3707,7 @@ function postProcessSystemEvents(
     // destroy 鈫?move 寰幆鐩村埌绋冲畾锛坢ove 瑙﹀彂鍣ㄥ彲鑳戒骇鐢熸柊鐨?MINION_DESTROYED锛?
     const afterDestroyMove = processDestroyMoveCycle(events, ms, pid, random, now, {
         skipDestroyEventKeys: processedDestroyEventKeys,
+        skipReactionQueueResolution: options?.skipReactionQueueResolution,
     });
     if (afterDestroyMove.matchState) ms = afterDestroyMove.matchState;
     const afterReturnToHand = processReturnToHandTriggers(afterDestroyMove.events, ms, pid, random, now);
@@ -2788,6 +3729,11 @@ function postProcessSystemEvents(
     const derivedEvents: SmashUpEvent[] = [];
 
     const prePlayEvents: SmashUpEvent[] = [];
+    let prePlayCore = state;
+    const appendPrePlayEvent = (event: SmashUpEvent) => {
+        prePlayEvents.push(event);
+        prePlayCore = applyPostProcessPrefixEvent(prePlayCore, event);
+    };
     
     // 鍒濆鍖栧凡澶勭悊浜嬩欢闆嗗悎锛堝鏋滀笉瀛樺湪锛?
     // 浣跨敤 any 绫诲瀷鏂█缁曡繃 SystemState 绫诲瀷闄愬埗锛堣繖鏄父鎴忕壒瀹氱殑涓存椂鐘舵€侊級
@@ -2825,13 +3771,7 @@ function postProcessSystemEvents(
     for (const event of afterDeckInspection.events) {
         if (event.type === SU_EVENTS.VP_AWARDED) {
             const vpEvt = event as VpAwardedEvent;
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
-            if (!inputEventsAlreadyReduced) {
-                tempCore = reduce(tempCore, event);
-            }
+            const tempCore = prePlayCore;
             const sourceEventId = `vp-awarded:${vpEvt.payload.playerId}:${event.timestamp}`;
             const frameId = `vp-awarded-frame:${vpEvt.payload.playerId}:${event.timestamp}`;
             const queued = collectTriggers(tempCore, 'onVpAwarded', {
@@ -2849,16 +3789,10 @@ function postProcessSystemEvents(
                 derivedEvents.push(queued);
                 ms = queued.matchState ?? ms;
             }
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.BASE_SCORED) {
             const scoreEvt = event as BaseScoredEvent;
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
-            if (!inputEventsAlreadyReduced) {
-                tempCore = reduce(tempCore, event);
-            }
+            let tempCore = prePlayCore;
             for (const ranking of scoreEvt.payload.rankings) {
                 if (ranking.vp <= 0) continue;
                 const sourceEventId = `base-scored-vp:${scoreEvt.payload.baseIndex}:${ranking.playerId}:${event.timestamp}`;
@@ -2881,10 +3815,43 @@ function postProcessSystemEvents(
                     tempCore = queued.matchState?.core ?? tempCore;
                 }
             }
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
+        } else if (event.type === SU_EVENTS.BASE_CLEARED) {
+            const clearEvt = event as BaseClearedEvent;
+            const preClearCore = prePlayCore;
+            const postClearCore = inputEventsAlreadyReduced ? state : reduceBaseClearedEvent(preClearCore, clearEvt);
+            const queuedClearDiscard = queueBaseClearedMinionDiscardTriggers({
+                preClearCore,
+                postClearCore,
+                clearEvent: clearEvt,
+                random,
+                matchState: { ...ms, core: postClearCore },
+            });
+            derivedEvents.push(...queuedClearDiscard.events);
+            ms = queuedClearDiscard.matchState ?? ms;
+            appendPrePlayEvent(event);
+        } else if (event.type === SU_EVENTS.BASE_REPLACED) {
+            const replaceEvt = event as BaseReplacedEvent;
+            const preReplaceCore = prePlayCore;
+            const postReplaceCore = inputEventsAlreadyReduced ? state : reduceBaseReplacedEvent(preReplaceCore, replaceEvt);
+            const sourceEventId = `base-replaced:${replaceEvt.payload.baseIndex}:${replaceEvt.payload.newBaseDefId}:${event.timestamp}`;
+            const queuedReveal = collectExtendedBaseAbilityTriggers({
+                core: postReplaceCore,
+                timing: 'onBaseRevealed',
+                ownerPlayerId: pid,
+                baseIndex: replaceEvt.payload.baseIndex,
+                reason: 'base_replaced',
+                frameId: sourceEventId,
+                sourceEventId,
+                now: event.timestamp,
+            });
+            if (queuedReveal) {
+                derivedEvents.push(queuedReveal as unknown as SmashUpEvent);
+            }
+            appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.CARDS_DISCARDED || event.type === SU_EVENTS.CARDS_MILLED) {
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
-            const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);
+            const tempCore = prePlayCore;
             const sourceZone = event.type === SU_EVENTS.CARDS_MILLED ? 'deck' : 'hand';
             // 初始命令事件在进入这里前可能已经被管线归约；此时卡牌已经离开手牌/牌库，
             // 只能从归约后的各玩家弃牌堆按 UID 回查，才能为弃牌触发保留完整卡牌快照。
@@ -2911,7 +3878,7 @@ function postProcessSystemEvents(
             if (queued) {
                 derivedEvents.push(queued);
             }
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.MINION_PLAYED) {
             const playedEvt = event as MinionPlayedEvent;
             
@@ -2920,7 +3887,7 @@ function postProcessSystemEvents(
             
 
             if (processedSet.has(eventKey)) {
-                prePlayEvents.push(event);
+                appendPrePlayEvent(event);
                 continue;
             }
             
@@ -2929,16 +3896,13 @@ function postProcessSystemEvents(
             
             // 将之前积累的事件 reduce 到临时 core
 
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
+            let tempCore = prePlayCore;
 
             const payload = event.payload;
             if (!inputEventsAlreadyReduced) {
-                tempCore = reduce(tempCore, event);
+                tempCore = reduceMinionPlayedEvent(tempCore, playedEvt);
             } else if (payload.fromDeck || payload.fromDiscard || payload.fromBuried || payload.fromStored) {
-                tempCore = reduce(tempCore, event);
+                tempCore = reduceMinionPlayedEvent(tempCore, playedEvt);
             }
             
             const triggers = fireMinionPlayedTriggers({
@@ -2971,7 +3935,7 @@ function postProcessSystemEvents(
             
 
             if (processedSet.has(eventKey)) {
-                prePlayEvents.push(event);
+                appendPrePlayEvent(event);
                 continue;
             }
             
@@ -3010,7 +3974,7 @@ function postProcessSystemEvents(
                 });
                 if (queuedBase) {
                     derivedEvents.push(queuedBase as unknown as SmashUpEvent);
-                    tempCore = reduce(tempCore, queuedBase as unknown as SmashUpEvent);
+                    tempCore = applyTriggerQueueFactEvent(tempCore, queuedBase as unknown as SmashUpEvent);
                     tempMatchState = { ...tempMatchState, core: tempCore };
                 }
 
@@ -3032,7 +3996,7 @@ function postProcessSystemEvents(
                 });
                 if (queuedExtendedBase) {
                     derivedEvents.push(queuedExtendedBase as unknown as SmashUpEvent);
-                    tempCore = reduce(tempCore, queuedExtendedBase as unknown as SmashUpEvent);
+                    tempCore = applyTriggerQueueFactEvent(tempCore, queuedExtendedBase as unknown as SmashUpEvent);
                     tempMatchState = { ...tempMatchState, core: tempCore };
                 }
             }
@@ -3055,28 +4019,25 @@ function postProcessSystemEvents(
             });
             if (queuedActionTriggers) {
                 derivedEvents.push(queuedActionTriggers);
-                tempCore = reduce(tempCore, queuedActionTriggers);
+                tempCore = applyTriggerQueueFactEvent(tempCore, queuedActionTriggers);
                 tempMatchState = { ...tempMatchState, core: tempCore };
             }
 
             ms = tempMatchState;
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.MUNCHKIN_MONSTER_PLAYED) {
             const playedEvt = event as SmashUpEvent & {
                 payload: { baseIndex: number; monsterDefId: string; monsterUid: string };
             };
             const eventKey = `MONSTER:${playedEvt.payload.monsterUid}@${playedEvt.payload.baseIndex}`;
             if (processedMunchkinMonsterPlayedEvents.has(eventKey)) {
-                prePlayEvents.push(event);
+                appendPrePlayEvent(event);
                 continue;
             }
             processedMunchkinMonsterPlayedEvents.add(eventKey);
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
+            let tempCore = prePlayCore;
             if (!inputEventsAlreadyReduced) {
-                tempCore = reduce(tempCore, event);
+                tempCore = reduceMunchkinMonsterPlayedEvent(tempCore, playedEvt as MunchkinMonsterPlayedEvent);
             }
             const base = tempCore.bases[playedEvt.payload.baseIndex];
             const monster = base?.monsters?.find(candidate => candidate.uid === playedEvt.payload.monsterUid);
@@ -3096,7 +4057,7 @@ function postProcessSystemEvents(
                     timestamp: event.timestamp,
                 } as SmashUpEvent);
             }
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         } else if (event.type === SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED) {
             const defeatedEvt = event as SmashUpEvent & {
                 payload: {
@@ -3111,15 +4072,12 @@ function postProcessSystemEvents(
             };
             const eventKey = `MONSTER_DEFEATED:${defeatedEvt.payload.monsterUid}@${defeatedEvt.payload.baseIndex}:${event.timestamp}`;
             if (processedMunchkinMonsterDefeatedEvents.has(eventKey)) {
-                prePlayEvents.push(event);
+                appendPrePlayEvent(event);
                 continue;
             }
             processedMunchkinMonsterDefeatedEvents.add(eventKey);
 
-            let tempCore = state;
-            for (const preEvt of prePlayEvents) {
-                tempCore = reduce(tempCore, preEvt);
-            }
+            let tempCore = prePlayCore;
             const baseBeforeDefeat = tempCore.bases[defeatedEvt.payload.baseIndex];
             const monsterBeforeDefeat = baseBeforeDefeat?.monsters?.find(
                 candidate => candidate.uid === defeatedEvt.payload.monsterUid,
@@ -3129,7 +4087,7 @@ function postProcessSystemEvents(
                 ? (getMunchkinSpecialCardDescriptor(monsterDefId)?.power ?? 0)
                 : 0;
             if (!inputEventsAlreadyReduced) {
-                tempCore = reduce(tempCore, event);
+                tempCore = reduceMunchkinMonsterDefeatedEvent(tempCore, defeatedEvt as MunchkinMonsterDefeatedEvent);
             }
             let tempMatchState = { ...ms, core: tempCore };
             const sourceEventId = `monster-destroyed:${defeatedEvt.payload.monsterUid}:${defeatedEvt.payload.baseIndex}:${event.timestamp}`;
@@ -3152,7 +4110,7 @@ function postProcessSystemEvents(
             });
             if (queuedMonsterTriggers) {
                 derivedEvents.push(queuedMonsterTriggers);
-                tempCore = reduce(tempCore, queuedMonsterTriggers);
+                tempCore = applyTriggerQueueFactEvent(tempCore, queuedMonsterTriggers);
                 tempMatchState = { ...tempMatchState, core: tempCore };
             }
 
@@ -3171,7 +4129,7 @@ function postProcessSystemEvents(
             });
             if (queuedMonsterBaseTriggers) {
                 derivedEvents.push(queuedMonsterBaseTriggers);
-                tempCore = reduce(tempCore, queuedMonsterBaseTriggers);
+                tempCore = applyTriggerQueueFactEvent(tempCore, queuedMonsterBaseTriggers);
                 tempMatchState = { ...tempMatchState, core: tempCore };
             }
 
@@ -3201,9 +4159,9 @@ function postProcessSystemEvents(
             }
 
             ms = tempMatchState;
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         } else {
-            prePlayEvents.push(event);
+            appendPrePlayEvent(event);
         }
     }
 
@@ -3216,6 +4174,7 @@ function postProcessSystemEvents(
         }
         const afterDerivedDestroyMove = processDestroyMoveCycle(derivedEvents, ms, pid, random, now, {
             skipDestroyEventKeys: processedDestroyEventKeys,
+            skipReactionQueueResolution: options?.skipReactionQueueResolution,
         });
         if (afterDerivedDestroyMove.matchState) ms = afterDerivedDestroyMove.matchState;
         const afterDerivedReturnToHand = processReturnToHandTriggers(afterDerivedDestroyMove.events, ms, pid, random, now);
@@ -3230,14 +4189,14 @@ function postProcessSystemEvents(
     }
 
     const combined = [...afterDeckInspection.events, ...finalDerived];
-    const alreadyReducedEventCount = inputEventsAlreadyReduced ? afterDeckInspection.events.length : 0;
 
     const talentDerived: SmashUpEvent[] = [];
     let talentCore = state;
+    const shouldApplyForTalentScan = createUnreducedPostProcessEventPredicate(events, inputEventsAlreadyReduced);
     for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
         const event = combined[eventIndex];
-        if (eventIndex >= alreadyReducedEventCount) {
-            talentCore = reduce(talentCore, event);
+        if (shouldApplyForTalentScan(event)) {
+            talentCore = applyPostProcessPrefixEvent(talentCore, event);
         }
         if (event.type !== SU_EVENTS.TALENT_USED) continue;
         const talentEvent = event as TalentUsedEvent;
@@ -3260,7 +4219,7 @@ function postProcessSystemEvents(
         });
         if (queuedTalentTriggers) {
             talentDerived.push(queuedTalentTriggers);
-            talentCore = reduce(talentCore, queuedTalentTriggers);
+            talentCore = applyTriggerQueueFactEvent(talentCore, queuedTalentTriggers);
         }
         const queuedBaseTalent = collectBaseAbilityTriggers({
             core: talentCore,
@@ -3276,7 +4235,7 @@ function postProcessSystemEvents(
         });
         if (queuedBaseTalent) {
             talentDerived.push(queuedBaseTalent as unknown as SmashUpEvent);
-            talentCore = reduce(talentCore, queuedBaseTalent as unknown as SmashUpEvent);
+            talentCore = applyTriggerQueueFactEvent(talentCore, queuedBaseTalent as unknown as SmashUpEvent);
         }
     }
     const combinedWithTalent = [...combined, ...talentDerived];
@@ -3295,12 +4254,13 @@ function postProcessSystemEvents(
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
+    const shouldApplyForTitanScan = createUnreducedPostProcessEventPredicate(events, inputEventsAlreadyReduced);
     for (let eventIndex = 0; eventIndex < combinedWithTalent.length; eventIndex++) {
         const event = combinedWithTalent[eventIndex];
         // state 已经包含了本轮原始领域事件（afterDeckInspection.events）的 reduce 结果；
         // 这里只需要把新增的派生事件继续 reduce 进临时 core，避免原始事件被重复结算。
-        if (eventIndex >= alreadyReducedEventCount) {
-            titanCore = reduce(titanCore, event);
+        if (shouldApplyForTitanScan(event)) {
+            titanCore = applyPostProcessPrefixEvent(titanCore, event);
         }
         if (
             event.type !== SU_EVENT_TYPES.TITAN_PLAYED
@@ -3327,7 +4287,7 @@ function postProcessSystemEvents(
             if (clashResult.events.length > 0) {
                 titanDerived.push(...clashResult.events);
                 for (const clashEvent of clashResult.events) {
-                    titanCore = reduce(titanCore, clashEvent);
+                    titanCore = applyPostProcessPrefixEvent(titanCore, clashEvent);
                 }
             }
         }
@@ -3346,7 +4306,7 @@ function postProcessSystemEvents(
                 });
                 if (queuedTitanMove) {
                     titanDerived.push(queuedTitanMove);
-                    titanCore = reduce(titanCore, queuedTitanMove);
+                    titanCore = applyTriggerQueueFactEvent(titanCore, queuedTitanMove);
                 }
             }
         }
@@ -3373,7 +4333,7 @@ function postProcessSystemEvents(
             }, { sourceDefIds: [event.payload.defId] });
             if (queuedTitanRemoved) {
                 titanDerived.push(queuedTitanRemoved);
-                titanCore = reduce(titanCore, queuedTitanRemoved);
+                titanCore = applyTriggerQueueFactEvent(titanCore, queuedTitanRemoved);
             }
         }
     }
@@ -3389,7 +4349,7 @@ function postProcessSystemEvents(
     if (deferredClashResult.events.length > 0) {
         titanDerived.push(...deferredClashResult.events);
         for (const deferredEvent of deferredClashResult.events) {
-            titanCore = reduce(titanCore, deferredEvent);
+            titanCore = applyPostProcessPrefixEvent(titanCore, deferredEvent);
         }
     }
 
@@ -3409,10 +4369,14 @@ function postProcessSystemEvents(
     // old base position and silently fizzles.
     const msForQueue = titanCore === ms.core ? ms : { ...ms, core: titanCore };
 
-    const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    if (rq) {
-        finalEvents = [...finalEvents, ...rq.events];
-        ms = rq.state;
+    const hasUnreducedTriggerConsumption = !inputEventsAlreadyReduced
+        && finalEvents.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED);
+    if (!options?.skipReactionQueueResolution && !hasUnreducedTriggerConsumption) {
+        const rq = maybeResolveReactionQueueSuspendingDomainEvents(msForQueue, random, now);
+        if (rq) {
+            finalEvents = [...finalEvents, ...rq.events];
+            ms = rq.state;
+        }
     }
 
     const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean(getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive);
@@ -3478,10 +4442,17 @@ function postProcessSystemEvents(
             sys: {
                 ...ms.sys,
                 _smashupStartTurnWindowActive: undefined,
-                _waitForStartTurnInteractionReduce: undefined,
             } as SmashUpRuntimeSystemState,
         };
     }
+
+    ms = materializeReturnedPostProcessEvents(
+        ms,
+        state,
+        finalEvents,
+        events,
+        inputEventsAlreadyReduced,
+    );
 
     ms = queueActionReturnToHandPrompts(ms, finalEvents, now);
 

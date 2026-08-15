@@ -12,6 +12,7 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
     createSkipOption,
     findMinionOnBases,
     grantExtraAction,
@@ -27,21 +28,22 @@ import type {
     CardToDeckTopEvent,
     CardTransferredEvent,
     DeckReorderedEvent,
+    MinionPlayedEvent,
     SmashUpCore,
     SmashUpEvent,
     VpAwardedEvent,
 } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { actionLikeNeedsPlayBase } from '../domain/utils';
-import { execute } from '../domain/reducer';
-import { reduce } from '../domain/reduce';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 
 type PlayerChoice = { targetPlayerId: PlayerId };
 type HandChoice = { cardUid: string; defId: string; ownerId: PlayerId };
@@ -1237,18 +1239,6 @@ function isRaidingPartyPlayable(card: CardInstance): boolean {
     return ((getCardDef(card.defId) as any)?.power ?? 99) <= 4;
 }
 
-function cloneSysForSimulatedExecute(state: MatchState<SmashUpCore>) {
-    return {
-        ...state.sys,
-        interaction: state.sys.interaction
-            ? {
-                ...state.sys.interaction,
-                queue: [...(state.sys.interaction.queue ?? [])],
-            }
-            : { queue: [] },
-    } as MatchState<SmashUpCore>['sys'];
-}
-
 function playRaidingPartyCard(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -1267,53 +1257,79 @@ function playRaidingPartyCard(
         timestamp,
         selected.ownerId,
     );
-    const simulatedCore = reduce(state.core, transferEvent);
-    const simulatedState: MatchState<SmashUpCore> = {
-        ...state,
-        core: simulatedCore,
-        sys: cloneSysForSimulatedExecute(state),
-    };
 
-    const command = selected.type === 'minion'
-        ? {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId,
-            payload: { cardUid: selected.cardUid, baseIndex: targets.baseIndex ?? 0 },
-        }
-        : {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId,
-            payload: {
-                cardUid: selected.cardUid,
-                ...(targets.targetBaseIndex !== undefined ? { targetBaseIndex: targets.targetBaseIndex } : {}),
-                ...(targets.targetMinionUid ? { targetMinionUid: targets.targetMinionUid } : {}),
-            },
+    if (selected.type === 'minion') {
+        const baseIndex = targets.baseIndex ?? 0;
+        const minionDef = getCardDef(selected.defId) as { power?: number } | undefined;
+        return {
+            state,
+            events: [
+                transferEvent,
+                ...prefixEvents,
+                {
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: selected.cardUid,
+                        defId: selected.defId,
+                        ownerId: selected.ownerId,
+                        baseIndex,
+                        baseDefId: state.core.bases[baseIndex]?.defId,
+                        power: minionDef?.power ?? 0,
+                        consumesNormalLimit: false,
+                    },
+                    timestamp,
+                } as MinionPlayedEvent,
+            ],
         };
+    }
 
-    const playEvents = execute(simulatedState, command as any, random).map((event) => {
-        if (event.type === SU_EVENTS.MINION_PLAYED && selected.type === 'minion' && (event as any).payload.cardUid === selected.cardUid) {
-            return {
-                ...event,
-                payload: { ...(event as any).payload, consumesNormalLimit: false },
-            } as SmashUpEvent;
-        }
-        if (event.type === SU_EVENTS.ACTION_PLAYED && selected.type === 'action' && (event as any).payload.cardUid === selected.cardUid) {
-            return {
-                ...event,
-                payload: { ...(event as any).payload, isExtraAction: true },
-            } as SmashUpEvent;
-        }
-        return event;
+    const actionDef = getCardDef(selected.defId) as { subtype?: string } | undefined;
+    const actionEvents: SmashUpEvent[] = [
+        transferEvent,
+        ...prefixEvents,
+        buildActionPlayedEvent({
+            playerId,
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selected.ownerId,
+            isExtraAction: true,
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            timestamp,
+        }) as SmashUpEvent,
+    ];
+
+    if (actionDef?.subtype === 'ongoing' && targets.targetBaseIndex !== undefined) {
+        actionEvents.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selected.ownerId,
+            ...(selected.ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourceKind: 'action',
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now: timestamp,
+        }));
+    }
+
+    const appended = appendResolvedActionAbility({
+        state,
+        events: actionEvents,
+        playerId,
+        cardUid: selected.cardUid,
+        defId: selected.defId,
+        random,
+        timestamp,
+        baseIndex: targets.targetBaseIndex ?? 0,
+        targetBaseIndex: targets.targetBaseIndex,
+        targetMinionUid: targets.targetMinionUid,
     });
-    const currentInteractionId = state.sys.interaction?.current?.id;
-    const nextInteractionId = simulatedState.sys.interaction?.current?.id;
-    const hasNewInteraction = (
-        !!nextInteractionId && nextInteractionId !== currentInteractionId
-    ) || ((simulatedState.sys.interaction?.queue?.length ?? 0) > (state.sys.interaction?.queue?.length ?? 0));
 
     return {
-        state: hasNewInteraction ? { ...state, sys: simulatedState.sys } : state,
-        events: [transferEvent, ...prefixEvents, ...playEvents],
+        state: appended.state,
+        events: appended.events,
     };
 }
 

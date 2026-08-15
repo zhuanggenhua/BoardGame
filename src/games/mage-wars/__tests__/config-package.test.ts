@@ -13,14 +13,17 @@ import {
     MAGE_WARS_CONFIG_SOURCE_ID,
     buildMageWarsConfigReviewTable,
     getApprenticeArenaZonesFromConfig,
-    getApprenticeMageOrderFromConfig,
-    getApprenticeMageSetupFromConfig,
     getApprenticeStartingDeploymentFromConfig,
     getApprenticeStartingZoneIdFromConfig,
-    getApprenticeSpellbookCardIdsFromConfig,
-    getApprenticeSpellbookCountFromConfig,
-    getApprenticeSpellbookEntriesFromConfig,
-    hasApprenticeSpellbookCardInConfig,
+    getFormalArenaZonesFromConfig,
+    getFormalStartingDeploymentFromConfig,
+    getFormalStartingZoneIdFromConfig,
+    getPresetMageOrderFromConfig,
+    getPresetMageSetupFromConfig,
+    getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookCountFromConfig,
+    getPresetSpellbookEntriesFromConfig,
+    hasPresetSpellbookCardInConfig,
     materializeMageWarsConfigPackage,
     requireMageWarsCombatProfilesFromConfig,
     requireMageWarsSpellCardFromConfig,
@@ -40,11 +43,13 @@ describe('mage-wars config package', () => {
 
         expect(materialized.package.gameId).toBe('mage-wars');
         expect(materialized.package.packageVersion).toBe(MAGE_WARS_CONFIG_PACKAGE.packageVersion);
+        expect(materialized.package.metadata?.description).toContain('4x3 标准竞技场');
+        expect(materialized.package.metadata?.description).not.toContain('2x3 竞技场');
         expect(reviewTable.source?.sourceId).toBe(MAGE_WARS_CONFIG_SOURCE_ID);
         expect(reviewTable.rows).toHaveLength(materialized.package.objects.length);
     });
 
-    test('covers apprentice mages, spell cards, zones, dice, and tokens', () => {
+    test('covers preset mage resources, spell cards, standard zones, legacy zones, dice, and tokens', () => {
         const materialized = materializeMageWarsConfigPackage();
         const objects = materialized.package.objects;
         const byType = (objectType: string) => objects.filter((object) => object.objectType === objectType);
@@ -105,7 +110,7 @@ describe('mage-wars config package', () => {
         });
     });
 
-    test('keeps apprentice mage stats aligned with the existing setup source', () => {
+    test('keeps preset mage stats aligned with the existing setup source', () => {
         const materialized = materializeMageWarsConfigPackage();
 
         for (const mageId of APPRENTICE_MAGE_ORDER) {
@@ -122,7 +127,7 @@ describe('mage-wars config package', () => {
         }
     });
 
-    test('keeps configured apprentice spellbooks aligned with the existing TypeScript source', () => {
+    test('keeps configured preset spellbooks aligned with the existing TypeScript source', () => {
         const materialized = materializeMageWarsConfigPackage();
 
         for (const mageId of APPRENTICE_MAGE_ORDER) {
@@ -144,12 +149,12 @@ describe('mage-wars config package', () => {
         }
     });
 
-    test('exposes runtime-safe apprentice setup and spellbook queries from the config package', () => {
-        expect(getApprenticeMageOrderFromConfig()).toEqual(APPRENTICE_MAGE_ORDER);
+    test('exposes runtime-safe preset setup and spellbook queries from the config package', () => {
+        expect(getPresetMageOrderFromConfig()).toEqual(APPRENTICE_MAGE_ORDER);
 
         for (const mageId of APPRENTICE_MAGE_ORDER) {
             const sourceSetup = APPRENTICE_MAGE_SETUP[mageId];
-            expect(getApprenticeMageSetupFromConfig(mageId)).toEqual({
+            expect(getPresetMageSetupFromConfig(mageId)).toEqual({
                 mageId,
                 displayName: sourceSetup.displayName,
                 startingLife: sourceSetup.startingLife,
@@ -158,21 +163,21 @@ describe('mage-wars config package', () => {
                 baseMeleeDice: sourceSetup.baseMeleeDice,
             });
 
-            const configuredEntries = getApprenticeSpellbookEntriesFromConfig(mageId);
+            const configuredEntries = getPresetSpellbookEntriesFromConfig(mageId);
             const sourceEntries = APPRENTICE_SPELLBOOKS[mageId];
             expect(configuredEntries).toHaveLength(sourceEntries.length);
-            expect(getApprenticeSpellbookCountFromConfig(mageId)).toBe(getApprenticeSpellbookCount(mageId));
-            expect(getApprenticeSpellbookCardIdsFromConfig(mageId)).toHaveLength(getApprenticeSpellbookCount(mageId));
+            expect(getPresetSpellbookCountFromConfig(mageId)).toBe(getApprenticeSpellbookCount(mageId));
+            expect(getPresetSpellbookCardIdsFromConfig(mageId)).toHaveLength(getApprenticeSpellbookCount(mageId));
 
             for (const sourceEntry of sourceEntries) {
-                expect(hasApprenticeSpellbookCardInConfig(mageId, sourceEntry.workshopCardIds[0])).toBe(true);
+                expect(hasPresetSpellbookCardInConfig(mageId, sourceEntry.workshopCardIds[0])).toBe(true);
             }
         }
 
-        expect(hasApprenticeSpellbookCardInConfig(APPRENTICE_MAGE_ORDER[0], 999999)).toBe(false);
+        expect(hasPresetSpellbookCardInConfig(APPRENTICE_MAGE_ORDER[0], 999999)).toBe(false);
     });
 
-    test('exposes apprentice two-player diagonal starting deployment from the config package', () => {
+    test('keeps legacy tutorial two-player diagonal deployment query separate from formal runtime setup', () => {
         const deployment = getApprenticeStartingDeploymentFromConfig();
 
         expect(deployment).toEqual([
@@ -198,7 +203,7 @@ describe('mage-wars config package', () => {
         expect(getApprenticeStartingZoneIdFromConfig(1)).toBe(ARENA_ZONE_IDS.B3);
     });
 
-    test('exposes apprentice arena zone layout as 2 columns by 3 rows', () => {
+    test('keeps legacy tutorial arena zone layout as 2 columns by 3 rows', () => {
         expect(getApprenticeArenaZonesFromConfig()).toEqual([
             {
                 objectId: 'zone-a1',
@@ -245,7 +250,47 @@ describe('mage-wars config package', () => {
         ]);
     });
 
-    test('maps every apprentice spell card to an official atlas frame asset', () => {
+    test('exposes formal runtime setup and diagonal standard arena deployment from the config package', () => {
+        expect(MAGE_WARS_CONFIG_PACKAGE.setup?.data?.arenaMode).toBe('formal-4x3');
+
+        const deployment = getFormalStartingDeploymentFromConfig();
+        expect(deployment).toEqual([
+            {
+                seatIndex: 0,
+                objectId: `mage-${APPRENTICE_MAGE_ORDER[0]}`,
+                owner: 'seat-0',
+                locationObjectId: 'formal-zone-a3',
+                zoneId: ARENA_ZONE_IDS.A3,
+                defaultMageId: APPRENTICE_MAGE_ORDER[0],
+            },
+            {
+                seatIndex: 1,
+                objectId: `mage-${APPRENTICE_MAGE_ORDER[1]}`,
+                owner: 'seat-1',
+                locationObjectId: 'formal-zone-d1',
+                zoneId: ARENA_ZONE_IDS.D1,
+                defaultMageId: APPRENTICE_MAGE_ORDER[1],
+            },
+        ]);
+        expect(getFormalStartingZoneIdFromConfig(0)).toBe(ARENA_ZONE_IDS.A3);
+        expect(getFormalStartingZoneIdFromConfig(1)).toBe(ARENA_ZONE_IDS.D1);
+        expect(getFormalArenaZonesFromConfig().map((zone) => zone.zoneId)).toEqual([
+            ARENA_ZONE_IDS.A1,
+            ARENA_ZONE_IDS.B1,
+            ARENA_ZONE_IDS.C1,
+            ARENA_ZONE_IDS.D1,
+            ARENA_ZONE_IDS.A2,
+            ARENA_ZONE_IDS.B2,
+            ARENA_ZONE_IDS.C2,
+            ARENA_ZONE_IDS.D2,
+            ARENA_ZONE_IDS.A3,
+            ARENA_ZONE_IDS.B3,
+            ARENA_ZONE_IDS.C3,
+            ARENA_ZONE_IDS.D3,
+        ]);
+    });
+
+    test('maps every preset spell card to an official atlas frame asset', () => {
         const materialized = materializeMageWarsConfigPackage();
         const spellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
 
@@ -278,7 +323,7 @@ describe('mage-wars config package', () => {
         expect(materialized.objectsById.get('spell-3017')?.assetRefs).toBeUndefined();
     });
 
-    test('exposes card-read spell action speed for every apprentice spell card', () => {
+    test('exposes card-read spell action speed for every preset spell card', () => {
         const materialized = materializeMageWarsConfigPackage();
         const speedByCardId = new Map(
             materialized.package.objects

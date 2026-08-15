@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -9,7 +9,6 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
-    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
@@ -24,6 +23,7 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
@@ -38,7 +38,6 @@ import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbil
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getMinionDef } from '../data/cards';
-import { reduce } from '../domain/reduce';
 import { matchesDefId } from '../domain/utils';
 import type {
     CardInstance,
@@ -58,6 +57,7 @@ type BaseChoice = { baseIndex: number; baseDefId?: string };
 type ActionChoice = { cardUid: string; defId: string; ownerId?: PlayerId; baseIndex?: number; hostMinionUid?: string };
 type ReturnReplacementChoice = { replace?: boolean; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
+type GiveControlAfterGiveMode = 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none';
 type BaseAbilityPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & { sourceId: string }>;
 
 type PromptContext<T extends Record<string, unknown> = Record<string, never>> = {
@@ -66,18 +66,21 @@ type PromptContext<T extends Record<string, unknown> = Record<string, never>> = 
     now: number;
 } & T;
 
+type AfterGiveControlContext = PromptContext<{
+    sourceId: string;
+    afterGive: GiveControlAfterGiveMode;
+    random: RandomFn;
+}>;
+
+type DrawAfterCommittedEventsContext = PromptContext<{
+    drawCount: number;
+    random: RandomFn;
+}>;
+
 function runtimeToAbilityResult(result: RuntimeResult): AbilityResult {
     return {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
-    };
-}
-
-function applyPreview(matchState: MatchState<SmashUpCore>, events: SmashUpEvent[]): MatchState<SmashUpCore> {
-    if (events.length === 0) return matchState;
-    return {
-        ...matchState,
-        core: events.reduce((core, event) => reduce(core, event), matchState.core),
     };
 }
 
@@ -803,8 +806,38 @@ const DIRECT_POWER_ACTIONS = new Set([
     'changerbots_matrix_of_bossiness',
 ]);
 
+const afterGiveControlCommittedProgram = createEffectProgram<AfterGiveControlContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const events: SmashUpEvent[] = [];
+        if (context.afterGive === 'draw2_extra_minion') {
+            events.push(...buildStandardDrawEvents(context.matchState.core, context.playerId, 2, context.random, context.now));
+            events.push(grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, context.sourceId));
+        }
+        if (context.afterGive === 'draw1_extra_action') {
+            events.push(...buildStandardDrawEvents(context.matchState.core, context.playerId, 1, context.random, context.now));
+            events.push(grantContextualExtraAction({ playerId: context.playerId, now: context.now, matchState: context.matchState }, context.sourceId));
+        }
+        if (context.afterGive === 'extra_minion') {
+            events.push(grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, context.sourceId));
+        }
+        return { events };
+    },
+);
+
+const drawAfterCommittedEventsProgram = createEffectProgram<DrawAfterCommittedEventsContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.drawCount,
+            context.random,
+            context.now,
+        ),
+    }),
+);
+
 const giveControlPrompt = createPromptProgram<
-    PromptContext<{ sourceId: string; minionUid: string; baseIndex: number; afterGive: 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none' }>
+    PromptContext<{ sourceId: string; minionUid: string; baseIndex: number; afterGive: GiveControlAfterGiveMode }>
 , SmashUpCore, SmashUpEvent>({
     sourceId: 'ignobles_give_control',
     interactionSourceIds: ['ignobles_repaying_debts', 'ignobles_aunt_of_drakes', 'ignobles_sneaky_squire', 'ignobles_betrothed'],
@@ -845,24 +878,25 @@ const giveControlPrompt = createPromptProgram<
             reason: context.sourceId,
             now: timestamp,
         });
-        const preview = applyPreview(state, [control]);
-        const events: SmashUpEvent[] = [control];
-        if (context.afterGive === 'draw2_extra_minion') {
-            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 2));
-            events.push(grantContextualExtraMinion({ playerId: context.playerId, now: timestamp, matchState: preview }, context.sourceId));
+        if (context.afterGive === 'none') {
+            return { events: [control] };
         }
-        if (context.afterGive === 'draw1_extra_action') {
-            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 1));
-            events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: preview }, context.sourceId));
-        }
-        if (context.afterGive === 'extra_minion') {
-            events.push(grantContextualExtraMinion({ playerId: context.playerId, now: timestamp, matchState: preview }, context.sourceId));
-        }
-        return { events };
+        return {
+            events: [control],
+            context: {
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                sourceId: context.sourceId,
+                afterGive: context.afterGive,
+                random: args.random,
+            } satisfies AfterGiveControlContext,
+            nextProgram: afterGiveControlCommittedProgram,
+        };
     },
 });
 
-function giveControlAbility(ctx: AbilityContext, sourceId: string, afterGive: 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none'): AbilityResult {
+function giveControlAbility(ctx: AbilityContext, sourceId: string, afterGive: GiveControlAfterGiveMode): AbilityResult {
     const target = ctx.targetMinionUid
         ? findMinionOnBases(ctx.state, ctx.targetMinionUid)
         : undefined;
@@ -1723,8 +1757,18 @@ const baseDestroyForDrawPrompt = createPromptProgram<
             sourceBaseIndex: context.baseIndex,
             sourceKind: 'nonAction',
         });
-        const preview = applyPreview(state, destroyEvents);
-        return { events: [...destroyEvents, ...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 1)] };
+        if (destroyEvents.length === 0) return { events: [] };
+        return {
+            events: destroyEvents,
+            context: {
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                drawCount: 1,
+                random: args.random,
+            } satisfies DrawAfterCommittedEventsContext,
+            nextProgram: drawAfterCommittedEventsProgram,
+        };
     },
 });
 

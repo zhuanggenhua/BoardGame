@@ -57,6 +57,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:cards_drawn': { audio: 'immediate', sound: CARD_DRAW_KEY },
   'su:cards_discarded': { audio: 'immediate', sound: CARD_DISCARD_KEY },
+  'su:reaction_pass_requested': 'silent',
   // 从牌库顶“磨牌/弃牌”（mill）：牌从 deck 进入 discard（不是手牌弃置）
   'su:cards_milled': { audio: 'immediate', sound: CARD_DISCARD_KEY },
   // 触发队列（静默）：用于实现 Wiki 的同时触发排序/见证规则
@@ -83,6 +84,7 @@ export const SU_EVENTS = defineEvents({
   'su:turn_started': { audio: 'immediate', sound: TURN_NOTIFY_KEY },
   'su:turn_ended': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:extra_turn_queued': 'silent',
+  'su:duel_ended': 'silent',
   
   'su:base_replaced': { audio: 'immediate', sound: UPDATE_CHIME_KEY },  // 基地替换（本地 AnimatePresence 过渡）
   'su:deck_reshuffled': { audio: 'immediate', sound: CARD_SHUFFLE_KEY },
@@ -181,6 +183,7 @@ export const SU_EVENT_TYPES = {
   VP_AWARDED: SU_EVENTS['su:vp_awarded'].type,
   CARDS_DRAWN: SU_EVENTS['su:cards_drawn'].type,
   CARDS_DISCARDED: SU_EVENTS['su:cards_discarded'].type,
+  REACTION_PASS_REQUESTED: SU_EVENTS['su:reaction_pass_requested'].type,
   CARDS_MILLED: SU_EVENTS['su:cards_milled'].type,
   TRIGGER_QUEUED: SU_EVENTS['su:trigger_queued'].type,
   TRIGGER_CONSUMED: SU_EVENTS['su:trigger_consumed'].type,
@@ -195,6 +198,7 @@ export const SU_EVENT_TYPES = {
   TURN_STARTED: SU_EVENTS['su:turn_started'].type,
   TURN_ENDED: SU_EVENTS['su:turn_ended'].type,
   EXTRA_TURN_QUEUED: SU_EVENTS['su:extra_turn_queued'].type,
+  DUEL_ENDED: SU_EVENTS['su:duel_ended'].type,
   BASE_REPLACED: SU_EVENTS['su:base_replaced'].type,
   DECK_RESHUFFLED: SU_EVENTS['su:deck_reshuffled'].type,
   DECK_REORDERED: SU_EVENTS['su:deck_reordered'].type,

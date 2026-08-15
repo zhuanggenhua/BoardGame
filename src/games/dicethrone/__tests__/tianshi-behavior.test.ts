@@ -13,7 +13,7 @@ import { checkPlayCard } from '../domain/rules';
 import { getUsableTokensForTiming } from '../domain/tokenResponse';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initHeroState } from '../domain/characters';
-import { DIVINE_PURIFICATION_2, DIVINE_PUNISHMENT_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
+import { DIVINE_PURIFICATION_2, DIVINE_PUNISHMENT_2, HOLY_BLADE_2, SUPREME_POWER_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
 import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import { TIANSHI_TOKENS } from '../heroes/tianshi/tokens';
 import {
@@ -168,6 +168,46 @@ describe('炽天使领域行为', () => {
         const card = TIANSHI_CARDS.find(entry => entry.id === 'upgrade-tianshi-holy-blade-3-cherub-2');
 
         expect(card?.cpCost).toBe(3);
+    });
+
+    it.each([
+        { cardId: 'upgrade-tianshi-supreme-power-2-gospel-arrival', targetAbilityId: 'supreme-power', expectedLevel: 2 },
+        { cardId: 'upgrade-tianshi-divine-punishment-2-divine-command', targetAbilityId: 'divine-punishment', expectedLevel: 2 },
+        { cardId: 'upgrade-tianshi-archangel-resolve-2-divine-protection', targetAbilityId: 'archangel-resolve', expectedLevel: 2 },
+        { cardId: 'upgrade-tianshi-holy-radiance-2-takeoff', targetAbilityId: 'holy-radiance', expectedLevel: 2 },
+        { cardId: 'upgrade-tianshi-holy-blade-3-cherub-2', targetAbilityId: 'holy-blade', expectedLevel: 3 },
+        { cardId: 'upgrade-tianshi-holy-blade-2-cherub', targetAbilityId: 'holy-blade', expectedLevel: 2 },
+    ])('复合升级牌 $cardId 打出时只替换技能，不立刻执行下半区技能', ({ cardId, targetAbilityId, expectedLevel }) => {
+        const state = createTianshiState();
+        const card = TIANSHI_CARDS.find(entry => entry.id === cardId);
+        expect(card).toBeDefined();
+        if (!card) return;
+        state.sys.phase = 'main1';
+        state.core.players['0'].hand = [card];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('PLAY_UPGRADE_CARD', '0', { cardId, targetAbilityId }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        const eventTypes = result.events.map(event => event.type);
+        expect(eventTypes).toContain('ABILITY_REPLACED');
+        expect(result.state.core.players['0'].abilityLevels[targetAbilityId]).toBe(expectedLevel);
+        expect(result.state.core.players['0'].upgradeCardByAbilityId[targetAbilityId]?.cardId).toBe(cardId);
+        expect(eventTypes).not.toContain('TOKEN_GRANTED');
+        expect(eventTypes).not.toContain('STATUS_APPLIED');
+        expect(eventTypes).not.toContain('DAMAGE_DEALT');
+        expect(eventTypes).not.toContain('HEAL_APPLIED');
+        expect(eventTypes).not.toContain('INTERACTION_REQUESTED');
+        expect(eventTypes).not.toContain('CHOICE_REQUESTED');
+        expect(eventTypes).not.toContain('BONUS_DICE_REROLL_REQUESTED');
+        expect(eventTypes).not.toContain('BONUS_DIE_ROLLED');
     });
 
     it.each([
@@ -963,19 +1003,19 @@ describe('炽天使领域行为', () => {
         }
     });
 
-    it('福音临世只有一名合法对手时仍保留玩家目标选择，不提前自动施加眩光', () => {
+    it('福音临世作为升级后技能分支时，只有一名合法对手也保留玩家目标选择', () => {
         const state = createTianshiState();
-        const card = TIANSHI_CARDS.find(entry => entry.id === 'upgrade-tianshi-supreme-power-2-gospel-arrival');
+        const variant = SUPREME_POWER_2.variants?.find(entry => entry.id === 'gospel-arrival');
         const context: EffectContext = {
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: card?.id ?? 'upgrade-tianshi-supreme-power-2-gospel-arrival',
+            sourceAbilityId: variant?.id ?? 'gospel-arrival',
             state: state.core,
             damageDealt: 0,
             timestamp: 550,
         };
 
-        const events = resolveEffectsToEvents(card?.effects ?? [], 'immediate', context);
+        const events = resolveEffectsToEvents(variant?.effects ?? [], 'preDefense', context);
         const interaction = events.find((event): event is Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }> => (
             event.type === 'INTERACTION_REQUESTED'
         ));
@@ -1174,19 +1214,19 @@ describe('炽天使领域行为', () => {
         expect(playSixResult.state.core.players['0'].hand).toMatchObject([{ id: 'card-play-six' }]);
     });
 
-    it('圣刃 II / 小天使只获得飞行和神圣降临，不额外获得净化', () => {
+    it('圣刃 II / 智天使作为升级后技能分支时，只获得飞行和神圣降临，不额外获得净化', () => {
         const state = createTianshiState();
-        const card = TIANSHI_CARDS.find(entry => entry.id === 'upgrade-tianshi-holy-blade-2-cherub');
+        const variant = HOLY_BLADE_2.variants?.find(entry => entry.id === 'cherub');
         const context: EffectContext = {
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: card?.id ?? 'upgrade-tianshi-holy-blade-2-cherub',
+            sourceAbilityId: variant?.id ?? 'cherub',
             state: state.core,
             damageDealt: 0,
             timestamp: 565,
         };
 
-        const events = resolveEffectsToEvents(card?.effects ?? [], 'immediate', context);
+        const events = resolveEffectsToEvents(variant?.effects ?? [], 'preDefense', context);
         expect(events).toContainEqual(expect.objectContaining({
             type: 'TOKEN_GRANTED',
             payload: expect.objectContaining({ targetId: '0', tokenId: TOKEN_IDS.FLIGHT, amount: 1 }),

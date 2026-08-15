@@ -3,20 +3,21 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import {
     getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
-    hasApprenticeSpellbookCardInConfig,
+    hasPresetSpellbookCardInConfig,
     requireMageWarsStatusTokenFromConfig,
     type MageWarsConfigMageAbility,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
-import { MAGE_WARS_OBJECT_ABILITY_IDS, type StatusTokenId } from './ids';
+import type { StatusTokenId } from './ids';
 import { areAdjacentZones, getArenaObject, getArenaZone, isArenaZoneId, isSpellPrepared } from './utils';
 import {
     getMageWarsSpellcastingSourceKind,
     isMageWarsConfiguredSpellcastingSource,
     isMageWarsSpellcastingObject,
 } from './spellCasting';
+import { validateMageWarsArenaObjectAbility } from './objectAbilityRuntime';
 import {
     isMageWarsAreaTargetSpell,
     isMageWarsAttackSpell,
@@ -45,7 +46,6 @@ import {
     isMageWarsImplementedDispelSpell,
     isMageWarsImplementedExplodeSpell,
     isMageWarsEquipmentArenaObject,
-    isMageWarsAnimalArenaObject,
     isMageWarsImplementedEquipmentSpell,
     isMageWarsElementalStaffBindableSpell,
     isMageWarsElementalStaffSpell,
@@ -86,8 +86,6 @@ import {
     parseMageWarsSpellAttackProfile,
     parseMageWarsRange,
     resolveMageWarsAttachedEquipmentZoneId,
-    resolveMageWarsAttachedBeastStaff,
-    resolveMageWarsAttachedElementalStaff,
     resolveMageWarsDamageTypeImmunity,
     resolveMageWarsEnchantmentTotalManaCost,
     resolveMageWarsEquipmentManaCost,
@@ -102,7 +100,6 @@ import {
     resolveMageWarsTeleportSpellManaCostForTargetZone,
     resolveMageWarsVisibleEnchantmentTargetZoneId,
     resolveMageWarsVisibleEnchantmentZoneId,
-    resolveMageWarsObjectAbilityActionTrack,
 } from './spellRules';
 
 const QUICKCAST_PHASES: MageWarsPhase[] = ['initiativeQuickcast', 'finalQuickcast'];
@@ -113,7 +110,7 @@ function invalid(error: string): ValidationResult {
 }
 
 function hasSpellbookCard(player: MageWarsPlayerState, spellCardId: number): boolean {
-    return hasApprenticeSpellbookCardInConfig(player.mageId, spellCardId);
+    return hasPresetSpellbookCardInConfig(player.mageId, spellCardId);
 }
 
 function resolveMageWarsElementalStaffBoundSpell(
@@ -303,112 +300,7 @@ function validateArenaObjectAbility(
     command: Extract<MageWarsCommand, { type: typeof MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY }>,
     phase: MageWarsPhase,
 ): ValidationResult {
-    if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND) {
-        const source = resolveMageWarsAttachedElementalStaff(state.core, player.id);
-        if (!source) return invalid('invalidArenaObjectAbilitySource');
-        if (command.payload.objectId !== source.object.id) return invalid('invalidArenaObjectAbilitySource');
-        if (phase !== 'initiativeQuickcast' && phase !== 'finalQuickcast') return invalid('wrongPhase');
-        if (command.payload.targetObjectId || command.payload.mode !== undefined) {
-            return invalid('invalidTargetMode');
-        }
-        if (source.object.boundSpellCardId === undefined) return invalid('elementalStaffNotBound');
-        if (command.payload.boundSpellCardId === source.object.boundSpellCardId) {
-            return invalid('sameBoundSpell');
-        }
-        if (!resolveMageWarsElementalStaffBoundSpell(player, command.payload.boundSpellCardId)) {
-            return invalid('invalidBoundSpell');
-        }
-        if (command.payload.manaCost !== 3) return invalid('manaCostMismatch');
-        if (player.mana < 3) return invalid('insufficientMana');
-        return { valid: true };
-    }
-
-    if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF) {
-        const source = resolveMageWarsAttachedBeastStaff(state.core, player.id);
-        if (!source) return invalid('invalidArenaObjectAbilitySource');
-        if (command.payload.objectId !== source.object.id) return invalid('invalidArenaObjectAbilitySource');
-        if (source.trait.requiredMageId !== player.mageId) return invalid('invalidMageRestriction');
-        const actionTrack = resolveMageWarsObjectAbilityActionTrack(phase, source.trait.actionSpeed);
-        if (!actionTrack) return invalid('wrongPhase');
-        if (
-            source.trait.oncePerRound
-            && source.object.abilityUseRoundNumbers?.[source.trait.abilityId] === state.core.turnNumber
-        ) {
-            return invalid('objectAbilityAlreadyUsedThisRound');
-        }
-        if (command.payload.manaCost !== source.trait.manaCost) return invalid('manaCostMismatch');
-        if (player.mana < source.trait.manaCost) return invalid('insufficientMana');
-        if (hasMageWarsStunStatus(player)) return invalid('playerStunned');
-        if (command.payload.mode !== 'melee-bonus' && command.payload.mode !== 'heal') {
-            return invalid('invalidAbilityMode');
-        }
-        if (!command.payload.targetObjectId) return invalid('missingTarget');
-
-        const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
-        if (
-            !targetObject
-            || targetObject.ownerId !== player.id
-            || !isMageWarsAnimalArenaObject(targetObject)
-            || !isMageWarsLivingArenaObject(targetObject)
-        ) {
-            return invalid('invalidTargetObject');
-        }
-        const distance = getMageWarsZoneDistance(state.core, player.mageZoneId, targetObject.zoneId);
-        if (
-            distance === undefined
-            || distance < source.trait.range.min
-            || distance > source.trait.range.max
-        ) {
-            return invalid('targetOutOfRange');
-        }
-        return { valid: true };
-    }
-
-    if (phase !== 'creatureAction') return invalid('wrongPhase');
-    const object = getArenaObject(state.core, command.payload.objectId);
-    if (!object) return invalid('invalidSourceObject');
-    if (object.ownerId !== player.id) return invalid('notYourObject');
-    if (object.kind !== 'creature') return invalid('objectCannotAct');
-    if (!object.actionReady) return invalid('objectActionSpent');
-    if (hasMageWarsStunStatus(object)) return invalid('objectStunned');
-
-    if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT) {
-        if (command.payload.manaCost !== 1) return invalid('manaCostMismatch');
-        if (player.mana < command.payload.manaCost) return invalid('insufficientMana');
-        if (object.sourceSpellCardId !== 2822) return invalid('invalidArenaObjectAbilitySource');
-        if (object.temporaryTraits?.swift || object.temporaryTraits?.teleportMovement) {
-            return invalid('objectAbilityAlreadyActive');
-        }
-
-        return { valid: true };
-    }
-
-    if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT) {
-        if (command.payload.manaCost !== 0) return invalid('manaCostMismatch');
-        if (object.sourceSpellCardId !== 2811) return invalid('invalidArenaObjectAbilitySource');
-        if (!command.payload.targetObjectId) return invalid('missingTarget');
-
-        const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
-        if (!targetObject || !isMageWarsLivingArenaObject(targetObject)) return invalid('invalidTargetObject');
-
-        const distance = getMageWarsZoneDistance(state.core, object.zoneId, targetObject.zoneId);
-        if (distance === undefined || distance > 1) return invalid('targetOutOfRange');
-
-        return { valid: true };
-    }
-
-    if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE) {
-        if (command.payload.manaCost !== 0) return invalid('manaCostMismatch');
-        if (object.sourceSpellCardId !== 2907) return invalid('invalidArenaObjectAbilitySource');
-        if (!command.payload.targetObjectId) return invalid('missingTarget');
-
-        const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
-        if (!targetObject || !isMageWarsLivingArenaObject(targetObject)) return invalid('invalidTargetObject');
-
-        return { valid: true };
-    }
-
-    return invalid('unknownArenaObjectAbility');
+    return validateMageWarsArenaObjectAbility(state, player, command, phase);
 }
 
 function validateArenaObjectDefense(
@@ -496,7 +388,7 @@ export function validateCommand(
             if (spellCardIds.length > 2) return invalid('tooManyPreparedSpells');
             if (new Set(spellCardIds).size !== spellCardIds.length) return invalid('duplicatePreparedSpell');
             if (!spellCardIds.every((spellCardId) => hasSpellbookCard(player, spellCardId))) {
-                return invalid('spellNotInApprenticeSpellbook');
+                return invalid('spellNotInPresetSpellbook');
             }
             return { valid: true };
         }
@@ -510,7 +402,7 @@ export function validateCommand(
                 return invalid('objectCannotCastSpells');
             }
             if (object.preparedSpellCardId !== undefined) return invalid('objectSpellAlreadyPlanned');
-            if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInApprenticeSpellbook');
+            if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInPresetSpellbook');
             const spell = getMageWarsSpellCardFromConfig(command.payload.spellCardId);
             const source = object.spellcastingSource;
             if (!spell || !source.allowedSpellTypes.includes(spell.spellType)) return invalid('spellTypeNotAllowed');
@@ -543,7 +435,7 @@ export function validateCommand(
             } else if (!isSpellPrepared(player, command.payload.spellCardId)) {
                 return invalid('spellNotPrepared');
             }
-            if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInApprenticeSpellbook');
+            if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInPresetSpellbook');
             if (!Number.isInteger(command.payload.manaCost) || command.payload.manaCost < 0) {
                 return invalid('invalidManaCost');
             }

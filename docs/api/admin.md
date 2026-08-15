@@ -828,8 +828,9 @@ Authorization: Bearer <admin_token>
 
 ## 反馈管理
 
-> `GET /admin/feedback` 允许 `admin` 与 `developer` 访问。
-> `PATCH /admin/feedback/:id/status`、`DELETE /admin/feedback/:id`、批量删除接口仍仅 `admin` 可用。
+> `GET /admin/feedback` 允许匿名只读；登录后会按当前用户补充可管理范围。普通用户可配合 `mineOnly=true` 查看自己的反馈，后台角色可按权限范围查看。
+> `GET /admin/feedback/:id` 同样允许匿名只读，用于公开查看单条反馈完整内容；响应里的 `canManage` 只表示当前登录用户是否可修改或删除该反馈，不限制读取。
+> `PATCH /admin/feedback/:id/status`、`DELETE /admin/feedback/:id` 按当前用户可管理范围执行：普通用户仅限自己的反馈，developer 仅限自己或负责游戏反馈，admin 不受游戏范围限制。批量删除接口仅用于后台管理批量操作。
 
 ### GET /admin/feedback
 
@@ -845,6 +846,10 @@ Authorization: Bearer <admin_token>
 | severity | string | 否 | 按严重程度筛选，支持 `low` / `medium` / `high` / `critical` |
 | sort | string | 否 | 时间排序，支持 `newest`（默认） / `oldest` |
 | preferMine | boolean | 否 | 是否优先显示当前登录用户自己的反馈，默认 `false` |
+| mineOnly | boolean | 否 | 是否只返回当前登录用户自己的反馈，默认 `false` |
+| summaryOnly | boolean | 否 | 是否只返回轻量摘要，默认 `false`。后台列表和“我的反馈”推荐使用 `true`，再通过单条详情接口懒加载完整内容 |
+
+当 `summaryOnly=true` 时，列表项不会返回完整 `content`、`actionLog`、`stateSnapshot`；会返回 `contentPreview` 和 `hasEmbeddedImage` / `hasActionLog` / `hasStateSnapshot` 等布尔标记，用于先渲染标题和附件提示。
 
 **响应示例**:
 ```json
@@ -904,9 +909,29 @@ Authorization: Bearer <admin_token>
 }
 ```
 
+### GET /admin/feedback/:id
+
+获取单条反馈完整详情。该接口是公开只读接口，允许匿名用户按反馈 ID 查看完整正文、内嵌截图、操作日志和状态快照；登录用户会额外得到当前账号是否可管理该反馈的 `canManage` 标记。用于列表已用 `summaryOnly=true` 时，点击或选中单条反馈后再加载完整内容。
+
+**响应示例**:
+```json
+{
+  "_id": "feedback_001",
+  "content": "某张卡牌效果与描述不一致",
+  "type": "bug",
+  "severity": "medium",
+  "status": "open",
+  "gameName": "smashup",
+  "actionLog": "[12:00] P1: play card",
+  "stateSnapshot": "{\"gameId\":\"smashup\"}",
+  "canManage": true,
+  "createdAt": "2026-03-14T10:00:00.000Z"
+}
+```
+
 ### PATCH /admin/feedback/:id/status
 
-更新反馈状态，仅 `admin` 可用。
+更新反馈状态，按当前用户可管理范围执行。
 
 **请求体**:
 ```json
@@ -917,12 +942,12 @@ Authorization: Bearer <admin_token>
 
 ### DELETE /admin/feedback/:id
 
-删除单条反馈，仅 `admin` 可用。
+删除单条反馈，按当前用户可管理范围执行。普通用户只能删除自己提交的反馈。
 
 ### POST /admin/feedback/bulk-delete
 
-按 ID 批量删除反馈，仅 `admin` 可用。
+按 ID 批量删除反馈，按当前用户可管理范围执行。
 
 ### POST /admin/feedback/bulk-delete-by-filter
 
-按筛选条件批量删除反馈，仅 `admin` 可用。
+按筛选条件批量删除反馈，按当前用户可管理范围执行。

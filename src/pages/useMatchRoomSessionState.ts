@@ -101,6 +101,7 @@ export function useMatchRoomSessionState(args: {
         statusPlayerID,
         matchStatusLoading: matchStatus.isLoading,
         matchStatusPlayers: matchStatus.players,
+        matchStatusRevision: matchStatus.playersRevision ?? 0,
         shouldAutoJoin,
         isAutoJoining,
         autoJoinGraceActive,

@@ -336,13 +336,12 @@ describe('巨蚁派系能力', () => {
         expect((added as any).payload.amount).toBe(3);
         expect((added as any).payload.minionUid).toBe('m2');
 
-        // 当前实现会在确认转移后回到计分收口流程，但不会在同一命令里立刻清空来源基地；
-        // 这里锁定的是“转移已生效，且仍停留在计分收口阶段”的权威状态。
+        // 规则收口不再等待视觉 reveal delay；确认转移后应继续完成当前基地清场。
         const m2Final = amountResult.finalState.core.bases[1]?.minions.find(m => m.uid === 'm2');
-        const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
-        expect(amountResult.finalState.sys.phase).toBe('scoreBases');
-        expect((amountResult.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
-        expect(m1Final?.powerCounters).toBe(0);
+        const finalMinionUids = amountResult.finalState.core.bases.flatMap(base => base.minions.map(minion => minion.uid));
+        expect(amountResult.finalState.sys.phase).toBe('playCards');
+        expect((amountResult.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+        expect(finalMinionUids).not.toContain('m1');
         expect(m2Final?.powerCounters).toBe(3);
     });
 

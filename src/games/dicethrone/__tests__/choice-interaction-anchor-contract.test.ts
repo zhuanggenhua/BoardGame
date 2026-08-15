@@ -452,6 +452,44 @@ describe('DiceThrone choice handler anchor contract', () => {
         expect(nextEvents.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.DELAYED_POISON)).toBe(true);
     });
 
+    it('真实 simple-choice 交互快照存在时，通用 token 花费也应不依赖 core 锚点生效', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+
+        const choiceValue = {
+            tokenId: TOKEN_IDS.SYNTH,
+            value: -1,
+            customId: 'artificer-wrench-strike-spend-electricity',
+        };
+        const afterEvents = runAfterEvents(state, [{
+            type: 'SYS_INTERACTION_RESOLVED',
+            payload: {
+                interactionId: 'choice-wrench-strike-2-4-120',
+                playerId: '0',
+                optionId: 'option-2',
+                value: choiceValue,
+                sourceId: 'wrench-strike-2-4',
+                interactionData: {
+                    sourceId: 'wrench-strike-2-4',
+                    options: [
+                        {
+                            id: 'option-2',
+                            value: choiceValue,
+                        },
+                    ],
+                },
+            },
+            timestamp: 120,
+        } as unknown as DiceThroneEvent]);
+
+        const choiceResolved = afterEvents.events.find(event => event.type === 'CHOICE_RESOLVED');
+        expect(choiceResolved).toBeTruthy();
+        expect((choiceResolved as any)?.payload?.interactionBacked).toBe(true);
+
+        const next = reduce(state.core, choiceResolved as DiceThroneEvent);
+        expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
+    });
+
     it('ninja undefendable followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.pendingAttack = {

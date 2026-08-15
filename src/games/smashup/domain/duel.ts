@@ -1,7 +1,6 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
-import { requireOnPlay, requireSpecial, resolveOnPlay, resolveSpecial } from './abilityRegistry';
 import {
     addPowerCounter,
     addTempPower,
@@ -17,8 +16,9 @@ import {
 import { getCardDef, getBaseDef } from '../data/cards';
 import { fireTriggers } from './ongoingEffects';
 import { validateActionPlaySemantics } from './playLegality';
-import { reduce } from './reduce';
 import { buildActionPlayedEvent } from './actionPlayEvent';
+import { createEffectProgram, executeAbilityProgram } from './abilityRuntime';
+import { appendResolvedActionAbility, type ExternalActionAbilityContinuationContext } from './externalActionPlay';
 import type {
     ActionCardDef,
     ActiveDuel,
@@ -31,14 +31,6 @@ import type {
 } from './types';
 import { SU_EVENTS } from './types';
 
-function requireDuelActionExecutor(defId: string, subtype: string) {
-    if (subtype === 'special') {
-        if (resolveSpecial(defId)) return requireSpecial(defId, 'duel.playActionAsDuelCard');
-        return requireOnPlay(defId, 'duel.playActionAsDuelCard');
-    }
-    return requireOnPlay(defId, 'duel.playActionAsDuelCard');
-}
-
 type DuelStage =
     | 'pinkerton_challenger'
     | 'pinkerton_challenged'
@@ -47,6 +39,38 @@ type DuelStage =
     | 'deputy_challenger'
     | 'deputy_challenged'
     | 'resolve';
+
+function isDuelStage(value: unknown): value is DuelStage {
+    return value === 'pinkerton_challenger'
+        || value === 'pinkerton_challenged'
+        || value === 'card_challenger'
+        || value === 'card_challenged'
+        || value === 'deputy_challenger'
+        || value === 'deputy_challenged'
+        || value === 'resolve';
+}
+
+function isDeputyStage(value: unknown): value is 'deputy_challenger' | 'deputy_challenged' {
+    return value === 'deputy_challenger' || value === 'deputy_challenged';
+}
+
+const advanceDuelStageAfterActionProgram = createEffectProgram<
+    ExternalActionAbilityContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('duel action continuation 缺少正式 matchState');
+    }
+    if (!context.duel) {
+        throw new Error('duel action continuation 缺少 duel 上下文');
+    }
+    const nextStage = context.afterActionContext?.nextStage;
+    if (!isDuelStage(nextStage)) {
+        throw new Error('duel action continuation 缺少 nextStage');
+    }
+    return advanceQueuedStage(context.matchState, context.duel, nextStage, context.timestamp);
+});
 
 type PinkertonContinuation = {
     duel: ActiveDuel;
@@ -78,6 +102,170 @@ type DeputyTargetContinuation = {
     deputyCardUid: string;
 };
 
+type StartDuelParams = {
+    sourceId: string;
+    sourcePlayerId: PlayerId;
+    challengerMinionUid: string;
+    challengedMinionUid: string;
+    outcome: DuelOutcomeKind;
+    destroyReason?: string;
+};
+
+interface DuelDeputyAdvanceContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    duel: ActiveDuel;
+    nextStage: 'deputy_challenger' | 'deputy_challenged';
+    consecutivePasses: number;
+    timestamp: number;
+}
+
+interface EmitDuelEventsThenAdvanceDeputyContext extends DuelDeputyAdvanceContinuationContext {
+    events: SmashUpEvent[];
+}
+
+interface DuelResolvedTriggerContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    random?: RandomFn;
+    duel: ActiveDuel;
+    baseIndex: number;
+    duelChallenger: MinionOnBase;
+    duelChallenged: MinionOnBase;
+    duelWinner?: MinionOnBase;
+    duelLoser?: MinionOnBase;
+    duelTie: boolean;
+    timestamp: number;
+}
+
+interface EmitDuelResolutionEventsThenTriggerContext extends DuelResolvedTriggerContinuationContext {
+    events: SmashUpEvent[];
+}
+
+interface DuelStartedAdvanceContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    duel: ActiveDuel;
+    timestamp: number;
+}
+
+interface EmitDuelStartedEventsThenAdvanceContext extends DuelStartedAdvanceContinuationContext {
+    events: SmashUpEvent[];
+}
+
+const advanceDeputyStageAfterEventsProgram = createEffectProgram<
+    DuelDeputyAdvanceContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('duel deputy continuation 缺少正式 matchState');
+    }
+    return advanceDeputyStage(
+        context.matchState,
+        context.duel,
+        context.nextStage,
+        context.consecutivePasses,
+        context.timestamp,
+    );
+});
+
+const emitDuelEventsThenAdvanceDeputyProgram = createEffectProgram<
+    EmitDuelEventsThenAdvanceDeputyContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    context: {
+        matchState: context.matchState,
+        duel: context.duel,
+        nextStage: context.nextStage,
+        consecutivePasses: context.consecutivePasses,
+        timestamp: context.timestamp,
+    } satisfies DuelDeputyAdvanceContinuationContext,
+    nextProgram: advanceDeputyStageAfterEventsProgram,
+}));
+
+const fireDuelResolvedTriggersAfterEventsProgram = createEffectProgram<
+    DuelResolvedTriggerContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('duel resolved continuation 缺少正式 matchState');
+    }
+    if (!context.random) {
+        throw new Error('duel resolved continuation 缺少随机源');
+    }
+    const duelResolved = fireTriggers(context.matchState.core, 'onDuelResolved', {
+        state: context.matchState.core,
+        matchState: context.matchState,
+        playerId: context.duel.sourcePlayerId,
+        baseIndex: context.baseIndex,
+        duel: context.duel,
+        duelSourceId: context.duel.sourceId,
+        duelOutcome: context.duel.outcome,
+        duelChallenger: context.duelChallenger,
+        duelChallenged: context.duelChallenged,
+        duelWinner: context.duelWinner,
+        duelLoser: context.duelLoser,
+        duelTie: context.duelTie,
+        random: context.random,
+        now: context.timestamp,
+    });
+
+    return {
+        events: duelResolved.events,
+        matchState: duelResolved.matchState,
+    };
+});
+
+const emitDuelResolutionEventsThenTriggerProgram = createEffectProgram<
+    EmitDuelResolutionEventsThenTriggerContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    context: {
+        matchState: context.matchState,
+        random: context.random,
+        duel: context.duel,
+        baseIndex: context.baseIndex,
+        duelChallenger: context.duelChallenger,
+        duelChallenged: context.duelChallenged,
+        duelWinner: context.duelWinner,
+        duelLoser: context.duelLoser,
+        duelTie: context.duelTie,
+        timestamp: context.timestamp,
+    } satisfies DuelResolvedTriggerContinuationContext,
+    nextProgram: fireDuelResolvedTriggersAfterEventsProgram,
+}));
+
+const queueFirstDuelStageAfterStartedEventsProgram = createEffectProgram<
+    DuelStartedAdvanceContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('duel started continuation 缺少正式 matchState');
+    }
+    return {
+        events: [],
+        matchState: queueNextDuelStage(context.matchState, context.duel, 'pinkerton_challenger', context.timestamp),
+    };
+});
+
+const emitDuelStartedEventsThenAdvanceProgram = createEffectProgram<
+    EmitDuelStartedEventsThenAdvanceContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.events,
+    context: {
+        matchState: context.matchState,
+        duel: context.duel,
+        timestamp: context.timestamp,
+    } satisfies DuelStartedAdvanceContinuationContext,
+    nextProgram: queueFirstDuelStageAfterStartedEventsProgram,
+}));
+
 function buildDuelEffectSource(
     duel: ActiveDuel,
     options?: {
@@ -108,20 +296,12 @@ function withActiveDuel(
     };
 }
 
-function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    return events.reduce((current, event) => reduce(current, event), core);
-}
-
-function applyImmediateTriggerResult(
-    state: MatchState<SmashUpCore>,
-    result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> },
-): MatchState<SmashUpCore> {
-    const nextState = result.matchState ?? state;
-    if (result.events.length === 0) return nextState;
+function duelEndedEvent(duel: ActiveDuel, reason: 'resolved' | 'invalid', now: number): SmashUpEvent {
     return {
-        ...nextState,
-        core: simulateCore(nextState.core, result.events),
-    };
+        type: SU_EVENTS.DUEL_ENDED,
+        payload: { duelId: duel.id, reason },
+        timestamp: now,
+    } as SmashUpEvent;
 }
 
 function isPinkertonDefId(defId: string): boolean {
@@ -464,27 +644,6 @@ function advanceDeputyStage(
     };
 }
 
-function keepStateOnlyDuelChanges(
-    resultState: MatchState<SmashUpCore>,
-    coreBeforePendingEvents: SmashUpCore,
-): MatchState<SmashUpCore> {
-    const resultBases = resultState.core.bases;
-    return {
-        ...resultState,
-        core: {
-            ...coreBeforePendingEvents,
-            bases: coreBeforePendingEvents.bases.map((base, baseIndex) => ({
-                ...base,
-                ongoingActions: resultBases[baseIndex]?.ongoingActions ?? base.ongoingActions,
-                buriedCards: resultBases[baseIndex]?.buriedCards ?? base.buriedCards,
-            })),
-            activeDuel: resultState.core.activeDuel,
-            triggerQueue: resultState.core.triggerQueue,
-            timedPowerModifiers: resultState.core.timedPowerModifiers,
-        },
-    };
-}
-
 function advanceQueuedStage(
     state: MatchState<SmashUpCore>,
     duel: ActiveDuel,
@@ -542,25 +701,20 @@ function playActionAsDuelCard(
         timestamp: now,
     }) as SmashUpEvent];
 
-    const executor = requireDuelActionExecutor(defId, subtype ?? 'standard');
-    let nextState = state;
-    const simCore = simulateCore(state.core, events);
-    const result = executor({
-        state: simCore,
-        matchState: { ...state, core: simCore },
+    return appendResolvedActionAbility({
+        state,
+        events,
         playerId,
         cardUid,
         defId,
         baseIndex: duel.baseIndex,
         random,
-        now,
+        timestamp: now,
         duel,
+        afterActionContext: { nextStage },
+        abilityRequirementContext: 'duel.playActionAsDuelCard',
+        afterActionProgram: advanceDuelStageAfterActionProgram,
     });
-    events.push(...result.events);
-    nextState = result.matchState ?? state;
-
-    const stageResult = advanceQueuedStage(nextState, duel, nextStage, now);
-    return { state: stageResult.state, events: [...events, ...stageResult.events] };
 }
 
 function playOngoingActionAsDuelCard(
@@ -602,35 +756,29 @@ function playOngoingActionAsDuelCard(
         } as SmashUpEvent,
     ];
 
-    const executor = resolveOnPlay(defId);
-    let nextState = state;
-    if (executor) {
-        const simCore = simulateCore(state.core, events);
-        const result = executor({
-            state: simCore,
-            matchState: { ...state, core: simCore },
-            playerId,
-            cardUid,
-            defId,
-            baseIndex: targetBaseIndex,
-            targetMinionUid,
-            random,
-            now,
-            duel,
-        });
-        events.push(...result.events);
-        nextState = result.matchState ?? state;
-    }
-
-    const stageResult = advanceQueuedStage(nextState, duel, nextStage, now);
-    return { state: stageResult.state, events: [...events, ...stageResult.events] };
+    return appendResolvedActionAbility({
+        state,
+        events,
+        playerId,
+        cardUid,
+        defId,
+        baseIndex: targetBaseIndex,
+        targetBaseIndex,
+        targetMinionUid,
+        random,
+        timestamp: now,
+        duel,
+        afterActionContext: { nextStage },
+        abilityRequirementContext: 'duel.playActionAsDuelCard',
+        afterActionProgram: advanceDuelStageAfterActionProgram,
+    });
 }
 
 function buildRunEmOffTieMovePrompts(
     state: MatchState<SmashUpCore>,
     duel: ActiveDuel,
     now: number,
-): MatchState<SmashUpCore> {
+): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const currentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
     const orderedPlayers = [duel.challengerPlayerId, duel.challengedPlayerId].sort((a, b) => {
         if (a === currentPlayerId) return -1;
@@ -639,12 +787,13 @@ function buildRunEmOffTieMovePrompts(
     });
 
     let nextState = state;
+    const events: SmashUpEvent[] = [];
     for (const mover of orderedPlayers) {
         // 平局时双方都要“跑”：每位玩家为自己参与决斗的随从选择逃跑的基地
         const moveUid = mover === duel.challengerPlayerId ? duel.challengerMinionUid : duel.challengedMinionUid;
-        const found = findMinionOnBases(nextState.core, moveUid);
+        const found = findMinionOnBases(state.core, moveUid);
         if (!found) continue;
-        const destinationOptions = nextState.core.bases
+        const destinationOptions = state.core.bases
             .map((base, baseIndex) => ({
                 baseIndex,
                 baseDefId: base.defId,
@@ -667,14 +816,14 @@ function buildRunEmOffTieMovePrompts(
                 sourceControllerId: moveSource.sourceControllerId,
                 sourceBaseIndex: moveSource.sourceBaseIndex,
             });
-            nextState = { ...nextState, core: simulateCore(nextState.core, moveEvents) };
+            events.push(...moveEvents);
             continue;
         }
         const interaction = createSimpleChoice(
             `smashup_duel_run_em_off_move_${duel.id}_${mover}_${now}`,
             mover,
             'ui.duel_prompt_run_em_off_tie_title',
-            buildBaseTargetOptions(destinationOptions, nextState.core),
+            buildBaseTargetOptions(destinationOptions, state.core),
             { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base' },
         );
         (interaction.data as any).continuationContext = {
@@ -685,7 +834,7 @@ function buildRunEmOffTieMovePrompts(
         };
         nextState = queueInteraction(nextState, interaction);
     }
-    return nextState;
+    return { state: nextState, events };
 }
 
 function resolveDuelResult(
@@ -697,7 +846,7 @@ function resolveDuelResult(
     const challengerFound = findMinionOnBases(state.core, duel.challengerMinionUid);
     const challengedFound = findMinionOnBases(state.core, duel.challengedMinionUid);
     if (!challengerFound || !challengedFound || challengerFound.baseIndex !== challengedFound.baseIndex) {
-        return { state: withActiveDuel(state, undefined), events: [] };
+        return { state, events: [duelEndedEvent(duel, 'invalid', now)] };
     }
 
     const baseIndex = challengerFound.baseIndex;
@@ -706,8 +855,8 @@ function resolveDuelResult(
     const isTie = challengerPower === challengedPower;
     const winner = challengerPower > challengedPower ? challengerFound.minion : challengedPower > challengerPower ? challengedFound.minion : undefined;
     const loser = winner?.uid === challengerFound.minion.uid ? challengedFound.minion : winner?.uid === challengedFound.minion.uid ? challengerFound.minion : undefined;
-    const events: SmashUpEvent[] = [];
-    let nextState = withActiveDuel(state, undefined);
+    const events: SmashUpEvent[] = [duelEndedEvent(duel, 'resolved', now)];
+    let nextState = state;
     const destroySourceId = duel.destroyReason ?? duel.sourceId;
     const destroySourceKind = getCardDef(destroySourceId)?.type === 'action' ? 'action' : 'nonAction';
 
@@ -781,8 +930,7 @@ function resolveDuelResult(
     } else if (duel.outcome === 'draw2_to_winner') {
         if (isTie) {
             events.push(...buildStandardDrawEvents(state.core, duel.challengerPlayerId, 2, random, now));
-            const simCore = simulateCore(state.core, events);
-            events.push(...buildStandardDrawEvents(simCore, duel.challengedPlayerId, 2, random, now));
+            events.push(...buildStandardDrawEvents(state.core, duel.challengedPlayerId, 2, random, now));
         } else if (winner) {
             events.push(...buildStandardDrawEvents(state.core, winner.controller, 2, random, now));
         }
@@ -846,7 +994,9 @@ function resolveDuelResult(
         if (isTie) {
             events.push(addTempPower(challengerFound.minion.uid, baseIndex, 3, 'cowboys_run_em_off', now));
             events.push(addTempPower(challengedFound.minion.uid, baseIndex, 3, 'cowboys_run_em_off', now));
-            nextState = buildRunEmOffTieMovePrompts(nextState, duel, now);
+            const tieMoveResult = buildRunEmOffTieMovePrompts(nextState, duel, now);
+            nextState = tieMoveResult.state;
+            events.push(...tieMoveResult.events);
         } else if (winner && loser) {
             events.push(addTempPower(winner.uid, baseIndex, 3, 'cowboys_run_em_off', now));
             const destinationOptions = state.core.bases
@@ -891,26 +1041,23 @@ function resolveDuelResult(
         }
     }
 
-    const coreAfterResolution = simulateCore(nextState.core, events);
-    const duelResolved = fireTriggers(coreAfterResolution, 'onDuelResolved', {
-        state: coreAfterResolution,
-        playerId: duel.sourcePlayerId,
-        baseIndex,
+    const continuation = executeAbilityProgram(emitDuelResolutionEventsThenTriggerProgram, {
+        matchState: nextState,
+        random,
+        events,
         duel,
-        duelSourceId: duel.sourceId,
-        duelOutcome: duel.outcome,
+        baseIndex,
         duelChallenger: challengerFound.minion,
         duelChallenged: challengedFound.minion,
         duelWinner: winner,
         duelLoser: loser,
         duelTie: isTie,
-        random,
-        now,
+        timestamp: now,
     });
 
     return {
-        state: duelResolved.matchState ?? nextState,
-        events: [...events, ...duelResolved.events],
+        state: continuation.matchState ?? nextState,
+        events: continuation.events as SmashUpEvent[],
     };
 }
 
@@ -932,23 +1079,16 @@ export function continueActiveDuel(
     return queueNextDuelStage(state, duel, 'pinkerton_challenger', now);
 }
 
-export function startDuel(
+export function startDuelWithEvents(
     state: MatchState<SmashUpCore>,
-    params: {
-        sourceId: string;
-        sourcePlayerId: PlayerId;
-        challengerMinionUid: string;
-        challengedMinionUid: string;
-        outcome: DuelOutcomeKind;
-        destroyReason?: string;
-    },
+    params: StartDuelParams,
     now: number,
-): MatchState<SmashUpCore> {
-    if (state.core.activeDuel) return state;
+): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+    if (state.core.activeDuel) return { state, events: [] };
     const challengerFound = findMinionOnBases(state.core, params.challengerMinionUid);
     const challengedFound = findMinionOnBases(state.core, params.challengedMinionUid);
     if (!challengerFound || !challengedFound || challengerFound.baseIndex !== challengedFound.baseIndex) {
-        return state;
+        return { state, events: [] };
     }
     const duel: ActiveDuel = {
         id: `${params.sourceId}_${now}_${params.challengerMinionUid}_${params.challengedMinionUid}`,
@@ -976,12 +1116,40 @@ export function startDuel(
         random: DEFAULT_RANDOM,
         now,
     });
-    duelState = applyImmediateTriggerResult(duelState, duelStarted);
+    duelState = duelStarted.matchState ?? duelState;
+
+    if (duelStarted.events.length > 0) {
+        if (duelState.sys.interaction?.current || (duelState.sys.interaction?.queue?.length ?? 0) > 0) {
+            throw new Error('onDuelStarted 同时产生事件和交互；需要拆成明确 continuation 顺序');
+        }
+        const continuation = executeAbilityProgram(emitDuelStartedEventsThenAdvanceProgram, {
+            matchState: duelState,
+            duel,
+            timestamp: now,
+            events: duelStarted.events,
+        });
+        return {
+            state: continuation.matchState ?? duelState,
+            events: continuation.events as SmashUpEvent[],
+        };
+    }
 
     if (duelState.sys.interaction?.current || (duelState.sys.interaction?.queue?.length ?? 0) > 0) {
-        return duelState;
+        return { state: duelState, events: [] };
     }
-    return queueNextDuelStage(duelState, duel, 'pinkerton_challenger', now);
+    return { state: queueNextDuelStage(duelState, duel, 'pinkerton_challenger', now), events: [] };
+}
+
+export function startDuel(
+    state: MatchState<SmashUpCore>,
+    params: StartDuelParams,
+    now: number,
+): MatchState<SmashUpCore> {
+    const result = startDuelWithEvents(state, params, now);
+    if (result.events.length > 0) {
+        throw new Error('startDuel 是 state-only 兼容入口；会产生事件的决斗开始必须使用 startDuelWithEvents');
+    }
+    return result.state;
 }
 
 const DEFAULT_RANDOM: RandomFn = {
@@ -1087,20 +1255,18 @@ export function registerDuelInteractionHandlers(): void {
             } as SmashUpEvent,
             addTempPower(selected.minionUid, selected.baseIndex, 2, 'cowboys_deputy', now),
         ];
-        const simulatedState = {
-            ...state,
-            core: simulateCore(state.core, events),
-        };
-        const stageResult = advanceDeputyStage(
-            simulatedState,
-            ctx.duel,
-            ctx.nextStage as 'deputy_challenger' | 'deputy_challenged',
-            0,
-            now,
-        );
+        if (!isDeputyStage(ctx.nextStage)) return { state, events };
+        const continuation = executeAbilityProgram(emitDuelEventsThenAdvanceDeputyProgram, {
+            matchState: state,
+            duel: ctx.duel,
+            nextStage: ctx.nextStage,
+            consecutivePasses: 0,
+            timestamp: now,
+            events,
+        });
         return {
-            state: keepStateOnlyDuelChanges(stageResult.state, state.core),
-            events: [...events, ...stageResult.events],
+            state: continuation.matchState ?? state,
+            events: continuation.events as SmashUpEvent[],
         };
     });
 

@@ -12,7 +12,7 @@ import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { SmashUpDomain } from '../domain';
 import { initAllAbilities } from '../abilities';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { MatchState } from '../../../engine/types';
 import {
@@ -29,6 +29,7 @@ import {
 import { smashUpSystemsForTest } from '../game';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { getSmashUpReactionSession } from '../domain/reactionSession';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 import { defaultTestRandom, runCommand } from './testRunner';
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
@@ -39,21 +40,14 @@ function getActiveSimpleChoice(state: MatchState<SmashUpCore>) {
     return getOptionalSimpleChoicePrompt(state);
 }
 
-function getCurrentPlayerIdForTest(state: MatchState<SmashUpCore>): string {
-    return state.core.turnOrder[state.core.currentPlayerIndex]!;
-}
-
-function getPostScoringDelayUntil(state: MatchState<SmashUpCore>): number | undefined {
-    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-    return typeof delayUntil === 'number' ? delayUntil : undefined;
-}
-
 function drainScoreBasesDelayUntilPromptOrIdle(
     initialState: MatchState<SmashUpCore>,
     runner: CommandRunner,
     eventsAcc: SmashUpEvent[] = [],
 ) {
-    let state = initialState;
+    void runner;
+    void eventsAcc;
+    const state = initialState;
     for (let guard = 0; guard < 8; guard++) {
         if (getActiveSimpleChoice(state)) {
             break;
@@ -61,19 +55,7 @@ function drainScoreBasesDelayUntilPromptOrIdle(
         if (state.sys.phase !== 'scoreBases') {
             break;
         }
-        const delayUntil = getPostScoringDelayUntil(state);
-        if (delayUntil === undefined) {
-            break;
-        }
-        const advanced = runner(state, {
-            type: 'ADVANCE_PHASE',
-            playerId: getCurrentPlayerIdForTest(state),
-            payload: undefined,
-            timestamp: delayUntil,
-        } as SmashUpCommand);
-        expect(advanced.success).toBe(true);
-        eventsAcc.push(...(advanced.events as SmashUpEvent[]));
-        state = advanced.finalState;
+        break;
     }
     return state;
 }
@@ -638,7 +620,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             ],
         });
 
-        // 当前 GameTestRunner 会顺着延迟清场继续自动推进，并停在下一次 multi_base_scoring 选择前。
+        // 当前 GameTestRunner 会在同一计分链中发出清场 / 换基地收尾事件，并停在下一次 multi_base_scoring 选择前。
         const allEvents = result.steps.flatMap(step => step.events);
         const scoredEvents = allEvents.filter((e: string) => e === 'su:base_scored');
 
@@ -654,14 +636,16 @@ describe('scoreBases 多基地计分链恢复', () => {
             'su:when_scoring_triggered',
             'su:base_scored',
             'su:after_scoring_triggered',
+            'su:base_cleared',
+            'su:base_replaced',
         ]);
 
         expect(result.finalState.core.players['0'].vp).toBe(2);
         expect(result.finalState.core.players['1'].vp).toBe(0);
         const nextPrompt = getActiveSimpleChoice(result.finalState);
-        expect(nextPrompt).toBeUndefined();
+        expect(nextPrompt?.sourceId).toBe('multi_base_scoring');
+        expect(nextPrompt?.options).toHaveLength(2);
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(getPostScoringDelayUntil(result.finalState)).toEqual(expect.any(Number));
     });
 
     it('三个基地同时计分时，第二次选择后最后一个基地只会自动结算一次', () => {
@@ -1201,9 +1185,9 @@ describe('scoreBases 多基地计分链恢复', () => {
         const chooseBase = scoringStart.chooseBase;
         const resolvePirateKing = scoringStart.resolvePirateKing;
         expect(resolvePirateKing.finalState.sys.phase).toBe('scoreBases');
-        const windowTypeAfterPirateKing = resolvePirateKing.finalState.sys.responseWindow?.current?.windowType;
-        if (windowTypeAfterPirateKing !== undefined) {
-            expect(['meFirst', 'afterScoring']).toContain(windowTypeAfterPirateKing);
+        const presentationAfterPirateKing = getSmashUpReactionWindowPresentation(resolvePirateKing.finalState);
+        if (presentationAfterPirateKing) {
+            expect(['meFirst', 'afterScoring']).toContain(presentationAfterPirateKing.windowType);
         }
 
         // 兼容不同链路顺序：有的实现会先回到 multi_base_scoring，再进入 base_tortuga。
@@ -1276,7 +1260,7 @@ describe('scoreBases 多基地计分链恢复', () => {
         expect(remainingAfterScoringChoice).toBeTruthy();
         expect(remainingAfterScoringChoice.sourceId).toBe('smashup_reaction_choose');
         expect(remainingAfterScoringChoice.playerId).toBe('1');
-        expect(stateAfterTortuga.sys.responseWindow?.current?.windowType).toBe('afterScoring');
+        expect(getSmashUpReactionWindowPresentation(stateAfterTortuga)?.windowType).toBe('afterScoring');
 
         const tortugaScoredEventsBeforeResponse = [
             ...scoringStart.events,
@@ -1306,11 +1290,14 @@ describe('scoreBases 多基地计分链恢复', () => {
         });
         expect(clearOrReplaceBeforeResponse).toHaveLength(0);
 
-        const playNoTargetSpecial = runCommandWithFullSystems(stateAfterTortuga, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '1',
-            payload: { cardUid: 'champ-1', targetBaseIndex: 0 },
-        });
+        const playNoTargetSpecialOption = findOption(
+            remainingAfterScoringChoice,
+            (option: any) => option.value?.kind === 'play_action' && option.value?.cardUid === 'champ-1',
+        );
+        const playNoTargetSpecial = runCommandWithFullSystems(
+            stateAfterTortuga,
+            respondCommand(playNoTargetSpecialOption, remainingAfterScoringChoice.playerId),
+        );
         expect(playNoTargetSpecial.success).toBe(true);
         expect(playNoTargetSpecial.events).toEqual(
             expect.arrayContaining([

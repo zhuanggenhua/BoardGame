@@ -8240,6 +8240,60 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/lieren/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "282f08b234fb49d2b308f2be9d1b9a07cfd42d25eaf4e8c5c8a42ef4a693775e",
+          "bytes": 2246590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/bleed": {
+      "variants": {
+        "webp": {
+          "sha256": "2495d41ded65188a4bd5f52f3e09ddb2fe6e54aee33b8f0590b7f36e4e36d52d",
+          "bytes": 7298,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "18c9f7881da57c92f71efd339ada92cee4625ed893d59222f5dcb6f7faaa6b66",
+          "bytes": 36856,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/nyras-bond": {
+      "variants": {
+        "webp": {
+          "sha256": "2364438ee5a18e209f3deb9069b235972715bf50834ed45c8fc62ab7783c6649",
+          "bytes": 13284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "42ef27cbbf55d57e9f5fb1ac7b389ad593ff979557b4ca71d0472f51bbaf11a5",
+          "bytes": 2076750,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "3acdd25c075288e853cc44665a5b26f77d636b380ca8c0de4692e8612476c467",
+          "bytes": 30164,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/lieren/player-board": {
       "variants": {
         "png": {

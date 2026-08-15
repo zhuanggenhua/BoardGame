@@ -9,13 +9,13 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bm
 const usage = () => {
     console.log(`用法:
   node scripts/verify/open-verified-image.mjs --path <图片路径>
-  node scripts/verify/open-verified-image.mjs --path <图片路径1> --path <图片路径2>
-  node scripts/verify/open-verified-image.mjs --paths <图片路径1> <图片路径2> ...
+  node scripts/verify/open-verified-image.mjs --path <00-sequence-index.png> --path <01-labeled-*.png>
+  node scripts/verify/open-verified-image.mjs --paths <00-sequence-index.png> <01-labeled-*.png> <02-labeled-*.png> ...
   node scripts/verify/open-verified-image.mjs --latest [目录]
 
 选项:
-  --path <路径>     打开指定图片；可重复传入多次
-  --paths <路径...> 依次打开多张指定图片
+  --path <路径>     打开指定图片；可重复传入多次，默认 PureRef 多图只接受带序号标记组
+  --paths <路径...> 依次打开多张指定图片；默认 PureRef 多图只接受带序号标记组
   --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
   --viewer <system|pureref>  指定查看器；默认 pureref，pureref 会一次性打开整批图片
   --pureref         等同于 --viewer pureref

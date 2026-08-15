@@ -196,7 +196,7 @@ if (isMultiWorker) {
 } else if (useDevServers) {
     console.log(`⚠️ E2E 测试模式：使用开发服务器（${DEV_PORTS.frontend}/${DEV_PORTS.gameServer}/${DEV_PORTS.apiServer}）`);
 } else {
-    console.log(`✅ E2E 测试模式：单 worker（${SINGLE_WORKER_PORTS.frontend}/${SINGLE_WORKER_PORTS.gameServer}/${SINGLE_WORKER_PORTS.apiServer}）`);
+    console.log(`✅ E2E 测试模式：单 worker（${ports.frontend}/${ports.gameServer}/${ports.apiServer}）`);
 }
 
 if (headedMode) {

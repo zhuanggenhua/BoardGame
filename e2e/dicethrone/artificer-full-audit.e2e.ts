@@ -88,30 +88,43 @@ const setHarnessRandomQueue = async (page: Page, values: number[]): Promise<void
     }, values);
 };
 
-const getSimpleChoiceOptionIndexByCustomId = async (game: GameTestContext, customId: string): Promise<number> => {
+const getSimpleChoiceOptionByCustomId = async (game: GameTestContext, customId: string): Promise<JsonRecord> => {
     const state = await game.getState() as JsonRecord;
     const interaction = state?.sys?.interaction?.current;
     const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
         ? interaction.data.options
         : [];
-    const index = options.findIndex((option: JsonRecord) => option?.value?.customId === customId);
-    if (index < 0) {
+    const option = options.find((candidate: JsonRecord) => candidate?.value?.customId === customId);
+    if (!option) {
         throw new Error(`未找到 simple-choice 选项 ${customId}`);
     }
-    return index;
+    return option;
 };
+
+const cssAttributeValue = (value: string): string => (
+    value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+);
 
 const clickSimpleChoiceByCustomId = async (
     page: Page,
     game: GameTestContext,
     customId: string,
 ): Promise<void> => {
-    const optionIndex = await getSimpleChoiceOptionIndexByCustomId(game, customId);
+    const option = await getSimpleChoiceOptionByCustomId(game, customId);
+    const optionId = typeof option.id === 'string' ? option.id : undefined;
     const modalRoot = page.locator('#modal-root');
-    const visibleButtons = modalRoot.locator('button:visible');
-    const modalButton = visibleButtons.nth(optionIndex);
-    if (await modalButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await modalButton.click();
+
+    if (optionId) {
+        const buttonByOptionId = modalRoot.locator(`button[data-option-id="${cssAttributeValue(optionId)}"]`).first();
+        if (await buttonByOptionId.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await buttonByOptionId.click();
+            return;
+        }
+    }
+
+    const buttonByCustomId = modalRoot.locator(`button[data-choice-custom-id="${cssAttributeValue(customId)}"]`).first();
+    if (await buttonByCustomId.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await buttonByCustomId.click();
         return;
     }
 
@@ -2556,6 +2569,9 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-pre-damage-heal-bot-choice-open', testInfo);
 
         await clickSimpleChoiceByCustomId(page, game, 'artificer-activate-bot-resolve');
+        await settleCurrentBonusDice(page, () => game.getState() as Promise<JsonRecord>, {
+            sourceAbilityId: 'artificer-heal-bot-use',
+        });
 
         await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;
@@ -3005,6 +3021,9 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
 
         await game.screenshot('artificer-wrench-strike-2-branch-open', testInfo);
         await clickSimpleChoiceByCustomId(page, game, 'artificer-wrench-strike-spend-electricity');
+        await settleCurrentBonusDice(page, () => game.getState() as Promise<JsonRecord>, {
+            sourceAbilityId: 'wrench-strike-2-4',
+        });
 
         await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;

@@ -19,24 +19,41 @@ import {
     mustUseGlobalPowerLimitedMinionQuota,
 } from './utils';
 
-function isCurrentTurnPlayer(core: SmashUpCore, playerId: string): boolean {
-    return core.turnOrder[core.currentPlayerIndex] === playerId;
+export interface PlayLegalityValidationContext {
+    currentTurnPlayerId?: string;
 }
 
-export function getMinionPlayRestrictionError(core: SmashUpCore, playerId: string): string | null {
+function isCurrentTurnPlayer(
+    core: SmashUpCore,
+    playerId: string,
+    context?: PlayLegalityValidationContext,
+): boolean {
+    return (context?.currentTurnPlayerId ?? core.turnOrder[core.currentPlayerIndex]) === playerId;
+}
+
+export function getMinionPlayRestrictionError(
+    core: SmashUpCore,
+    playerId: string,
+    context?: PlayLegalityValidationContext,
+): string | null {
     if (
         hasPlayerTurnRestriction(core, playerId, 'play_minion')
-        || (isCurrentTurnPlayer(core, playerId) && core.sleepMarkedPlayers?.includes(playerId))
+        || (isCurrentTurnPlayer(core, playerId, context) && core.sleepMarkedPlayers?.includes(playerId))
     ) {
         return '当前效果禁止你打出随从';
     }
     return null;
 }
 
-export function getActionPlayRestrictionError(core: SmashUpCore, playerId: string, defId?: string): string | null {
+export function getActionPlayRestrictionError(
+    core: SmashUpCore,
+    playerId: string,
+    defId?: string,
+    context?: PlayLegalityValidationContext,
+): string | null {
     if (
         hasPlayerTurnRestriction(core, playerId, 'play_action')
-        || (isCurrentTurnPlayer(core, playerId) && core.sleepMarkedPlayers?.includes(playerId))
+        || (isCurrentTurnPlayer(core, playerId, context) && core.sleepMarkedPlayers?.includes(playerId))
     ) {
         return '当前效果禁止你打出战术';
     }
@@ -255,8 +272,9 @@ export function validateActionPlaySemantics(
         targetMinionUid?: string;
         effectiveHandSize?: number;
     },
+    context?: PlayLegalityValidationContext,
 ): ValidationResult {
-    const restrictionError = getActionPlayRestrictionError(core, playerId, params.defId);
+    const restrictionError = getActionPlayRestrictionError(core, playerId, params.defId, context);
     if (restrictionError) {
         return { valid: false, error: restrictionError };
     }

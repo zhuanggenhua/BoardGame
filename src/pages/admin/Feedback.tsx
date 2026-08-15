@@ -47,7 +47,8 @@ interface FeedbackItem {
         username: string;
         avatar?: string;
     };
-    content: string;
+    content?: string;
+    contentPreview?: string;
     type: 'bug' | 'suggestion' | 'other';
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -66,6 +67,11 @@ interface FeedbackItem {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    hasEmbeddedImage?: boolean;
+    hasActionLog?: boolean;
+    hasStateSnapshot?: boolean;
+    hasClientContext?: boolean;
+    hasErrorContext?: boolean;
     clientContext?: FeedbackClientContext;
     errorContext?: FeedbackErrorContext;
     createdAt: string;
@@ -187,7 +193,7 @@ const buildSeverityConfig = (t: TFunction<'admin'>): SeverityConfig => ({
 const isLegacyWatchdogFeedback = (item: FeedbackItem): boolean => (
     item.contactInfo === 'system:online-ai-watchdog'
     || item.errorContext?.source === 'online-ai-watchdog'
-    || /^\[system\]\[online-ai-watchdog\]\s+/.test(item.content)
+    || /^\[system\]\[online-ai-watchdog\]\s+/.test(item.content ?? item.contentPreview ?? '')
 );
 
 const resolveOriginInfo = (item: FeedbackItem): {
@@ -220,6 +226,21 @@ const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
     const option = SOURCE_OPTIONS.find((item) => item.value === source);
     return option ? t(option.labelKey) : t('feedback.source.unknown');
 };
+
+const resolveFeedbackPreviewText = (item: FeedbackItem, t: TFunction<'admin'>): string => {
+    const preview = item.contentPreview?.trim();
+    if (preview) return preview;
+    if (item.content) return extractText(item.content, t);
+    return item.hasEmbeddedImage ? t('feedback.content.onlyImage') : t('feedback.content.empty');
+};
+
+const resolveFeedbackHasImage = (item: FeedbackItem): boolean => (
+    item.hasEmbeddedImage ?? (item.content ? hasEmbeddedImage(item.content) : false)
+);
+
+const hasFullFeedbackDetail = (item: FeedbackItem | null | undefined): item is FeedbackItem & { content: string } => (
+    typeof item?.content === 'string'
+);
 
 function StatusSelect({
     value,
@@ -366,11 +387,15 @@ export default function AdminFeedbackPage() {
     const [isPolling, setIsPolling] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [aiPayloadPreview, setAiPayloadPreview] = useState<string | null>(null);
+    const [feedbackDetails, setFeedbackDetails] = useState<Record<string, FeedbackItem>>({});
+    const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
+    const [detailErrorMessage, setDetailErrorMessage] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [limit, setLimit] = useState(PAGE_LIMIT);
 
     const requestIdRef = useRef(0);
+    const detailRequestIdRef = useRef(0);
     const isMountedRef = useRef(true);
 
     useEffect(() => {
@@ -396,6 +421,7 @@ export default function AdminFeedbackPage() {
             if (sourceFilter !== 'all') params.set('source', sourceFilter);
             if (sortFilter) params.set('sort', sortFilter);
             if (preferMineFilter) params.set('preferMine', 'true');
+            params.set('summaryOnly', 'true');
 
             const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
             const response = await fetch(`${ADMIN_API_URL}/feedback?${params}`, {
@@ -467,16 +493,62 @@ export default function AdminFeedbackPage() {
         }
     }, [limit, page, total]);
 
-    const activeFeedback = useMemo(
+    const activeFeedbackSummary = useMemo(
         () => feedbacks.find((feedback) => feedback._id === activeId) ?? null,
-        [activeId, feedbacks]
+        [activeId, feedbacks],
+    );
+    const activeFeedback = useMemo(
+        () => (activeId ? feedbackDetails[activeId] ?? activeFeedbackSummary : null),
+        [activeFeedbackSummary, activeId, feedbackDetails],
     );
 
     useEffect(() => {
-        if (!activeFeedback) {
+        if (!activeFeedbackSummary) {
             setActiveId(null);
         }
-    }, [activeFeedback]);
+    }, [activeFeedbackSummary]);
+
+    useEffect(() => {
+        if (!activeId) return;
+        const summary = feedbacks.find((feedback) => feedback._id === activeId);
+        const cached = feedbackDetails[activeId];
+        if (!summary || hasFullFeedbackDetail(cached) || hasFullFeedbackDetail(summary)) {
+            return;
+        }
+
+        const requestId = ++detailRequestIdRef.current;
+        setDetailLoadingId(activeId);
+        setDetailErrorMessage('');
+
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        fetch(`${ADMIN_API_URL}/feedback/${activeId}`, { headers })
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(t('feedback.messages.fetchFailed'));
+                }
+                return response.json() as Promise<FeedbackItem>;
+            })
+            .then((detail) => {
+                if (!isMountedRef.current || detailRequestIdRef.current !== requestId) {
+                    return;
+                }
+                setFeedbackDetails((prev) => ({
+                    ...prev,
+                    [activeId]: detail,
+                }));
+            })
+            .catch((err) => {
+                if (!isMountedRef.current || detailRequestIdRef.current !== requestId) {
+                    return;
+                }
+                setDetailErrorMessage(err instanceof Error ? err.message : t('feedback.messages.fetchFailed'));
+            })
+            .finally(() => {
+                if (isMountedRef.current && detailRequestIdRef.current === requestId) {
+                    setDetailLoadingId(null);
+                }
+            });
+    }, [activeId, feedbackDetails, feedbacks, t, token]);
 
     const manageableFeedbacks = useMemo(
         () => feedbacks.filter((feedback) => feedback.canManage),
@@ -565,6 +637,9 @@ export default function AdminFeedbackPage() {
                     feedback._id === id ? { ...feedback, ...updated } : feedback
                 ))
                 .filter((feedback) => statusFilter === 'all' || feedback.status === statusFilter));
+            setFeedbackDetails((prev) => (
+                prev[id] ? { ...prev, [id]: { ...prev[id], ...updated } } : prev
+            ));
             success(t('feedback.messages.updateSuccess'));
         } catch (err) {
             error(err instanceof Error ? err.message : t('feedback.messages.updateFailed'));
@@ -587,6 +662,11 @@ export default function AdminFeedbackPage() {
             if (!response.ok) throw new Error('delete_failed');
 
             setFeedbacks((prev) => prev.filter((feedback) => feedback._id !== id));
+            setFeedbackDetails((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
             setSelectedIds((prev) => {
                 const next = new Set(prev);
                 next.delete(id);
@@ -876,6 +956,8 @@ export default function AdminFeedbackPage() {
                     severityConfig={severityConfig}
                     statusOptions={statusOptions}
                     t={t}
+                    loading={Boolean(activeId && detailLoadingId === activeId && !hasFullFeedbackDetail(activeFeedback))}
+                    errorMessage={detailErrorMessage}
                     onStatusUpdate={handleStatusUpdate}
                     onDelete={handleDelete}
                     onAiPayloadCopy={setAiPayloadPreview}
@@ -955,11 +1037,11 @@ function FeedbackRow({
     onStatusUpdate,
     onDelete,
 }: FeedbackRowProps) {
-    const previewText = extractText(item.content, t);
+    const previewText = resolveFeedbackPreviewText(item, t);
     const submitter = item.userId?.username || t('feedback.anonymous');
-    const hasImage = hasEmbeddedImage(item.content);
-    const hasActionLog = Boolean(item.actionLog);
-    const hasSnapshot = Boolean(item.stateSnapshot);
+    const hasImage = resolveFeedbackHasImage(item);
+    const hasActionLog = item.hasActionLog ?? Boolean(item.actionLog);
+    const hasSnapshot = item.hasStateSnapshot ?? Boolean(item.stateSnapshot);
     const origin = resolveOriginInfo(item);
     const reporterLabel = t(`feedback.reporterType.${origin.reporterType}`);
     const sourceLabel = resolveSourceLabel(t, origin.source);
@@ -1143,6 +1225,8 @@ function FeedbackDetailPanel({
     severityConfig,
     statusOptions,
     t,
+    loading,
+    errorMessage,
     onStatusUpdate,
     onDelete,
     onAiPayloadCopy,
@@ -1153,6 +1237,8 @@ function FeedbackDetailPanel({
     severityConfig: SeverityConfig;
     statusOptions: StatusOptionWithLabel[];
     t: TFunction<'admin'>;
+    loading: boolean;
+    errorMessage: string;
     onStatusUpdate: (id: string, status: string) => void;
     onDelete: (id: string) => void;
     onAiPayloadCopy: (payloadText: string) => void;
@@ -1176,8 +1262,11 @@ function FeedbackDetailPanel({
     const TypeIcon = typeOpt?.icon ?? HelpCircle;
     const sevCfg = severityConfig[item.severity] ?? severityConfig.low;
     const submitter = item.userId?.username || t('feedback.anonymous');
-    const previewText = extractText(item.content, t);
-    const hasImage = hasEmbeddedImage(item.content);
+    const previewText = resolveFeedbackPreviewText(item, t);
+    const fullDetailReady = hasFullFeedbackDetail(item);
+    const hasImage = resolveFeedbackHasImage(item);
+    const hasActionLog = item.hasActionLog ?? Boolean(item.actionLog);
+    const hasSnapshot = item.hasStateSnapshot ?? Boolean(item.stateSnapshot);
     const origin = resolveOriginInfo(item);
     const reporterLabel = t(`feedback.reporterType.${origin.reporterType}`);
     const sourceLabel = resolveSourceLabel(t, origin.source);
@@ -1271,18 +1360,24 @@ function FeedbackDetailPanel({
                             {t('feedback.content.screenshotAlt')}
                         </MetaBadge>
                     )}
-                    {item.actionLog && (
+                    {hasActionLog && (
                         <MetaBadge>
                             <ScrollText size={11} />
                             {t('feedback.actionLog.title')}
                         </MetaBadge>
                     )}
-                    {item.stateSnapshot && <MetaBadge>JSON</MetaBadge>}
+                    {hasSnapshot && <MetaBadge>JSON</MetaBadge>}
                     {item.rewardPoints ? (
                         <RewardPointsBadge points={item.rewardPoints} signed className="rounded-md px-1.5 py-0.5 text-[10px]" />
                     ) : null}
                     <div className="ml-auto">
-                        <CopyFeedbackButton item={item} t={t} onAiPayloadCopy={onAiPayloadCopy} />
+                        {fullDetailReady ? (
+                            <CopyFeedbackButton item={item} t={t} onAiPayloadCopy={onAiPayloadCopy} />
+                        ) : (
+                            <span className="inline-flex h-7 items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 text-[10px] text-zinc-400">
+                                {t('feedback.detail.copyPending')}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1292,7 +1387,29 @@ function FeedbackDetailPanel({
                     <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
                         {t('feedback.table.content')}
                     </p>
-                    <FeedbackContent content={item.content} onImageClick={onImageClick} t={t} />
+                    {fullDetailReady ? (
+                        <FeedbackContent content={item.content} onImageClick={onImageClick} t={t} />
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-800">
+                                {previewText}
+                            </p>
+                            {loading ? (
+                                <p className="inline-flex items-center gap-1.5 text-xs text-zinc-500">
+                                    <RefreshCw size={12} className="animate-spin" />
+                                    {t('feedback.detail.loading')}
+                                </p>
+                            ) : errorMessage ? (
+                                <p className="rounded-md border border-red-100 bg-red-50 px-2 py-1.5 text-xs text-red-600">
+                                    {errorMessage}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-zinc-400">
+                                    {t('feedback.detail.summaryOnly')}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </section>
 
                 <section className="rounded-lg border border-zinc-200 bg-white p-2.5">

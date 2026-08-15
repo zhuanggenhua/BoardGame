@@ -25,10 +25,9 @@
 - `D:\gongzuo\webgame\BoardGame\.spec/knowledge/standards/asset-pipeline.md`
 - `D:\gongzuo\webgame\BoardGame\design-system\game-ui\MASTER.md`
 - `D:\gongzuo\webgame\BoardGame\design-system\styles\tactical-clean.md`
-- `D:\codex-home\skills\.system\imagegen\SKILL.md`
-- `D:\codex-home\skills\show-image-to-user\SKILL.md`
-- `D:\codex-home\skills\ui-design-pipeline\SKILL.md`
-- `D:\codex-home\skills\ui-ux-pro-max\SKILL.md`
+- `D:\gongzuo\webgame\BoardGame\.spec\skills\show-image-to-user\SKILL.md`
+- `D:\gongzuo\webgame\BoardGame\.spec\skills\ui-design-pipeline\SKILL.md`
+- `D:\gongzuo\webgame\BoardGame\.spec\skills\ui-ux-pro-max\SKILL.md`
 - `D:\gongzuo\webgame\BoardGame\.spec\skills\boardgame-ui-imagegen\SKILL.md`
 
 ## 规则对象结论与画面映射
@@ -161,7 +160,7 @@ Avoid: HTML wireframe look, placeholder cards, purely textual UI, heavy borders,
 - 出图前硬回执：`ready`
 - 位图生图工具：`blocked-imagegen-entry`
 - Open Design 自动接力：`pending`
-- 当前证据：本轮没有可调用的内置 `image_gen`；`D:\codex-home\skills\.system\imagegen\scripts\image_gen.py` 存在，但当前 shell 中 `OPENAI_API_KEY` 未设置。
+- 当前证据：本轮没有可调用的内置 `image_gen`；项目设计稿入口统一回到 `D:\gongzuo\webgame\BoardGame\.spec\skills\boardgame-ui-imagegen\SKILL.md`，当时环境缺 `OPENAI_API_KEY`。
 - 新流程裁定：这不再是最终阻塞；如果 Open Design 工具链可用，应自动创建 / 使用 Open Design 项目，把输入包素材导入项目或相对资源目录，生成可渲染 artifact 候选稿，再导出 PNG/JPG/WebP 作为用户可看的设计稿候选。
 - 仍然禁止：不能直接把 HTML、线框、素材拼贴参考板、运行页截图或未审计 Open Design artifact 当作完成态设计稿。
 - 下一步：启动 Open Design 候选稿路线；导出图片后按本文件的 AI 图面核验门槛判定是否允许人工验收。

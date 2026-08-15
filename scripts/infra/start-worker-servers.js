@@ -13,7 +13,7 @@ import { registerExitGuard, spawnBundleRunner, spawnNodeScript, spawnTsLoaderEnt
 import { startRuntimeHeartbeat } from './e2e-runtime-registry.js';
 
 const workerId = Number.parseInt(process.argv[2] ?? '', 10);
-const bundleWatchEnabled = process.env.PW_SERVER_WATCH !== 'false';
+const bundleWatchEnabled = process.env.PW_SERVER_WATCH === 'true';
 const selectedRuntime = process.env.PW_SERVER_RUNTIME?.trim() || 'bundle';
 const useTsxRuntime = selectedRuntime === 'tsx';
 const useTsLoaderRuntime = selectedRuntime === 'ts-loader';

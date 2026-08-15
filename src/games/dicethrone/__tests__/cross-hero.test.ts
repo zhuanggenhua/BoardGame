@@ -424,6 +424,78 @@ describe('cross hero battles', () => {
 
             expect(result.assertionErrors).toEqual([]);
             expect(result.finalState.core.pendingAttack).toBeNull();
+            const compareRollEntry = result.finalState.sys.actionLog?.entries.find(entry => entry.kind === 'COMPARE_ROLL');
+            expect(compareRollEntry).toBeTruthy();
+            expect(compareRollEntry?.segments.some(seg =>
+                seg.type === 'i18n' && (seg as { key: string }).key === 'compareRoll.gunslingerDuel.win'
+            )).toBe(true);
+            expect(compareRollEntry?.segments.filter(seg => seg.type === 'diceResult')).toHaveLength(2);
+        });
+
+        it('duel compare-roll choice id must not depend on command timestamp', () => {
+            const buildPromptId = (confirmTimestamp: number) => {
+                const random = createQueuedRandom([1, 1, 1, 1, 1, 6, 1]);
+                const playerIds: PlayerId[] = ['0', '1'];
+                const pipelineConfig = {
+                    domain: DiceThroneDomain,
+                    systems: testSystems,
+                };
+                let state = createInitializedStateWithCharacters(
+                    playerIds,
+                    random,
+                    { '0': 'monk', '1': 'gunslinger' }
+                );
+
+                const commands: CommandInput[] = [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('ADVANCE_PHASE', '1'),
+                ];
+
+                for (const input of commands) {
+                    const result = executePipeline(
+                        pipelineConfig,
+                        state,
+                        {
+                            type: input.type,
+                            playerId: input.playerId,
+                            payload: input.payload,
+                            timestamp: 100,
+                        } as DiceThroneCommand,
+                        random,
+                        playerIds,
+                    );
+                    expect(result.success).toBe(true);
+                    state = result.state as MatchState<DiceThroneCore>;
+                }
+
+                const confirmResult = executePipeline(
+                    pipelineConfig,
+                    state,
+                    {
+                        type: 'CONFIRM_COMPARE_ROLL',
+                        playerId: '1',
+                        payload: {},
+                        timestamp: confirmTimestamp,
+                    } as DiceThroneCommand,
+                    random,
+                    playerIds,
+                );
+
+                expect(confirmResult.success).toBe(true);
+                const prompt = getCompareRollChoicePrompt(confirmResult.state as MatchState<DiceThroneCore>, 'duel');
+                expect(prompt.options?.map(option => option.id)).toEqual(['option-0', 'option-1']);
+                return prompt.id;
+            };
+
+            expect(buildPromptId(1)).toBe(buildPromptId(Date.now()));
         });
 
         it('duel defensiveRoll requires roll confirmation and opens a dice response window before roll-off', () => {

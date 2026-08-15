@@ -1,6 +1,6 @@
 # Mage Wars 用户纠正覆盖账本
 
-> 角色：`drift-check / evidence`。本文件只把用户在 Mage Wars PC Open Design 设计稿线上反复指出的纠正，映射到规则证据、项目设计合同和送验前检查项。它不是独立规范来源；新增硬规则必须回写到 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`、`D:\codex-home\skills\ui-audit-loop\SKILL.md` 或 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 后，再由本账本引用。
+> 角色：`drift-check / evidence`。本文件只把用户在 Mage Wars PC Open Design 设计稿线上反复指出的纠正，映射到规则证据、项目设计合同和送验前检查项。它不是独立规范来源；新增硬规则必须回写到 `.spec/skills/ui-design-pipeline/SKILL.md`、`.spec/skills/ui-audit-loop/SKILL.md` 或 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 后，再由本账本引用。
 
 ## 使用方式
 

@@ -325,9 +325,9 @@ const createAssetUploadArchive = async (stagingRoot) => {
 
 export const publishStagedAssetsToUploadEndpoint = async ({
     stagingRoot,
-    uploadUrl = process.env.ASSET_SERVER_UPLOAD_URL?.trim() || '',
+    uploadUrl = process.env.ASSET_SERVER_UPLOAD_URL?.trim() || DEFAULT_ASSET_UPLOAD_URL,
     token = resolveAssetUploadToken(),
-    allowUnauthenticated = process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1',
+    allowUnauthenticated = process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1' || !token,
     chunkSizeBytes = resolvePositiveInteger(
         process.env.ASSET_SERVER_UPLOAD_CHUNK_BYTES,
         DEFAULT_UPLOAD_CHUNK_BYTES,
@@ -413,9 +413,9 @@ export const publishStagedAssetsToUploadEndpoint = async ({
 };
 
 export const fetchAssetPublishInventory = async ({
-    uploadUrl = process.env.ASSET_SERVER_UPLOAD_URL?.trim() || '',
+    uploadUrl = process.env.ASSET_SERVER_UPLOAD_URL?.trim() || DEFAULT_ASSET_UPLOAD_URL,
     token = resolveAssetUploadToken(),
-    allowUnauthenticated = process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1',
+    allowUnauthenticated = process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1' || !token,
 } = {}) => {
     if (!uploadUrl) {
         throw new Error('缺少素材上传入口 ASSET_SERVER_UPLOAD_URL');
@@ -450,10 +450,7 @@ export const fetchAssetPublishInventory = async ({
 
 export const resolveAssetUploadUrl = ({
     uploadUrl = process.env.ASSET_SERVER_UPLOAD_URL?.trim(),
-    uploadToken = process.env.ASSET_SERVER_UPLOAD_TOKEN?.trim()
-        || process.env.BG_ASSET_PUBLISH_TOKEN?.trim(),
-    allowUnauthenticated = process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1' || true,
-} = {}) => uploadUrl || (uploadToken || allowUnauthenticated ? DEFAULT_ASSET_UPLOAD_URL : '');
+} = {}) => uploadUrl || DEFAULT_ASSET_UPLOAD_URL;
 
 export const resolveAssetPublishSshConfig = ({
     sshTarget = process.env.ASSET_SERVER_SSH_TARGET?.trim() || DEFAULT_SSH_TARGET,
@@ -532,7 +529,6 @@ export const publishStagedAssetsToServer = async (staged) => {
         await publishStagedAssetsToUploadEndpoint({
             stagingRoot: staged.stagingRoot,
             uploadUrl,
-            allowUnauthenticated: process.env.ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED === '1',
         });
         return;
     }

@@ -20,9 +20,13 @@ import {
     grantContextualExtraAction,
     revealHand,
 } from '../domain/abilityHelpers';
-import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
+import { createEffectProgram, executeAbilityProgram, type AbilityProgram } from '../domain/abilityRuntime';
+import {
+    appendResolvedActionAbility,
+    getExternalActionEffectiveHandSize,
+    type ExternalActionAbilityContinuationContext,
+} from '../domain/externalActionPlay';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
-import { reduce } from '../domain/reduce';
 import { registerProtection, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { registerOngoingPowerModifier } from '../domain/ongoingModifiers';
 import { collectLegalActionPlayTargets, validateActionPlaySemantics, validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
@@ -34,6 +38,88 @@ type BaseChoice = { baseIndex?: number; baseDefId?: string; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
 type ActionPlayChoice = { mode?: 'play' | 'return'; targetBaseIndex?: number; targetMinionUid?: string; skip?: boolean };
 type WoodForSheepChoice = ActionPlayChoice & { giveCardUid?: string; giveDefId?: string; playKind?: 'action' | 'minion' };
+
+const sheepDrawAfterExternalActionProgram = createEffectProgram<
+    ExternalActionAbilityContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('sheep_to_follow_or_not continuation 缺少正式 matchState');
+    }
+    if (!context.random) {
+        throw new Error('sheep_to_follow_or_not continuation 缺少随机源');
+    }
+    return buildStandardDrawEvents(context.matchState.core, context.playerId, 1, context.random, context.timestamp);
+});
+
+interface SheepTransferredMinionContinuationContext {
+    matchState?: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    reason: string;
+    timestamp: number;
+    targetBaseIndex: number;
+    power: number;
+}
+
+interface SheepTransferredMinionSetupContext extends SheepTransferredMinionContinuationContext {
+    setupEvents: SmashUpEvent[];
+}
+
+const sheepPlayTransferredMinionAfterSetupProgram = createEffectProgram<
+    SheepTransferredMinionContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (!context.matchState) {
+        throw new Error('sheep_wood_for_sheep minion continuation 缺少正式 matchState');
+    }
+    const validation = validateImmediateHandExtraMinionPlaySemantics(context.matchState.core, context.playerId, {
+        cardUid: context.cardUid,
+        baseIndex: context.targetBaseIndex,
+    });
+    if (!validation.valid) return [];
+
+    return [{
+        type: SU_EVENTS.MINION_PLAYED,
+        payload: {
+            playerId: context.playerId,
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ownerId: context.ownerId,
+            baseIndex: context.targetBaseIndex,
+            baseDefId: context.matchState.core.bases[context.targetBaseIndex]?.defId,
+            power: context.power,
+            consumesNormalLimit: false,
+            discardPlaySourceId: context.reason,
+        },
+        timestamp: context.timestamp,
+    } as MinionPlayedEvent];
+});
+
+const sheepEmitSetupThenPlayTransferredMinionProgram = createEffectProgram<
+    SheepTransferredMinionSetupContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: context.setupEvents,
+    context: {
+        matchState: context.matchState,
+        playerId: context.playerId,
+        cardUid: context.cardUid,
+        defId: context.defId,
+        ownerId: context.ownerId,
+        reason: context.reason,
+        timestamp: context.timestamp,
+        targetBaseIndex: context.targetBaseIndex,
+        power: context.power,
+    } satisfies SheepTransferredMinionContinuationContext,
+    nextProgram: sheepPlayTransferredMinionAfterSetupProgram,
+}));
+
 function otherBaseOptions(core: SmashUpCore, fromBaseIndex: number) {
     return buildBaseTargetOptions(
         core.bases
@@ -166,6 +252,7 @@ function executeTransferredActionPlay(params: {
     targetBaseIndex?: number;
     targetMinionUid?: string;
     effectiveHandSize: number;
+    afterActionProgram?: AbilityProgram<ExternalActionAbilityContinuationContext, SmashUpCore, SmashUpEvent>;
 }): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const def = getCardDef(params.card.defId) as ActionCardDef | undefined;
     if (def?.type !== 'action') return { state: params.state, events: [] };
@@ -217,6 +304,7 @@ function executeTransferredActionPlay(params: {
         baseIndex: params.targetBaseIndex ?? 0,
         targetBaseIndex: params.targetBaseIndex,
         targetMinionUid: params.targetMinionUid,
+        afterActionProgram: params.afterActionProgram,
     });
 }
 
@@ -233,33 +321,22 @@ function executeTransferredMinionPlay(params: {
     const power = getMinionLikePower(params.card.defId);
     if (power === undefined) return { state: params.state, events: [] };
 
-    const coreAfterSetup = params.setupEvents.reduce((core, event) => reduce(core, event), params.state.core);
-    const validation = validateImmediateHandExtraMinionPlaySemantics(coreAfterSetup, params.playerId, {
+    const result = executeAbilityProgram(sheepEmitSetupThenPlayTransferredMinionProgram, {
+        matchState: params.state,
+        setupEvents: params.setupEvents,
+        playerId: params.playerId,
         cardUid: params.card.uid,
-        baseIndex: params.targetBaseIndex,
+        defId: params.card.defId,
+        ownerId: params.card.owner,
+        reason: params.reason,
+        timestamp: params.timestamp,
+        targetBaseIndex: params.targetBaseIndex,
+        power,
     });
-    if (!validation.valid) return { state: params.state, events: [] };
 
     return {
-        state: params.state,
-        events: [
-            ...params.setupEvents,
-            {
-                type: SU_EVENTS.MINION_PLAYED,
-                payload: {
-                    playerId: params.playerId,
-                    cardUid: params.card.uid,
-                    defId: params.card.defId,
-                    ownerId: params.card.owner,
-                    baseIndex: params.targetBaseIndex,
-                    baseDefId: params.state.core.bases[params.targetBaseIndex]?.defId,
-                    power,
-                    consumesNormalLimit: false,
-                    discardPlaySourceId: params.reason,
-                },
-                timestamp: params.timestamp,
-            } as MinionPlayedEvent,
-        ],
+        state: result.matchState ?? params.state,
+        events: result.events as SmashUpEvent[],
     };
 }
 const MOVE_OWN_MINION_TITLES: Record<string, string> = {
@@ -604,15 +681,10 @@ function registerMoveInteractionHandlers(): void {
             targetBaseIndex: selected.targetBaseIndex,
             targetMinionUid: selected.targetMinionUid,
             effectiveHandSize: getExternalActionEffectiveHandSize(state, playerId, false),
+            afterActionProgram: sheepDrawAfterExternalActionProgram,
         });
-        const coreAfterAction = resolved.events.reduce((core, event) => reduce(core, event), state.core);
-        return {
-            state: resolved.state,
-            events: [
-                ...resolved.events,
-                ...buildStandardDrawEvents(coreAfterAction, playerId, 1, random, timestamp),
-            ],
-        };
+        if (resolved.events.length === 0) return { state, events: drawFromCurrentState() };
+        return { state: resolved.state, events: resolved.events };
     });
 
     registerInteractionHandler('sheep_wood_for_sheep', (state, playerId, value, _data, random, timestamp) => {

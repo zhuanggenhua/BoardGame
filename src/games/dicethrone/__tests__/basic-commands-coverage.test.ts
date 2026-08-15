@@ -2612,6 +2612,71 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('本地 AI 在武士 Honor 造成伤害前响应窗口应使用 Honor 增伤', async () => {
+        const state = createHeroMatchup('gunslinger', 'samurai')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '1';
+        state.core.players['1'].tokens[TOKEN_IDS.HONOR] = 1;
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            isDefendable: true,
+            sourceAbilityId: 'wakizashi',
+            damage: 4,
+            bonusDamage: 0,
+        };
+        state.core.pendingDamage = {
+            id: 'dmg-ai-honor-response',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 4,
+            currentDamage: 4,
+            sourceAbilityId: 'wakizashi',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '1',
+            isFullyEvaded: false,
+        };
+        state.sys.responseWindow = {
+            current: null,
+        };
+        state.sys.interaction.current = {
+            id: 'dt-token-response-dmg-ai-honor-response',
+            kind: 'dt:token-response',
+            playerId: '1',
+            data: null,
+        } as any;
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(legalActions.some((action) => (
+            action.kind === 'token-response'
+            && action.commands.some((command) => (
+                command.type === 'USE_TOKEN'
+                && (command.payload as Record<string, unknown> | undefined)?.tokenId === TOKEN_IDS.HONOR
+            ))
+        ))).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('token-response');
+        expect(resolution?.action.metadata).toMatchObject({
+            tokenId: TOKEN_IDS.HONOR,
+        });
+    });
+
     it('响应窗口被 pendingInteractionId 锁定时 AI 不应暴露 RESPONSE_PASS', () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.sys.phase = 'targetingRoll';

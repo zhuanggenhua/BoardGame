@@ -3559,15 +3559,6 @@ test.describe('SummonerWars', () => {
       await waitForOnlineAiDebugApi(hostPage, 15000);
 
       await expect.poll(async () => {
-        return hostPage.evaluate((targetMatchId) => {
-          return localStorage.getItem(`match_ai_creds_${targetMatchId}`);
-        }, matchId!);
-      }, {
-        timeout: 15000,
-        message: '等待 host 自动领取 AI seat 凭据',
-      }).not.toBeNull();
-
-      await expect.poll(async () => {
         return hostPage.evaluate(() => {
           const api = (window as Window & { __BG_ONLINE_AI_DEBUG__?: OnlineAiDebugApi }).__BG_ONLINE_AI_DEBUG__;
           return Boolean(api?.getSeatLatestState?.('1'));

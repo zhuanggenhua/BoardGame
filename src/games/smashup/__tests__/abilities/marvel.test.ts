@@ -4,10 +4,15 @@ import { fireTriggers, isCardSuppressed, isMinionProtected } from '../../domain/
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import {
+    isAbilityRuntimeContinuationEvent,
+    resumeAbilityRuntimeContinuationEvent,
+} from '../../domain/abilityRuntime';
 import { SHIELD_CARDS } from '../../data/factions/shield';
 import { SPIDER_VERSE_CARDS } from '../../data/factions/spider_verse';
 import { ULTIMATES_CARDS } from '../../data/factions/ultimates';
 import {
+    applyEvents,
     expectRegisteredAbilityContract,
     getPromptOptions,
     getSimpleChoicePrompt,
@@ -396,8 +401,17 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 40,
         });
-        expect(rescue.events.filter(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toHaveLength(2);
-        expect(rescue.events).toEqual(expect.arrayContaining([
+        const rescueTopEvents = rescue.events.filter(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP);
+        const rescueContinuation = rescue.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+        expect(rescueTopEvents).toHaveLength(2);
+        expect(rescueContinuation).toBeTruthy();
+        expect(rescue.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        const resumedRescue = resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, rescueTopEvents as any)),
+            rescueContinuation as any,
+            FIXED_RANDOM,
+        );
+        expect(resumedRescue?.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: expect.objectContaining({ playerId: '0', count: 1 }),

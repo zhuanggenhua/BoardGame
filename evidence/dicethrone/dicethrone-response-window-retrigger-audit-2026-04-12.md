@@ -1,6 +1,8 @@
 # DiceThrone：response-window 重触发（重复提示/音效循环）专项审计（2026-04-12）
 
 > 2026-06-06 当前有效口径：本文是 2026-04-12 那轮关于 `response-window` 重触发/重复提示/音效循环的历史专项审计，不是当前 DiceThrone 所有 response-window 重开问题都已收口的证明，也不是新英雄补审出口。阅读时只能把它理解成历史链路审计文档。
+>
+> 2026-08-14 修订：本文旧版把“当前响应者是 human”写成 watchdog 一律不出手，这个口径过宽。当前有效口径是：human 自己回合 + human 响应窗口不出手；AI 当前阶段 + human 响应窗口应先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，再继续 AI 阶段收口，且不得替 human 发 `RESPONSE_PASS`。
 
 ## 用户现象（来自线上反馈的复述）
 - 我方（human）正在响应窗口中“跳过/让过”；
@@ -9,17 +11,18 @@
 
 ## 强口径事实拆解（不靠猜）
 
-### A. watchdog 误触发会制造“失败提示”噪音
+### A. watchdog 对 human 响应窗口必须分场景处理
 当 responseWindow 存在且当前响应者是 human：
-- ResponseWindowSystem 会拒绝任何“非当前响应者”的推进命令（例如 AI 侧的 `ADVANCE_PHASE`）。
-- 如果 watchdog 仍试图“强制结束 AI 回合”，会被拒绝 → 触发前端的 `AI 强制结束失败（reason）` toast。
+- 如果当前阶段属于 human，这是真人正常响应流程；watchdog 和手动强制都不得关闭窗口。
+- 如果当前阶段属于 AI，这是真人响应窗口把 AI 阶段卡住；watchdog 和手动强制应先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，再继续 AI 阶段收口。
+- 禁止项保持不变：任何场景都不得替 human 发 `RESPONSE_PASS` 或替 human 选择响应动作。
 
-这会让玩家误以为“AI 一直在点击/兜底一直失败”，但本质是**watchdog 在不该出手的时机出手**。
+旧版“一律返回 null”虽然能避免误替真人 pass，但会造成 AI 阶段卡在 human 响应窗口时无法自动结束，前端强制入口也容易被误判为不可用。
 
-**已落地修正：**
-- `src/engine/transport/onlineAiRecovery.ts`：当 `responseWindow.current` 存在且当前响应者是 human 时，`resolveForceEndTurnForStalledAi()` 返回 `null`，避免误触发。
-- 已有单测用例（本轮未跑）：`src/engine/transport/__tests__/server.test.ts`  
-  用例：`online AI watchdog 在 responseWindow 当前响应者为 human 时不得误触发强制结束 AI 回合`。
+**2026-08-14 已落地修正：**
+- `src/engine/transport/onlineAiRecovery.ts`：human responder 分支改为先判断当前阶段归属；AI 当前阶段返回 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 候选，human 当前阶段仍返回 `null`。
+- `src/engine/transport/__tests__/server.test.ts`：新增服务端协作覆盖，验证 AI 阶段先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 再 `ADVANCE_PHASE`，human 自己回合不动。
+- `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`：新增 resolver 层覆盖，验证自动和手动恢复都遵守同一分场景口径。
 
 ### B. response-window “重触发”更可能来自 AI 行为链，而不是 UI 点击
 DiceThrone 的响应窗口来源（领域事件）主要有：
@@ -96,25 +99,22 @@ DiceThrone 的响应窗口来源（领域事件）主要有：
   1. rollConfirmed 重置链仍可能触发 reopen，边界未完全闭环；
   2. responseWindow 去重在 Undo/回滚/重放场景下仍可能失效；
   3. 音效循环是否源于 UI 侧消费指针仍未审计。
-- 口径：**本轮未复跑测试，仅引用历史证据与静态审计结论。**
+- 口径：**2026-08-14 只收口 watchdog 分场景门禁回归；DiceThrone response-window 重触发 / 音效循环整体仍未收口。**
 
 ## 关联证据
 - 引擎层统一审计：`evidence/engine/online-ai-watchdog-strong-audit-2026-04-12.md`
 - DiceThrone AI 总审计：`evidence/dicethrone/dicethrone-ai-interaction-audit-2026-04-11.md`
 
-## 本轮验证（仅静态审计）
-> 你要求“继续审计且不跑 E2E”，本轮未运行任何测试。  
-> 下列为**既有用例清单**（供后续复核），不代表本轮已验证通过。
+## 2026-08-14 验证
 
-1) watchdog 门禁（responseWindow 当前响应者为 human 时不出手）：
-- 测试文件：`src/engine/transport/__tests__/server.test.ts`
-- 用例名：`online AI watchdog 在 responseWindow 当前响应者为 human 时不得误触发强制结束 AI 回合`
+1) watchdog 分场景门禁：
+- `npx vitest run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native`
+  - 54 passed，覆盖 resolver 层自动 / 手动恢复。
+- `npx vitest run src/engine/transport/__tests__/server.test.ts -t "human 响应窗口" --configLoader native`
+  - 2 passed，覆盖服务端实际命令序列：AI 阶段先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 再 `ADVANCE_PHASE`；human 自己回合不动。
 
 2) DiceThrone AI 行为收敛（rollConfirmed=true 后不再产出重掷被动动作）：
-- 测试文件：`src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`
-- 用例名：
-  - `本地 AI 在已确认骰面时不应再使用教皇税重掷骰子（避免反复打开响应窗口打扰真人）`
-  - `本地 AI 在未确认骰面且有可重掷骰子时应能使用教皇税重掷骰子`
+- 旧验证仍在 `src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`，本次未复跑该专项。
 
 ---
 

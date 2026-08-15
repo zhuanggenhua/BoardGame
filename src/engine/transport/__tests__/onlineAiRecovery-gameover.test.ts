@@ -2433,7 +2433,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         });
     });
 
-    it('AI 当前阶段里若 human 正在响应，手动强制结束不得强制关闭玩家响应窗口', () => {
+    it('AI 当前阶段里若 human 正在响应，自动 watchdog 应强制关闭窗口而不是返回空', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -2462,13 +2462,119 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
             '1': { type: 'local-ai', policyId: 'baseline' },
         };
 
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+        });
+
+        expect(result).toMatchObject({
+            playerId: '1',
+            reason: 'response-window',
+            resolution: {
+                action: {
+                    commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
+                },
+            },
+        });
+        expect(result?.resolution.action.commands).not.toContainEqual({
+            type: 'RESPONSE_PASS',
+            payload: {},
+        });
+    });
+
+    it('AI 当前阶段里若 human 正在响应，手动强制结束应强制关闭窗口而不是返回空', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'rw-human-response',
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'card-surprise',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
         const result = resolveManualForceEndAiPhase({
             sharedState,
             seatControllers,
             seatStates: {},
         });
 
-        expect(result).toBeNull();
+        expect(result).toMatchObject({
+            playerId: '1',
+            reason: 'response-window',
+            fingerprintHint: 'manual-response-window:0:main1:afterCardPlayed:card-surprise:0:rw-human-response',
+            resolution: {
+                action: {
+                    commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
+                },
+            },
+        });
+        expect(result?.resolution.action.commands).not.toContainEqual({
+            type: 'RESPONSE_PASS',
+            payload: {},
+        });
+    });
+
+    it('human 当前阶段里若 human 正在响应，自动和手动恢复都不得强制关闭窗口', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'rw-human-own-turn-response',
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'card-surprise',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        expect(resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+        })).toBeNull();
+        expect(resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+        })).toBeNull();
     });
 
     it('手动强制结束在 AI 阶段无显式阻塞面时，也应返回兜底推进命令', () => {

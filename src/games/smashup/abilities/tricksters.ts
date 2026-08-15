@@ -15,26 +15,32 @@ import {
     buildAbilityFeedback,
     createSkipOption,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
     isSpecialLimitBlocked,
     emitSpecialLimitUsed,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
     CardInstance,
+    CardsDrawnEvent,
     CardsDiscardedEvent,
+    CardToDeckBottomEvent,
+    CardTransferredEvent,
+    DeckReshuffledEvent,
+    DeckReorderedEvent,
+    PlayerState,
     SmashUpEvent,
     PowerCounterAddedEvent,
     BreakpointModifiedEvent,
 } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
-import { matchesDefId } from '../domain/utils';
+import { drawCards as drawCardsFromPlayerState, matchesDefId } from '../domain/utils';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
-import type { MatchState, PlayerId } from '../../../engine/types';
-import { reduce } from '../domain/reduce';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -94,6 +100,54 @@ function createTricksterPromptContext<TExtra extends Record<string, unknown> = R
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+function clonePlayerDrawPlan(player: PlayerState): PlayerState {
+    return {
+        ...player,
+        hand: [...player.hand],
+        deck: [...player.deck],
+        discard: [...player.discard],
+    };
+}
+
+function buildSinglePlannedDrawEvents(
+    drawPlan: PlayerState,
+    playerId: PlayerId,
+    random: RandomFn,
+    now: number,
+): SmashUpEvent[] {
+    const drawResult = drawCardsFromPlayerState(drawPlan, 1, random);
+    const events: SmashUpEvent[] = [];
+
+    if (drawResult.reshuffledDeckUids && drawResult.reshuffledDeckUids.length > 0) {
+        events.push({
+            type: SU_EVENTS.DECK_RESHUFFLED,
+            payload: {
+                playerId,
+                deckUids: drawResult.reshuffledDeckUids,
+            },
+            timestamp: now,
+        } as DeckReshuffledEvent);
+    }
+
+    if (drawResult.drawnUids.length > 0) {
+        events.push({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: {
+                playerId,
+                count: drawResult.drawnUids.length,
+                cardUids: drawResult.drawnUids,
+            },
+            timestamp: now,
+        } as CardsDrawnEvent);
+    }
+
+    drawPlan.hand = drawResult.hand;
+    drawPlan.deck = drawResult.deck;
+    drawPlan.discard = drawResult.discard;
+
+    return events;
 }
 
 function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
@@ -576,6 +630,18 @@ const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHid
     },
 });
 
+const tricksterHideoutPodAfterSwapProgram = createEffectProgram<TricksterHideoutPodDestroyPromptContext, AbilityContext['state'], SmashUpEvent>((context) => {
+    const destroyOptions = buildHideoutPodDestroyOptions(context.matchState.core, context.baseIndex);
+    if (destroyOptions.length <= 1) {
+        return { events: [] };
+    }
+    return {
+        events: [],
+        context,
+        nextProgram: tricksterHideoutPodDestroyPromptProgram,
+    };
+});
+
 const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideoutPodSwapPromptContext, AbilityContext['state'], SmashUpEvent>({
     sourceId: 'trickster_hideout_pod_swap',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -605,9 +671,6 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
             : player.deck.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
         if (!selectedCard) return { events: [] };
 
-        const nextHand = selected.zone === 'hand'
-            ? player.hand.filter(card => card.uid !== selected.cardUid)
-            : player.hand;
         const nextDeckWithoutSelection = selected.zone === 'deck'
             ? player.deck.filter(card => card.uid !== selected.cardUid)
             : player.deck;
@@ -617,60 +680,67 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
             type: 'action',
             owner: hideout.ownerId,
         };
-        const updatedDeck = selected.zone === 'deck'
-            ? ((random.shuffle
-                ? random.shuffle([...nextDeckWithoutSelection, hideoutCard])
-                : [...nextDeckWithoutSelection, hideoutCard]) as CardInstance[])
-            : nextDeckWithoutSelection;
 
-        const nextState: MatchState<AbilityContext['state']> = {
-            ...state,
-            core: {
-                ...state.core,
-                bases: state.core.bases.map((currentBase, index) => {
-                    if (index !== context.baseIndex) return currentBase;
-                    return {
-                        ...currentBase,
-                        ongoingActions: [
-                            ...currentBase.ongoingActions.filter(ongoing => ongoing.uid !== context.hideoutUid),
-                            { uid: selected.cardUid!, defId: selected.defId!, ownerId: selectedCard.owner, talentUsed: false },
-                        ],
-                    };
-                }),
-                players: {
-                    ...state.core.players,
-                    [playerId]: {
-                        ...player,
-                        hand: selected.zone === 'hand'
-                            ? [...nextHand, hideoutCard]
-                            : nextHand,
-                        deck: updatedDeck,
-                    },
+        const events: SmashUpEvent[] = selected.zone === 'hand'
+            ? [{
+                type: SU_EVENTS.CARD_TRANSFERRED,
+                payload: {
+                    cardUid: hideout.uid,
+                    defId: hideout.defId,
+                    fromPlayerId: playerId,
+                    toPlayerId: playerId,
+                    ownerId: hideout.ownerId,
+                    reason: 'trickster_hideout_pod_swap',
                 },
-            },
-        };
+                timestamp,
+            } as CardTransferredEvent]
+            : [{
+                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                payload: {
+                    cardUid: hideout.uid,
+                    defId: hideout.defId,
+                    ownerId: hideout.ownerId,
+                    reason: 'trickster_hideout_pod_swap',
+                    sourcePlayerId: playerId,
+                    sourceCardUid: hideout.uid,
+                    sourceDefId: hideout.defId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: context.baseIndex,
+                },
+                timestamp,
+            } as CardToDeckBottomEvent];
 
-        const events: SmashUpEvent[] = [];
+        events.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selectedCard.owner,
+            sourcePlayerId: playerId,
+            targetBaseIndex: context.baseIndex,
+            talentUsed: false,
+            now: timestamp,
+        }));
+
         if (selected.zone === 'deck') {
+            const updatedDeck = (random.shuffle
+                ? random.shuffle([...nextDeckWithoutSelection, hideoutCard])
+                : [...nextDeckWithoutSelection, hideoutCard]) as CardInstance[];
             events.push({
                 type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: updatedDeck.map(card => card.uid) },
+                payload: {
+                    playerId,
+                    deckUids: updatedDeck.map(card => card.uid),
+                    ...(hideout.ownerId !== playerId ? { sourcePlayerId: hideout.ownerId } : {}),
+                },
                 timestamp,
-            } as any);
-        }
-
-        const destroyOptions = buildHideoutPodDestroyOptions(nextState.core, context.baseIndex);
-        if (destroyOptions.length <= 1) {
-            return { events, matchState: nextState };
+            } as DeckReorderedEvent);
         }
 
         return {
             events,
-            matchState: nextState,
-            context: createTricksterPromptContext(nextState, playerId, timestamp, {
+            context: createTricksterPromptContext(state, playerId, timestamp, {
                 baseIndex: context.baseIndex,
             }) satisfies TricksterHideoutPodDestroyPromptContext,
-            nextProgram: tricksterHideoutPodDestroyPromptProgram,
+            nextProgram: tricksterHideoutPodAfterSwapProgram,
         };
     },
 });
@@ -1607,7 +1677,16 @@ function registerTricksterPodOngoingEffects(): void {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
         // 对手打出的随从：playerId=打出者；需要找到所有 brownie_pod（可能多个）
         const events: SmashUpEvent[] = [];
-        let workingState = trigCtx.state;
+        const drawPlans = new Map<PlayerId, PlayerState>();
+        const getDrawPlan = (playerId: PlayerId): PlayerState | undefined => {
+            const existing = drawPlans.get(playerId);
+            if (existing) return existing;
+            const player = trigCtx.state.players[playerId];
+            if (!player) return undefined;
+            const plan = clonePlayerDrawPlan(player);
+            drawPlans.set(playerId, plan);
+            return plan;
+        };
         for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
             const base = trigCtx.state.bases[bi];
             for (const brownie of base.minions.filter(m => m.defId === 'trickster_brownie_pod')) {
@@ -1618,12 +1697,11 @@ function registerTricksterPodOngoingEffects(): void {
                 if (used === trigCtx.state.turnNumber) continue;
 
                 // 抽 1
-                const owner = workingState.players[ownerId];
-                if (!owner) continue;
-                const drawEvents = buildStandardDrawEvents(workingState, ownerId, 1, trigCtx.random, trigCtx.now);
+                const drawPlan = getDrawPlan(ownerId);
+                if (!drawPlan) continue;
+                const drawEvents = buildSinglePlannedDrawEvents(drawPlan, ownerId, trigCtx.random, trigCtx.now);
                 if (drawEvents.length === 0) continue;
                 events.push(...drawEvents);
-                workingState = drawEvents.reduce((state, event) => reduce(state, event), workingState);
                 events.push({
                     type: SU_EVENTS.MINION_METADATA_UPDATED,
                     payload: {

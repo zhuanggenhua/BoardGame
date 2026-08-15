@@ -21,7 +21,6 @@ import {
     createEffectProgram,
     createPromptProgram,
 } from '../domain/abilityRuntime';
-import { reduce } from '../domain/reduce';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { buildAffectRecords } from '../domain/affect';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
@@ -48,14 +47,6 @@ type SteampunkPromptContext = {
     replayOwnerId?: string;
 };
 
-function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    let nextCore = core;
-    for (const event of events) {
-        nextCore = reduce(nextCore, event);
-    }
-    return nextCore;
-}
-
 function createPromptContext(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -68,16 +59,6 @@ function createPromptContext(
         playerId,
         now,
         ...extra,
-    };
-}
-
-function withSimulatedMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    return {
-        ...matchState,
-        core: simulateCore(matchState.core, events),
     };
 }
 
@@ -857,10 +838,9 @@ const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContex
             reason: 'steampunk_mechanic',
             timestamp,
         }) as SmashUpEvent;
-        const promptState = withSimulatedMatchState(state, [recoverEvent]);
         return {
             events: [recoverEvent],
-            context: createPromptContext(promptState, playerId, timestamp, {
+            context: createPromptContext(state, playerId, timestamp, {
                 replayCardUid: selected.cardUid,
                 replayDefId: defId,
                 replayOwnerId: liveCard.owner,
@@ -888,7 +868,7 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
             `steampunk_cov_target_${context.now}`,
             context.playerId,
             '选择要将行动卡附着到的随从',
-            buildChangeOfVenueMinionOptions(context.state, context.playerId),
+            buildChangeOfVenueMinionOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'steampunk_change_of_venue_choose_minion',
                 titleKey: 'ui.steampunk_change_of_venue_choose_minion_title',
@@ -962,7 +942,7 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
             `steampunk_cov_target_${context.now}`,
             context.playerId,
             '选择要将行动卡附着到的基地',
-            buildChangeOfVenueBaseOptions(context.state),
+            buildChangeOfVenueBaseOptions(context.matchState.core),
             {
                 sourceId: 'steampunk_change_of_venue_choose_base',
                 titleKey: 'ui.steampunk_change_of_venue_choose_base_title',
@@ -1066,12 +1046,11 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             reason: 'steampunk_change_of_venue',
             timestamp,
         }) as SmashUpEvent;
-        const replayState = withSimulatedMatchState(state, [detachEvent, recoverEvent]);
 
         if (cardDef?.subtype === 'ongoing') {
             const targets = (cardDef.ongoingTarget ?? 'base') === 'minion'
-                ? buildChangeOfVenueMinionOptions(replayState.core, playerId)
-                : buildChangeOfVenueBaseOptions(replayState.core);
+                ? buildChangeOfVenueMinionOptions(state.core, playerId)
+                : buildChangeOfVenueBaseOptions(state.core);
             if (targets.length === 0) {
                 return {
                     events: [detachEvent, recoverEvent, grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'steampunk_change_of_venue')],
@@ -1079,7 +1058,7 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             }
             return {
                 events: [detachEvent, recoverEvent],
-                context: createPromptContext(replayState, playerId, timestamp, {
+                context: createPromptContext(state, playerId, timestamp, {
                     replayCardUid: selected.cardUid,
                     replayDefId: selected.defId,
                     replayOwnerId: selected.ownerId,

@@ -223,7 +223,6 @@ describe('scoreBases 阶段自动推进', () => {
                 interaction: { current: undefined, queue: [] },
                 responseWindow: { current: undefined },
                 _smashupStartTurnWindowActive: true,
-                _waitForStartTurnInteractionReduce: true,
             } as any,
         };
 
@@ -243,7 +242,6 @@ describe('scoreBases 阶段自动推进', () => {
         }
 
         expect((result.updatedState.sys as any)._smashupStartTurnWindowActive).toBeUndefined();
-        expect((result.updatedState.sys as any)._waitForStartTurnInteractionReduce).toBeUndefined();
     });
 
     it('score-after 交互不应因残留的 _smashupStartTurnWindowActive 被误判回 startTurn', () => {
@@ -567,7 +565,7 @@ describe('scoreBases 阶段自动推进', () => {
         expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
     });
 
-    it('反馈 69beb069：基地已达 breakpoint 且当前玩家仍有额外随从额度时，ADVANCE_PHASE 仍应触发基地计分并进入延迟收尾', () => {
+    it('反馈 69beb069：基地已达 breakpoint 且当前玩家仍有额外随从额度时，ADVANCE_PHASE 仍应触发基地计分并完成收尾', () => {
         const initialState: MatchState<SmashUpCore> = {
             core: makeMinimalCore({
                 currentPlayerIndex: 1,
@@ -639,12 +637,12 @@ describe('scoreBases 阶段自动推进', () => {
         expect(advanced.success, advanced.error).toBe(true);
         expect(advanced.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_SCORED);
         expect(advanced.events.filter(event => event.type === SU_EVENT_TYPES.BASE_SCORED)).toHaveLength(1);
-        expect(advanced.events.map(event => event.type)).not.toContain(SU_EVENT_TYPES.BASE_CLEARED);
-        expect(advanced.events.map(event => event.type)).not.toContain(SU_EVENT_TYPES.BASE_REPLACED);
-        expect((advanced.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
-        expect(advanced.finalState.sys.phase).toBe('scoreBases');
-        expect((advanced.finalState.sys as any).flowHalted).toBe(true);
-        expect(advanced.finalState.core.bases[0]?.defId).toBe('base_the_homeworld');
+        expect(advanced.events.filter(event => event.type === SU_EVENT_TYPES.BASE_CLEARED)).toHaveLength(1);
+        expect(advanced.events.filter(event => event.type === SU_EVENT_TYPES.BASE_REPLACED)).toHaveLength(1);
+        expect((advanced.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+        expect(advanced.finalState.sys.phase).not.toBe('scoreBases');
+        expect((advanced.finalState.sys as any).flowHalted).toBeFalsy();
+        expect(advanced.finalState.core.bases[0]?.defId).toBe('base_haunted_house');
     });
 
     it('达标基地上只有触发式侏儒 POD beforeScoring 时仍应自动推进', () => {
@@ -1989,6 +1987,7 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(resolution?.playerId).toBe('1');
         expect(resolution?.action.kind).toBe('response-pass');
+        expect(resolution?.action.commands[0]?.type).toBe(SU_COMMANDS.REACTION_PASS);
     });
 
     it('afterScoring live session 丢失镜像 responseWindow 后，AI 仍不应误暴露 advance-phase', () => {
@@ -2100,6 +2099,70 @@ describe('scoreBases 阶段自动推进', () => {
             baseIndex: 0,
             scoringBase: true,
         });
+    });
+
+    it('afterScoring live session 丢失镜像且没有可用动作时，AI 也不能暴露 advance-phase', () => {
+        const initialState = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 1,
+                bases: [
+                    makeBase('base_pirate_cove', [
+                        makeMinion('0', 'robot_hoverbot', 4),
+                    ]),
+                ],
+                scoringEligibleBaseIndices: [0],
+            }),
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'reaction-window-missing-mirror-no-actions',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+                eventStream: { nextId: 1 },
+            } as any,
+        } as MatchState<SmashUpCore>;
+        const baseRef = createScoringBaseRef(initialState.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造 missing-mirror-no-actions reaction 的 scoring base ref');
+        }
+        const scoringState = setScoringSession(initialState, {
+            ...createScoringSession(initialState.core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+        const sessionState = startSmashUpReactionSession(scoringState, {
+            frameId: 'missing-mirror-no-actions-reaction',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '1',
+            consecutivePasses: 0,
+            responseWindowType: 'afterScoring',
+        });
+        const state = {
+            ...sessionState,
+            sys: {
+                ...sessionState.sys,
+                interaction: { current: undefined, queue: [] },
+                responseWindow: { current: undefined, history: [] },
+            },
+        } as MatchState<SmashUpCore>;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: state as any,
+        });
+
+        expect(getSmashUpReactionSession(state)).toBeDefined();
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
     });
 
     it('AI 在计分阶段仅存在 playCards-only 泰坦 special 时应暴露 advance-phase', () => {

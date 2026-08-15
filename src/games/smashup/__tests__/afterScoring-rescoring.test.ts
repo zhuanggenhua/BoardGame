@@ -101,10 +101,11 @@ function advancePostScoringDelay(
     eventLog: SmashUpEvent[],
 ) {
     const state = runner.getState();
-    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-    expect(typeof delayUntil).toBe('number');
+    if (state.sys.phase !== 'scoreBases') {
+        return { success: true, events: [] as SmashUpEvent[], finalState: state };
+    }
     const playerId = state.core.turnOrder[state.core.currentPlayerIndex]!;
-    const advance = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
+    const advance = runner.dispatch('ADVANCE_PHASE', { playerId });
     expect(advance.success).toBe(true);
     eventLog.push(...advance.events);
     return advance;
@@ -120,10 +121,6 @@ function drainScoreBasesDelayUntilPromptOrIdle(
             break;
         }
         if (state.sys.phase !== 'scoreBases') {
-            break;
-        }
-        const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-        if (typeof delayUntil !== 'number') {
             break;
         }
         advancePostScoringDelay(runner, eventLog);
@@ -890,8 +887,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             const pendingChoice = getCurrentChoice(state);
 
             if (!pendingChoice) {
-                const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
-                if (state.sys.phase === 'scoreBases' && typeof delayUntil === 'number') {
+                if (state.sys.phase === 'scoreBases') {
                     advancePostScoringDelay(runner, eventLog);
                     continue;
                 }

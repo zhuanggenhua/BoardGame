@@ -37,7 +37,6 @@ import {
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { registerTriggerProgramExecutor } from '../domain/triggerExecutors';
-import { reduce } from '../domain/reduce';
 import { getCardDef } from '../data/cards';
 import { SU_EVENTS } from '../domain/types';
 import type { MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
@@ -108,24 +107,6 @@ function appendPendingBodyShopDistribution(
             ...matchState.sys,
             [BODY_SHOP_PENDING_DISTRIBUTIONS_KEY]: [...existing, pending],
         } as typeof matchState.sys,
-    };
-}
-
-function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    let nextCore = core;
-    for (const event of events) {
-        nextCore = reduce(nextCore, event);
-    }
-    return nextCore;
-}
-
-function withSimulatedMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    return {
-        ...matchState,
-        core: simulateCore(matchState.core, events),
     };
 }
 
@@ -440,14 +421,16 @@ const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMob
             ...deckBottomEvents,
             addPowerCounter(context.minionUid, context.baseIndex, 1, 'frankenstein_angry_mob', timestamp),
         ];
-        const nextState = withSimulatedMatchState(state, events);
-        if ((nextState.core.players[playerId]?.hand.length ?? 0) === 0) {
+        const remainingHandCount = (state.core.players[playerId]?.hand ?? [])
+            .filter(card => card.uid !== sourceCard.uid)
+            .length;
+        if (remainingHandCount === 0) {
             return { events };
         }
 
         return {
             events,
-            context: createPromptContext(nextState, playerId, timestamp, {
+            context: createPromptContext(state, playerId, timestamp, {
                 minionUid: context.minionUid,
                 baseIndex: context.baseIndex,
             }),
@@ -682,10 +665,9 @@ const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemove
         const events: SmashUpEvent[] = [
             removePowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_blitzed', timestamp),
         ];
-        const nextState = withSimulatedMatchState(state, events);
         return {
             events,
-            context: createPromptContext(nextState, playerId, timestamp, { removedTotal: context.removedTotal + 1 }),
+            context: createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal + 1 }),
             nextProgram: frankensteinBlitzedRemovePromptProgram,
         };
     },

@@ -23,7 +23,6 @@ import { registerActiveBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { registerTrigger } from '../domain/ongoingEffects';
-import { reduce } from '../domain/reduce';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import type { BaseMetadataUpdatedEvent, CardsDiscardedEvent, DeckInspectedEvent, DeckReorderedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
@@ -92,6 +91,14 @@ type BeautyDiscardChoice = {
     cardUid?: string;
     defId?: string;
     skip?: boolean;
+};
+
+type BeautyDiscardAfterCommittedContext = BeautyDiscardPromptContext & {
+    random: RandomFn;
+};
+
+type DiscoverTheLibraryContext = BeautyDiscardPromptContext & {
+    random: RandomFn;
 };
 
 function abilityFromRuntime(result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> }): AbilityResult {
@@ -180,6 +187,12 @@ function resolveBeautyDiscardEffect(
     }
 }
 
+const beautyDiscardAfterCommittedProgram = createEffectProgram<BeautyDiscardAfterCommittedContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: resolveBeautyDiscardEffect(context, context.matchState, context.random, context.now),
+    }),
+);
+
 const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'beauty_and_the_beast_discard_hand',
     buildInteraction: context => {
@@ -221,12 +234,16 @@ const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContex
             payload: { playerId: context.playerId, cardUids: selectedUids },
             timestamp,
         } as CardsDiscardedEvent;
-        const afterDiscard: MatchState<SmashUpCore> = {
-            ...state,
-            core: reduce(state.core, discardEvent),
-        };
+        if (context.effect === 'none') return { events: [discardEvent] };
         return {
-            events: [discardEvent, ...resolveBeautyDiscardEffect(context, afterDiscard, random, timestamp)],
+            events: [discardEvent],
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                random,
+            } satisfies BeautyDiscardAfterCommittedContext,
+            nextProgram: beautyDiscardAfterCommittedProgram,
         };
     },
 });
@@ -247,6 +264,34 @@ function runBeautyDiscardPrompt(
         matchState: context.matchState,
     }));
 }
+
+const discoverTheLibraryAfterCommittedDrawProgram = createEffectProgram<DiscoverTheLibraryContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        if ((context.matchState.core.players[context.playerId]?.hand.length ?? 0) === 0) return { events: [] };
+        const prompt = runBeautyDiscardPrompt({
+            ...context,
+            matchState: context.matchState,
+        });
+        return {
+            events: prompt.events,
+            ...(prompt.matchState ? { matchState: prompt.matchState } : {}),
+        };
+    },
+);
+
+const discoverTheLibraryProgram = createEffectProgram<DiscoverTheLibraryContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            2,
+            context.random,
+            context.now,
+        ),
+        context,
+        nextProgram: discoverTheLibraryAfterCommittedDrawProgram,
+    }),
+);
 
 function belleOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
@@ -404,21 +449,22 @@ function breakTheCurse(ctx: AbilityContext): AbilityResult {
 }
 
 function discoverTheLibrary(ctx: AbilityContext): AbilityResult {
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now);
-    if (!ctx.matchState) return { events: drawEvents };
-    const drawnCore = drawEvents.reduce((state, event) => reduce(state, event), ctx.state);
-    const drawnMatchState: MatchState<SmashUpCore> = { ...ctx.matchState, core: drawnCore };
-    if ((drawnCore.players[ctx.playerId]?.hand.length ?? 0) === 0) return { events: drawEvents };
-    const prompt = runBeautyDiscardPrompt({
-        ...ctx,
-        state: drawnCore,
-        matchState: drawnMatchState,
+    if (!ctx.matchState) {
+        return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now) };
+    }
+    return abilityFromRuntime(executeAbilityProgram(discoverTheLibraryProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        baseIndex: ctx.baseIndex,
+        cardUid: ctx.cardUid,
+        defId: ctx.defId,
         discardCount: 1,
         optional: false,
         excludeCardUid: ctx.cardUid,
         effect: 'none',
-    });
-    return { events: [...drawEvents, ...prompt.events], matchState: prompt.matchState };
+        random: ctx.random,
+    }));
 }
 
 function everASurprise(ctx: AbilityContext): AbilityResult {

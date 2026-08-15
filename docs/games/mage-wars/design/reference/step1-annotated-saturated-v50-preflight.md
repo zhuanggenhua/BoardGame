@@ -1,6 +1,6 @@
 # Mage Wars 标注图饱和布局 v50 出图前硬回执
 
-> 状态：`preflight-ready / open-design-artifact-only / media-generate-forbidden / human-review-not-allowed / implementation-blocked / mobile-blocked`。本轮先更新全局设计前置规范的“规则对象实体锚点守恒”，再把 v49 重构为 v50；不进入真实 Board/UI、真实运行页 E2E 或移动端适配。
+> 状态：`preflight-ready / open-design-artifact-only / media-generate-forbidden / human-review-not-allowed / implementation-blocked / mobile-blocked`。本轮先更新项目设计前置规范的“规则对象实体锚点守恒”，再把 v49 重构为 v50；不进入真实 Board/UI、真实运行页 E2E 或移动端适配。
 
 ## 本轮问题锁定
 

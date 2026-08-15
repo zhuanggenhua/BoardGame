@@ -2,7 +2,7 @@
 
 ## 2026-08-06 修订：资源占用结论失效，恢复序列改为分片执行
 
-2026-04-12 的真人保护、隐藏交互识别和响应窗口结论仍然成立；但文末“性能成本可接受”与整体 `APPROVE` 不再覆盖资源占用维度。生产证据已经推翻该结论：
+2026-04-12 的真人保护、隐藏交互识别和响应窗口结论需要按 2026-08-14 的分场景修订理解；文末“性能成本可接受”与整体 `APPROVE` 不再覆盖资源占用维度。生产证据已经推翻该结论：
 
 - `/home/admin/BoardGame/logs/game-server-cpu-watch/restart-history.log` 记录了 2026-07-28 至 2026-08-05 共 20 次 `boardgame-game-server` 持续高 CPU 自动重启，平均值为 93.88% 至 99.65%。
 - 20 个故障窗口都出现在线 AI watchdog 恢复活动；同一批连续重启通常由同一个房间占据主要日志，且涉及王权骰铸、大杀四方和《The Gang》，排除了单款游戏规则作为共同根因。
@@ -29,6 +29,33 @@
 - 残余扩审范围：当前预算按“恢复步骤”计数；单个合法动作仍可能串行包含多条命令，也没有墙钟时间预算。该项不改变本轮把单序列最坏连续步骤从 16 降到 3 的修复结论，但部署后仍需继续观察 CPU；若同类高占用再次出现，下一层动作是补命令数/墙钟预算并采集 profiler 或火焰图，而不是继续提高步骤上限。
 
 当前结论等级：**资源占用根因已定位并完成本地修复与共享链回归；尚未部署生产，因此不能用当前线上低 CPU 证明新代码已经在线生效。**
+
+## 2026-08-14 修订：AI 当前阶段 + human 响应窗口不是“真人响应一律不动”
+
+现实症状：
+- DiceThrone 在线 AI 阶段可能卡在真人响应窗口，前端“强制结束 AI 阶段”入口消失或自动结束未触发，表现为 AI 回合无法继续。
+- 旧审计把“当前响应者是 human”简化成 watchdog 一律返回空；这能避免误替真人 pass，但也把“AI 当前阶段被真人响应窗口卡住”的合法恢复路径一起挡掉。
+
+修订口径：
+- human 自己回合 + human 响应窗口：watchdog 和手动强制都不得出手，窗口必须继续等真人。
+- AI 当前阶段 + human 响应窗口：watchdog 和手动强制都应先执行 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，随后按恢复序列继续 `ADVANCE_PHASE` / 游戏特化阶段推进；仍禁止替真人发 `RESPONSE_PASS`。
+- 门禁仍是 AI-only：恢复候选的执行玩家必须是非 human AI seat；真人响应者只作为“关闭卡住窗口”的对象，不会被代选或代 pass。
+
+本轮修复：
+- `src/engine/transport/onlineAiRecovery.ts`：把 human responder 分支改为先判断当前阶段归属；只有当前阶段属于 AI seat 时才生成 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 候选。
+- `src/engine/transport/server.ts`：服务端恢复序列已验证会先强制关闭窗口，再跟随 active-turn 继续推进阶段。
+- `src/components/game/framework/widgets/GameHUD.tsx`：setup 阶段不再隐藏“强制结束 AI 阶段”入口；普通弹窗强关仍受 setup 限制。
+- `src/pages/onlineAiRuntimeSupport.ts` / `src/pages/matchRoomOnlineStageRuntime.tsx`：恢复旧调试 API 形状，供 E2E 和诊断读取服务端权威状态；这不是恢复旧浏览器 AI seat 执行权。
+- `src/hooks/match/useMatchStatus.ts` / `src/pages/useMatchRoomSeatValidation.ts` / `src/pages/matchRoomBridges.tsx`：在线房座位校验增加“快照版本”门禁。现实含义是本地座位凭据只会在连续两次服务端 / 传输快照都确认该座位不存在时清理；同一次坏快照、StrictMode/effect 重放或不可信空传输快照不会立刻把房主打回旁观者。这样避免“本地 seat 被误清 → 房主身份丢失 → 强制结束 AI 阶段入口消失”的同类回归。
+
+验证：
+- `npx vitest run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native`：54 passed。
+- `npx vitest run src/engine/transport/__tests__/server.test.ts -t "human 响应窗口" --configLoader native`：2 passed，覆盖 AI 阶段先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 再 `ADVANCE_PHASE`，以及 human 自己回合不动。
+- `npx vitest run src/components/game/framework/widgets/__tests__/GameHUD.test.tsx --configLoader native`：4 passed。
+- `npx vitest run src/pages/__tests__/MatchRoom.onlineIdentity.test.tsx --configLoader native`：13 passed。
+- `npx vitest run src/pages/__tests__/MatchRoom.routeIdentity.test.ts src/pages/__tests__/MatchRoom.routeIdentity.test.tsx -t "stored seat|pending clear|坏快照|连续两次|第一次|同一次" --configLoader native`：12 passed / 8 skipped。
+- `npx vitest run src/pages/__tests__/matchSeatValidation.test.ts -t "useMatchStatus" --configLoader native`：3 passed / 148 skipped。
+- `npx eslint src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts src/engine/transport/__tests__/server.test.ts src/pages/onlineAiRuntimeSupport.ts src/pages/matchRoomOnlineStageRuntime.tsx src/pages/__tests__/MatchRoom.onlineIdentity.test.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/game/framework/widgets/__tests__/GameHUD.test.tsx e2e/smashup/smashup-phase-transition-simple.e2e.ts e2e/summonerwars/summonerwars.e2e.ts`：0 errors；仍有既有 warnings。
 
 > 目的：回答“底层是不是设计有问题、为什么会卡死、兜底是否会误伤真人、为什么会弹失败提示、自动上报是否包含无法选择原因”。  
 > 本文是**引擎层统一审计**；各游戏的交互类型细节见对应 `evidence/*-ai-interaction-audit-*.md`。
@@ -129,12 +156,13 @@
 - 同时还可能弹出“AI 强制结束失败/AI 自动跳过失败”之类提示，造成“AI 兜底失效”的错觉。
 
 强口径判定：
-1) **watchdog 在 responseWindow 当前响应者为 human 时不应出手**（否则会被 ResponseWindowSystem 的“当前响应者门禁”拒绝，形成误报与失败提示）。  
-2) 若重触发来自 AI 行为（例如 DiceThrone AI 在已确认骰面后仍反复使用重掷类能力，导致多次 `CONFIRM_ROLL → RESPONSE_WINDOW_OPENED`），应优先在 **AI 行为层**减少对 human 的重复打扰，而不是靠强制跳过粗暴吞掉真人响应机会。
+1) **human 自己回合里的 human 响应窗口，watchdog 不应出手**；否则会越权影响真人流程。
+2) **AI 当前阶段被 human 响应窗口卡住时，watchdog 应先强制关窗再继续 AI 阶段收口**；这不是替 human `RESPONSE_PASS`，而是关闭阻塞 AI 阶段的窗口并回到 AI-only 恢复序列。
+3) 若重触发来自 AI 行为（例如 DiceThrone AI 在已确认骰面后仍反复使用重掷类能力，导致多次 `CONFIRM_ROLL → RESPONSE_WINDOW_OPENED`），应优先在 **AI 行为层**减少对 human 的重复打扰，而不是靠强制跳过粗暴吞掉真人响应机会。
 
 已落地的引擎/兜底改动：
-- `src/engine/transport/onlineAiRecovery.ts`：当 `responseWindow.current` 存在且当前响应者是 human 时，`resolveForceEndTurnForStalledAi()` 直接返回 `null`，避免 watchdog 误触发。  
-  验证：`src/engine/transport/__tests__/server.test.ts` 新增用例 `online AI watchdog 在 responseWindow 当前响应者为 human 时不得误触发强制结束 AI 回合`。
+- `src/engine/transport/onlineAiRecovery.ts`：当 `responseWindow.current` 存在且当前响应者是 human 时，先判断当前阶段归属；human 当前阶段返回 `null`，AI 当前阶段返回 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 恢复候选。
+  验证：`src/engine/transport/__tests__/server.test.ts` 用例 `online AI watchdog 在 AI 当前阶段卡住 human 响应窗口时，应先强关响应窗口` 与 `online AI watchdog 在 human 自己回合的 human 响应窗口中不应强制关窗`。
 - `src/engine/systems/ResponseWindowSystem.ts`：新增两层系统级去重门禁：  
   1. 当前窗口已存在时，忽略语义等价 `OPENED`，避免重置 responder 进度；  
   2. 同一批事件里 `CLOSED` 后若没有任何非响应窗口业务事件，又收到语义等价 `OPENED`，则忽略该 reopen。  

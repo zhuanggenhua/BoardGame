@@ -57,6 +57,7 @@ import {
     isSmashUpReactionChoiceInteraction,
 } from './domain/reactionChoiceInteraction';
 import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
+import { getSmashUpReactionSession } from './domain/reactionSession';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -310,6 +311,7 @@ const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: Pl
 const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.current) return false;
     if (state.sys.interaction?.isBlocked === true) return false;
+    if (getSmashUpReactionSession(state)) return false;
     if (getSmashUpReactionWindowPresentation(state)) return false;
     if (hasBlockingLegacyResponseWindow(state)) return false;
     const responseWindow = state.sys.responseWindow?.current as {
@@ -820,13 +822,31 @@ const RELATIVE_UTILITY_ACTION_KINDS = new Set<AiLegalAction['kind']>([
 ]);
 
 const RELATIVE_UTILITY_WEIGHT = 9;
+const ONLINE_RELATIVE_UTILITY_MAX_PROJECTED_ACTIONS = 8;
+const ONLINE_RELATIVE_UTILITY_DECISION_BUDGET_MS = 250;
 const relativeUtilityByActionIdCache = new WeakMap<AiDecisionContext, Map<string, number>>();
 
 const shouldApplySmashUpRelativeUtility = (context: AiDecisionContext): boolean => {
     if (context.responseWindow) return false;
     const state = context.visibleState as SmashUpState;
+    if (getSmashUpReactionSession(state)) return false;
     if (getSmashUpReactionWindowPresentation(state)) return false;
     if (hasBlockingLegacyResponseWindow(state)) return false;
+    return true;
+};
+
+const shouldProjectSmashUpRelativeUtility = (
+    context: AiDecisionContext,
+    candidateCount: number,
+): boolean => {
+    if (!shouldApplySmashUpRelativeUtility(context)) return false;
+    if (
+        context.source === 'online'
+        && context.decisionBudgetMs <= ONLINE_RELATIVE_UTILITY_DECISION_BUDGET_MS
+        && candidateCount > ONLINE_RELATIVE_UTILITY_MAX_PROJECTED_ACTIONS
+    ) {
+        return false;
+    }
     return true;
 };
 
@@ -841,7 +861,7 @@ const buildRelativeUtilityByActionId = (context: AiDecisionContext): Map<string,
     }
 
     const candidates = context.legalActions.filter((action) => RELATIVE_UTILITY_ACTION_KINDS.has(action.kind));
-    if (candidates.length <= 1) {
+    if (candidates.length <= 1 || !shouldProjectSmashUpRelativeUtility(context, candidates.length)) {
         relativeUtilityByActionIdCache.set(context, utilityMap);
         return utilityMap;
     }
@@ -1986,8 +2006,8 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
             kind: 'response-pass',
             label: '跳过响应',
             commands: [{
-                type: 'RESPONSE_PASS',
-                payload: {},
+                type: SU_COMMANDS.REACTION_PASS,
+                payload: { reason: 'ai_pass' },
             }],
             metadata: {
                 windowType: reactionWindow.windowType,
@@ -1995,6 +2015,7 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
         }];
 
         actions.push(...buildPlayableCardActions(state, playerId, { inResponseWindow: true }));
+        actions.push(...buildSpecialActions(state, playerId, { includeMinions: true, includeTitans: true }));
         return actions;
     }
 

@@ -139,6 +139,7 @@ export function mapMageWarsEventToFx(
                 spellCardId: payload.spellCardId,
                 sourceAbilityId: payload.sourceAbilityId,
                 diceResults: payload.diceResults,
+                effectDieResult: payload.effectDieResult,
                 damageAmount: payload.baseDamage,
             },
         };

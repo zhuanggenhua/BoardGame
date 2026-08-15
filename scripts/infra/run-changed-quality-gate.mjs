@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { ESLint } from 'eslint';
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
@@ -37,7 +37,46 @@ const vitestPoolOverride = vitestPoolOverrideRaw === 'threads' || vitestPoolOver
 const vitestPool = vitestPoolOverride || 'forks';
 const GAME_VITEST_ARGS = ['--config', 'vitest.config.core.ts', '--pool', vitestPool, '--no-file-parallelism', '--maxWorkers', '1'];
 const FAST_VITEST_ARGS = ['--pool', vitestPool, '--no-file-parallelism', '--maxWorkers', '1'];
-const KNOWN_GAME_IDS = new Set(['smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia']);
+const GAMES_DIR = path.join(repoRoot, 'src', 'games');
+const UNDER_CONSTRUCTION_STATUS_TAG = 'under_construction';
+
+function parseGameManifestEntry(manifestPath) {
+  const manifest = readFileSync(manifestPath, 'utf8');
+  const id = manifest.match(/\bid\s*:\s*['"`]([^'"`]+)['"`]/)?.[1];
+  const type = manifest.match(/\btype\s*:\s*['"`]([^'"`]+)['"`]/)?.[1];
+  const statusTag = manifest.match(/\bstatusTag\s*:\s*['"`]([^'"`]+)['"`]/)?.[1] ?? '';
+  const enabled = /\benabled\s*:\s*true\b/.test(manifest);
+
+  if (!id || type !== 'game' || !enabled) return null;
+  return { id, statusTag };
+}
+
+function collectGameManifestEntries() {
+  const entries = [];
+  const dirents = readdirSync(GAMES_DIR, { withFileTypes: true });
+
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory()) continue;
+    const manifestPath = path.join(GAMES_DIR, dirent.name, 'manifest.ts');
+    if (!existsSync(manifestPath)) continue;
+    const entry = parseGameManifestEntry(manifestPath);
+    if (entry) entries.push(entry);
+  }
+
+  if (entries.length === 0) {
+    throw new Error('[changed-quality-gate] 未读取到 src/games/*/manifest.ts 中的已启用正式游戏，无法建立游戏增量门禁。');
+  }
+
+  return entries;
+}
+
+const GAME_MANIFEST_ENTRIES = collectGameManifestEntries();
+const KNOWN_GAME_IDS = new Set(GAME_MANIFEST_ENTRIES.map((entry) => entry.id));
+const PRE_PUSH_GAME_E2E_FLOW_ELIGIBLE_IDS = new Set(
+  GAME_MANIFEST_ENTRIES
+    .filter((entry) => entry.statusTag !== UNDER_CONSTRUCTION_STATUS_TAG)
+    .map((entry) => entry.id),
+);
 const PRE_PUSH_CORE_TARGET_GROUPS = [
   {
     label: 'Core tests (engine)',
@@ -50,12 +89,39 @@ const PRE_PUSH_CORE_TARGET_GROUPS = [
     targets: ['src/components', 'src/pages'],
   },
 ];
-const PRE_PUSH_GAME_SMOKE_TARGETS = {
-  smashup: ['src/games/smashup/__tests__/smashup.smoke.test.ts'],
-  dicethrone: ['src/games/dicethrone/__tests__/flow.test.ts'],
-  summonerwars: ['src/games/summonerwars/__tests__/flow.test.ts'],
-  tictactoe: ['src/games/tictactoe/__tests__/flow.test.ts'],
-  cardia: ['src/games/cardia/__tests__/smoke.test.ts'],
+const PRE_PUSH_GAME_E2E_FLOW_TARGETS = {
+  cardia: {
+    target: 'e2e/cardia/cardia-basic-flow.e2e.ts',
+    testNamePattern: 'should complete a full turn cycle',
+  },
+  smashup: {
+    target: 'e2e/smashup/smashup-online-ai-faction-select.e2e.ts',
+    testNamePattern: 'SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 playCards',
+  },
+  dicethrone: {
+    target: 'e2e/dicethrone/dicethrone-golden-full-flow.e2e.ts',
+    testNamePattern: 'DiceThrone 黄金全流程：覆盖开局、主阶段、攻骰、改骰、响应、防御、伤害、弃牌和回合交接',
+  },
+  fantasyrealms: {
+    target: 'e2e/fantasyrealms/fantasyrealms-online-ai-golden.e2e.ts',
+    testNamePattern: '4人在线房里 host 与 seat1 / seat2 / seat3 local AI 可从真实开局完成一整轮串行托管并把回合交回 host',
+  },
+  splendor: {
+    target: 'e2e/splendor/splendor.e2e.ts',
+    testNamePattern: 'Splendor：超过 10 宝石后应进入弃牌流程并在弃到上限后推进回合',
+  },
+  summonerwars: {
+    target: 'e2e/summonerwars/summonerwars.e2e.ts',
+    testNamePattern: '移动横屏：基础流程可完成召唤、移动、建造、攻击与弃牌',
+  },
+  'the-gang': {
+    target: 'e2e/the-gang/the-gang-runtime.e2e.ts',
+    testNamePattern: '桌面端当前玩家使用可见 UI、其它座位用代表态完成四轮抢劫并显示摊牌结果',
+  },
+  tictactoe: {
+    target: 'e2e/tictactoe/tictactoe-tutorial.e2e.ts',
+    testNamePattern: '教学流程会推进到 AI 步骤并正常结束',
+  },
 };
 const DICETHRONE_SYNC_BLOCKER_PATTERNS = [
   /^src\/engine\/transport\//,
@@ -891,6 +957,82 @@ function collectGameIds(files, { sourceOnly = false } = {}) {
   return [...ids];
 }
 
+function resolveChangedGameFlowId(file) {
+  const normalized = normalizeFile(file);
+  const sourceMatch = normalized.match(/^(?:src|e2e\/src)\/games\/([^/]+)\//);
+  if (sourceMatch && PRE_PUSH_GAME_E2E_FLOW_ELIGIBLE_IDS.has(sourceMatch[1])) {
+    return sourceMatch[1];
+  }
+
+  const e2eMatch = normalized.match(/^e2e\/([^/]+)\//);
+  if (e2eMatch && PRE_PUSH_GAME_E2E_FLOW_ELIGIBLE_IDS.has(e2eMatch[1])) {
+    return e2eMatch[1];
+  }
+
+  return null;
+}
+
+function collectChangedGameFlowIds(files) {
+  return dedupeValues(files.map(resolveChangedGameFlowId).filter(Boolean));
+}
+
+function createMissingGameFlowCommand(gameId) {
+  const message = `[changed-quality-gate] ${gameId} 是非实施中游戏且有游戏增量，但未登记 pre-push 浏览器 E2E 单用例流程门禁；请在 PRE_PUSH_GAME_E2E_FLOW_TARGETS 增加该游戏对应的 { target, testNamePattern }。`;
+  return {
+    label: `BLOCKER: ${gameId} E2E flow gate missing`,
+    reason: `${gameId} 是非实施中游戏且有增量，但缺少对应浏览器 E2E 单用例流程门禁，按 fail-close 处理`,
+    command: process.execPath,
+    args: ['-e', `console.error(${JSON.stringify(message)}); process.exit(1);`],
+  };
+}
+
+function createInvalidGameFlowCommand(gameId, details) {
+  const message = `[changed-quality-gate] ${gameId} 的 pre-push 浏览器 E2E 流程门禁配置无效：${details}。每个非实施中游戏必须只登记一个 { target, testNamePattern }，target 必须是 e2e/*.e2e.ts，push 时只跑这一个 Playwright 全流程用例。`;
+  return {
+    label: `BLOCKER: ${gameId} E2E flow gate invalid`,
+    reason: `${gameId} 浏览器 E2E 流程门禁配置无效，按 fail-close 处理，避免回退成领域测试或整文件测试`,
+    command: process.execPath,
+    args: ['-e', `console.error(${JSON.stringify(message)}); process.exit(1);`],
+  };
+}
+
+function createPrePushGameFlowCommands(gameIds, reason) {
+  const commands = [];
+
+  dedupeValues(gameIds).forEach((gameId) => {
+    if (!PRE_PUSH_GAME_E2E_FLOW_ELIGIBLE_IDS.has(gameId)) return;
+    const flowTarget = PRE_PUSH_GAME_E2E_FLOW_TARGETS[gameId];
+    if (!flowTarget) {
+      commands.push(createMissingGameFlowCommand(gameId));
+      return;
+    }
+    if (Array.isArray(flowTarget)) {
+      commands.push(createInvalidGameFlowCommand(gameId, '仍是数组配置，会导致一次跑多个目标或整文件'));
+      return;
+    }
+
+    const target = typeof flowTarget.target === 'string' ? flowTarget.target.trim() : '';
+    const testNamePattern = typeof flowTarget.testNamePattern === 'string' ? flowTarget.testNamePattern.trim() : '';
+    if (!target || !testNamePattern) {
+      commands.push(createInvalidGameFlowCommand(gameId, '缺少 target 或 testNamePattern'));
+      return;
+    }
+    if (!target.startsWith('e2e/') || !target.endsWith('.e2e.ts')) {
+      commands.push(createInvalidGameFlowCommand(gameId, `target 不是 Playwright E2E 文件：${target}`));
+      return;
+    }
+
+    commands.push({
+      label: `${gameId} E2E flow gate`,
+      reason: `${reason}；只运行 ${gameId} 登记的一个浏览器端到端全流程用例`,
+      command: process.execPath,
+      args: ['scripts/infra/run-e2e-single.mjs', 'ci', target, testNamePattern],
+    });
+  });
+
+  return commands;
+}
+
 function hasChangesForTargetGroup(files, targets) {
   return hasAny(files, (file) => targets.some((target) => file.startsWith(`${target}/`) || file === target));
 }
@@ -1039,10 +1181,7 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     workspaceScopeFiles.filter((file) => isNonGameTestFile(file)),
   );
   const touchedGameIds = collectGameIds(workspaceScopeFiles);
-  const gameSourceIds = collectGameIds(workspaceScopeFiles, { sourceOnly: true });
-  const gameTestFiles = collectRunnableVitestWorkspaceTargets(
-    workspaceScopeFiles.filter((file) => isGameFile(file) && isTestFile(file)),
-  );
+  const changedGameFlowIds = collectChangedGameFlowIds(workspaceScopeFiles);
 
   if (hasAny(files, isGameVitestTest)) {
     commands.push({
@@ -1197,6 +1336,22 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     });
   }
 
+  if (isPrePushMode && changedGameFlowIds.length > 0) {
+    commands.push(...createPrePushGameFlowCommands(
+      changedGameFlowIds,
+      '游戏源码、游戏测试或该游戏 E2E 有改动',
+    ));
+  }
+  if (isPrePushMode) {
+    const skippedUnderConstructionGameIds = touchedGameIds
+      .filter((gameId) => !PRE_PUSH_GAME_E2E_FLOW_ELIGIBLE_IDS.has(gameId));
+    if (skippedUnderConstructionGameIds.length > 0) {
+      console.log(
+        `[changed-quality-gate] 实施中游戏增量不触发稳定游戏流程门禁: ${skippedUnderConstructionGameIds.join(', ')}`,
+      );
+    }
+  }
+
   if (isPrePushMode && hasAny(workspaceScopeFiles, affectsGameEntryBlocker)) {
     GAME_ENTRY_BLOCKER_TESTS.forEach((blocker) => {
       commands.push({
@@ -1266,43 +1421,8 @@ function collectCommands(files, baseRef, affectsTypecheck) {
           });
         });
 
-      if (gameSourceIds.length > 0) {
-        gameSourceIds.forEach((gameId) => {
-          commands.push({
-            label: `${gameId} tests`,
-            reason: `${gameId} 源码改动，单独跑该游戏完整测试集`,
-            command: process.execPath,
-            args: [...VITEST_SAFE_ENTRY, 'run', `src/games/${gameId}`, ...GAME_VITEST_ARGS],
-          });
-        });
-      } else if (gameTestFiles.length > 0) {
-        commands.push({
-          label: 'Changed game test files',
-          reason: '核心源码改动且仅改到游戏测试文件，优先按测试文件精确运行',
-          command: process.execPath,
-          args: [...VITEST_SAFE_ENTRY, 'run', ...gameTestFiles, ...ensurePassWithNoTests(GAME_VITEST_ARGS)],
-        });
-      } else {
-        const fallbackGameIds = touchedGameIds.length > 0 ? touchedGameIds : [...KNOWN_GAME_IDS];
-        fallbackGameIds.forEach((gameId) => {
-          const smokeTargets = PRE_PUSH_GAME_SMOKE_TARGETS[gameId] ?? [];
-          if (smokeTargets.length > 0) {
-            commands.push({
-              label: `${gameId} smoke`,
-              reason: '核心源码改动，使用每个游戏的代表性 smoke/flow 测试做跨游戏兜底',
-              command: process.execPath,
-              args: [...VITEST_SAFE_ENTRY, 'run', ...smokeTargets, ...ensurePassWithNoTests(GAME_VITEST_ARGS)],
-            });
-            return;
-          }
-
-          commands.push({
-            label: `${gameId} tests`,
-            reason: '核心源码改动，缺少代表性 smoke/flow 测试，回退到该游戏完整测试集',
-            command: process.execPath,
-            args: [...VITEST_SAFE_ENTRY, 'run', `src/games/${gameId}`, ...GAME_VITEST_ARGS],
-          });
-        });
+      if (touchedGameIds.length === 0) {
+        console.log('[changed-quality-gate] 核心源码改动未命中具体游戏，跳过全游戏流程门禁；这里只跑核心相关校验。');
       }
     } else {
       if (coreTestFiles.length > 0) {
@@ -1311,27 +1431,6 @@ function collectCommands(files, baseRef, affectsTypecheck) {
           reason: '仅改动核心测试文件，按文件精确运行',
           command: process.execPath,
           args: [...VITEST_SAFE_ENTRY, 'run', ...coreTestFiles, ...ensurePassWithNoTests(FAST_VITEST_ARGS)],
-        });
-      }
-      if (gameSourceIds.length > 0) {
-        if (isLatestCommitScopeMode) {
-          console.log('[changed-quality-gate] pre-push 最新提交范围模式：游戏源码改动不再默认回归整游戏全量测试，避免历史红灯阻塞当前增量；请依赖本轮显式改动测试或 CI 全量回归。');
-        } else {
-          gameSourceIds.forEach((gameId) => {
-            commands.push({
-              label: `${gameId} tests`,
-              reason: `${gameId} 源码改动，跑该游戏完整测试集`,
-              command: process.execPath,
-              args: [...VITEST_SAFE_ENTRY, 'run', `src/games/${gameId}`, ...GAME_VITEST_ARGS],
-            });
-          });
-        }
-      } else if (gameTestFiles.length > 0) {
-        commands.push({
-          label: 'Changed game test files',
-          reason: '仅改动游戏测试文件，按文件精确运行',
-          command: process.execPath,
-          args: [...VITEST_SAFE_ENTRY, 'run', ...gameTestFiles, ...ensurePassWithNoTests(GAME_VITEST_ARGS)],
         });
       }
     }
@@ -1733,7 +1832,6 @@ const {
   scopeLabel: prePushLintScopeLabel,
 } = resolvePrePushLintContext();
 const prePushRefContexts = resolvePrePushRefContexts(baseRef);
-const isLatestCommitScopeMode = isPrePushMode && effectiveBaseRef !== baseRef;
 const affectsTypecheck = createTypecheckPredicate(effectiveBaseRef, headSha);
 console.log(`[changed-quality-gate] 模式: ${mode}`);
 console.log(`[changed-quality-gate] 基线: ${baseRef}`);

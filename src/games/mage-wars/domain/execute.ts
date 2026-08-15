@@ -1,6 +1,5 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
-import type { PlayerId } from '../../../engine/types';
 import {
     getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
@@ -16,6 +15,7 @@ import {
     resolveMageWarsMageEquipmentTraitText,
 } from './damageRules';
 import { executeMageWarsSpellAbility } from './spellAbilityExecutors';
+import { executeMageWarsObjectAbility } from './objectAbilityRuntime';
 import type { MageWarsObjectAttackProfile } from './spellRules';
 import {
     canMageWarsStatusTokenAffectArenaObject,
@@ -29,7 +29,6 @@ import {
     isMageWarsDazeAttackMiss,
     isMageWarsFlyingArenaObject,
     isMageWarsHiddenResponseEnchantmentSpell,
-    isMageWarsLivingArenaObject,
     isMageWarsNonlivingArenaObject,
     isMageWarsObjectDefenseProfileReady,
     isMageWarsObjectDefenseProfileAutomatic,
@@ -60,9 +59,6 @@ import {
     resolveMageWarsObjectDeathMarkAttackDiceModifier,
     resolveMageWarsObjectMentalCalmSources,
     resolveMageWarsObjectMeleeAttackManaTaxSources,
-    resolveMageWarsAttachedBeastStaff,
-    resolveMageWarsAttachedElementalStaff,
-    resolveMageWarsObjectAbilityActionTrack,
     resolveMageWarsHiddenResponseEnchantmentsAttachedToObject,
     resolveMageWarsHiddenResponseEnchantmentsAttachedToPlayer,
     resolveMageWarsDamageBarrierSource,
@@ -1619,219 +1615,13 @@ export function executeCommand(
         }
 
         case MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY: {
-            const object = getArenaObject(state.core, command.payload.objectId);
-            if (!object) return [];
-
-            if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF) {
-                const source = resolveMageWarsAttachedBeastStaff(state.core, command.playerId);
-                const targetObject = command.payload.targetObjectId
-                    ? getArenaObject(state.core, command.payload.targetObjectId)
-                    : undefined;
-                const actionTrack = source
-                    ? resolveMageWarsObjectAbilityActionTrack(
-                        state.sys.phase as MageWarsPhase,
-                        source.trait.actionSpeed,
-                    )
-                    : undefined;
-                if (!source || !targetObject || !actionTrack) return [];
-
-                const abilityEvent: MageWarsEvent = {
-                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
-                    payload: {
-                        ownerId: command.playerId,
-                        objectId: source.object.id,
-                        abilityId: command.payload.abilityId,
-                        abilityName: '群兽法杖',
-                        manaCost: source.trait.manaCost,
-                        targetObjectId: targetObject.id,
-                        mode: command.payload.mode,
-                        actionTrack,
-                        actionCost: 'none',
-                        roundNumber: state.core.turnNumber,
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                };
-
-                if (command.payload.mode === 'melee-bonus') {
-                    return [abilityEvent, {
-                        type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_GAINED,
-                        payload: {
-                            ownerId: targetObject.ownerId,
-                            objectId: targetObject.id,
-                            sourceAbilityId: command.payload.abilityId,
-                            spellCardId: source.object.sourceSpellCardId,
-                            meleeDiceModifier: source.trait.meleeDiceModifier,
-                            meleeDiceModifierUntilRoundNumber: state.core.turnNumber,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    }];
-                }
-
-                const diceResults = rollD3(random, source.trait.healingDiceCount);
-                const healing = diceResults.reduce((total, result) => total + result, 0);
-                return [abilityEvent, {
-                    type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
-                    payload: {
-                        playerId: command.playerId,
-                        spellCardId: source.object.sourceSpellCardId,
-                        sourceAbilityId: command.payload.abilityId,
-                        targetObjectId: targetObject.id,
-                        targetZoneId: targetObject.zoneId,
-                        diceResults,
-                        healing,
-                        actualHealing: Math.min(targetObject.damage, healing),
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                }];
-            }
-
-            if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND) {
-                const source = resolveMageWarsAttachedElementalStaff(state.core, command.playerId);
-                const actionTrack = source
-                    ? resolveMageWarsObjectAbilityActionTrack(
-                        state.sys.phase as MageWarsPhase,
-                        'quick',
-                    )
-                    : undefined;
-                if (!source || command.payload.boundSpellCardId === undefined || !actionTrack) return [];
-
-                return [{
-                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
-                    payload: {
-                        ownerId: command.playerId,
-                        objectId: source.object.id,
-                        abilityId: command.payload.abilityId,
-                        abilityName: '元素魔杖',
-                        manaCost: command.payload.manaCost,
-                        boundSpellCardId: command.payload.boundSpellCardId,
-                        actionTrack,
-                        actionCost: 'none',
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                }];
-            }
-
-            if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT) {
-                return [{
-                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
-                    payload: {
-                        ownerId: command.playerId,
-                        objectId: object.id,
-                        abilityId: command.payload.abilityId,
-                        abilityName: '蓝色精怪迅捷传送',
-                        manaCost: command.payload.manaCost,
-                        actionCost: 'none',
-                        grants: ['swift', 'teleportMovement'],
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                }];
-            }
-
-            if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT) {
-                const targetObject = command.payload.targetObjectId
-                    ? getArenaObject(state.core, command.payload.targetObjectId)
-                    : undefined;
-                if (!targetObject || !isMageWarsLivingArenaObject(targetObject)) return [];
-
-                const diceResults = rollD3(random, 1);
-                const healing = diceResults.reduce((total, result) => total + result, 0);
-                const actualHealing = Math.min(targetObject.damage, healing);
-
-                return [
-                    {
-                        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
-                        payload: {
-                            ownerId: command.playerId,
-                            objectId: object.id,
-                            abilityId: command.payload.abilityId,
-                            abilityName: '治疗之光',
-                            manaCost: command.payload.manaCost,
-                            targetObjectId: targetObject.id,
-                            actionCost: 'normal',
-                            grants: [],
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    },
-                    {
-                        type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
-                        payload: {
-                            playerId: command.playerId,
-                            spellCardId: 2811,
-                            sourceAbilityId: command.payload.abilityId,
-                            targetObjectId: targetObject.id,
-                            targetZoneId: targetObject.zoneId,
-                            diceResults,
-                            healing,
-                            actualHealing,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    },
-                ];
-            }
-
-            if (command.payload.abilityId === MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE) {
-                const targetObject = command.payload.targetObjectId
-                    ? getArenaObject(state.core, command.payload.targetObjectId)
-                    : undefined;
-                if (!targetObject || !isMageWarsLivingArenaObject(targetObject)) return [];
-
-                const diceResults = rollD3(random, 6);
-                const healing = diceResults.reduce((total, result) => total + result, 0);
-                const actualHealing = Math.min(targetObject.damage, healing);
-
-                return [
-                    {
-                        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
-                        payload: {
-                            ownerId: command.playerId,
-                            objectId: object.id,
-                            abilityId: command.payload.abilityId,
-                            abilityName: '救赎献祭',
-                            manaCost: command.payload.manaCost,
-                            targetObjectId: targetObject.id,
-                            actionCost: 'normal',
-                            grants: [],
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    },
-                    {
-                        type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
-                        payload: {
-                            playerId: command.playerId,
-                            spellCardId: 2907,
-                            sourceAbilityId: command.payload.abilityId,
-                            targetObjectId: targetObject.id,
-                            targetZoneId: targetObject.zoneId,
-                            diceResults,
-                            healing,
-                            actualHealing,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    },
-                    {
-                        type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                        payload: {
-                            objectId: object.id,
-                            ownerId: command.playerId,
-                            sourceAbilityId: command.payload.abilityId,
-                            spellCardId: 2907,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    },
-                ];
-            }
-
-            return [];
+            return executeMageWarsObjectAbility({
+                state,
+                command,
+                random,
+                timestamp,
+                phase: state.sys.phase as MageWarsPhase,
+            });
         }
 
         case MAGE_WARS_COMMANDS.MOVE_MAGE:

@@ -13,7 +13,7 @@ description: "BoardGame 保留/合并/真相源决策包。用于多 worktree、
 
 - 本 skill 是 `workflow`：只负责生成给用户看的保留/合并裁决包。
 - 分支 / worktree 目标锁定和删改影响标准，以 `.spec/knowledge/standards/worktree-branch-target-lock.md` 为 `canonical-source`。
-- 真正执行 PR/分支合并时回到 `.spec/skills/merge-pr-workflow/SKILL.md`；普通提交/推送回到 `.spec/skills/git-operations/SKILL.md`。
+- PR / 分支合并、普通提交和推送不由本 skill 执行；本 skill 只生成决策包。
 - 本 skill 不执行合并、不删除分支、不移动文件；它只把证据转成用户能判断的决策说明。
 
 ## 先决条件

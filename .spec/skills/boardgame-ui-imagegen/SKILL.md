@@ -17,14 +17,14 @@ description: "BoardGame 桌游 UI 设计稿前置门禁与 imagegen/Open Design 
 ## 使用顺序
 
 1. 先读当前项目规范：`AGENTS.md`、`.spec/knowledge/standards/ui-ux.md`、`.spec/knowledge/standards/asset-pipeline.md`。
-2. 若是新增游戏，先读 `.spec/skills/create-new-game/SKILL.md`。新增游戏默认必须继承上游 workflow：`feat/game-<gameId>` + 独立 worktree；当任务已进入具体布局、单一风格收敛、玩家关注点排序、proposal/spec/design/tasks 拆分时，必须同步进入 OpenSpec，而不是只把这里当作一份孤立的生图 prompt skill。
+2. 若是新增游戏，先读 `.spec/skills/create-new-game/SKILL.md`。新增游戏默认建议独立 worktree，但创建、切换或派生分支前必须取得用户当轮明确授权；当任务已进入具体布局、单一风格收敛、玩家关注点排序、proposal/spec/design/tasks 拆分时，必须同步进入 OpenSpec，而不是只把这里当作一份孤立的生图 prompt skill。
 3. 读取规则真相源：优先 `docs/games/<gameId>/rule/**`、`docs/games/<gameId>/intake/**` 和该游戏设计前置矩阵；若项目没有这些合同，再读 `src/games/<gameId>/rule/**`；若仍没有 Markdown 合同，回到 PDF/OCR 导出页。不得只因为 `src/` 下没有规则文件就跳过读规则。
 4. 读取规则对象素材矩阵或建立本轮最小矩阵：`规则对象 -> 应用素材 -> 当前素材状态 -> 画面表达 -> 是否允许出现`。没有矩阵，不得生成 prompt、HTML 预览或 AI PASS 结论。
 5. 打开主地图、主棋盘或玩家面板素材；如果用户给的是本地图片路径，必须看图。大图先降采样或裁局部，再用 `view_image` 看，避免直接打开超大原图。
 6. 先输出 UI 元素拆解，再生成 prompt；没有拆解，不要直接生图。
 7. 如果用户明确要“生成图 / image2 / UI 指导图”，交付物仍然是 imagegen 概念图；真实素材 mockup/screenshot 只能作为辅助校验和 prompt 参考，不能替代生成图。
 8. 如果用户要求保留/使用真实地图或棋盘素材，prompt 必须把“完整地图素材作为结构参考”写清楚；必要时先做 HTML/CSS/React 静态 mockup 辅助定位，但最终仍按用户要求输出生成图。
-9. 如果默认 imagegen 路线不可用，而 Open Design 工具链可用，必须自动转入 **Open Design artifact 候选稿路线**，不得停在“缺 imagegen / 缺 API key”。Open Design 候选稿仍必须继承本 skill 的规则重读、素材输入包、出图前硬回执、少边框和 AI 图面核验门禁；只有渲染导出的 PNG/JPG/WebP 或等价图片证据通过 AI 核验后，才允许按项目 `.spec/skills/show-image-to-user/SKILL.md` 进入用户验收展示。
+9. 如果默认 imagegen 路线不可用，而 Open Design 工具链可用，必须自动转入 **Open Design artifact 候选稿路线**，不得停在“缺 imagegen / 缺 API key”。Open Design 候选稿仍必须继承本 skill 的规则重读、素材输入包、出图前硬回执、少边框和 AI 图面核验门禁；只有渲染导出的 PNG/JPG/WebP 或等价图片证据通过 AI 核验后，才允许进入用户验收展示。
 
 ### 设计启动门禁（强制）
 
@@ -50,7 +50,7 @@ description: "BoardGame 桌游 UI 设计稿前置门禁与 imagegen/Open Design 
 - 需要正式素材的对象，只有处于 `design-asset-ready`、`pass` 或 `approved-programmatic`，并且角色允许可见时，才允许进入位图设计稿和 AI 图面核验；`reference-only` 只能进入证据链、输入包或详情 / 帮助语义，不能作为主画面可见主体；`planned-not-moved`、`frame-candidate`、`temp-only`、`blocked` 或未登记对象不得被画成正式卡牌、token、棋盘、骰子、角色板、状态标记或其它完成态素材。
 - `design-asset-ready` 只允许证明“可作为视觉设计输入”，不能证明运行时已接线或 UI 已完成；若最终口径是运行时完成截图，必须另有运行时代码引用、真实页面截图和资源链验证。
 - AI 图面核验必须先核矩阵再看图。前置矩阵不过，或图中出现素材状态不允许的对象，即使画面好看也只能判 `REVISE`。
-- 人工验收只能发生在 AI 图面核验给出 `PASS` 后；未通过 AI 自检的候选图不得进入用户验收展示。具体展示通道和原图选择统一按项目 `.spec/skills/show-image-to-user/SKILL.md` 执行。
+- 人工验收只能发生在 AI 图面核验给出 `PASS` 后；未通过 AI 自检的候选图不得进入用户验收展示。
 
 ### 同稿同源证据块（强制）
 
@@ -205,7 +205,7 @@ description: "BoardGame 桌游 UI 设计稿前置门禁与 imagegen/Open Design 
 
 - 固定构图类棋盘 / 牌桌 / 战场设计，PC 桌面设计稿或桌面真实页是主基线；移动端只能在 PC 基线通过后做适配。
 - 当用户指出 PC 端没好、PC 端未通过、边框 / 素材 / 规则主链仍失败，当前稿必须标为 `REVISE / implementation-blocked / mobile-blocked-by-desktop`。
-- 在上述状态下不得生成移动端验收图、不得把移动端截图当完成证据、不得跑移动端 E2E 作为收口；移动风险可以记录，但不能成为下一主阶段。需要展示已通过的图时，另按项目 `.spec/skills/show-image-to-user/SKILL.md` 执行。
+- 在上述状态下不得生成移动端验收图、不得把移动端截图当完成证据、不得跑移动端 E2E 作为收口；移动风险可以记录，但不能成为下一主阶段。
 
 ## 实现导向生图的可复刻门禁（强制）
 
@@ -260,9 +260,9 @@ description: "BoardGame 桌游 UI 设计稿前置门禁与 imagegen/Open Design 
 
 ## 新游戏分支与工作树口径
 
-- 新增/添加游戏时，分支与工作树要求以 `.spec/skills/create-new-game/SKILL.md` 为准：默认应在 `feat/game-<gameId>` 分支 + 独立 worktree 上推进。
-- 对“新增游戏”任务，创建 worktree 不是可选优化，而是默认执行现场；只有用户明确说“不要新开工作树”时才允许留在当前工作区。
-- 本 skill 只负责 UI 生图 brief；如果它在新游戏 workflow 中被触发，应继承上游 `create-new-game` 的 worktree 口径，而不是退回根 `AGENTS.md` 的通用默认值。
+- 新增/添加游戏时，分支与工作树要求以 `.spec/skills/create-new-game/SKILL.md` 为准：默认建议独立 worktree，但创建、切换或派生分支前必须取得用户当轮明确授权。
+- 未获授权前不得创建、切换、重建 worktree 或分支；如果 UI 生图工作必须依赖隔离现场，先说明目标路径、候选分支名、影响范围和最小授权动作。
+- 本 skill 只负责 UI 生图 brief；如果它在新游戏 workflow 中被触发，应继承上游 `create-new-game` 的授权口径。
 - 一旦上游已经为该新游戏选定 worktree，本 skill 后续的读图、写 prompt、写 evidence、落静态稿、截图与验证，都必须继续使用同一个 worktree；不得因为这里只做 UI 草稿，就回到主工作区继续推进。
 
 ## 新游戏 UI 生图与 OpenSpec 收口门禁
@@ -398,7 +398,7 @@ source image -> temp/<gameId>-ui-imagegen-review/crop-action-indicator.png
 
 ## 牌桌层级与重叠规则
 
-> 本节是 BoardGame 项目适配层；底图 / 地图最低层裁决的 `canonical-source` 是项目 `.spec/skills/ui-design-pipeline/SKILL.md`。这里不另建独立真相，只把该裁决落到桌游素材、棋盘、牌区、骰盘和 token 场景。
+> 本节是 BoardGame 项目适配层；底图 / 地图最低层裁决来自设计启动门禁。这里不另建独立真相，只把该裁决落到桌游素材、棋盘、牌区、骰盘和 token 场景。
 
 - 桌游主界面默认按层级建模，而不是只按上下左右分区：`table/background`、`board/map`、`physical objects/cards/tokens`、`interactive overlays`、`resolution overlays`、`edge HUD`。出稿前必须列出每层对象、允许重叠对象和必须保护对象；没有层级表，不得生成 Open Design artifact、HTML 预览或位图稿。
 - 合理重叠是桌游 UI 的常规手段。法术书、已计划法术、持有物、主动作 dock、目标选择条、骰盘和结算标记可以作为 overlay 压在桌面 / 底图 / 主棋盘的低权重区域上，只要不遮挡当前必须点击 / 阅读的棋盘格、卡牌、token、骰子或素材印刷信息。
@@ -438,7 +438,7 @@ source image -> temp/<gameId>-ui-imagegen-review/crop-action-indicator.png
 ## 规则理解规则
 
 - 先建立 `规则对象交互权重表`，再画布局。每个对象至少写清：规则来源、当前阶段角色、是否当前主动作、是否需要高频点击、是否只是公开检视 / 归档、可见性 / 隐藏信息、最大承载量、默认收起还是展开、默认靠近哪个现实主体。没有权重表时不得把任何规则对象放进中央主舞台。
-- 设计前还必须按项目 `.spec/skills/ui-design-pipeline/SKILL.md` 的“规则对象实体锚点守恒”和“开放式直选裁决顺序”补 `规则对象 -> 唯一实体锚点 -> 状态 / 详情引用` 表，以及 `当前选择 -> 可直选对象 -> 本体高亮 -> 代理 UI 是否必要` 表。`已选`、`当前来源`、`目标摘要`、详情和放大检视只能引用实体锚点，不能复制成第二个规则对象；棋盘格、场上卡、token、骰子等可见对象能直接承接选择时，不得用目标摘要块、文字按钮、编号圆点或大空 UI 替代。本 skill 只作入口适配，不另维护该规则正文。
+- 设计前还必须按设计启动门禁中的“规则对象实体锚点守恒”和“开放式直选裁决顺序”补 `规则对象 -> 唯一实体锚点 -> 状态 / 详情引用` 表，以及 `当前选择 -> 可直选对象 -> 本体高亮 -> 代理 UI 是否必要` 表。`已选`、`当前来源`、`目标摘要`、详情和放大检视只能引用实体锚点，不能复制成第二个规则对象；棋盘格、场上卡、token、骰子等可见对象能直接承接选择时，不得用目标摘要块、文字按钮、编号圆点或大空 UI 替代。
 - 固定区域、格子、地图房间、战场格、基地或等价空间单位是规则单位时，先建立 `区域 / 格子 -> 对象锚点 -> 容量 / 堆叠 -> token 贴附 -> 高亮` 合同，再摆卡牌、棋子、token 或结算层。对象必须有唯一所属区域，中心点不得在边界 / 缝隙 / 格外；允许轻微旋转和自然偏移，但不得让玩家无法判断对象属于哪一格。可参考仓内成熟格子游戏的“格子先行、对象在格内、点击对象本体”交互不变量，不复制其皮肤或术语。
 - 先找“回合主动作模型”。不要把子选项误升为主按钮。
 - 如果规则写“执行 A 及 B，顺序自定”，UI 应表达两个动作槽，而不是把 A 的子项和 B 并列。

@@ -35,6 +35,22 @@
 - transport watchdog 现在能识别“**当前真人仍是 activePlayer，但另一个 AI seat 在防御阶段已有合法动作**”的场景，并改走 legal-action recovery，而不是继续空等。
 - online E2E 已证明真实房间里，流程可从 defensiveRoll 收口到 `main2`，用户不再卡死。
 
+## 2026-08-14 回归复验与 pre-push 口径
+
+- 用户纠偏后的验收口径：这条链路必须用真实浏览器 Playwright E2E 证明；Vitest / transport 单测只能证明低层恢复链路，不能替代“玩家真实入口 + 在线房间 + AI 防御阶段收口”。
+- 本轮目标用例：`e2e/dicethrone/dicethrone-simple-start.e2e.ts` 中 `Online AI 在 off-turn defensiveRoll 也应自动掷骰并收口，不应卡死在玩家回合下的防御阶段`。
+- 当前 Playwright 验证：
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 在 off-turn defensiveRoll 也应自动掷骰并收口，不应卡死在玩家回合下的防御阶段"` -> `1 passed`。
+  - `$env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 在 off-turn defensiveRoll 也应自动掷骰并收口，不应卡死在玩家回合下的防御阶段"` -> isolated runtime `1 passed`。
+- 截图口径修正：
+  - 本轮截图组不是“黄金端到端”本体，也不能单独证明 AI 逐步执行了防御掷骰链；黄金链本体是上面这条 Playwright 用例及其状态断言。
+  - 因为服务端 AI 收口很快，`05h/05i/05j` 当前只能作为最终可见状态附件：画面显示已经回到 `主要阶段(2)`，右侧 `下一阶段` 可见。不得把这些重复最终态图命名或汇报成完整流程分镜。
+  - 若后续需要肉眼证明防御阶段中间帧，必须单独设计带可控暂停的诊断用例；pre-push 黄金链不应为了截图分镜而人为放慢或改写真实 AI 执行路径。
+- 当前低层对照：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死"` -> `1 passed / 270 skipped`。
+  - 这里的 `skipped` 只是 `-t` 过滤掉同文件其它 Vitest 用例；不表示目标用例被跳过，也不表示它是端到端验收。
+- pre-push 口径已收紧到游戏增量：非实施中游戏发生源码 / 游戏测试 / 该游戏 E2E 增量时，只运行该游戏登记的一个 Playwright 黄金链用例；DiceThrone 对应的就是上面的 off-turn defensiveRoll 用例。实施中游戏不触发稳定游戏流程门禁。
+
 ---
 
 **当前阅读说明**：本文只能证明“online AI off-turn defensiveRoll 卡死”这条专项问题曾被修复，不能外推为当前所有 AI 防御阶段卡死、所有 watchdog recovery 场景或 DiceThrone 当前整体审计都已收口。

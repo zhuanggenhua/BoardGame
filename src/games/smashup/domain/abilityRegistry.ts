@@ -55,6 +55,10 @@ export interface AbilityResult {
     events: SmashUpEvent[];
     /** 如果能力修改了 matchState（如创建了 Interaction），返回更新后的 matchState */
     matchState?: MatchState<SmashUpCore>;
+    /** 能力运行时挂起了一个需要玩家响应的 prompt */
+    suspended?: boolean;
+    /** 挂起 prompt 的 continuation id，用于把后续规则步骤接到同一 prompt 后 */
+    continuationId?: string;
 }
 
 /** 能力执行函数签名 */
@@ -149,6 +153,8 @@ function createProgramExecutor<TContext>(
         return {
             events: result.events,
             matchState: result.matchState,
+            ...(result.suspended ? { suspended: true } : {}),
+            ...(result.continuationId ? { continuationId: result.continuationId } : {}),
         };
     };
 }

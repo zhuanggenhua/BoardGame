@@ -7,6 +7,7 @@ import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import type { RandomFn } from '../../src/engine/types';
 import { initHeroState } from '../../src/games/dicethrone/domain/characters';
+import { getPlayerDieFace } from '../../src/games/dicethrone/domain/rules';
 
 type DtState = Record<string, any>;
 
@@ -81,6 +82,72 @@ const primeFixedRandomQueue = async (page: Page) => {
     });
 };
 
+const primeDuelCompareDiceValues = async (page: Page) => {
+    await page.waitForFunction(
+        () => Boolean((window as any).__BG_TEST_HARNESS__?.dice?.setValues),
+        { timeout: 5000 },
+    );
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([6, 1, 1, 1, 1, 1, 1, 1]);
+    });
+};
+
+const withDuelDieValue = (
+    state: DtState,
+    die: DtState,
+    ownerId: string,
+    value: number,
+): DtState => {
+    const characterId = state.players?.[ownerId]?.characterId;
+    const definitionId = typeof characterId === 'string' && characterId !== 'unselected'
+        ? `${characterId}-dice`
+        : die.definitionId;
+    const face = getPlayerDieFace(state as never, ownerId as never, value) ?? die.symbol ?? null;
+    return {
+        ...die,
+        ownerId,
+        definitionId,
+        value,
+        symbol: face,
+        symbols: face ? [face] : [],
+    };
+};
+
+const stabilizeDuelDefenseRollValues = async (matchId: string, page: Page) => {
+    await applyOnlineMatchState(matchId, page, (state) => {
+        const root = (state.G ?? state) as DtState;
+        const next = structuredClone(root);
+        const core = (next.core ?? {}) as DtState;
+        const pendingAttack = (core.pendingAttack ?? {}) as DtState;
+        const defenderId = String(pendingAttack.defenderId ?? '1');
+        const attackerId = String(pendingAttack.attackerId ?? '0');
+        const rollDiceCount = typeof core.rollDiceCount === 'number' ? core.rollDiceCount : 1;
+        const currentRollContext = (core.currentRollContext ?? {}) as DtState;
+        const currentContextDice = Array.isArray(currentRollContext.dice) ? currentRollContext.dice : [];
+        const defenderDie = withDuelDieValue(next.core, currentContextDice[0] ?? {}, defenderId, 6);
+        const attackerDie = withDuelDieValue(
+            next.core,
+            currentContextDice.find((die: DtState) => die?.ownerId === attackerId && die?.id !== defenderDie.id) ?? currentContextDice[1] ?? { id: 1 },
+            attackerId,
+            1,
+        );
+
+        next.core = {
+            ...core,
+            dice: Array.isArray(core.dice)
+                ? core.dice.map((die: DtState, index: number) => (
+                    index < rollDiceCount ? withDuelDieValue(next.core, die, defenderId, 6) : die
+                ))
+                : core.dice,
+            currentRollContext: {
+                ...currentRollContext,
+                dice: [defenderDie, attackerDie],
+            },
+        };
+        return next;
+    });
+};
+
 const dismissStartDefenseShowcaseIfPresent = async (page: Page) => {
     const startDefenseButton = page.getByRole('button', { name: /开始防御|Start Defense/i }).first();
     if (await startDefenseButton.isVisible({ timeout: 1500 }).catch(() => false)) {
@@ -116,17 +183,13 @@ const buildSharedDuelState = (state: DtState): DtState => {
     const sys = (next.sys ?? {}) as DtState;
     const monk = initHeroState('0', 'monk', DICE_THRONE_PREPARE_RANDOM);
     const gunslinger = initHeroState('1', 'gunslinger', DICE_THRONE_PREPARE_RANDOM);
-    const preparedDice = Array.isArray(core.dice) && core.dice.length > 0
-        ? core.dice.map((die: DtState, index: number) => (
-            index === 0
-                ? { ...die, value: 6, isKept: true }
-                : die
-        ))
-        : Array.from({ length: 5 }, (_, index) => ({
-            id: index,
-            value: index === 0 ? 6 : 1,
-            isKept: index === 0,
-        }));
+    const preparedDice = [
+        { id: 0, definitionId: 'gunslinger-dice', value: 1, symbol: 'bullet', symbols: ['bullet'], isKept: false, ownerId: '1' },
+        { id: 1, definitionId: 'gunslinger-dice', value: 2, symbol: 'dash', symbols: ['dash'], isKept: false, ownerId: '1' },
+        { id: 2, definitionId: 'gunslinger-dice', value: 3, symbol: 'bullseye', symbols: ['bullseye'], isKept: false, ownerId: '1' },
+        { id: 3, definitionId: 'gunslinger-dice', value: 4, symbol: 'bullet', symbols: ['bullet'], isKept: false, ownerId: '1' },
+        { id: 4, definitionId: 'gunslinger-dice', value: 5, symbol: 'dash', symbols: ['dash'], isKept: false, ownerId: '1' },
+    ];
 
     next.core = {
         ...core,
@@ -149,9 +212,10 @@ const buildSharedDuelState = (state: DtState): DtState => {
         },
         activePlayerId: '1',
         turnNumber: typeof core.turnNumber === 'number' ? core.turnNumber : 1,
-        rollCount: 1,
+        rollCount: 0,
         rollLimit: 1,
-        rollConfirmed: true,
+        rollDiceCount: 1,
+        rollConfirmed: false,
         dice: preparedDice,
         players: {
             '0': {
@@ -171,6 +235,7 @@ const buildSharedDuelState = (state: DtState): DtState => {
                 },
             },
         },
+        currentRollContext: null,
         pendingDamage: null,
         pendingAttack: {
             attackerId: '0',
@@ -236,16 +301,74 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
                 activePlayerId: root.core?.activePlayerId ?? null,
                 defenderId: root.core?.pendingAttack?.defenderId ?? null,
                 defenseAbilityId: root.core?.pendingAttack?.defenseAbilityId ?? null,
+                rollCount: root.core?.rollCount ?? null,
+                rollConfirmed: root.core?.rollConfirmed ?? null,
             };
         }, { timeout: 15000 }).toMatchObject({
             phase: 'defensiveRoll',
             activePlayerId: '1',
             defenderId: '1',
             defenseAbilityId: 'duel',
+            rollCount: 0,
+            rollConfirmed: false,
         });
 
         await dismissStartDefenseShowcaseIfPresent(guestPage);
+        await primeFixedRandomQueue(guestPage);
+        await primeDuelCompareDiceValues(guestPage);
+        await dispatchHarnessCommand(guestPage, 'ROLL_DICE', '1');
+        await stabilizeDuelDefenseRollValues(matchId, guestPage);
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                phase: root.sys?.phase ?? null,
+                rollCount: root.core?.rollCount ?? null,
+                rollConfirmed: root.core?.rollConfirmed ?? null,
+                rollContextKind: root.core?.currentRollContext?.kind ?? null,
+                dice: root.core?.currentRollContext?.dice?.map((die: DtState) => die?.value ?? null) ?? [],
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            rollCount: 1,
+            rollConfirmed: false,
+            rollContextKind: 'defensive',
+            dice: [6, 1],
+        });
+
+        await dispatchHarnessCommand(guestPage, 'CONFIRM_ROLL', '1');
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                phase: root.sys?.phase ?? null,
+                rollConfirmed: root.core?.rollConfirmed ?? null,
+                rollContextStatus: root.core?.currentRollContext?.status ?? null,
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            rollConfirmed: true,
+            rollContextStatus: 'settling',
+        });
+
         await dispatchHarnessCommand(guestPage, 'ADVANCE_PHASE', '1');
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                phase: root.sys?.phase ?? null,
+                rollContextKind: root.core?.currentRollContext?.kind ?? null,
+                rollContextOwner: root.core?.currentRollContext?.ownerPlayerId ?? null,
+                dice: root.core?.currentRollContext?.dice?.map((die: DtState) => die?.value ?? null) ?? [],
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            rollContextKind: 'compare',
+            rollContextOwner: '1',
+            dice: [6, 1],
+        });
+
+        await dispatchHarnessCommand(guestPage, 'CONFIRM_COMPARE_ROLL', '1');
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, guestPage) as DtState;
@@ -277,6 +400,18 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
         });
 
         await guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            const current = root.sys?.interaction?.current;
+            return {
+                phase: root.sys?.phase ?? null,
+                interactionKind: current?.kind ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            interactionKind: null,
+        });
         await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
         await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
 

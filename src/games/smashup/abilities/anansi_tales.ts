@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -8,7 +8,6 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildStandardDrawEvents,
-    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedMoveEvents,
     createSkipOption,
     grantExtraAction,
@@ -16,6 +15,7 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
@@ -26,7 +26,6 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { createCardObjectRef, createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import { getEffectiveBreakpoint, registerCustomBreakpointModifiers } from '../domain/ongoingModifiers';
-import { reduce } from '../domain/reduce';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -84,6 +83,11 @@ type GiftCardsContext = AnansiPromptContext & {
     excludeCardUid?: string;
 };
 
+type GiftCardsAfterTransferContext = GiftCardsContext & {
+    transferCount: number;
+    random: RandomFn;
+};
+
 type GiftSelfContext = AnansiPromptContext & {
     sourceId: string;
     cardUid: string;
@@ -95,6 +99,20 @@ type GiftSelfContext = AnansiPromptContext & {
         metadataUpdate: Record<string, unknown>;
         reason: string;
     };
+};
+
+type GiftSelfAfterTransferContext = GiftSelfContext & {
+    random: RandomFn;
+};
+
+type DrawThenGiftSelfContext = GiftSelfContext & {
+    drawCount: number;
+    random: RandomFn;
+};
+
+type PotOfWisdomContext = AnansiPromptContext & {
+    otherCount: number;
+    random: RandomFn;
 };
 
 type CounterPromptContext = AnansiPromptContext & {
@@ -117,6 +135,25 @@ type MoveDestinationContext = MoveSourceContext & {
 
 type DeckActionSearchContext = AnansiPromptContext & {
     sourceId: 'anansi_tales_the_perfect_gift' | 'anansi_tales_anansi_the_spider';
+};
+
+type PendingActionContinuationContext = AnansiPromptContext & {
+    random: RandomFn;
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    targetBaseIndex?: number;
+    postGiftSelf?: {
+        sourceId: string;
+        cardUid: string;
+        defId: string;
+        fromPlayerId?: PlayerId;
+    };
+    lockActionDefAfter?: boolean;
+};
+
+type PendingActionAfterEventsContext = PendingActionContinuationContext & {
+    leadingEvents: SmashUpEvent[];
 };
 
 type CollectingStoriesChoice = {
@@ -151,17 +188,6 @@ function runtimeToAbilityResult(result: {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
     };
-}
-
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    let core = matchState.core;
-    for (const event of events) {
-        core = reduce(core, event);
-    }
-    return { ...matchState, core };
 }
 
 function getTurnOrderPlayers(state: SmashUpCore): PlayerId[] {
@@ -380,29 +406,120 @@ function appendActionOnPlayResolution(params: {
     random: Parameters<typeof resolvePendingActionExecution>[2];
     timestamp: number;
     targetBaseIndex?: number;
+    postGiftSelf?: PendingActionContinuationContext['postGiftSelf'];
+    lockActionDefAfter?: boolean;
 }): {
     events: SmashUpEvent[];
-    matchState: MatchState<SmashUpCore>;
+    matchState?: MatchState<SmashUpCore>;
 } {
-    const projected = simulateMatchState(params.state, params.events);
-    const resolution = resolvePendingActionExecution(
-        projected,
-        createPendingActionResolution({
-            playerId: params.playerId,
-            cardUid: params.card.uid,
-            defId: params.card.defId,
-            ownerId: params.card.owner,
-            ...(params.targetBaseIndex !== undefined ? { targetBaseIndex: params.targetBaseIndex } : {}),
-            now: params.timestamp,
-        }),
-        params.random,
-        params.timestamp,
-    );
-    return {
-        events: [...params.events, ...resolution.events],
-        matchState: simulateMatchState(resolution.state, resolution.events),
-    };
+    return executeAbilityProgram(pendingActionAfterEventsProgram, {
+        matchState: params.state,
+        playerId: params.playerId,
+        now: params.timestamp,
+        random: params.random,
+        cardUid: params.card.uid,
+        defId: params.card.defId,
+        ownerId: params.card.owner,
+        ...(params.targetBaseIndex !== undefined ? { targetBaseIndex: params.targetBaseIndex } : {}),
+        ...(params.postGiftSelf ? { postGiftSelf: params.postGiftSelf } : {}),
+        ...(params.lockActionDefAfter ? { lockActionDefAfter: true } : {}),
+        leadingEvents: params.events,
+    });
 }
+
+const pendingActionResolutionProgram = createEffectProgram<PendingActionContinuationContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const resolution = resolvePendingActionExecution(
+            context.matchState,
+            createPendingActionResolution({
+                playerId: context.playerId,
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                ...(context.targetBaseIndex !== undefined ? { targetBaseIndex: context.targetBaseIndex } : {}),
+                now: context.now,
+            }),
+            context.random,
+            context.now,
+        );
+        const events = [
+            ...resolution.events,
+            ...(context.lockActionDefAfter
+                ? [buildActionDefBlockedEvent(context.playerId, context.defId, 'anansi_tales_anansi_the_spider', context.now)]
+                : []),
+        ];
+        if (!context.postGiftSelf) {
+            return { events, matchState: resolution.state };
+        }
+        return {
+            events,
+            matchState: resolution.state,
+            context: {
+                matchState: resolution.state,
+                playerId: context.playerId,
+                now: context.now,
+                ...context.postGiftSelf,
+            } satisfies GiftSelfContext,
+            nextProgram: giftSelfPromptProgram,
+        };
+    },
+);
+
+const pendingActionAfterEventsProgram = createEffectProgram<PendingActionAfterEventsContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const { leadingEvents: _leadingEvents, ...nextContext } = context;
+        return {
+            events: context.leadingEvents,
+            context: nextContext,
+            nextProgram: pendingActionResolutionProgram,
+        };
+    },
+);
+
+const giftCardsAfterTransferProgram = createEffectProgram<GiftCardsAfterTransferContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const events: SmashUpEvent[] = [];
+        const drawCount = context.transferCount * (context.drawPerTransferred ?? 0);
+        if (drawCount > 0) {
+            events.push(...buildStandardDrawEvents(
+                context.matchState.core,
+                context.playerId,
+                drawCount,
+                context.random,
+                context.now,
+            ));
+        }
+        if (context.grantExtraActionAfter) {
+            events.push(buildExtraActionEvent(context.matchState, context.playerId, context.sourceId, context.now));
+        }
+        return { events };
+    },
+);
+
+const giftSelfAfterTransferProgram = createEffectProgram<GiftSelfAfterTransferContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const events: SmashUpEvent[] = [];
+        if ((context.drawCardsAfterTransfer ?? 0) > 0) {
+            events.push(...buildStandardDrawEvents(
+                context.matchState.core,
+                context.playerId,
+                context.drawCardsAfterTransfer!,
+                context.random,
+                context.now,
+            ));
+        }
+        if (context.baseMetadataAfterTransfer) {
+            events.push(buildBaseMetadataUpdatedEvent(
+                context.matchState.core,
+                context.baseMetadataAfterTransfer.baseIndex,
+                context.baseMetadataAfterTransfer.metadataUpdate,
+                context.baseMetadataAfterTransfer.reason,
+                context.now,
+            ));
+        }
+        return { events };
+    },
+);
 
 const giftCardsPromptProgram = createPromptProgram<GiftCardsContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'anansi_tales_gift_cards',
@@ -455,18 +572,17 @@ const giftCardsPromptProgram = createPromptProgram<GiftCardsContext, SmashUpCore
         if (events.length < context.minCards) {
             return { events: [] };
         }
-        let projected = state;
-        if (events.length > 0) {
-            projected = simulateMatchState(state, events);
-        }
-        const drawCount = events.length * (context.drawPerTransferred ?? 0);
-        if (drawCount > 0) {
-            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: projected }, context.playerId, drawCount));
-        }
-        if (context.grantExtraActionAfter) {
-            events.push(buildExtraActionEvent(state, context.playerId, context.sourceId, timestamp));
-        }
-        return { events };
+        return {
+            events,
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                transferCount: events.length,
+                random: args.random,
+            } satisfies GiftCardsAfterTransferContext,
+            nextProgram: giftCardsAfterTransferProgram,
+        };
     },
 });
 
@@ -517,24 +633,16 @@ const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, 
             timestamp,
         );
         const events: SmashUpEvent[] = [transferEvent];
-        const projected = simulateMatchState(state, events);
-        if ((context.drawCardsAfterTransfer ?? 0) > 0) {
-            events.push(...buildStandardDrawEventsFromRuntimeContext(
-                { ...args, state: projected },
-                context.playerId,
-                context.drawCardsAfterTransfer!,
-            ));
-        }
-        if (context.baseMetadataAfterTransfer) {
-            events.push(buildBaseMetadataUpdatedEvent(
-                projected.core,
-                context.baseMetadataAfterTransfer.baseIndex,
-                context.baseMetadataAfterTransfer.metadataUpdate,
-                context.baseMetadataAfterTransfer.reason,
-                timestamp,
-            ));
-        }
-        return { events };
+        return {
+            events,
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                random: args.random,
+            } satisfies GiftSelfAfterTransferContext,
+            nextProgram: giftSelfAfterTransferProgram,
+        };
     },
 });
 
@@ -598,7 +706,7 @@ const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCo
             return {
                 events,
                 context: {
-                    matchState: simulateMatchState(state, events),
+                    matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
                     sourceId: context.sourceId,
@@ -653,7 +761,7 @@ const featherGiftDestinationPromptProgram = createPromptProgram<MoveDestinationC
         return {
             events,
             context: {
-                matchState: simulateMatchState(state, events),
+                matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
@@ -804,28 +912,15 @@ const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContex
             card,
             random,
             timestamp,
+            postGiftSelf: {
+                sourceId: `${context.sourceId}_gift`,
+                cardUid: card.uid,
+                defId: card.defId,
+                fromPlayerId: context.playerId,
+            },
+            lockActionDefAfter: context.sourceId === 'anansi_tales_anansi_the_spider',
         });
-        const lockEvents = context.sourceId === 'anansi_tales_anansi_the_spider'
-            ? [buildActionDefBlockedEvent(context.playerId, card.defId, context.sourceId, timestamp)]
-            : [];
-        const projected = simulateMatchState(resolvedAction.matchState, lockEvents);
-        const giftPrompt = executeAbilityProgram(giftSelfPromptProgram, {
-            matchState: projected,
-            playerId: context.playerId,
-            now: timestamp,
-            sourceId: `${context.sourceId}_gift`,
-            cardUid: card.uid,
-            defId: card.defId,
-            fromPlayerId: context.playerId,
-        });
-        return {
-            events: [
-                ...resolvedAction.events,
-                ...lockEvents,
-                ...giftPrompt.events,
-            ],
-            ...(giftPrompt.matchState ? { matchState: giftPrompt.matchState } : {}),
-        };
+        return { events: resolvedAction.events, matchState: resolvedAction.matchState };
     },
 });
 
@@ -1028,7 +1123,7 @@ const discardActionRecyclePromptProgram = createPromptProgram<DiscardActionRecyc
         return {
             events,
             context: {
-                matchState: simulateMatchState(state, events),
+                matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
@@ -1084,6 +1179,83 @@ const hornetBasePromptProgram = createPromptProgram<HornetBaseContext, SmashUpCo
     },
 });
 
+const giftSelfAfterCommittedDrawProgram = createEffectProgram<GiftSelfContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: [],
+        context,
+        nextProgram: giftSelfPromptProgram,
+    }),
+);
+
+const drawThenGiftSelfProgram = createEffectProgram<DrawThenGiftSelfContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.drawCount,
+            context.random,
+            context.now,
+        ),
+        context: {
+            matchState: context.matchState,
+            playerId: context.playerId,
+            now: context.now,
+            sourceId: context.sourceId,
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ...(context.fromPlayerId ? { fromPlayerId: context.fromPlayerId } : {}),
+            ...(context.drawCardsAfterTransfer !== undefined ? { drawCardsAfterTransfer: context.drawCardsAfterTransfer } : {}),
+            ...(context.baseMetadataAfterTransfer ? { baseMetadataAfterTransfer: context.baseMetadataAfterTransfer } : {}),
+        } satisfies GiftSelfContext,
+        nextProgram: giftSelfAfterCommittedDrawProgram,
+    }),
+);
+
+const potOfWisdomAfterCommittedDrawProgram = createEffectProgram<PotOfWisdomContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const handCount = context.matchState.core.players[context.playerId]?.hand.length ?? 0;
+        if (handCount === 0 || context.otherCount === 0) {
+            return {
+                events: [buildExtraActionEvent(
+                    context.matchState,
+                    context.playerId,
+                    'anansi_tales_pot_of_wisdom',
+                    context.now,
+                )],
+            };
+        }
+        return {
+            events: [],
+            context: {
+                matchState: context.matchState,
+                playerId: context.playerId,
+                now: context.now,
+                sourceId: 'anansi_tales_pot_of_wisdom',
+                title: '智慧之锅：给每名其他玩家一张手牌，然后额外打出一个行动',
+                minCards: Math.min(context.otherCount, handCount),
+                maxCards: context.otherCount,
+                onePerOtherPlayer: true,
+                grantExtraActionAfter: true,
+            } satisfies GiftCardsContext,
+            nextProgram: giftCardsPromptProgram,
+        };
+    },
+);
+
+const potOfWisdomProgram = createEffectProgram<PotOfWisdomContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.otherCount,
+            context.random,
+            context.now,
+        ),
+        context,
+        nextProgram: potOfWisdomAfterCommittedDrawProgram,
+    }),
+);
+
 function akyeTheTurtle(ctx: AbilityContext): AbilityResult {
     const hasGift = (ctx.state.players[ctx.playerId]?.hand ?? []).some(card => card.uid !== ctx.cardUid);
     if (!hasGift || getOtherPlayers(ctx.state, ctx.playerId).length === 0) return { events: [] };
@@ -1117,20 +1289,16 @@ function tradingStories(ctx: AbilityContext): AbilityResult {
 }
 
 function letItBeFullAndEat(ctx: AbilityContext): AbilityResult {
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now);
-    const projected = simulateMatchState(ctx.matchState, drawEvents);
-    const gift = executeAbilityProgram(giftSelfPromptProgram, {
-        matchState: projected,
+    return runtimeToAbilityResult(executeAbilityProgram(drawThenGiftSelfProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
         sourceId: 'anansi_tales_let_it_be_full_and_eat',
         cardUid: ctx.cardUid,
         defId: ctx.defId,
-    });
-    return {
-        events: [...drawEvents, ...gift.events],
-        ...(gift.matchState ? { matchState: gift.matchState } : {}),
-    };
+        drawCount: 2,
+        random: ctx.random,
+    }));
 }
 
 function potOfBeans(ctx: AbilityContext): AbilityResult {
@@ -1177,26 +1345,13 @@ function featherGifts(ctx: AbilityContext): AbilityResult {
 
 function potOfWisdom(ctx: AbilityContext): AbilityResult {
     const otherCount = getOtherPlayers(ctx.state, ctx.playerId).length;
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, otherCount, ctx.random, ctx.now);
-    const projected = simulateMatchState(ctx.matchState, drawEvents);
-    if ((projected.core.players[ctx.playerId]?.hand.length ?? 0) === 0 || otherCount === 0) {
-        return { events: [...drawEvents, buildExtraActionEvent(projected, ctx.playerId, 'anansi_tales_pot_of_wisdom', ctx.now)] };
-    }
-    const gift = executeAbilityProgram(giftCardsPromptProgram, {
-        matchState: projected,
+    return runtimeToAbilityResult(executeAbilityProgram(potOfWisdomProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
-        sourceId: 'anansi_tales_pot_of_wisdom',
-        title: '智慧之锅：给每名其他玩家一张手牌，然后额外打出一个行动',
-        minCards: Math.min(otherCount, projected.core.players[ctx.playerId]?.hand.length ?? 0),
-        maxCards: otherCount,
-        onePerOtherPlayer: true,
-        grantExtraActionAfter: true,
-    });
-    return {
-        events: [...drawEvents, ...gift.events],
-        ...(gift.matchState ? { matchState: gift.matchState } : {}),
-    };
+        otherCount,
+        random: ctx.random,
+    }));
 }
 
 function earOfCorn(ctx: AbilityContext): AbilityResult {

@@ -8,15 +8,9 @@ import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
-import { SU_COMMANDS, type CardInstance, type SmashUpCommand, type SmashUpCore } from '../domain/types';
-import {
-    canCardBePlayedInResponseWindowForMatchState,
-    getResponseWindowPlayableBaseIndicesForMatchState,
-    isCardActionLike,
-    isCardMinionLike,
-} from '../domain/utils';
+import { SU_COMMANDS, type SmashUpCore } from '../domain/types';
 import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
-import { validate } from '../domain/commands';
+import { hasSmashUpResponderDrivenReactionOptionsForResponseWindow } from '../domain/reactionSession';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
 import { getCompactPlayerBadgeLabel } from '../../../components/game/framework/playerDisplay';
@@ -28,45 +22,6 @@ import { getCompactPlayerBadgeLabel } from '../../../components/game/framework/p
 export interface MeFirstPendingCard {
     cardUid: string;
     defId: string;
-}
-
-function hasValidatedResponseOption(
-    G: MatchState<SmashUpCore>,
-    playerId: string,
-    card: CardInstance,
-    windowType: 'meFirst' | 'afterScoring',
-): boolean {
-    if (!canCardBePlayedInResponseWindowForMatchState(G, card, windowType)) return false;
-
-    const baseIndices = getResponseWindowPlayableBaseIndicesForMatchState(G, card.defId, windowType);
-    if (isCardMinionLike(card)) {
-        return baseIndices.some(baseIndex => {
-            const command: SmashUpCommand = {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId,
-            payload: { cardUid: card.uid, baseIndex },
-            };
-            return validate(G, command).valid;
-        });
-    }
-
-    if (!isCardActionLike(card)) return false;
-    if (baseIndices.length > 0) {
-        return baseIndices.some(targetBaseIndex => {
-            const command: SmashUpCommand = {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId,
-            payload: { cardUid: card.uid, targetBaseIndex },
-            };
-            return validate(G, command).valid;
-        });
-    }
-    const command: SmashUpCommand = {
-        type: SU_COMMANDS.PLAY_ACTION,
-        playerId,
-        payload: { cardUid: card.uid },
-    };
-    return validate(G, command).valid;
 }
 
 export const MeFirstOverlay: React.FC<{
@@ -84,7 +39,7 @@ export const MeFirstOverlay: React.FC<{
     const currentInteraction = G.sys.interaction?.current;
     const handlePass = () => {
         onSelectCard(null);
-        dispatch('RESPONSE_PASS');
+        dispatch(SU_COMMANDS.REACTION_PASS);
     };
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
@@ -101,12 +56,18 @@ export const MeFirstOverlay: React.FC<{
     // 只要当前玩家已经有真实交互承接层，中央 Me First 壳层就必须退场，避免出现两个并列主入口。
     if (isMyResponse && currentInteraction) return null;
 
-    // 检查手牌中是否有可在当前响应窗口打出的行动卡或 beforeScoringPlayable 随从
-    const myPlayer = playerID ? core.players[playerID] : undefined;
-    
-    const hasRespondableCards = myPlayer?.hand.some(card =>
-        playerID ? hasValidatedResponseOption(G, playerID, card, reactionWindow.windowType) : false,
-    ) ?? false;
+    const hasRespondableCards = playerID
+        ? hasSmashUpResponderDrivenReactionOptionsForResponseWindow(
+            core,
+            playerID,
+            reactionWindow.windowType,
+            {
+                matchState: G,
+                window: G.sys.responseWindow?.current,
+                now: G.sys.turnNumber ?? core.turnNumber ?? 0,
+            },
+        )
+        : false;
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'

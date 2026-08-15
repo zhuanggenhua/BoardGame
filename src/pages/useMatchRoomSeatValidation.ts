@@ -20,32 +20,50 @@ type SeatValidationPlayer = {
     isConnected?: boolean;
 };
 
+type PendingSeatValidationClear = {
+    key: string;
+    observationKey: string;
+};
+
+const buildSeatValidationPlayersSignature = (players: SeatValidationPlayer[]): string => (
+    players
+        .map((player) => [
+            String(player.id),
+            player.name ?? '',
+            player.isConnected === undefined ? '' : String(player.isConnected),
+        ].join(':'))
+        .join('|')
+);
+
 export function useMatchRoomSeatValidation(args: {
     isTutorialRoute: boolean;
     matchId?: string;
     statusPlayerID: string | null;
     matchStatusLoading: boolean;
     matchStatusPlayers: SeatValidationPlayer[];
+    matchStatusRevision?: number;
     shouldAutoJoin: boolean;
     isAutoJoining: boolean;
     autoJoinGraceActive: boolean;
     onLocalStateCleared: () => void;
 }) {
-    const toast = useToast();
+    const { warning: showWarningToast } = useToast();
     const {
         isTutorialRoute,
         matchId,
         statusPlayerID,
         matchStatusLoading,
         matchStatusPlayers,
+        matchStatusRevision = 0,
         shouldAutoJoin,
         isAutoJoining,
         autoJoinGraceActive,
         onLocalStateCleared,
     } = args;
-    const pendingSeatValidationClearKeyRef = useRef<string | null>(null);
+    const pendingSeatValidationClearRef = useRef<PendingSeatValidationClear | null>(null);
     const [transportSeatValidationSnapshot, setTransportSeatValidationSnapshot] = useState<MatchRoomSeatValidationSnapshot>({
         players: [],
+        revision: 0,
         transportReady: false,
         lastConfirmedAt: null,
     });
@@ -71,12 +89,14 @@ export function useMatchRoomSeatValidation(args: {
                 prevSnapshot.transportReady === nextSnapshot.transportReady
                 && prevSnapshot.lastConfirmedAt === nextLastConfirmedAt
                 && samePlayers
+                && prevSnapshot.revision === nextSnapshot.revision
             ) {
                 return prevSnapshot;
             }
             return {
                 ...nextSnapshot,
                 players: effectivePlayers,
+                revision: nextSnapshot.revision ?? prevSnapshot.revision,
                 lastConfirmedAt: nextLastConfirmedAt,
             };
         });
@@ -93,22 +113,34 @@ export function useMatchRoomSeatValidation(args: {
         transportPlayers: transportSeatValidationSnapshot.players,
         transportReady: shouldUseTransportSeatValidation,
     }), [matchStatusPlayers, transportSeatValidationSnapshot.players, shouldUseTransportSeatValidation]);
+    const seatValidationPlayersSignature = useMemo(
+        () => buildSeatValidationPlayersSignature(seatValidationPlayers),
+        [seatValidationPlayers],
+    );
+    const seatValidationObservationKey = [
+        shouldUseTransportSeatValidation ? 'transport' : 'status',
+        shouldUseTransportSeatValidation ? (transportSeatValidationSnapshot.revision ?? 0) : 0,
+        matchStatusRevision,
+        matchId ?? '',
+        statusPlayerID ?? '',
+        seatValidationPlayersSignature,
+    ].join('::');
 
     useEffect(() => {
         if (isTutorialRoute) {
-            pendingSeatValidationClearKeyRef.current = null;
+            pendingSeatValidationClearRef.current = null;
             return;
         }
         if (!matchId || !statusPlayerID) {
-            pendingSeatValidationClearKeyRef.current = null;
+            pendingSeatValidationClearRef.current = null;
             return;
         }
         if (!shouldUseTransportSeatValidation && (matchStatusLoading || seatValidationPlayers.length === 0)) {
-            pendingSeatValidationClearKeyRef.current = null;
+            pendingSeatValidationClearRef.current = null;
             return;
         }
         if (shouldAutoJoin || isAutoJoining || autoJoinGraceActive) {
-            pendingSeatValidationClearKeyRef.current = null;
+            pendingSeatValidationClearRef.current = null;
             return;
         }
 
@@ -120,10 +152,17 @@ export function useMatchRoomSeatValidation(args: {
             validation,
         });
         const clearDecision = resolveStoredSeatValidationClearDecision({
-            pendingKey: pendingSeatValidationClearKeyRef.current,
+            pendingKey: pendingSeatValidationClearRef.current?.key ?? null,
+            pendingObservationKey: pendingSeatValidationClearRef.current?.observationKey ?? null,
             nextKey: clearKey,
+            nextObservationKey: seatValidationObservationKey,
         });
-        pendingSeatValidationClearKeyRef.current = clearDecision.nextPendingKey;
+        pendingSeatValidationClearRef.current = clearDecision.nextPendingKey
+            ? {
+                key: clearDecision.nextPendingKey,
+                observationKey: clearDecision.nextPendingObservationKey ?? seatValidationObservationKey,
+            }
+            : null;
         if (!clearDecision.shouldClear) {
             return;
         }
@@ -131,7 +170,7 @@ export function useMatchRoomSeatValidation(args: {
         clearMatchCredentials(matchId);
         clearOwnerActiveMatch(matchId);
         onLocalStateCleared();
-        toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
+        showWarningToast({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     }, [
         autoJoinGraceActive,
         isAutoJoining,
@@ -139,11 +178,12 @@ export function useMatchRoomSeatValidation(args: {
         matchId,
         matchStatusLoading,
         onLocalStateCleared,
+        seatValidationObservationKey,
         shouldAutoJoin,
         statusPlayerID,
         seatValidationPlayers,
         shouldUseTransportSeatValidation,
-        toast,
+        showWarningToast,
     ]);
 
     return {

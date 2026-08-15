@@ -28,13 +28,27 @@ After Scoring 入队已经建立提交屏障：afterScoring trigger/marker 与�
 
 局部卡牌/基地投影也已开始拆除：桌游桌 afterScoring 的“抽 3 后弃 2”候选从 `CARDS_DRAWN` 事件 payload 与当前手牌直接派生；Geeks Min Maxing / Non-Infinite Loop 的额外行动链不再把 `grantExtraAction` / `CARD_TRANSFERRED` 事件 reduce 进临时 core，而是构造只服务 `validate()` / `execute()` 的显式临时校验态，并且该临时态只保留在本地调用栈，不返回权威 `MatchState.core`；Min Maxing 查看手牌、Mulligan reveal 和 Banned List 多对手续链后的下一 prompt 上下文也不再预演事件。Griefer 多对手续链已删除 `simulateMatchState()`，由 ability runtime 在“领域事件 + 后续 program”之间发出内部 continuation 事件，等待 pipeline 正式归约后再恢复下一段 program。Marvel / Avengers / Marvel Villains 的 runtime prompt 续链已迁入同一 seam；Anansi / Russian Fairy Tales 的手写 interaction 链路也已迁为“领域事件正式归约后恢复 continuation/prompt”，覆盖 draw 后 prompt、destroy 后 search、transformation 后 attach、赠牌后抽牌/标记、移动/加指示物/洗回后赠牌等链路。continuation 恢复时可注入 pipeline 当前随机源，因此抽牌、洗牌和 reveal 后 prompt 不需要再预演未来 core。
 
+Flow 自动推进已不再依赖 SmashUp 私有 pipeline 轮次 flag：`_waitForPostScoringReduce`、`_waitForScoreBasesInteractionReduce`、`_waitForStartTurnInteractionReduce` 不再作为规则恢复条件。共享 FlowSystem 通过 pipeline 明确传入“本轮前置 afterEvents 还有待正式归约事件”的上下文来等待下一轮，SmashUp 不再自行猜测 pipeline 是否已经进入下一轮。
+
+post-scoring reveal 的两秒视觉 delay 已移出规则状态：生产路径不再写入 `_smashupPostScoringBaseRevealDelayUntil` 或 `awaiting-post-scoring-delay`，AI recovery 和 domain flow 不再读取墙上时钟来决定规则是否继续。视觉表现应由客户端根据事件流播放并本地锁输入。
+
+Me First / After Scoring 的“是否有可响应内容”已收口到 ReactionSession 的真实选项生成入口：`game.ts` 不再保留第二套手牌、基地和限制判断；`MeFirstOverlay` 的提示文案也复用该入口，不再本地 probe 手牌/基地/validate；UI 对手牌、基地、随从目标的响应点击优先查找 `smashup_reaction_choose` live option 并通过当前 prompt 响应。
+
+通用 ResponseWindow 到 SmashUp reaction pass 的桥接仍存在，但已集中为薄兼容 adapter：AI recovery、共享传输和部分自动化路径仍可能发 `RESPONSE_PASS`，该桥只把通用窗口事件翻译成 ReactionSession 的 pass，不再拥有响应者规则、可响应内容判断或实际候选生成。
+
+reaction presentation、AI 的结束阶段与相对效用判断已改为直接读取 live ReactionSession：即使 `smashup_reaction_choose` 镜像 responseWindow 在恢复态中丢失，只要 resolution frame 中仍有 SmashUp reaction session，UI/AI 仍能从 session 得到当前响应者上下文，AI 也不能把该状态当作普通可结束阶段。镜像 responseWindow 仍是兼容/展示壳，不再是判断反应是否收口的唯一来源。
+
+真人 UI 与 Smash Up AI 的正常 reaction pass 已改走 `su:reaction_pass`：该命令只在 live optional ReactionSession 存在且发起者是当前响应者时合法，领域后处理把 `REACTION_PASS_REQUESTED` 视为控制请求事件，不再把它送入 destroy/affect/reactionQueue 通用派生链。专用 pass 消费只记录当前响应者已让过并推进到下一响应者；如果下一响应者当前只有 Pass，空 afterEvents 轮不会再自动代替其 pass。旧 `RESPONSE_PASS` 仍作为 AI recovery / shared transport / legacy 自动化兼容 adapter 保留，但不再是真人 UI 与 Smash Up AI live reaction 的正常入口。
+
+live ReactionSession 已不再写入通用 `ResponseWindowSystem` 镜像窗口：`setSmashUpReactionSession()` 只更新 reaction frame/session，并在发现旧 `smashup_reaction_choose` responseWindow 壳时将其清掉。正常 Me First / After Scoring 展示、UI 响应和 Smash Up AI 现在都从 live session/prompt 读取；legacy responseWindow fallback 仍保留给恢复态和旧桥接路径。
+
 仍待迁移的投影/拼状态点包括：
 - Before Scoring / When Scoring / After Scoring 的非暂停 reaction trigger 执行与 reaction command 后处理仍会立即应用事件；当前切片已阻止 scoreBases 暂停路径继续消费这些影子 core，并删除了 stale/auto-pass trigger consumption 与暂停式 reaction 后处理的投影续链，但还没有把所有非暂停兼容路径迁成提交屏障。
 - standalone direct-test 兼容路径仍 inline reduce 清场/换基地事件。
 - `postProcessSystemEvents()` 内部仍会按本批事件顺序构造局部 tempCore 来收集部分触发；轮次信号已类型化，但这一段局部投影本身仍不是最终形态。
 - `SmashUpEventSystem.afterEvents()` 的 pending domain events preview 已删除：交互 handler 产出领域事件后，response/reaction 续链只允许从事件正式归约后的状态继续。
 - `mergePromptResultCoreWithPreEventState()` 已删除：交互 handler 发出领域事件时不再手工拼回部分 core 字段；若 handler 同时发领域事件并改写 core，会立即暴露为内部契约错误。
-- SmashUp reaction session 与通用 `ResponseWindowSystem` 仍存在镜像 responder 状态和双向 pass 桥接。
+- 外部 `RESPONSE_PASS` 兼容桥与 legacy responseWindow fallback 仍存在，但桥接职责已被收窄，后续需要基于 UI、AI、online recovery、server/local runner 消费者矩阵迁出。
 
 ## Goals / Non-Goals
 - Goals:

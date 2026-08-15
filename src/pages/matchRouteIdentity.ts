@@ -13,25 +13,33 @@ export function buildStoredSeatValidationClearKey(args: {
 
 export function resolveStoredSeatValidationClearDecision(args: {
     pendingKey: string | null;
+    pendingObservationKey?: string | null;
     nextKey: string | null;
+    nextObservationKey?: string | null;
 }): {
     nextPendingKey: string | null;
+    nextPendingObservationKey: string | null;
     shouldClear: boolean;
 } {
     if (!args.nextKey) {
         return {
             nextPendingKey: null,
+            nextPendingObservationKey: null,
             shouldClear: false,
         };
     }
-    if (args.pendingKey === args.nextKey) {
+    const hasObservationKeys = Boolean(args.pendingObservationKey && args.nextObservationKey);
+    const isSameObservation = hasObservationKeys && args.pendingObservationKey === args.nextObservationKey;
+    if (args.pendingKey === args.nextKey && !isSameObservation) {
         return {
             nextPendingKey: null,
+            nextPendingObservationKey: null,
             shouldClear: true,
         };
     }
     return {
         nextPendingKey: args.nextKey,
+        nextPendingObservationKey: args.nextObservationKey ?? null,
         shouldClear: false,
     };
 }

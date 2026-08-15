@@ -5,290 +5,207 @@
  * 1. 火焰精通注入后正确显示
  * 2. 火焰精通消耗后增加伤害
  * 3. 火焰精通消耗后施加燃烧
- * 4. 火焰精通上限验证
- * 5. 火焰精通不出现在 Token 响应窗口（自动消耗）
+ * 4. 花费 CP 获得火焰精通
  *
- * 使用在线双人对局模式，通过调试面板注入状态。
+ * 使用专用 TestHarness 代表态，不再依赖在线双人房或调试面板。
  */
 
+import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
+import type { GameTestContext } from '../framework';
+import type { MatchState } from '../../src/engine/types';
 import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
-
-type __ThreeAxeGameMarker = {
-  openTestGame: (gameId: string) => Promise<void>;
-  setupScene: (config: { gameId: string }) => Promise<void>;
-};
-
-const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
-  await game.openTestGame('dicethrone');
-  await game.setupScene({ gameId: 'dicethrone' });
-};
-void __ensureThreeAxesMarker;
-
+import type { DiceThroneCore } from '../../src/games/dicethrone/types';
 import {
-    setupOnlineMatch,
-    readCoreState,
-    applyCoreStateDirect,
-    closeDebugPanelIfOpen,
+    patchDiceThroneHarnessState,
+    readDiceThroneHarnessState,
+    waitForDiceThroneHarness,
 } from '../helpers/dicethrone';
 
-/** 读取指定玩家状态 */
-const getPlayerState = (core: Record<string, unknown>, playerId: string) => {
-    const players = core.players as Record<string, Record<string, unknown>>;
-    return players[playerId];
-};
+type DiceThroneMatchState = MatchState<DiceThroneCore>;
 
-/** 注入 tokens */
-const injectTokens = async (
-    page: import('@playwright/test').Page,
-    playerId: string,
-    tokens: Record<string, number>,
-) => {
-    const core = await readCoreState(page) as Record<string, unknown>;
-    const players = core.players as Record<string, Record<string, unknown>>;
-    const player = players[playerId];
-    await applyCoreStateDirect(page, {
-        ...core,
-        players: {
-            ...players,
-            [playerId]: {
-                ...player,
-                tokens: { ...((player.tokens as Record<string, number>) ?? {}), ...tokens },
+const OPEN_TIMEOUT_MS = 180000;
+const TEST_TIMEOUT_MS = 120000;
+const PYROMANCER_ID = '0';
+const DEFENDER_ID = '1';
+
+async function setupFireMasteryScene(page: Page, game: GameTestContext): Promise<void> {
+    await game.openTestGame('dicethrone', {}, OPEN_TIMEOUT_MS);
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { [RESOURCE_IDS.CP]: 5, [RESOURCE_IDS.HP]: 50 },
+            tokens: { [TOKEN_IDS.FIRE_MASTERY]: 0 },
+        },
+        player1: {
+            resources: { [RESOURCE_IDS.HP]: 50 },
+            tokens: {},
+        },
+        currentPlayer: PYROMANCER_ID,
+        phase: 'main1',
+        extra: {
+            selectedCharacters: { [PYROMANCER_ID]: 'pyromancer', [DEFENDER_ID]: 'barbarian' },
+            hostStarted: true,
+        },
+        sys: {
+            phase: 'main1',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        },
+    });
+
+    await waitForDiceThroneHarness(page);
+    await expect(page.getByTestId('dicethrone-board-root')).toBeVisible({ timeout: 10000 });
+}
+
+async function readCore(page: Page): Promise<DiceThroneCore> {
+    const state = await readDiceThroneHarnessState<DiceThroneMatchState>(page);
+    return state.core;
+}
+
+function getPlayerState(core: DiceThroneCore, playerId: string) {
+    return core.players[playerId];
+}
+
+async function setFireMastery(page: Page, playerId: string, amount: number): Promise<void> {
+    await patchDiceThroneHarnessState(page, {
+        core: {
+            players: {
+                [playerId]: {
+                    tokens: { [TOKEN_IDS.FIRE_MASTERY]: amount },
+                },
             },
         },
     });
-    await page.waitForTimeout(500);
-};
+
+    await expect.poll(async () => {
+        const core = await readCore(page);
+        return getPlayerState(core, playerId)?.tokens?.[TOKEN_IDS.FIRE_MASTERY] ?? 0;
+    }, { timeout: 5000 }).toBe(amount);
+}
 
 test.describe('火焰精通自动消耗机制', () => {
+    test('火焰精通注入后正确显示并可累积', async ({ page, game }, testInfo: TestInfo) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupFireMasteryScene(page, game);
 
-    test('火焰精通注入后正确显示并可累积', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        await setFireMastery(page, PYROMANCER_ID, 3);
+        const core1 = await readCore(page);
+        expect(
+            getPlayerState(core1, PYROMANCER_ID)?.tokens?.[TOKEN_IDS.FIRE_MASTERY],
+            '火焰精通注入失败',
+        ).toBe(3);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'pyromancer', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await setFireMastery(page, PYROMANCER_ID, 5);
+        const core2 = await readCore(page);
+        expect(
+            getPlayerState(core2, PYROMANCER_ID)?.tokens?.[TOKEN_IDS.FIRE_MASTERY],
+            '火焰精通应累积到 5',
+        ).toBe(5);
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const pyromancerId = hostIsActive ? '0' : '1';
-
-            // 注入 3 层火焰精通
-            await injectTokens(page, pyromancerId, { [TOKEN_IDS.FIRE_MASTERY]: 3 });
-
-            const core1 = await readCoreState(page) as Record<string, unknown>;
-            const tokens1 = (getPlayerState(core1, pyromancerId).tokens as Record<string, number>) ?? {};
-            expect(tokens1[TOKEN_IDS.FIRE_MASTERY], '火焰精通注入失败').toBe(3);
-
-            // 累积到 5
-            await injectTokens(page, pyromancerId, { [TOKEN_IDS.FIRE_MASTERY]: 5 });
-
-            const core2 = await readCoreState(page) as Record<string, unknown>;
-            const tokens2 = (getPlayerState(core2, pyromancerId).tokens as Record<string, number>) ?? {};
-            expect(tokens2[TOKEN_IDS.FIRE_MASTERY], '火焰精通应累积到 5').toBe(5);
-
-            await closeDebugPanelIfOpen(page);
-            await page.screenshot({ path: testInfo.outputPath('fire-mastery-display.png'), fullPage: false });
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await page.screenshot({ path: testInfo.outputPath('fire-mastery-display.png'), fullPage: false });
     });
 
-    test('火焰精通消耗后增加伤害', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('火焰精通消耗后增加伤害', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupFireMasteryScene(page, game);
+        await setFireMastery(page, PYROMANCER_ID, 3);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'pyromancer', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        const coreBefore = await readCore(page);
+        const hpBefore = getPlayerState(coreBefore, DEFENDER_ID)?.resources?.[RESOURCE_IDS.HP] ?? 0;
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const pyromancerId = hostIsActive ? '0' : '1';
-            const defenderId = hostIsActive ? '1' : '0';
+        const baseDamage = 5;
+        const fmConsumed = 2;
+        const bonusDamage = fmConsumed * 2;
+        const totalDamage = baseDamage + bonusDamage;
 
-            // 注入 3 层火焰精通
-            await injectTokens(page, pyromancerId, { [TOKEN_IDS.FIRE_MASTERY]: 3 });
-
-            // 读取防御方 HP
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const hpBefore = (getPlayerState(coreBefore, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            // 模拟高温爆破：消耗 2 层火焰精通，基础伤害 5 + 2*2 = 9
-            const baseDamage = 5;
-            const fmConsumed = 2;
-            const bonusDamage = fmConsumed * 2;
-            const totalDamage = baseDamage + bonusDamage;
-
-            const core = await readCoreState(page) as Record<string, unknown>;
-            const players = core.players as Record<string, Record<string, unknown>>;
-            const pyromancer = players[pyromancerId];
-            const defender = players[defenderId];
-
-            await applyCoreStateDirect(page, {
-                ...core,
+        await patchDiceThroneHarnessState(page, {
+            core: {
                 players: {
-                    ...players,
-                    [pyromancerId]: {
-                        ...pyromancer,
-                        tokens: { ...((pyromancer.tokens as Record<string, number>) ?? {}), [TOKEN_IDS.FIRE_MASTERY]: 3 - fmConsumed },
+                    [PYROMANCER_ID]: {
+                        tokens: { [TOKEN_IDS.FIRE_MASTERY]: 3 - fmConsumed },
                     },
-                    [defenderId]: {
-                        ...defender,
-                        resources: {
-                            ...((defender.resources as Record<string, number>) ?? {}),
-                            [RESOURCE_IDS.HP]: hpBefore - totalDamage,
-                        },
+                    [DEFENDER_ID]: {
+                        resources: { [RESOURCE_IDS.HP]: hpBefore - totalDamage },
                     },
                 },
-            });
-            await page.waitForTimeout(500);
+            },
+        });
 
-            // 验证
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const fmFinal = ((getPlayerState(coreFinal, pyromancerId).tokens as Record<string, number>) ?? {})[TOKEN_IDS.FIRE_MASTERY] ?? 0;
-            const hpFinal = (getPlayerState(coreFinal, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            expect(fmFinal, '火焰精通应减少 2 层').toBe(1);
-            expect(hpFinal, '伤害应为基础 + 火焰精通加成').toBe(hpBefore - totalDamage);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(async () => {
+            const coreFinal = await readCore(page);
+            return {
+                fireMastery: getPlayerState(coreFinal, PYROMANCER_ID)?.tokens?.[TOKEN_IDS.FIRE_MASTERY] ?? 0,
+                defenderHp: getPlayerState(coreFinal, DEFENDER_ID)?.resources?.[RESOURCE_IDS.HP] ?? 0,
+            };
+        }, { timeout: 5000 }).toEqual({
+            fireMastery: 1,
+            defenderHp: hpBefore - totalDamage,
+        });
     });
 
-    test('火焰精通消耗后施加燃烧', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('火焰精通消耗后施加燃烧', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupFireMasteryScene(page, game);
+        await setFireMastery(page, PYROMANCER_ID, 4);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'pyromancer', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
-
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const pyromancerId = hostIsActive ? '0' : '1';
-            const defenderId = hostIsActive ? '1' : '0';
-
-            // 注入 4 层火焰精通
-            await injectTokens(page, pyromancerId, { [TOKEN_IDS.FIRE_MASTERY]: 4 });
-
-            // 模拟烧毁：消耗所有火焰精通，施加等量燃烧（上限 3）
-            const core = await readCoreState(page) as Record<string, unknown>;
-            const players = core.players as Record<string, Record<string, unknown>>;
-            const pyromancer = players[pyromancerId];
-            const defender = players[defenderId];
-
-            await applyCoreStateDirect(page, {
-                ...core,
+        await patchDiceThroneHarnessState(page, {
+            core: {
                 players: {
-                    ...players,
-                    [pyromancerId]: {
-                        ...pyromancer,
-                        tokens: { ...((pyromancer.tokens as Record<string, number>) ?? {}), [TOKEN_IDS.FIRE_MASTERY]: 0 },
+                    [PYROMANCER_ID]: {
+                        tokens: { [TOKEN_IDS.FIRE_MASTERY]: 0 },
                     },
-                    [defenderId]: {
-                        ...defender,
-                        statusEffects: { ...((defender.statusEffects as Record<string, number>) ?? {}), [STATUS_IDS.BURN]: 3 },
+                    [DEFENDER_ID]: {
+                        statusEffects: { [STATUS_IDS.BURN]: 3 },
                     },
                 },
-            });
-            await page.waitForTimeout(500);
+            },
+        });
 
-            // 验证
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const fmFinal = ((getPlayerState(coreFinal, pyromancerId).tokens as Record<string, number>) ?? {})[TOKEN_IDS.FIRE_MASTERY] ?? 0;
-            const burnFinal = ((getPlayerState(coreFinal, defenderId).statusEffects as Record<string, number>) ?? {})[STATUS_IDS.BURN] ?? 0;
-
-            expect(fmFinal, '火焰精通应被完全消耗').toBe(0);
-            expect(burnFinal, '应施加 3 层燃烧（上限）').toBe(3);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(async () => {
+            const coreFinal = await readCore(page);
+            return {
+                fireMastery: getPlayerState(coreFinal, PYROMANCER_ID)?.tokens?.[TOKEN_IDS.FIRE_MASTERY] ?? 0,
+                burn: getPlayerState(coreFinal, DEFENDER_ID)?.statusEffects?.[STATUS_IDS.BURN] ?? 0,
+            };
+        }, { timeout: 5000 }).toEqual({
+            fireMastery: 0,
+            burn: 3,
+        });
     });
 
-    test('花费 CP 获得火焰精通', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('花费 CP 获得火焰精通', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupFireMasteryScene(page, game);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'pyromancer', 'barbarian');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        const coreBefore = await readCore(page);
+        const cpBefore = getPlayerState(coreBefore, PYROMANCER_ID)?.resources?.[RESOURCE_IDS.CP] ?? 0;
+        expect(cpBefore, 'CP 注入失败').toBe(5);
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const pyromancerId = hostIsActive ? '0' : '1';
-
-            // 注入 5 CP
-            const core = await readCoreState(page) as Record<string, unknown>;
-            const players = core.players as Record<string, Record<string, unknown>>;
-            const pyromancer = players[pyromancerId];
-            await applyCoreStateDirect(page, {
-                ...core,
+        const cpSpent = 2;
+        const fmGained = 3;
+        await patchDiceThroneHarnessState(page, {
+            core: {
                 players: {
-                    ...players,
-                    [pyromancerId]: {
-                        ...pyromancer,
-                        resources: { ...((pyromancer.resources as Record<string, number>) ?? {}), [RESOURCE_IDS.CP]: 5 },
+                    [PYROMANCER_ID]: {
+                        resources: { [RESOURCE_IDS.CP]: cpBefore - cpSpent },
+                        tokens: { [TOKEN_IDS.FIRE_MASTERY]: fmGained },
                     },
                 },
-            });
-            await page.waitForTimeout(500);
+            },
+        });
 
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const cpBefore = (getPlayerState(coreBefore, pyromancerId).resources as Record<string, number>)[RESOURCE_IDS.CP] ?? 0;
-            expect(cpBefore, 'CP 注入失败').toBe(5);
-
-            // 模拟"升温"卡：花费 2 CP 获得 3 层火焰精通
-            const cpSpent = 2;
-            const fmGained = 3;
-            const coreForCard = await readCoreState(page) as Record<string, unknown>;
-            const playersForCard = coreForCard.players as Record<string, Record<string, unknown>>;
-            const pyroForCard = playersForCard[pyromancerId];
-            await applyCoreStateDirect(page, {
-                ...coreForCard,
-                players: {
-                    ...playersForCard,
-                    [pyromancerId]: {
-                        ...pyroForCard,
-                        resources: { ...((pyroForCard.resources as Record<string, number>) ?? {}), [RESOURCE_IDS.CP]: cpBefore - cpSpent },
-                        tokens: { ...((pyroForCard.tokens as Record<string, number>) ?? {}), [TOKEN_IDS.FIRE_MASTERY]: fmGained },
-                    },
-                },
-            });
-            await page.waitForTimeout(500);
-
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const cpFinal = (getPlayerState(coreFinal, pyromancerId).resources as Record<string, number>)[RESOURCE_IDS.CP] ?? 0;
-            const fmFinal = ((getPlayerState(coreFinal, pyromancerId).tokens as Record<string, number>) ?? {})[TOKEN_IDS.FIRE_MASTERY] ?? 0;
-
-            expect(cpFinal, 'CP 应减少').toBe(cpBefore - cpSpent);
-            expect(fmFinal, '应获得火焰精通').toBe(fmGained);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await expect.poll(async () => {
+            const coreFinal = await readCore(page);
+            return {
+                cp: getPlayerState(coreFinal, PYROMANCER_ID)?.resources?.[RESOURCE_IDS.CP] ?? 0,
+                fireMastery: getPlayerState(coreFinal, PYROMANCER_ID)?.tokens?.[TOKEN_IDS.FIRE_MASTERY] ?? 0,
+            };
+        }, { timeout: 5000 }).toEqual({
+            cp: cpBefore - cpSpent,
+            fireMastery: fmGained,
+        });
     });
 });

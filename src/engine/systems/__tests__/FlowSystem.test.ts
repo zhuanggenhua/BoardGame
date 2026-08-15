@@ -338,6 +338,57 @@ describe('FlowSystem', () => {
         expect(result).toBeUndefined();
     });
 
+    it('当前 afterEvents 轮已有待落地事件时，不触发 autoContinue', () => {
+        let autoContinueChecked = false;
+        const system = createFlowSystem<TestCore>({
+            hooks: buildHooks({
+                onAutoContinueCheck: () => {
+                    autoContinueChecked = true;
+                    return { autoContinue: true, playerId: '0' };
+                },
+            }),
+        });
+        const state = createTestState('phase1');
+
+        const result = system.afterEvents?.({
+            state,
+            command: { type: 'noop', playerId: '0', payload: {} },
+            events: [{ type: 'DOMAIN_EVENT', payload: {}, timestamp: 1 }],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            pendingAfterEventsToReduceCount: 1,
+        });
+
+        expect(result).toBeUndefined();
+        expect(autoContinueChecked).toBe(false);
+    });
+
+    it('当前 afterEvents 轮没有待落地事件时，保留原 autoContinue 行为', () => {
+        const system = createFlowSystem<TestCore>({
+            hooks: buildHooks({
+                onAutoContinueCheck: () => ({ autoContinue: true, playerId: '0' }),
+            }),
+        });
+        const state = createTestState('phase1');
+
+        const result = system.afterEvents?.({
+            state,
+            command: { type: 'noop', playerId: '0', payload: {} },
+            events: [{ type: 'DOMAIN_EVENT', payload: {}, timestamp: 1 }],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            pendingAfterEventsToReduceCount: 0,
+        });
+
+        expect(result?.state?.sys.phase).toBe('phase2');
+        expect(result?.events).toContainEqual(
+            expect.objectContaining({
+                type: FLOW_EVENTS.PHASE_CHANGED,
+                payload: expect.objectContaining({ from: 'phase1', to: 'phase2' }),
+            }),
+        );
+    });
+
     it('getCurrentPhase / setPhase 辅助函数', () => {
         const state = createTestState('main1');
         expect(getCurrentPhase(state)).toBe('main1');

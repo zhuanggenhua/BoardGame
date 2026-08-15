@@ -145,6 +145,7 @@ npm run merge:audit:strict -- HEAD
   - `npm run check:prod-deps`
 - 功能/逻辑改动：
   - 依规范选择 `npm run test:games:core` / E2E（按 AGENTS.md 要求）
+- **规范 / 文档架构改动（强制）**：若 PR 修改 `AGENTS.md`、`CLAUDE.md`、`.spec/**`、`.agents/**`、`.codex/**`、`.claude/**` 或任何会路由到规范 / skill / knowledge 的 docs，必须按当前 `.spec` 架构收口：项目入口只指向 `.spec` 真相源；项目内不得新增或保留指向系统层 `show-image-to-user`、不存在的项目 skill、旧 `docs` 规范入口或第二套开图 / E2E / UI 验收正文；新增 / 删除 knowledge、skill、agent 或 ADR 时同步相应 README / 名册；验证至少运行 `npm run spec:lint` 并复扫过期入口关键词。
 - **资源改动的远端闭环（强制）**：若 PR 新增、替换、移动或重建了运行时资源（包括 `compressed/*.webp`、`compressed/*.ogg`、运行时 `.svg/.json`、移动素材包或 OTA 包），必须按 [`.spec/knowledge/standards/asset-pipeline.md`](../../../.spec/knowledge/standards/asset-pipeline.md) 执行关联资源的清单校验、服务器发布和远端回查；至少确认代表性公开 URL 返回 `200`，`X-Asset-Source: server`，且大小/哈希与本次产物一致。若更新了 Android/OTA 的 file-index 或 manifest，还必须回查远端 JSON 正文、大小和 SHA-256，并确认清单引用的运行时对象已经闭合。
 - 资源发布、远端回查、Android/OTA file-index 或 manifest 任一步失败，都只能记录为当前合并阻塞，不能用“本地文件存在”“本地 manifest 已登记”“服务器主资源已部分上传”或“截图能显示”宣称资源交付或 PR 合并完成；汇报必须写清失败步骤、现实影响、证据和最小补救动作。已有服务器资源规范是唯一资源验收真相源，本技能只负责把它接入 PR 合并收口，不重复定义资源规则。
 

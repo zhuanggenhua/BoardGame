@@ -9,6 +9,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
     storedMatchCreds?: Record<string, unknown> | null;
     matchPlayers?: MatchPlayer[];
     matchPlayersRef?: { current: MatchPlayer[] };
+    matchPlayersRevisionRef?: { current: number };
     searchParams?: string;
     gameClientStateRef?: { current: any };
     resolveCurrentPlayerId?: (state: any) => string | null;
@@ -196,6 +197,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
                     { id: 0, name: 'Alice', isConnected: true },
                     { id: 1, name: 'Bob', isConnected: true },
                 ],
+                playersRevision: args?.matchPlayersRevisionRef?.current ?? 0,
                 opponentName: 'Bob',
                 opponentConnected: true,
                 isLoading: false,
@@ -514,6 +516,12 @@ describe('MatchRoom route identity integration', () => {
     });
 
     it('过期 stored seat 且 matchStatus 持续缺少该座位时，必须连续两次稳定坏快照后才清空凭据并退回 spectator', async () => {
+        const matchPlayersRef = {
+            current: [
+                { id: 1, name: 'Bob', isConnected: true },
+            ] satisfies MatchPlayer[],
+        };
+        const matchPlayersRevisionRef = { current: 0 };
         const {
             MatchRoom,
             clearMatchCredentialsSpy,
@@ -525,9 +533,8 @@ describe('MatchRoom route identity integration', () => {
                 gameName: 'smashup',
                 updatedAt: Date.now() - 20_000,
             },
-            matchPlayers: [
-                { id: 1, name: 'Bob', isConnected: true },
-            ],
+            matchPlayersRef,
+            matchPlayersRevisionRef,
         });
 
         render(createElement(MatchRoom));
@@ -539,6 +546,10 @@ describe('MatchRoom route identity integration', () => {
         expect(clearMatchCredentialsSpy).not.toHaveBeenCalled();
         expect(localStorage.getItem('match_creds_match-1')).not.toBeNull();
 
+        matchPlayersRef.current = [
+            { id: 1, name: 'Bob', isConnected: true },
+        ];
+        matchPlayersRevisionRef.current += 1;
         await act(async () => {
             window.dispatchEvent(new Event('owner-active-match-changed'));
         });
@@ -559,6 +570,7 @@ describe('MatchRoom route identity integration', () => {
                 { id: 1, name: 'Bob', isConnected: true },
             ] satisfies MatchPlayer[],
         };
+        const matchPlayersRevisionRef = { current: 0 };
         const {
             MatchRoom,
             clearMatchCredentialsSpy,
@@ -571,6 +583,7 @@ describe('MatchRoom route identity integration', () => {
                 updatedAt: Date.now() - 20_000,
             },
             matchPlayersRef,
+            matchPlayersRevisionRef,
         });
 
         render(createElement(MatchRoom));
@@ -584,6 +597,7 @@ describe('MatchRoom route identity integration', () => {
             { id: 0, name: 'Alice', isConnected: true },
             { id: 1, name: 'Bob', isConnected: true },
         ];
+        matchPlayersRevisionRef.current += 1;
         await act(async () => {
             window.dispatchEvent(new Event('owner-active-match-changed'));
         });
@@ -595,6 +609,7 @@ describe('MatchRoom route identity integration', () => {
         matchPlayersRef.current = [
             { id: 1, name: 'Bob', isConnected: true },
         ];
+        matchPlayersRevisionRef.current += 1;
         await act(async () => {
             window.dispatchEvent(new Event('owner-active-match-changed'));
         });
@@ -603,6 +618,10 @@ describe('MatchRoom route identity integration', () => {
             expect(screen.getByTestId('game-provider-probe')).toHaveAttribute('data-player-id', '0');
         });
 
+        matchPlayersRef.current = [
+            { id: 1, name: 'Bob', isConnected: true },
+        ];
+        matchPlayersRevisionRef.current += 1;
         await act(async () => {
             window.dispatchEvent(new Event('owner-active-match-changed'));
         });

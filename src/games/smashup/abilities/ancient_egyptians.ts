@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAbilities';
@@ -14,7 +14,6 @@ import {
     removePowerCounter,
 } from '../domain/abilityHelpers';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
-import { reduce } from '../domain/reducer';
 import { SU_EVENTS } from '../domain/types';
 import type { BaseAbilityUsedEvent, SmashUpCore, SmashUpEvent, BuriedCardOnBase } from '../domain/types';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -28,6 +27,10 @@ import {
 
 type BuriedChoice = { cardUid: string; baseIndex: number; defId?: string; baseDefId?: string };
 type HandCardChoice = { cardUid: string; defId: string };
+type SealTheTombUncoverContinuationContext = AncientEgyptiansPromptContext & {
+    pendingChoices: BuriedChoice[];
+    random: RandomFn;
+};
 type AncientEgyptiansPromptContext = {
     matchState: MatchState<SmashUpCore>;
     state: SmashUpCore;
@@ -62,17 +65,6 @@ function runtimeResultToAbilityResult(
     return {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
-    };
-}
-
-function applyPreviewEventsToMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    if (events.length === 0) return matchState;
-    return {
-        ...matchState,
-        core: events.reduce((core, event) => reduce(core, event), matchState.core),
     };
 }
 
@@ -792,6 +784,39 @@ const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<
     },
 });
 
+const ancientEgyptiansSealTheTombUncoverNextProgram = createEffectProgram<
+    SealTheTombUncoverContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    const [buried, ...remainingChoices] = context.pendingChoices;
+    if (!buried) return { events: [] };
+
+    const result = uncoverBuriedCard({
+        matchState: context.matchState,
+        playerId: context.playerId,
+        cardUid: buried.cardUid,
+        baseIndex: buried.baseIndex,
+        random: context.random,
+        now: context.now,
+        reason: 'ancient_egyptians_seal_the_tomb',
+    });
+
+    return {
+        events: result.events,
+        matchState: result.state,
+        ...(remainingChoices.length > 0
+            ? {
+                context: createPromptContext(result.state, context.playerId, context.now, {
+                    pendingChoices: remainingChoices,
+                    random: context.random,
+                }),
+                nextProgram: ancientEgyptiansSealTheTombUncoverNextProgram,
+            }
+            : {}),
+    };
+});
+
 const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
     AncientEgyptiansPromptContext & { baseIndex: number }
 , SmashUpCore, SmashUpEvent>({
@@ -819,22 +844,15 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
     },
     onResolve: ({ state, playerId, value, random, timestamp }) => {
         const selected = (Array.isArray(value) ? value : []) as BuriedChoice[];
-        let currentState = state;
-        const events: SmashUpEvent[] = [];
-        for (const buried of selected) {
-            const result = uncoverBuriedCard({
-                matchState: currentState,
-                playerId,
-                cardUid: buried.cardUid,
-                baseIndex: buried.baseIndex,
+        if (selected.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, playerId, timestamp, {
+                pendingChoices: selected,
                 random,
-                now: timestamp,
-                reason: 'ancient_egyptians_seal_the_tomb',
-            });
-            currentState = applyPreviewEventsToMatchState(result.state, result.events);
-            events.push(...result.events);
-        }
-        return { events, matchState: currentState };
+            }),
+            nextProgram: ancientEgyptiansSealTheTombUncoverNextProgram,
+        };
     },
 });
 

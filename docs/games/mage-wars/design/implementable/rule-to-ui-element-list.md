@@ -1,12 +1,12 @@
 # 法师战争规则到 UI 元素清单
 
-> 角色：`design-preflight-contract / evidence`。本文件不是新的全局 skill，也不是替代 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 的规范正文；它是下一版 Mage Wars UI 设计 / Open Design artifact / 真实 Board 实现前必须消费的项目级元素清单。
+> 角色：`design-preflight-contract / evidence`。本文件不是新的独立 skill，也不是替代 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 的规范正文；它是下一版 Mage Wars UI 设计 / Open Design artifact / 真实 Board 实现前必须消费的项目级元素清单。
 
 ## Skill 落点裁决
 
 | 裁决项 | 结论 |
 | --- | --- |
-| 是否新建全局 skill | 暂不新建。通用方法已由 `D:\codex-home\skills\ui-design-pipeline\SKILL.md` 承担，里面已经要求先做规则 / TTS / 素材阅读理解、对象职责表、交互权重表、实体锚点表、开放式直选和饱和态空间预算。 |
+| 是否新建项目 skill | 暂不新建。通用方法已由 `.spec/skills/ui-design-pipeline/SKILL.md` 承担，里面已经要求先做规则 / TTS / 素材阅读理解、对象职责表、交互权重表、实体锚点表、开放式直选和饱和态空间预算。 |
 | 是否安装现成 skill | 暂不安装。`npx skills find "board game ui design rule to ui elements"` 只找到通用 `game-ui-design`、`board-game-design` 等候选；它们没有本项目规则书、TTS、Open Design 和用户纠正账本上下文，不能替代当前 owner。 |
 | Mage Wars 项目 owner | `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 是 Mage Wars 用户纠正、对象拆分和送验门禁的 `canonical-source`。 |
 | 本文件职责 | 把规则书、TTS/Workshop、atlas、素材合同进一步提炼为布局、交互和 UI 元素输入；后续设计稿必须逐行消费，不得只看旧图或旧 PASS。 |

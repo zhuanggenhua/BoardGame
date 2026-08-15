@@ -57,6 +57,16 @@ export class FeedbackAdminController {
         return this.feedbackService.findAll(req.user?.userId ?? null, query);
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get(':id')
+    async findOne(@Request() req: FeedbackAdminRequest, @Param('id') id: string) {
+        const item = await this.feedbackService.findOne(req.user?.userId ?? null, id);
+        if (!item) {
+            throw new NotFoundException('feedback not found');
+        }
+        return item;
+    }
+
     @UseGuards(JwtAuthGuard, AdminGuard)
     @Roles('admin', 'developer', 'user')
     @Patch(':id/status')

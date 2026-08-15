@@ -32,14 +32,17 @@ import { validate } from '../domain/commands';
 import { registerProtection, registerTrigger, type ProtectionCheckContext, type TriggerContext } from '../domain/ongoingEffects';
 import type { CardInstance, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, type ActionCardDef, type FusionCardDef } from '../domain/types';
-import { reduce } from '../domain/reduce';
-import { execute } from '../domain/reducer';
 import {
     createCardObjectRef,
     createCardObjectRefFromInstance,
     createCardTransferEvent,
 } from '../domain/objectProvenance';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
+import {
+    createPendingActionResolution,
+    maybeQueueActionCounterWindow,
+} from '../domain/actionCounter';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -332,21 +335,6 @@ function getOrderedOpponentIds(state: SmashUpCore, playerId: PlayerId): PlayerId
     return Object.keys(state.players).filter((pid) => pid !== playerId) as PlayerId[];
 }
 
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    if (events.length === 0) return matchState;
-    let nextCore = matchState.core;
-    for (const event of events) {
-        nextCore = reduce(nextCore, event);
-    }
-    return {
-        ...matchState,
-        core: nextCore,
-    };
-}
-
 function getCurrentDeckTopSnapshotCards<T extends { uid: string; defId: string }>(
     state: SmashUpCore,
     playerId: PlayerId,
@@ -536,13 +524,14 @@ function buildGeeksMinMaxingBorrowEvent(
     playerId: PlayerId,
     cardUid: string,
     defId: string,
+    ownerId: PlayerId,
     now: number,
 ): SmashUpEvent {
     return createCardTransferEvent({
         card: createCardObjectRef({
             uid: cardUid,
             defId,
-            ownerId: targetPlayerId,
+            ownerId,
         }),
         fromPlayerId: targetPlayerId,
         toPlayerId: playerId,
@@ -551,18 +540,73 @@ function buildGeeksMinMaxingBorrowEvent(
     });
 }
 
-function buildGeeksMinMaxingPreparedMatchState(
+function getTransientCardType(defId: string): CardInstance['type'] {
+    const def = getCardDef(defId);
+    if (def?.type === 'action' || def?.type === 'fusion' || def?.type === 'titan') {
+        return def.type;
+    }
+    return 'minion';
+}
+
+function buildGeeksExtraActionTransientMatchState(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+): MatchState<SmashUpCore> {
+    const player = matchState.core.players[playerId];
+    if (!player) return matchState;
+    return {
+        ...matchState,
+        core: {
+            ...matchState.core,
+            players: {
+                ...matchState.core.players,
+                [playerId]: {
+                    ...player,
+                    actionLimit: player.actionLimit + 1,
+                },
+            },
+        },
+    };
+}
+
+function buildGeeksMinMaxingTransientMatchState(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     targetPlayerId: PlayerId,
     cardUid: string,
     defId: string,
-    now: number,
 ): MatchState<SmashUpCore> {
-    return simulateMatchState(matchState, [
-        grantExtraAction(playerId, 'geeks_min_maxing', now),
-        buildGeeksMinMaxingBorrowEvent(targetPlayerId, playerId, cardUid, defId, now),
-    ]);
+    const player = matchState.core.players[playerId];
+    const targetPlayer = matchState.core.players[targetPlayerId];
+    if (!player || !targetPlayer) return matchState;
+
+    const borrowedCard: CardInstance = targetPlayer.hand.find((card) => card.uid === cardUid) ?? {
+        uid: cardUid,
+        defId,
+        type: getTransientCardType(defId),
+        owner: targetPlayerId,
+    };
+    const targetHand = targetPlayer.hand.filter((card) => card.uid !== cardUid);
+    const playerHandWithoutBorrowed = player.hand.filter((card) => card.uid !== cardUid);
+
+    return {
+        ...matchState,
+        core: {
+            ...matchState.core,
+            players: {
+                ...matchState.core.players,
+                [targetPlayerId]: {
+                    ...targetPlayer,
+                    hand: targetHand,
+                },
+                [playerId]: {
+                    ...player,
+                    hand: [...playerHandWithoutBorrowed, borrowedCard],
+                    actionLimit: player.actionLimit + 1,
+                },
+            },
+        },
+    };
 }
 
 function buildGeeksMinMaxingBaseOptions(
@@ -573,13 +617,12 @@ function buildGeeksMinMaxingBaseOptions(
     replayDefId: string,
     now: number,
 ): PromptOption<GeeksMinMaxingBaseChoice>[] {
-    const borrowedState = buildGeeksMinMaxingPreparedMatchState(
+    const borrowedState = buildGeeksMinMaxingTransientMatchState(
         matchState,
         playerId,
         targetPlayerId,
         replayCardUid,
         replayDefId,
-        now,
     );
     const candidates = borrowedState.core.bases
         .map((base, baseIndex) => ({
@@ -606,13 +649,12 @@ function buildGeeksMinMaxingMinionOptions(
     replayDefId: string,
     now: number,
 ): PromptOption<GeeksMinMaxingMinionChoice>[] {
-    const borrowedState = buildGeeksMinMaxingPreparedMatchState(
+    const borrowedState = buildGeeksMinMaxingTransientMatchState(
         matchState,
         playerId,
         targetPlayerId,
         replayCardUid,
         replayDefId,
-        now,
     );
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
     for (let baseIndex = 0; baseIndex < borrowedState.core.bases.length; baseIndex += 1) {
@@ -659,13 +701,12 @@ function buildGeeksMinMaxingActionOptions(
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
             const targetMode = getGeeksImmediateActionTargetMode(def);
-            const borrowedState = buildGeeksMinMaxingPreparedMatchState(
+            const borrowedState = buildGeeksMinMaxingTransientMatchState(
                 matchState,
                 playerId,
                 targetPlayerId,
                 card.uid,
                 card.defId,
-                now,
             );
 
             const playable = targetMode === 'none'
@@ -725,9 +766,8 @@ function executeGeeksMinMaxingPlay(
     targetBaseIndex?: number,
     targetMinionUid?: string,
 ): { matchState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const borrowEvent = buildGeeksMinMaxingBorrowEvent(targetPlayerId, playerId, replayCardUid, replayDefId, timestamp);
     const extraActionEvent = grantExtraAction(playerId, 'geeks_min_maxing', timestamp);
-    const borrowedState = simulateMatchState(state, [extraActionEvent, borrowEvent]);
+    const borrowedState = buildGeeksMinMaxingTransientMatchState(state, playerId, targetPlayerId, replayCardUid, replayDefId);
     const validation = validate(borrowedState, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId,
@@ -737,19 +777,64 @@ function executeGeeksMinMaxingPlay(
         return { matchState: state, events: [] };
     }
 
-    const execState: MatchState<SmashUpCore> = {
-        ...borrowedState,
-        sys: { ...borrowedState.sys },
-    };
-    const playEvents = execute(execState, {
-        type: SU_COMMANDS.PLAY_ACTION,
+    const replayOwnerId = state.core.players[targetPlayerId]?.hand.find(card => card.uid === replayCardUid)?.owner ?? targetPlayerId;
+    const borrowEvent = buildGeeksMinMaxingBorrowEvent(targetPlayerId, playerId, replayCardUid, replayDefId, replayOwnerId, timestamp);
+    const actionPlayedEvent = buildActionPlayedEvent({
         playerId,
-        payload: { cardUid: replayCardUid, targetBaseIndex, targetMinionUid },
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        ownerId: replayOwnerId,
+        targetBaseIndex,
+        targetMinionUid,
+        sourceCommandType: SU_COMMANDS.PLAY_ACTION,
         timestamp,
-    }, random);
+    }) as SmashUpEvent;
+    const baseEvents = [extraActionEvent, borrowEvent, actionPlayedEvent];
+    const pending = createPendingActionResolution({
+        playerId,
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        ownerId: replayOwnerId,
+        targetBaseIndex,
+        targetMinionUid,
+        now: timestamp,
+    });
+    const counterWindowState = maybeQueueActionCounterWindow(state, pending, timestamp);
+    if (counterWindowState) {
+        return { matchState: counterWindowState, events: baseEvents };
+    }
+
+    const actionDef = getCardDef(replayDefId) as ActionCardDef | FusionCardDef | undefined;
+    const actionEvents = [...baseEvents];
+    if (actionDef && getGeeksActionLikeSubtype(actionDef) === 'ongoing') {
+        actionEvents.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: replayCardUid,
+            defId: replayDefId,
+            ownerId: replayOwnerId,
+            ...(replayOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourceKind: 'action',
+            targetBaseIndex: targetBaseIndex ?? 0,
+            targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now: timestamp,
+        }));
+    }
+
+    const appended = appendResolvedActionAbility({
+        state,
+        events: actionEvents,
+        playerId,
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        random,
+        timestamp,
+        baseIndex: targetBaseIndex ?? 0,
+        targetBaseIndex,
+        targetMinionUid,
+    });
     return {
-        matchState: execState,
-        events: [extraActionEvent, borrowEvent, ...playEvents],
+        matchState: appended.state,
+        events: appended.events,
     };
 }
 
@@ -764,12 +849,11 @@ function getGeeksNonInfiniteLoopReplayableAction(card: CardInstance): ActionCard
     return getGeeksActionLikeSubtype(def) === 'standard' ? def : undefined;
 }
 
-function buildGeeksNonInfiniteLoopPreparedMatchState(
+function buildGeeksNonInfiniteLoopTransientMatchState(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
-    now: number,
 ): MatchState<SmashUpCore> {
-    return simulateMatchState(matchState, [grantExtraAction(playerId, 'geeks_non_infinite_loop', now)]);
+    return buildGeeksExtraActionTransientMatchState(matchState, playerId);
 }
 
 function buildGeeksNonInfiniteLoopActionOptions(
@@ -783,7 +867,7 @@ function buildGeeksNonInfiniteLoopActionOptions(
         return [createSkipOption('放弃额外打牌', 'ui.geeks_skip_extra_action_option') as PromptOption<GeeksNonInfiniteLoopActionChoice>];
     }
 
-    const preparedState = buildGeeksNonInfiniteLoopPreparedMatchState(matchState, playerId, now);
+    const preparedState = buildGeeksNonInfiniteLoopTransientMatchState(matchState, playerId);
     const options = player.hand.flatMap((card) => {
         if (card.uid === excludedCardUid) return [];
         const def = getGeeksNonInfiniteLoopReplayableAction(card);
@@ -831,7 +915,7 @@ function buildGeeksNonInfiniteLoopBaseOptions(
     replayCardUid: string,
     now: number,
 ): PromptOption<GeeksNonInfiniteLoopBaseChoice>[] {
-    const preparedState = buildGeeksNonInfiniteLoopPreparedMatchState(matchState, playerId, now);
+    const preparedState = buildGeeksNonInfiniteLoopTransientMatchState(matchState, playerId);
     const candidates = preparedState.core.bases
         .map((base, baseIndex) => ({
             baseIndex,
@@ -855,7 +939,7 @@ function buildGeeksNonInfiniteLoopMinionOptions(
     replayCardUid: string,
     now: number,
 ): PromptOption<GeeksNonInfiniteLoopMinionChoice>[] {
-    const preparedState = buildGeeksNonInfiniteLoopPreparedMatchState(matchState, playerId, now);
+    const preparedState = buildGeeksNonInfiniteLoopTransientMatchState(matchState, playerId);
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
     for (let baseIndex = 0; baseIndex < preparedState.core.bases.length; baseIndex += 1) {
         const base = preparedState.core.bases[baseIndex];
@@ -896,7 +980,7 @@ function executeGeeksNonInfiniteLoopPlay(
     targetMinionUid?: string,
 ): { matchState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const extraActionEvent = grantExtraAction(playerId, 'geeks_non_infinite_loop', timestamp);
-    const preparedState = simulateMatchState(state, [extraActionEvent]);
+    const preparedState = buildGeeksNonInfiniteLoopTransientMatchState(state, playerId);
     const validation = validate(preparedState, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId,
@@ -906,33 +990,75 @@ function executeGeeksNonInfiniteLoopPlay(
         return { matchState: state, events: [] };
     }
 
-    const execState: MatchState<SmashUpCore> = {
-        ...preparedState,
-        sys: { ...preparedState.sys },
-    };
-    const playEvents = execute(execState, {
-        type: SU_COMMANDS.PLAY_ACTION,
+    const actionPlayedEvent = buildActionPlayedEvent({
         playerId,
-        payload: { cardUid: replayCardUid, targetBaseIndex, targetMinionUid },
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        ownerId: replayOwnerId,
+        targetBaseIndex,
+        targetMinionUid,
+        sourceCommandType: SU_COMMANDS.PLAY_ACTION,
         timestamp,
-    }, random);
+    }) as SmashUpEvent;
+    const returnToHandEvent = {
+        type: SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED,
+        payload: {
+            playerId,
+            cardUid: replayCardUid,
+            defId: replayDefId,
+            ownerId: replayOwnerId,
+            reason: 'geeks_non_infinite_loop',
+        },
+        timestamp,
+    } as SmashUpEvent;
+    const baseEvents = [extraActionEvent, actionPlayedEvent];
+    const pending = createPendingActionResolution({
+        playerId,
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        ownerId: replayOwnerId,
+        targetBaseIndex,
+        targetMinionUid,
+        now: timestamp,
+        afterResolutionEvents: [returnToHandEvent],
+    });
+    const counterWindowState = maybeQueueActionCounterWindow(state, pending, timestamp);
+    if (counterWindowState) {
+        return { matchState: counterWindowState, events: baseEvents };
+    }
+
+    const actionDef = getCardDef(replayDefId) as ActionCardDef | FusionCardDef | undefined;
+    const actionEvents = [...baseEvents];
+    if (actionDef && getGeeksActionLikeSubtype(actionDef) === 'ongoing') {
+        actionEvents.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: replayCardUid,
+            defId: replayDefId,
+            ownerId: replayOwnerId,
+            ...(replayOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourceKind: 'action',
+            targetBaseIndex: targetBaseIndex ?? 0,
+            targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now: timestamp,
+        }));
+    }
+
+    const appended = appendResolvedActionAbility({
+        state,
+        events: actionEvents,
+        playerId,
+        cardUid: replayCardUid,
+        defId: replayDefId,
+        random,
+        timestamp,
+        baseIndex: targetBaseIndex ?? 0,
+        targetBaseIndex,
+        targetMinionUid,
+    });
+    appended.events.push(returnToHandEvent);
     return {
-        matchState: execState,
-        events: [
-            extraActionEvent,
-            ...playEvents,
-            {
-                type: SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED,
-                payload: {
-                    playerId,
-                    cardUid: replayCardUid,
-                    defId: replayDefId,
-                    ownerId: replayOwnerId,
-                    reason: 'geeks_non_infinite_loop',
-                },
-                timestamp,
-            },
-        ],
+        matchState: appended.state,
+        events: appended.events,
     };
 }
 
@@ -1273,20 +1399,17 @@ function getNextGeeksGrieferStep(
     context: GeeksGrieferPromptContext,
     now: number,
 ) {
-    const nextTargetState = getGeeksGrieferTargetState(
-        matchState.core,
-        context.opponents,
-        context.opponentIdx + 1,
-    );
-    if (!nextTargetState) return null;
-    return createGeeksGrieferPromptContext(
+    const nextOpponentIdx = context.opponentIdx + 1;
+    if (nextOpponentIdx >= context.opponents.length) return null;
+    const nextTargetPlayerId = context.opponents[nextOpponentIdx];
+    if (!nextTargetPlayerId) return null;
+    return {
+        ...context,
         matchState,
-        context.playerId,
         now,
-        context.cardUid,
-        context.opponents,
-        nextTargetState,
-    );
+        opponentIdx: nextOpponentIdx,
+        targetPlayerId: nextTargetPlayerId,
+    };
 }
 
 function continueGeeksGrieferAfterEvents(
@@ -1295,8 +1418,7 @@ function continueGeeksGrieferAfterEvents(
     events: SmashUpEvent[],
     now: number,
 ) {
-    const nextState = simulateMatchState(state, events);
-    const nextContext = getNextGeeksGrieferStep(nextState, context, now);
+    const nextContext = getNextGeeksGrieferStep(state, context, now);
     if (!nextContext) return { events };
     return {
         events,
@@ -1596,11 +1718,10 @@ const geeksMulliganProgram = createEffectProgram<AbilityContext, SmashUpCore, Sm
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
     }
 
-    const nextMatchState = simulateMatchState(ctx.matchState, reveal.events);
     return {
         events: reveal.events,
         context: {
-            matchState: nextMatchState,
+            matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
@@ -1657,9 +1778,8 @@ const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptCo
             }
         }
 
-        const nextState = simulateMatchState(state, events);
         const nextTargetState = getNextGeeksBannedListTargetState(
-            nextState.core,
+            state.core,
             context.opponents,
             context.opponentIdx + 1,
         );
@@ -1669,7 +1789,7 @@ const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptCo
         return {
             events,
             context: createGeeksBannedListPromptContext(
-                nextState,
+                state,
                 context.playerId,
                 timestamp,
                 context.cardUid,
@@ -1892,12 +2012,7 @@ const geeksMinMaxingOpponentPromptProgram = createPromptProgram<GeeksMinMaxingOp
                 ? [revealHand(targetPlayerId, context.playerId, revealCards, 'geeks_min_maxing', timestamp, context.playerId)]
                 : [],
             context: {
-                matchState: simulateMatchState(
-                    state,
-                    revealCards.length > 0
-                        ? [revealHand(targetPlayerId, context.playerId, revealCards, 'geeks_min_maxing', timestamp, context.playerId)]
-                        : [],
-                ),
+                matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 cardUid: context.cardUid,
@@ -2351,11 +2466,10 @@ const geeksMinMaxingProgram = createEffectProgram<AbilityContext, SmashUpCore, S
         const revealEvents = revealCards.length > 0
             ? [revealHand(targetPlayerId, ctx.playerId, revealCards, 'geeks_min_maxing', ctx.now, ctx.playerId)]
             : [];
-        const nextState = simulateMatchState(ctx.matchState, revealEvents);
         return {
             events: revealEvents,
             context: {
-                matchState: nextState,
+                matchState: ctx.matchState,
                 playerId: ctx.playerId,
                 now: ctx.now,
                 cardUid: ctx.cardUid,

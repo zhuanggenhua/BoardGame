@@ -4,7 +4,7 @@
   "packageVersion": "2026.08.04-apprentice-config.27",
   "metadata": {
     "title": "法师战争",
-    "description": "学徒基础版配置包：四名学徒法师、预设法术书、91 张学徒法术、2x3 竞技场、骰子和 token。",
+    "description": "标准竞技场首批流程配置包：四名首批法师、预设法术书、91 张预设法术、4x3 标准竞技场、骰子和 token；apprentice 仅保留为历史资源命名。",
     "locale": "zh-CN",
     "minPlayers": 2,
     "maxPlayers": 2,
@@ -8293,7 +8293,7 @@
       }
     ],
     "data": {
-      "arenaMode": "apprentice-2x3",
+      "arenaMode": "formal-4x3",
       "hiddenInformation": [
         "spellbook",
         "preparedSpells"

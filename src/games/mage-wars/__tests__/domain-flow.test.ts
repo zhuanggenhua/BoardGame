@@ -5,10 +5,10 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from '../domain';
 import {
-    getApprenticeSpellbookCardIdsFromConfig,
-    getApprenticeSpellbookCountFromConfig,
     getFormalArenaZonesFromConfig,
     getFormalStartingZoneIdFromConfig,
+    getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { reduceEvent } from '../domain/reducer';
@@ -18,6 +18,7 @@ import {
     MAGE_WARS_MAGE_ABILITY_IDS,
     MAGE_WARS_OBJECT_ABILITY_IDS,
     STATUS_TOKEN_IDS,
+    type MageWarsObjectAbilityId,
 } from '../domain/ids';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase } from '../domain/types';
 import { getMageWarsPlayerDefenseProfiles } from '../domain/spellRules';
@@ -37,7 +38,7 @@ const fixedRandom: RandomFn = {
 const CAT_ATTACK_LINE = '利爪：快速近战 2 骰；冲锋+2';
 const CAT_ATTACK_WITH_DEFENSE_LINE = '利爪：快速近战 2 骰；防御图标 `8+ / 1x`；冲锋+2';
 
-const beastmasterSpellIds = (): number[] => getApprenticeSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE);
+const beastmasterSpellIds = (): number[] => getPresetSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE);
 
 function setupState(phase?: MageWarsPhase): MatchState<MageWarsCore> {
     const sys = createInitialSystemState(playerIds, engineConfig.systems, 'local:mage-wars-domain-flow');
@@ -133,7 +134,7 @@ function withPlayerMage(
             [playerId]: {
                 ...core.players[playerId],
                 mageId,
-                spellbookCount: getApprenticeSpellbookCountFromConfig(mageId),
+                spellbookCount: getPresetSpellbookCountFromConfig(mageId),
             },
         },
     };
@@ -389,12 +390,12 @@ describe('mage-wars domain flow', () => {
         ]));
 
         expect(validateCommand(state, planCommand(spellIds.slice(0, 3)))).toBe('tooManyPreparedSpells');
-        expect(validateCommand(state, planCommand([999999]))).toBe('spellNotInApprenticeSpellbook');
+        expect(validateCommand(state, planCommand([999999]))).toBe('spellNotInPresetSpellbook');
         expect(validateCommand(state, {
             type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
             playerId: '1',
             payload: { spellCardIds: [spellIds[0]] },
-        })).toBe('spellNotInApprenticeSpellbook');
+        })).toBe('spellNotInPresetSpellbook');
     });
 
     it('channels mana on channel phase entry and advances turn after final quickcast', () => {
@@ -2642,6 +2643,24 @@ describe('mage-wars domain flow', () => {
         expect(moved.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(object.id);
         expect(moved.state.core.arena.find((zone) => zone.id === ARENA_ZONE_IDS.A2)?.objectIds).toContain(object.id);
         expect(actionLogKinds(moved.state)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED);
+    });
+
+    it('rejects unknown arena object abilities before execution', () => {
+        const state = setupState('creatureAction');
+        const command: MageWarsCommand = {
+            type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+            playerId: '0',
+            payload: {
+                objectId: 'missing-object',
+                abilityId: 'mw.object.unknown' as MageWarsObjectAbilityId,
+                manaCost: 0,
+            },
+        };
+
+        expect(validateCommand(state, command)).toBe('unknownArenaObjectAbility');
+        const result = runCommand(state, command);
+        expect(result.success).toBe(false);
+        expect(result.events).toEqual([]);
     });
 
     it('lets Blue Gremlin pay for swift teleport movement until the creature action ends', () => {
@@ -8621,7 +8640,7 @@ describe('mage-wars domain flow', () => {
     it('executes alternate Dissolve 3406 with the same attached-equipment destruction rule', () => {
         const dissolveSpellId = 3406;
         const planningState = setupState('planning');
-        expect(validateCommand(planningState, planCommand([dissolveSpellId]))).toBe('spellNotInApprenticeSpellbook');
+        expect(validateCommand(planningState, planCommand([dissolveSpellId]))).toBe('spellNotInPresetSpellbook');
 
         const coreWithEnemyInRange = withPlayerInZone(planningState.core, '1', ARENA_ZONE_IDS.A2);
         const equipment = makeArenaObject('enemy-equipment-3703-alt', '1', ARENA_ZONE_IDS.A2, {
@@ -8857,7 +8876,7 @@ describe('mage-wars domain flow', () => {
     it('executes alternate Dispel 3419 with the same visible-enchantment destruction rule', () => {
         const dispelSpellId = 3419;
         const planningState = setupState('planning');
-        expect(validateCommand(planningState, planCommand([dispelSpellId]))).toBe('spellNotInApprenticeSpellbook');
+        expect(validateCommand(planningState, planCommand([dispelSpellId]))).toBe('spellNotInPresetSpellbook');
 
         const enchantedCreature = makeArenaObject('enchanted-cat-alt-1', '1', ARENA_ZONE_IDS.A2);
         const visibleEnchantment = makeVisibleEnchantmentObject('visible-enchantment-alt-1800', '1', ARENA_ZONE_IDS.A2, {

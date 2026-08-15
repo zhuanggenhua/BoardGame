@@ -1,10 +1,15 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility, resolveTalent, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram, resolveTalent, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
-import { startDuel } from '../domain/duel';
+import { startDuelWithEvents } from '../domain/duel';
 import { registerInterceptor, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
-import { reduce } from '../domain/reduce';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import {
     addPowerCounter,
     addTitanPowerCounter,
@@ -23,9 +28,7 @@ import { getCardDef } from '../data/cards';
 import type {
     CardInstance,
     CardsDiscardedEvent,
-    MinionCardDef,
     MinionOnBase,
-    MinionPlayedEvent,
     OngoingDetachedEvent,
     SmashUpCore,
     SmashUpEvent,
@@ -48,11 +51,6 @@ function withContinuation<TData extends object>(
     continuationContext: Record<string, unknown>,
 ): void {
     Object.assign(data, { continuationContext });
-}
-
-function getMinionBasePower(defId: string): number {
-    const def = getCardDef(defId);
-    return def?.type === 'minion' ? (def as MinionCardDef).power : 0;
 }
 
 function getOwnSeraphimInPlay(state: SmashUpCore, playerId: PlayerId): TitanState | undefined {
@@ -172,10 +170,6 @@ function makeCardReturnedToHandEvent(cardUid: string, ownerId: PlayerId, now: nu
     } as SmashUpEvent;
 }
 
-function applyEventsToCore(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    return events.reduce((core, event) => reduce(core, event), state);
-}
-
 function makeCardsDiscardedEvent(playerId: PlayerId, cardUids: string[], now: number): CardsDiscardedEvent {
     return {
         type: SU_EVENTS.CARDS_DISCARDED,
@@ -194,11 +188,6 @@ function buildHandDiscardOption(card: CardInstance) {
     };
 }
 
-function readStringSet(value: unknown): Set<string> | undefined {
-    if (!Array.isArray(value)) return undefined;
-    return new Set(value.filter((entry): entry is string => typeof entry === 'string'));
-}
-
 function paladinsRoland(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found || found.baseIndex !== ctx.baseIndex) return { events: [] };
@@ -206,19 +195,26 @@ function paladinsRoland(ctx: AbilityContext): AbilityResult {
     return playSeraphimHere(ctx, 'paladins_roland');
 }
 
-function paladinsDevoutPastor(ctx: AbilityContext): AbilityResult {
-    if (hasOwnTitanAtBase(ctx.state, ctx.playerId, ctx.baseIndex)) return { events: [] };
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
-    const projectedCore = applyEventsToCore(ctx.state, drawEvents);
-    const handAfterDraw = projectedCore.players[ctx.playerId]?.hand ?? [];
-    if (handAfterDraw.length === 0) return { events: drawEvents };
+type PaladinsDevoutPastorDiscardContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    cardUid: string;
+    now: number;
+};
 
-    if (ctx.matchState) {
-        const interaction = createSimpleChoice(
-            `paladins_devout_pastor_discard_${ctx.cardUid}_${ctx.now}`,
-            ctx.playerId,
+const paladinsDevoutPastorDiscardPromptProgram = createPromptProgram<
+    PaladinsDevoutPastorDiscardContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'paladins_devout_pastor_discard',
+    buildInteraction: (context) => {
+        const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `paladins_devout_pastor_discard_${context.cardUid}_${context.now}`,
+            context.playerId,
             '虔诚的牧师：选择一张手牌弃掉',
-            handAfterDraw.map(buildHandDiscardOption),
+            hand.map(buildHandDiscardOption),
             {
                 sourceId: 'paladins_devout_pastor_discard',
                 targetType: 'hand',
@@ -226,20 +222,36 @@ function paladinsDevoutPastor(ctx: AbilityContext): AbilityResult {
                 titleKey: 'ui.paladins_devout_pastor_discard_title',
             },
         );
-        interaction.data.allowedCardUids = handAfterDraw.map(card => card.uid);
-        return {
-            events: drawEvents,
-            matchState: queueInteraction(ctx.matchState, interaction),
-        };
-    }
+        interaction.data.optionsGenerator = (state: MatchState<SmashUpCore>) =>
+            (state.core.players[context.playerId]?.hand ?? []).map(buildHandDiscardOption);
+        return interaction;
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as { cardUid?: string } | undefined;
+        const cardUid = selected?.cardUid;
+        if (!cardUid) return { events: [] };
+        const player = state.core.players[playerId];
+        if (!player?.hand.some(card => card.uid === cardUid)) return { events: [] };
+        return { events: [makeCardsDiscardedEvent(playerId, [cardUid], timestamp)] };
+    },
+});
 
+const paladinsDevoutPastorProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    if (hasOwnTitanAtBase(ctx.state, ctx.playerId, ctx.baseIndex)) return { events: [] };
+    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+    const currentHand = ctx.state.players[ctx.playerId]?.hand ?? [];
+    if (drawEvents.length === 0 && currentHand.length === 0) return { events: [] };
     return {
-        events: [
-            ...drawEvents,
-            makeCardsDiscardedEvent(ctx.playerId, [handAfterDraw[0].uid], ctx.now),
-        ],
+        events: drawEvents,
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            cardUid: ctx.cardUid,
+            now: ctx.now,
+        } satisfies PaladinsDevoutPastorDiscardContext,
+        nextProgram: paladinsDevoutPastorDiscardPromptProgram,
     };
-}
+});
 
 function paladinsSeniorMentor(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
@@ -417,6 +429,13 @@ function buildPlayMinionEvent(
     } as SmashUpEvent;
 }
 
+type PaladinsHeavenlyTalentPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    baseIndex: number;
+    now: number;
+};
+
 function queueHeavenlyTalentPrompt(state: MatchState<SmashUpCore>, playerId: PlayerId, baseIndex: number, now: number): MatchState<SmashUpCore> {
     const base = state.core.bases[baseIndex];
     const talentMinions = (base?.minions ?? []).filter(minion =>
@@ -440,6 +459,73 @@ function queueHeavenlyTalentPrompt(state: MatchState<SmashUpCore>, playerId: Pla
     return queueInteraction(state, interaction);
 }
 
+const paladinsHeavenlyTalentPromptProgram = createEffectProgram<
+    PaladinsHeavenlyTalentPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: [],
+    matchState: queueHeavenlyTalentPrompt(context.matchState, context.playerId, context.baseIndex, context.now),
+}));
+
+type PaladinsHeavenlyMinionPromptContext = PaladinsHeavenlyTalentPromptContext & {
+    cardUid: string;
+};
+
+const paladinsHeavenlyMinionPromptProgram = createPromptProgram<
+    PaladinsHeavenlyMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'paladins_heavenly_soldiers_descend',
+    buildInteraction: (context) => {
+        const minionCards = context.matchState.core.players[context.playerId]?.hand.filter(card => card.type === 'minion') ?? [];
+        return createSimpleChoice(
+            `paladins_heavenly_soldiers_descend_${context.cardUid}_${context.now}`,
+            context.playerId,
+            'paladins_heavenly_soldiers_descend.choose_minion',
+            [
+                ...minionCards.map(card => ({
+                    id: `minion-${card.uid}`,
+                    label: getCardDef(card.defId)?.name ?? card.defId,
+                    value: { cardUid: card.uid, defId: card.defId },
+                    displayMode: 'card' as const,
+                })),
+                {
+                    id: 'skip',
+                    label: '跳过额外随从',
+                    labelKey: 'ui.paladins_heavenly_soldiers_descend_skip_minion_option',
+                    value: { skip: true },
+                    displayMode: 'button' as const,
+                },
+            ],
+            { sourceId: 'paladins_heavenly_soldiers_descend', targetType: 'hand' },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string } | undefined;
+        const events: SmashUpEvent[] = [];
+        if (!selected?.skip && selected?.cardUid && selected.defId) {
+            const card = state.core.players[playerId]?.hand.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && candidate.type === 'minion',
+            );
+            if (card) events.push(buildPlayMinionEvent(card, playerId, context.baseIndex, timestamp));
+        }
+        return {
+            events,
+            context: {
+                matchState: state,
+                playerId,
+                baseIndex: context.baseIndex,
+                now: timestamp,
+            } satisfies PaladinsHeavenlyTalentPromptContext,
+            nextProgram: paladinsHeavenlyTalentPromptProgram,
+        };
+    },
+});
+
 function paladinsHeavenlySoldiersDescend(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const minionCards = player?.hand.filter(card => card.type === 'minion') ?? [];
@@ -449,29 +535,13 @@ function paladinsHeavenlySoldiersDescend(ctx: AbilityContext): AbilityResult {
             matchState: queueHeavenlyTalentPrompt(ctx.matchState, ctx.playerId, ctx.baseIndex, ctx.now),
         };
     }
-    const interaction = createSimpleChoice(
-        `paladins_heavenly_soldiers_descend_${ctx.cardUid}_${ctx.now}`,
-        ctx.playerId,
-        'paladins_heavenly_soldiers_descend.choose_minion',
-        [
-            ...minionCards.map(card => ({
-                id: `minion-${card.uid}`,
-                label: getCardDef(card.defId)?.name ?? card.defId,
-                value: { cardUid: card.uid, defId: card.defId },
-                displayMode: 'card' as const,
-            })),
-            {
-                id: 'skip',
-                label: '跳过额外随从',
-                labelKey: 'ui.paladins_heavenly_soldiers_descend_skip_minion_option',
-                value: { skip: true },
-                displayMode: 'button' as const,
-            },
-        ],
-        { sourceId: 'paladins_heavenly_soldiers_descend', targetType: 'hand' },
-    );
-    withContinuation(interaction.data, { baseIndex: ctx.baseIndex });
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return executeAbilityProgram(paladinsHeavenlyMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        baseIndex: ctx.baseIndex,
+        cardUid: ctx.cardUid,
+        now: ctx.now,
+    });
 }
 
 function paladinsNoviceKnightOnTalentUsed(ctx: TriggerContext) {
@@ -606,31 +676,21 @@ function handleSeniorMentor(state: MatchState<SmashUpCore>, _playerId: PlayerId,
     return { state, events: [addPowerCounter(found.minion.uid, found.baseIndex, 1, 'paladins_senior_mentor', timestamp)] };
 }
 
-function handleDevoutPastorDiscard(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) {
-    const selected = value as { cardUid?: string } | undefined;
-    const cardUid = selected?.cardUid;
-    if (!cardUid) return { state, events: [] };
-    const allowedCardUids = readStringSet(data?.allowedCardUids);
-    if (!allowedCardUids?.has(cardUid)) return { state, events: [] };
-    const player = state.core.players[playerId];
-    if (!player?.hand.some(card => card.uid === cardUid)) return { state, events: [] };
-    return { state, events: [makeCardsDiscardedEvent(playerId, [cardUid], timestamp)] };
-}
-
 function handleKnightsDuel(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) {
     const selected = value as { minionUid?: string; uid?: string } | undefined;
     const challengedMinionUid = selected?.minionUid ?? selected?.uid;
     const continuation = data?.continuationContext as { challengerMinionUid?: string } | undefined;
     if (!continuation?.challengerMinionUid || !challengedMinionUid) return { state, events: [] };
+    const duelStarted = startDuelWithEvents(state, {
+        sourceId: 'paladins_knights_duel',
+        sourcePlayerId: playerId,
+        challengerMinionUid: continuation.challengerMinionUid,
+        challengedMinionUid,
+        outcome: 'destroy_loser',
+    }, timestamp);
     return {
-        state: startDuel(state, {
-            sourceId: 'paladins_knights_duel',
-            sourcePlayerId: playerId,
-            challengerMinionUid: continuation.challengerMinionUid,
-            challengedMinionUid,
-            outcome: 'destroy_loser',
-        }, timestamp),
-        events: [],
+        state: duelStarted.state,
+        events: duelStarted.events,
     };
 }
 
@@ -675,46 +735,6 @@ function handleSeraphimDestroy(state: MatchState<SmashUpCore>, playerId: PlayerI
     };
 }
 
-function handleHeavenlyMinion(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) {
-    const selected = value as { skip?: boolean; cardUid?: string; defId?: string } | undefined;
-    const continuation = data?.continuationContext as { baseIndex?: number } | undefined;
-    const baseIndex = continuation?.baseIndex;
-    if (baseIndex === undefined || !state.core.bases[baseIndex]) return { state, events: [] };
-    const events: SmashUpEvent[] = [];
-    if (!selected?.skip && selected?.cardUid && selected.defId) {
-        const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === selected.cardUid && candidate.defId === selected.defId && candidate.type === 'minion');
-        if (card) events.push(buildPlayMinionEvent(card, playerId, baseIndex, timestamp));
-    }
-    const nextCore = events.reduce((core, event) => {
-        // The pipeline will reduce these events after the handler returns; this local snapshot is only for prompt availability.
-        if (event.type !== SU_EVENTS.MINION_PLAYED) return core;
-        const payload = (event as MinionPlayedEvent).payload;
-        return {
-            ...core,
-            bases: core.bases.map((base, index) => index === baseIndex
-                ? {
-                    ...base,
-                    minions: [...base.minions, {
-                        uid: payload.cardUid,
-                        defId: payload.defId,
-                        controller: playerId,
-                        owner: playerId,
-                        basePower: getMinionBasePower(payload.defId),
-                        powerModifier: 0,
-                        talentUsed: false,
-                        attachedActions: [],
-                    }],
-                }
-                : base),
-        };
-    }, state.core);
-    const promptState = queueHeavenlyTalentPrompt({ ...state, core: nextCore }, playerId, baseIndex, timestamp);
-    return {
-        state: { ...promptState, core: state.core },
-        events,
-    };
-}
-
 function handleHeavenlyTalent(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, _data: unknown, random: AbilityContext['random'], timestamp: number) {
     const selected = value as { minionUid?: string; uid?: string } | undefined;
     const minionUid = selected?.minionUid ?? selected?.uid;
@@ -745,7 +765,7 @@ function handleHeavenlyTalent(state: MatchState<SmashUpCore>, playerId: PlayerId
 
 export function registerPaladinAbilities(): void {
     registerAbility('paladins_roland', 'talent', paladinsRoland);
-    registerAbility('paladins_devout_pastor', 'talent', paladinsDevoutPastor);
+    registerAbilityProgram('paladins_devout_pastor', 'talent', { program: paladinsDevoutPastorProgram });
     registerAbility('paladins_senior_mentor', 'talent', paladinsSeniorMentor);
     registerAbility('paladins_durandal', 'talent', paladinsDurandal);
     registerAbility('paladins_knights_duel', 'onPlay', paladinsKnightsDuel);
@@ -778,10 +798,8 @@ export function registerPaladinAbilities(): void {
     registerInterceptor('base_paladins_roncesvalles_gorge', paladinsTitanBaseInterceptor);
 
     registerInteractionHandler('paladins_senior_mentor', handleSeniorMentor as InteractionHandler);
-    registerInteractionHandler('paladins_devout_pastor_discard', handleDevoutPastorDiscard as InteractionHandler);
     registerInteractionHandler('paladins_knights_duel', handleKnightsDuel as InteractionHandler);
     registerInteractionHandler('paladins_expel', handleExpel as InteractionHandler);
     registerInteractionHandler('paladins_seraphim', handleSeraphimDestroy as InteractionHandler);
-    registerInteractionHandler('paladins_heavenly_soldiers_descend', handleHeavenlyMinion as InteractionHandler);
     registerInteractionHandler('paladins_heavenly_soldiers_descend_talent', handleHeavenlyTalent as InteractionHandler);
 }

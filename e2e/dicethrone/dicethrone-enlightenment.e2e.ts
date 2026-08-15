@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
+import { dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
+import { settleCurrentBonusDice } from './bonus-dice-flow';
 
 async function setupEnlightenmentScene(
     page: Page,
@@ -54,11 +56,10 @@ test.describe('DiceThrone - 顿悟卡牌', () => {
     test('掷出莲花时应获得 2 太极、1 闪避、1 净化', async ({ page, game }) => {
         await setupEnlightenmentScene(page, game, { dieValue: 6 });
 
-        const enlightenmentCard = page
-            .locator('[data-card-id="card-enlightenment"], [data-card-key^="card-enlightenment-"]')
-            .first();
+        const enlightenmentCard = page.locator('[data-testid="hand-area"] [data-card-id="card-enlightenment"]').first();
         await expect(enlightenmentCard).toBeVisible({ timeout: 5000 });
-        await enlightenmentCard.click();
+        await dragDiceThroneHandCardToPlay(page, 'card-enlightenment');
+        await settleCurrentBonusDice(page, () => game.getState(), { sourceAbilityId: 'card-enlightenment' });
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -105,11 +106,10 @@ test.describe('DiceThrone - 顿悟卡牌', () => {
             deck: ['card-buddha-light'],
         });
 
-        const enlightenmentCard = page
-            .locator('[data-card-id="card-enlightenment"], [data-card-key^="card-enlightenment-"]')
-            .first();
+        const enlightenmentCard = page.locator('[data-testid="hand-area"] [data-card-id="card-enlightenment"]').first();
         await expect(enlightenmentCard).toBeVisible({ timeout: 5000 });
-        await enlightenmentCard.click();
+        await dragDiceThroneHandCardToPlay(page, 'card-enlightenment');
+        await settleCurrentBonusDice(page, () => game.getState(), { sourceAbilityId: 'card-enlightenment' });
 
         await expect.poll(async () => {
             const state = await game.getState();

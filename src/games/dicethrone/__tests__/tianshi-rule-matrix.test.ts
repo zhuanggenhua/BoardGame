@@ -9,7 +9,16 @@ import { TIANSHI_DICE_FACE_IDS as FACE, STATUS_IDS, TOKEN_IDS } from '../domain/
 import type { Die, DiceThroneEvent } from '../domain/types';
 import type { AbilityDef, AbilityEffect } from '../domain/combat';
 import type { EffectTiming } from '../domain/combat/types';
-import { HOLY_BLADE_2, HOLY_BLADE_3, TRIUMPHANT_RETURN_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
+import {
+    ARCHANGEL_RESOLVE_2,
+    DIVINE_PUNISHMENT_2,
+    HOLY_BLADE_2,
+    HOLY_BLADE_3,
+    HOLY_RADIANCE_2,
+    SUPREME_POWER_2,
+    TRIUMPHANT_RETURN_2,
+    TIANSHI_ABILITIES,
+} from '../heroes/tianshi/abilities';
 import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
@@ -60,9 +69,9 @@ const resolveAndSettleBonus = (
 };
 
 const findVariantDamageValues = (ability: AbilityDef): number[] => (
-    (ability.variants ?? []).map(variant => {
+    (ability.variants ?? []).flatMap(variant => {
         const effect = variant.effects.find(entry => entry.action?.type === 'damage');
-        return effect?.action?.type === 'damage' ? effect.action.value ?? 0 : 0;
+        return effect?.action?.type === 'damage' ? [effect.action.value ?? 0] : [];
     })
 );
 
@@ -88,6 +97,29 @@ describe('炽天使规则分支矩阵', () => {
         expect(findVariantDamageValues(base as AbilityDef)).toEqual([5, 6, 7]);
         expect(findVariantDamageValues(HOLY_BLADE_2)).toEqual([6, 7, 8]);
         expect(findVariantDamageValues(HOLY_BLADE_3)).toEqual([5, 7, 9]);
+    });
+
+    it('复合升级牌只负责替换技能，下半区效果登记在升级后技能分支', () => {
+        const compositeUpgradeIds = [
+            'upgrade-tianshi-supreme-power-2-gospel-arrival',
+            'upgrade-tianshi-divine-punishment-2-divine-command',
+            'upgrade-tianshi-archangel-resolve-2-divine-protection',
+            'upgrade-tianshi-holy-radiance-2-takeoff',
+            'upgrade-tianshi-holy-blade-3-cherub-2',
+            'upgrade-tianshi-holy-blade-2-cherub',
+        ];
+
+        for (const cardId of compositeUpgradeIds) {
+            const card = TIANSHI_CARDS.find(entry => entry.id === cardId);
+            expect(card?.effects.map(effect => effect.action?.type)).toEqual(['replaceAbility']);
+        }
+
+        expect(SUPREME_POWER_2.variants?.map(variant => variant.id)).toEqual(['supreme-power-2-main', 'gospel-arrival']);
+        expect(DIVINE_PUNISHMENT_2.variants?.map(variant => variant.id)).toEqual(['divine-punishment-2-main', 'divine-command']);
+        expect(ARCHANGEL_RESOLVE_2.variants?.map(variant => variant.id)).toEqual(['archangel-resolve-2-main', 'divine-protection']);
+        expect(HOLY_RADIANCE_2.variants?.map(variant => variant.id)).toEqual(['holy-radiance-2-main', 'takeoff']);
+        expect(HOLY_BLADE_3.variants?.map(variant => variant.id)).toEqual(['holy-blade-3-3', 'holy-blade-3-4', 'holy-blade-3-5', 'cherub-2']);
+        expect(HOLY_BLADE_2.variants?.map(variant => variant.id)).toEqual(['holy-blade-2-3', 'holy-blade-2-4', 'holy-blade-2-5', 'cherub']);
     });
 
     it('不满足骰型时九个炽天使技能都不进入进攻阶段可用列表', () => {

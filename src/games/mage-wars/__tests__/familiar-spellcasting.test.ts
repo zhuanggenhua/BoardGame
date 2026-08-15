@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { getApprenticeSpellbookCardIdsFromConfig, getMageWarsSpellCardFromConfig } from '../data/configPackage';
+import { getPresetSpellbookCardIdsFromConfig, getMageWarsSpellCardFromConfig } from '../data/configPackage';
 import { MageWarsDomain, MAGE_WARS_COMMANDS, MAGE_WARS_EVENTS } from '../domain';
 import { reduceEvent } from '../domain/reducer';
 import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
@@ -83,7 +83,7 @@ function ordinaryCreature(id: string, zoneId: typeof ARENA_ZONE_IDS[keyof typeof
 }
 
 function withMage(core: MageWarsCore, mageId: typeof MAGE_IDS[keyof typeof MAGE_IDS], mana: number): MageWarsCore {
-    const spellbookCount = getApprenticeSpellbookCardIdsFromConfig(mageId).length;
+    const spellbookCount = getPresetSpellbookCardIdsFromConfig(mageId).length;
     return {
         ...core,
         players: {
@@ -116,8 +116,8 @@ describe('mage-wars familiar and spawn-point spellcasting', () => {
             allowedTypeLineIncludes: ['动物'],
             channeling: 4,
         });
-        expect(getApprenticeSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).not.toContain(2218);
-        expect(getApprenticeSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).not.toContain(2908);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).not.toContain(2218);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).not.toContain(2908);
     });
 
     it('plans and casts a familiar incantation from the familiar location with familiar-first payment', () => {

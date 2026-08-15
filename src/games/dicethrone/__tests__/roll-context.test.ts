@@ -17,18 +17,26 @@ import type {
 import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { COMMON_CARDS } from '../domain/commonCards';
-import { canAdvancePhase, checkPlayCard } from '../domain/rules';
+import { canAdvancePhase, checkPlayCard, getPlayerDieFace } from '../domain/rules';
 import { canManuallyAdvancePhase, getFocusPlayerId } from '../hooks/useDiceThroneState';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
 import { zhanshujiaDiceDefinition } from '../heroes/zhanshujia/diceConfig';
+import { gunslingerDiceDefinition } from '../heroes/gunslinger/diceConfig';
+import { barbarianDiceDefinition } from '../heroes/barbarian/diceConfig';
+import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
 import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../heroes/zhanshujia/tokens';
 import { createCompareRollContext, createEvasionRollContext, createMainRollContext } from '../domain/rollContext';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+import { initHeroState } from '../domain/characters';
+import { diceThroneFlowHooks } from '../domain/flowHooks';
 
 initializeCustomActions();
 registerDiceDefinition(monkDiceDefinition);
 registerDiceDefinition(zhanshujiaDiceDefinition);
+registerDiceDefinition(gunslingerDiceDefinition);
+registerDiceDefinition(barbarianDiceDefinition);
+registerDiceDefinition(moonElfDiceDefinition);
 
 const queuedRandom = (values: number[]): RandomFn => {
     let index = 0;
@@ -102,6 +110,24 @@ const applyEvents = (
     events: DiceThroneEvent[],
 ): DiceThroneCore => events.reduce((current, event) => reduce(current, event), state);
 
+const runMain1EnterEvents = (core: DiceThroneCore): DiceThroneEvent[] => {
+    const result = diceThroneFlowHooks.onPhaseEnter?.({
+        state: { core, sys: { phase: 'discard' } },
+        from: 'discard',
+        to: 'main1',
+        command: {
+            type: 'ADVANCE_PHASE',
+            playerId: core.activePlayerId,
+            payload: {},
+            timestamp: 1,
+        },
+        random: queuedRandom([]),
+        exitEvents: [],
+    } as any);
+
+    return (Array.isArray(result) ? result : []) as DiceThroneEvent[];
+};
+
 const createBonusSettlement = (
     overrides: Partial<PendingBonusDiceSettlement> = {},
 ): PendingBonusDiceSettlement => ({
@@ -122,6 +148,70 @@ const createBonusSettlement = (
     allowDiceModification: true,
     ...overrides,
 });
+
+const createCoreWithAttacker = (characterId: HeroState['characterId']): DiceThroneCore => {
+    const core = createCore();
+    return {
+        ...core,
+        selectedCharacters: { ...core.selectedCharacters, '0': characterId },
+        players: {
+            ...core.players,
+            '0': { ...core.players['0'], characterId },
+        },
+    };
+};
+
+const getAttackerFace = (state: DiceThroneCore, value: number): string =>
+    getPlayerDieFace(state, '0', value) ?? String(value);
+
+const createAttackerBonusDice = (
+    state: DiceThroneCore,
+    values: number[],
+    effectKey?: string,
+): PendingBonusDiceSettlement['dice'] => values.map((value, index) => ({
+    index,
+    value,
+    face: getAttackerFace(state, value) as PendingBonusDiceSettlement['dice'][number]['face'],
+    effectKey,
+    effectParams: { value, index },
+}));
+
+const openBonusSettlement = (
+    state: DiceThroneCore,
+    settlement: PendingBonusDiceSettlement,
+): DiceThroneCore => reduce(state, {
+    type: 'BONUS_DICE_REROLL_REQUESTED',
+    payload: { settlement },
+    timestamp: 3,
+} as DiceThroneEvent);
+
+const modifyPendingBonusDie = (
+    state: DiceThroneCore,
+    newValue: number,
+    dieId = 0,
+): DiceThroneCore => reduce(state, {
+    type: 'DIE_MODIFIED',
+    payload: {
+        dieId,
+        oldValue: state.pendingBonusDiceSettlement?.dice.find(die => die.index === dieId)?.value ?? 0,
+        newValue,
+        playerId: '0',
+        ownerId: '0',
+        target: 'pendingBonusDie',
+    },
+    timestamp: 4,
+} as DiceThroneEvent);
+
+const buildSettlementEventsFromState = (state: DiceThroneCore): DiceThroneEvent[] => buildBonusDiceSettlementEvents({
+    state,
+    settlement: state.pendingBonusDiceSettlement!,
+    random: queuedRandom([]),
+    timestamp: 5,
+    sourceCommandType: 'TEST_CONFIRM_TEMPORARY_DIE',
+});
+
+const findBonusDamageAmount = (events: DiceThroneEvent[]): number | undefined =>
+    events.find(event => event.type === 'BONUS_DAMAGE_ADDED')?.payload.amount;
 
 describe('DiceThrone 单槽当前骰区', () => {
     it('展示型临时骰确认时只按专属最终骰面收口，不生成默认伤害', () => {
@@ -197,6 +287,50 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(modified.currentRollContext?.dice[0]?.value).toBe(6);
     });
 
+    it('已确认的当前防御骰被修改后必须重新确认', () => {
+        const base = {
+            ...createCore(),
+            turnPhase: 'defensiveRoll' as const,
+            activePlayerId: '0',
+            rollCount: 1,
+            rollDiceCount: 3,
+            rollConfirmed: true,
+            dice: [createDie(0, 2), createDie(1, 1), createDie(2, 1)],
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'fist-technique-5',
+                defenseAbilityId: 'thick-skin',
+                isDefendable: true,
+                damage: 8,
+            },
+        } as DiceThroneCore;
+        const state: DiceThroneCore = {
+            ...base,
+            currentRollContext: createMainRollContext(base, {
+                phase: 'defensiveRoll',
+                ownerPlayerId: '1',
+                dice: [createDie(0, 1), createDie(1, 1), createDie(2, 1)],
+            }),
+        };
+
+        const modified = reduce(state, {
+            type: 'DIE_MODIFIED',
+            payload: {
+                dieId: 0,
+                oldValue: 1,
+                newValue: 2,
+                playerId: '0',
+                ownerId: '1',
+                target: 'activeDie',
+            },
+            timestamp: 2,
+        } as DiceThroneEvent);
+
+        expect(modified.currentRollContext?.dice.map((die) => die.value)).toEqual([2, 1, 1]);
+        expect(modified.rollConfirmed).toBe(false);
+    });
+
     it('可改奖励骰会暂时挂起主骰，并使用实际掷骰者的骰子定义', () => {
         const rolled = roll(createCore(), [1, 2, 3, 4, 5]);
         const rolledContext = rolled.currentRollContext;
@@ -240,6 +374,137 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(modified.pendingBonusDiceSettlement?.dice[0]?.value).toBe(5);
         expect(modified.currentRollContext?.dice[0]?.value).toBe(5);
         expect(modified.dice[0].value).toBe(1);
+    });
+
+    it('装填临时骰未改时按 6 加 3，改成 4 后展示参数和最终结算都改为加 2', () => {
+        const gunslinger = createCoreWithAttacker('gunslinger');
+        const settlement = createBonusSettlement({
+            customResolutionId: 'gunslinger-loaded-use',
+            dice: [{
+                index: 0,
+                value: 6,
+                face: 'bullseye',
+                effectKey: 'bonusDie.effect.gunslingerLoadedDie',
+                effectParams: { value: 6, index: 0, bonusDamage: 3 },
+            }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            maxRerollCount: 0,
+        });
+        const opened = openBonusSettlement(gunslinger, settlement);
+
+        expect(opened.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 6,
+            face: 'bullseye',
+            effectParams: { value: 6, index: 0, bonusDamage: 3 },
+        });
+        expect(findBonusDamageAmount(buildSettlementEventsFromState(opened))).toBe(3);
+
+        const modified = modifyPendingBonusDie(opened, 4);
+
+        expect(modified.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 4,
+            face: 'dash',
+            effectParams: { value: 4, index: 0, bonusDamage: 2 },
+        });
+        expect(findBonusDamageAmount(buildSettlementEventsFromState(modified))).toBe(2);
+    });
+
+    it('非装填的单颗临时骰改点数后，展示数值跟着重算', () => {
+        const state = createCoreWithAttacker('monk');
+        const opened = openBonusSettlement(state, createBonusSettlement({
+            dice: [{
+                index: 0,
+                value: 5,
+                face: getAttackerFace(state, 5) as PendingBonusDiceSettlement['dice'][number]['face'],
+                effectKey: 'bonusDie.effect.gainCp',
+                effectParams: { value: 5, index: 0, cp: 3 },
+            }],
+        }));
+        const modified = modifyPendingBonusDie(opened, 4);
+
+        expect(opened.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 5,
+            face: 'taiji',
+            effectParams: { value: 5, index: 0, cp: 3 },
+        });
+        expect(modified.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 4,
+            face: 'taiji',
+            effectParams: { value: 4, index: 0, cp: 2 },
+        });
+    });
+
+    it('骰点跨过命中阈值时，临时骰展示说明跟着切换', () => {
+        const state = createCoreWithAttacker('moon_elf');
+        const opened = openBonusSettlement(state, createBonusSettlement({
+            dice: [{
+                index: 0,
+                value: 1,
+                face: getAttackerFace(state, 1) as PendingBonusDiceSettlement['dice'][number]['face'],
+                effectKey: 'bonusDie.effect.blinded.miss',
+                effectParams: { value: 1, index: 0 },
+            }],
+        }));
+        const modified = modifyPendingBonusDie(opened, 3);
+
+        expect(opened.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 1,
+            effectKey: 'bonusDie.effect.blinded.miss',
+            effectParams: { value: 1, index: 0 },
+        });
+        expect(modified.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 3,
+            face: 'bow',
+            effectKey: 'bonusDie.effect.blinded.hit',
+            effectParams: { value: 3, index: 0 },
+        });
+    });
+
+    it('修改多颗临时骰中的一颗时，应重算汇总数值', () => {
+        const moonElf = createCoreWithAttacker('moon_elf');
+        const opened = openBonusSettlement(moonElf, createBonusSettlement({
+            dice: createAttackerBonusDice(moonElf, [1, 2, 3, 4, 5]),
+            summaryEffectKey: 'bonusDie.effect.volley.result',
+            summaryEffectParams: { bowCount: 3, bonusDamage: 3 },
+        }));
+        const modified = modifyPendingBonusDie(opened, 4, 2);
+
+        expect(opened.pendingBonusDiceSettlement?.summaryEffectParams).toMatchObject({
+            bowCount: 3,
+            bonusDamage: 3,
+        });
+        expect(modified.pendingBonusDiceSettlement?.dice[2]).toMatchObject({
+            value: 4,
+            face: 'foot',
+        });
+        expect(modified.pendingBonusDiceSettlement?.summaryEffectKey).toBe('bonusDie.effect.volley.result');
+        expect(modified.pendingBonusDiceSettlement?.summaryEffectParams).toMatchObject({
+            bowCount: 2,
+            bonusDamage: 2,
+        });
+    });
+
+    it('修改多颗临时骰中的一颗时，应同步重算单骰说明和汇总说明切换', () => {
+        const gunslinger = createCoreWithAttacker('gunslinger');
+        const settlement = createBonusSettlement({
+            dice: createAttackerBonusDice(gunslinger, [1, 1, 2, 2, 3], 'bonusDie.effect.gunslingerEatMyLeadDie'),
+            summaryEffectKey: 'bonusDie.effect.gunslingerEatMyLead.resultKnockdown',
+            summaryEffectParams: { bulletCount: 5, bonusDamage: 5 },
+        });
+        const opened = openBonusSettlement(gunslinger, settlement);
+        const modified = modifyPendingBonusDie(opened, 4);
+
+        expect(modified.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            value: 4,
+            face: 'dash',
+            effectParams: { value: 4, index: 0 },
+        });
+        expect(modified.pendingBonusDiceSettlement?.summaryEffectKey).toBe('bonusDie.effect.gunslingerEatMyLead.result');
+        expect(modified.pendingBonusDiceSettlement?.summaryEffectParams).toMatchObject({
+            bulletCount: 4,
+            bonusDamage: 4,
+        });
     });
 
     it('攻击型临时奖励骰确认后恢复被挂起的主攻击骰', () => {
@@ -1583,6 +1848,63 @@ describe('DiceThrone 单槽当前骰区', () => {
                     resultTextKey: 'compareRoll.gunslingerDuel.win',
                     resultTone: 'success',
                 }),
+            }),
+        }));
+    });
+
+    it('已初始化玩家即使手牌和牌库都为空，进入主阶段也不能被旧存档补救重置血量', () => {
+        const core = createCore();
+        const initializedAttacker = initHeroState('0', 'monk', queuedRandom([]));
+        const initializedDefender = initHeroState('1', 'barbarian', queuedRandom([]));
+        const spentCard = COMMON_CARDS.find((card) => card.id === 'card-surprise');
+        expect(spentCard).toBeDefined();
+
+        initializedDefender.resources[RESOURCE_IDS.HP] = 44;
+        initializedDefender.hand = [];
+        initializedDefender.deck = [];
+        initializedDefender.discard = spentCard ? [spentCard] : [];
+
+        core.players = {
+            '0': initializedAttacker,
+            '1': initializedDefender,
+        };
+        core.selectedCharacters = { '0': 'monk', '1': 'barbarian' };
+        core.activePlayerId = '1';
+
+        const events = runMain1EnterEvents(core);
+        const next = applyEvents(core, events);
+
+        expect(events).not.toContainEqual(expect.objectContaining({ type: 'HERO_INITIALIZED' }));
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
+        expect(next.players['1'].hand).toHaveLength(0);
+        expect(next.players['1'].deck).toHaveLength(0);
+    });
+
+    it('真正缺少英雄技能定义的旧选角存档，进入主阶段仍会补初始化', () => {
+        const core = createCore();
+        const initializedAttacker = initHeroState('0', 'monk', queuedRandom([]));
+        core.players = {
+            '0': initializedAttacker,
+            '1': {
+                ...createHero('1'),
+                characterId: 'barbarian',
+                resources: {},
+                hand: [],
+                deck: [],
+                abilities: [],
+                playerBoardFace: undefined,
+            },
+        };
+        core.selectedCharacters = { '0': 'monk', '1': 'barbarian' };
+        core.activePlayerId = '1';
+
+        const events = runMain1EnterEvents(core);
+
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'HERO_INITIALIZED',
+            payload: expect.objectContaining({
+                playerId: '1',
+                characterId: 'barbarian',
             }),
         }));
     });

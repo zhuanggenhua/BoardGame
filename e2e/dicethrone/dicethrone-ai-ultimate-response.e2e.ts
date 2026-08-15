@@ -32,7 +32,7 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
     test('真人响应提示更显眼且可跳过并关闭响应窗口', async ({ page, game }, testInfo) => {
         test.setTimeout(TEST_TIMEOUT_MS);
 
-        await game.openTestGame('dicethrone', { playerID: '1' }, OPEN_TIMEOUT_MS);
+        await game.openTestGame('dicethrone', { playerID: '1', disableLocalAiAutomation: true }, OPEN_TIMEOUT_MS);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
@@ -237,7 +237,7 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
     test('AI 选中制胜高地后，真人应能用惊不惊喜改骰取消终极招式', async ({ page, game }, testInfo) => {
         test.setTimeout(TEST_TIMEOUT_MS);
 
-        await game.openTestGame('dicethrone', { playerID: '1' }, OPEN_TIMEOUT_MS);
+        await game.openTestGame('dicethrone', { playerID: '1', disableLocalAiAutomation: true }, OPEN_TIMEOUT_MS);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
@@ -305,6 +305,12 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
             isUltimate: true,
             rollConfirmed: true,
         });
+
+        const attackShowcase = page.getByTestId('attack-showcase-overlay');
+        const continueButton = attackShowcase.getByRole('button', { name: /^(继续|Continue)$/i });
+        await expect(continueButton).toBeVisible({ timeout: 10000 });
+        await continueButton.click();
+        await expect(attackShowcase).toBeHidden({ timeout: 10000 });
 
         await game.screenshot('01-AI选中制胜高地后-真人发动前响应窗口', testInfo);
 

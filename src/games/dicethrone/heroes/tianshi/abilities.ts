@@ -59,6 +59,14 @@ export const HOLY_BLADE_2: AbilityDef = {
         { id: 'holy-blade-2-3', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3 } }, effects: [damage(6, abilityEffectText('holy-blade-2', 'damage6'))], priority: 0 },
         { id: 'holy-blade-2-4', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 4 } }, effects: [damage(7, abilityEffectText('holy-blade-2', 'damage7'))], priority: 1 },
         { id: 'holy-blade-2-5', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 5 } }, effects: [damage(8, abilityEffectText('holy-blade-2', 'damage8'))], priority: 2 },
+        {
+            id: 'cherub',
+            name: abilityText('cherub', 'name'),
+            description: abilityText('cherub', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3, [FACE.SHIELD]: 1 } },
+            effects: [custom('tianshi-cherub-basic-card', abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'secondary'))],
+            priority: 3,
+        },
     ],
 };
 
@@ -94,6 +102,14 @@ export const HOLY_BLADE_3: AbilityDef = {
             ],
             priority: 2,
         },
+        {
+            id: 'cherub-2',
+            name: abilityText('cherub-2', 'name'),
+            description: abilityText('cherub-2', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3, [FACE.SHIELD]: 1 } },
+            effects: [custom('tianshi-cherub-card', abilityEffectText('upgrade-tianshi-holy-blade-3-cherub-2', 'secondary'))],
+            priority: 3,
+        },
     ],
 };
 
@@ -102,6 +118,28 @@ export const HOLY_RADIANCE_2: AbilityDef = {
         grantToken(TOKEN_IDS.FLIGHT, 1, abilityEffectText('holy-radiance-2', 'gainFlight')),
         damage(7, abilityEffectText('holy-radiance-2', 'damage7')),
     ]),
+    variants: [
+        {
+            id: 'holy-radiance-2-main',
+            name: abilityText('holy-radiance-2', 'name'),
+            description: abilityText('holy-radiance-2', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3, [FACE.WING]: 1 } },
+            effects: [
+                grantToken(TOKEN_IDS.FLIGHT, 1, abilityEffectText('holy-radiance-2', 'gainFlight')),
+                damage(7, abilityEffectText('holy-radiance-2', 'damage7')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'takeoff',
+            name: abilityText('takeoff', 'name'),
+            description: abilityText('takeoff', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 1, [FACE.WING]: 2 } },
+            effects: [custom('tianshi-takeoff-card', abilityEffectText('upgrade-tianshi-holy-radiance-2-takeoff', 'secondary'))],
+            tags: ['unblockable'],
+            priority: 0,
+        },
+    ],
 };
 
 export const DIVINE_PURIFICATION_2: AbilityDef = {
@@ -110,6 +148,25 @@ export const DIVINE_PURIFICATION_2: AbilityDef = {
 
 export const DIVINE_PUNISHMENT_2: AbilityDef = {
     ...replaceable('divine-punishment', 'divine-punishment-2', 'divine-punishment-2', { type: 'allSymbolsPresent', symbols: [FACE.BLADE, FACE.WING, FACE.CROSS, FACE.SHIELD] }, [custom('tianshi-divine-punishment', abilityEffectText('divine-punishment-2', 'resolve'), 'preDefense', { damagePerBlade: 2 })]),
+    variants: [
+        {
+            id: 'divine-punishment-2-main',
+            name: abilityText('divine-punishment-2', 'name'),
+            description: abilityText('divine-punishment-2', 'description'),
+            trigger: { type: 'allSymbolsPresent', symbols: [FACE.BLADE, FACE.WING, FACE.CROSS, FACE.SHIELD] },
+            effects: [custom('tianshi-divine-punishment', abilityEffectText('divine-punishment-2', 'resolve'), 'preDefense', { damagePerBlade: 2 })],
+            priority: 1,
+        },
+        {
+            id: 'divine-command',
+            name: abilityText('divine-command', 'name'),
+            description: abilityText('divine-command', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3, [FACE.CROSS]: 1 } },
+            effects: [custom('tianshi-divine-command-card', abilityEffectText('upgrade-tianshi-divine-punishment-2-divine-command', 'secondary'))],
+            tags: ['unblockable'],
+            priority: 0,
+        },
+    ],
 };
 
 export const TRIUMPHANT_RETURN_2: AbilityDef = {
@@ -126,6 +183,29 @@ export const SUPREME_POWER_2: AbilityDef = {
         grantStatus(STATUS_IDS.DAZZLE, 1, abilityEffectText('supreme-power-2', 'dazzle')),
         damage(10, abilityEffectText('supreme-power-2', 'damage10')),
     ]),
+    variants: [
+        {
+            id: 'supreme-power-2-main',
+            name: abilityText('supreme-power-2', 'name'),
+            description: abilityText('supreme-power-2', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.SHIELD]: 4 } },
+            effects: [
+                grantToken(TOKEN_IDS.FLIGHT, 1, abilityEffectText('supreme-power-2', 'gainFlight')),
+                grantToken(TOKEN_IDS.DIVINE_ARRIVAL, 1, abilityEffectText('supreme-power-2', 'gainDivineArrival')),
+                grantStatus(STATUS_IDS.DAZZLE, 1, abilityEffectText('supreme-power-2', 'dazzle')),
+                damage(10, abilityEffectText('supreme-power-2', 'damage10')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'gospel-arrival',
+            name: abilityText('gospel-arrival', 'name'),
+            description: abilityText('gospel-arrival', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.SHIELD]: 3 } },
+            effects: [custom('tianshi-gospel-arrival-card', abilityEffectText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'secondary'))],
+            priority: 0,
+        },
+    ],
 };
 
 export const ARCHANGEL_RESOLVE_2: AbilityDef = {
@@ -134,6 +214,28 @@ export const ARCHANGEL_RESOLVE_2: AbilityDef = {
         grantStatus(STATUS_IDS.DAZZLE, 1, abilityEffectText('archangel-resolve-2', 'dazzle')),
         damage(9, abilityEffectText('archangel-resolve-2', 'damage9')),
     ]),
+    variants: [
+        {
+            id: 'archangel-resolve-2-main',
+            name: abilityText('archangel-resolve-2', 'name'),
+            description: abilityText('archangel-resolve-2', 'description'),
+            trigger: { type: 'largeStraight' },
+            effects: [
+                grantToken(TOKEN_IDS.FLIGHT, 1, abilityEffectText('archangel-resolve-2', 'gainFlight')),
+                grantStatus(STATUS_IDS.DAZZLE, 1, abilityEffectText('archangel-resolve-2', 'dazzle')),
+                damage(9, abilityEffectText('archangel-resolve-2', 'damage9')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'divine-protection',
+            name: abilityText('divine-protection', 'name'),
+            description: abilityText('divine-protection', 'description'),
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 1, [FACE.CROSS]: 2 } },
+            effects: [custom('tianshi-divine-protection-card', abilityEffectText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'secondary'))],
+            priority: 0,
+        },
+    ],
 };
 
 export const ANGELIC_CLOAK_2: AbilityDef = {

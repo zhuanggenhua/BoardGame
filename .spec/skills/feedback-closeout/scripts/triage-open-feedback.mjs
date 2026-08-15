@@ -2,6 +2,10 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+    normalizeBaseUrl,
+    updateFeedbackStatusViaBestAvailableWriter,
+} from './lib/feedback-status-writer.mjs';
 
 const EMBEDDED_IMG_RE = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
@@ -74,10 +78,6 @@ function parseArgs(argv) {
     return options;
 }
 
-function normalizeBaseUrl(baseUrl) {
-    return baseUrl.replace(/\/+$/, '');
-}
-
 function buildHeaders(token, extraHeaders = {}) {
     return token
         ? {
@@ -85,23 +85,6 @@ function buildHeaders(token, extraHeaders = {}) {
             Authorization: `Bearer ${token}`,
         }
         : extraHeaders;
-}
-
-async function updateFeedbackStatus(baseUrl, token, id, status) {
-    const response = await fetch(`${baseUrl}/admin/feedback/${id}/status`, {
-        method: 'PATCH',
-        headers: buildHeaders(token, {
-            'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify({ status }),
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`更新状态失败 ${response.status} ${response.statusText}: ${id} -> ${status}; ${text}`);
-    }
-
-    return response.json();
 }
 
 async function fetchList(baseUrl, token, status, limit) {
@@ -409,9 +392,6 @@ function pickParallelCandidates(groups, slots) {
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const baseUrl = normalizeBaseUrl(options.baseUrl);
-    if (options.markInProgress && !options.token) {
-        throw new Error('mark-in-progress 需要反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
-    }
     const outDir = makeRunDir(options.outDir);
     await fs.mkdir(outDir, { recursive: true });
 
@@ -454,11 +434,19 @@ async function main() {
     const claimedCandidates = [];
     if (options.markInProgress) {
         for (const candidate of parallelCandidates) {
-            const updated = await updateFeedbackStatus(baseUrl, options.token, candidate.feedbackId, 'in_progress');
+            const updated = await updateFeedbackStatusViaBestAvailableWriter({
+                baseUrl,
+                token: options.token,
+                id: candidate.feedbackId,
+                status: 'in_progress',
+            });
             candidate.status = updated.status;
+            candidate.statusWriter = updated.writer;
             claimedCandidates.push({
                 feedbackId: candidate.feedbackId,
                 status: updated.status,
+                writer: updated.writer,
+                writerReason: updated.reason,
             });
         }
     }

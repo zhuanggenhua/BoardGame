@@ -10,7 +10,6 @@ import {
     type TriggerContext,
 } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from '../domain/ongoingDetach';
-import { reduce } from '../domain/reduce';
 import {
     addOngoingCardCounter,
     addPowerCounter,
@@ -21,7 +20,7 @@ import {
     grantExtraAction,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
-import type { BaseInPlay, CardInstance, MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { BaseInPlay, CardInstance, CardsDrawnEvent, MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
 type LocatedMinion = { minion: MinionOnBase; baseIndex: number };
@@ -342,12 +341,22 @@ function nobleSteedTalent(ctx: AbilityContext): AbilityResult {
     return { events: moveMinion(ctx.state, host.minion, host.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_noble_steed', ctx.now) };
 }
 
+function countDrawnCardsForPlayer(events: SmashUpEvent[], playerId: PlayerId): number {
+    return events.reduce((count, event) => {
+        if (event.type !== SU_EVENTS.CARDS_DRAWN) return count;
+        const drawEvent = event as CardsDrawnEvent;
+        if (drawEvent.payload.playerId !== playerId) return count;
+        return count + (drawEvent.payload.cardUids?.length ?? drawEvent.payload.count ?? 0);
+    }, 0);
+}
+
 function fisherKingOnMove(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.moveToBaseIndex !== ctx.sourceBaseIndex || ctx.triggerMinion?.controller !== ctx.sourceControllerId) return [];
     const events = buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
-    const projected = events.reduce((next, event) => reduce(next, event), ctx.state);
-    if ((projected.players[ctx.sourceControllerId]?.hand.length ?? 0) >= 8) {
+    const handCountAfterDraw = (ctx.state.players[ctx.sourceControllerId]?.hand.length ?? 0)
+        + countDrawnCardsForPlayer(events, ctx.sourceControllerId);
+    if (handCountAfterDraw >= 8) {
         events.push(
             ...buildValidatedOngoingDetachEvents(ctx.state, {
                 cardUid: ctx.sourceCardUid,

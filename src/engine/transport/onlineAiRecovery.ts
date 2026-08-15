@@ -13,6 +13,7 @@ import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import {
     hasPendingResponseWindowInteractionLock,
     resolveResponseWindowCurrent,
+    type ResponseWindowCurrentSummary,
     responseWindowSeatViewBelongsToResponder,
 } from '../responseWindowInteractionLock';
 import type { GameEngineConfig } from './server';
@@ -540,6 +541,57 @@ function buildForceEndTurnResolution(args: {
     };
 }
 
+function resolveAiCurrentPlayerForHumanResponseWindow(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatControllers: Record<string, AiSeatController>;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
+}): string | null {
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(args.sharedState, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    return currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human'
+        ? currentPlayerId
+        : null;
+}
+
+function buildForceCloseHumanResponseWindowDuringAiPhase(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatControllers: Record<string, AiSeatController>;
+    responseWindow: ResponseWindowCurrentSummary;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
+    fingerprintReason?: 'response-window' | 'manual-response-window';
+    suffixDetail?: string;
+}): ForceEndTurnStalledAiResolution | null {
+    const aiPlayerId = resolveAiCurrentPlayerForHumanResponseWindow(args);
+    if (!aiPlayerId) {
+        return null;
+    }
+    const windowId = args.responseWindow.id ?? `${aiPlayerId}:human-response-window`;
+    const fingerprintReason = args.fingerprintReason ?? 'response-window';
+    const fingerprintHint = buildResponseWindowRecoveryFingerprintHint(
+        args.sharedState,
+        aiPlayerId,
+        fingerprintReason,
+    );
+    const suffix = args.suffixDetail
+        ? `${fingerprintHint}:${windowId}:${args.suffixDetail}`
+        : `${fingerprintHint}:${windowId}`;
+    return {
+        playerId: aiPlayerId,
+        reason: 'response-window',
+        requiresConfirmedAdvancePhase: true,
+        fingerprintHint,
+        resolution: buildForceEndTurnResolution({
+            playerId: aiPlayerId,
+            suffix,
+            commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
+        }),
+    };
+}
+
 function buildForceEndTurnFromInteractionState(
     state: MatchState<unknown>,
     playerId: string,
@@ -1002,6 +1054,16 @@ export function resolveForceEndTurnForStalledAi(args: {
                     }),
                 };
             }
+            if (responseWindow && responderId && args.seatControllers[responderId]?.type === 'human') {
+                return buildForceCloseHumanResponseWindowDuringAiPhase({
+                    sharedState: args.sharedState,
+                    seatControllers: args.seatControllers,
+                    responseWindow,
+                    engineConfig: args.engineConfig,
+                    gameId: args.gameId,
+                    suffixDetail: 'orphan-pending-interaction',
+                });
+            }
             return null;
         }
     }
@@ -1044,9 +1106,13 @@ export function resolveForceEndTurnForStalledAi(args: {
         };
     }
     if (responderId && args.seatControllers[responderId]?.type === 'human') {
-        // 当前响应权在 human 手里时，无论 active player 是否为 AI，都应保持真人流程。
-        // watchdog 不能替真人强制关窗，也不能回退成 active-turn-legal-only。
-        return null;
+        return buildForceCloseHumanResponseWindowDuringAiPhase({
+            sharedState: args.sharedState,
+            seatControllers: args.seatControllers,
+            responseWindow,
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
+        });
     }
 
     const configuredSeatLegalOnlyRecovery = resolveConfiguredSeatLegalOnlyRecovery(args);
@@ -1232,7 +1298,14 @@ export function resolveManualForceEndAiPhase(args: {
     if (currentWindow) {
         const responderId = currentWindow.currentResponderId;
         if (responderId && args.seatControllers[responderId]?.type === 'human') {
-            return null;
+            return buildForceCloseHumanResponseWindowDuringAiPhase({
+                sharedState: args.sharedState,
+                seatControllers: args.seatControllers,
+                responseWindow: currentWindow,
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+                fingerprintReason: 'manual-response-window',
+            });
         }
         if (responderId && args.seatControllers[responderId]?.type !== 'human') {
             const windowId = currentWindow.id ?? `${responderId}:manual-response-window`;

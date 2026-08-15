@@ -262,6 +262,36 @@ async function passOpenReactionOrResponseWindowVisibly(
     return false;
 }
 
+async function expectCenteredSmashUpReactionPrompt(page: Page, description: string): Promise<void> {
+    const layout = await page.evaluate(() => {
+        const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-reaction-prompt"]');
+        const promptContent = prompt?.querySelector<HTMLElement>('.smashup-prompt-content');
+        const promptRect = promptContent?.getBoundingClientRect();
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        const promptCenterX = promptRect ? promptRect.left + promptRect.width / 2 : 0;
+        const promptCenterY = promptRect ? promptRect.top + promptRect.height / 2 : 0;
+        return {
+            noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
+            dockedPromptAbsent: !document.querySelector('[data-testid="smashup-docked-prompt"]'),
+            promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
+            horizontallyCentered: promptRect
+                ? Math.abs(promptCenterX - viewportCenterX) <= 32
+                : false,
+            verticallyCentered: promptRect
+                ? Math.abs(promptCenterY - viewportCenterY) <= 32
+                : false,
+        };
+    });
+    expect(layout, description).toEqual({
+        noUnexpectedOverflow: true,
+        dockedPromptAbsent: true,
+        promptVisible: true,
+        horizontallyCentered: true,
+        verticallyCentered: true,
+    });
+}
+
 async function chooseReactionBySourceDefId(
     page: Page,
     game: GameTestContext,
@@ -8058,40 +8088,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             windowType: 'afterScoring',
             hasStraightLineOption: true,
         });
-        const responsePromptLayout = await page.evaluate(() => {
-            const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-docked-prompt"]');
-            const turnTracker = document.querySelector<HTMLElement>('[data-testid="su-turn-tracker"]');
-            const promptRect = prompt?.getBoundingClientRect();
-            const baseRects = Array.from(document.querySelectorAll<HTMLElement>('[data-base-index]'))
-                .map(element => element.getBoundingClientRect());
-            const overlapsBase = promptRect
-                ? baseRects.some(rect => (
-                    promptRect.left < rect.right
-                    && promptRect.right > rect.left
-                    && promptRect.top < rect.bottom
-                    && promptRect.bottom > rect.top
-                ))
-                : true;
-            const turnRect = turnTracker?.getBoundingClientRect();
-            const overlapsTurnTracker = promptRect && turnRect
-                ? promptRect.left < turnRect.right
-                    && promptRect.right > turnRect.left
-                    && promptRect.top < turnRect.bottom
-                    && promptRect.bottom > turnRect.top
-                : true;
-            return {
-                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
-                promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-                noBaseOverlap: !overlapsBase,
-                noTurnTrackerOverlap: !overlapsTurnTracker,
-            };
-        });
-        expect(responsePromptLayout, '移动端直线跑路药水 afterScoring 短提示必须可见，且不能压住基地牌或回合/阶段牌').toEqual({
-            noUnexpectedOverflow: true,
-            promptVisible: true,
-            noBaseOverlap: true,
-            noTurnTrackerOverlap: true,
-        });
+        await expectCenteredSmashUpReactionPrompt(
+            page,
+            '移动端直线跑路药水 afterScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
+        );
         await game.screenshot('移动端-直线跑路药水-afterScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -8244,40 +8244,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        const responsePromptLayout = await page.evaluate(() => {
-            const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-docked-prompt"]');
-            const turnTracker = document.querySelector<HTMLElement>('[data-testid="su-turn-tracker"]');
-            const promptRect = prompt?.getBoundingClientRect();
-            const baseRects = Array.from(document.querySelectorAll<HTMLElement>('[data-base-index]'))
-                .map(element => element.getBoundingClientRect());
-            const overlapsBase = promptRect
-                ? baseRects.some(rect => (
-                    promptRect.left < rect.right
-                    && promptRect.right > rect.left
-                    && promptRect.top < rect.bottom
-                    && promptRect.bottom > rect.top
-                ))
-                : true;
-            const turnRect = turnTracker?.getBoundingClientRect();
-            const overlapsTurnTracker = promptRect && turnRect
-                ? promptRect.left < turnRect.right
-                    && promptRect.right > turnRect.left
-                    && promptRect.top < turnRect.bottom
-                    && promptRect.bottom > turnRect.top
-                : true;
-            return {
-                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
-                promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-                noBaseOverlap: !overlapsBase,
-                noTurnTrackerOverlap: !overlapsTurnTracker,
-            };
-        });
-        expect(responsePromptLayout, '移动端麻痹药水 beforeScoring 短提示必须可见，且不能压住基地牌或回合/阶段牌').toEqual({
-            noUnexpectedOverflow: true,
-            promptVisible: true,
-            noBaseOverlap: true,
-            noTurnTrackerOverlap: true,
-        });
+        await expectCenteredSmashUpReactionPrompt(
+            page,
+            '移动端麻痹药水 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
+        );
         await game.screenshot('移动端-麻痹药水-beforeScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -8342,14 +8312,27 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                     && rect.top >= -2
                     && rect.bottom <= window.innerHeight + 2;
             };
+            const visibleSupplyElementInViewport = (selector: string) => Array.from(document.querySelectorAll<HTMLElement>(selector))
+                .some(element => {
+                    const rect = element.getBoundingClientRect();
+                    const style = getComputedStyle(element);
+                    return style.display !== 'none'
+                        && style.visibility !== 'hidden'
+                        && rect.width > 0
+                        && rect.height > 0
+                        && rect.left >= -2
+                        && rect.right <= window.innerWidth + 2
+                        && rect.top >= -2
+                        && rect.bottom <= window.innerHeight + 2;
+                });
             return {
                 noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
                 baseVisible: inViewport('[data-base-index="0"]'),
                 handVisible: inViewport('[data-testid="su-hand-area"]'),
-                monsterSupplyCardVisible: inViewport('[data-testid="su-munchkin-monster-supply-card"]'),
-                monsterSupplyCountVisible: inViewport('[data-testid="su-munchkin-monster-supply-count"]'),
-                treasureSupplyCardVisible: inViewport('[data-testid="su-munchkin-treasure-supply-card"]'),
-                treasureSupplyCountVisible: inViewport('[data-testid="su-munchkin-treasure-supply-count"]'),
+                monsterSupplyCardVisible: visibleSupplyElementInViewport('[data-testid="su-munchkin-monster-supply-card"]'),
+                monsterSupplyCountVisible: visibleSupplyElementInViewport('[data-testid="su-munchkin-monster-supply-count"]'),
+                treasureSupplyCardVisible: visibleSupplyElementInViewport('[data-testid="su-munchkin-treasure-supply-card"]'),
+                treasureSupplyCountVisible: visibleSupplyElementInViewport('[data-testid="su-munchkin-treasure-supply-count"]'),
                 turnTrackerVisible: inViewport('[data-testid="su-turn-tracker"]'),
             };
         });
@@ -9939,7 +9922,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             interactionSourceId: null,
             responseWindowType: null,
         });
-        await expect(page.locator('[data-testid="smashup-docked-prompt"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="smashup-reaction-prompt"], [data-testid="smashup-docked-prompt"]')).toHaveCount(0);
 
         const mobileResolutionEvidence = await page.evaluate(() => {
             const inViewport = (selector: string) => {
@@ -10715,7 +10698,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             },
             { timeout: 20000, polling: 200 },
         );
-        await expect(page.locator('[data-testid="smashup-docked-prompt"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="smashup-reaction-prompt"] .smashup-prompt-content')).toBeVisible({ timeout: 10000 });
         await game.screenshot('移动端-兽人狗堆-beforeScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -10851,7 +10834,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             interactionSourceId: null,
             responseWindowType: null,
         });
-        await expect(page.locator('[data-testid="smashup-docked-prompt"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="smashup-reaction-prompt"], [data-testid="smashup-docked-prompt"]')).toHaveCount(0);
 
         const mobileResolutionEvidence = await page.evaluate(() => {
             const inViewport = (selector: string) => {
@@ -11311,7 +11294,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             interactionSourceId: null,
             responseWindowType: null,
         });
-        await expect(page.locator('[data-testid="smashup-docked-prompt"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="smashup-reaction-prompt"], [data-testid="smashup-docked-prompt"]')).toHaveCount(0);
 
         const mobileResolutionEvidence = await page.evaluate(() => {
             const inViewport = (selector: string) => {
@@ -11606,32 +11589,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        const responsePromptLayout = await page.evaluate(() => {
-            const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-docked-prompt"]');
-            const turnTracker = document.querySelector<HTMLElement>('[data-testid="su-turn-tracker"]');
-            const promptRect = prompt?.getBoundingClientRect();
-            const baseRects = Array.from(document.querySelectorAll<HTMLElement>('[data-base-index]'))
-                .map(element => element.getBoundingClientRect());
-            const overlapsBase = promptRect
-                ? baseRects.some(rect => promptRect.left < rect.right && promptRect.right > rect.left && promptRect.top < rect.bottom && promptRect.bottom > rect.top)
-                : true;
-            const turnRect = turnTracker?.getBoundingClientRect();
-            const overlapsTurnTracker = promptRect && turnRect
-                ? promptRect.left < turnRect.right && promptRect.right > turnRect.left && promptRect.top < turnRect.bottom && promptRect.bottom > turnRect.top
-                : true;
-            return {
-                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
-                promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-                noBaseOverlap: !overlapsBase,
-                noTurnTrackerOverlap: !overlapsTurnTracker,
-            };
-        });
-        expect(responsePromptLayout, '移动端躺下计分前提示必须可见且不遮挡基地或回合信息').toEqual({
-            noUnexpectedOverflow: true,
-            promptVisible: true,
-            noBaseOverlap: true,
-            noTurnTrackerOverlap: true,
-        });
+        await expectCenteredSmashUpReactionPrompt(
+            page,
+            '移动端躺下 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
+        );
         await game.screenshot('移动端-兽人躺下-beforeScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -11737,32 +11698,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        const responsePromptLayout = await page.evaluate(() => {
-            const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-docked-prompt"]');
-            const turnTracker = document.querySelector<HTMLElement>('[data-testid="su-turn-tracker"]');
-            const promptRect = prompt?.getBoundingClientRect();
-            const baseRects = Array.from(document.querySelectorAll<HTMLElement>('[data-base-index]'))
-                .map(element => element.getBoundingClientRect());
-            const overlapsBase = promptRect
-                ? baseRects.some(rect => promptRect.left < rect.right && promptRect.right > rect.left && promptRect.top < rect.bottom && promptRect.bottom > rect.top)
-                : true;
-            const turnRect = turnTracker?.getBoundingClientRect();
-            const overlapsTurnTracker = promptRect && turnRect
-                ? promptRect.left < turnRect.right && promptRect.right > turnRect.left && promptRect.top < turnRect.bottom && promptRect.bottom > turnRect.top
-                : true;
-            return {
-                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
-                promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-                noBaseOverlap: !overlapsBase,
-                noTurnTrackerOverlap: !overlapsTurnTracker,
-            };
-        });
-        expect(responsePromptLayout, '移动端躺下并列最高提示必须可见且不遮挡基地或回合信息').toEqual({
-            noUnexpectedOverflow: true,
-            promptVisible: true,
-            noBaseOverlap: true,
-            noTurnTrackerOverlap: true,
-        });
+        await expectCenteredSmashUpReactionPrompt(
+            page,
+            '移动端躺下并列最高 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
+        );
         await game.screenshot('移动端-兽人躺下-并列最高计分前响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -11879,32 +11818,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        const responsePromptLayout = await page.evaluate(() => {
-            const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-docked-prompt"]');
-            const turnTracker = document.querySelector<HTMLElement>('[data-testid="su-turn-tracker"]');
-            const promptRect = prompt?.getBoundingClientRect();
-            const baseRects = Array.from(document.querySelectorAll<HTMLElement>('[data-base-index]'))
-                .map(element => element.getBoundingClientRect());
-            const overlapsBase = promptRect
-                ? baseRects.some(rect => promptRect.left < rect.right && promptRect.right > rect.left && promptRect.top < rect.bottom && promptRect.bottom > rect.top)
-                : true;
-            const turnRect = turnTracker?.getBoundingClientRect();
-            const overlapsTurnTracker = promptRect && turnRect
-                ? promptRect.left < turnRect.right && promptRect.right > turnRect.left && promptRect.top < turnRect.bottom && promptRect.bottom > turnRect.top
-                : true;
-            return {
-                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
-                promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-                noBaseOverlap: !overlapsBase,
-                noTurnTrackerOverlap: !overlapsTurnTracker,
-            };
-        });
-        expect(responsePromptLayout, '移动端愤怒的掠夺者计分前提示必须可见且不遮挡基地或回合信息').toEqual({
-            noUnexpectedOverflow: true,
-            promptVisible: true,
-            noBaseOverlap: true,
-            noTurnTrackerOverlap: true,
-        });
+        await expectCenteredSmashUpReactionPrompt(
+            page,
+            '移动端愤怒的掠夺者 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
+        );
         await game.screenshot('移动端-兽人愤怒的掠夺者-beforeScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(

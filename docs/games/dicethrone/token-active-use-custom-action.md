@@ -1,6 +1,6 @@
 # DiceThrone Token ActiveUse Custom Action
 
-> 来源：从 `.spec/knowledge/standards/engine-systems.md` 无损下沉。该规则只约束 DiceThrone 的 Token 主动使用建模，不属于跨游戏引擎通用规则。
+本文档只约束 DiceThrone 的 Token 主动使用建模，不属于跨游戏引擎通用规则。
 
 ## DiceThrone Token ActiveUse Custom Action（强制）
 

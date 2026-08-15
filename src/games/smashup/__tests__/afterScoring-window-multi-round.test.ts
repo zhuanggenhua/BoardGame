@@ -1,21 +1,22 @@
 /**
- * 大杀四方 - afterScoring 响应窗口多轮响应测试
+ * 大杀四方 - afterScoring 响应窗口 live pass 测试
  * 
  * 测试场景：
  * - 基地计分后打开 afterScoring 响应窗口
  * - 多个玩家手牌中有 afterScoring 卡牌（如"我们乃最强"）
- * - 验证窗口支持多轮响应（loopUntilAllPass）
- * - 验证所有玩家连续 pass 后窗口关闭
+ * - 验证当前响应者通过 Smash Up 专用 reaction pass 逐个让过
+ * - 验证所有有权响应者都让过后窗口关闭，且不依赖通用 ResponseWindow 镜像
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { SmashUpDomain } from '../domain';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { SU_COMMANDS, type SmashUpCore, type SmashUpCommand, type SmashUpEvent } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { smashUpSystemsForTest } from '../game';
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 const PLAYER_IDS = ['0', '1'];
 const systems = smashUpSystemsForTest;
@@ -24,8 +25,8 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-describe('afterScoring 响应窗口 - 多轮响应', () => {
-    it('两个玩家都有 afterScoring 卡牌，支持多轮响应', () => {
+describe('afterScoring 响应窗口 - live pass', () => {
+    it('两个玩家都有 afterScoring 卡牌时，应通过 live ReactionSession 逐个 pass 后关闭', () => {
         // Setup: 两个玩家都有 afterScoring 卡牌
         function setup(ids: PlayerId[], random: RandomFn) {
             const core = SmashUpDomain.setup(ids, random);
@@ -90,43 +91,27 @@ describe('afterScoring 响应窗口 - 多轮响应', () => {
             setup,
         });
         
-        // 执行测试命令序列
-        const result = runner.run({
-            name: 'afterScoring 窗口多轮响应测试',
-            commands: [
-                // 步骤 1：推进到 scoreBases 阶段
-                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                
-                // 此时应该打开 meFirst 响应窗口（beforeScoring）
-                // 两个玩家都 pass
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
-                
-                // meFirst 窗口关闭后，基地计分
-                // 计分后应该打开 afterScoring 响应窗口
-                
-                // 步骤 2：P0 pass
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                
-                // 步骤 3：P1 pass
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
-                
-                // 第一轮所有人都 pass，应该开始第二轮
-                // 步骤 4：P0 再次 pass
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                
-                // 步骤 5：P1 再次 pass
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
-                
-                // 连续两轮所有人都 pass，窗口应该关闭
-            ] as any[],
-        });
-        
-        // 验证：检查响应窗口状态
-        // 断言：响应窗口应该已关闭
-        // 注意：GameTestRunner 的最后一步可能没有 after 状态（如果命令没有返回新状态）
-        // 我们检查倒数第二步的状态
-        const lastStateStep = [...result.steps].reverse().find(s => s.after);
-        expect(lastStateStep?.after?.sys?.responseWindow?.current).toBeUndefined();
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success).toBe(true);
+
+        const passedPlayers: PlayerId[] = [];
+        for (let guard = 0; guard < PLAYER_IDS.length + 2; guard += 1) {
+            const presentation = getSmashUpReactionWindowPresentation(runner.getState());
+            if (!presentation) break;
+
+            expect(presentation.windowType).toBe('afterScoring');
+            expect(runner.getState().sys.responseWindow?.current).toBeUndefined();
+            passedPlayers.push(presentation.activePlayerId);
+
+            const pass = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+                playerId: presentation.activePlayerId,
+                reason: 'player_pass',
+            });
+            expect(pass.success, pass.error).toBe(true);
+        }
+
+        expect(passedPlayers).toEqual(['0', '1']);
+        expect(getSmashUpReactionWindowPresentation(runner.getState())).toBeUndefined();
+        expect(runner.getState().sys.responseWindow?.current).toBeUndefined();
     });
 });

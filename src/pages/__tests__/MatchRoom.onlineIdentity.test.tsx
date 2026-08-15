@@ -6,6 +6,7 @@ type MatchStatusShape = {
     isLoading: boolean;
     isHost: boolean;
     players: Array<{ id: number; name?: string; isConnected?: boolean }>;
+    playersRevision: number;
     opponentName: string | null;
     opponentConnected: boolean;
 };
@@ -27,6 +28,7 @@ let mockMatchStatus: MatchStatusShape = {
     isLoading: false,
     isHost: false,
     players: [{ id: 0, name: 'Alice', isConnected: true }],
+    playersRevision: 0,
     opponentName: 'Bob',
     opponentConnected: true,
 };
@@ -356,6 +358,7 @@ vi.mock('../../engine/ai', () => ({
     resolveNextAiDispatch: vi.fn(async () => ({ kind: 'unavailable' })),
     getGameAiRuntime: vi.fn(() => null),
     resolveOnlineAiDecisionView: vi.fn(() => null),
+    isManualSetupSelectionEnabledForSeat: vi.fn(() => false),
     startCancelableAiDelay: vi.fn(() => ({
         cancel: vi.fn(),
     })),
@@ -383,6 +386,7 @@ describe('MatchRoom online route identity', () => {
             isLoading: false,
             isHost: false,
             players: [{ id: 0, name: 'Alice', isConnected: true }],
+            playersRevision: 0,
             opponentName: 'Bob',
             opponentConnected: true,
         };
@@ -446,6 +450,49 @@ describe('MatchRoom online route identity', () => {
         });
 
         expect(requestForceEndAiPhaseMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('在线 AI 房服务端 runtime 应保留旧调试 API 读取当前权威状态', async () => {
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            isHost: true,
+            players: [
+                { id: 0, name: 'Alice', isConnected: true },
+                { id: 1, name: 'AI', isConnected: true },
+            ],
+        };
+        mockOnlineAiSeatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        };
+        mockTransportState = {
+            core: { activePlayerId: '1' },
+            sys: {
+                phase: 'main1',
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        };
+
+        await renderMatchRoom();
+
+        await waitFor(() => {
+            expect((window as any).__BG_ONLINE_AI_DEBUG__?.getSeatLatestState?.('1')).toBe(mockTransportState);
+        });
+        expect((window as any).__BG_ONLINE_AI_DEBUG__?.getSeatDecisionState?.('1')).toMatchObject({
+            stage: 'server-authority-observed',
+            playerId: '1',
+            authority: 'server-online-ai-executor',
+        });
+
+        const overrideState = {
+            core: { activePlayerId: '0' },
+            sys: { phase: 'override' },
+        };
+        (window as any).__BG_ONLINE_AI_DEBUG__?.setSeatLatestStateOverride?.('1', overrideState);
+        expect((window as any).__BG_ONLINE_AI_DEBUG__?.getSeatLatestState?.('1')).toBe(overrideState);
+        (window as any).__BG_ONLINE_AI_DEBUG__?.clearSeatLatestStateOverride?.('1');
+        expect((window as any).__BG_ONLINE_AI_DEBUG__?.getSeatLatestState?.('1')).toBe(mockTransportState);
     });
 
     it('当 URL seat 与本地 stored seat 冲突时，GameProvider 应以 stored seat 建立身份并修正 URL', async () => {
@@ -512,6 +559,7 @@ describe('MatchRoom online route identity', () => {
 
         mockMatchStatus = {
             ...mockMatchStatus,
+            playersRevision: mockMatchStatus.playersRevision + 1,
             players: [{ id: 1, name: 'Bob', isConnected: true }],
         };
         view.rerender(<MatchRoom />);
@@ -566,6 +614,14 @@ describe('MatchRoom online route identity', () => {
         expect(localStorage.getItem('match_creds_match-1')).not.toBeNull();
         expect(toastWarningMock).not.toHaveBeenCalled();
 
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            playersRevision: mockMatchStatus.playersRevision + 1,
+            players: [
+                { id: 0, name: 'Alice', isConnected: true },
+                { id: 1, name: 'Bob', isConnected: true },
+            ],
+        };
         view.rerender(<MatchRoom />);
         await waitFor(() => {
             expect(localStorage.getItem('match_creds_match-1')).toBeNull();
@@ -601,6 +657,11 @@ describe('MatchRoom online route identity', () => {
         expect(localStorage.getItem('match_creds_match-1')).not.toBeNull();
         expect(toastWarningMock).not.toHaveBeenCalled();
 
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            playersRevision: mockMatchStatus.playersRevision + 1,
+            players: [{ id: 1, name: 'Bob', isConnected: true }],
+        };
         view.rerender(<MatchRoom />);
         await waitFor(() => {
             expect(localStorage.getItem('match_creds_match-1')).toBeNull();
@@ -637,6 +698,11 @@ describe('MatchRoom online route identity', () => {
         expect(localStorage.getItem('match_creds_match-1')).not.toBeNull();
         expect(toastWarningMock).not.toHaveBeenCalled();
 
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            playersRevision: mockMatchStatus.playersRevision + 1,
+            players: [{ id: 1, name: 'Bob', isConnected: true }],
+        };
         view.rerender(<MatchRoom />);
         await waitFor(() => {
             expect(localStorage.getItem('match_creds_match-1')).toBeNull();
@@ -681,6 +747,11 @@ describe('MatchRoom online route identity', () => {
         expect(localStorage.getItem('match_creds_match-1')).not.toBeNull();
         expect(toastWarningMock).not.toHaveBeenCalled();
 
+        mockMatchStatus = {
+            ...mockMatchStatus,
+            playersRevision: mockMatchStatus.playersRevision + 1,
+            players: [{ id: 1, name: 'Bob', isConnected: true }],
+        };
         view.rerender(<MatchRoom />);
         await waitFor(() => {
             expect(localStorage.getItem('match_creds_match-1')).toBeNull();

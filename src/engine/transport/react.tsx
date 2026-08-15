@@ -162,6 +162,8 @@ export interface LocalGameProviderProps {
     persistSession?: boolean;
     /** 持久化用的游戏 ID；默认使用 config.gameId */
     persistGameId?: string;
+    /** 测试/手动驱动场景中仅保留 AI 座位语义，不启动本地 AI 自动出牌。 */
+    disableLocalAiAutomation?: boolean;
 }
 
 export function LocalGameProvider({
@@ -177,6 +179,7 @@ export function LocalGameProvider({
     followCurrentTurnPlayer = false,
     persistSession = false,
     persistGameId,
+    disableLocalAiAutomation = false,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
         config,
@@ -190,6 +193,7 @@ export function LocalGameProvider({
         followCurrentTurnPlayer,
         persistSession,
         persistGameId,
+        disableLocalAiAutomation,
     });
 
     return (

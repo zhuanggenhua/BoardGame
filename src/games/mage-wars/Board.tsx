@@ -21,9 +21,9 @@ import {
     type MageWarsPlayerState,
 } from './domain';
 import {
-    getApprenticeMageSetupFromConfig,
-    getApprenticeSpellbookCardIdsFromConfig,
-    getApprenticeSpellbookEntriesFromConfig,
+    getPresetMageSetupFromConfig,
+    getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookEntriesFromConfig,
     getMageWarsSpellCardFromConfig,
 } from './data/configPackage';
 import { areAdjacentZones } from './domain/utils';
@@ -187,7 +187,7 @@ function resolveOpponentId(core: MageWarsCore, playerId: PlayerId): PlayerId | n
 
 function getSpellbookPreviewCardIds(player: MageWarsPlayerState, maxCount: number): number[] {
     const preparedIds = player.preparedSpellCardIds.filter((cardId) => getMageWarsSpellCardPreviewRef(cardId) != null);
-    const spellbookIds = getApprenticeSpellbookEntriesFromConfig(player.mageId)
+    const spellbookIds = getPresetSpellbookEntriesFromConfig(player.mageId)
         .map((entry) => entry.spellCardId)
         .filter((cardId) => !preparedIds.includes(cardId));
 
@@ -196,7 +196,7 @@ function getSpellbookPreviewCardIds(player: MageWarsPlayerState, maxCount: numbe
 }
 
 function getMageDisplayLabel(player: MageWarsPlayerState): string {
-    return getApprenticeMageSetupFromConfig(player.mageId).displayName;
+    return getPresetMageSetupFromConfig(player.mageId).displayName;
 }
 
 function getZoneFieldCardOffsetStyle(zoneId: ArenaZoneId, hasFieldCards: boolean): CSSProperties | undefined {
@@ -871,7 +871,7 @@ function SpellbookShelf({
         { id: 'equipment', label: t('spellbook.categories.equipment') },
     ];
     const spellbookIds = useMemo(() => (
-        [...new Set(getApprenticeSpellbookCardIdsFromConfig(player.mageId))]
+        [...new Set(getPresetSpellbookCardIdsFromConfig(player.mageId))]
     ), [player.mageId]);
     const filteredIds = useMemo(() => spellbookIds.filter((cardId) => {
         if (category === 'all') return true;

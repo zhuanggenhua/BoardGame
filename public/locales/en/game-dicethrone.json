@@ -683,6 +683,7 @@
     "cardChoiceResult": "Choice result:",
     "dieModified": "Modified die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieModifiedSource": "({{source}})",
+    "bonusDieModified": "Modified temporary die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieRerolled": "Rerolled die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieRerolledSource": "({{source}})",
     "bonusDieRolled": "Bonus die result: {{value}}",
@@ -4255,6 +4256,14 @@
       "description": "3/4/5 Blade faces: deal 5/7/9 damage; if 4 dice show the same number, inflict Dazzle on an opponent.",
       "effects": { "damage5": "Deal 5 damage", "damage7": "Deal 7 damage", "damage9": "Deal 9 damage", "dazzleIfFourKind": "If 4 dice show the same number, inflict 1 Dazzle on an opponent" }
     },
+    "cherub": {
+      "name": "Cherub",
+      "description": "3 Blade + 1 Holy Pendant: gain Flight and Divine Arrival."
+    },
+    "cherub-2": {
+      "name": "Cherub II",
+      "description": "3 Blade + 1 Holy Pendant: gain Purify, Flight and Divine Arrival."
+    },
     "holy-radiance": {
       "name": "Holy Radiance",
       "description": "3 Blade + 1 Wing: gain 1 Flight and deal 6 damage.",
@@ -4264,6 +4273,10 @@
       "name": "Holy Radiance II",
       "description": "3 Blade + 1 Wing: gain 1 Flight and deal 7 damage.",
       "effects": { "gainFlight": "Gain 1 Flight", "damage7": "Deal 7 damage" }
+    },
+    "takeoff": {
+      "name": "Takeoff",
+      "description": "1 Blade + 2 Wing: choose 1 player to gain Flight and take 3 undefendable damage."
     },
     "divine-purification": {
       "name": "Divine Purification",
@@ -4285,6 +4298,10 @@
        "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
        "effects": { "resolve": "Each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle." }
     },
+    "divine-command": {
+      "name": "Divine Command",
+      "description": "3 Blade + 1 Cross: heal 1 and deal 4 undefendable damage."
+    },
     "triumphant-return": {
       "name": "Triumphant Return",
       "description": "Small Straight: deal 6 damage, then roll 1 bonus die.",
@@ -4305,6 +4322,10 @@
       "description": "4 Holy Pendants: gain Flight and Divine Arrival, inflict Dazzle, then deal 10 damage.",
       "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "dazzle": "Inflict 1 Dazzle on the opponent", "damage10": "Deal 10 damage" }
     },
+    "gospel-arrival": {
+      "name": "Gospel Arrival",
+      "description": "3 Holy Pendants: gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent."
+    },
     "archangel-resolve": {
       "name": "Archangel Resolve",
       "description": "Large Straight: gain Flight, inflict Dazzle, then deal 8 damage.",
@@ -4314,6 +4335,10 @@
       "name": "Archangel Resolve II",
       "description": "Large Straight: gain Flight, inflict Dazzle, then deal 9 damage.",
       "effects": { "gainFlight": "Gain 1 Flight", "dazzle": "Inflict 1 Dazzle on the opponent", "damage9": "Deal 9 damage" }
+    },
+    "divine-protection": {
+      "name": "Divine Protection",
+      "description": "1 Blade + 2 Cross: choose 1 player to gain 2 Purify and 2 Flight."
     },
     "angelic-cloak": {
       "name": "Angelic Cloak",

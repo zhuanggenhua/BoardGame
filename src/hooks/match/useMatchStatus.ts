@@ -613,6 +613,7 @@ export async function destroyMatch(
 export interface MatchStatus {
     matchID: string;
     players: PlayerStatus[];
+    playersRevision?: number;
     isLoading: boolean;
     error: string | null;
     errorKind: 'not_found' | 'transient_unreachable' | null;
@@ -643,6 +644,7 @@ const computeTransientRetryDelayMs = (failureCount: number): number => {
  */
 export function useMatchStatus(gameName: string | undefined, matchID: string | undefined, myPlayerID: string | null): MatchStatus {
     const [players, setPlayers] = useState<PlayerStatus[]>([]);
+    const [playersRevision, setPlayersRevision] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [errorKind, setErrorKind] = useState<'not_found' | 'transient_unreachable' | null>(null);
@@ -677,6 +679,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
                 name: p.name,
                 isConnected: p.isConnected,
             })));
+            setPlayersRevision((revision) => revision + 1);
             failureCountRef.current = 0;
             lastFailureAtRef.current = null;
             nextAllowedFetchAtRef.current = null;
@@ -726,6 +729,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
         setError(null);
         setErrorKind(null);
         setPlayers([]);
+        setPlayersRevision(0);
         setIsLoading(Boolean(matchID));
     }, [matchID, gameName]);
 
@@ -784,6 +788,7 @@ export function useMatchStatus(gameName: string | undefined, matchID: string | u
     return {
         matchID: matchID || '',
         players,
+        playersRevision,
         isLoading,
         error,
         errorKind,

@@ -29,7 +29,7 @@ description: "BoardGame 规则审计与证据链流程。用于规则、卡牌�
 
 ## 默认执行口径（强制）
 
-详细红线已下沉到 `references/audit-redlines.md`，主 workflow 只保留审计执行入口。
+详细红线见 `references/audit-redlines.md`，主 workflow 保留审计执行入口。
 
 - 普通 / 全面审计：先按范围读取 `references/audit-redlines.md` 的默认执行口径。
 - 涉及新增批次、教程、UI / E2E / 截图、交互合同、运行态审计或 evidence 收口：必须读取对应红线，再进入 Step 0-6。

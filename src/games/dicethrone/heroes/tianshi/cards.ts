@@ -73,14 +73,14 @@ const TIANSHi_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'description'),
         previewRef: atlasPreview(19), sourceAtlasIndex: 19,
-        effects: [replaceAbility('supreme-power', SUPREME_POWER_2, 2, abilityEffectText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'upgrade')), custom('tianshi-gospel-arrival-card', abilityEffectText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'secondary'))],
+        effects: [replaceAbility('supreme-power', SUPREME_POWER_2, 2, abilityEffectText('upgrade-tianshi-supreme-power-2-gospel-arrival', 'upgrade'))],
     },
     {
         id: 'upgrade-tianshi-divine-punishment-2-divine-command',
         name: cardText('upgrade-tianshi-divine-punishment-2-divine-command', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-divine-punishment-2-divine-command', 'description'),
         previewRef: atlasPreview(20), sourceAtlasIndex: 20,
-        effects: [replaceAbility('divine-punishment', DIVINE_PUNISHMENT_2, 2, abilityEffectText('upgrade-tianshi-divine-punishment-2-divine-command', 'upgrade')), custom('tianshi-divine-command-card', abilityEffectText('upgrade-tianshi-divine-punishment-2-divine-command', 'secondary'))],
+        effects: [replaceAbility('divine-punishment', DIVINE_PUNISHMENT_2, 2, abilityEffectText('upgrade-tianshi-divine-punishment-2-divine-command', 'upgrade'))],
     },
     {
         id: 'upgrade-tianshi-divine-purification-2',
@@ -94,7 +94,7 @@ const TIANSHi_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'description'),
         previewRef: atlasPreview(22), sourceAtlasIndex: 22,
-        effects: [replaceAbility('archangel-resolve', ARCHANGEL_RESOLVE_2, 2, abilityEffectText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'upgrade')), custom('tianshi-divine-protection-card', abilityEffectText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'secondary'))],
+        effects: [replaceAbility('archangel-resolve', ARCHANGEL_RESOLVE_2, 2, abilityEffectText('upgrade-tianshi-archangel-resolve-2-divine-protection', 'upgrade'))],
     },
     {
         id: 'upgrade-tianshi-angelic-cloak-3',
@@ -122,14 +122,14 @@ const TIANSHi_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-tianshi-holy-radiance-2-takeoff', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-holy-radiance-2-takeoff', 'description'),
         previewRef: atlasPreview(26), sourceAtlasIndex: 26,
-        effects: [replaceAbility('holy-radiance', HOLY_RADIANCE_2, 2, abilityEffectText('upgrade-tianshi-holy-radiance-2-takeoff', 'upgrade')), custom('tianshi-takeoff-card', abilityEffectText('upgrade-tianshi-holy-radiance-2-takeoff', 'secondary'))],
+        effects: [replaceAbility('holy-radiance', HOLY_RADIANCE_2, 2, abilityEffectText('upgrade-tianshi-holy-radiance-2-takeoff', 'upgrade'))],
     },
     {
         id: 'upgrade-tianshi-holy-blade-3-cherub-2',
         name: cardText('upgrade-tianshi-holy-blade-3-cherub-2', 'name'),
         type: 'upgrade', cpCost: 3, timing: 'main', description: cardText('upgrade-tianshi-holy-blade-3-cherub-2', 'description'),
         previewRef: atlasPreview(27), sourceAtlasIndex: 27,
-        effects: [replaceAbility('holy-blade', HOLY_BLADE_3, 3, abilityEffectText('upgrade-tianshi-holy-blade-3-cherub-2', 'upgrade')), custom('tianshi-cherub-card', abilityEffectText('upgrade-tianshi-holy-blade-3-cherub-2', 'secondary'))],
+        effects: [replaceAbility('holy-blade', HOLY_BLADE_3, 3, abilityEffectText('upgrade-tianshi-holy-blade-3-cherub-2', 'upgrade'))],
     },
     {
         id: 'card-tianshi-divine-arbitration',
@@ -157,7 +157,7 @@ const TIANSHi_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-tianshi-holy-blade-2-cherub', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-holy-blade-2-cherub', 'description'),
         previewRef: atlasPreview(31), sourceAtlasIndex: 31,
-        effects: [replaceAbility('holy-blade', HOLY_BLADE_2, 2, abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'upgrade')), custom('tianshi-cherub-basic-card', abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'secondary'))],
+        effects: [replaceAbility('holy-blade', HOLY_BLADE_2, 2, abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'upgrade'))],
     },
 ];
 

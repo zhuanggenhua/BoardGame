@@ -5,7 +5,7 @@ description: BoardGame 项目内参考图生成 Three.js 程序化模型流程�
 
 # Img2threejs Reconstruction
 
-这个 skill 用于 BoardGame 项目里把参考图片转成可用的 Three.js 程序化模型原型。它是项目 workflow，不是系统 skill；只写 BoardGame 的执行边界、临时目录、素材验收和交付口径，不替官方 img2threejs 工具本身背书。
+这个 skill 用于 BoardGame 项目里把参考图片转成可用的 Three.js 程序化模型原型；只写 BoardGame 的执行边界、临时目录、素材验收和交付口径，不替官方 img2threejs 工具本身背书。
 
 ## 前置锁定
 

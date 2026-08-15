@@ -24,10 +24,10 @@ import {
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
     buildValidatedDestroyEvents,
+    buildStandardDrawEvents,
     buildStandardDrawEventsFromRuntimeContext,
     findMinionOnBases,
 } from '../domain/abilityHelpers';
-import { reduce } from '../domain/reduce';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import {
@@ -37,7 +37,7 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { getPlayerLabel } from '../domain/utils';
 
 type CardChoiceValue = { cardUid: string; defId: string };
@@ -53,6 +53,10 @@ type CthulhuPromptContext = {
 };
 type CthulhuItBeginsAgainPromptContext = CthulhuPromptContext & { sourceCardUid: string };
 type CthulhuMadnessUnleashedPromptContext = CthulhuPromptContext & { sourceCardUid: string };
+type CthulhuMadnessUnleashedAfterDiscardContext = CthulhuPromptContext & {
+    discardCount: number;
+    random: RandomFn;
+};
 type SpecialMadnessPromptContext = CthulhuPromptContext & { cardUid: string };
 type StarSpawnPromptContext = CthulhuPromptContext & { madnessUid: string };
 type CthulhuChosenPromptTarget = {
@@ -573,6 +577,31 @@ const cthulhuCorruptionProgram = createEffectProgram<AbilityContext, SmashUpCore
  * 1. 必须先决定并弃掉所有要弃的疯狂卡，再开始抽牌
  * 2. 每次选择结算该收益时，抽牌和额外行动是绑定的一组收益，不应拆成二次确认
  */
+const cthulhuMadnessUnleashedAfterDiscardProgram = createEffectProgram<
+    CthulhuMadnessUnleashedAfterDiscardContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    const events: SmashUpEvent[] = [
+        ...buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.discardCount,
+            context.random,
+            context.now,
+        ),
+    ];
+
+    for (let index = 0; index < context.discardCount; index += 1) {
+        events.push(grantContextualExtraAction(
+            { playerId: context.playerId, now: context.now, matchState: context.matchState },
+            'cthulhu_madness_unleashed',
+        ));
+    }
+
+    return { events };
+});
+
 const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessUnleashedPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'cthulhu_madness_unleashed',
     buildInteraction: (context) => {
@@ -614,18 +643,17 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
             payload: { playerId, cardUids: madnessUids },
             timestamp,
         };
-        const events: SmashUpEvent[] = [discardEvent];
-        const drawState = reduce(state.core, discardEvent);
-        events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: drawState }, playerId, madnessUids.length));
-
-        for (let index = 0; index < madnessUids.length; index += 1) {
-            events.push(grantContextualExtraAction(
-                { playerId, now: args.timestamp, matchState: state },
-                'cthulhu_madness_unleashed',
-            ));
-        }
-
-        return { events };
+        return {
+            events: [discardEvent],
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                discardCount: madnessUids.length,
+                random: args.random,
+            } satisfies CthulhuMadnessUnleashedAfterDiscardContext,
+            nextProgram: cthulhuMadnessUnleashedAfterDiscardProgram,
+        };
     },
 });
 

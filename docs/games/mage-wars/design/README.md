@@ -412,7 +412,7 @@
 
 ## 继续迭代门禁
 
-- 继续改视觉稿、Open Design artifact、HTML 预览或 AI 图面核验时，必须先逐项消费 `user-correction-traceability-ledger.md`；该文件是纠正覆盖账本 / drift-check，不是独立规范来源。若账本发现新规则缺 canonical-source，先回 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 或 `D:\codex-home\skills\ui-design-pipeline\SKILL.md` 补规则，再重新审图。
+- 继续改视觉稿、Open Design artifact、HTML 预览或 AI 图面核验时，必须先逐项消费 `user-correction-traceability-ledger.md`；该文件是纠正覆盖账本 / drift-check，不是独立规范来源。若账本发现新规则缺 canonical-source，先回 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 或 `.spec/skills/ui-design-pipeline/SKILL.md` 补规则，再重新审图。
 - 继续改视觉稿、Open Design artifact、HTML 预览或 AI 图面核验时，必须先重读 `board-ui-preflight-matrix.md`、学徒法术书合同、学徒区域锚点合同和已重构 UI 设计。
 - 继续改视觉稿、Open Design artifact、HTML 预览或 AI 图面核验前，必须先消费 `external-ui-methodology-baseline.md`，并输出新的文字 UI 设计；不能直接从 v21 / v22 微调。
 - 后续多设计稿必须以 v21 作为第一张对照基线，新增候选统一落到 `docs/games/mage-wars/design/generated/skill-drafts-v2/`，并各自对应独立 Open Design artifact、独立 PNG 和独立审计；不得再用同页总览或同母版微调作为多方案。

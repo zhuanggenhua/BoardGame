@@ -188,8 +188,10 @@ node .spec/skills/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 如果要把挑出的并行候选立即认领成 `in_progress`：
 
 ```bash
-node .spec/skills/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --token <BearerToken> --slots 4 --mark-in-progress
+node .spec/skills/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --slots 4 --mark-in-progress
 ```
+
+`--token <BearerToken>` 只是 HTTP 管理接口可用时的可选参数；脚本会自动选择真实写入口：有 token 先走 HTTP，线上 HTTP 缺凭证或返回 401/403 时改走生产机 Mongo 回写。不要再把“没有 token”当成反馈状态无法回写的默认阻塞。
 
 禁止把 `http://127.0.0.1:*` 当成默认正式目标，除非用户明确说这次就是要处理本地测试反馈。
 当前线上正式列表/回写接口默认是 `https://api.easyboardgame.top/admin/feedback...`；旧的 `/feedback/open` 若返回 `404`，视为过期入口，不得继续沿用。
@@ -537,16 +539,18 @@ node .spec/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 使用：
 
 ```bash
-node .spec/skills/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> closed --base-url <真实反馈接口基址> --token <BearerToken> --closed-reason "<关闭理由>"
+node .spec/skills/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> closed --base-url <真实反馈接口基址> --closed-reason "<关闭理由>"
 
-node .spec/skills/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken> --resolved-method "<解决方式>"
+node .spec/skills/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> resolved --base-url <真实反馈接口基址> --resolved-method "<解决方式>"
 ```
 
 收口代表项并顺带关闭重复项：
 
 ```bash
-node .spec/skills/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken>
+node .spec/skills/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址>
 ```
+
+如果当前环境确实有可用管理凭证，可以继续给上述命令追加 `--token <BearerToken>` 或设置 `BOARDGAME_FEEDBACK_TOKEN`，这样会优先走 HTTP 管理接口；否则线上默认写入口是生产机 Mongo，不需要二次确认。
 
 `finalize-feedback-group.mjs` 的同组反馈默认必须同步为同一个最终状态：代表项 `resolved` 时，同组反馈也必须 `resolved`；代表项 `closed` 时，同组反馈才 `closed`。禁止再把“同组重复反馈”固定写成 `closed`。
 
@@ -593,9 +597,9 @@ node .spec/skills/feedback-closeout/scripts/finalize-feedback-group.mjs temp/fee
 - `triage-open-feedback.mjs`
   - 拉取开放反馈、排重、分类、生成诊断包与并行候选。
 - `update-feedback-status.mjs`
-  - 用开放接口回写状态，并同步更新本地状态镜像。
+  - 自动选择 HTTP 管理接口或生产机 Mongo 回写状态，并同步更新本地状态镜像。
 - `finalize-feedback-group.mjs`
-  - 按 `summary.json` 收口代表项，并默认把同组反馈在线上与本地状态镜像同步为代表项的最终状态。
+  - 按 `summary.json` 收口代表项，自动选择真实写入口，并默认把同组反馈在线上与本地状态镜像同步为代表项的最终状态。
 - `sync-feedback-status-board.mjs`
   - 从 `summary.json` 初始化或刷新本地状态镜像，必须覆盖代表项和同组反馈 ID。
 - `update-local-feedback-board.mjs`

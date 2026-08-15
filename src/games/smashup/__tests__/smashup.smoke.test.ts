@@ -23,6 +23,7 @@ import { TITAN_CARD_DEFS } from '../data/titans';
 import { getPlayerEffectivePowerOnBase, getRegisteredModifierIds, getTitanPowerContribution } from '../domain/ongoingModifiers';
 import { addPowerCounter, buildPlayerTargetOptions } from '../domain/abilityHelpers';
 import { uncoverBuriedCard } from '../domain/bury';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../domain/abilityRuntime';
 import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoingEffects';
 import { filterProtectedDestroyEvents, filterProtectedMoveEvents, filterProtectedReturnEvents } from '../domain/reducer';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
@@ -47,6 +48,7 @@ import {
     getPromptsBySourceId,
     getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
+    applyEvents,
     makeBase,
     makeCard,
     makeMatchState,
@@ -2066,15 +2068,30 @@ describe('smashup', () => {
             reason: 'test_uncover_cross_base_target',
         });
 
-        const prompt = getSimpleChoicePrompt(uncovered.state, 'ancient_egyptians_ancient_curse_confirm');
+        const continuation = uncovered.events.find(event => isAbilityRuntimeContinuationEvent(event));
+        expect(continuation).toBeDefined();
+        const preContinuationEvents = uncovered.events.filter(event => !isAbilityRuntimeContinuationEvent(event)) as SmashUpEvent[];
+        const afterActionState = {
+            ...uncovered.state,
+            core: applyEvents(uncovered.state.core, preContinuationEvents),
+        };
+        const resumed = resumeAbilityRuntimeContinuationEvent(
+            afterActionState,
+            continuation!,
+            FIXED_RANDOM,
+        );
+        expect(resumed).toBeDefined();
+
+        const prompt = getSimpleChoicePrompt(resumed!.state, 'ancient_egyptians_ancient_curse_confirm');
         const applyOption = getPromptOption(prompt, entry => entry.id === 'apply', 'Ancient Curse apply option');
         expect(applyOption?.value).toMatchObject({
             targetMinionUid: 'target-minion',
             baseIndex: 0,
             baseDefId: 'base_ninja_dojo',
         });
-        expect(uncovered.events.map(event => event.type)).toContain(SU_EVENTS.ONGOING_ATTACHED);
-        expect(uncovered.events).toContainEqual(expect.objectContaining({
+        const finalEvents = [...preContinuationEvents, ...(resumed!.events as SmashUpEvent[])];
+        expect(finalEvents.map(event => event.type)).toContain(SU_EVENTS.ONGOING_ATTACHED);
+        expect(finalEvents).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ONGOING_ATTACHED,
             payload: expect.objectContaining({
                 cardUid: 'buried-curse',
@@ -2085,10 +2102,7 @@ describe('smashup', () => {
             }),
         }));
 
-        const finalCore = uncovered.events.reduce(
-            (acc, event) => SmashUpDomain.reduce(acc, event),
-            uncovered.state.core,
-        );
+        const finalCore = applyEvents(uncovered.state.core, finalEvents);
 
         expect(finalCore.bases[1].buriedCards?.some(card => card.uid === 'buried-curse') ?? false).toBe(false);
         expect(finalCore.bases[0].minions.find(minion => minion.uid === 'target-minion')?.attachedActions).toContainEqual(
@@ -3223,6 +3237,67 @@ describe('smashup', () => {
         expect(
             evaluations.some((item) => item.contributions.some((contribution) => contribution.scorerId === 'relative-utility-smashup-limited')),
         ).toBe(true);
+    });
+
+    it('线上高动作密度决策不跑全量相对效用投影，避免恢复链长时间占用服务端 CPU', async () => {
+        const stateForAi = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('wizard-summon-1', 'wizard_summon', 'action', '0'),
+                        makeCard('wizard-summon-2', 'wizard_summon', 'action', '0'),
+                        makeCard('robot-warbot-1', 'robot_warbot', 'minion', '0'),
+                        makeCard('robot-warbot-2', 'robot_warbot', 'minion', '0'),
+                        makeCard('pirate-first-mate-1', 'pirate_first_mate', 'minion', '0'),
+                        makeCard('dino-armor-stego-1', 'dino_armor_stego', 'minion', '0'),
+                        makeCard('robot-tech-center-1', 'robot_tech_center', 'action', '0'),
+                        makeCard('wizard-enchantress-1', 'wizard_enchantress', 'minion', '0'),
+                    ],
+                    factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.ROBOTS],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_jungle'),
+                makeBase('base_the_mothership'),
+                makeBase('base_tar_pits'),
+            ],
+        }));
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+        expect(legalActions.length).toBeGreaterThan(15);
+
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide({
+            gameId: 'smashup',
+            matchId: 'test-smashup-online-ai-candidate-loop-density',
+            playerId: '0',
+            visibleState: stateForAi,
+            interaction: null,
+            responseWindow: null,
+            legalActions,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            difficulty: resolveAiDifficultyProfile('expert'),
+            source: 'online',
+        });
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            searched?: boolean;
+            contributions: Array<{ scorerId: string }>;
+        }>;
+
+        expect(evaluations.length).toBe(legalActions.length);
+        expect(evaluations.some((item) => item.searched === true)).toBe(true);
+        expect(
+            evaluations.some((item) => item.contributions.some((contribution) => contribution.scorerId === 'relative-utility-smashup-limited')),
+        ).toBe(false);
     });
 
     it('Smash Up baseline AI 会优先把随从投向能直接改写高价值评分的关键基地', async () => {
@@ -5430,18 +5505,7 @@ describe('smashup', () => {
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 85 } as any,
             random: FIXED_RANDOM,
         });
-        const delayedState = (finalize as any)?.updatedState;
-        expect((finalize as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(2085);
-
-        const finishDelay = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? hook?.state ?? state,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2085 } as any,
-            random: FIXED_RANDOM,
-        });
-        const finalizeEvents = Array.isArray(finishDelay) ? finishDelay : (finishDelay as any)?.events ?? [];
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
         expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
@@ -5450,7 +5514,7 @@ describe('smashup', () => {
 
         const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            (delayedState ?? hook?.state ?? state).core,
+            (hook?.state ?? state).core,
         );
         expect(finalCore.titans?.find(candidate => candidate.uid === 't-rainboroc-setaside')?.location).toMatchObject({
             zone: 'base',
@@ -5554,18 +5618,7 @@ describe('smashup', () => {
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 85.1 } as any,
             random: FIXED_RANDOM,
         });
-        const delayedState = (finalize as any)?.updatedState;
-        expect((finalize as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(2085.1);
-
-        const finishDelay = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? hook?.state ?? staleState,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2085.1 } as any,
-            random: FIXED_RANDOM,
-        });
-        const finalizeEvents = Array.isArray(finishDelay) ? finishDelay : (finishDelay as any)?.events ?? [];
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
         expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
@@ -5573,7 +5626,7 @@ describe('smashup', () => {
 
         const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            (delayedState ?? hook?.state ?? staleState).core,
+            (hook?.state ?? staleState).core,
         );
         expect(finalCore.titans?.find(candidate => candidate.uid === 't-rainboroc-setaside-stale')?.location).toMatchObject({
             zone: 'base',
@@ -10378,18 +10431,7 @@ describe('smashup', () => {
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 75 } as any,
             random: FIXED_RANDOM,
         });
-        const delayedState = (finalize as any)?.updatedState;
-        expect((finalize as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(2075);
-
-        const finishDelay = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? hook?.state ?? state,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2075 } as any,
-            random: FIXED_RANDOM,
-        });
-        const finalizeEvents = Array.isArray(finishDelay) ? finishDelay : (finishDelay as any)?.events ?? [];
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
         expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
@@ -10398,7 +10440,7 @@ describe('smashup', () => {
 
         const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            (delayedState ?? hook?.state ?? state).core,
+            (hook?.state ?? state).core,
         );
         const kraken = (finalCore.titans ?? []).find(candidate => candidate.uid === 't-kraken-setaside');
 
@@ -10506,18 +10548,7 @@ describe('smashup', () => {
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 75.1 } as any,
             random: FIXED_RANDOM,
         });
-        const delayedState = (finalize as any)?.updatedState;
-        expect((finalize as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(2075.1);
-
-        const finishDelay = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? hook?.state ?? staleState,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2075.1 } as any,
-            random: FIXED_RANDOM,
-        });
-        const finalizeEvents = Array.isArray(finishDelay) ? finishDelay : (finishDelay as any)?.events ?? [];
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
         expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
@@ -10525,7 +10556,7 @@ describe('smashup', () => {
 
         const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            (delayedState ?? hook?.state ?? staleState).core,
+            (hook?.state ?? staleState).core,
         );
         expect(finalCore.titans?.find(candidate => candidate.uid === 't-kraken-setaside-stale')?.location).toMatchObject({
             zone: 'base',

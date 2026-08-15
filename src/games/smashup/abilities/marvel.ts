@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -6,7 +6,6 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
-    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     createSkipOption,
@@ -20,6 +19,7 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
@@ -32,7 +32,6 @@ import {
     registerTrigger,
     type TriggerContext,
 } from '../domain/ongoingEffects';
-import { reduce } from '../domain/reduce';
 import type {
     CardToDeckBottomEvent,
     CardToDeckTopEvent,
@@ -49,6 +48,15 @@ type MarvelPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+};
+
+type MarvelDrawContinuationContext = MarvelPromptContext & {
+    random: RandomFn;
+    drawCount: number;
+};
+
+type ShieldRescueMissionContext = MarvelDrawContinuationContext & {
+    baseIndex: number;
 };
 
 type MinionChoice = {
@@ -147,17 +155,6 @@ function runtimeToAbilityResult(result: {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
     };
-}
-
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    let core = matchState.core;
-    for (const event of events) {
-        core = reduce(core, event);
-    }
-    return { ...matchState, core };
 }
 
 function findMinion(
@@ -529,6 +526,18 @@ const powerAndSpeedMovePromptProgram = createPromptProgram<PowerAndSpeedContext,
     },
 });
 
+const marvelDrawAfterCommittedProgram = createEffectProgram<MarvelDrawContinuationContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.drawCount,
+            context.random,
+            context.now,
+        ),
+    }),
+);
+
 const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'ultimates_cosmic_knowledge',
     buildInteraction: (context) => {
@@ -556,7 +565,7 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
         );
     },
     onResolve: (args) => {
-        const { state, playerId, value, timestamp } = args;
+        const { state, playerId, value, random, timestamp } = args;
         const choices = (Array.isArray(value) ? value : []) as CardChoice[];
         const selected = new Set(
             choices.map(choice => choice.cardUid).filter((uid): uid is string => !!uid),
@@ -576,12 +585,16 @@ const cosmicKnowledgePromptProgram = createPromptProgram<MarvelPromptContext, Sm
             },
             timestamp,
         }));
-        const projected = simulateMatchState(state, bottomEvents);
         return {
-            events: [
-                ...bottomEvents,
-                ...buildStandardDrawEventsFromRuntimeContext({ ...args, state: projected }, playerId, selectedCards.length + 1),
-            ],
+            events: bottomEvents,
+            context: {
+                matchState: state,
+                playerId,
+                random,
+                now: timestamp,
+                drawCount: selectedCards.length + 1,
+            },
+            nextProgram: marvelDrawAfterCommittedProgram,
         };
     },
 });
@@ -669,15 +682,16 @@ const heroicLandingDestinationPromptProgram = createPromptProgram<
             now: timestamp,
             sourceDefId: 'ultimates_heroic_landing',
         });
-        const nextState = simulateMatchState(state, events);
         return {
             events,
-            matchState: executeAbilityProgram(heroicLandingSourcePromptProgram, {
-                matchState: nextState,
+            context: {
+                ...context,
+                matchState: state,
                 playerId,
                 now: timestamp,
                 movedUids: context.movedUids,
-            }).matchState,
+            },
+            nextProgram: heroicLandingSourcePromptProgram,
         };
     },
 });
@@ -893,16 +907,17 @@ const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDec
         };
         const remaining = context.revealed.filter(card => card.uid !== selected.uid);
         if (remaining.length === 0) return { events: [drawEvent] };
-        const nextState = simulateMatchState(state, [drawEvent]);
         return {
             events: [drawEvent],
-            matchState: executeAbilityProgram(spiderVerseDeckOrderPromptProgram, {
-                matchState: nextState,
+            context: {
+                ...context,
+                matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
                 remaining,
-            }).matchState,
+            },
+            nextProgram: spiderVerseDeckOrderPromptProgram,
         };
     },
 });
@@ -1338,7 +1353,7 @@ function spiderVerseDeckSelection(
     ];
     if (ctx.matchState) {
         const prompted = executeAbilityProgram(spiderVerseDeckSelectionPromptProgram, {
-            matchState: simulateMatchState(ctx.matchState, events),
+            matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             sourceId,
@@ -1447,22 +1462,39 @@ function marvelCardToDeckTop(
     };
 }
 
+const shieldRescueMissionProgram = createEffectProgram<ShieldRescueMissionContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const owned = context.matchState.core.bases[context.baseIndex]?.minions
+            .filter(minion => minion.controller === context.playerId) ?? [];
+        const topEvents = owned.map(minion => marvelCardToDeckTop(
+            { uid: minion.uid, defId: minion.defId, owner: minion.owner },
+            context.playerId,
+            'shield_rescue_mission',
+            context.now,
+        ));
+        return {
+            events: topEvents,
+            context: {
+                matchState: context.matchState,
+                playerId: context.playerId,
+                random: context.random,
+                now: context.now,
+                drawCount: 1,
+            },
+            nextProgram: marvelDrawAfterCommittedProgram,
+        };
+    },
+);
+
 function shieldRescueMission(ctx: AbilityContext): AbilityResult {
-    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-    const owned = ctx.state.bases[baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
-    const topEvents = owned.map(minion => marvelCardToDeckTop(
-        { uid: minion.uid, defId: minion.defId, owner: minion.owner },
-        ctx.playerId,
-        'shield_rescue_mission',
-        ctx.now,
-    ));
-    const projected = simulateMatchState(ctx.matchState, topEvents);
-    return {
-        events: [
-            ...topEvents,
-            ...buildStandardDrawEvents(projected.core, ctx.playerId, 1, ctx.random, ctx.now),
-        ],
-    };
+    return runtimeToAbilityResult(executeAbilityProgram(shieldRescueMissionProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        random: ctx.random,
+        now: ctx.now,
+        drawCount: 1,
+        baseIndex: ctx.targetBaseIndex ?? ctx.baseIndex,
+    }));
 }
 
 function spiderVerseFriendlyNeighborhoodHero(ctx: AbilityContext): AbilityResult {

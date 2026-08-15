@@ -130,6 +130,14 @@ const getOverlayVisibleSegmentCount = (timeline: DuelAuditTimelineEntry[]): numb
     return count;
 };
 
+const getVisibleOverlayInteractionIdCount = (timeline: DuelAuditTimelineEntry[]): number => (
+    new Set(
+        timeline
+            .filter((entry) => entry.overlayVisible && entry.interactionId)
+            .map((entry) => entry.interactionId),
+    ).size
+);
+
 const hasOverlayCollapseReopenPattern = (timeline: DuelAuditTimelineEntry[]): boolean => {
     const visibleHeights = timeline
         .filter((entry) => entry.overlayVisible && entry.overlayRect && entry.overlayRect.height > 0)
@@ -166,7 +174,7 @@ async function setupDefenseEntryScene(
     game: GameTestContext,
     defenderCharacter: 'shadow_thief' | 'paladin',
 ): Promise<void> {
-    await game.openTestGame('dicethrone');
+    await game.openTestGame('dicethrone', { playerID: 1, disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
@@ -175,6 +183,7 @@ async function setupDefenseEntryScene(
         },
         player1: {
             resources: { CP: 2, HP: 50 },
+            tokens: { [TOKEN_IDS.TAIJI]: 0 },
         },
         currentPlayer: '0',
         phase: 'offensiveRoll',
@@ -219,16 +228,27 @@ async function setupDefenseEntryScene(
 }
 
 async function setupGunslingerDuelAgainstHarmonyScene(game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone');
+    await game.openTestGame('dicethrone', { disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
         randomQueue: [0.99, 0.0],
         player0: {
             resources: { CP: 2, HP: 50 },
+            hand: [],
+            deck: [],
+            discard: [],
         },
         player1: {
             resources: { CP: 2, HP: 50 },
+            hand: [],
+            deck: [],
+            discard: [],
+            tokens: {
+                [TOKEN_IDS.TAIJI]: 0,
+                [TOKEN_IDS.EVASIVE]: 0,
+                [TOKEN_IDS.PURIFY]: 0,
+            },
         },
         currentPlayer: '0',
         phase: 'defensiveRoll',
@@ -279,6 +299,8 @@ async function setupGunslingerDuelAgainstHarmonyScene(game: GameTestContext): Pr
             rollCount: state?.core?.rollCount ?? null,
             rollConfirmed: state?.core?.rollConfirmed ?? null,
             interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            attackerTaiji: state?.core?.players?.['1']?.tokens?.[TOKEN_IDS.TAIJI] ?? null,
+            attackerHandSize: state?.core?.players?.['1']?.hand?.length ?? null,
         };
     }, { timeout: 10000 }).toMatchObject({
         phase: 'defensiveRoll',
@@ -289,11 +311,13 @@ async function setupGunslingerDuelAgainstHarmonyScene(game: GameTestContext): Pr
         rollCount: 0,
         rollConfirmed: false,
         interactionKind: null,
+        attackerTaiji: 0,
+        attackerHandSize: 0,
     });
 }
 
 async function setupGunslingerShowdownScene(game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone');
+    await game.openTestGame('dicethrone', { disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
@@ -314,6 +338,7 @@ async function setupGunslingerShowdownScene(game: GameTestContext): Promise<void
             rollCount: 1,
             rollLimit: 3,
             rollConfirmed: true,
+            selectedAbilityId: 'showdown',
             dice: [
                 { id: 0, definitionId: 'gunslinger-dice', value: 1, symbol: 'bullet', symbols: ['bullet'], isKept: false },
                 { id: 1, definitionId: 'gunslinger-dice', value: 2, symbol: 'dash', symbols: ['dash'], isKept: false },
@@ -338,12 +363,14 @@ async function setupGunslingerShowdownScene(game: GameTestContext): Promise<void
             phase: state?.sys?.phase ?? null,
             sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
             bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
+            selectedAbilityId: state?.core?.selectedAbilityId ?? null,
             interactionKind: state?.sys?.interaction?.current?.kind ?? null,
         };
     }, { timeout: 10000 }).toMatchObject({
         phase: 'offensiveRoll',
         sourceAbilityId: 'showdown',
         bonusDamage: 0,
+        selectedAbilityId: 'showdown',
         interactionKind: null,
     });
 }
@@ -356,8 +383,64 @@ async function dismissAttackShowcaseIfVisible(page: Page): Promise<void> {
     }
 }
 
+async function openGunslingerDuelCompareRollChoice(page: Page, game: GameTestContext): Promise<void> {
+    await dismissAttackShowcaseIfVisible(page);
+    await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice), { timeout: 5000 });
+    await page.evaluate(() => {
+        window.__BG_TEST_HARNESS__?.dice.setValues([6, 2, 2, 2, 2, 1]);
+    });
+
+    await dispatchHarnessCommand(page, 'ROLL_DICE', '0');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollCount: state?.core?.rollCount ?? null,
+            rollConfirmed: state?.core?.rollConfirmed ?? null,
+            rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+            dice: (state?.core?.currentRollContext?.dice ?? []).map((die: any) => die?.value ?? null),
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        rollCount: 1,
+        rollConfirmed: false,
+        rollContextKind: 'defensive',
+        dice: [6, 2, 2, 2, 2, 1],
+    });
+
+    await dispatchHarnessCommand(page, 'CONFIRM_ROLL', '0');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollConfirmed: state?.core?.rollConfirmed ?? null,
+            rollContextStatus: state?.core?.currentRollContext?.status ?? null,
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        rollConfirmed: true,
+        rollContextStatus: 'settling',
+    });
+
+    await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+            rollContextOwner: state?.core?.currentRollContext?.ownerPlayerId ?? null,
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        rollContextKind: 'compare',
+        rollContextOwner: '0',
+    });
+
+    await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
+}
+
 async function setupNinjaBlink2DefenseScene(page: Page, game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone', { playerID: 1 });
+    await game.openTestGame('dicethrone', { playerID: 1, disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
@@ -748,18 +831,27 @@ async function dispatchHarnessCommand(
         commandPayload: payload,
     });
 
-    await page.evaluate(({ commandType, commandPlayerId, commandPayload }) => {
-        (window as Window & {
+    await page.waitForFunction(
+        () => (window as any).__BG_TEST_HARNESS__?.command?.isRegistered?.() === true,
+        { timeout: 15000 },
+    );
+
+    await page.evaluate(async ({ commandType, commandPlayerId, commandPayload }) => {
+        const harness = (window as Window & {
             __BG_TEST_HARNESS__?: {
                 command?: {
                     dispatch?: (command: {
                         type: string;
                         playerId: string;
                         payload: Record<string, unknown>;
-                    }) => void;
+                    }) => void | Promise<void>;
                 };
             };
-        }).__BG_TEST_HARNESS__?.command?.dispatch?.({
+        }).__BG_TEST_HARNESS__;
+        if (!harness?.command?.dispatch) {
+            throw new Error('TestHarness command dispatcher not ready');
+        }
+        await harness.command.dispatch({
             type: commandType,
             playerId: commandPlayerId,
             payload: commandPayload,
@@ -777,7 +869,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
     test('影贼双防御应先要求选择防御技能，再进入防御掷骰', async ({ page, game }) => {
         await setupDefenseEntryScene(game, 'shadow_thief');
 
-        await game.advancePhase();
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -792,9 +884,9 @@ test.describe('DiceThrone - 防御技能选择', () => {
             rollCount: 0,
         });
 
-        const highlightedSlots = page
-            .locator('[data-ability-slot]')
-            .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
+        const highlightedSlots = page.locator(
+            '[data-ability-slot-scope="main-board"][data-ability-slot][data-can-click="true"][data-should-highlight="true"]',
+        );
         await expect(highlightedSlots.first()).toBeVisible({ timeout: 5000 });
         expect(await highlightedSlots.count()).toBeGreaterThanOrEqual(2);
 
@@ -802,14 +894,9 @@ test.describe('DiceThrone - 防御技能选择', () => {
 
         await expect.poll(async () => {
             const state = await game.getState();
-            return {
-                phase: state?.sys?.phase ?? null,
-                defenseAbilityId: state?.core?.pendingAttack?.defenseAbilityId ?? null,
-            };
-        }, { timeout: 5000 }).toSatisfy(({ phase, defenseAbilityId }) => {
-            return phase === 'defensiveRoll'
-                && (defenseAbilityId === 'shadow-defense' || defenseAbilityId === 'fearless-riposte');
-        });
+            if (state?.sys?.phase !== 'defensiveRoll') return null;
+            return state?.core?.pendingAttack?.defenseAbilityId ?? null;
+        }, { timeout: 5000 }).toMatch(/^(shadow-defense|fearless-riposte)$/);
 
         await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toBeEnabled({ timeout: 5000 });
     });
@@ -817,7 +904,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
     test('圣骑单防御应自动选择 holy-defense 并直接进入防御掷骰', async ({ page, game }) => {
         await setupDefenseEntryScene(game, 'paladin');
 
-        await game.advancePhase();
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -953,7 +1040,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         let auditPath = '';
 
         try {
-            await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+            await openGunslingerDuelCompareRollChoice(page, game);
 
             const overlay = page.getByTestId('compare-roll-overlay');
             await expect(overlay).toBeVisible({ timeout: 5000 });
@@ -965,8 +1052,8 @@ test.describe('DiceThrone - 防御技能选择', () => {
 
             const audit = await readDuelAuditProbe(page);
             expect(audit.compareRollOverlayMountCount).toBe(1);
-            expect(new Set(audit.compareRollInteractionIds).size).toBe(1);
             expect(getOverlayVisibleSegmentCount(audit.timeline)).toBe(1);
+            expect(getVisibleOverlayInteractionIdCount(audit.timeline)).toBe(1);
             expect(hasOverlayCollapseReopenPattern(audit.timeline)).toBe(false);
 
             await recordDuelAuditMarker(page, 'ui:click-prevent-half');
@@ -1008,7 +1095,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         let auditPath = '';
 
         try {
-            await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+            await openGunslingerDuelCompareRollChoice(page, game);
 
             await expect(page.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 5000 });
             await expect(page.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
@@ -1064,6 +1151,20 @@ test.describe('DiceThrone - 防御技能选择', () => {
         await setupGunslingerShowdownScene(game);
 
         await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+                rollContextOwner: state?.core?.currentRollContext?.ownerPlayerId ?? null,
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            rollContextKind: 'compare',
+            rollContextOwner: '0',
+        });
+
+        await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
 
         const overlay = page.getByTestId('compare-roll-overlay');
         await expect(overlay).toBeVisible({ timeout: 5000 });

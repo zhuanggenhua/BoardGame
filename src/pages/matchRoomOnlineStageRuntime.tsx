@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type ComponentType, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ComponentType, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AiSeatController } from '../engine/ai';
@@ -25,6 +25,7 @@ import type { MatchRoomOnlineHudBridgeProps } from './useMatchRoomOnlineHudModel
 import {
     OnlineManualSetupSelectionBridge,
 } from './onlineManualSetupSelectionBridge';
+import { installOnlineAiServerDebugApi } from './onlineAiRuntimeSupport';
 
 const FORCE_END_AI_PHASE_ACK_TIMEOUT_MS = 6000;
 
@@ -314,6 +315,7 @@ const MatchRoomOnlineSeatBridge = ({
     return (
         <>
             <OnlineAiServerRecoveryBridge onForceEndAiPhaseReady={seatBridge.onForceEndAiPhaseReady} />
+            <OnlineAiServerDebugBridge seatControllers={seatBridge.seatControllers} />
             {/* Keep the board inside the manual-setup seam so seat overrides apply to board commands. */}
             <OnlineManualSetupSelectionBridge
                 seatControllers={seatBridge.seatControllers}
@@ -324,6 +326,31 @@ const MatchRoomOnlineSeatBridge = ({
             </OnlineManualSetupSelectionBridge>
         </>
     );
+};
+
+const OnlineAiServerDebugBridge = ({
+    seatControllers,
+}: {
+    seatControllers: MatchRoomOnlineSeatBridgeModel['seatControllers'];
+}) => {
+    const { state } = useGameClient();
+    const latestStateRef = useRef(state);
+    const seatControllersRef = useRef(seatControllers);
+
+    useEffect(() => {
+        latestStateRef.current = state;
+    }, [state]);
+
+    useEffect(() => {
+        seatControllersRef.current = seatControllers;
+    }, [seatControllers]);
+
+    useEffect(() => installOnlineAiServerDebugApi({
+        getLatestState: () => latestStateRef.current,
+        getSeatControllers: () => seatControllersRef.current,
+    }), []);
+
+    return null;
 };
 
 const OnlineAiServerRecoveryBridge = ({

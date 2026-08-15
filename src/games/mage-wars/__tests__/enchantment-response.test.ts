@@ -4,7 +4,7 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { RESPONSE_WINDOW_COMMANDS } from '../../../engine/systems/ResponseWindowSystem';
 import { completeResolutionFrame, updateResolutionFrame } from '../../../engine/systems/resolutionStack';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
-import { getApprenticeSpellbookCountFromConfig } from '../data/configPackage';
+import { getPresetSpellbookCountFromConfig } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
 import { MageWarsDomain } from '../domain';
@@ -126,7 +126,7 @@ function withPreparedSpell(
                 '0': {
                     ...state.core.players['0'],
                     mageId: MAGE_IDS.WARLOCK_APPRENTICE,
-                    spellbookCount: getApprenticeSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE),
+                    spellbookCount: getPresetSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE),
                     mana: 20,
                     preparedSpellCardIds: [spellCardId],
                     preparedSpellSlots: 1,
@@ -443,7 +443,7 @@ describe('mage-wars enchantment response windows', () => {
                     '0': {
                         ...state.core.players['0'],
                         mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
-                        spellbookCount: getApprenticeSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE),
+                        spellbookCount: getPresetSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE),
                     },
                 },
             },

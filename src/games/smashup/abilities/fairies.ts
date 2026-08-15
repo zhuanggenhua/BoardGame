@@ -25,7 +25,6 @@ import {
     playTitan,
 } from '../domain/abilityHelpers';
 import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
-import { reduce } from '../domain/reduce';
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
 import {
@@ -140,25 +139,6 @@ type FairiesPlayfulTricksDestroyPromptContext = FairiesPromptContext & {
 type FairiesPlayfulTricksSpiritBasePromptContext = FairiesPromptContext & {
     titanUid: string;
 };
-
-function appendTimedPowerModifier(
-    matchState: MatchState<SmashUpCore>,
-    minionUid: string,
-    amount: number,
-    reason: string,
-): MatchState<SmashUpCore> {
-    const expiresOnTurnNumber = matchState.core.turnNumber + matchState.core.turnOrder.length;
-    return {
-        ...matchState,
-        core: {
-            ...matchState.core,
-            timedPowerModifiers: [
-                ...(matchState.core.timedPowerModifiers ?? []),
-                { minionUid, amount, expiresOnTurnNumber, reason },
-            ],
-        },
-    };
-}
 
 function findAttachedActionState(
     state: SmashUpCore,
@@ -516,17 +496,6 @@ function runtimeResultToBranchResult(
     };
 }
 
-function applyEventsToMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    if (events.length === 0) return matchState;
-    return {
-        ...matchState,
-        core: events.reduce((core, event) => reduce(core, event), matchState.core),
-    };
-}
-
 function createTransferSelfAbilityProgram(
     sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
     title: string,
@@ -707,8 +676,9 @@ const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerProm
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [addPermanentPower(target.uid, selected.baseIndex, -4, 'fairies_glymmer', timestamp)],
-            matchState: appendTimedPowerModifier(state, target.uid, -4, 'fairies_glymmer'),
+            events: [addPermanentPower(target.uid, selected.baseIndex, -4, 'fairies_glymmer', timestamp, {
+                expiresOnTurnNumber: state.core.turnNumber + state.core.turnOrder.length,
+            })],
         };
     },
 });
@@ -753,8 +723,9 @@ const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptCont
 
         if (selected.choice === 'self_bonus') {
             return {
-                events: [addPermanentPower(glymmer.uid, context.sourceBaseIndex, 1, 'fairies_glymmer', timestamp)],
-                matchState: appendTimedPowerModifier(state, glymmer.uid, 1, 'fairies_glymmer'),
+                events: [addPermanentPower(glymmer.uid, context.sourceBaseIndex, 1, 'fairies_glymmer', timestamp, {
+                    expiresOnTurnNumber: state.core.turnNumber + state.core.turnOrder.length,
+                })],
             };
         }
 
@@ -868,13 +839,11 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
                 },
                 timestamp,
             } as OngoingAttachedEvent];
-            const nextMatchState = applyEventsToMatchState(state, immediateEvents);
             return {
                 events: immediateEvents,
-                matchState: nextMatchState,
                 context: {
                     ...context,
-                    matchState: nextMatchState,
+                    matchState: state,
                     playerId,
                     now: timestamp,
                     selectedBranchIds: [selectedValue.branchId],

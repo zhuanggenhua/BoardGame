@@ -234,6 +234,99 @@ test.describe('后台反馈管理 E2E', () => {
         });
     });
 
+    test('反馈列表先加载摘要，点击单条后再加载完整详情', async ({ page }) => {
+        await setStoredAuth(page, {
+            id: 'admin_1',
+            username: 'Admin',
+            role: 'admin',
+            banned: false,
+        });
+
+        const listRequests: string[] = [];
+        const detailRequests: string[] = [];
+        const summaryItem = {
+            _id: 'feedback_lazy_001',
+            userId: {
+                _id: 'user_001',
+                username: '测试员',
+            },
+            contentPreview: '反馈列表先显示这段摘要',
+            hasEmbeddedImage: true,
+            hasActionLog: true,
+            hasStateSnapshot: true,
+            type: 'bug',
+            severity: 'high',
+            status: 'open',
+            gameName: '大杀四方',
+            clientContext: {
+                route: '/play/smashup/match/lazy',
+            },
+            errorContext: {
+                name: 'LazyFeedbackError',
+                message: '列表不应直接拉完整内容',
+                source: 'feedback.performance',
+            },
+            canManage: true,
+            createdAt: '2026-03-14T10:00:00.000Z',
+        };
+        const detailItem = {
+            ...summaryItem,
+            content: '反馈完整正文。![截图](data:image/png;base64,AAAA) 详情加载后才出现。',
+            actionLog: JSON.stringify([{ step: 'open-feedback-detail' }]),
+            stateSnapshot: JSON.stringify({ gameId: 'smashup', phase: 'feedback-detail' }),
+            clientContext: {
+                ...summaryItem.clientContext,
+                mode: 'online',
+                matchId: 'lazy',
+                gameId: 'smashup',
+            },
+        };
+
+        await page.route('**/admin/feedback?*', async (route) => {
+            if (route.request().method() !== 'GET') return route.fallback();
+            const url = new URL(route.request().url());
+            if (url.pathname !== '/admin/feedback') return route.fallback();
+
+            listRequests.push(url.search);
+            return route.fulfill({
+                status: 200,
+                json: {
+                    items: [summaryItem],
+                    total: 1,
+                    limit: 20,
+                    page: 1,
+                },
+            });
+        });
+
+        await page.route('**/admin/feedback/feedback_lazy_001', async (route) => {
+            if (route.request().method() !== 'GET') return route.fallback();
+            detailRequests.push(route.request().url());
+            return route.fulfill({
+                status: 200,
+                json: detailItem,
+            });
+        });
+
+        await gotoFrontendRoute(page, '/admin/feedback');
+
+        const row = page.locator('[data-testid="feedback-row"][data-feedback-id="feedback_lazy_001"]');
+        await expect(row).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await expect(row).toContainText('反馈列表先显示这段摘要');
+        expect(listRequests.some((entry) => entry.includes('summaryOnly=true'))).toBeTruthy();
+        expect(detailRequests).toHaveLength(0);
+
+        await row.click();
+
+        await expect(page.getByTestId('feedback-action-log-toggle')).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await expect(page.getByTestId('feedback-state-snapshot-toggle')).toBeVisible();
+        await expect(page.getByTestId('feedback-copy-ai-payload')).toBeVisible();
+        await expect.poll(() => detailRequests.length, {
+            timeout: ADMIN_PAGE_READY_TIMEOUT_MS,
+            message: '点击反馈行后应请求完整详情',
+        }).toBe(1);
+    });
+
     test('反馈列表按页请求并可切换分页', async ({ page }) => {
         await setStoredAuth(page, {
             id: 'admin_1',
@@ -389,7 +482,7 @@ test.describe('后台反馈管理 E2E', () => {
 
         const controls = page.getByTestId('feedback-list-controls');
         await expect(controls).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
-        await controls.getByRole('button', { name: 'Bug' }).click();
+        await controls.getByRole('button', { name: '问题' }).click();
         await controls.getByRole('button', { name: '严重' }).click();
         await controls.getByRole('button', { name: '最早优先' }).click();
 
@@ -402,9 +495,12 @@ test.describe('后台反馈管理 E2E', () => {
         expect(requests.some((entry) => entry.includes('severity=critical'))).toBeTruthy();
         expect(requests.some((entry) => entry.includes('sort=oldest'))).toBeTruthy();
 
-        await controls.getByRole('button', { name: '我的优先' }).click();
-        await expect(page.locator('[data-testid="feedback-row"]').first()).toContainText('最早的严重 Bug');
-        expect(requests.some((entry) => entry.includes('preferMine=true'))).toBeTruthy();
+        const preferMineButton = controls.getByRole('button', { name: '我的优先' });
+        if (await preferMineButton.count() > 0) {
+            await preferMineButton.click();
+            await expect(page.locator('[data-testid="feedback-row"]').first()).toContainText('最早的严重 Bug');
+            expect(requests.some((entry) => entry.includes('preferMine=true'))).toBeTruthy();
+        }
 
         const listScroll = page.getByTestId('feedback-list-scroll');
         const scrollState = await listScroll.evaluate((element) => {

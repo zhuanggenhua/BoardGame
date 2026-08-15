@@ -15,7 +15,7 @@
 
 | 层级 | 本轮动作 |
 | --- | --- |
-| 全局 skill | 既有 `ui-design-pipeline` 已包含“先读 task-relevant skills，再设计”“当前结算浮层”“Open Design artifact 与 media 生图区分”，本轮不再重复扩写全局细节 |
+| 项目通用 skill | 既有 `.spec/skills/ui-design-pipeline/SKILL.md` 已包含“先读 task-relevant skills，再设计”“当前结算浮层”“Open Design artifact 与 media 生图区分”，本轮不再重复扩写通用细节 |
 | 项目 skill / 项目规则 | 既有 `.spec/skills/boardgame-ui-imagegen` 和 `.spec/knowledge/README.md` 已把 BoardGame 出稿前硬回执、规则重读、素材输入链、少边框和人工验收门禁写成拦截项 |
 | Mage Wars 专项规范 | 本文件新增 v23 的具体画面规则、交互落位、框体职责和失败清单；这是当前重新设计的最近执行真相 |
 | 真实实现 | 明确冻结；本轮只产设计稿候选 |

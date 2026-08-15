@@ -1259,10 +1259,14 @@ describe('useSyncedModalStackEntry', () => {
         });
 
         expect(screen.getByText('选择获得的状态')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '闪避' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '净化' })).toBeInTheDocument();
+        const evasiveButton = screen.getByRole('button', { name: '闪避' });
+        const purifyButton = screen.getByRole('button', { name: '净化' });
+        expect(evasiveButton).toBeInTheDocument();
+        expect(purifyButton).toBeInTheDocument();
+        expect(evasiveButton).toHaveAttribute('data-option-id', 'option-0');
+        expect(purifyButton).toHaveAttribute('data-option-id', 'option-1');
 
-        fireEvent.click(screen.getByRole('button', { name: '闪避' }));
+        fireEvent.click(evasiveButton);
         expect(onResolve).toHaveBeenCalledWith('option-0');
     });
 });

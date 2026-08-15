@@ -26,6 +26,7 @@ import {
 } from '../../../engine';
 import type { MatchState } from '../../../engine/types';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
+import { smashUpSystemsForTest } from '../game';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -102,10 +103,7 @@ describe('基地记分与力量计算', () => {
     // Property 16: VP 分配正确性
     describe('Property 16: VP 分配', () => {
         it('罗德百货商场计分时，每个随从 VP 只结算一次（不翻倍）', () => {
-            const systems = [
-                createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-                ...createBaseSystems<SmashUpCore>(),
-            ];
+            const systems = smashUpSystemsForTest;
             const rng = createSeededRandom('rhodes-plaza-vp-once');
 
             const initialCore: SmashUpCore = {
@@ -142,8 +140,6 @@ describe('基地记分与力量计算', () => {
 
             const commands = [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 1 },
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined, timestamp: 2 },
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined, timestamp: 3 },
             ] as const;
 
             for (const command of commands) {
@@ -1570,7 +1566,7 @@ describe('基地记分与力量计算', () => {
             expect(countPromptsBySourceId(result.matchState, 'giant_ant_worker_pod_replay')).toBe(1);
         });
 
-        it('scoreOneBase 会让 Igor 在计分弃牌后给控制者创建放置指示物目标选择', () => {
+        it('scoreOneBase 会让 Igor 在清场弃牌事实后只影响仍在场的己方随从', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1622,14 +1618,20 @@ describe('基地记分与力量计算', () => {
             };
 
             const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
-            const current = result.matchState?.sys.interaction.current as any;
-            const optionUids = (current?.data?.options ?? []).map((option: any) => option?.value?.minionUid);
-
-            expect(current?.data?.sourceId).toBe('frankenstein_igor');
-            expect(current?.playerId).toBe('0');
-            expect(optionUids).toContain('igor-same-base-ally');
-            expect(optionUids).toContain('igor-other-base-ally');
-            expect(optionUids).not.toContain('igor-score-a');
+            expect(result.matchState?.sys.interaction.current).toBeUndefined();
+            expect(result.events.some(event =>
+                event.type === SU_EVENTS.POWER_COUNTER_ADDED
+                && (event as any).payload?.minionUid === 'igor-other-base-ally'
+                && (event as any).payload?.reason === 'frankenstein_igor'
+            )).toBe(true);
+            expect(result.events.some(event =>
+                event.type === SU_EVENTS.POWER_COUNTER_ADDED
+                && (event as any).payload?.minionUid === 'igor-same-base-ally'
+            )).toBe(false);
+            expect(result.events.some(event =>
+                event.type === SU_EVENTS.POWER_COUNTER_ADDED
+                && (event as any).payload?.minionUid === 'igor-score-a'
+            )).toBe(false);
         });
 
         it('scoreOneBase 会让 Death on Six Legs 在己方随从计分弃牌后获得 1 个力量指示物', () => {

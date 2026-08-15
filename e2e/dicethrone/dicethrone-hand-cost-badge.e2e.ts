@@ -6,8 +6,11 @@ import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../f
 import {
     ensureDebugPanelClosed,
     disableFabMenu,
+    setDiceThroneBonusDiceValues,
 } from '../helpers/dicethrone';
 import { waitForTestHarness } from '../helpers/common';
+import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { settleCurrentBonusDice } from './bonus-dice-flow';
 
 type HandCardSnapshot = {
     id?: string;
@@ -91,28 +94,21 @@ const injectSamuraiTokenResponseScene = async (
     options: {
         mode: 'samurai-retribution';
         incomingDamage?: number;
-        rollValues?: number[];
+        bonusDiceValues?: number[];
     },
 ) => {
-    await page.evaluate(async ({ mode, incomingDamage, rollValues }) => {
+    await page.evaluate(async ({ mode, incomingDamage }) => {
         const harness = (window as Window & {
             __BG_TEST_HARNESS__?: {
                 state?: {
                     get?: () => Record<string, unknown> | null;
                     set?: (state: Record<string, unknown>) => void;
                 };
-                dice?: {
-                    setValues?: (values: number[]) => void;
-                };
             };
         }).__BG_TEST_HARNESS__;
         const state = harness?.state?.get?.();
         if (!harness || !state || !harness.state?.set) {
             throw new Error('TestHarness state not ready');
-        }
-
-        if (Array.isArray(rollValues) && rollValues.length > 0) {
-            harness.dice?.setValues?.(rollValues);
         }
 
         const damage = incomingDamage ?? 5;
@@ -233,6 +229,10 @@ const injectSamuraiTokenResponseScene = async (
         });
         (window as Window & { __BG_LAST_COMMAND_REJECTED__?: unknown }).__BG_LAST_COMMAND_REJECTED__ = null;
     }, options);
+
+    if (Array.isArray(options.bonusDiceValues) && options.bonusDiceValues.length > 0) {
+        await setDiceThroneBonusDiceValues(page, options.bonusDiceValues);
+    }
 };
 
 const waitForSamuraiTokenResponseScene = async (
@@ -259,7 +259,7 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
     test('手牌费用 token 应显示统一三角费用牌', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
-        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await game.openTestGame('dicethrone', { playerID: '0' }, DICETHRONE_OPEN_TIMEOUT_MS);
         await waitForTestHarness(page, 40000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -331,7 +331,7 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
     test('武士反击链路应先在己方显示来伤，再在对方显示反伤数字', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
 
-        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await game.openTestGame('dicethrone', { playerID: '0' }, DICETHRONE_OPEN_TIMEOUT_MS);
         await waitForTestHarness(page, 40000);
         await forceManualResponseEnabled(page);
         await game.setupScene({
@@ -356,21 +356,37 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         await injectSamuraiTokenResponseScene(page, {
             mode: 'samurai-retribution',
             incomingDamage: 5,
-            rollValues: [1],
+            bonusDiceValues: [1],
         });
         await waitForSamuraiTokenResponseScene(page, { mode: 'samurai-retribution' });
         await ensureDebugPanelClosed(page);
         await disableFabMenu(page);
 
-        const defenderTitle = page.getByText(/响应（防御方）|defender/i).first();
-        const retributionLabel = page.getByText(/^反击$|^Back Strike$|^Retribution$/).first();
-        const useButton = page.getByRole('button', { name: /^(使用|Use|Use Token)(?: x\d+)?$/i }).first();
+        const retributionToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.SAMURAI_RETRIBUTION}`).first();
+        const retributionHitTarget = page
+            .getByTestId(`dt-player-0-token-${TOKEN_IDS.SAMURAI_RETRIBUTION}-hit-target`)
+            .first();
         const selfHealth = page.locator('[data-player-id="player-0"][role="region"] [data-resource="health"]').first();
         const attackerHeader = page.locator('[data-testid="dt-top-header-1"][data-player-id="1"]').first();
-        await expect(defenderTitle).toBeVisible({ timeout: 5000 });
-        await expect(retributionLabel).toBeVisible({ timeout: 5000 });
-        await expect(useButton).toBeVisible({ timeout: 5000 });
-        await useButton.click();
+        await expect(retributionToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 5000 });
+        await expect(retributionHitTarget).toBeVisible({ timeout: 5000 });
+        await retributionHitTarget.click();
+        await expect.poll(async () => {
+            const state = await game.getState() as Record<string, any>;
+            return {
+                pendingBonusSource: state?.core?.pendingBonusDiceSettlement?.sourceAbilityId ?? null,
+                retribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+                pendingDamage: state?.core?.pendingDamage?.currentDamage ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            pendingBonusSource: 'samurai-back-strike-reflect',
+            retribution: 0,
+            pendingDamage: 5,
+        });
+
+        const responsePassButton = page.getByTestId('dicethrone-response-pass-button');
+        await expect(responsePassButton).toBeVisible({ timeout: 5000 });
+        await responsePassButton.click();
 
         await page.waitForFunction(() => {
             const threshold = window.innerHeight * 0.55;
@@ -394,6 +410,12 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         await expect(selfHealth).toContainText('45');
         await expect(attackerHeader).toContainText('50');
         await saveEvidenceScreenshot(page, testInfo, '02-retribution-incoming-damage');
+
+        await settleCurrentBonusDice(
+            page,
+            () => game.getState() as Promise<Record<string, any>>,
+            { sourceAbilityId: 'samurai-back-strike-reflect' },
+        );
 
         await page.waitForFunction(() => {
             const threshold = window.innerHeight * 0.45;

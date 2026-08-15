@@ -670,6 +670,11 @@ export interface PipelineContext<TCore = unknown> {
     playerIds: PlayerId[];
     /** afterEvents 多轮迭代的当前轮次（0 = 首轮，>0 = 后续轮次） */
     afterEventsRound?: number;
+    /**
+     * 当前 afterEvents 轮中，优先级更早的系统已经产出但尚未 reduce 进 core 的事件数。
+     * 系统只能把它当作只读管线事实；不能自行写入。
+     */
+    pendingAfterEventsToReduceCount?: number;
 }
 
 // ============================================================================

@@ -4,13 +4,13 @@
  * 锁定的不是某个“海盗湾 bug”，而是 scoreBases 阶段的窗口门禁：
  * 1. Me First! 窗口打开时，不能继续 ADVANCE_PHASE 越过响应窗口
  * 2. 所有玩家都没有可响应内容时，窗口应自动关闭并进入后续计分链
- * 3. 所有人 pass 后，应进入 afterScoring 窗口或具体基地交互，而不是卡死或提前推进
+ * 3. 当前可让过者让过后，应进入 afterScoring 窗口或具体基地交互，而不是卡死或提前推进
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SmashUpDomain } from '../domain';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../types';
+import { SU_COMMANDS, type SmashUpCore, type SmashUpCommand, type SmashUpEvent } from '../domain/types';
 import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
@@ -169,8 +169,10 @@ describe('scoreBases / Me First! 窗口门禁', () => {
 
         // 验证：仍然停在 scoreBases，Me First! 窗口仍然打开
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.responseWindow?.current).toBeDefined();
-        expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('meFirst');
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation).toBeDefined();
+        expect(presentation?.windowType).toBe('meFirst');
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
         
         // 验证：第二个 ADVANCE_PHASE 命令被阻止，没有产生新事件
         const steps = result.steps;
@@ -205,7 +207,7 @@ describe('scoreBases / Me First! 窗口门禁', () => {
         expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(getPromptSourceId(prompt));
     });
 
-    it('所有玩家 pass 后，应该创建海盗湾交互', () => {
+    it('当前可让过者 pass 后，应该创建海盗湾交互或后续 afterScoring 选择', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,
             systems,
@@ -214,11 +216,10 @@ describe('scoreBases / Me First! 窗口门禁', () => {
         });
 
         const result = runner.run({
-            name: '完整流程：推进 → pass → 计分 → 交互',
+            name: '完整流程：推进 → 当前响应者 pass → 计分 → 交互',
             commands: [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
+                { type: SU_COMMANDS.REACTION_PASS, playerId: '0', payload: { reason: 'test_pass' } },
             ] as any[],
         });
 
@@ -243,11 +244,10 @@ describe('scoreBases / Me First! 窗口门禁', () => {
         });
 
         const result = runner.run({
-            name: '推进到 scoreBases 并完成所有让过，进入计分后强制效果选择',
+            name: '推进到 scoreBases 并完成当前可让过者让过，进入计分后强制效果选择',
             commands: [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
+                { type: SU_COMMANDS.REACTION_PASS, playerId: '0', payload: { reason: 'test_pass' } },
             ] as any[],
         });
 

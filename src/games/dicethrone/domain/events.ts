@@ -685,6 +685,8 @@ export interface ChoiceResolvedEvent extends GameEvent<'CHOICE_RESOLVED'> {
         /** 自定义选择 ID（用于非 status/token 的选择，或区分不同语义） */
         customId?: string;
         sourceAbilityId?: string;
+        /** 由真实 InteractionSystem 当前交互快照生成；允许 reducer 在 core 锚点已切走时消费本次选择。 */
+        interactionBacked?: boolean;
     };
 }
 

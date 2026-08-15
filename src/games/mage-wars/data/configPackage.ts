@@ -1154,6 +1154,10 @@ export function getApprenticeMageOrderFromConfig(): readonly MageId[] {
     return cachedMageOrder;
 }
 
+export function getPresetMageOrderFromConfig(): readonly MageId[] {
+    return getApprenticeMageOrderFromConfig();
+}
+
 export function getApprenticeMageSetupFromConfig(mageId: MageId): MageWarsConfigMageSetup {
     const object = requireObject(mageObjectId(mageId));
     if (object.objectType !== 'mage') {
@@ -1172,6 +1176,10 @@ export function getApprenticeMageSetupFromConfig(mageId: MageId): MageWarsConfig
         channeling: assertNumber(object.stats?.channeling, `${object.id}.stats.channeling`),
         baseMeleeDice: assertNumber(object.stats?.baseMeleeDice, `${object.id}.stats.baseMeleeDice`),
     };
+}
+
+export function getPresetMageSetupFromConfig(mageId: MageId): MageWarsConfigMageSetup {
+    return getApprenticeMageSetupFromConfig(mageId);
 }
 
 export function getApprenticeStartingDeploymentFromConfig(): readonly MageWarsConfigStartingDeployment[] {
@@ -1301,6 +1309,23 @@ export function getFormalStartingZoneIdFromConfig(seatIndex: number): ArenaZoneI
     return matches[0].zoneId;
 }
 
+export function getFormalStartingMageIdFromConfig(seatIndex: number): MageId {
+    if (!Number.isInteger(seatIndex) || seatIndex < 0) {
+        throw new Error(`invalid Mage Wars formal seat index "${seatIndex}"`);
+    }
+
+    const matches = getFormalStartingDeploymentFromConfig()
+        .filter((deployment) => deployment.seatIndex === seatIndex);
+    if (matches.length !== 1) {
+        throw new Error(`expected exactly one Mage Wars formal starting deployment for seat ${seatIndex}, found ${matches.length}`);
+    }
+    const mageId = matches[0].defaultMageId;
+    if (!mageId) {
+        throw new Error(`Mage Wars formal starting deployment for seat ${seatIndex} is missing defaultMageId`);
+    }
+    return mageId;
+}
+
 export function getApprenticeSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
     const cached = cachedSpellbookEntries.get(mageId);
     if (cached) {
@@ -1327,19 +1352,35 @@ export function getApprenticeSpellbookEntriesFromConfig(mageId: MageId): readonl
     return entries;
 }
 
+export function getPresetSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
+    return getApprenticeSpellbookEntriesFromConfig(mageId);
+}
+
 export function getApprenticeSpellbookCardIdsFromConfig(mageId: MageId): number[] {
     return getApprenticeSpellbookEntriesFromConfig(mageId).flatMap((entry) => (
         Array.from({ length: entry.count }, () => entry.spellCardId)
     ));
 }
 
+export function getPresetSpellbookCardIdsFromConfig(mageId: MageId): number[] {
+    return getApprenticeSpellbookCardIdsFromConfig(mageId);
+}
+
 export function getApprenticeSpellbookCountFromConfig(mageId: MageId): number {
     return getApprenticeSpellbookEntriesFromConfig(mageId).reduce((total, entry) => total + entry.count, 0);
+}
+
+export function getPresetSpellbookCountFromConfig(mageId: MageId): number {
+    return getApprenticeSpellbookCountFromConfig(mageId);
 }
 
 export function hasApprenticeSpellbookCardInConfig(mageId: MageId, spellCardId: number): boolean {
     return getApprenticeSpellbookEntriesFromConfig(mageId)
         .some((entry) => entry.spellCardId === spellCardId);
+}
+
+export function hasPresetSpellbookCardInConfig(mageId: MageId, spellCardId: number): boolean {
+    return hasApprenticeSpellbookCardInConfig(mageId, spellCardId);
 }
 
 export function getMageWarsSpellCardFromConfig(spellCardId: number): MageWarsConfigSpellCard | undefined {

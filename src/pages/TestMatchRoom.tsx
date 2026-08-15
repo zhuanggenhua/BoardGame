@@ -137,6 +137,7 @@ export const TestMatchRoom: React.FC = () => {
         const skipFactionSelect = searchParams.get('skipFactionSelect') === 'true';
         const skipInitialization = searchParams.get('skipInitialization') === 'true';
         const playerId = searchParams.get('playerID') || '0';
+        const disableLocalAiAutomation = searchParams.get('disableLocalAiAutomation') === 'true';
         const seatControllers = resolveSeatControllersFromSearchParams({
             numPlayers,
             searchParams,
@@ -160,6 +161,7 @@ export const TestMatchRoom: React.FC = () => {
             seatControllers,
             playerNames,
             setupData,
+            disableLocalAiAutomation,
         };
     }, [gameConfig, gameId, searchParams]);
 
@@ -334,6 +336,7 @@ export const TestMatchRoom: React.FC = () => {
                                         seatControllers={testConfig.seatControllers}
                                         playerNames={testConfig.playerNames}
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
+                                        disableLocalAiAutomation={testConfig.disableLocalAiAutomation}
                                     >
                                         <GameHUD gameId={gameId} mode="test" />
                                         <BoardBridge

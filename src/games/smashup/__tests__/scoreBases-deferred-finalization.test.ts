@@ -4,7 +4,7 @@
  * 这些用例锁的不是单张卡的 happy path，而是计分后延迟清场、换基地和链式收口的系统边界。
  */
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
@@ -14,7 +14,7 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { smashUpFlowHooks } from '../domain/index';
+import { postProcessSystemEvents, smashUpFlowHooks } from '../domain/index';
 import { reduce } from '../domain/reduce';
 import type { SmashUpCore, SmashUpEvent, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import type { SmashUpCommand } from '../domain/types';
@@ -150,6 +150,72 @@ function withDeferredScoringFrame(
 }
 
 describe('scoreBases 延迟清场 / 最终化', () => {
+    it('换基地揭示触发应在 BASE_REPLACED 正式落地后产生，而不是预塞进 deferred payload', () => {
+        const system = createSmashUpEventSystem();
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_wizard_academy'),
+                makeBase('base_other', {
+                    minions: [makeMinion('m-other', '0', 3, 'alien_scout')],
+                }),
+            ],
+            baseDeck: ['base_sheep_shrine'],
+        }));
+
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_wizard_academy' },
+                timestamp: 2050,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_wizard_academy',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2050,
+            },
+        ]);
+
+        const rewritten = replaceDeferredPostScoringReplacementBase(state, 'base_sheep_shrine');
+        const consumed = consumeScoringFrameDeferredPayload(rewritten);
+        expect(consumed.deferredEvents.map(event => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+        ]);
+
+        const replaceEvent = consumed.deferredEvents.find(event => event.type === SU_EVENTS.BASE_REPLACED)!;
+        const postReplaceCore = reduce(consumed.state.core, replaceEvent);
+        const reducedState = {
+            ...consumed.state,
+            core: postReplaceCore,
+        };
+        const result = postProcessSystemEvents(
+            postReplaceCore,
+            [replaceEvent],
+            defaultTestRandom,
+            reducedState,
+            { inputEventsAlreadyReduced: true },
+        );
+        const emittedEvents = result.events as SmashUpEvent[] | undefined;
+        const revealTrigger = emittedEvents?.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED);
+
+        expect(revealTrigger).toBeDefined();
+        expect((revealTrigger?.payload as { triggers?: Array<{ timing?: string; baseIndex?: number; sourceDefId?: string }> }).triggers).toEqual([
+            expect.objectContaining({
+                timing: 'onBaseRevealed',
+                baseIndex: 0,
+                sourceDefId: 'base_sheep_shrine',
+            }),
+        ]);
+    });
+
     it('base_greenhouse 被 watchdog emergency-cancel 时，仍应补发延迟清场而不是卡在 afterScoring', () => {
         const system = createSmashUpEventSystem();
         let state = wrapState(makeCore({
@@ -204,22 +270,11 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
         expect(emittedEvents ?? []).toHaveLength(0);
 
-        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
             state: result?.state ?? state,
             from: 'scoreBases',
             to: 'draw',
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2102 } as any,
-            random: defaultTestRandom,
-        });
-        const delayedState = (beginDelay as any)?.updatedState;
-        expect((beginDelay as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4102);
-
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? result?.state ?? state,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4102 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
@@ -354,24 +409,12 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         expect((resolved?.events as SmashUpEvent[] | undefined) ?? []).toHaveLength(0);
         expect(resolved?.state).toBeDefined();
         expectNoPrompt(resolved!.state);
-        expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBeUndefined();
 
-        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
             state: resolved?.state ?? state,
             from: 'scoreBases',
             to: 'draw',
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2300 } as any,
-            random: defaultTestRandom,
-        });
-        const delayedState = (beginDelay as any)?.updatedState;
-        expect((beginDelay as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4300);
-
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? resolved?.state ?? state,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4300 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
@@ -824,22 +867,11 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             ...(result?.state ?? state),
             core: (emittedEvents ?? []).reduce((core, event) => reduce(core, event), state.core as SmashUpCore),
         };
-        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
             state: reducedState,
             from: 'scoreBases',
             to: 'draw',
             command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2500 } as any,
-            random: defaultTestRandom,
-        });
-        const delayedState = (beginDelay as any)?.updatedState;
-        expect((beginDelay as any)?.events ?? []).toEqual([]);
-        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4500);
-
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
-            state: delayedState ?? reducedState,
-            from: 'scoreBases',
-            to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4500 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
@@ -874,7 +906,7 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             baseDeck: ['base_secret_garden'],
         }));
 
-        const result = smashUpFlowHooks.onPhaseExit?.({
+        const firstCommit = smashUpFlowHooks.onPhaseExit?.({
             state,
             from: 'scoreBases',
             to: 'draw',
@@ -882,17 +914,63 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             random: () => 0.5,
         });
 
-        if (!result || Array.isArray(result)) {
-            throw new Error('Expected scoreBases to return PhaseExitResult when afterScoring window opens');
+        if (!firstCommit || Array.isArray(firstCommit)) {
+            throw new Error('Expected scoreBases to return PhaseExitResult while committing scoring events');
         }
 
-        const emittedEvents = result.events as SmashUpEvent[];
+        const emittedEvents = firstCommit.events as SmashUpEvent[];
+        expect(emittedEvents.map(event => event.type)).toEqual([
+            SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
+            SU_EVENTS.BEFORE_SCORING_TRIGGERED,
+            SU_EVENTS.WHEN_SCORING_TRIGGERED,
+            SU_EVENTS.BASE_SCORED,
+        ]);
         expect(emittedEvents.map(event => event.type)).toContain(SU_EVENTS.BASE_SCORED);
-        expect(result.halt).toBe(true);
-        const reactionChoice = getReactionPrompt(result.updatedState!);
+        expect(firstCommit.halt).toBe(true);
+        expect(getScoringSession(firstCommit.updatedState!)?.currentStep).toBe('awaiting-score-award-reduce');
+        expect(getScoringSession(firstCommit.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
+        expect(getScoringSession(firstCommit.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
+
+        const committedState = {
+            ...firstCommit.updatedState!,
+            core: emittedEvents.reduce((core, event) => reduce(core, event), firstCommit.updatedState!.core),
+        };
+        const afterCommit = smashUpFlowHooks.onPhaseExit?.({
+            state: committedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', timestamp: 2300 },
+            random: () => 0.5,
+        });
+        if (!afterCommit || Array.isArray(afterCommit)) {
+            throw new Error('Expected scoreBases to commit afterScoring triggers before opening the window');
+        }
+
+        const afterEvents = afterCommit.events as SmashUpEvent[];
+        expect(afterEvents.map(event => event.type)).toContain(SU_EVENTS.AFTER_SCORING_TRIGGERED);
+        expect(afterCommit.halt).toBe(true);
+        expect(getScoringSession(afterCommit.updatedState!)?.currentStep).toBe('awaiting-after-scoring-reduce');
+
+        const afterCommittedState = {
+            ...afterCommit.updatedState!,
+            core: afterEvents.reduce((core, event) => reduce(core, event), afterCommit.updatedState!.core),
+        };
+
+        const continued = smashUpFlowHooks.onPhaseExit?.({
+            state: afterCommittedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', timestamp: 2300 },
+            random: () => 0.5,
+        });
+        if (!continued || Array.isArray(continued)) {
+            throw new Error('Expected scoreBases to continue from committed score event into afterScoring window');
+        }
+
+        const reactionChoice = getReactionPrompt(continued.updatedState!);
         expect(reactionChoice).toBeTruthy();
-        expect(getScoringSession(result.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
-        expect(getScoringSession(result.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
+        expect(getScoringSession(continued.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
+        expect(getScoringSession(continued.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
     });
 
     it('scoreBases 在 afterScoring 响应窗口打开时，不应因 eligibleIndices 为空而自动推进', () => {
@@ -1091,7 +1169,7 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         }
     });
 
-    it('scoreBases 延迟清场已进入 awaiting-post-scoring-delay 时，解决立即额外随从 prompt 不应误报 frame 所有权丢失', () => {
+    it('scoreBases 已进入清场收尾待执行状态时，解决立即额外随从 prompt 不应误报 frame 所有权丢失', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,
             systems: smashUpSystemsForTest,
@@ -1125,7 +1203,7 @@ describe('scoreBases 延迟清场 / 最终化', () => {
                 state = setScoringSession(state, {
                     ...createScoringSession(state.core, [0]),
                     currentBaseRef,
-                    currentStep: 'awaiting-post-scoring-delay',
+                    currentStep: 'awaiting-post-scoring-finalize',
                 });
                 state = appendScoringFrameDeferredPayload(state, {
                     deferredEvents: [
@@ -1210,10 +1288,21 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             },
         });
 
+        const baseReplacementWarningStacks: string[] = [];
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation((message: unknown) => {
+            if (typeof message === 'string' && message.includes('[BASE_REPLACED] newBaseDefId')) {
+                baseReplacementWarningStacks.push(new Error().stack ?? 'missing stack');
+            }
+        });
         const resolved = runner.resolveInteraction('1', { optionId: 'skip' });
+        const baseReplacementWarnings = warnSpy.mock.calls.filter(([message]) =>
+            typeof message === 'string' && message.includes('[BASE_REPLACED] newBaseDefId'),
+        );
+        warnSpy.mockRestore();
 
         expect(resolved.success).toBe(true);
         expect(resolved.error).toBeUndefined();
+        expect(baseReplacementWarnings, baseReplacementWarningStacks.join('\n')).toHaveLength(0);
         expect(resolved.events.some(event => event.type === INTERACTION_EVENTS.RESOLVED)).toBe(true);
         expectNoPrompt(runner.getState());
     });

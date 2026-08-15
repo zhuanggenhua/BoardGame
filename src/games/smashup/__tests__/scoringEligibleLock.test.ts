@@ -26,6 +26,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { initAllAbilities } from '../abilities';
 import { getPromptOption, getSimpleChoicePrompt } from './helpers';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 beforeAll(() => {
     initAllAbilities();
@@ -111,10 +112,12 @@ function passResponseWindowToClose(
 ): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < 8; i++) {
-        const window = runner.getState().sys.responseWindow?.current;
+        const window = getSmashUpReactionWindowPresentation(runner.getState());
         if (!window) return events;
-        const responder = window.responderQueue[window.currentResponderIndex];
-        const passResult = runner.dispatch('RESPONSE_PASS', { playerId: responder });
+        const passResult = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+            playerId: window.activePlayerId,
+            reason: 'player_pass',
+        });
         expect(passResult.success, passResult.error).toBe(true);
         events.push(...passResult.events);
     }
@@ -357,7 +360,7 @@ describe('计分阶段 eligible 基地锁定', () => {
     });
 
     describe('完整流程回归', () => {
-        it('Me First! 特殊牌把基地压到 breakpoint 以下后，已触发的基地仍然计分并进入延迟收尾', () => {
+        it('Me First! 特殊牌把基地压到 breakpoint 以下后，已触发的基地仍然计分并完成收尾', () => {
             const runner = createRunner((ids) => {
                 const core = makeMinimalCore({
                     bases: [
@@ -393,11 +396,15 @@ describe('计分阶段 eligible 基地锁定', () => {
             const advanceResult = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
             expect(advanceResult.success).toBe(true);
 
-            const playResult = runner.dispatch(SU_COMMANDS.PLAY_ACTION, {
-                playerId: '0',
-                cardUid: 'under-pressure',
-                targetBaseIndex: 0,
-            });
+            const reactionPrompt = getSimpleChoicePrompt(runner.getState(), 'smashup_reaction_choose');
+            const playUnderPressure = getPromptOption(
+                reactionPrompt,
+                (option: any) => option?.value?.kind === 'play_action'
+                    && option?.value?.cardUid === 'under-pressure'
+                    && option?.value?.targetBaseIndex === 0,
+                'Under Pressure Me First play option',
+            );
+            const playResult = runner.resolveInteraction('0', { optionId: playUnderPressure.id });
             expect(playResult.success, playResult.error).toBe(true);
 
             const sourcePrompt = getSimpleChoicePrompt(runner.getState(), 'giant_ant_under_pressure_choose_source');
@@ -435,15 +442,16 @@ describe('计分阶段 eligible 基地锁定', () => {
                 ...passEvents,
             ].map(event => event.type);
             expect(eventTypes).toContain(SU_EVENTS.BASE_SCORED);
-            expect(eventTypes).not.toContain(SU_EVENTS.BASE_CLEARED);
-            expect(runner.getState().sys.phase).toBe('scoreBases');
-            expect((runner.getState().sys as any).flowHalted).toBe(true);
-            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
-            expect(runner.getState().core.bases[0]?.defId).toBe(BASE_JUNGLE);
-            expect(runner.getState().core.scoringEligibleBaseIndices).toEqual([0]);
+            expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
+            expect(eventTypes).toContain(SU_EVENTS.BASE_REPLACED);
+            expect(runner.getState().sys.phase).not.toBe('scoreBases');
+            expect((runner.getState().sys as any).flowHalted).toBeFalsy();
+            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+            expect(runner.getState().core.bases[0]?.defId).toBe('base_the_hill');
+            expect(runner.getState().core.scoringEligibleBaseIndices).toBeUndefined();
         });
 
-        it('beforeScoring 触发器把基地压到 breakpoint 以下后，已触发的基地仍然计分并进入延迟收尾', () => {
+        it('beforeScoring 触发器把基地压到 breakpoint 以下后，已触发的基地仍然计分并完成收尾', () => {
             const runner = createRunner((ids) => {
                 const core = makeMinimalCore({
                     bases: [
@@ -483,12 +491,13 @@ describe('计分阶段 eligible 基地锁定', () => {
 
             expect(eventTypes).toContain(SU_EVENTS.MINION_DESTROYED);
             expect(eventTypes).toContain(SU_EVENTS.BASE_SCORED);
-            expect(eventTypes).not.toContain(SU_EVENTS.BASE_CLEARED);
-            expect(runner.getState().sys.phase).toBe('scoreBases');
-            expect((runner.getState().sys as any).flowHalted).toBe(true);
-            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
-            expect(runner.getState().core.bases[0]?.defId).toBe(BASE_JUNGLE);
-            expect(runner.getState().core.scoringEligibleBaseIndices).toEqual([0]);
+            expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
+            expect(eventTypes).toContain(SU_EVENTS.BASE_REPLACED);
+            expect(runner.getState().sys.phase).not.toBe('scoreBases');
+            expect((runner.getState().sys as any).flowHalted).toBeFalsy();
+            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+            expect(runner.getState().core.bases[0]?.defId).toBe('base_secret_garden');
+            expect(runner.getState().core.scoringEligibleBaseIndices).toBeUndefined();
         });
     });
 });

@@ -162,7 +162,7 @@ v38 之后默认拆成两个独立稿：`计划 / 浏览态` 与 `目标选择 /
 ## 视觉稿继承约束
 
 - 后续 Open Design v38 及以后必须继承本文件重构后的对象、交互、隐藏信息、阶段容量和饱和状态，不得重新发明主交互。
-- 后续 Open Design artifact、导出 PNG 和 AI 图面核验必须先逐项消费 `user-correction-traceability-ledger.md`。该账本只作纠正覆盖 / drift-check；若发现新规则缺口，先回本文件、`.spec/skills/mage-wars-ui-design-memory/SKILL.md` 或 `D:\codex-home\skills\ui-design-pipeline\SKILL.md` 补 canonical-source，再重新审图。
+- 后续 Open Design artifact、导出 PNG 和 AI 图面核验必须先逐项消费 `user-correction-traceability-ledger.md`。该账本只作纠正覆盖 / drift-check；若发现新规则缺口，先回本文件、`.spec/skills/mage-wars-ui-design-memory/SKILL.md` 或 `.spec/skills/ui-design-pipeline/SKILL.md` 补 canonical-source，再重新审图。
 - 后续 Open Design v38 及以后必须做字符串审查：可见文案、aria、class、审计文本中不得出现 `手牌`、`hand`、`opponent-hand`；只允许法术书、已计划法术、弃牌堆、隐性结界等规则真实名称。
 - 设计稿必须用正式素材或来源锁定程序化对象作为主体；边框、玻璃面板、文字壳只能做轻量组织，不得抢走棋盘 / 卡牌 / token 主语。
 - 玩家生命、伤害、法力、聚魔的常驻读数必须使用自制运行态 UI；不得把整张法师状态板素材、状态板裁切或状态板轨道当血量 / 蓝量面板铺在主界面。

@@ -182,16 +182,18 @@ describe('完整回合循环', () => {
         const result = runCommand(state, { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any);
 
         expect(result.success, result.error).toBe(true);
-        expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.core.currentPlayerIndex).toBe(0);
+        expect(result.finalState.sys.phase).toBe('playCards');
+        expect(result.finalState.core.currentPlayerIndex).toBe(1);
         expectNoPrompt(result.finalState);
         expect(result.events.some(event => event.type === SU_EVENTS.BASE_SCORED)).toBe(true);
-        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
         expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
             'c33',
             'c32',
             'c39',
             'c16',
+            'c30',
+            'c36',
         ]);
     });
 

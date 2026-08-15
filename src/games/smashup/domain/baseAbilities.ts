@@ -46,17 +46,15 @@ import {
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerExpansionBaseAbilities, registerExpansionBaseInteractionHandlers } from './baseAbilities_expansion';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
-import { collectExtendedBaseAbilityTriggers, registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
+import { registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 import {
     appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
     isScoringSessionAwaitingDeferredResolution,
-    serializePostScoringEvents,
     updateDeferredPostScoringEvents,
 } from './scoringSession';
-import { getCurrentPlayerId } from './types';
 
 // ============================================================================
 // 类型定义
@@ -235,7 +233,6 @@ function rewriteWizardAcademyDeferredReplacement(
     state: MatchState<SmashUpCore>,
     baseIndex: number,
     replacementBaseDefId: string,
-    timestamp: number,
 ): MatchState<SmashUpCore> {
     if (!isScoringSessionAwaitingDeferredResolution(state)) {
         return state;
@@ -247,23 +244,19 @@ function rewriteWizardAcademyDeferredReplacement(
         }
 
         let hasReplacementEvent = false;
-        const withoutRevealTriggers = deferredEvents.filter((event) => {
-            if (event.type !== SU_EVENTS.TRIGGER_QUEUED) return true;
-            const triggers = (event.payload as { triggers?: Array<{ timing?: string; baseIndex?: number }> } | undefined)?.triggers;
-            return !Array.isArray(triggers) || !triggers.some((trigger) =>
-                trigger.timing === 'onBaseRevealed' && trigger.baseIndex === baseIndex,
-            );
-        });
-
-        const updatedEvents = withoutRevealTriggers.map((event) => {
+        const updatedEvents = deferredEvents.map((event) => {
             if (event.type !== SU_EVENTS.BASE_REPLACED) {
+                return event;
+            }
+            const payload = event.payload as { baseIndex?: number; oldBaseDefId?: string; newBaseDefId?: string } | undefined;
+            if (payload?.baseIndex !== baseIndex) {
                 return event;
             }
             hasReplacementEvent = true;
             return {
                 ...event,
                 payload: {
-                    ...(event.payload as { baseIndex: number; oldBaseDefId: string; newBaseDefId: string }),
+                    ...payload,
                     newBaseDefId: replacementBaseDefId,
                 },
             };
@@ -272,29 +265,7 @@ function rewriteWizardAcademyDeferredReplacement(
         if (!hasReplacementEvent) {
             return deferredEvents;
         }
-
-        const replacementCore: SmashUpCore = {
-            ...state.core,
-            bases: state.core.bases.map((base, index) =>
-                index === baseIndex ? { ...base, defId: replacementBaseDefId } : base,
-            ),
-        };
-        const revealTrigger = collectExtendedBaseAbilityTriggers({
-            core: replacementCore,
-            timing: 'onBaseRevealed',
-            ownerPlayerId: getCurrentPlayerId(state.core),
-            baseIndex,
-            now: timestamp,
-        });
-
-        if (!revealTrigger) {
-            return updatedEvents;
-        }
-
-        return [
-            ...updatedEvents,
-            ...serializePostScoringEvents([revealTrigger as unknown as SmashUpEvent]),
-        ];
+        return updatedEvents;
     });
 }
 
@@ -2375,7 +2346,6 @@ export function registerBaseInteractionHandlers(): void {
             state,
             ctx.baseIndex,
             chosenDefId,
-            timestamp,
         );
 
         if (remaining.length <= 1) {

@@ -5759,6 +5759,7 @@ function RecentRollPanel({
   openTableResultDocked = false,
   resultStageClassName = "",
   compactRowsClassName = "",
+  actorLabel = null,
   actionSlot = null,
   onDiceSettledChange,
 }: {
@@ -5783,6 +5784,7 @@ function RecentRollPanel({
   openTableResultDocked?: boolean;
   resultStageClassName?: string;
   compactRowsClassName?: string;
+  actorLabel?: string | null;
   actionSlot?: React.ReactNode;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
@@ -5858,7 +5860,8 @@ function RecentRollPanel({
     </div>
   );
   const showResultCopy = Boolean(
-    showSource ||
+    actorLabel ||
+      showSource ||
       showRollLabel ||
       showOutcome ||
       (showBreakdown && attackComparisonText),
@@ -5949,6 +5952,14 @@ function RecentRollPanel({
     >
       {showResultCopy ? (
         <div className="min-w-0">
+        {actorLabel ? (
+          <div
+            data-testid="betrayal-recent-roll-actor"
+            className="mb-1 inline-flex max-w-full items-center rounded-[999px] border border-[rgba(214,181,109,0.30)] bg-[rgba(214,181,109,0.10)] px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] text-[#f4dda0]"
+          >
+            <span className="truncate">{actorLabel}</span>
+          </div>
+        ) : null}
         {showSource ? (
           <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
             {roll.sourceTitle}
@@ -6015,6 +6026,7 @@ function RecentRollPanel({
   );
   const srSummary = (
     <div className="sr-only">
+      {actorLabel ? <span>{actorLabel}</span> : null}
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       {showRollLabel ? (
         <span>{roll.rollLabel ?? t("board.roll.fallbackLabel")}</span>
@@ -6130,6 +6142,7 @@ function StandardRecentRollOverlay({
   onDismiss,
   effectiveLocale,
   rerollSelection,
+  actorLabel = null,
 }: {
   roll: BetrayalRecentRollState;
   isPhoneLandscapeLayout: boolean;
@@ -6137,6 +6150,7 @@ function StandardRecentRollOverlay({
   onDismiss: () => void;
   effectiveLocale: string;
   rerollSelection?: RecentRollRerollSelection | null;
+  actorLabel?: string | null;
 }) {
   const { t } = useTranslation("game-betrayal");
   const continueButton = (
@@ -6215,6 +6229,7 @@ function StandardRecentRollOverlay({
           }
           diceVisualScale={isPhoneLandscapeLayout ? 1.16 : 1}
           effectiveLocale={effectiveLocale}
+          actorLabel={actorLabel}
           actionSlot={isPhoneLandscapeLayout ? continueButton : null}
         />
         {isPhoneLandscapeLayout ? null : (
@@ -7087,6 +7102,21 @@ export default function BetrayalBoard({
     () => [core.currentExplorer, ...core.otherExplorers],
     [core.currentExplorer, core.otherExplorers],
   );
+  const resolveRecentRollActorLabel = React.useCallback(
+    (roll: BetrayalRecentRollState | null | undefined) => {
+      if (!roll || roll.playerId === viewerPlayerId) {
+        return null;
+      }
+      const actor = allExplorers.find(
+        (explorer) => explorer.playerId === roll.playerId,
+      );
+      const actorName = actor
+        ? resolvePlayerName(actor.playerId, actor.displayName, matchData)
+        : resolvePlayerName(roll.playerId, "玩家", matchData);
+      return `由 ${actorName} 触发`;
+    },
+    [allExplorers, matchData, viewerPlayerId],
+  );
   const [observedExplorerPlayerId, setObservedExplorerPlayerId] =
     React.useState<string | null>(null);
   const observationReturnPlayerIdRef = React.useRef<string | null>(null);
@@ -7646,6 +7676,18 @@ export default function BetrayalBoard({
   }, [scenarioStartOpeningKey]);
   const roomOccupants = React.useMemo(() => buildRoomOccupants(core), [core]);
   const roomMonsters = React.useMemo(() => buildRoomMonsters(core), [core]);
+  const movingExplorerPlayerId =
+    visualTransition?.kind === "explorer-move"
+      ? visualTransition.explorer?.playerId ?? null
+      : null;
+  const movingMonsterId =
+    visualTransition?.kind === "monster-move"
+      ? visualTransition.monster?.id ?? null
+      : null;
+  const movingGirlTokenId =
+    visualTransition?.kind === "girl-transfer"
+      ? visualTransition.girlToken?.id ?? null
+      : null;
   const monsterStatusById = React.useMemo(
     () =>
       new Map(
@@ -11093,9 +11135,28 @@ export default function BetrayalBoard({
     core.pendingEventRollResolution.rollId === latestDiscoveryRecentRoll?.id
       ? core.pendingEventRollResolution
       : null;
+  const pendingLatestDiscoveryEventRollRequiredPlayerIds =
+    pendingLatestDiscoveryEventRoll?.requiredPlayerIds?.length
+      ? pendingLatestDiscoveryEventRoll.requiredPlayerIds
+      : pendingLatestDiscoveryEventRoll
+        ? core.playerIds
+        : [];
+  const pendingLatestDiscoveryEventRollAcknowledgedPlayerIds =
+    pendingLatestDiscoveryEventRoll?.acknowledgedPlayerIds ?? [];
+  const pendingLatestDiscoveryEventRollConfirmedCount =
+    pendingLatestDiscoveryEventRollAcknowledgedPlayerIds.length;
+  const pendingLatestDiscoveryEventRollTotalCount =
+    pendingLatestDiscoveryEventRollRequiredPlayerIds.length;
+  const hasCurrentViewerConfirmedLatestDiscoveryEventRoll =
+    pendingLatestDiscoveryEventRollAcknowledgedPlayerIds.includes(viewerPlayerId);
+  const latestDiscoveryEventRollProgressText =
+    pendingLatestDiscoveryEventRoll
+      ? `${pendingLatestDiscoveryEventRollConfirmedCount}/${pendingLatestDiscoveryEventRollTotalCount}`
+      : "";
   const canCurrentViewerFinalizeLatestDiscoveryEventRoll = Boolean(
     pendingLatestDiscoveryEventRoll &&
-      pendingLatestDiscoveryEventRoll.playerId === viewerPlayerId,
+      pendingLatestDiscoveryEventRollRequiredPlayerIds.includes(viewerPlayerId) &&
+      !hasCurrentViewerConfirmedLatestDiscoveryEventRoll,
   );
   const latestDiscoveryRollActionSlot = selectedRollModifierCanConfirm ? (
     <div className="pointer-events-auto flex items-center gap-2">
@@ -11128,14 +11189,16 @@ export default function BetrayalBoard({
       className="pointer-events-auto min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[12px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
       onClick={finalizePendingEventRoll}
     >
-      确认最终结果
+      确认最终结果（{latestDiscoveryEventRollProgressText}）
     </button>
   ) : pendingLatestDiscoveryEventRoll ? (
     <span
       data-testid="betrayal-event-roll-waiting"
       className="rounded-[6px] border border-[rgba(214,181,109,0.34)] bg-[rgba(18,17,13,0.74)] px-4 py-2 text-[12px] font-semibold tracking-[0.08em] text-[#eadbb0]"
     >
-      等待投骰玩家确认最终结果
+      {hasCurrentViewerConfirmedLatestDiscoveryEventRoll
+        ? `已确认，等待其他玩家确认（${latestDiscoveryEventRollProgressText}）`
+        : `等待其他玩家确认最终结果（${latestDiscoveryEventRollProgressText}）`}
     </span>
   ) : null;
   const activePendingCardResolution =
@@ -11148,6 +11211,7 @@ export default function BetrayalBoard({
   );
   const canDismissLatestDiscoveryByBackdrop =
     !hasLatestDiscoveryPendingCardResolution &&
+    !pendingLatestDiscoveryEventRoll &&
     (!shouldShowLatestDiscoveryRoll || !canCurrentPlayerModifyLatestDiscoveryRoll);
   const hasPendingAttackReward = Boolean(
     mummyPendingReward || helpingHandsPendingReward,
@@ -11453,6 +11517,9 @@ export default function BetrayalBoard({
     if (isVisualBusy) {
       return;
     }
+    if (pendingLatestDiscoveryEventRoll) {
+      return;
+    }
     if (latestDiscoveryPendingCardResolution) {
       if (canAdvanceLatestDiscoverySearch) {
         setLatestDiscoverySearchRevealIndex((previousIndex) =>
@@ -11484,6 +11551,7 @@ export default function BetrayalBoard({
     dispatch,
     handleDismissLatestDiscovery,
     isVisualBusy,
+    pendingLatestDiscoveryEventRoll,
     canAdvanceLatestDiscoverySearch,
     canCurrentViewerAcknowledgeCardResolution,
     startPendingDiscoveryGainVisual,
@@ -11521,7 +11589,7 @@ export default function BetrayalBoard({
           : undefined
       }
       disabled={Boolean(
-        (options.disabledWhilePendingRoll && pendingLatestDiscoveryEventRoll) ||
+        pendingLatestDiscoveryEventRoll ||
           (latestDiscoveryPendingCardResolution &&
             !canAdvanceLatestDiscoverySearch &&
             !canCurrentViewerAcknowledgeCardResolution),
@@ -15692,6 +15760,9 @@ export default function BetrayalBoard({
                           }
                           rerollSelection={latestDiscoveryRerollSelection}
                           effectiveLocale={effectiveLocale}
+                          actorLabel={resolveRecentRollActorLabel(
+                            latestDiscoveryRecentRoll,
+                          )}
                           showSource={false}
                           showRollLabel={false}
                           openTable
@@ -15786,6 +15857,7 @@ export default function BetrayalBoard({
                             : "min-h-[190px]"
                         }
                         effectiveLocale={effectiveLocale}
+                        actorLabel={resolveRecentRollActorLabel(core.recentRoll)}
                         openTable
                         compactResult
                         resultStageClassName="w-full max-w-[520px] justify-self-center"
@@ -15825,6 +15897,7 @@ export default function BetrayalBoard({
                     onDismiss={handleDismissRecentRoll}
                     effectiveLocale={effectiveLocale}
                     rerollSelection={recentRollRerollSelection}
+                    actorLabel={resolveRecentRollActorLabel(core.recentRoll)}
                   />
                 )
               ) : null}
@@ -16115,6 +16188,7 @@ export default function BetrayalBoard({
                         }
                         animateInitialRoll={false}
                         effectiveLocale={effectiveLocale}
+                        actorLabel={resolveRecentRollActorLabel(pendingEventChoiceRoll)}
                         showSource={false}
                         showRollLabel={false}
                         openTable
@@ -16982,10 +17056,17 @@ export default function BetrayalBoard({
                   {visibleMapRooms.map((room) => {
                       const tone = FLOOR_TONE[room.floor];
                       const isActive = room.id === core.activeRoomId;
-                      const occupants = roomOccupants[room.id] ?? [];
-                      const monsters = roomMonsters[room.id] ?? [];
+                      const occupants = (roomOccupants[room.id] ?? []).filter(
+                        (occupant) =>
+                          occupant.playerId !== movingExplorerPlayerId,
+                      );
+                      const monsters = (roomMonsters[room.id] ?? []).filter(
+                        (monster) => monster.id !== movingMonsterId,
+                      );
                       const visibleHauntRoomTokens =
-                        visibleHauntTokensByRoomId.get(room.id) ?? [];
+                        (visibleHauntTokensByRoomId.get(room.id) ?? []).filter(
+                          (token) => token.id !== movingGirlTokenId,
+                        );
                       const visibleGirlToken = visibleHauntRoomTokens.find(
                         (token) => token.id === "mummy-girl-token",
                       );

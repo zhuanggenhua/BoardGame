@@ -5,10 +5,42 @@ import {
     getMageWarsSpellAbilityDef,
     getMageWarsSpellAbilityId,
     mageWarsAbilityRegistry,
+    mageWarsObjectAbilityRegistry,
     summarizeMageWarsAbilityGaps,
 } from '../domain/abilityCatalog';
+import { MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG, mageWarsObjectAbilityExecutorRegistry } from '../domain/objectAbilityRuntime';
+import {
+    MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
+    mageWarsSpellAbilityExecutorRegistry,
+} from '../domain/spellAbilityExecutors';
+import { MAGE_WARS_OBJECT_ABILITY_IDS } from '../domain/ids';
 
 describe('mage-wars ability catalog', () => {
+    test('registers every current arena object ability with an executor', () => {
+        const objectAbilityIds = Object.values(MAGE_WARS_OBJECT_ABILITY_IDS);
+
+        expect(mageWarsObjectAbilityRegistry.size).toBe(objectAbilityIds.length);
+
+        for (const abilityId of objectAbilityIds) {
+            const ability = mageWarsObjectAbilityRegistry.get(abilityId);
+            expect(ability).toBeDefined();
+            expect(ability).toMatchObject({
+                id: abilityId,
+                trigger: 'arena-object-ability',
+                meta: {
+                    abilityId,
+                    implementationStatus: 'implemented',
+                },
+            });
+            expect(ability?.meta.sourceKind).toMatch(/^(creature|attached-equipment)$/);
+            expect(ability?.meta.sourceSpellCardId).toEqual(expect.any(Number));
+            expect(ability?.meta.actionSpeed).toMatch(/^(quick|normal|source-trait)$/);
+            expect(ability?.meta.actionCost).toMatch(/^(normal|none)$/);
+            expect(ability?.effects[0]).toMatchObject({ type: 'object-ability-runtime' });
+            expect(mageWarsObjectAbilityExecutorRegistry.has(abilityId, MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG)).toBe(true);
+        }
+    });
+
     test('registers every apprentice spell as a stable ability id', () => {
         const materialized = materializeMageWarsConfigPackage();
         const spellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
@@ -32,6 +64,23 @@ describe('mage-wars ability catalog', () => {
                 },
             });
         }
+    });
+
+    test('keeps preset spell ability catalog and executors aligned for future mage expansion', () => {
+        const abilityCatalog = buildMageWarsConfigAbilityCatalog();
+        const registeredAbilityIds = Array.from(mageWarsAbilityRegistry.getRegisteredIds()).sort();
+
+        expect(Object.keys(abilityCatalog).sort()).toEqual(registeredAbilityIds);
+        for (const abilityId of registeredAbilityIds) {
+            expect(mageWarsSpellAbilityExecutorRegistry.has(
+                abilityId,
+                MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
+            )).toBe(true);
+        }
+
+        expect(mageWarsAbilityRegistry.getByTag('implementation:needs-code').map((def) => def.id)).toEqual([
+            getMageWarsSpellAbilityId(1804),
+        ]);
     });
 
     test('tracks implemented apprentice spell effects separately from code gaps', () => {

@@ -95,6 +95,8 @@ export const mageWarsSpellAbilityExecutorRegistry = createAbilityExecutorRegistr
     MageWarsEvent
 >('mage-wars-spell-ability-executors');
 
+export const MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG = 'spell-cast' as const;
+
 interface MageWarsResolvedAttackTarget {
     targetId: string;
     ownerId: PlayerId;
@@ -1453,31 +1455,31 @@ export function resolveMageWarsSpellAttackAfterDefense(
 
 for (const def of mageWarsAbilityRegistry.getByTag('spell-type:攻击')) {
     mageWarsSpellAbilityExecutorRegistry.register(def.id, executeAttackSpell, {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 for (const def of mageWarsAbilityRegistry.getByTag('spell-type:生物')) {
     mageWarsSpellAbilityExecutorRegistry.register(def.id, executeSummonCreatureSpell, {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 for (const def of mageWarsAbilityRegistry.getByTag('spell-type:魔物')) {
     mageWarsSpellAbilityExecutorRegistry.register(def.id, executeSummonConjurationSpell, {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 for (const def of mageWarsAbilityRegistry.getByTag('spell-type:咒语')) {
     mageWarsSpellAbilityExecutorRegistry.register(def.id, executeIncantationSpell, {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 for (const def of mageWarsAbilityRegistry.getByTag('spell-type:装备')) {
     mageWarsSpellAbilityExecutorRegistry.register(def.id, executeEquipmentSpell, {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
@@ -1487,13 +1489,13 @@ for (const def of mageWarsAbilityRegistry.getByTag('spell-type:结界')) {
             ? executeHiddenResponseEnchantmentSpell(ctx)
             : executeVisibleEnchantmentSpell(ctx)
     ), {
-        tag: 'spell-cast',
+        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 export function executeMageWarsSpellAbility(ctx: Omit<MageWarsSpellAbilityContext, 'sourceId'>): MageWarsEvent[] {
     const abilityId = getMageWarsSpellAbilityId(ctx.spell.spellCardId);
-    const executor = mageWarsSpellAbilityExecutorRegistry.resolve(abilityId, 'spell-cast');
+    const executor = mageWarsSpellAbilityExecutorRegistry.resolve(abilityId, MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG);
     if (!executor) return [];
 
     return executor({

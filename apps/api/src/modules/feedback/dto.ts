@@ -562,6 +562,11 @@ export class QueryFeedbackDto {
     @Transform(({ value }: { value: unknown }) => parseBoolean(value))
     @IsBoolean()
     mineOnly?: boolean;
+
+    @IsOptional()
+    @Transform(({ value }: { value: unknown }) => parseBoolean(value))
+    @IsBoolean()
+    summaryOnly?: boolean;
 }
 
 export class FeedbackFilterDto {

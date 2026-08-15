@@ -5,7 +5,7 @@ description: "Mage Wars 设计稿与真实 Board/UI 实现的用户原话反思�
 
 # Mage Wars UI Design Memory
 
-这是 BoardGame 项目内、Mage Wars 设计稿与真实 Board/UI 实现专用的用户原话反思 skill。它是本主题的项目适配层 / 用户纠正正源；README、审计、实现合同和前置包只能引用或记录，不另写一套独立规则。通用游戏 UI 设计方法以项目 `.spec/skills/game-ui-design/SKILL.md` 为准，设计链路以项目 `.spec/skills/ui-design-pipeline/SKILL.md` 为准；本 skill 只记录 Mage Wars 的具体对象、素材和用户纠正实例。
+这是 BoardGame 项目内、Mage Wars 设计稿与真实 Board/UI 实现专用的用户原话反思 skill。它只记录 Mage Wars 的具体对象、素材和用户纠正实例；通用游戏 UI 方法、设计链路和图面审计按使用顺序加载，不在本 skill 复写。
 
 ## 使用顺序
 
@@ -107,7 +107,7 @@ description: "Mage Wars 设计稿与真实 Board/UI 实现的用户原话反思�
 ## 纠正覆盖账本
 
 - `docs/games/mage-wars/design/reference/user-correction-traceability-ledger.md` 记录用户已指出的 Mage Wars 设计纠正、规则 / 素材证据、下一稿门禁和送验前检查方式。
-- 该文件角色是 `drift-check / evidence`：它不能创造新规范，只能引用本 skill、`ui-design-pipeline`、`ui-audit-loop`、规则合同和素材合同。
+- 该文件角色是 `drift-check / evidence`：它不能创造新规范，只能引用本 skill、上游设计 / 审计入口、规则合同和素材合同。
 - 每次用户新增纠正，先判断是否已经被该账本覆盖；没有覆盖时先补账本或回到 canonical-source 补规则，再改 artifact。
 - 每次送验前必须逐项复核账本里的 `必须检查` 列；任一项未覆盖或图面失败，当前稿不得 `AI_PASS`，也不得打开人工验收。
 

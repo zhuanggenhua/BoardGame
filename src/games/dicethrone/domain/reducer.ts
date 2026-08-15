@@ -792,11 +792,12 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
     state,
     event
 ) => {
-    const { playerId, statusId, tokenId, value, customId, sourceAbilityId } = event.payload;
+    const { playerId, statusId, tokenId, value, customId, sourceAbilityId, interactionBacked } = event.payload;
     let resultState = state;
     const hasValidChoiceDelta = typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
     const hasChoiceAnchor = hasCurrentChoiceAnchor(state, sourceAbilityId);
-    const allowGenericChoiceDelta = !sourceAbilityId || hasChoiceAnchor;
+    const hasAuthorizedChoice = hasChoiceAnchor || interactionBacked === true;
+    const allowGenericChoiceDelta = !sourceAbilityId || hasAuthorizedChoice;
 
     const player = state.players[playerId];
     if (player) {
@@ -841,7 +842,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 
     // 通过注册表处理特殊选择效果
     if (customId) {
-        const result = resolveChoiceEffect({ state: resultState, playerId, customId, sourceAbilityId, value });
+        const result = resolveChoiceEffect({ state: resultState, playerId, customId, sourceAbilityId, value, interactionBacked });
         if (result) {
             resultState = { ...resultState, ...result };
         }
@@ -863,7 +864,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 
     if (
         sourceAbilityId
-        && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
+        && (hasCurrentChoiceAnchor(resultState, sourceAbilityId) || interactionBacked === true)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
         && shouldAutoResolveOffensiveRollEndChoice
@@ -1019,6 +1020,187 @@ const handleResponseWindowClosed: EventHandler<Extract<DiceThroneEvent, { type: 
     return state;
 };
 
+type PendingBonusSettlement = NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>;
+type PendingBonusDie = ReturnType<typeof getPendingBonusSettlementDice>[number];
+type BonusEffectParams = Record<string, string | number>;
+
+const countBonusFaces = (dice: PendingBonusDie[], face: string): number =>
+    dice.filter(die => die.face === face).length;
+
+const sumBonusValues = (dice: PendingBonusDie[]): number =>
+    dice.reduce((sum, die) => sum + die.value, 0);
+
+const halfUp = (value: number): number => Math.ceil(value / 2);
+
+const resolveBonusDieEffectKeyForValue = (
+    effectKey: string | undefined,
+    face: string,
+    value: number,
+): string | undefined => {
+    if (!effectKey) return effectKey;
+    if (effectKey.startsWith('bonusDie.effect.powderKeg.')) {
+        return `bonusDie.effect.powderKeg.${value}`;
+    }
+    if (effectKey.startsWith('bonusDie.effect.blinded.')) {
+        return value <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit';
+    }
+
+    for (const prefix of [
+        'bonusDie.effect.treantWildGrowth2.',
+        'bonusDie.effect.treantTrample.',
+        'bonusDie.effect.treantSoulfire.',
+        'bonusDie.effect.treantMotherTree.',
+        'bonusDie.effect.treantRooted.',
+    ]) {
+        if (effectKey.startsWith(prefix)) {
+            return `${prefix}${face || 'other'}`;
+        }
+    }
+
+    return effectKey;
+};
+
+const rebuildBonusDieEffectParams = (
+    die: PendingBonusDie,
+    effectKey: string | undefined,
+    value: number,
+    face: string,
+): BonusEffectParams => {
+    const params: BonusEffectParams = {
+        ...(die.effectParams ?? {}),
+        value,
+        index: die.index,
+    };
+
+    if (Object.prototype.hasOwnProperty.call(params, 'face')) {
+        params.face = face;
+    }
+
+    switch (effectKey) {
+        case 'bonusDie.effect.gainCp':
+            params.cp = halfUp(value);
+            break;
+        case 'bonusDie.effect.gunslingerLoadedDie':
+            params.bonusDamage = halfUp(value);
+            break;
+        case 'bonusDie.effect.artificerPerfectlyCalibrated':
+            params.synth = halfUp(value);
+            params.synthGain = halfUp(value);
+            break;
+        case 'bonusDie.effect.artificerHealBot': {
+            const healAmount = face === 'wrench' ? 1 : 2;
+            params.heal = healAmount;
+            params.healAmount = healAmount;
+            break;
+        }
+        case 'bonusDie.effect.shadowDamage':
+        case 'bonusDie.effect.samuraiBackStrikeDie':
+            params.damage = halfUp(value);
+            break;
+        case 'bonusDie.effect.treantLifeSap':
+            params.heal = halfUp(value);
+            break;
+        default:
+            break;
+    }
+
+    return params;
+};
+
+const rebuildBonusSettlementSummary = (
+    settlement: PendingBonusSettlement,
+    dice: PendingBonusDie[],
+): Partial<PendingBonusSettlement> => {
+    switch (settlement.summaryEffectKey) {
+        case 'bonusDie.effect.volley.result': {
+            const bowCount = countBonusFaces(dice, 'bow');
+            return { summaryEffectParams: { bowCount, bonusDamage: bowCount } };
+        }
+        case 'bonusDie.effect.luckyRoll.result': {
+            const heartCount = countBonusFaces(dice, 'heart');
+            return { summaryEffectParams: { heartCount, healAmount: 1 + 2 * heartCount } };
+        }
+        case 'bonusDie.effect.morePleaseRoll.result': {
+            const swordCount = countBonusFaces(dice, 'sword');
+            return { summaryEffectParams: { swordCount, damage: swordCount } };
+        }
+        case 'bonusDie.effect.gunslingerEatMyLead.result':
+        case 'bonusDie.effect.gunslingerEatMyLead.resultKnockdown': {
+            const bulletCount = countBonusFaces(dice, 'bullet');
+            return {
+                summaryEffectKey: bulletCount > 4
+                    ? 'bonusDie.effect.gunslingerEatMyLead.resultKnockdown'
+                    : 'bonusDie.effect.gunslingerEatMyLead.result',
+                summaryEffectParams: { bulletCount, bonusDamage: bulletCount },
+            };
+        }
+        case 'bonusDie.effect.samuraiMasamune.result': {
+            const katanaCount = countBonusFaces(dice, 'katana');
+            const shameCount = countBonusFaces(dice, 'helm');
+            const retributionCount = countBonusFaces(dice, 'rising_sun');
+            return { summaryEffectParams: { katanaCount, shameCount, retributionCount } };
+        }
+        case 'bonusDie.effect.ninjaGoingForwardResult':
+            return { summaryEffectParams: { totalDamage: sumBonusValues(dice) } };
+        case 'bonusDie.effect.ninjaNinjutsuResult':
+            return { summaryEffectParams: { bonusDamage: dice[0]?.value ?? 0 } };
+        case 'bonusDie.effect.treantLifeSapResult':
+            return { summaryEffectParams: { heal: halfUp(dice[0]?.value ?? 0) } };
+        case 'bonusDie.effect.treantWildGrowth2.result': {
+            const branchCount = countBonusFaces(dice, 'branch');
+            const leafCount = countBonusFaces(dice, 'leaf');
+            const spiritCount = countBonusFaces(dice, 'spirit');
+            return { summaryEffectParams: { branchCount, leafCount, spiritCount } };
+        }
+        case 'bonusDie.effect.treantTrample.result': {
+            const branchCount = countBonusFaces(dice, 'branch');
+            return { summaryEffectParams: { branchCount } };
+        }
+        case 'bonusDie.effect.treantSoulfire.result': {
+            const branchCount = countBonusFaces(dice, 'branch');
+            const leafCount = countBonusFaces(dice, 'leaf');
+            const spiritCount = countBonusFaces(dice, 'spirit');
+            return { summaryEffectParams: { branchCount, leafCount, spiritCount } };
+        }
+        default:
+            return {};
+    }
+};
+
+const updatePendingBonusSettlementDie = (
+    state: DiceThroneCore,
+    dieId: number,
+    newValue: number,
+    effectParamsOverride?: BonusEffectParams,
+): PendingBonusSettlement | undefined => {
+    const settlement = state.pendingBonusDiceSettlement;
+    if (!settlement) return settlement;
+
+    const dice = getPendingBonusSettlementDice(settlement).map(die => {
+        if (die.index !== dieId) return die;
+        const rawFace = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true
+            ? String(newValue)
+            : (getPlayerDieFace(state, settlement.attackerId, newValue) ?? String(newValue));
+        const face = rawFace;
+        const effectKey = resolveBonusDieEffectKeyForValue(die.effectKey, face, newValue);
+        return {
+            ...die,
+            value: newValue,
+            face,
+            effectKey,
+            effectParams: effectParamsOverride
+                ? { ...rebuildBonusDieEffectParams(die, effectKey, newValue, face), ...effectParamsOverride, value: newValue, index: die.index }
+                : rebuildBonusDieEffectParams(die, effectKey, newValue, face),
+        };
+    });
+
+    return {
+        ...settlement,
+        dice,
+        ...rebuildBonusSettlementSummary(settlement, dice),
+    };
+};
+
 /**
  * 处理骰子修改事件
  * 
@@ -1046,32 +1228,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
             && !state.dice.some(die => die.id === dieId)
         ));
     const pendingBonusDiceSettlement = targetsPendingBonusDie && state.pendingBonusDiceSettlement
-        ? {
-            ...state.pendingBonusDiceSettlement,
-            dice: getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => {
-                if (die.index !== dieId) return die;
-                const isPowderKegDie = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true;
-                const isBlindedDie = die.effectKey?.startsWith('bonusDie.effect.blinded.') === true;
-                const face = isPowderKegDie
-                    ? String(newValue)
-                    : (getPlayerDieFace(state, state.pendingBonusDiceSettlement!.attackerId, newValue) ?? String(newValue));
-                return {
-                    ...die,
-                    value: newValue,
-                    face,
-                    effectKey: isPowderKegDie
-                        ? `bonusDie.effect.powderKeg.${newValue}`
-                        : isBlindedDie
-                            ? (newValue <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit')
-                        : die.effectKey,
-                    effectParams: {
-                        ...die.effectParams,
-                        value: newValue,
-                        ...(die.effectKey === 'bonusDie.effect.gainCp' ? { cp: Math.ceil(newValue / 2) } : {}),
-                    },
-                };
-            }),
-        }
+        ? updatePendingBonusSettlementDie(state, dieId, newValue)
         : state.pendingBonusDiceSettlement;
     const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
     const pendingAttack = state.pendingAttack
@@ -1109,9 +1266,13 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
         && state.currentRollContext.dice.some(die => die.id === dieId)
         && !state.dice.slice(0, state.rollDiceCount).some(die => die.id === dieId),
     );
+    const didCurrentContextDieValueChange = Boolean(
+        state.currentRollContext
+        && targetsCoreDie
+        && state.currentRollContext.dice.some(die => die.id === dieId && die.value !== newValue),
+    );
     const didDieValueChange = (targetsCoreDie && state.dice.some(d => d.id === dieId && d.value !== newValue))
-        || (isCurrentContextOnlyDie
-            && state.currentRollContext!.dice.some(die => die.id === dieId && die.value !== newValue));
+        || didCurrentContextDieValueChange;
     const newDice = targetsCoreDie && !isCurrentContextOnlyDie
         ? state.dice.map(d => {
             if (d.id !== dieId) return d;
@@ -1142,7 +1303,15 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
     if (targetsPendingBonusDie && pendingBonusDiceSettlement) {
         return setCurrentRollContextDice(nextState, getBonusSettlementContextDice(nextState, pendingBonusDiceSettlement));
     }
-    if (contextDice) return nextState;
+    if (contextDice) {
+        return {
+            ...nextState,
+            currentRollContext: {
+                ...state.currentRollContext!,
+                dice: contextDice,
+            },
+        };
+    }
     return syncLegacyMainDiceToCurrentRollContext(nextState);
 };
 
@@ -1172,32 +1341,7 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
             && !state.dice.some(die => die.id === dieId)
         ));
     if (targetsPendingBonusDie && state.pendingBonusDiceSettlement) {
-        const pendingBonusDiceSettlement = {
-            ...state.pendingBonusDiceSettlement,
-            dice: getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => {
-                if (die.index !== dieId) return die;
-                const isPowderKegDie = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true;
-                const isBlindedDie = die.effectKey?.startsWith('bonusDie.effect.blinded.') === true;
-                const face = isPowderKegDie
-                    ? String(newValue)
-                    : (getPlayerDieFace(state, state.pendingBonusDiceSettlement!.attackerId, newValue) ?? String(newValue));
-                return {
-                    ...die,
-                    value: newValue,
-                    face,
-                    effectKey: isPowderKegDie
-                        ? `bonusDie.effect.powderKeg.${newValue}`
-                        : isBlindedDie
-                            ? (newValue <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit')
-                            : die.effectKey,
-                    effectParams: {
-                        ...die.effectParams,
-                        value: newValue,
-                        ...(die.effectKey === 'bonusDie.effect.gainCp' ? { cp: Math.ceil(newValue / 2) } : {}),
-                    },
-                };
-            }),
-        };
+        const pendingBonusDiceSettlement = updatePendingBonusSettlementDie(state, dieId, newValue);
         return setCurrentRollContextDice(
             { ...state, pendingBonusDiceSettlement },
             getBonusSettlementContextDice({ ...state, pendingBonusDiceSettlement }, pendingBonusDiceSettlement),
@@ -1209,9 +1353,13 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
         && state.currentRollContext.dice.some(die => die.id === dieId)
         && !state.dice.slice(0, state.rollDiceCount).some(die => die.id === dieId),
     );
+    const didCurrentContextDieValueChange = Boolean(
+        state.currentRollContext
+        && (target === undefined || target === 'activeDie')
+        && state.currentRollContext.dice.some(die => die.id === dieId && die.value !== newValue),
+    );
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue)
-        || (isCurrentContextOnlyDie
-            && state.currentRollContext!.dice.some(die => die.id === dieId && die.value !== newValue));
+        || didCurrentContextDieValueChange;
     const newDice = isCurrentContextOnlyDie
         ? state.dice
         : state.dice.map(d => {
@@ -1368,10 +1516,15 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     // 更新 pendingBonusDiceSettlement
     let pendingBonusDiceSettlement = state.pendingBonusDiceSettlement;
     if (state.pendingBonusDiceSettlement) {
-        const newDice = getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(d =>
-            d.index === dieIndex ? { ...d, value: newValue, face: newFace, effectParams } : d);
+        const updatedSettlement = updatePendingBonusSettlementDie(state, dieIndex, newValue, {
+            ...effectParams,
+            value: newValue,
+            index: dieIndex,
+        });
+        const newDice = getPendingBonusSettlementDice(updatedSettlement).map(d =>
+            d.index === dieIndex ? { ...d, face: newFace } : d);
         pendingBonusDiceSettlement = {
-            ...state.pendingBonusDiceSettlement,
+            ...updatedSettlement,
             dice: newDice,
             rerollCount: state.pendingBonusDiceSettlement.rerollCount + 1,
             lastRerolledDieIndex: dieIndex,

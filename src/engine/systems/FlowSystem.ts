@@ -348,11 +348,17 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
             });
         },
 
-        afterEvents: ({ state, events, random, playerIds }): HookResult<TCore> | void => {
+        afterEvents: ({ state, events, random, playerIds, pendingAfterEventsToReduceCount }): HookResult<TCore> | void => {
             // 撤回后不自动推进（通用守卫）
             // UndoSystem 恢复快照后会设置 restoredRandomCursor，
             // 此时不应触发任何自动推进逻辑，等待玩家手动操作
             if (state.sys.undo?.restoredRandomCursor !== undefined) {
+                return;
+            }
+
+            // 同一轮 afterEvents 中，优先级更早的系统可能刚产出事件。
+            // 这些事件尚未 reduce 进 core 时，自动推进只能等下一轮读取已落地状态。
+            if ((pendingAfterEventsToReduceCount ?? 0) > 0) {
                 return;
             }
 

@@ -1465,6 +1465,13 @@ const buildInteractionActions = (
 ): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
     if (!current) return null;
+    if (current.kind === 'dt:token-response') {
+        const pendingDamage = state.core.pendingDamage as PendingDamage | undefined;
+        if (!pendingDamage || pendingDamage.responderId !== playerId) {
+            return [];
+        }
+        return buildResponseActions(state, playerId, phase);
+    }
     if (current.playerId !== playerId) return [];
 
     const selectPlayerActions = buildSelectPlayerInteractionActions(state, playerId, current);

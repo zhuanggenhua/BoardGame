@@ -7,6 +7,10 @@ import {
     updateBoardItems,
     writeBoard,
 } from './lib/status-board.mjs';
+import {
+    normalizeBaseUrl,
+    updateFeedbackStatusViaBestAvailableWriter,
+} from './lib/feedback-status-writer.mjs';
 
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
 
@@ -92,39 +96,28 @@ function parseArgs(argv) {
 
 async function main() {
     const options = parseArgs(process.argv.slice(2));
-    const baseUrl = options.baseUrl.replace(/\/+$/, '');
-    if (!options.token) {
-        throw new Error('缺少反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
-    }
-    const response = await fetch(`${baseUrl}/admin/feedback/${options.id}/status`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${options.token}`,
-        },
-        body: JSON.stringify({
-            status: options.status,
-            ...(options.closedReason.trim() ? { closedReason: options.closedReason.trim() } : {}),
-            ...(options.resolvedMethod.trim() ? { resolvedMethod: options.resolvedMethod.trim() } : {}),
-        }),
+    const baseUrl = normalizeBaseUrl(options.baseUrl);
+    const remoteUpdate = await updateFeedbackStatusViaBestAvailableWriter({
+        baseUrl,
+        token: options.token,
+        id: options.id,
+        status: options.status,
+        closedReason: options.closedReason,
+        resolvedMethod: options.resolvedMethod,
     });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`更新失败 ${response.status} ${response.statusText}: ${text}`);
-    }
-
-    const payload = await response.json();
+    const writerEvidence = remoteUpdate.writer === 'http'
+        ? `online-feedback-status:http:${baseUrl}/admin/feedback/${options.id}/status`
+        : `online-feedback-status:mongo-ssh:feedbacks/${options.id}`;
     let localBoardPath = '';
     if (options.summaryPath) {
         const { board, boardPath } = await syncBoardFromSummaryFile(options.summaryPath, options.boardPath);
         localBoardPath = boardPath;
         const mirrorEvidence = options.evidence.length > 0
             ? options.evidence
-            : [`online-feedback-status:${baseUrl}/admin/feedback/${options.id}/status`];
+            : [writerEvidence];
         const mirrorVerification = options.verification.length > 0
             ? options.verification
-            : ['线上反馈状态回写成功后同步本地状态镜像'];
+            : [`线上反馈状态通过 ${remoteUpdate.writer} 回写成功后同步本地状态镜像`];
         updateBoardItems(board, [options.id], {
             status: options.status,
             owner: 'codex',
@@ -140,10 +133,10 @@ async function main() {
         localBoardPath = options.boardPath;
         const mirrorEvidence = options.evidence.length > 0
             ? options.evidence
-            : [`online-feedback-status:${baseUrl}/admin/feedback/${options.id}/status`];
+            : [writerEvidence];
         const mirrorVerification = options.verification.length > 0
             ? options.verification
-            : ['线上反馈状态回写成功后同步本地状态镜像'];
+            : [`线上反馈状态通过 ${remoteUpdate.writer} 回写成功后同步本地状态镜像`];
         updateBoardItems(board, [options.id], {
             status: options.status,
             owner: 'codex',
@@ -156,7 +149,7 @@ async function main() {
         await writeBoard(options.boardPath, board);
     }
 
-    process.stdout.write(`${JSON.stringify({ ...payload, localBoardPath }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({ ...remoteUpdate, localBoardPath }, null, 2)}\n`);
 }
 
 main().catch((error) => {

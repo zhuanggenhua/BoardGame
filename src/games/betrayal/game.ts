@@ -794,6 +794,8 @@ export interface BetrayalPendingEventRollResolutionState {
     playerId: string;
     sourceTitle: string;
     effect: UseEffectProfile;
+    requiredPlayerIds?: string[];
+    acknowledgedPlayerIds?: string[];
     nextPendingEventChoice?: BetrayalPendingEventChoiceState;
     deathPrevention?: {
         playerId: string;
@@ -1943,13 +1945,18 @@ type BetrayalEvent =
         mentalDamageAfterReroll?: number;
         eventRerollEffect?: UseEffectProfile;
         eventRerollDeathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
-        eventRerollHaunt?: Omit<BetrayalPendingEventRollResolutionState, 'rollId' | 'playerId' | 'sourceTitle' | 'effect' | 'nextPendingEventChoice' | 'deathPrevention' | 'hauntRoll'>;
+        eventRerollHaunt?: Omit<BetrayalPendingEventRollResolutionState, 'rollId' | 'playerId' | 'sourceTitle' | 'effect' | 'requiredPlayerIds' | 'acknowledgedPlayerIds' | 'nextPendingEventChoice' | 'deathPrevention' | 'hauntRoll'>;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.EVENT_ROLL_FINALIZED, {
         rollId: string;
         playerId: string;
+        triggerPlayerId: string;
         sourceTitle: string;
+        requiredPlayerIds: string[];
+        acknowledgedPlayerIds: string[];
+        remainingAcknowledgementCount: number;
+        isFullyAcknowledged: boolean;
         effect: UseEffectProfile;
         nextPendingEventChoice?: BetrayalPendingEventChoiceState;
         deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
@@ -2945,6 +2952,34 @@ function isPendingCardResolutionFullyAcknowledged(
     acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
 ): boolean {
     const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
+    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
+}
+
+function resolvePendingEventRollResolutionRequiredPlayerIds(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    resolution: BetrayalPendingEventRollResolutionState,
+): string[] {
+    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    if (configuredPlayerIds.length > 0) {
+        return configuredPlayerIds;
+    }
+    return core.playerIds.length > 0 ? [...core.playerIds] : [resolution.playerId];
+}
+
+function resolvePendingEventRollResolutionAcknowledgedPlayerIds(
+    resolution: BetrayalPendingEventRollResolutionState,
+): string[] {
+    return Array.from(new Set(
+        resolution.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
+    ));
+}
+
+function isPendingEventRollResolutionFullyAcknowledged(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    resolution: BetrayalPendingEventRollResolutionState,
+    acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
+): boolean {
+    const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);
     return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
@@ -4014,6 +4049,12 @@ function clonePendingEventRollResolution(
 ): BetrayalPendingEventRollResolutionState {
     return {
         ...pending,
+        requiredPlayerIds: pending.requiredPlayerIds
+            ? [...pending.requiredPlayerIds]
+            : undefined,
+        acknowledgedPlayerIds: pending.acknowledgedPlayerIds
+            ? [...pending.acknowledgedPlayerIds]
+            : undefined,
         effect: cloneUseEffect(pending.effect),
         nextPendingEventChoice: pending.nextPendingEventChoice
             ? clonePendingEventChoice(pending.nextPendingEventChoice)
@@ -14406,8 +14447,13 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
     if (command.type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL) {
         return { valid: false, error: '请先确认事件骰的最终结果。' };
     }
-    if (command.playerId !== pending.playerId) {
-        return { valid: false, error: '必须由刚刚投骰的玩家确认最终结果。' };
+    const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, pending);
+    if (!requiredPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '只有本局玩家可以确认事件骰最终结果。' };
+    }
+    const acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(pending);
+    if (acknowledgedPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '你已经确认过当前事件骰最终结果。' };
     }
     if (command.payload.rollId && command.payload.rollId !== pending.rollId) {
         return { valid: false, error: '确认的投骰已不是当前事件骰。' };
@@ -16667,10 +16713,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         case BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL: {
             const pending = core.pendingEventRollResolution!;
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, pending);
+            const acknowledgedPlayerIds = Array.from(new Set([
+                ...resolvePendingEventRollResolutionAcknowledgedPlayerIds(pending),
+                command.playerId,
+            ]));
+            const isFullyAcknowledged = isPendingEventRollResolutionFullyAcknowledged(
+                core,
+                pending,
+                acknowledgedPlayerIds,
+            );
             return [nowEvent(EVENTS.EVENT_ROLL_FINALIZED, {
                 rollId: pending.rollId,
                 playerId: command.playerId,
+                triggerPlayerId: pending.playerId,
                 sourceTitle: pending.sourceTitle,
+                requiredPlayerIds,
+                acknowledgedPlayerIds,
+                remainingAcknowledgementCount: Math.max(0, requiredPlayerIds.length - acknowledgedPlayerIds.length),
+                isFullyAcknowledged,
                 effect: cloneUseEffect(pending.effect),
                 nextPendingEventChoice: pending.nextPendingEventChoice
                     ? clonePendingEventChoice(pending.nextPendingEventChoice)
@@ -16704,7 +16765,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     ? cloneUponReflectionRuntimeState(pending.uponReflectionSetup)
                     : undefined,
                 hauntRoll: pending.hauntRoll ? { ...pending.hauntRoll } : undefined,
-                logText: `${actor.displayName}确认${pending.sourceTitle}的最终投骰结果`,
+                logText: `${actor.displayName}确认${pending.sourceTitle}的最终投骰结果（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
@@ -19603,6 +19664,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     rollId: core.recentRoll.id,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
+                    requiredPlayerIds: [...core.playerIds],
+                    acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(event.payload.eventEffect),
                     deathPrevention: event.payload.deathPrevention
                         ? {
@@ -19862,6 +19925,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     rollId: core.recentRoll.id,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.sourceTitle,
+                    requiredPlayerIds: [...core.playerIds],
+                    acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(pendingEffect),
                     nextPendingEventChoice: event.payload.nextPendingEventChoice
                         ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
@@ -20119,6 +20184,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     core.recentRoll = nextRoll;
                     core.pendingEventRollResolution = {
                         ...core.pendingEventRollResolution,
+                        requiredPlayerIds: resolvePendingEventRollResolutionRequiredPlayerIds(core, core.pendingEventRollResolution),
+                        acknowledgedPlayerIds: [],
                         effect: cloneUseEffect(nextEffect),
                         nextPendingEventChoice,
                         deathPrevention: event.payload.eventRerollDeathPrevention
@@ -20360,6 +20427,19 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (core.pendingEventRollResolution?.rollId !== event.payload.rollId) {
                 return core;
             }
+            if (!event.payload.isFullyAcknowledged) {
+                core.pendingEventRollResolution = {
+                    ...core.pendingEventRollResolution,
+                    requiredPlayerIds: [...event.payload.requiredPlayerIds],
+                    acknowledgedPlayerIds: [...event.payload.acknowledgedPlayerIds],
+                };
+                const synced = syncCurrentExplorerProjection(core);
+                return {
+                    ...synced,
+                    recommendedAction: resolveRecommendedAction(synced),
+                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+                };
+            }
             if (event.payload.nextPendingEventChoice) {
                 core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
                 core.pendingEventRollResolution = null;
@@ -20411,8 +20491,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 applyDustEventEffectDeathIfNeeded(core);
             }
             core.pendingEventRollResolution = null;
+            const eventTriggerPlayerId = event.payload.triggerPlayerId || event.payload.playerId;
             core.pendingCardResolutionQueue = createPendingCardResolutionQueue({
-                playerId: event.payload.playerId,
+                playerId: eventTriggerPlayerId,
                 requiredPlayerIds: core.playerIds,
                 roomId: core.currentExplorer.roomId,
                 timestamp: event.timestamp,
@@ -20427,7 +20508,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
             if (event.payload.hauntTriggered) {
                 const scenario = scenarioConfigById(core.scenarioId);
-                const hauntRevealerPlayerId = event.payload.playerId;
+                const hauntRevealerPlayerId = eventTriggerPlayerId;
                 const hauntRevealResolution = event.payload.hauntRevealResolution
                     ?? resolveHauntRevealResolutionForTrigger(
                         core,

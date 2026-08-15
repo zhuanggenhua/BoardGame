@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -21,13 +21,13 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { registerProtection } from '../domain/ongoingEffects';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
-import { reduce } from '../domain/reduce';
 import type {
     BaseReplacedEvent,
     CardInstance,
@@ -71,6 +71,13 @@ type DiscardPromptContext = AvengersPromptContext & {
     count: number;
 };
 
+type DrawThenDiscardContext = AvengersPromptContext & {
+    sourceId: 'avengers_hawkeye' | 'avengers_jarvis';
+    random: RandomFn;
+    drawCount: number;
+    discardCount: number;
+};
+
 type MovePromptContext = AvengersPromptContext & {
     sourceId: 'avengers_repulsor_boots';
     minionUid: string;
@@ -105,6 +112,10 @@ type HawkeyeArrowsPromptContext = AvengersPromptContext & {
     hawkeyeInPlay: boolean;
 };
 
+type HawkeyeArrowsRevealContext = HawkeyeArrowsPromptContext & {
+    revealEvents: SmashUpEvent[];
+};
+
 type HulkSmashPromptContext = AvengersPromptContext & {
     baseIndex: number;
 };
@@ -134,17 +145,6 @@ function runtimeToAbilityResult(result: {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
     };
-}
-
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    let core = matchState.core;
-    for (const event of events) {
-        core = reduce(core, event);
-    }
-    return { ...matchState, core };
 }
 
 function findMinion(
@@ -230,6 +230,41 @@ const discardCardsPromptProgram = createPromptProgram<DiscardPromptContext, Smas
         };
     },
 });
+
+const discardPromptAfterCommittedDrawProgram = createEffectProgram<DrawThenDiscardContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const count = Math.min(
+            context.discardCount,
+            context.matchState.core.players[context.playerId]?.hand.length ?? 0,
+        );
+        if (count === 0) return { events: [] };
+        return {
+            events: [],
+            context: {
+                matchState: context.matchState,
+                playerId: context.playerId,
+                now: context.now,
+                sourceId: context.sourceId,
+                count,
+            },
+            nextProgram: discardCardsPromptProgram,
+        };
+    },
+);
+
+const drawThenDiscardProgram = createEffectProgram<DrawThenDiscardContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            context.drawCount,
+            context.random,
+            context.now,
+        ),
+        context,
+        nextProgram: discardPromptAfterCommittedDrawProgram,
+    }),
+);
 
 const blackWidowPromptProgram = createPromptProgram<
     AvengersPromptContext & { baseIndex: number },
@@ -744,6 +779,20 @@ const hawkeyeArrowsPickPromptProgram = createPromptProgram<HawkeyeArrowsPromptCo
     },
 });
 
+const hawkeyeArrowsPromptAfterRevealProgram = createEffectProgram<HawkeyeArrowsRevealContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: context.revealEvents,
+        context: {
+            matchState: context.matchState,
+            playerId: context.playerId,
+            now: context.now,
+            actionCards: context.actionCards,
+            hawkeyeInPlay: context.hawkeyeInPlay,
+        },
+        nextProgram: hawkeyeArrowsPickPromptProgram,
+    }),
+);
+
 const hulkSmashReplacePromptProgram = createPromptProgram<HulkSmashPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'avengers_hulk_smash_replace',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -855,17 +904,16 @@ const hulkSmashArtifactsPromptProgram = createPromptProgram<HulkSmashPromptConte
                 sourceBaseIndex: context.baseIndex,
                 now: timestamp,
             }));
-        const projected = simulateMatchState(state, events);
         const canReplace = Boolean(
-            projected.core.baseDeck[0]
-            && projected.core.bases[context.baseIndex]?.minions.some(minion =>
+            state.core.baseDeck[0]
+            && state.core.bases[context.baseIndex]?.minions.some(minion =>
                 minion.controller === context.playerId
                 && matchesDefId(minion.defId, 'avengers_hulk')),
         );
         if (!canReplace) return { events };
         return {
             events,
-            context: { ...context, matchState: projected, now: timestamp },
+            context: { ...context, matchState: state, now: timestamp },
             nextProgram: hulkSmashReplacePromptProgram,
         };
     },
@@ -1258,21 +1306,17 @@ function hawkeyesArrows(ctx: AbilityContext): AbilityResult {
             ],
         };
     }
-    const projected = simulateMatchState(ctx.matchState, revealEvents);
     const hawkeyeInPlay = ctx.state.bases.some(base => base.minions.some(minion =>
         minion.controller === ctx.playerId
         && matchesDefId(minion.defId, 'avengers_hawkeye')));
-    const prompt = executeAbilityProgram(hawkeyeArrowsPickPromptProgram, {
-        matchState: projected,
+    return runtimeToAbilityResult(executeAbilityProgram(hawkeyeArrowsPromptAfterRevealProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        revealEvents,
         actionCards: result.picked.map(card => ({ cardUid: card.uid, defId: card.defId })),
         hawkeyeInPlay,
-    });
-    return {
-        events: [...revealEvents, ...prompt.events],
-        ...(prompt.matchState ? { matchState: prompt.matchState } : {}),
-    };
+    }));
 }
 
 function hulkSmash(ctx: AbilityContext): AbilityResult {
@@ -1369,21 +1413,15 @@ function captainAmerica(ctx: AbilityContext): AbilityResult {
 }
 
 function hawkeye(ctx: AbilityContext): AbilityResult {
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now);
-    const projected = simulateMatchState(ctx.matchState, drawEvents);
-    const count = Math.min(2, projected.core.players[ctx.playerId]?.hand.length ?? 0);
-    if (count === 0) return { events: drawEvents };
-    const prompt = executeAbilityProgram(discardCardsPromptProgram, {
-        matchState: projected,
+    return runtimeToAbilityResult(executeAbilityProgram(drawThenDiscardProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
+        random: ctx.random,
         now: ctx.now,
         sourceId: 'avengers_hawkeye',
-        count,
-    });
-    return {
-        events: [...drawEvents, ...prompt.events],
-        ...(prompt.matchState ? { matchState: prompt.matchState } : {}),
-    };
+        drawCount: 3,
+        discardCount: 2,
+    }));
 }
 
 function hulk(ctx: AbilityContext): AbilityResult {
@@ -1405,21 +1443,15 @@ function avengersAssemble(ctx: AbilityContext): AbilityResult {
 }
 
 function jarvis(ctx: AbilityContext): AbilityResult {
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
-    const projected = simulateMatchState(ctx.matchState, drawEvents);
-    const count = Math.min(1, projected.core.players[ctx.playerId]?.hand.length ?? 0);
-    if (count === 0) return { events: drawEvents };
-    const prompt = executeAbilityProgram(discardCardsPromptProgram, {
-        matchState: projected,
+    return runtimeToAbilityResult(executeAbilityProgram(drawThenDiscardProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
+        random: ctx.random,
         now: ctx.now,
         sourceId: 'avengers_jarvis',
-        count,
-    });
-    return {
-        events: [...drawEvents, ...prompt.events],
-        ...(prompt.matchState ? { matchState: prompt.matchState } : {}),
-    };
+        drawCount: 1,
+        discardCount: 1,
+    }));
 }
 
 function repulsorBoots(ctx: AbilityContext, special: boolean): AbilityResult {

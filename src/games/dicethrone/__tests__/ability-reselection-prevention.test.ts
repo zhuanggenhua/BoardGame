@@ -9,15 +9,21 @@
 
 import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import { executePipeline } from '../../../engine/pipeline';
 import { DiceThroneDomain } from '../domain';
+import { getAvailableAbilityIds } from '../domain/rules';
+import { RESOURCE_IDS } from '../domain/resources';
 import {
     testSystems,
     fixedRandom,
     createNoResponseSetup,
+    createHeroMatchup,
     assertState,
     cmd,
     createQueuedRandom,
+    getCardById,
 } from './test-utils';
+import { ZHANSHUJIA_DICE_FACE_IDS } from '../domain/ids';
 
 const createRunner = (random = fixedRandom) =>
     new GameTestRunner({
@@ -68,5 +74,121 @@ describe('技能重选防护（attack_already_initiated）', () => {
         expect(reselect.actualErrors[0].error).toBe('attack_already_initiated');
         // 验证：攻击未改变（仍然是原来的技能）
         expect(reselect.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-5');
+    });
+
+    it('冲拳必须从当前骰面解析到具体变体，父技能不能进入 0 伤害攻击链', () => {
+        const playerIds = ['0', '1'];
+        const random = createQueuedRandom([1, 1, 1, 1, 5, 1, 1, 1]);
+        const run = (state: ReturnType<ReturnType<typeof createHeroMatchup>>, command: ReturnType<typeof cmd>) => (
+            executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                { ...command, timestamp: Date.now() } as any,
+                random,
+                playerIds,
+            )
+        );
+
+        let state = createHeroMatchup('monk', 'barbarian')(playerIds, random);
+        for (const command of [
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+        ]) {
+            const result = run(state, command);
+            expect(result.success, `${command.type} 必须成功：${result.error ?? ''}`).toBe(true);
+            state = result.state;
+        }
+
+        const availableAbilityIds = getAvailableAbilityIds(state.core, '0', 'offensiveRoll');
+        expect(availableAbilityIds).toContain('fist-technique-4');
+        expect(availableAbilityIds).not.toContain('fist-technique');
+
+        const parentSelect = run(state, cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique' }));
+        expect(parentSelect.success).toBe(false);
+        expect(parentSelect.error).toBe('ability_not_available');
+        expect(parentSelect.state.core.pendingAttack).toBeNull();
+
+        const selected = run(state, cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-4' }));
+        expect(selected.success, selected.error ?? '').toBe(true);
+        expect(selected.state.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-4');
+
+        state = selected.state;
+        for (const command of [
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '1'),
+            cmd('CONFIRM_ROLL', '1'),
+            cmd('ADVANCE_PHASE', '1'),
+        ]) {
+            const result = run(state, command);
+            expect(result.success, `${command.type} 必须成功：${result.error ?? ''}`).toBe(true);
+            state = result.state;
+        }
+
+        expect(state.sys.phase).toBe('main2');
+        expect(state.core.pendingAttack).toBeNull();
+        expect(state.core.lastResolvedAttackDamage).toBeGreaterThan(0);
+        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBeLessThan(50);
+    });
+
+    it('制胜高地选中后必须先保留攻击并开放发动前改骰响应窗口', () => {
+        const playerIds = ['0', '1'];
+        const random = createQueuedRandom([6, 6, 6, 6, 6]);
+        const run = (state: ReturnType<ReturnType<typeof createHeroMatchup>>, command: ReturnType<typeof cmd>) => (
+            executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                { ...command, timestamp: Date.now() } as any,
+                random,
+                playerIds,
+            )
+        );
+
+        let state = createHeroMatchup('zhanshujia', 'cursed_pirate')(playerIds, random);
+        for (const command of [
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+        ]) {
+            const result = run(state, command);
+            expect(result.success, `${command.type} 必须成功：${result.error ?? ''}`).toBe(true);
+            state = result.state;
+        }
+
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    ...state.core.players,
+                    '1': {
+                        ...state.core.players['1'],
+                        hand: [getCardById('card-surprise')],
+                        resources: {
+                            ...state.core.players['1'].resources,
+                            [RESOURCE_IDS.CP]: 10,
+                        },
+                    },
+                },
+            },
+        };
+
+        expect(state.core.dice.map((die) => die.value)).toEqual([6, 6, 6, 6, 6]);
+        expect(state.core.dice.every((die) => die.symbol === ZHANSHUJIA_DICE_FACE_IDS.MEDAL)).toBe(true);
+        expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).toContain('high-ground');
+
+        const selected = run(state, cmd('SELECT_ABILITY', '0', { abilityId: 'high-ground' }));
+        expect(selected.success, selected.error ?? '').toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'high-ground',
+            isUltimate: true,
+        });
+        expect(selected.state.sys.responseWindow.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+        });
+        expect(selected.state.core.rollConfirmed).toBe(true);
     });
 });

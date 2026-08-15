@@ -66,7 +66,8 @@ describe('迪士尼四派系代表性玩法行为', () => {
     it('丛林乐园：计分弃牌后从真实反应选择进入 +1 力量标记', () => {
         const core = makeState({
             bases: [makeBase('base_jungle_paradise', [
-                makeMinion('discarded-minion', 'lion_king_simba', '0', 20),
+                makeMinion('discarded-minion', 'lion_king_simba', '0', 30),
+            ]), makeBase('base_the_jungle', [
                 makeMinion('target-minion', 'lion_king_zazu', '0', 2),
             ])],
         });
@@ -98,7 +99,7 @@ describe('迪士尼四派系代表性玩法行为', () => {
         );
 
         expect(targetPrompt).toBeTruthy();
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target-minion')?.powerCounters).toBe(1);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'target-minion')?.powerCounters).toBe(1);
         expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.POWER_COUNTER_ADDED,
             payload: expect.objectContaining({ minionUid: 'target-minion', amount: 1 }),

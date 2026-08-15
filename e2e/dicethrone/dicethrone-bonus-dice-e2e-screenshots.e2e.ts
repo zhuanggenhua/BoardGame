@@ -16,7 +16,11 @@ import {
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
 import { MOON_ELF_CARDS } from '../../src/games/dicethrone/heroes/moon_elf/cards';
-import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
+import {
+    expectRightTrayBonusDiceAwaitingResponse,
+    expectRightTrayBonusDiceConfirmation,
+    settleCurrentBonusDice,
+} from './bonus-dice-flow';
 
 const DICETHRONE_ONLINE_TEST_TIMEOUT_MS = 600000;
 
@@ -333,6 +337,19 @@ async function readVisibleBonusSnapshot(page: Page) {
     });
 }
 
+async function hasPendingBonusDieModifiedEvent(page: Page, oldValue: number, newValue: number): Promise<boolean> {
+    return page.evaluate(({ expectedOldValue, expectedNewValue }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        return entries.some((entry: any) => (
+            entry?.event?.type === 'DIE_MODIFIED'
+            && entry?.event?.payload?.target === 'pendingBonusDie'
+            && entry?.event?.payload?.oldValue === expectedOldValue
+            && entry?.event?.payload?.newValue === expectedNewValue
+        ));
+    }, { expectedOldValue: oldValue, expectedNewValue: newValue });
+}
+
 function chooseVolleyBoundaryDie(snapshot: Awaited<ReturnType<typeof readVisibleBonusSnapshot>>) {
     const indexWithThree = snapshot.diceValues.findIndex((value) => value === 3);
     if (indexWithThree >= 0) {
@@ -597,6 +614,9 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             const volleyChoice = chooseVolleyBoundaryDie(volleyBeforeSnapshot);
             expect(volleyChoice.beforeBowCount).not.toBe(volleyChoice.afterBowCount);
             await closeCardSpotlightIfVisible(guestPage);
+            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+                sourceAbilityId: 'volley',
+            });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
             await expect(guestPage.getByRole('button', { name: /^(跳过|Pass)$/i }).first()).toBeVisible({ timeout: 5000 });
             await assertResponseHintAboveHand(guestPage);
@@ -622,6 +642,12 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 newValue: volleyChoice.afterValue,
             });
             await expect(selectedVolleyDie).toHaveAttribute('data-display-value', String(volleyChoice.afterValue), { timeout: 5000 });
+            await expect.poll(() => hasPendingBonusDieModifiedEvent(
+                guestPage,
+                volleyChoice.beforeValue,
+                volleyChoice.afterValue,
+            ), { timeout: 5000 }).toBe(true);
+            await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
             await screenshotStep(guestPage, testInfo, '05-万箭齐发-弹一手已修改奖励骰');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
@@ -742,6 +768,9 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             });
             const thunderBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
             const thunderChoice = chooseThunderDie(thunderBeforeSnapshot);
+            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+                sourceAbilityId: 'thunder-strike',
+            });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
             await assertResponseHintAboveHand(guestPage);
             await screenshotStep(guestPage, testInfo, '03a-雷霆万钧-奖励骰响应提示贴在手牌上沿');
@@ -766,6 +795,12 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 newValue: thunderChoice.afterValue,
             });
             await expect(selectedThunderDie).toHaveAttribute('data-display-value', String(thunderChoice.afterValue), { timeout: 5000 });
+            await expect.poll(() => hasPendingBonusDieModifiedEvent(
+                guestPage,
+                thunderChoice.beforeValue,
+                thunderChoice.afterValue,
+            ), { timeout: 5000 }).toBe(true);
+            await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
             await screenshotStep(guestPage, testInfo, '05-雷霆万钧-弹一手已修改奖励骰');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');

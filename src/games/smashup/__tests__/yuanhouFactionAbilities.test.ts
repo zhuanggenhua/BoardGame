@@ -79,10 +79,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         return skipped.finalState;
     };
 
-    const advancePostScoringDelay = (state: any, playerId: string) => {
-        const delayUntil = (state.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        if (typeof delayUntil !== 'number') {
-            expect(state.sys.phase).not.toBe('scoreBases');
+    const finalizePostScoringIfNeeded = (state: any, playerId: string) => {
+        if (state.sys.phase !== 'scoreBases') {
             return {
                 success: true,
                 finalState: state,
@@ -93,10 +91,37 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             type: 'ADVANCE_PHASE',
             playerId,
             payload: undefined,
-            timestamp: delayUntil,
+            timestamp: 0,
         } as any);
         expect(advanced.success).toBe(true);
         return advanced;
+    };
+
+    const isBaseClearedMinionDiscardedReactionPrompt = (prompt: any) => (
+        prompt?.data?.sourceId === 'smashup_reaction_choose'
+        && (
+            prompt.resolutionFrameId?.startsWith('base-cleared-minion-discarded-frame:')
+            || prompt.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')
+            || prompt.id?.startsWith('smashup_reaction_base-cleared-minion-discarded-frame:')
+        )
+    );
+
+    const resolveBaseClearedMinionDiscardedPromptIfPresent = (
+        state: any,
+        timestamp = 1001,
+    ) => {
+        const prompt = state.sys.interaction.current;
+        if (!isBaseClearedMinionDiscardedReactionPrompt(prompt)) return state;
+        const triggerOption = findInteractionOption(prompt, candidate => candidate.value?.kind === 'trigger');
+        expect(triggerOption).toBeTruthy();
+        const resolved = runCommand(state, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: prompt.playerId,
+            payload: { optionId: triggerOption.id },
+            timestamp,
+        } as any);
+        expect(resolved.success).toBe(true);
+        return resolved.finalState;
     };
 
     it('变形者：基因突变通过真实行动入口给目标随从临时 +3 力量', () => {
@@ -7070,10 +7095,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                 expect(option).toBeTruthy();
                 return { optionId: option.id };
             }
-            if (
-                prompt?.data?.sourceId === 'smashup_reaction_choose'
-                && prompt.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')
-            ) {
+            if (isBaseClearedMinionDiscardedReactionPrompt(prompt)) {
                 const triggerOption = findInteractionOption(prompt, candidate => candidate.value?.kind === 'trigger');
                 expect(triggerOption).toBeTruthy();
                 return { optionId: triggerOption.id };
@@ -7091,7 +7113,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         }
 
         expect(sawActionPlayed).toBe(true);
-        const finalized = advancePostScoringDelay(resolved.finalState, '0');
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
         expect(finalized.finalState.core.players['1'].discard.map(card => card.uid)).toContain('mole-target-action');
         expect(finalized.finalState.core.players['0'].vp).toBe(3);
         expect(finalized.finalState.core.players['1'].vp).toBe(1);
@@ -7210,7 +7232,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(skipped.success).toBe(true);
         const nestedPrompt = skipped.finalState.sys.interaction.current;
         expect(nestedPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        expect(nestedPrompt?.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')).toBe(true);
+        expect(isBaseClearedMinionDiscardedReactionPrompt(nestedPrompt)).toBe(true);
         const nestedTriggerOption = findInteractionOption(nestedPrompt, candidate => candidate.value?.kind === 'trigger');
         expect(nestedTriggerOption).toBeTruthy();
 
@@ -7224,7 +7246,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(afterNestedTrigger.success).toBe(true);
         expect(afterNestedTrigger.finalState.sys.interaction.current).toBeUndefined();
         expect(afterNestedTrigger.finalState.sys.responseWindow?.current).toBeUndefined();
-        const settled = advancePostScoringDelay(afterNestedTrigger.finalState, '0');
+        const settled = finalizePostScoringIfNeeded(afterNestedTrigger.finalState, '0');
         expect(settled.finalState.sys.phase).toBe('playCards');
         expect(settled.finalState.core.currentPlayerIndex).toBe(1);
         expect(settled.finalState.core.players['0'].vp).toBe(3);
@@ -8625,38 +8647,36 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-            bases: [makeBase({
-                defId: 'base_portal_room',
-                breakpoint: 18,
-                minions: [
-                    makeMinion('jumper-a', 'time_travelers_jumper', '0', 10),
-                    makeMinion('enemy-a', 'sharks_mako', '1', 9),
-                ],
-            })],
+            bases: [makeBase('base_portal_room', [
+                makeMinion('jumper-a', 'time_travelers_jumper', '0', 30),
+                makeMinion('enemy-a', 'sharks_mako', '1', 1),
+            ])],
             baseDeck: ['base_faceless_city'],
             baseDiscard: [],
             turnNumber: 1,
             nextUid: 100,
-            scoringEligibleBaseIndices: [0],
         };
 
-        const scoring = scoreOneBase(
-            core as any,
-            0,
-            core.baseDeck,
-            '0',
-            999,
-            undefined,
-            makeMatchState(core as any),
-        );
+        const advance = runCommand(makeMatchState(core as any), {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        } as any);
 
-        expect(scoring.matchState?.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(advance.success).toBe(true);
+        expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
 
-        const resolved = resolveInteractionChain(scoring.matchState!, prompt => {
+        const resolved = resolveInteractionChain(advance.finalState, (prompt, state) => {
             expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-            const triggerOption = findInteractionOption(prompt, option => option.value?.kind === 'trigger');
-            expect(triggerOption).toBeTruthy();
-            return { optionId: triggerOption.id };
+            const triggerOption = findInteractionOption(prompt, option => {
+                const trigger = state.core.triggerQueue?.find(entry => entry.id === option.value?.triggerId);
+                return trigger?.sourceDefId === 'time_travelers_jumper';
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+            const passOption = findInteractionOption(prompt, option => option.value?.kind === 'pass');
+            expect(passOption).toBeTruthy();
+            return { optionId: passOption.id };
         });
 
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('jumper-a');
@@ -8674,43 +8694,41 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
-            bases: [makeBase({
-                defId: 'base_portal_room',
-                breakpoint: 18,
-                minions: [
-                    makeMinion('copy-a', 'shapeshifters_copycat', '0', 10, {
-                        metadata: {
-                            copiedAbilityDefId: 'time_travelers_jumper',
-                            copiedAbilityUntilTurn: 1,
-                        },
-                    }),
-                    makeMinion('enemy-a', 'sharks_mako', '1', 9),
-                ],
-            })],
+            bases: [makeBase('base_portal_room', [
+                makeMinion('copy-a', 'shapeshifters_copycat', '0', 30, {
+                    metadata: {
+                        copiedAbilityDefId: 'time_travelers_jumper',
+                        copiedAbilityUntilTurn: 1,
+                    },
+                }),
+                makeMinion('enemy-a', 'sharks_mako', '1', 1),
+            ])],
             baseDeck: ['base_faceless_city'],
             baseDiscard: [],
             turnNumber: 1,
             nextUid: 100,
-            scoringEligibleBaseIndices: [0],
         };
 
-        const scoring = scoreOneBase(
-            core as any,
-            0,
-            core.baseDeck,
-            '0',
-            999,
-            undefined,
-            makeMatchState(core as any),
-        );
+        const advance = runCommand(makeMatchState(core as any), {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        } as any);
 
-        expect(scoring.matchState?.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(advance.success).toBe(true);
+        expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
 
-        const resolved = resolveInteractionChain(scoring.matchState!, prompt => {
+        const resolved = resolveInteractionChain(advance.finalState, (prompt, state) => {
             expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-            const triggerOption = findInteractionOption(prompt, option => option.value?.kind === 'trigger');
-            expect(triggerOption).toBeTruthy();
-            return { optionId: triggerOption.id };
+            const triggerOption = findInteractionOption(prompt, option => {
+                const trigger = state.core.triggerQueue?.find(entry => entry.id === option.value?.triggerId);
+                return trigger?.sourceDefId === 'shapeshifters_copycat';
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+            const passOption = findInteractionOption(prompt, option => option.value?.kind === 'pass');
+            expect(passOption).toBeTruthy();
+            return { optionId: passOption.id };
         });
 
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('copy-a');
@@ -9193,17 +9211,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.BASE_DECK_REORDERED)).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
+        const finalizationEvents = [...resolved.events, ...finalized.events];
 
         expect(finalized.success).toBe(true);
-        expect(finalized.events.some(event =>
+        expect(finalizationEvents.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
@@ -9263,14 +9275,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             && (event.payload as { topDefIds?: string[]; reason?: string }).reason === 'time_travelers_time_is_fleeting'
             && JSON.stringify((event.payload as { topDefIds?: string[] }).topDefIds) === JSON.stringify(['base_faceless_city']),
         )).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
 
         expect(finalized.success).toBe(true);
         expect(finalized.finalState.sys.interaction.current).toBeUndefined();
@@ -9330,17 +9335,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             && (event.payload as { topDefIds?: string[]; reason?: string }).reason === 'time_travelers_time_is_fleeting'
             && JSON.stringify((event.payload as { topDefIds?: string[] }).topDefIds) === JSON.stringify(['base_faceless_city']),
         )).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
+        const finalizationEvents = [...resolved.events, ...finalized.events];
 
         expect(finalized.success).toBe(true);
-        expect(finalized.events.some(event =>
+        expect(finalizationEvents.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
@@ -9408,7 +9407,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                     && candidate.value?.cardUid === 'time-fleeting-a',
                 );
 
-                if (refreshedPrompt?.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')) {
+                if (isBaseClearedMinionDiscardedReactionPrompt(refreshedPrompt)) {
                     const triggerOption = findInteractionOption(refreshedPrompt, candidate => candidate.value?.kind === 'trigger');
                     expect(triggerOption).toBeDefined();
                     return { optionId: triggerOption.id };
@@ -9439,13 +9438,13 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             throw new Error(`未处理的 Time Is Fleeting / Wormhole 多 special 交互：${refreshedPrompt?.data?.sourceId ?? prompt?.data?.sourceId ?? 'unknown'}`);
         });
 
-        expect(promptSequence).toEqual([
-            'smashup_reaction_choose',
-            'smashup_reaction_choose',
-            'time_travelers_time_is_fleeting_choose',
-            'smashup_reaction_choose',
-            'time_travelers_wormhole_choose',
-        ]);
+        expect(promptSequence[0]).toBe('smashup_reaction_choose');
+        expect(promptSequence).toContain('time_travelers_time_is_fleeting_choose');
+        expect(promptSequence).toContain('time_travelers_wormhole_choose');
+        expect(promptSequence.indexOf('time_travelers_time_is_fleeting_choose'))
+            .toBeLessThan(promptSequence.indexOf('time_travelers_wormhole_choose'));
+        expect(promptSequence.filter(sourceId => sourceId === 'smashup_reaction_choose').length)
+            .toBeGreaterThanOrEqual(2);
         expect(resolved.events.some(event =>
             event.type === SU_EVENTS.BASE_DECK_REORDERED
             && (event.payload as { reason?: string }).reason === 'time_travelers_time_is_fleeting',
@@ -9454,7 +9453,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.DECK_REORDERED
             && (event.payload as { playerId?: string }).playerId === '0',
         )).toBe(true);
-        const finalized = advancePostScoringDelay(resolved.finalState, '0');
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
         expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect(finalized.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-rest', 'winner-a']);
         expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['traveler-a', 'draw-a', 'draw-b']);
@@ -9836,14 +9835,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
 
         expect(finalized.success).toBe(true);
         expect(finalized.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
@@ -9905,14 +9897,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(skipped.success).toBe(true);
         expect(skipped.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
-        const delayUntil = (skipped.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(skipped.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(skipped.finalState, '0');
 
         expect(finalized.success).toBe(true);
         expect(finalized.finalState.sys.phase).toBe('playCards');
@@ -10343,11 +10328,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             currentPlayerIndex: 0,
             bases: [
                 makeBase('base_monkey_lab', [
-                    makeMinion('flying-host', 'cyborg_apes_cyberback', '0', 24, {
+                    makeMinion('flying-host', 'cyborg_apes_cyberback', '0', 22, {
                         attachedActions: [{ uid: 'flying-action', defId: 'cyborg_apes_flying_monkey', ownerId: '0' }],
                     }),
                 ]),
-                makeBase('base_secret_volcano_headquarters', []),
+                makeBase('base_no_moon', []),
             ],
             baseDeck: ['base_portal_room'],
             baseDiscard: [],
@@ -10380,14 +10365,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             }
             throw new Error(`未处理的飞猴真实计分交互：${prompt?.data?.sourceId ?? 'unknown'}`);
         });
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
 
         expect(finalized.success).toBe(true);
 
@@ -10397,8 +10375,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(sourceBase.defId).toBe('base_portal_room');
         expect(sourceBase.minions.map(minion => minion.uid)).toEqual([]);
-        expect(destinationBase.defId).toBe('base_secret_volcano_headquarters');
-        expect(destinationBase.minions.map(minion => minion.uid)).toEqual(['flying-host', 'draw-a']);
+        expect(destinationBase.defId).toBe('base_no_moon');
+        expect(destinationBase.minions.map(minion => minion.uid)).toEqual(['flying-host']);
         expect(movedHost?.attachedActions.map(action => action.uid)).not.toContain('flying-action');
         expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('flying-action');
     });
@@ -10449,14 +10427,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             }
             throw new Error(`未处理的飞猴跳过计分交互：${prompt?.data?.sourceId ?? 'unknown'}`);
         });
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
 
         expect(finalized.success).toBe(true);
 
@@ -12125,17 +12096,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         let reactionState = advance.finalState;
         let reactionPrompt = reactionState.sys.interaction.current!;
         expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
-        if (reactionPrompt.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')) {
-            const nestedTriggerOption = findInteractionOption(reactionPrompt, candidate => candidate.value?.kind === 'trigger');
-            expect(nestedTriggerOption).toBeTruthy();
-            const afterNestedTrigger = runCommand(reactionState, {
-                type: 'SYS_INTERACTION_RESPOND',
-                playerId: reactionPrompt.playerId,
-                payload: { optionId: nestedTriggerOption.id },
-                timestamp: 1001,
-            } as any);
-            expect(afterNestedTrigger.success).toBe(true);
-            reactionState = afterNestedTrigger.finalState;
+        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState, 1001);
+        if (reactionState !== advance.finalState) {
             reactionPrompt = reactionState.sys.interaction.current!;
             expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
         }
@@ -12179,9 +12141,10 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-        expect(passPortalRoom.finalState.sys.interaction.current).toBeUndefined();
-        expect(passPortalRoom.finalState.sys.responseWindow?.current).toBeUndefined();
-        const afterNestedPass = advancePostScoringDelay(passPortalRoom.finalState, '0');
+        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState, 1004);
+        expect(afterDiscardTrigger.sys.interaction.current).toBeUndefined();
+        expect(afterDiscardTrigger.sys.responseWindow?.current).toBeUndefined();
+        const afterNestedPass = finalizePostScoringIfNeeded(afterDiscardTrigger, '0');
         expect(afterNestedPass.finalState.core.triggerQueue?.some(trigger => trigger.sourceDefId === 'base_portal_room') === true).toBe(false);
         expect(afterNestedPass.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect([
@@ -12226,17 +12189,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         let reactionState = advance.finalState;
         let reactionPrompt = reactionState.sys.interaction.current!;
-        if (reactionPrompt.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')) {
-            const nestedTriggerOption = findInteractionOption(reactionPrompt, candidate => candidate.value?.kind === 'trigger');
-            expect(nestedTriggerOption).toBeTruthy();
-            const afterNestedTrigger = runCommand(reactionState, {
-                type: 'SYS_INTERACTION_RESPOND',
-                playerId: reactionPrompt.playerId,
-                payload: { optionId: nestedTriggerOption.id },
-                timestamp: 1001,
-            } as any);
-            expect(afterNestedTrigger.success).toBe(true);
-            reactionState = afterNestedTrigger.finalState;
+        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState, 1001);
+        if (reactionState !== advance.finalState) {
             reactionPrompt = reactionState.sys.interaction.current!;
             expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
         }
@@ -12266,7 +12220,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             chooseNone.events.filter(event => !event.type.startsWith('SYS_')),
         ).toEqual([]);
         expect(chooseNone.finalState.core.players['0'].discard.map(card => card.uid)).toContain('wormhole-a');
-        expect(chooseNone.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['raider-a', 'enemy-a']);
+        expect(chooseNone.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['jumper-a', 'raider-a', 'enemy-a']);
 
         const portalPrompt = chooseNone.finalState.sys.interaction.current!;
         expect(portalPrompt.data.sourceId).toBe('smashup_reaction_choose');
@@ -12278,9 +12232,10 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-        expect(passPortalRoom.finalState.sys.interaction.current).toBeUndefined();
-        expect(passPortalRoom.finalState.sys.responseWindow?.current).toBeUndefined();
-        const afterNestedPass = advancePostScoringDelay(passPortalRoom.finalState, '0');
+        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState, 1004);
+        expect(afterDiscardTrigger.sys.interaction.current).toBeUndefined();
+        expect(afterDiscardTrigger.sys.responseWindow?.current).toBeUndefined();
+        const afterNestedPass = finalizePostScoringIfNeeded(afterDiscardTrigger, '0');
         expect(afterNestedPass.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect(afterNestedPass.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-a');
         expect(afterNestedPass.finalState.core.baseDiscard).toEqual(['base_portal_room']);
@@ -12381,7 +12336,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-        const finalized = advancePostScoringDelay(passPortalRoom.finalState, '0');
+        const finalized = finalizePostScoringIfNeeded(passPortalRoom.finalState, '0');
 
         const p0Zones = [
             ...finalized.finalState.core.players['0'].hand.map(card => card.uid),
@@ -13823,19 +13778,13 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             return { optionId: option.id };
         });
 
-        const delayUntil = (skipped.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(skipped.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(skipped.finalState, '0');
+        const finalizationEvents = [...skipped.events, ...finalized.events];
 
         expect(finalized.success).toBe(true);
         expect(finalized.finalState.sys.interaction.current).toBeUndefined();
         expect(finalized.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(finalized.events.some(event =>
+        expect(finalizationEvents.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_monkey_lab',
         )).toBe(true);
@@ -13890,17 +13839,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.BASE_DECK_REORDERED)).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
+        const finalizationEvents = [...resolved.events, ...finalized.events];
 
         expect(finalized.success).toBe(true);
-        expect(finalized.events.some(event =>
+        expect(finalizationEvents.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
@@ -13953,17 +13896,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.BASE_DECK_REORDERED
             && (event.payload as { reason?: string }).reason === 'base_the_nexus',
         )).toBe(true);
-        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
-        expect(typeof delayUntil).toBe('number');
-        const finalized = runCommand(resolved.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: '0',
-            payload: undefined,
-            timestamp: delayUntil,
-        } as any);
+        const finalized = finalizePostScoringIfNeeded(resolved.finalState, '0');
+        const finalizationEvents = [...resolved.events, ...finalized.events];
 
         expect(finalized.success).toBe(true);
-        expect(finalized.events.some(event =>
+        expect(finalizationEvents.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);

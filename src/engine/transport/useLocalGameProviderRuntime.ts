@@ -29,6 +29,7 @@ export function useLocalGameProviderRuntime(args: {
     followCurrentTurnPlayer: boolean;
     persistSession: boolean;
     persistGameId?: string;
+    disableLocalAiAutomation?: boolean;
 }): GameClientContextValue {
     const playerIds = useMemo(
         () => Array.from({ length: args.numPlayers }, (_, i) => String(i)),
@@ -94,6 +95,7 @@ export function useLocalGameProviderRuntime(args: {
         randomRef,
         setupPlayerIds,
         onCommandRejectedRef,
+        automationDisabled: args.disableLocalAiAutomation,
     });
 
     const value = useLocalProviderViewModel({

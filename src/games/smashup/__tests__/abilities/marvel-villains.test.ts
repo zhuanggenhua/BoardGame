@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import {
+    isAbilityRuntimeContinuationEvent,
+    resumeAbilityRuntimeContinuationEvent,
+} from '../../domain/abilityRuntime';
 import { fireTriggers, getRegisteredOngoingEffectIds, isBaseAbilitySuppressed, isMinionProtected, isOperationRestricted } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower, getRegisteredModifierIds } from '../../domain/ongoingModifiers';
 import { validateActionPlaySemantics } from '../../domain/playLegality';
@@ -132,8 +136,18 @@ describe('漫威反派四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 10,
         });
+        const redSkullDestroyEvents = talent.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        const redSkullContinuation = talent.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
         expect(talent.events).toEqual(expect.arrayContaining([
             expect.objectContaining({ type: SU_EVENTS.MINION_DESTROYED, payload: expect.objectContaining({ minionUid: 'agent' }) }),
+        ]));
+        expect(redSkullContinuation).toBeTruthy();
+        const resumedRedSkull = resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, redSkullDestroyEvents as any)),
+            redSkullContinuation as any,
+            FIXED_RANDOM,
+        );
+        expect(resumedRedSkull?.events).toEqual(expect.arrayContaining([
             expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN, payload: expect.objectContaining({ cardUids: ['draw-a'] }) }),
         ]));
 
@@ -408,13 +422,21 @@ describe('漫威反派四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 27,
         });
-        expect(prepare.events.map(event => event.type)).toEqual([SU_EVENTS.DECK_INSPECTED, SU_EVENTS.REVEAL_DECK_TOP]);
-        const preparePrompt = getSimpleChoicePrompt(prepare.matchState!, 'kree_prepare_to_engage');
+        const prepareRevealEvents = prepare.events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+        const prepareContinuation = prepare.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+        expect(prepareRevealEvents.map(event => event.type)).toEqual([SU_EVENTS.DECK_INSPECTED, SU_EVENTS.REVEAL_DECK_TOP]);
+        expect(prepareContinuation).toBeTruthy();
+        const preparePromptState = resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, prepareRevealEvents as any)),
+            prepareContinuation as any,
+            FIXED_RANDOM,
+        )?.state;
+        const preparePrompt = getSimpleChoicePrompt(preparePromptState!, 'kree_prepare_to_engage');
         expect(getPromptMulti(preparePrompt)).toMatchObject({ min: 0, max: 2 });
         const prepareOptions = getPromptOptions(preparePrompt);
         expect(prepareOptions.map(option => option.value?.cardUid).sort()).toEqual(['action-a', 'action-b']);
         const selectedPrepare = respondToPromptOptions(
-            prepare.matchState!,
+            preparePromptState!,
             prepareOptions.filter(option => option.value?.cardUid === 'action-b').map(option => option.id),
             '0',
             FIXED_RANDOM,

@@ -3,7 +3,7 @@ import type { MatchState } from '../../../engine/types';
 import { executePipeline, createInitialSystemState } from '../../../engine/pipeline';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
-import type { SmashUpCommand, SmashUpCore } from '../domain/types';
+import { SU_EVENTS, type SmashUpCommand, type SmashUpCore } from '../domain/types';
 import {
     expectNoPrompt,
     getPromptOption,
@@ -42,7 +42,7 @@ function runCommandWithFullSystems(initialState: MatchState<SmashUpCore>, comman
 }
 
 describe('pirate_king afterScoring window', () => {
-    it('海盗王结算后，若当前回合玩家被限制打行动牌，不应错误打开 afterScoring 响应窗口，并应留在 scoreBases 等待延迟收尾', () => {
+    it('海盗王结算后，若当前回合玩家被限制打行动牌，不应错误打开 afterScoring 响应窗口，并应直接完成收尾', () => {
         const state: MatchState<SmashUpCore> = {
             core: {
                 turnOrder: ['0', '1'],
@@ -91,11 +91,14 @@ describe('pirate_king afterScoring window', () => {
         );
 
         expect(resolvePirateKing.success).toBe(true);
+        const eventTypes = resolvePirateKing.events.map(event => event.type);
+        expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
+        expect(eventTypes).toContain(SU_EVENTS.BASE_REPLACED);
         expect(resolvePirateKing.finalState.sys.responseWindow?.current).toBeFalsy();
         expectNoPrompt(resolvePirateKing.finalState);
-        expect(resolvePirateKing.finalState.sys.phase).toBe('scoreBases');
-        expect((resolvePirateKing.finalState.sys as any).flowHalted).toBe(true);
-        expect((resolvePirateKing.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
-        expect(resolvePirateKing.finalState.core.currentPlayerIndex).toBe(1);
+        expect(resolvePirateKing.finalState.sys.phase).toBe('playCards');
+        expect((resolvePirateKing.finalState.sys as any).flowHalted).toBeFalsy();
+        expect((resolvePirateKing.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+        expect(resolvePirateKing.finalState.core.currentPlayerIndex).toBe(0);
     });
 });

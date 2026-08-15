@@ -1,6 +1,6 @@
 # Mage Wars v57 卡牌比例前置回执
 
-> 状态：`preflight-ready / open-design-artifact-only / media-generate-forbidden / human-review-not-allowed-until-ai-pass`。本文件只服务 v57 Open Design artifact 设计稿，不是全局规范更新，不批准真实 Board/UI 实现，也不允许移动端适配先行。
+> 状态：`preflight-ready / open-design-artifact-only / media-generate-forbidden / human-review-not-allowed-until-ai-pass`。本文件只服务 v57 Open Design artifact 设计稿，不是项目规范更新，不批准真实 Board/UI 实现，也不允许移动端适配先行。
 
 ## 本轮问题本质
 
@@ -13,9 +13,9 @@ v56 的正确部分是删除卡外可见卡名、费用、射程、目标等字�
 
 | 类型 | 来源 | 直接结论 |
 | --- | --- | --- |
-| UI 设计链路 | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | 读卡策略应是卡图本体 + hover / focus / 详情检视，不能把字段复写成 UI chip，也不能把检视尺寸常驻化 |
-| UI 审计链路 | `D:\codex-home\skills\ui-audit-loop\SKILL.md` | 几何无重叠只是底线；玩家视角比例失衡、主焦点错位也必须判 `REVISE` |
-| 游戏比例方法 | `D:\codex-home\skills\game-design\references\topics\golden-ratio-design` | 黄金比例只能作为舒服比例参考，不能覆盖可用性；接近 `1.6` 的主次比例可用于主舞台与辅助层分配 |
+| UI 设计链路 | `.spec/skills/ui-design-pipeline/SKILL.md` | 读卡策略应是卡图本体 + hover / focus / 详情检视，不能把字段复写成 UI chip，也不能把检视尺寸常驻化 |
+| UI 审计链路 | `.spec/skills/ui-audit-loop/SKILL.md` | 几何无重叠只是底线；玩家视角比例失衡、主焦点错位也必须判 `REVISE` |
+| 游戏比例方法 | `.spec/skills/game-design/references/topics/golden-ratio-design` | 黄金比例只能作为舒服比例参考，不能覆盖可用性；接近 `1.6` 的主次比例可用于主舞台与辅助层分配 |
 | 学徒法术书真相 | `docs/games/mage-wars/rule/apprentice-spellbooks.md` | 当前玩家有法术书、最多 2 张已计划法术、弃牌堆；规则没有默认“手牌” |
 | 主 UI 素材矩阵 | `docs/games/mage-wars/design/implementable/board-ui-preflight-matrix.md` | 竞技场、法师牌、法术牌、卡背、骰子、token 均为主体素材；状态条为 `approved-programmatic-runtime-ui` |
 | 竞技场合同 | `docs/games/mage-wars/design/implementable/board-layout-contract.md`、`board-coordinate-contract.md` | 学徒主舞台必须保留 `2x3` 区域语义；场上卡和 token 不能为大卡检视让路到不可辨认 |

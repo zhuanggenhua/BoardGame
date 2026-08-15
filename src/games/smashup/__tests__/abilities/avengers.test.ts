@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import {
+    isAbilityRuntimeContinuationEvent,
+    resumeAbilityRuntimeContinuationEvent,
+} from '../../domain/abilityRuntime';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { SU_EVENTS } from '../../domain/types';
 import { AVENGERS_CARDS } from '../../data/factions/avengers';
@@ -332,14 +336,22 @@ describe('复仇者代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 50,
         });
-        const prompt = getSimpleChoicePrompt(arrows.matchState!, 'avengers_hawkeyes_arrows_pick');
+        const revealEvents = arrows.events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+        const arrowsContinuation = arrows.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+        expect(arrowsContinuation).toBeTruthy();
+        const arrowsPromptState = resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, revealEvents as any)),
+            arrowsContinuation as any,
+            FIXED_RANDOM,
+        )?.state;
+        const prompt = getSimpleChoicePrompt(arrowsPromptState!, 'avengers_hawkeyes_arrows_pick');
         expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual([
             'action-a',
             'action-b',
         ]);
 
         const picked = respondToPromptOption(
-            arrows.matchState!,
+            arrowsPromptState!,
             option => option.value?.cardUid === 'action-a',
             'pick first revealed action',
             '0',

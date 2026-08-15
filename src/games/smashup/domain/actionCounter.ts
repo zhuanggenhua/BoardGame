@@ -48,6 +48,7 @@ export type PendingActionResolution = {
     cancelTargetCardUid?: string;
     cancelTargetDefId?: string;
     cancelTargetOwnerId?: PlayerId;
+    afterResolutionEvents?: SmashUpEvent[];
 };
 
 type ActionCounterStackContext = {
@@ -91,6 +92,7 @@ export function createPendingActionResolution(params: {
     now: number;
     resolutionKind?: PendingActionResolutionKind;
     cancelTarget?: PendingActionResolution;
+    afterResolutionEvents?: SmashUpEvent[];
 }): PendingActionResolution {
     return {
         actionInstanceId: buildPendingActionInstanceId(params.cardUid, params.playerId, params.now),
@@ -111,6 +113,9 @@ export function createPendingActionResolution(params: {
                 cancelTargetDefId: params.cancelTarget.defId,
                 cancelTargetOwnerId: params.cancelTarget.ownerId,
             }
+            : {}),
+        ...(params.afterResolutionEvents?.length
+            ? { afterResolutionEvents: params.afterResolutionEvents }
             : {}),
     };
 }
@@ -417,6 +422,11 @@ export function resolvePendingActionExecution(
     let updatedState = state;
     const targetBaseIndex = pending.targetBaseIndex ?? 0;
     const reactionWindow = getSmashUpReactionWindowContext(state);
+    const appendAfterResolutionEvents = () => {
+        if (pending.afterResolutionEvents?.length) {
+            events.push(...pending.afterResolutionEvents);
+        }
+    };
 
     const runActionExecutor = (
         executor: ReturnType<typeof resolveOnPlay> | ReturnType<typeof resolveSpecial>,
@@ -457,6 +467,7 @@ export function resolvePendingActionExecution(
             now,
         }));
         runActionExecutor(resolveOnPlay(pending.defId), targetBaseIndex);
+        appendAfterResolutionEvents();
         return { state: updatedState, events };
     }
 
@@ -506,10 +517,12 @@ export function resolvePendingActionExecution(
                 } as SmashUpEvent);
             }
         }
+        appendAfterResolutionEvents();
         return { state: updatedState, events };
     }
 
     runActionExecutor(resolveOnPlay(pending.defId), targetBaseIndex);
+    appendAfterResolutionEvents();
     return { state: updatedState, events };
 }
 

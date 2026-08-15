@@ -16,6 +16,8 @@ export interface ChoiceEffectContext {
     sourceAbilityId?: string;
     /** CHOICE_RESOLVED 事件中的 value（选项携带的数值） */
     value?: number;
+    /** 本次选择来自真实 InteractionSystem 当前交互快照。 */
+    interactionBacked?: boolean;
 }
 
 /**
@@ -64,8 +66,11 @@ export function getChoiceEffectHandler(customId: string): ChoiceEffectHandler | 
 }
 
 export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceThroneCore> | undefined {
+    const hasAuthorizedChoice = hasCurrentChoiceAnchor(context.state, context.sourceAbilityId)
+        || context.interactionBacked === true;
+
     if (context.customId.startsWith('select-target:')) {
-        if (!hasCurrentChoiceAnchor(context.state, context.sourceAbilityId)) {
+        if (!hasAuthorizedChoice) {
             return undefined;
         }
         const defenderId = context.customId.slice('select-target:'.length);
@@ -83,7 +88,7 @@ export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceT
     }
 
     const handler = getChoiceEffectHandler(context.customId);
-    if (!handler || !hasCurrentChoiceAnchor(context.state, context.sourceAbilityId)) {
+    if (!handler || !hasAuthorizedChoice) {
         return undefined;
     }
     return handler(context);

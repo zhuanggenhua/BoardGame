@@ -9,6 +9,7 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     createSkipOption,
@@ -19,11 +20,11 @@ import {
 import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
-import { canStartDuel, isMinionInActiveDuel, startDuel } from '../domain/duel';
+import { canStartDuel, isMinionInActiveDuel, startDuelWithEvents } from '../domain/duel';
 import { validateActionPlaySemantics, validateDeckTopRegularMinionPlaySemantics } from '../domain/playLegality';
 import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from '../domain/utils';
-import { execute } from '../domain/reducer';
-import { reduce } from '../domain/reduce';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
 import type {
     CardsDrawnEvent,
     CardInstance,
@@ -31,10 +32,11 @@ import type {
     DuelOutcomeKind,
     MinionOnBase,
     MinionMetadataUpdatedEvent,
+    MinionPlayedEvent,
     SmashUpCore,
     SmashUpEvent,
 } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -553,16 +555,17 @@ const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptCo
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { skip?: boolean; minionUid?: string } | undefined;
         if (selected?.skip || !selected?.minionUid) return { events: [] };
+        const duelStarted = startDuelWithEvents(state, {
+            sourceId: context.duelSourceId,
+            sourcePlayerId: context.casterPlayerId,
+            challengerMinionUid: context.friendlyMinionUid,
+            challengedMinionUid: selected.minionUid,
+            outcome: context.outcome,
+            ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
+        }, timestamp);
         return {
-            events: [],
-            matchState: startDuel(state, {
-                sourceId: context.duelSourceId,
-                sourcePlayerId: context.casterPlayerId,
-                challengerMinionUid: context.friendlyMinionUid,
-                challengedMinionUid: selected.minionUid,
-                outcome: context.outcome,
-                ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
-            }, timestamp),
+            events: duelStarted.events,
+            matchState: duelStarted.state,
         };
     },
 });
@@ -628,16 +631,17 @@ const cowboysEnemyDuelPromptProgram = createPromptProgram<CowboysDuelPromptConte
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as MinionChoice | undefined;
         if (!selected?.minionUid) return { events: [] };
+        const duelStarted = startDuelWithEvents(state, {
+            sourceId: context.duelSourceId,
+            sourcePlayerId: context.casterPlayerId,
+            challengerMinionUid: context.friendlyMinionUid,
+            challengedMinionUid: selected.minionUid,
+            outcome: context.outcome,
+            ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
+        }, timestamp);
         return {
-            events: [],
-            matchState: startDuel(state, {
-                sourceId: context.duelSourceId,
-                sourcePlayerId: context.casterPlayerId,
-                challengerMinionUid: context.friendlyMinionUid,
-                challengedMinionUid: selected.minionUid,
-                outcome: context.outcome,
-                ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
-            }, timestamp),
+            events: duelStarted.events,
+            matchState: duelStarted.state,
         };
     },
 });
@@ -1534,18 +1538,6 @@ function canOfferGoldExtraPlay(core: SmashUpCore, playerId: PlayerId, chosenCard
     return validateActionPlaySemantics(core, playerId, { defId: chosenCard.defId }).valid;
 }
 
-function cloneSysForSimulatedExecute(state: MatchState<SmashUpCore>) {
-    return {
-        ...state.sys,
-        interaction: state.sys.interaction
-            ? {
-                ...state.sys.interaction,
-                queue: [...(state.sys.interaction.queue ?? [])],
-            }
-            : { queue: [] },
-    } as MatchState<SmashUpCore>['sys'];
-}
-
 function playGoldCard(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -1556,55 +1548,77 @@ function playGoldCard(
     now: number,
 ): { matchState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const prefixEvents = buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now);
-    let simulatedCore = state.core;
-    for (const event of prefixEvents) simulatedCore = reduce(simulatedCore, event);
-    const simulatedState: MatchState<SmashUpCore> = {
-        ...state,
-        core: simulatedCore,
-        sys: cloneSysForSimulatedExecute(state),
-    };
-
-    const command = chosenCard.type === 'minion'
-        ? {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId,
-            payload: { cardUid: chosenCard.uid, baseIndex: targets.baseIndex ?? 0 },
-        }
-        : {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId,
-            payload: {
-                cardUid: chosenCard.uid,
-                ...(targets.targetBaseIndex !== undefined ? { targetBaseIndex: targets.targetBaseIndex } : {}),
-                ...(targets.targetMinionUid ? { targetMinionUid: targets.targetMinionUid } : {}),
-            },
+    if (chosenCard.type === 'minion') {
+        const baseIndex = targets.baseIndex ?? 0;
+        const minionDef = getCardDef(chosenCard.defId) as { power?: number } | undefined;
+        return {
+            matchState: state,
+            events: [
+                ...prefixEvents,
+                {
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: chosenCard.uid,
+                        defId: chosenCard.defId,
+                        ownerId: chosenCard.owner,
+                        baseIndex,
+                        baseDefId: state.core.bases[baseIndex]?.defId,
+                        power: minionDef?.power ?? 0,
+                        consumesNormalLimit: false,
+                    },
+                    timestamp: now,
+                } as MinionPlayedEvent,
+            ],
         };
+    }
 
-    const playEvents = execute(simulatedState, command as any, random).map((event) => {
-        if (event.type === SU_EVENTS.MINION_PLAYED && chosenCard.type === 'minion' && (event as any).payload.cardUid === chosenCard.uid) {
-            return {
-                ...event,
-                payload: { ...(event as any).payload, consumesNormalLimit: false },
-            } as SmashUpEvent;
-        }
-        if (event.type === SU_EVENTS.ACTION_PLAYED && chosenCard.type === 'action' && (event as any).payload.cardUid === chosenCard.uid) {
-            return {
-                ...event,
-                payload: { ...(event as any).payload, isExtraAction: true },
-            } as SmashUpEvent;
-        }
-        return event;
+    if (chosenCard.type !== 'action') {
+        return { matchState: state, events: prefixEvents };
+    }
+
+    const actionDef = getCardDef(chosenCard.defId) as { subtype?: string } | undefined;
+    const actionEvents: SmashUpEvent[] = [
+        ...prefixEvents,
+        buildActionPlayedEvent({
+            playerId,
+            cardUid: chosenCard.uid,
+            defId: chosenCard.defId,
+            ownerId: chosenCard.owner,
+            isExtraAction: true,
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            timestamp: now,
+        }) as SmashUpEvent,
+    ];
+
+    if (actionDef?.subtype === 'ongoing' && targets.targetBaseIndex !== undefined) {
+        actionEvents.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: chosenCard.uid,
+            defId: chosenCard.defId,
+            ownerId: chosenCard.owner,
+            ...(chosenCard.owner !== playerId ? { sourcePlayerId: playerId } : {}),
+            sourceKind: 'action',
+            targetBaseIndex: targets.targetBaseIndex,
+            targetMinionUid: targets.targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now,
+        }));
+    }
+
+    const appended = appendResolvedActionAbility({
+        state,
+        events: actionEvents,
+        playerId,
+        cardUid: chosenCard.uid,
+        defId: chosenCard.defId,
+        random,
+        timestamp: now,
+        baseIndex: targets.targetBaseIndex ?? 0,
+        targetBaseIndex: targets.targetBaseIndex,
+        targetMinionUid: targets.targetMinionUid,
     });
-    const currentInteractionId = state.sys.interaction?.current?.id;
-    const nextInteractionId = simulatedState.sys.interaction?.current?.id;
-    const hasNewInteraction = (
-        !!nextInteractionId && nextInteractionId !== currentInteractionId
-    ) || ((simulatedState.sys.interaction?.queue?.length ?? 0) > (state.sys.interaction?.queue?.length ?? 0));
-
-    return {
-        matchState: hasNewInteraction ? { ...state, sys: simulatedState.sys } : state,
-        events: [...prefixEvents, ...playEvents],
-    };
+    return { matchState: appended.state, events: appended.events };
 }
 
 function isWinningOnBase(state: SmashUpCore, baseIndex: number, playerId: PlayerId): boolean {

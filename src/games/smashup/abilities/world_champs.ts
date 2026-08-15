@@ -3,7 +3,7 @@ import { registerAbility, registerAbilityProgram } from '../domain/abilityRegist
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
-import { canStartDuel, startDuel } from '../domain/duel';
+import { canStartDuel, startDuelWithEvents } from '../domain/duel';
 import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilities';
 import { buildBuryCardEvents } from '../domain/bury';
 import {
@@ -823,16 +823,17 @@ const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldCh
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as MinionChoice;
         if (selected.skip || !selected.minionUid) return { events: [] };
+        const duelStarted = startDuelWithEvents(state, {
+            sourceId: 'world_champs_sheriff_before_scoring',
+            sourcePlayerId: context.casterPlayerId,
+            challengerMinionUid: context.friendlyMinionUid,
+            challengedMinionUid: selected.minionUid,
+            outcome: 'destroy_loser',
+            destroyReason: 'world_champs_sheriff',
+        }, timestamp);
         return {
-            events: [],
-            matchState: startDuel(state, {
-                sourceId: 'world_champs_sheriff_before_scoring',
-                sourcePlayerId: context.casterPlayerId,
-                challengerMinionUid: context.friendlyMinionUid,
-                challengedMinionUid: selected.minionUid,
-                outcome: 'destroy_loser',
-                destroyReason: 'world_champs_sheriff',
-            }, timestamp),
+            events: duelStarted.events,
+            matchState: duelStarted.state,
         };
     },
 });

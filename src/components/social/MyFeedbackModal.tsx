@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, Clock3, Lightbulb, MessageSquareWarning, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, Lightbulb, MessageSquareWarning, RefreshCw, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { ADMIN_API_URL } from '../../config/server';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
 
 interface MyFeedbackModalProps {
@@ -14,7 +15,9 @@ interface MyFeedbackModalProps {
 
 interface MyFeedbackItem {
     _id: string;
-    content: string;
+    content?: string;
+    contentPreview?: string;
+    hasEmbeddedImage?: boolean;
     type: 'bug' | 'suggestion' | 'other';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     gameName?: string;
@@ -37,7 +40,26 @@ const TYPE_ICONS: Record<MyFeedbackItem['type'], typeof AlertTriangle> = {
     other: MessageSquareWarning,
 };
 
-const stripEmbeddedImages = (content: string) => content.replace(/!\[[^\]]*\]\((data:image\/[^)]+)\)/g, '').trim();
+const stripEmbeddedImages = (content?: string) => (
+    content?.replace(/!\[[^\]]*\]\((data:image\/[^)]+)\)/g, '').trim() ?? ''
+);
+
+const resolveFeedbackExcerpt = (
+    item: MyFeedbackItem,
+    onlyImageLabel: string,
+    emptyLabel: string,
+    preferFullContent = false,
+) => {
+    if (preferFullContent) {
+        const fullText = stripEmbeddedImages(item.content);
+        if (fullText) return fullText;
+    }
+    const preview = item.contentPreview?.trim();
+    if (preview) return preview;
+    const text = stripEmbeddedImages(item.content);
+    if (text) return text;
+    return item.hasEmbeddedImage ? onlyImageLabel : emptyLabel;
+};
 
 const formatFeedbackTime = (value: string) => {
     const date = new Date(value);
@@ -51,10 +73,14 @@ const formatFeedbackTime = (value: string) => {
 
 export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
     const { token } = useAuth();
+    const { success, error } = useToast();
     const { t } = useTranslation(['auth', 'admin']);
     const [items, setItems] = useState<MyFeedbackItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+    const [detailLoadingIds, setDetailLoadingIds] = useState<Set<string>>(() => new Set());
 
     const statusLabels = useMemo(() => ({
         open: t('admin:feedback.status.open'),
@@ -77,7 +103,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
         setLoading(true);
         setErrorMessage('');
         try {
-            const response = await fetch(`${ADMIN_API_URL}/feedback?mineOnly=true&limit=50&sort=newest`, {
+            const response = await fetch(`${ADMIN_API_URL}/feedback?mineOnly=true&limit=50&sort=newest&summaryOnly=true`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -100,6 +126,94 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
         }
         void fetchItems();
     }, [fetchItems, isOpen]);
+
+    const loadItemDetail = useCallback(async (id: string) => {
+        if (!token) {
+            return;
+        }
+        const target = items.find((item) => item._id === id);
+        if (target?.content || detailLoadingIds.has(id)) {
+            return;
+        }
+
+        setDetailLoadingIds((prev) => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+        setErrorMessage('');
+        try {
+            const response = await fetch(`${ADMIN_API_URL}/feedback/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (!response.ok) {
+                throw new Error(t('admin:feedback.messages.fetchFailed'));
+            }
+            const detail = await response.json() as MyFeedbackItem;
+            setItems((prev) => prev.map((item) => (
+                item._id === id ? { ...item, ...detail } : item
+            )));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('admin:feedback.messages.fetchFailed');
+            setErrorMessage(message);
+            error(message);
+        } finally {
+            setDetailLoadingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    }, [detailLoadingIds, error, items, t, token]);
+
+    const deleteItem = useCallback(async (id: string) => {
+        if (!token) {
+            setErrorMessage(t('admin:feedback.messages.deleteFailed'));
+            error(t('admin:feedback.messages.deleteFailed'));
+            return;
+        }
+        if (!window.confirm(t('admin:feedback.confirm.delete'))) {
+            return;
+        }
+
+        setDeletingIds((prev) => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+        setErrorMessage('');
+        try {
+            const response = await fetch(`${ADMIN_API_URL}/feedback/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string; message?: string } | null;
+            if (!response.ok || payload?.ok === false) {
+                throw new Error(payload?.error || payload?.message || t('admin:feedback.messages.deleteFailed'));
+            }
+            setItems((prev) => prev.filter((item) => item._id !== id));
+            setExpandedIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+            success(t('admin:feedback.messages.deleteSuccess'));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('admin:feedback.messages.deleteFailed');
+            setErrorMessage(message);
+            error(message);
+        } finally {
+            setDeletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    }, [error, success, t, token]);
 
     if (!isOpen) return null;
 
@@ -181,10 +295,19 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                         <div className="space-y-3">
                             {items.map((item) => {
                                 const Icon = TYPE_ICONS[item.type];
-                                const excerpt = stripEmbeddedImages(item.content) || t('admin:feedback.content.onlyImage');
+                                const isExpanded = expandedIds.has(item._id);
+                                const isDetailLoading = detailLoadingIds.has(item._id);
+                                const excerpt = resolveFeedbackExcerpt(
+                                    item,
+                                    t('admin:feedback.content.onlyImage'),
+                                    t('admin:feedback.content.empty'),
+                                    isExpanded
+                                );
                                 return (
                                     <article
                                         key={item._id}
+                                        data-testid="my-feedback-item"
+                                        data-feedback-id={item._id}
                                         className="rounded-lg border border-parchment-card-border/30 bg-white/80 px-4 py-3 shadow-sm"
                                     >
                                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -203,9 +326,21 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                                                         <span className="text-[11px] text-parchment-light-text">{item.gameName}</span>
                                                     ) : null}
                                                 </div>
-                                                <p className="mt-2 whitespace-pre-wrap break-words text-sm text-parchment-base-text">
+                                                <p className={clsx(
+                                                    'mt-2 whitespace-pre-wrap break-words text-sm text-parchment-base-text',
+                                                    !isExpanded && 'line-clamp-3'
+                                                )}>
                                                     {excerpt}
                                                 </p>
+                                                {isDetailLoading ? (
+                                                    <p
+                                                        data-testid="my-feedback-detail-loading"
+                                                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-parchment-light-text"
+                                                    >
+                                                        <RefreshCw size={12} className="animate-spin" />
+                                                        {t('admin:feedback.detail.loading')}
+                                                    </p>
+                                                ) : null}
                                             </div>
 
                                             <div className="flex flex-col items-end gap-2">
@@ -216,6 +351,40 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                                                     <Clock3 size={12} />
                                                     {formatFeedbackTime(item.createdAt)}
                                                 </span>
+                                                <button
+                                                    type="button"
+                                                    data-testid="my-feedback-expand"
+                                                    onClick={() => {
+                                                        setExpandedIds((prev) => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(item._id)) {
+                                                                next.delete(item._id);
+                                                            } else {
+                                                                next.add(item._id);
+                                                                void loadItemDetail(item._id);
+                                                            }
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-parchment-card-border/40 px-2 py-1 text-[11px] font-semibold text-parchment-base-text transition-colors hover:bg-parchment-card-border/10"
+                                                >
+                                                    {isExpanded ? t('admin:feedback.detail.collapse') : t('admin:feedback.detail.expand')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    data-testid="my-feedback-delete"
+                                                    onClick={() => void deleteItem(item._id)}
+                                                    disabled={deletingIds.has(item._id)}
+                                                    className={clsx(
+                                                        'inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 transition-colors',
+                                                        deletingIds.has(item._id)
+                                                            ? 'cursor-wait opacity-60'
+                                                            : 'hover:bg-red-100'
+                                                    )}
+                                                >
+                                                    <Trash2 size={12} />
+                                                    {t('admin:feedback.actions.delete')}
+                                                </button>
                                             </div>
                                         </div>
 

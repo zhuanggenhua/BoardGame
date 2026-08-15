@@ -9,7 +9,7 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import { smashUpSystemsForTest } from '../game';
-import type { MinionOnBase, SmashUpCore } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS, type MinionOnBase, type SmashUpCore, type TriggerInstance } from '../domain/types';
 import { makeBase, makeCard, makeMatchState, makePlayer, makeState } from './helpers';
 import {
     cancelPrompt,
@@ -23,6 +23,7 @@ import {
     resolveSmashUpReactionChoice,
     startSmashUpReactionSession,
 } from '../domain/reactionSession';
+import { registerTriggerExecutor } from '../domain/triggerExecutors';
 import { getSmashUpReactionWindowContext, getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 function getReactionSession(state: MatchState<SmashUpCore>) {
@@ -86,6 +87,199 @@ beforeAll(() => {
 });
 
 describe('响应窗口跳过逻辑', () => {
+    it('暂停模式下 optional 全让过只发出 trigger 消费事件，不提前改写 core', () => {
+        const random: RandomFn = {
+            random: () => 0,
+            d: () => 1,
+            range: (min) => min,
+            shuffle: (items) => [...items],
+        };
+        const trigger: TriggerInstance = {
+            id: 'optional-trigger-1',
+            timing: 'afterScoring',
+            sourceDefId: 'test_optional_source',
+            mandatory: false,
+            resolutionClass: 'optional',
+            frameId: 'score-after:test',
+            ownerPlayerId: '0',
+            witnessRequirement: 'none',
+            witnessed: true,
+        };
+        const core = makeState({
+            players: { '0': makePlayer('0') },
+            turnOrder: ['0'],
+            triggerQueue: [trigger],
+        });
+        const state = startSmashUpReactionSession(makeMatchState(core), {
+            frameId: 'score-after:test',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            responseWindowType: 'afterScoring',
+        });
+
+        const resolved = resolveSmashUpReactionChoice(
+            state,
+            random,
+            100,
+            { kind: 'pass' },
+            { suspendAfterDomainEvents: true },
+        );
+
+        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
+        expect(resolved.state.core.triggerQueue?.map(item => item.id)).toEqual(['optional-trigger-1']);
+    });
+
+    it('暂停模式下选择 queued trigger 只发出消费事件，不提前从 core 移除 trigger', () => {
+        registerTriggerExecutor('test_projection_trigger', 'afterScoring', () => []);
+        const random: RandomFn = {
+            random: () => 0,
+            d: () => 1,
+            range: (min) => min,
+            shuffle: (items) => [...items],
+        };
+        const trigger: TriggerInstance = {
+            id: 'chosen-trigger-1',
+            timing: 'afterScoring',
+            sourceDefId: 'test_projection_trigger',
+            mandatory: true,
+            resolutionClass: 'mandatory',
+            frameId: 'score-after:chosen',
+            ownerPlayerId: '0',
+            witnessRequirement: 'none',
+            witnessed: true,
+        };
+        const core = makeState({
+            players: { '0': makePlayer('0') },
+            turnOrder: ['0'],
+            triggerQueue: [trigger],
+        });
+        const state = startSmashUpReactionSession(makeMatchState(core), {
+            frameId: 'score-after:chosen',
+            frameKind: 'score-after',
+            phase: 'mandatory',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            responseWindowType: 'afterScoring',
+        });
+
+        const resolved = resolveSmashUpReactionChoice(
+            state,
+            random,
+            101,
+            { kind: 'trigger', triggerId: 'chosen-trigger-1' },
+            { suspendAfterDomainEvents: true },
+        );
+
+        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
+        expect(resolved.state.core.triggerQueue?.map(item => item.id)).toEqual(['chosen-trigger-1']);
+    });
+
+    it('su:reaction_pass 请求事件经过领域后处理时不应提前推进 live ReactionSession', () => {
+        const random: RandomFn = {
+            random: () => 0,
+            d: () => 1,
+            range: (min) => min,
+            shuffle: (items) => [...items],
+        };
+        const state = startSmashUpReactionSession(
+            makeMatchState(makeState({
+                players: { '0': makePlayer('0'), '1': makePlayer('1') },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+            })),
+            {
+                frameId: 'score-after:post-process-control-request',
+                frameKind: 'score-after',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                responseWindowType: 'afterScoring',
+            },
+        );
+        const requestEvent = {
+            id: 'reaction-pass-request:event',
+            type: SU_EVENTS.REACTION_PASS_REQUESTED,
+            timestamp: 102,
+            payload: { playerId: '0', reason: 'player_pass' },
+        } as any;
+
+        const rawProcessed = SmashUpDomain.postProcessSystemEvents!(
+            state.core,
+            [requestEvent],
+            random,
+            state,
+            { inputEventsAlreadyReduced: true },
+        );
+        const processed = Array.isArray(rawProcessed)
+            ? { events: rawProcessed, matchState: undefined }
+            : rawProcessed;
+
+        expect(processed.events).toEqual([requestEvent]);
+        expect(getReactionSession(processed.matchState ?? state)?.activePlayerId).toBe('0');
+        expect(getReactionSession(processed.matchState ?? state)?.passedPlayerIds).toEqual([]);
+    });
+
+    it('su:reaction_pass 应直接推进 live ReactionSession，不依赖通用 RESPONSE_PASS 镜像', () => {
+        const runner = createRunner(() => startSmashUpReactionSession(
+            makeMatchState(makeState({
+                players: { '0': makePlayer('0'), '1': makePlayer('1') },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+            })),
+            {
+                frameId: 'score-after:direct-reaction-pass',
+                frameKind: 'score-after',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                responseWindowType: 'afterScoring',
+            },
+        ));
+
+        expect(getReactionSession(runner.getState())?.activePlayerId).toBe('0');
+
+        const passResult = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+            playerId: '0',
+            reason: 'player_pass',
+        });
+
+        expect(passResult.success).toBe(true);
+        expect(passResult.events.map(event => event.type)).toContain(SU_EVENTS.REACTION_PASS_REQUESTED);
+        expect(getReactionSession(passResult.finalState)?.activePlayerId).toBe('1');
+        expect(getReactionSession(passResult.finalState)?.passedPlayerIds).toEqual(['0']);
+        expect(passResult.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(getSmashUpReactionWindowPresentation(passResult.finalState)?.activePlayerId).toBe('1');
+    });
+
+    it('su:reaction_pass 只能由 live ReactionSession 当前响应者发出', () => {
+        const runner = createRunner(() => startSmashUpReactionSession(
+            makeMatchState(makeState({
+                players: { '0': makePlayer('0'), '1': makePlayer('1') },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+            })),
+            {
+                frameId: 'score-after:reject-non-active-pass',
+                frameKind: 'score-after',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                responseWindowType: 'afterScoring',
+            },
+        ));
+
+        const passResult = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+            playerId: '1',
+            reason: 'player_pass',
+        });
+
+        expect(passResult.success).toBe(false);
+        expect(passResult.error).toBe('等待当前响应者让过');
+        expect(getReactionSession(passResult.finalState)?.activePlayerId).toBe('0');
+    });
+
     it('同轮有人行动后，如果其他玩家没有内容，统一反应选择器会先回到仍可行动的本家', () => {
         const runner = createRunner((playerIds, random) => {
             const core = SmashUpDomain.setup(playerIds, random);
@@ -484,7 +678,68 @@ describe('响应窗口跳过逻辑', () => {
         expect(presentation?.currentResponderIndex).toBe(0);
     });
 
-    it('reactionWindowPresentation 在只有潜伏 session、没有可见 responseWindow 时应返回 undefined', () => {
+    it('reactionWindowPresentation 的 passedPlayers 应来自 live session，而不是镜像 responseWindow', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.resolution = {
+            activeFrameId: 'passed-authority-frame',
+            frames: [{
+                id: 'passed-authority-frame',
+                kind: 'smashup:reaction:score-before',
+                ownerGame: 'smashup',
+                ownerSystem: 'smashup-reaction',
+                ownerToken: 'smashup:reaction:passed-authority-frame',
+                ordering: 'responder-round',
+                status: 'running',
+                step: 'optional',
+                phase: 'scoreBases',
+                phaseGate: 'block-advance-when-blocked',
+                metadata: {
+                    smashupReactionSession: {
+                        frameId: 'passed-authority-frame',
+                        frameKind: 'score-before',
+                        phase: 'optional',
+                        activePlayerId: '1',
+                        currentPlayerId: '0',
+                        consecutivePasses: 1,
+                        passedPlayerIds: ['0'],
+                        responseWindowType: 'meFirst',
+                        sourceBaseIndex: 0,
+                    },
+                },
+            }],
+        } as any;
+        ms.sys.responseWindow = {
+            current: {
+                id: 'stale-mirror-window',
+                windowType: 'meFirst',
+                sourceId: 'smashup_reaction_choose',
+                responderQueue: ['0', '1'],
+                currentResponderIndex: 1,
+                passedPlayers: ['1', 'ghost'],
+                resolutionFrameId: 'passed-authority-frame',
+            },
+        } as any;
+
+        const presentation = getSmashUpReactionWindowPresentation(ms);
+        expect(presentation?.activePlayerId).toBe('1');
+        expect(presentation?.passedPlayers).toEqual(['0']);
+    });
+
+    it('reactionWindowPresentation 应直接来自 live session，不能依赖可见 responseWindow 镜像', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -531,7 +786,12 @@ describe('响应窗口跳过逻辑', () => {
         ms.sys.interaction = { current: undefined, queue: [] } as any;
 
         expect(getSmashUpReactionWindowContext(ms)?.activePlayerId).toBe('0');
-        expect(getSmashUpReactionWindowPresentation(ms)).toBeUndefined();
+        const presentation = getSmashUpReactionWindowPresentation(ms);
+        expect(presentation?.activePlayerId).toBe('0');
+        expect(presentation?.currentPlayerId).toBe('0');
+        expect(presentation?.responderQueue).toEqual(['0', '1']);
+        expect(presentation?.currentResponderIndex).toBe(0);
+        expect(presentation?.passedPlayers).toEqual([]);
     });
 
     it('reactionWindowState 读取 legacy responderQueue 时，也应过滤 ghost responder 并回退到合法当前玩家', () => {

@@ -469,6 +469,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
     // 上下文卡图（牌库顶查看等场景）
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
+    const isSmashUpReactionPrompt = prompt?.sourceId === 'smashup_reaction_choose';
     const shouldDockMunchkinPlayerPrompt = !contextPreviewRef
         && (promptTitleKey?.startsWith('ui.munchkin_elves_') === true
             || promptTitleKey?.startsWith('ui.base_treehouse_') === true
@@ -478,9 +479,13 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             || promptTitleKey === 'ui.munchkin_warriors_big_hero_mode_title'
             || promptTitleKey === 'ui.munchkin_warriors_taunter_mode_title'
             || promptTitleKey === 'ui.munchkin_warriors_dungeon_bait_mode_title'
-            || promptTitleKey === 'ui.munchkin_warriors_ruckus_mode_title'
-            // 响应动作只有短标题和按钮，停在牌桌上沿，避免压住基地/随从本体。
-            || prompt?.sourceId === 'smashup_reaction_choose');
+            || promptTitleKey === 'ui.munchkin_warriors_ruckus_mode_title');
+    let inlinePromptTestId: string | undefined;
+    if (isSmashUpReactionPrompt) {
+        inlinePromptTestId = 'smashup-reaction-prompt';
+    } else if (shouldDockMunchkinPlayerPrompt) {
+        inlinePromptTestId = 'smashup-docked-prompt';
+    }
 
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !isMulti && !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;
@@ -1194,16 +1199,16 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         return (
             <motion.div
                 key={`prompt-inline-${promptRenderKey}`}
-                data-testid={shouldDockMunchkinPlayerPrompt ? 'smashup-docked-prompt' : undefined}
+                data-testid={inlinePromptTestId}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className={`fixed inset-x-0 ${shouldDockMunchkinPlayerPrompt ? 'top-2 smashup-docked-prompt' : 'inset-0 items-center'} flex justify-center pointer-events-none`}
+                className={`fixed inset-x-0 ${shouldDockMunchkinPlayerPrompt ? 'top-2 smashup-docked-prompt' : 'inset-0 items-center'} ${isSmashUpReactionPrompt ? 'smashup-reaction-prompt' : ''} flex justify-center pointer-events-none`}
                 style={{ zIndex: UI_Z_INDEX.overlay }}
             >
-                <div className="flex flex-col items-center gap-4 pointer-events-auto">
+                <div className="smashup-prompt-content flex flex-col items-center gap-4 pointer-events-auto">
                         {/* 标题条：半透明深色背景 */}
-                        <div className="bg-black/70 px-6 py-2 rounded">
+                        <div className="smashup-prompt-title bg-black/70 px-6 py-2 rounded">
                             <h3 className="text-base font-black text-amber-100 uppercase tracking-tight">
                                 {title}
                             </h3>
@@ -1227,7 +1232,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 })}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center gap-3">
+                            <div className="smashup-prompt-actions flex flex-col items-center gap-3">
                                         <div className="flex gap-3">
                                             {nonSkipOptions.map((opt, idx) => (
                                                 <GameButton

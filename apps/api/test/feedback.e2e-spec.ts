@@ -333,6 +333,119 @@ describe('Feedback Module (e2e)', () => {
         expect(ownListRes.body.items[0].content).toBe('我的反馈 A');
     });
 
+    it('普通用户只能删除自己的反馈', async () => {
+        const { userToken: firstUserToken } = await seedUsers();
+        const { token: secondUserToken } = await registerUser({
+            username: 'other-fb-delete',
+            email: 'other-fb-delete@example.com',
+            code: '889900',
+        });
+
+        const ownFeedbackRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .send({
+                content: '我要删除自己的反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const otherFeedbackRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${secondUserToken}`)
+            .send({
+                content: '别人提交的反馈不能被我删',
+                type: 'suggestion',
+                severity: 'low',
+                gameName: 'tictactoe',
+            })
+            .expect(201);
+
+        const deleteOwnRes = await request(app.getHttpServer())
+            .delete(`/admin/feedback/${ownFeedbackRes.body._id as string}`)
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .expect(200);
+
+        expect(deleteOwnRes.body.ok).toBe(true);
+        expect(await feedbackModel.countDocuments({ _id: ownFeedbackRes.body._id })).toBe(0);
+
+        const deleteOtherRes = await request(app.getHttpServer())
+            .delete(`/admin/feedback/${otherFeedbackRes.body._id as string}`)
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .expect(200);
+
+        expect(deleteOtherRes.body.ok).toBe(false);
+        expect(await feedbackModel.countDocuments({ _id: otherFeedbackRes.body._id })).toBe(1);
+    });
+
+    it('summaryOnly=true 返回轻量摘要，详情接口再返回完整反馈内容', async () => {
+        const { adminToken, userToken } = await seedUsers();
+        const embeddedImage = '![截图](data:image/png;base64,AAAA)';
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: `卡顿反馈正文 ${embeddedImage} 后续操作说明`,
+                type: 'bug',
+                severity: 'high',
+                gameName: 'smashup',
+                actionLog: '[12:00] click feedback entry',
+                stateSnapshot: JSON.stringify({ gameId: 'smashup', phase: 'feedback' }),
+                clientContext: {
+                    route: '/play/smashup/match/lazy-load',
+                    gameId: 'smashup',
+                    appVersion: 'test-build',
+                    lastUserAction: {
+                        type: 'click',
+                        at: '2026-03-14T10:00:00.000Z',
+                        target: { tagName: 'button', testId: 'feedback-entry' },
+                    },
+                },
+                errorContext: {
+                    name: 'SlowFeedbackPanel',
+                    message: 'Feedback content is too large',
+                    source: 'feedback.performance',
+                    jsStack: 'SlowFeedbackPanel\n    at Feedback.tsx:1:1',
+                },
+            })
+            .expect(201);
+
+        const listRes = await request(app.getHttpServer())
+            .get('/admin/feedback?summaryOnly=true&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(listRes.body.items).toHaveLength(1);
+        const summaryItem = listRes.body.items[0];
+        expect(summaryItem.content).toBeUndefined();
+        expect(summaryItem.actionLog).toBeUndefined();
+        expect(summaryItem.stateSnapshot).toBeUndefined();
+        expect(summaryItem.contentPreview).toBe('卡顿反馈正文 后续操作说明');
+        expect(summaryItem.hasEmbeddedImage).toBe(true);
+        expect(summaryItem.hasActionLog).toBe(true);
+        expect(summaryItem.hasStateSnapshot).toBe(true);
+        expect(summaryItem.hasClientContext).toBe(true);
+        expect(summaryItem.hasErrorContext).toBe(true);
+        expect(summaryItem.clientContext?.route).toBe('/play/smashup/match/lazy-load');
+        expect(summaryItem.errorContext?.name).toBe('SlowFeedbackPanel');
+        expect(summaryItem.canManage).toBe(true);
+
+        const detailRes = await request(app.getHttpServer())
+            .get(`/admin/feedback/${createRes.body._id as string}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(detailRes.body.content).toContain('data:image/png;base64,AAAA');
+        expect(detailRes.body.actionLog).toContain('click feedback entry');
+        expect(detailRes.body.stateSnapshot).toContain('"phase":"feedback"');
+        expect(detailRes.body.clientContext?.lastUserAction?.target?.testId).toBe('feedback-entry');
+        expect(detailRes.body.errorContext?.jsStack).toContain('Feedback.tsx');
+        expect(detailRes.body.canManage).toBe(true);
+    });
+
     it('普通用户反馈关闭时不填写关闭理由会返回 400', async () => {
         const { userToken } = await seedUsers();
 

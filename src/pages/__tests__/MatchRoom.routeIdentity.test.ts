@@ -109,6 +109,33 @@ describe('resolveStoredSeatValidationClearDecision', () => {
         expect(result.nextPendingKey).toBeNull();
     });
 
+    it('同一次坏快照重放时不应被当成第二次确认', () => {
+        const nextKey = buildStoredSeatValidationClearKey({
+            matchId: 'match-a',
+            statusPlayerID: '0',
+            validation: { shouldClear: true, reason: 'missing_seat' },
+        });
+
+        const replay = resolveStoredSeatValidationClearDecision({
+            pendingKey: nextKey,
+            pendingObservationKey: 'snapshot-1',
+            nextKey,
+            nextObservationKey: 'snapshot-1',
+        });
+        expect(replay.shouldClear).toBe(false);
+        expect(replay.nextPendingKey).toBe(nextKey);
+        expect(replay.nextPendingObservationKey).toBe('snapshot-1');
+
+        const nextSnapshot = resolveStoredSeatValidationClearDecision({
+            pendingKey: replay.nextPendingKey,
+            pendingObservationKey: replay.nextPendingObservationKey,
+            nextKey,
+            nextObservationKey: 'snapshot-2',
+        });
+        expect(nextSnapshot.shouldClear).toBe(true);
+        expect(nextSnapshot.nextPendingKey).toBeNull();
+    });
+
     it('中间恢复正常快照后，会清掉 pending key 并重新累计', () => {
         const badKey = buildStoredSeatValidationClearKey({
             matchId: 'match-a',

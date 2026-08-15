@@ -648,7 +648,7 @@ describe('formatDiceThroneActionEntry', () => {
         expect(statusSeg?.paramI18nKeys).toContain('statusLabel');
     });
 
-    it('奖励骰出现和被动重投临时骰应写入可区分的操作日志', () => {
+    it('奖励骰出现、修改和被动重投临时骰应写入可区分的操作日志', () => {
         const state = createState();
         const command: Command = {
             type: 'USE_PASSIVE_ABILITY',
@@ -672,6 +672,17 @@ describe('formatDiceThroneActionEntry', () => {
             },
             timestamp: 50,
         } as GameEvent;
+        const modified = {
+            type: 'DIE_MODIFIED',
+            payload: {
+                dieId: 0,
+                oldValue: 6,
+                newValue: 4,
+                playerId: '0',
+                target: 'pendingBonusDie',
+            },
+            timestamp: 51,
+        } as GameEvent;
 
         const bonusEntries = normalizeEntries(formatDiceThroneActionEntry({
             command,
@@ -683,10 +694,19 @@ describe('formatDiceThroneActionEntry', () => {
             state,
             events: [rerolled],
         }));
+        const modifiedEntries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [modified],
+        }));
 
         const bonusEntry = bonusEntries.find(entry => entry.kind === 'BONUS_DIE_ROLLED');
         expect(bonusEntry).toBeTruthy();
         expect(getI18nKeys(bonusEntry!.segments)).toContain('actionLog.bonusDieRolled');
+        const modifiedEntry = modifiedEntries.find(entry => entry.kind === 'DIE_MODIFIED');
+        expect(modifiedEntry).toBeTruthy();
+        const modifiedSegment = findI18nSegment(modifiedEntry!.segments, 'actionLog.bonusDieModified');
+        expect(modifiedSegment?.params).toMatchObject({ dieId: 1, oldValue: 6, newValue: 4 });
         const rerollEntry = rerollEntries.find(entry => entry.kind === 'DIE_REROLLED');
         expect(rerollEntry).toBeTruthy();
         const rerollSegment = findI18nSegment(rerollEntry!.segments, 'actionLog.bonusDieRerolled');

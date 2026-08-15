@@ -38,7 +38,6 @@ import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEf
 import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
 import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import { reduce } from '../domain/reducer';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -292,24 +291,6 @@ function createElderThingPromptContext<TExtra extends Record<string, unknown>>(
         now,
         cardUid: typeof extra.cardUid === 'string' ? extra.cardUid : '',
         ...extra,
-    };
-}
-
-function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    let nextCore = core;
-    for (const event of events) {
-        nextCore = reduce(nextCore, event);
-    }
-    return nextCore;
-}
-
-function withSimulatedMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    return {
-        ...matchState,
-        core: simulateCore(matchState.core, events),
     };
 }
 
@@ -1732,10 +1713,9 @@ const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgra
         const events = [playedEvent];
         const remaining = context.remaining - 1;
         if (remaining <= 0) return { events };
-        const nextState = withSimulatedMatchState(state, events);
         return {
             events,
-            context: createElderThingPromptContext(nextState, context.playerId, timestamp, {
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 remaining,

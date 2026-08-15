@@ -7,12 +7,30 @@ import type {
     GameConfigObject,
 } from '../../../game-config';
 import { materializeMageWarsConfigPackage } from '../data/configPackage';
+import { MAGE_WARS_OBJECT_ABILITY_IDS, type MageWarsObjectAbilityId } from './ids';
 
 export const MAGE_WARS_SPELL_ABILITY_PREFIX = 'mw.spell';
 
 export type MageWarsAbilityImplementationStatus = 'implemented' | 'needs-code';
 
 export type MageWarsAbilityTrigger = 'spell-cast';
+
+export type MageWarsObjectAbilityTrigger = 'arena-object-ability';
+export type MageWarsObjectAbilitySourceKind = 'creature' | 'attached-equipment';
+export type MageWarsObjectAbilityActionSpeed = 'quick' | 'normal' | 'source-trait';
+export type MageWarsObjectAbilityActionCost = 'normal' | 'none';
+export type MageWarsObjectAbilityTargetMode =
+    | 'self'
+    | 'living-object'
+    | 'friendly-living-animal'
+    | 'bound-spell';
+export type MageWarsObjectAbilityManaCostRule =
+    | { type: 'fixed'; amount: number }
+    | { type: 'source-trait' };
+export type MageWarsObjectAbilityStateDebt =
+    | 'temporaryTraits'
+    | 'abilityUseRoundNumbers'
+    | 'statusTokens';
 
 export type MageWarsSpellAbilityEffect = {
     type: 'requires-code-support';
@@ -36,6 +54,28 @@ export interface MageWarsSpellAbilityMeta {
 
 export interface MageWarsSpellAbilityDef extends AbilityDef<MageWarsSpellAbilityEffect, MageWarsAbilityTrigger> {
     meta: MageWarsSpellAbilityMeta;
+}
+
+export type MageWarsObjectAbilityEffect = {
+    type: 'object-ability-runtime';
+    summary: string;
+};
+
+export interface MageWarsObjectAbilityMeta {
+    abilityId: MageWarsObjectAbilityId;
+    sourceKind: MageWarsObjectAbilitySourceKind;
+    sourceSpellCardId: number;
+    actionSpeed: MageWarsObjectAbilityActionSpeed;
+    actionCost: MageWarsObjectAbilityActionCost;
+    manaCost: MageWarsObjectAbilityManaCostRule;
+    targetMode: MageWarsObjectAbilityTargetMode;
+    implementationStatus: MageWarsAbilityImplementationStatus;
+    stateDebt?: MageWarsObjectAbilityStateDebt[];
+}
+
+export interface MageWarsObjectAbilityDef extends AbilityDef<MageWarsObjectAbilityEffect, MageWarsObjectAbilityTrigger> {
+    id: MageWarsObjectAbilityId;
+    meta: MageWarsObjectAbilityMeta;
 }
 
 export interface MageWarsAbilityGapSummary {
@@ -123,6 +163,104 @@ export function buildMageWarsSpellAbilityDefs(): MageWarsSpellAbilityDef[] {
 
 export const mageWarsAbilityRegistry = createAbilityRegistry<MageWarsSpellAbilityDef>('mage-wars-spell-abilities');
 mageWarsAbilityRegistry.registerAll(buildMageWarsSpellAbilityDefs());
+
+export const mageWarsObjectAbilityDefs: MageWarsObjectAbilityDef[] = [
+    {
+        id: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+        name: '蓝色精怪迅捷传送',
+        description: '以迅捷传送临时获得迅捷和传送移动。',
+        trigger: 'arena-object-ability',
+        effects: [{ type: 'object-ability-runtime', summary: 'grant swift and teleport movement' }],
+        tags: ['mage-wars', 'object-ability', 'source:creature', 'implementation:implemented'],
+        meta: {
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+            sourceKind: 'creature',
+            sourceSpellCardId: 2822,
+            actionSpeed: 'normal',
+            actionCost: 'none',
+            manaCost: { type: 'fixed', amount: 1 },
+            targetMode: 'self',
+            implementationStatus: 'implemented',
+            stateDebt: ['temporaryTraits'],
+        },
+    },
+    {
+        id: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+        name: '治疗之光',
+        description: '治疗距离 1 内的一个活物对象。',
+        trigger: 'arena-object-ability',
+        effects: [{ type: 'object-ability-runtime', summary: 'roll one healing die for a living object' }],
+        tags: ['mage-wars', 'object-ability', 'source:creature', 'implementation:implemented'],
+        meta: {
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+            sourceKind: 'creature',
+            sourceSpellCardId: 2811,
+            actionSpeed: 'normal',
+            actionCost: 'normal',
+            manaCost: { type: 'fixed', amount: 0 },
+            targetMode: 'living-object',
+            implementationStatus: 'implemented',
+        },
+    },
+    {
+        id: MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE,
+        name: '救赎献祭',
+        description: '献祭灰衣天使并治疗一个活物对象。',
+        trigger: 'arena-object-ability',
+        effects: [{ type: 'object-ability-runtime', summary: 'roll six healing dice and defeat the source object' }],
+        tags: ['mage-wars', 'object-ability', 'source:creature', 'implementation:implemented'],
+        meta: {
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE,
+            sourceKind: 'creature',
+            sourceSpellCardId: 2907,
+            actionSpeed: 'normal',
+            actionCost: 'normal',
+            manaCost: { type: 'fixed', amount: 0 },
+            targetMode: 'living-object',
+            implementationStatus: 'implemented',
+        },
+    },
+    {
+        id: MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+        name: '群兽法杖',
+        description: '兽王装备主动能力，给友方动物临时近战加成或治疗。',
+        trigger: 'arena-object-ability',
+        effects: [{ type: 'object-ability-runtime', summary: 'grant an animal melee bonus or roll healing dice' }],
+        tags: ['mage-wars', 'object-ability', 'source:attached-equipment', 'implementation:implemented'],
+        meta: {
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+            sourceKind: 'attached-equipment',
+            sourceSpellCardId: 3710,
+            actionSpeed: 'source-trait',
+            actionCost: 'none',
+            manaCost: { type: 'source-trait' },
+            targetMode: 'friendly-living-animal',
+            implementationStatus: 'implemented',
+            stateDebt: ['temporaryTraits', 'abilityUseRoundNumbers'],
+        },
+    },
+    {
+        id: MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND,
+        name: '元素魔杖',
+        description: '元素魔杖重新绑定一个合法元素法术。',
+        trigger: 'arena-object-ability',
+        effects: [{ type: 'object-ability-runtime', summary: 'rebind an elemental spell card' }],
+        tags: ['mage-wars', 'object-ability', 'source:attached-equipment', 'implementation:implemented'],
+        meta: {
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND,
+            sourceKind: 'attached-equipment',
+            sourceSpellCardId: 3716,
+            actionSpeed: 'quick',
+            actionCost: 'none',
+            manaCost: { type: 'fixed', amount: 3 },
+            targetMode: 'bound-spell',
+            implementationStatus: 'implemented',
+        },
+    },
+];
+
+export const mageWarsObjectAbilityRegistry = createAbilityRegistry<MageWarsObjectAbilityDef>('mage-wars-object-abilities');
+mageWarsObjectAbilityRegistry.registerAll(mageWarsObjectAbilityDefs);
 
 export function getMageWarsSpellAbilityDef(cardId: number): MageWarsSpellAbilityDef | undefined {
     return mageWarsAbilityRegistry.get(getMageWarsSpellAbilityId(cardId));

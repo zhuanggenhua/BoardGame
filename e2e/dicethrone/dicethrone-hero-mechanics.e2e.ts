@@ -688,13 +688,25 @@ test.describe('狂战士机制补充', () => {
             await confirmButton.click();
             await activePage.waitForTimeout(800);
 
+            const responsePage = activePage === hostPage ? guestPage : hostPage;
+            await maybePassResponse(responsePage, 3000);
+            await maybePassResponse(activePage, 1000);
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, activePage) as Record<string, any>;
+                const root = state?.G && typeof state.G === 'object' ? state.G : state;
+                return root?.sys?.responseWindow?.current ?? null;
+            }, {
+                timeout: 10000,
+                message: '确认进攻骰后的改骰响应窗口应先关闭，之后才能选择 Rage',
+            }).toBeNull();
+
             const highlightedRageSlot = activePage
                 .locator('[data-ability-slot]')
                 .filter({ has: activePage.locator('div.animate-pulse[class*="border-"]') })
                 .filter({ hasText: /狂怒|rage/i })
                 .first();
             const rageSlotById = activePage
-                .locator('[data-ability-slot="rage"], [data-ability-slot*="rage"], [data-ability-id="rage"]')
+                .locator('[data-available-ability-id="rage"], [data-resolved-ability-id="rage"], [data-ability-slot="ultimate"]')
                 .first();
             if (await highlightedRageSlot.isVisible({ timeout: 2000 }).catch(() => false)) {
                 await highlightedRageSlot.click();

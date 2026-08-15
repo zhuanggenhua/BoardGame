@@ -320,6 +320,19 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-inventory-omen-book"),
     ).toHaveCount(0);
     await saveScreenshot(page, RUNTIME_SCREENSHOT);
+    const firstMoveSourceRoomId = await page.evaluate(() => {
+      const harness = (
+        window as Window & {
+          __BG_TEST_HARNESS__?: {
+            state?: { get?: () => { core?: { currentExplorer?: { roomId?: string } } } };
+          };
+        }
+      ).__BG_TEST_HARNESS__;
+      return harness?.state?.get?.().core?.currentExplorer?.roomId ?? null;
+    });
+    if (!firstMoveSourceRoomId) {
+      throw new Error("山屋移动动画测试缺少移动前源房间");
+    }
 
     await page.getByTestId("betrayal-action-move").click();
     await expect(page.getByTestId("betrayal-action-move")).toContainText(
@@ -341,6 +354,12 @@ test.describe("山屋惊魂基本流程", () => {
       "data-transition-target-testid",
       "betrayal-room-hallway",
     );
+    await expect(
+      page.getByTestId("betrayal-visual-transition-explorer-token-0"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId(`betrayal-room-occupant-${firstMoveSourceRoomId}-0`),
+    ).toHaveCount(0);
     await expect
       .poll(() =>
         page

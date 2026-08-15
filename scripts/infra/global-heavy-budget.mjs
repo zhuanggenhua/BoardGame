@@ -243,7 +243,11 @@ function resolveMemoryMinFreeGb(group) {
 function readBudgetConfig(group) {
     const normalizedGroup = normalizeName(group, 'default');
     const defaultGroupWeight = normalizedGroup === 'quality-gate' ? 2 : 1;
-    const defaultGroupMaxWeight = normalizedGroup === 'quality-gate' ? 2 : parseEnvNumber('BG_HEAVY_GLOBAL_MAX_WEIGHT', 4);
+    const defaultGroupMaxWeight = normalizedGroup === 'quality-gate'
+        ? 2
+        : normalizedGroup === 'e2e'
+            ? 1
+            : parseEnvNumber('BG_HEAVY_GLOBAL_MAX_WEIGHT', 4);
 
     return {
         globalMaxWeight: parseEnvNumber('BG_HEAVY_GLOBAL_MAX_WEIGHT', 4),

@@ -36,7 +36,56 @@ import {
     setChineseLocale,
     waitForTestHarness,
 } from '../helpers/common';
+import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import type { MatchState, RandomFn } from '../../src/engine/types';
+import '../../src/games/dicethrone/domain';
+import { buildDiceThroneAiLegalActions } from '../../src/games/dicethrone/ai';
+import { createCharacterDice, initHeroState } from '../../src/games/dicethrone/domain/characters';
 import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import { getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
+
+type OnlineAiResponseMatchState = MatchState<unknown> & {
+    sys?: {
+        phase?: string | null;
+        turnOrder?: string[];
+        currentPlayerIndex?: number | null;
+        flowHalted?: boolean | null;
+        interaction?: {
+            current?: unknown | null;
+            queue?: unknown[];
+        } | null;
+        responseWindow?: {
+            current?: unknown | null;
+        } | null;
+    } | null;
+    core?: {
+        phase?: string | null;
+        activePlayerId?: string | null;
+        hostStarted?: boolean | null;
+        selectedCharacters?: Record<string, string | null> | null;
+        readyPlayers?: Record<string, boolean | null> | null;
+        seatControllers?: Record<string, { type?: string | null; minimumActionDelayMs?: number | null }> | null;
+        players?: Record<string, any>;
+        dice?: Array<Record<string, unknown>>;
+        pendingAttack?: Record<string, unknown> | null;
+        pendingDamage?: Record<string, unknown> | null;
+        pendingBonusDiceSettlement?: unknown | null;
+        selectedAbilityId?: string | null;
+        rollCount?: number | null;
+        rollLimit?: number | null;
+        rollConfirmed?: boolean | null;
+        turnNumber?: number | null;
+        tokenDefinitions?: unknown[];
+    } | null;
+};
+
+const DICE_THRONE_PREPARE_RANDOM: RandomFn = {
+    shuffle: <T>(values: T[]) => [...values],
+    random: () => 0.5,
+    d: (_n: number) => 1,
+    range: (min: number, _max: number) => min,
+};
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -104,6 +153,151 @@ async function waitForAiSeatCredential(
     }).not.toBeNull();
 }
 
+const applyOnlineAiResponseMatchState = async (
+    matchId: string,
+    page: Page,
+    mutator: (state: OnlineAiResponseMatchState) => OnlineAiResponseMatchState,
+) => {
+    const current = await getMatchState(matchId, page) as OnlineAiResponseMatchState;
+    const next = mutator(structuredClone(current) as OnlineAiResponseMatchState);
+    await injectMatchState(matchId, next, page);
+};
+
+const buildSamuraiHonorAiResponseState = (
+    state: OnlineAiResponseMatchState,
+    options: { aiControllerType?: 'human' | 'local-ai'; aiDelayMs?: number } = {},
+): OnlineAiResponseMatchState => {
+    const next = structuredClone(state) as OnlineAiResponseMatchState;
+    const host = initHeroState('0', 'gunslinger', DICE_THRONE_PREPARE_RANDOM);
+    const ai = initHeroState('1', 'samurai', DICE_THRONE_PREPARE_RANDOM);
+
+    host.resources = {
+        ...(host.resources ?? {}),
+        [RESOURCE_IDS.HP]: 50,
+        [RESOURCE_IDS.CP]: 2,
+    };
+    ai.resources = {
+        ...(ai.resources ?? {}),
+        [RESOURCE_IDS.HP]: 50,
+        [RESOURCE_IDS.CP]: 2,
+    };
+    ai.tokens = {
+        ...(ai.tokens ?? {}),
+        [TOKEN_IDS.HONOR]: 1,
+    };
+
+    next.core = {
+        ...next.core,
+        phase: 'defensiveRoll',
+        hostStarted: true,
+        activePlayerId: '1',
+        turnNumber: typeof next.core?.turnNumber === 'number' ? next.core.turnNumber : 1,
+        rollCount: 1,
+        rollLimit: 1,
+        rollConfirmed: true,
+        selectedAbilityId: 'wakizashi',
+        selectedCharacters: {
+            ...(next.core?.selectedCharacters ?? {}),
+            '0': 'gunslinger',
+            '1': 'samurai',
+        },
+        readyPlayers: {
+            ...(next.core?.readyPlayers ?? {}),
+            '0': true,
+            '1': true,
+        },
+        seatControllers: {
+            ...(next.core?.seatControllers ?? {}),
+            '0': { type: 'human' },
+            '1': options.aiControllerType === 'human'
+                ? { type: 'human' }
+                : { type: 'local-ai', minimumActionDelayMs: options.aiDelayMs ?? 250 },
+        },
+        players: {
+            ...(next.core?.players ?? {}),
+            '0': host,
+            '1': ai,
+        },
+        dice: createCharacterDice('samurai').map((die, index) => {
+            const values = [1, 1, 2, 4, 6];
+            const value = values[index] ?? 1;
+            const symbol = getHeroDieFace('samurai', value);
+            return {
+                ...die,
+                value,
+                symbol,
+                symbols: [symbol],
+                isKept: false,
+            };
+        }),
+        pendingAttack: {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'wakizashi',
+            defenseAbilityId: undefined,
+            isDefendable: true,
+            damage: 4,
+            bonusDamage: 0,
+            damageResolved: false,
+            resolvedDamage: 0,
+            settlementStage: 'preDamage',
+        },
+        pendingDamage: {
+            id: 'samurai-honor-ai-response',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 4,
+            currentDamage: 4,
+            sourceAbilityId: 'wakizashi',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '1',
+            isFullyEvaded: false,
+        },
+        pendingBonusDiceSettlement: null,
+    };
+
+    next.sys = {
+        ...next.sys,
+        phase: 'defensiveRoll',
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 1,
+        flowHalted: false,
+        responseWindow: {
+            ...(next.sys?.responseWindow ?? {}),
+            current: null,
+        },
+        interaction: {
+            ...(next.sys?.interaction ?? {}),
+            current: null,
+        },
+    };
+
+    return next;
+};
+
+const readSamuraiHonorResponseSnapshot = async (matchId: string, page: Page) => {
+    const state = await getMatchState(matchId, page) as OnlineAiResponseMatchState;
+    const events = await findEventsInStream(page, ['TOKEN_CONSUMED', 'TOKEN_RESPONSE_REQUESTED', 'DAMAGE_DEALT']);
+    return {
+        phase: state.sys?.phase ?? null,
+        aiHonor: state.core?.players?.['1']?.tokens?.[TOKEN_IDS.HONOR] ?? null,
+        pendingDamageId: state.core?.pendingDamage?.id ?? null,
+        pendingDamageResponderId: state.core?.pendingDamage?.responderId ?? null,
+        pendingDamageCurrentDamage: state.core?.pendingDamage?.currentDamage ?? null,
+        pendingDamageResponseType: state.core?.pendingDamage?.responseType ?? null,
+        pendingDamageHonorUsage: state.core?.pendingDamage?.tokenUsageTotals?.[TOKEN_IDS.HONOR] ?? 0,
+        hostHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+        tokenConsumedHonorCount: events.filter((event) => (
+            event.type === 'TOKEN_CONSUMED'
+            && event.payload?.playerId === '1'
+            && event.payload?.tokenId === TOKEN_IDS.HONOR
+        )).length,
+        tokenResponseRequestedCount: events.filter((event) => event.type === 'TOKEN_RESPONSE_REQUESTED').length,
+        damageEventCount: events.filter((event) => event.type === 'DAMAGE_DEALT').length,
+    };
+};
+
 async function setupDTOnlineAiRoom(
     browser: Browser,
     baseURL: string | undefined,
@@ -111,6 +305,7 @@ async function setupDTOnlineAiRoom(
     const hostContext = await browser.newContext({ baseURL });
     await initContext(hostContext, {
         storageKey: '__dicethrone_storage_reset_online_ai',
+        skipTutorial: false,
         skipImageGate: true,
         gameServerBaseURL: getGameServerBaseURL(),
     });
@@ -175,6 +370,23 @@ async function setupDTOnlineAiRoom(
         await hostContext.close();
         return null;
     }
+
+    const aiCredentials = await claimDTSeatViaAPI(hostPage, matchId, '1', {
+        guestId,
+        playerName: 'AI-DT-Response',
+        gameServerBaseURL: getGameServerBaseURL(),
+    });
+    if (!aiCredentials) {
+        console.error('[setupDTOnlineAiRoom] AI 座位占座失败');
+        await hostContext.close();
+        return null;
+    }
+    const aiSeatCredentials = { '1': aiCredentials };
+    await hostContext.addInitScript(({ targetMatchId, credentials }) => {
+        localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(credentials));
+        window.dispatchEvent(new Event('match-credentials-changed'));
+    }, { targetMatchId: matchId, credentials: aiSeatCredentials });
+    await seedAiSeatCredentials(hostPage, matchId, aiSeatCredentials);
 
     await seedDTMatchCredentials(hostContext, matchId, '0', credentials);
     await hostPage.goto(`/play/dicethrone/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
@@ -526,8 +738,8 @@ test.describe('DiceThrone AI 响应窗口', () => {
         }
     });
 
-    test('AI vs AI: samurai honor token 场景下 Token 响应窗口应触发', async ({ browser }, testInfo) => {
-        test.setTimeout(180000);
+    test('在线 AI: samurai honor token 近位点应生成并执行 Token 响应', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const setup = await setupDTOnlineAiRoom(browser, baseURL);
@@ -539,171 +751,105 @@ test.describe('DiceThrone AI 响应窗口', () => {
         try {
             await waitForCharacterSelectionWithRetry(hostPage, 30000);
             await waitForAiSeatCredential(hostPage, matchId, '1');
-
-            await selectCharacter(hostPage, 'samurai');
-            await expect.poll(async () => {
-                const state = await hostPage.evaluate(() => {
-                    return (window as any).__BG_TEST_HARNESS__?.state?.get?.() ?? null;
-                });
-                if (!state) return false;
-                const hostSelected = state.core?.selectedCharacters?.['0'];
-                const aiSelected = state.core?.selectedCharacters?.['1'];
-                const aiReady = state.core?.readyPlayers?.['1'] === true;
-                return hostSelected === 'samurai' && aiSelected !== 'unselected' && aiReady;
-            }, {
-                timeout: 30000,
-                message: '等待 DiceThrone host/AI 一起完成响应窗口测试前置条件',
-            }).toBe(true);
-
-            const startButton = hostPage.locator('button').filter({ hasText: /开始游戏|Start Game|Press.*Start/i }).first();
-            await expect(startButton).toBeEnabled({ timeout: 10000 });
-            await startButton.click();
-            await hostPage.waitForTimeout(500);
-
+            await applyOnlineAiResponseMatchState(
+                matchId,
+                hostPage,
+                (state) => buildSamuraiHonorAiResponseState(state, { aiControllerType: 'human' }),
+            );
+            await waitForTestHarness(hostPage, 15000);
             await waitForGameBoard(hostPage, 30000);
-            await hostPage.waitForTimeout(2000);
 
-            // 监控 AI 回合进度和事件流
-            console.log('[DT-AI-Response] 开始监控 AI 回合...');
+            const injectedState = await getMatchState(matchId, hostPage) as OnlineAiResponseMatchState;
+            const legalActions = buildDiceThroneAiLegalActions({
+                playerId: '1',
+                state: injectedState,
+            });
+            const honorAction = legalActions.find((action) => (
+                action.kind === 'token-response'
+                && action.commands.some((command) => (
+                    command.type === 'USE_TOKEN'
+                    && (command.payload as Record<string, unknown> | undefined)?.tokenId === TOKEN_IDS.HONOR
+                ))
+            ));
+            if (!honorAction) {
+                console.log('[DT-AI-Response] 注入态 AI 合法动作诊断:', JSON.stringify({
+                    phase: injectedState.sys?.phase ?? null,
+                    interaction: injectedState.sys?.interaction?.current ?? null,
+                    pendingDamage: injectedState.core?.pendingDamage ?? null,
+                    aiTokens: injectedState.core?.players?.['1']?.tokens ?? null,
+                    aiCharacterId: injectedState.core?.players?.['1']?.characterId ?? null,
+                    legalActions: legalActions.map((action) => ({
+                        kind: action.kind,
+                        commands: action.commands.map((command) => ({
+                            type: command.type,
+                            payload: command.payload,
+                        })),
+                    })),
+                }, null, 2));
+            }
+            expect(honorAction, 'AI 合法动作应包含武士 Honor 造成伤害前响应').toBeTruthy();
 
-            const maxWaitMs = 90000;
-            const startTime = Date.now();
-            let foundTokenResponse = false;
-            let foundResponseWindow = false;
-            let lastTurnNumber = 0;
-
-            // 收集关键控制台日志
-            const consoleLogs: string[] = [];
-            hostPage.on('console', (msg) => {
-            const text = msg.text();
-            if (
-                text.includes('TOKEN_RESPONSE') ||
-                text.includes('RESPONSE_WINDOW') ||
-                text.includes('shouldOpenTokenResponse') ||
-                text.includes('skipToNextRespondableResponder') ||
-                text.includes('buildResponseActions') ||
-                text.includes('resolveNextAiAction') ||
-                text.includes('getAutoResponseEnabled') ||
-                text.includes('checkAfterAttackResponseWindow')
-                ) {
-                    consoleLogs.push(text);
-                    console.log(`[Browser] ${text.substring(0, 200)}`);
-                }
+            const initialSnapshot = await readSamuraiHonorResponseSnapshot(matchId, hostPage);
+            expect(initialSnapshot).toMatchObject({
+                pendingDamageId: 'samurai-honor-ai-response',
+                pendingDamageResponderId: '1',
+                pendingDamageResponseType: 'beforeDamageDealt',
+                pendingDamageCurrentDamage: 4,
+                aiHonor: 1,
             });
 
-            while (Date.now() - startTime < maxWaitMs) {
-                await hostPage.waitForTimeout(3000);
+            await applyOnlineAiResponseMatchState(matchId, hostPage, buildSamuraiHonorAiResponseState);
 
-                // 读取状态
-                const stateSnapshot = await hostPage.evaluate(() => {
-                    const harness = (window as any).__BG_TEST_HARNESS__;
-                    const state = harness?.state?.get?.();
-                    if (!state) return null;
+            await expect.poll(async () => {
+                const debug = await hostPage.evaluate(() => {
+                    const api = (window as any).__BG_ONLINE_AI_DEBUG__;
+                    const latestState = api?.getSeatLatestState?.('1');
+                    const decisionState = api?.getSeatDecisionState?.('1');
                     return {
-                        phase: state.sys?.phase ?? null,
-                        turnNumber: state.sys?.turnNumber ?? null,
-                        gameover: state.sys?.gameover ?? null,
-                        pendingDamage: state.core?.pendingDamage
-                            ? {
-                                id: (state.core.pendingDamage as any).id,
-                                responderId: (state.core.pendingDamage as any).responderId,
-                                responseType: (state.core.pendingDamage as any).responseType,
-                                currentDamage: (state.core.pendingDamage as any).currentDamage,
-                            }
-                            : null,
-                        responseWindow: state.sys?.responseWindow?.current
-                            ? {
-                                windowType: (state.sys.responseWindow.current as any).windowType,
-                                currentResponderIndex: (state.sys.responseWindow.current as any).currentResponderIndex,
-                                responderQueue: (state.sys.responseWindow.current as any).responderQueue,
-                            }
-                            : null,
-                        interaction: state.sys?.interaction
-                            ? {
-                                currentId: (state.sys.interaction as any).current?.id ?? null,
-                                currentPlayerId: (state.sys.interaction as any).current?.playerId ?? null,
-                                isBlocked: (state.sys.interaction as any).isBlocked ?? false,
-                            }
-                            : null,
+                        latestHasPendingDamage: Boolean(latestState?.core?.pendingDamage),
+                        decisionStage: decisionState?.stage ?? null,
+                        decisionKind: decisionState?.actionKind ?? decisionState?.kind ?? null,
                     };
                 });
+                return debug.latestHasPendingDamage || Boolean(debug.decisionStage);
+            }, {
+                timeout: 15000,
+                message: '等待在线 AI seat 1 接收到 Samurai Honor 响应态',
+            }).toBe(true);
 
-                if (!stateSnapshot) continue;
+            await expect.poll(async () => {
+                const snapshot = await readSamuraiHonorResponseSnapshot(matchId, hostPage);
+                return snapshot.tokenConsumedHonorCount > 0
+                    || snapshot.pendingDamageHonorUsage > 0
+                    || snapshot.pendingDamageCurrentDamage === 5
+                    || snapshot.aiHonor === 0;
+            }, {
+                timeout: 30000,
+                message: '等待在线 AI 消费 Honor 并把当前伤害从 4 提升到 5',
+            }).toBe(true);
 
-                const currentTurn = stateSnapshot.turnNumber ?? 0;
-                if (currentTurn > lastTurnNumber) {
-                    lastTurnNumber = currentTurn;
-                    console.log(`[DT-AI-Response] 回合 ${currentTurn}, 阶段: ${stateSnapshot.phase}`);
-                }
+            const finalSnapshot = await readSamuraiHonorResponseSnapshot(matchId, hostPage);
+            console.log('[DT-AI-Response] Samurai Honor AI 响应最终状态:', JSON.stringify(finalSnapshot, null, 2));
+            expect(
+                finalSnapshot.tokenConsumedHonorCount > 0
+                || finalSnapshot.pendingDamageHonorUsage > 0
+                || finalSnapshot.pendingDamageCurrentDamage === 5
+                || finalSnapshot.aiHonor === 0,
+                '在线 AI 应真实执行 Honor Token 响应，而不是只看见 pendingDamage',
+            ).toBe(true);
 
-                // 检查是否有 pendingDamage（Token 响应窗口的标志）
-                if (stateSnapshot.pendingDamage) {
-                    console.log('[DT-AI-Response] 发现 pendingDamage:', JSON.stringify(stateSnapshot.pendingDamage));
-                    foundTokenResponse = true;
-                }
-
-                // 检查是否有 responseWindow
-                if (stateSnapshot.responseWindow) {
-                    console.log('[DT-AI-Response] 发现 responseWindow:', JSON.stringify(stateSnapshot.responseWindow));
-                    foundResponseWindow = true;
-                }
-
-                // 检查事件流
-                const tokenEvents = await findEventsInStream(hostPage, ['TOKEN_RESPONSE_REQUESTED']);
-                const rwEvents = await findEventsInStream(hostPage, ['RESPONSE_WINDOW_OPENED']);
-                if (tokenEvents.length > 0) foundTokenResponse = true;
-                if (rwEvents.length > 0) foundResponseWindow = true;
-
-                // 游戏结束
-                if (stateSnapshot.gameover) {
-                    console.log('[DT-AI-Response] 游戏结束');
-                    break;
-                }
-
-                // 如果已经发现了响应事件，可以提前结束
-                if (foundTokenResponse || foundResponseWindow) {
-                    console.log('[DT-AI-Response] 已发现响应事件，提前结束监控');
-                    break;
-                }
+            if (finalSnapshot.pendingDamageId) {
+                expect(finalSnapshot.pendingDamageCurrentDamage).toBe(5);
+                expect(finalSnapshot.pendingDamageHonorUsage).toBeGreaterThanOrEqual(1);
+            } else {
+                expect(finalSnapshot.damageEventCount).toBeGreaterThan(0);
+                expect(finalSnapshot.hostHp).toBeLessThanOrEqual(45);
             }
 
-            // 截图
             await hostPage.screenshot({
-                path: testInfo.outputPath('dicethrone-ai-response-samurai-scene.png'),
+                path: testInfo.outputPath('dicethrone-ai-response-samurai-honor-consumed.png'),
                 fullPage: false,
             });
-
-            // 最终诊断
-            console.log('\n=== 最终诊断 ===');
-            console.log('TOKEN_RESPONSE_REQUESTED 触发:', foundTokenResponse);
-            console.log('RESPONSE_WINDOW_OPENED 触发:', foundResponseWindow);
-            console.log('总回合数:', lastTurnNumber);
-            console.log('关键日志数:', consoleLogs.length);
-
-            // 输出关键日志
-            if (consoleLogs.length > 0) {
-                console.log('\n--- 关键日志（最近 20 条）---');
-                for (const log of consoleLogs.slice(-20)) {
-                    console.log(log.substring(0, 300));
-                }
-            }
-
-            // 检查 autoResponse 值
-            const finalAutoResponse = await hostPage.evaluate(() => {
-                return localStorage.getItem('dicethrone:autoResponse');
-            });
-            console.log('autoResponse 最终值:', finalAutoResponse);
-
-            if (!foundTokenResponse && !foundResponseWindow) {
-                console.log('\n⚠️ AI 响应窗口未触发！可能原因：');
-                console.log('1. autoResponse 开关为 false');
-                console.log('2. 角色无可用的 beforeDamageDealt/beforeDamageReceived Token');
-                console.log('3. hasRespondableContent 未注入 → skipToNextRespondableResponder 不跳过');
-                console.log('4. AI 座位凭据未被 MatchRoom 正确识别');
-                console.log('5. shouldBlockHiddenInteractionActions 阻止了 AI 动作生成');
-            }
-
-            expect(lastTurnNumber).toBeGreaterThan(0);
         } finally {
             await hostContext.close();
         }

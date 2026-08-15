@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import type { PipelineStage } from 'mongoose';
 import { normalizeDeveloperGameIds } from '../auth/schemas/developer-game-access';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import type { UserRole } from '../auth/schemas/user-role';
@@ -42,6 +43,8 @@ export const WATCHDOG_AGGREGATION_WINDOW_MS = 6 * 60 * 60 * 1000;
 export const WATCHDOG_RECENT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
 export const WATCHDOG_MAX_RECENT_RECORDS = 100;
 export const FEEDBACK_REWARD_POINTS = 1;
+const FEEDBACK_SUMMARY_PREVIEW_SOURCE_LENGTH = 360;
+const FEEDBACK_SUMMARY_PREVIEW_LENGTH = 180;
 
 const FEEDBACK_SEVERITY_RANK: Record<string, number> = {
     low: 1,
@@ -58,6 +61,15 @@ type WatchdogAggregationPlan = {
 };
 
 type WatchdogSnapshotRecord = Record<string, unknown>;
+type FeedbackListRecord = Feedback & {
+    contentPreviewSource?: string;
+    contentPreview?: string;
+    hasEmbeddedImage?: boolean;
+    hasActionLog?: boolean;
+    hasStateSnapshot?: boolean;
+    hasClientContext?: boolean;
+    hasErrorContext?: boolean;
+};
 
 @Injectable()
 export class FeedbackService {
@@ -113,7 +125,7 @@ export class FeedbackService {
         const manager = actorUserId ? await this.assertActorCanManage(actorUserId) : null;
         const page = Math.max(1, Number(query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-        const { status, type, severity, sort, reporterType, source, preferMine, mineOnly } = query;
+        const { status, type, severity, sort, reporterType, source, preferMine, mineOnly, summaryOnly } = query;
         if (mineOnly && !manager) {
             return {
                 items: [],
@@ -137,19 +149,23 @@ export class FeedbackService {
 
         const total = await this.feedbackModel.countDocuments(filter);
         const skip = (page - 1) * limit;
-        let items: Array<FeedbackDocument | Feedback> = [];
+        let items: Array<FeedbackDocument | FeedbackListRecord> = [];
         const shouldPreferMine = Boolean(manager?.actorUserObjectId && preferMine);
 
-        if (manager?.actorUserObjectId) {
-            const aggregatedItems = await this.feedbackModel.aggregate<Array<Feedback & { __isMine?: number }>>([
-                { $match: filter },
-                {
+        if (manager?.actorUserObjectId || summaryOnly) {
+            const addMineFieldStage: PipelineStage[] = manager?.actorUserObjectId
+                ? [{
                     $addFields: {
                         __isMine: {
                             $cond: [{ $eq: [{ $toString: '$userId' }, manager.actorUserId] }, 1, 0],
                         },
                     },
-                },
+                }]
+                : [];
+            const summaryProjectionStage: PipelineStage[] = summaryOnly ? [{ $project: this.buildSummaryProjection() }] : [];
+            const aggregatedItems = await this.feedbackModel.aggregate<Array<FeedbackListRecord & { __isMine?: number }>>([
+                { $match: filter },
+                ...addMineFieldStage,
                 {
                     $sort: {
                         ...(shouldPreferMine ? { __isMine: -1 } : {}),
@@ -158,15 +174,16 @@ export class FeedbackService {
                 },
                 { $skip: skip },
                 { $limit: limit },
+                ...summaryProjectionStage,
             ]).exec();
 
             const populated = await this.feedbackModel.populate(
                 aggregatedItems,
                 { path: 'userId', select: 'username avatar email' },
-            ) as Array<Feedback & { __isMine?: number }>;
+            ) as Array<FeedbackListRecord & { __isMine?: number }>;
             items = populated.map((item) => {
                 const { __isMine: _unusedIsMine, ...rest } = item;
-                return rest as Feedback;
+                return rest as FeedbackListRecord;
             });
         } else {
             items = await this.feedbackModel
@@ -179,16 +196,29 @@ export class FeedbackService {
         }
 
         return {
-            items: items.map((item) => {
-                const decorated = this.decorateLegacyOrigin(item);
-                return {
-                    ...decorated,
-                    canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
-                };
-            }),
+            items: items.map((item) => this.formatListItem(item, manager, Boolean(summaryOnly))),
             total,
             page,
             limit,
+        };
+    }
+
+    async findOne(actorUserId: string | null, id: string): Promise<(Feedback & { canManage: boolean }) | null> {
+        if (!Types.ObjectId.isValid(id)) {
+            return null;
+        }
+        const manager = actorUserId ? await this.assertActorCanManage(actorUserId) : null;
+        const item = await this.feedbackModel
+            .findById(id)
+            .populate('userId', 'username avatar email')
+            .exec();
+        if (!item) {
+            return null;
+        }
+        const decorated = this.decorateLegacyOrigin(item);
+        return {
+            ...decorated,
+            canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
         };
     }
 
@@ -1071,6 +1101,113 @@ export class FeedbackService {
                 { content: /^\[system\]\[online-ai-watchdog\]\s+/ },
             ],
         };
+    }
+
+    private buildSummaryProjection(): Record<string, unknown> {
+        return {
+            _id: 1,
+            userId: 1,
+            type: 1,
+            severity: 1,
+            status: 1,
+            closedReason: 1,
+            resolvedMethod: 1,
+            reporterType: 1,
+            source: 1,
+            autoReportKind: 1,
+            incidentKey: 1,
+            latestIncidentKey: 1,
+            occurrenceCount: 1,
+            firstOccurredAt: 1,
+            lastOccurredAt: 1,
+            gameName: 1,
+            gameId: 1,
+            contactInfo: 1,
+            rewardPoints: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            contentPreviewSource: {
+                $substrCP: [{ $ifNull: ['$content', ''] }, 0, FEEDBACK_SUMMARY_PREVIEW_SOURCE_LENGTH],
+            },
+            hasEmbeddedImage: {
+                $regexMatch: {
+                    input: { $ifNull: ['$content', ''] },
+                    regex: /data:image\//,
+                },
+            },
+            hasActionLog: {
+                $gt: [{ $strLenCP: { $ifNull: ['$actionLog', ''] } }, 0],
+            },
+            hasStateSnapshot: {
+                $gt: [{ $strLenCP: { $ifNull: ['$stateSnapshot', ''] } }, 0],
+            },
+            hasClientContext: {
+                $gt: [{ $size: { $objectToArray: { $ifNull: ['$clientContext', {}] } } }, 0],
+            },
+            hasErrorContext: {
+                $gt: [{ $size: { $objectToArray: { $ifNull: ['$errorContext', {}] } } }, 0],
+            },
+            clientContext: {
+                gameId: '$clientContext.gameId',
+                route: '$clientContext.route',
+                appVersion: '$clientContext.appVersion',
+                appCommitSha: '$clientContext.appCommitSha',
+                appBuildTime: '$clientContext.appBuildTime',
+                lastUserAction: '$clientContext.lastUserAction',
+                activeElement: '$clientContext.activeElement',
+            },
+            errorContext: {
+                source: '$errorContext.source',
+                name: '$errorContext.name',
+                message: '$errorContext.message',
+            },
+        };
+    }
+
+    private formatListItem(
+        item: FeedbackDocument | FeedbackListRecord,
+        manager: FeedbackManagerScope | null,
+        summaryOnly: boolean,
+    ): Record<string, unknown> {
+        if (!summaryOnly) {
+            const decorated = this.decorateLegacyOrigin(item as FeedbackDocument | Feedback);
+            return {
+                ...decorated,
+                canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
+            };
+        }
+
+        const raw = this.toFeedbackObject(item as FeedbackDocument | Feedback) as FeedbackListRecord;
+        const originInput = {
+            ...raw,
+            content: raw.content ?? raw.contentPreviewSource ?? '',
+        } as Feedback;
+        const decorated = this.decorateLegacyOrigin(originInput);
+        const canManage = manager ? this.canActorManageFeedbackItem(manager, decorated) : false;
+        const summary: Record<string, unknown> = { ...decorated };
+        const previewSource = typeof summary.contentPreviewSource === 'string'
+            ? summary.contentPreviewSource
+            : '';
+
+        summary.contentPreview = this.buildContentPreview(previewSource);
+        summary.canManage = canManage;
+        delete summary.contentPreviewSource;
+        delete summary.content;
+        delete summary.actionLog;
+        delete summary.stateSnapshot;
+
+        return summary;
+    }
+
+    private buildContentPreview(source: string): string {
+        const withoutImages = source
+            .replace(/!\[[^\]]*\]\(data:image\/[^)]*\)/g, ' ')
+            .replace(/!\[[^\]]*\]\(data:image\/.*$/s, ' ');
+        const normalized = withoutImages.replace(/\s+/g, ' ').trim();
+        if (normalized.length <= FEEDBACK_SUMMARY_PREVIEW_LENGTH) {
+            return normalized;
+        }
+        return `${normalized.slice(0, FEEDBACK_SUMMARY_PREVIEW_LENGTH - 3)}...`;
     }
 
     private decorateLegacyOrigin(item: FeedbackDocument | Feedback): Feedback {

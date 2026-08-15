@@ -580,7 +580,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 
 最小执行口径：
 - 设计稿、架构审查、需求对齐、Board 实现顺序和截图链门禁均以 `references/ui-implementation-gates.md` 为准。
-- 新游戏主 UI、设计稿或布局收敛前必须先走 `.spec/skills/ui-design-pipeline/SKILL.md`；若用户要位图设计稿，再继续走 `boardgame-ui-imagegen`。
+- 新游戏主 UI、设计稿或布局收敛前必须先走上方登记的 UI 设计生成链路；若用户要位图设计稿，再继续走 `boardgame-ui-imagegen`。
 - Board 组件只做接入和组装，状态、教学、音频、事件、选择阶段按已有游戏模式复用。
 - 对外声称基础流程已具备时，必须提供真实页面截图链；中局过程态和满元素截图要求回 `references/ui-implementation-gates.md`。
 ## 阶段 6：收尾与启用
@@ -589,7 +589,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 
 最小执行口径：
 - 补齐游戏 i18n 文案、教学配置、音频配置和关键图片预加载。
-- 音频细则读 `.spec/knowledge/standards/audio-assets.md` 和项目 skill `.spec/skills/audio-integration/SKILL.md`。
+- 音频细则读上方登记的音频运行时主合同和音频 workflow。
 - 关键图片预加载读 `.spec/knowledge/standards/critical-image-preload.md`。
 - 资源落盘、压缩、manifest、服务器素材主源回查按 `.spec/knowledge/standards/asset-pipeline.md`。
 - 最终验证至少覆盖清单生成、游戏测试、类型检查、资源检查/上传和真实入口可玩性。

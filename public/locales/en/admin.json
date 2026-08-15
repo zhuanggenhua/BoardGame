@@ -124,6 +124,9 @@
       "errorContext": "Error context",
       "recentAction": "Recent action",
       "activeElement": "Current focus",
+      "loading": "Loading full details...",
+      "summaryOnly": "Showing the summary first. Full content, screenshots, and logs will appear after details load.",
+      "copyPending": "Copy after details load",
       "expand": "Expand",
       "collapse": "Collapse"
     },

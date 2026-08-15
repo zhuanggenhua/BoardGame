@@ -1522,7 +1522,6 @@ describe('killer_plants POD 数据与特殊回归', () => {
         expect(respondResult.finalState.core.players['0'].hand.map(card => card.uid)).toContain('we-1');
         expect(respondResult.finalState.sys.phase).toBe('playCards');
         expectNoPrompt(respondResult.finalState);
-        expect((respondResult.finalState.sys as any)._waitForStartTurnInteractionReduce).toBeUndefined();
     });
 
     it('Sprout POD 连锁打出另一个 Sprout POD 时，应保持在 startTurn 直到整条链结束', () => {
@@ -1600,9 +1599,9 @@ describe('killer_plants POD 数据与特殊回归', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
-        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(0);
-        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_REPLACED)).toHaveLength(0);
-        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
-        expect(result.finalState.sys.phase).toBe('scoreBases');
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(1);
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_REPLACED)).toHaveLength(1);
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeUndefined();
+        expect(result.finalState.sys.phase).not.toBe('scoreBases');
     });
 });

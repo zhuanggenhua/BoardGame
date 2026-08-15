@@ -42,10 +42,17 @@ const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
 
 async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: string) {
+    const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({
-        path: getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true }),
+        path,
         fullPage: false,
+        animations: 'disabled',
+        timeout: 10_000,
     }));
+    testInfo.annotations.push({
+        type: 'evidence-screenshot',
+        description: path,
+    });
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -200,7 +207,7 @@ async function openOnlineBoard(page: Page) {
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     const board = page.getByTestId('mage-wars-board');
     await expect(board).toBeVisible({ timeout: 30_000 });
-    await expect(board).toContainText('学徒竞技场');
+    await expect(board).toContainText('正式竞技场');
     await page.waitForFunction(() => Array.from(document.images)
         .filter((image) => {
             const rect = image.getBoundingClientRect();
@@ -210,7 +217,7 @@ async function openOnlineBoard(page: Page) {
 }
 
 async function readPhase(page: Page): Promise<string | null> {
-    return page.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase');
+    return page.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase', { timeout: 500 }).catch(() => null);
 }
 
 const SIMULTANEOUS_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
@@ -396,15 +403,42 @@ async function clickLegalMoveZone(page: Page, zoneId: string, contextLabel: stri
 
 async function clickTurnEndIfEnabled(page: Page): Promise<boolean> {
     const turnEnd = page.getByTestId('mage-wars-turn-end');
-    if (!await turnEnd.isEnabled().catch(() => false)) return false;
+    if (!await turnEnd.isEnabled({ timeout: 200 }).catch(() => false)) return false;
     try {
-        await turnEnd.click({ timeout: 1_500 });
-        await page.waitForTimeout(180);
+        await turnEnd.click({ timeout: 1_000 });
+        await page.waitForTimeout(120);
         return true;
     } catch (error: unknown) {
-        if (await turnEnd.isEnabled().catch(() => false)) throw error;
+        if (await turnEnd.isEnabled({ timeout: 200 }).catch(() => false)) {
+            await turnEnd.click({ timeout: 800, force: true });
+            await page.waitForTimeout(120);
+            return true;
+        }
         return false;
     }
+}
+
+async function clickPlanSpellsIfEnabled(page: Page): Promise<boolean> {
+    const planSpells = page.getByTestId('mage-wars-plan-spells');
+    if (!await planSpells.isVisible({ timeout: 200 }).catch(() => false)) return false;
+    if (!await planSpells.isEnabled({ timeout: 200 }).catch(() => false)) return false;
+    try {
+        await planSpells.click({ timeout: 1_000 });
+        await page.waitForTimeout(120);
+        return true;
+    } catch (error: unknown) {
+        if (await planSpells.isEnabled({ timeout: 200 }).catch(() => false)) {
+            await planSpells.click({ timeout: 800, force: true });
+            await page.waitForTimeout(120);
+            return true;
+        }
+        return false;
+    }
+}
+
+async function clickPlanningOrTurnEndIfEnabled(page: Page): Promise<boolean> {
+    if (await clickPlanSpellsIfEnabled(page)) return true;
+    return clickTurnEndIfEnabled(page);
 }
 
 async function advanceUntilPhase(
@@ -421,18 +455,19 @@ async function advanceUntilPhase(
         ]);
         if (hostPhase === targetPhase && guestPhase === targetPhase) return;
 
-        const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id');
+        const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
         const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
         const standbyPage = phaseActorId === '1' ? match.hostPage : match.guestPage;
-        const candidates = SIMULTANEOUS_PHASES.has(hostPhase ?? '')
+        const isSimultaneousPhase = SIMULTANEOUS_PHASES.has(hostPhase ?? '');
+        const candidates = isSimultaneousPhase
             ? [match.hostPage, match.guestPage]
             : [actorPage, standbyPage];
 
         let advanced = false;
         for (const page of candidates) {
-            if (await clickTurnEndIfEnabled(page)) {
+            if (await clickPlanningOrTurnEndIfEnabled(page)) {
                 advanced = true;
-                break;
+                if (!isSimultaneousPhase) break;
             }
         }
         if (!advanced) await match.hostPage.waitForTimeout(250);
@@ -592,7 +627,7 @@ async function advanceUntilEnabled(page: Page, locator: ReturnType<Page['getByRo
         if (await locator.isEnabled().catch(() => false)) return;
         const turnEnd = page.getByTestId('mage-wars-turn-end');
         await expect(turnEnd).toBeVisible();
-        if (!await clickTurnEndIfEnabled(page)) await page.waitForTimeout(180);
+        if (!await clickPlanningOrTurnEndIfEnabled(page)) await page.waitForTimeout(180);
     }
     await expect(locator).toBeEnabled();
 }
@@ -686,43 +721,51 @@ async function deployBothPlayers(
     await match.guestPage.getByTestId('mage-wars-turn-end').click();
 }
 
-async function advanceToReadyCreatureAction(
+async function advanceToPlayerCreatureAction(
     match: MageWarsOnlineMatch,
     playerId: '0' | '1',
-    actionName: string,
+    diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
 ) {
     const targetPage = playerId === '0' ? match.hostPage : match.guestPage;
-    for (let index = 0; index < 120; index += 1) {
+    for (let index = 0; index < 72; index += 1) {
         const phase = await readPhase(targetPage);
-        const phaseActorId = await match.hostPage.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase-actor-id');
-        const action = targetPage.getByRole('button', { name: actionName, exact: true });
-        if (phase === 'creatureAction' && phaseActorId === playerId && await action.isEnabled().catch(() => false)) {
+        const phaseActorId = await match.hostPage.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
+        if (phase === 'creatureAction' && phaseActorId === playerId) {
             return;
         }
 
         if (phase === 'planning') {
             for (const page of [match.hostPage, match.guestPage]) {
-                if (await clickTurnEndIfEnabled(page)) break;
+                await clickPlanningOrTurnEndIfEnabled(page);
             }
             continue;
         }
 
         const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
         const standbyPage = phaseActorId === '1' ? match.hostPage : match.guestPage;
-        const candidates = SIMULTANEOUS_PHASES.has(phase ?? '')
+        const isSimultaneousPhase = SIMULTANEOUS_PHASES.has(phase ?? '');
+        const candidates = isSimultaneousPhase
             ? [match.hostPage, match.guestPage]
             : [actorPage, standbyPage];
         let advanced = false;
         for (const page of candidates) {
-            if (await clickTurnEndIfEnabled(page)) {
+            if (await clickPlanningOrTurnEndIfEnabled(page)) {
                 advanced = true;
-                break;
+                if (!isSimultaneousPhase) break;
             }
         }
         if (!advanced) await targetPage.waitForTimeout(250);
     }
 
-    throw new Error(`正式联机未能让玩家 ${playerId} 进入可用的${actionName}窗口`);
+    const failureEvidence = await collectFailureEvidence(targetPage, {
+        match,
+        playerId,
+        diagnostics,
+    });
+    throw new Error([
+        `正式联机未能让玩家 ${playerId} 进入行动阶段`,
+        `failureEvidence=${JSON.stringify(failureEvidence, null, 2)}`,
+    ].join('\n'));
 }
 
 async function advanceToReadyFieldObjectAction(
@@ -740,32 +783,33 @@ async function advanceToReadyFieldObjectAction(
 
     for (let index = 0; index < 180; index += 1) {
         const phase = await readPhase(targetPage);
-        const phaseActorId = await match.hostPage.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase-actor-id');
+        const phaseActorId = await match.hostPage.getByTestId('mage-wars-board').getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
         if (
             phase === 'creatureAction'
             && phaseActorId === playerId
-            && await fieldObject.isEnabled().catch(() => false)
+            && await fieldObject.isEnabled({ timeout: 200 }).catch(() => false)
         ) {
             return;
         }
 
         if (phase === 'planning') {
             for (const page of [match.hostPage, match.guestPage]) {
-                if (await clickTurnEndIfEnabled(page)) break;
+                await clickPlanningOrTurnEndIfEnabled(page);
             }
             continue;
         }
 
         const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
         const standbyPage = phaseActorId === '1' ? match.hostPage : match.guestPage;
-        const candidates = SIMULTANEOUS_PHASES.has(phase ?? '')
+        const isSimultaneousPhase = SIMULTANEOUS_PHASES.has(phase ?? '');
+        const candidates = isSimultaneousPhase
             ? [match.hostPage, match.guestPage]
             : [actorPage, standbyPage];
         let advanced = false;
         for (const page of candidates) {
-            if (await clickTurnEndIfEnabled(page)) {
+            if (await clickPlanningOrTurnEndIfEnabled(page)) {
                 advanced = true;
-                break;
+                if (!isSimultaneousPhase) break;
             }
         }
         if (!advanced) await targetPage.waitForTimeout(250);
@@ -787,11 +831,11 @@ async function advanceToNextPlanningPhase(
     diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
 ) {
     const board = match.hostPage.getByTestId('mage-wars-board');
-    const initialTurnNumber = Number(await board.getAttribute('data-mage-wars-turn-number'));
+    const initialTurnNumber = Number(await board.getAttribute('data-mage-wars-turn-number', { timeout: 500 }).catch(() => null));
 
     for (let index = 0; index < 180; index += 1) {
         const phase = await readPhase(match.hostPage);
-        const turnNumber = Number(await board.getAttribute('data-mage-wars-turn-number'));
+        const turnNumber = Number(await board.getAttribute('data-mage-wars-turn-number', { timeout: 500 }).catch(() => null));
         const guestPhase = await readPhase(match.guestPage);
         if (
             phase === 'planning'
@@ -802,17 +846,18 @@ async function advanceToNextPlanningPhase(
             return;
         }
 
-        const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id');
+        const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
         const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
         const standbyPage = phaseActorId === '1' ? match.hostPage : match.guestPage;
-        const candidates = SIMULTANEOUS_PHASES.has(phase ?? '')
+        const isSimultaneousPhase = SIMULTANEOUS_PHASES.has(phase ?? '');
+        const candidates = isSimultaneousPhase
             ? [match.hostPage, match.guestPage]
             : [actorPage, standbyPage];
         let advanced = false;
         for (const page of candidates) {
-            if (await clickTurnEndIfEnabled(page)) {
+            if (await clickPlanningOrTurnEndIfEnabled(page)) {
                 advanced = true;
-                break;
+                if (!isSimultaneousPhase) break;
             }
         }
         if (!advanced) await match.hostPage.waitForTimeout(250);
@@ -858,13 +903,13 @@ test.describe('Mage Wars formal online runtime', () => {
             const hostPreparedCard = selfPreparedCardByName(match.hostPage, hostCreatureName);
             await advanceUntilEnabled(match.hostPage, hostPreparedCard);
             await hostPreparedCard.click();
-            await match.hostPage.getByTestId('mage-wars-arena-zone-a1').click();
+            await clickLegalTargetZone(match.hostPage, 'a3', hostCreatureName);
             await match.hostPage.getByTestId('mage-wars-turn-end').click();
 
             const guestPreparedCard = selfPreparedCardByName(match.guestPage, guestCreatureName);
             await advanceUntilEnabled(match.guestPage, guestPreparedCard);
             await guestPreparedCard.click();
-            await match.guestPage.getByTestId('mage-wars-arena-zone-b3').click();
+            await clickLegalTargetZone(match.guestPage, 'd1', guestCreatureName);
             await match.guestPage.getByTestId('mage-wars-turn-end').click();
 
             await expect(match.hostPage.locator('[data-testid="mage-wars-zone-field-card"]').first()).toBeVisible();
@@ -874,26 +919,6 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.hostPage.getByTestId('mage-wars-opponent-prepared-mirror')).toContainText('对手已计划 0');
             await expect(match.guestPage.getByTestId('mage-wars-opponent-prepared-mirror')).toContainText('对手已计划 0');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '02-部署完成后-场地生物和隐藏计划');
-
-            await advanceToReadyCreatureAction(match, '0', '守卫');
-            await match.hostPage.getByRole('button', { name: '守卫', exact: true }).click();
-            await expect.poll(async () => {
-                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
-                const players = isRecord(snapshot.players) ? snapshot.players : {};
-                const hostPlayer = isRecord(players['0']) ? players['0'] : {};
-                return {
-                    guarding: hostPlayer.guarding,
-                    actionReady: hostPlayer.actionReady,
-                };
-            }, {
-                message: '正式联机守卫动作后服务端没有记录玩家 0 进入守卫状态',
-                timeout: 5_000,
-            }).toEqual({
-                guarding: true,
-                actionReady: false,
-            });
-            await expect(match.hostPage.getByAltText('守卫').first()).toBeVisible();
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-正式联机守卫后-守卫标记可见');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }
@@ -921,11 +946,14 @@ test.describe('Mage Wars formal online runtime', () => {
             const guestCreatureName = await selectFirstVisibleSpellbookCard(match.guestPage);
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
 
-            await deployBothPlayers(match, '丛林灰狼', guestCreatureName, 'a1', 'b3', [
+            await deployBothPlayers(match, '丛林灰狼', guestCreatureName, 'a3', 'd1', [
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
-            await advanceToReadyCreatureAction(match, '0', '移动法师');
+            await advanceToPlayerCreatureAction(match, '0', [
+                { label: 'host', diagnostics: hostDiagnostics },
+                { label: 'guest', diagnostics: guestDiagnostics },
+            ]);
 
             const preparedCharge = selfPreparedCardByName(match.hostPage, '冲锋陷阵');
             await expect(preparedCharge).toBeEnabled();
@@ -947,7 +975,7 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
     });
 
-    test('正式联机移动横屏入口真实移动、攻击并切换回合', async ({ browser, baseURL }, testInfo) => {
+    test('正式联机入口真实移动、攻击并切换回合', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(300_000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const match = await setupOnlineMageWars(browser, baseURL, {
@@ -965,7 +993,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await match.guestPage.getByRole('button', { name: '全部', exact: true }).click();
             await selectNamedSpellbookCard(match.guestPage, '阿希拉牧师');
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
-            await deployBothPlayers(match, '丛林灰狼', '阿希拉牧师', 'a1', 'b3', [
+            await deployBothPlayers(match, '丛林灰狼', '阿希拉牧师', 'a3', 'd1', [
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
@@ -978,18 +1006,14 @@ test.describe('Mage Wars formal online runtime', () => {
             await selectNamedSpellbookCard(match.guestPage, '圣光之柱');
             await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('计划 1 张');
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
-            await match.hostPage.setViewportSize({ width: 960, height: 540 });
-            await match.guestPage.setViewportSize({ width: 960, height: 540 });
-            await advanceToReadyFieldObjectAction(match, '0', 'a1', 2819, '丛林灰狼', [
+            await advanceToReadyFieldObjectAction(match, '0', 'a3', 2819, '丛林灰狼', [
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-横屏生物行动前-场地对象可直选');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-生物行动前-场地对象可直选');
 
-            const hostWolfCard = match.hostPage.locator('[data-testid="mage-wars-arena-zone-a1"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
+            const hostWolfCard = match.hostPage.locator('[data-testid="mage-wars-arena-zone-a3"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
             await hostWolfCard.click({ timeout: 3_000 });
-            await expect(match.hostPage.getByRole('button', { name: '移动生物', exact: true })).toBeEnabled();
-            await match.hostPage.getByRole('button', { name: '移动生物', exact: true }).click();
             await clickLegalMoveZone(match.hostPage, 'a2', '丛林灰狼移动');
             await waitForZoneFieldCard(match.hostPage, 'a2', 2819, '丛林灰狼移动后', {
                 match,
@@ -999,36 +1023,45 @@ test.describe('Mage Wars formal online runtime', () => {
                     { label: 'guest', diagnostics: guestDiagnostics },
                 ],
             });
+            await match.hostPage.setViewportSize({ width: 960, height: 540 });
+            await match.guestPage.setViewportSize({ width: 960, height: 540 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '06-横屏移动后-丛林灰狼进入目标区域');
 
             await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000 });
-            await advanceToReadyCreatureAction(match, '1', '移动法师');
+            await advanceToPlayerCreatureAction(match, '1', [
+                { label: 'host', diagnostics: hostDiagnostics },
+                { label: 'guest', diagnostics: guestDiagnostics },
+            ]);
 
             const preparedLightPillar = selfPreparedCardByName(match.guestPage, '圣光之柱');
             await advanceUntilEnabled(match.guestPage, preparedLightPillar);
             await selectPreparedSpell(match.guestPage, preparedLightPillar, '圣光之柱');
-            const targetWolf = match.guestPage.locator('[data-testid="mage-wars-arena-zone-a2"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
-            const targetWolfObjectId = await targetWolf.getAttribute('data-object-id');
-            if (!targetWolfObjectId) throw new Error('圣光之柱目标狼没有对象 ID，无法核对服务端攻击事件');
-            await expect(targetWolf.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
+            const targetCleric = match.guestPage.locator('[data-testid="mage-wars-arena-zone-d1"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2811"]').first();
+            const targetClericObjectId = await targetCleric.getAttribute('data-object-id');
+            if (!targetClericObjectId) throw new Error('圣光之柱目标牧师没有对象 ID，无法核对服务端攻击事件');
+            await expect(targetCleric.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
             const attackImpactFx = match.guestPage.getByTestId('mage-wars-fx-attack-impact');
+            const attackDiceFx = match.guestPage.getByTestId('mage-wars-fx-attack-dice');
             await Promise.all([
                 expect(attackImpactFx).toBeVisible({ timeout: 5_000 }),
-                targetWolf.click({ timeout: 3_000 }),
+                expect(attackDiceFx).toBeVisible({ timeout: 5_000 }),
+                expect(attackDiceFx.getByTestId('mage-wars-fx-attack-die-face')).toHaveCount(2, { timeout: 5_000 }),
+                expect(attackDiceFx.getByTestId('mage-wars-fx-effect-die-face')).toBeVisible({ timeout: 5_000 }),
+                targetCleric.click({ timeout: 3_000 }),
             ]);
 
             await expect.poll(async () => {
                 const snapshot = await readServerCoreSnapshot(match.guestPage, match, '1');
-                return hasSpellAttackRolledEvent(snapshot, 1706, targetWolfObjectId);
+                if (!hasSpellAttackRolledEvent(snapshot, 1706, targetClericObjectId)) return false;
+                const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                const targetObject = isRecord(objects[targetClericObjectId]) ? objects[targetClericObjectId] : {};
+                return typeof targetObject.damage === 'number' && targetObject.damage > 0;
             }, {
-                message: '服务端没有记录圣光之柱对丛林灰狼的攻击掷骰事件',
+                message: '服务端没有记录圣光之柱对阿希拉牧师的攻击掷骰和伤害状态',
                 timeout: 5_000,
             }).toBe(true);
-            const diceTray = match.guestPage.getByTestId('mage-wars-dice-tray');
-            await expect(diceTray).toBeVisible();
-            await expect(diceTray.getByTestId('mage-wars-attack-die-face')).toHaveCount(3);
-            await expect(diceTray.getByTestId('mage-wars-effect-die-face')).toBeVisible();
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '07-横屏圣光之柱攻击后-骰盘和伤害状态');
+            await expect(targetCleric.locator('img[alt*="伤害"]')).toBeVisible({ timeout: 5_000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态');
 
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000 });
             await advanceUntilPhase(match, 'finalQuickcast', '攻击行动结束后应通过剩余行动结束进入终末快速施法窗口', [

@@ -8,7 +8,7 @@ metadata:
 
 # 引擎伤害计算管线
 
-> 来源：从 `.spec/knowledge/standards/engine-systems.md` 无损拆出。本文档承载 `engine/primitives/damageCalculation.ts` 的使用合同；迁移步骤另见 `docs/damage-calculation-pipeline-migration-guide.md`。
+本文档定义 `engine/primitives/damageCalculation.ts` 的使用合同；相关实施指南见 `docs/damage-calculation-pipeline-migration-guide.md`。
 
 ## 伤害计算管线（`engine/primitives/damageCalculation.ts`）（强制）
 

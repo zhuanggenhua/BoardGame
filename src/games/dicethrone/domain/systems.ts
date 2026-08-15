@@ -48,6 +48,31 @@ type EmergencySkipContext = {
     interactionData?: unknown;
 };
 
+const sanitizeInteractionIdPart = (value: unknown, fallback: string): string => {
+    if (typeof value !== 'string' || value.length === 0) return fallback;
+    const sanitized = value.replace(/[^a-zA-Z0-9_-]+/g, '-');
+    return sanitized.length > 0 ? sanitized : fallback;
+};
+
+const buildChoiceInteractionId = (
+    state: MatchState<DiceThroneCore>,
+    prefix: string,
+    sourceAbilityId: string | undefined,
+    playerId: string | undefined,
+): string => {
+    const decisionEpoch = typeof state.sys?.decisionEpoch === 'number' ? state.sys.decisionEpoch : 0;
+    const queueOrdinal = state.sys.interaction?.current
+        ? (state.sys.interaction.queue?.length ?? 0) + 1
+        : 0;
+    return [
+        prefix,
+        sanitizeInteractionIdPart(sourceAbilityId, 'unknown'),
+        sanitizeInteractionIdPart(playerId, 'player'),
+        String(decisionEpoch),
+        String(queueOrdinal),
+    ].join('-');
+};
+
 const buildBonusDiceAfterRollConfirmedWindowEvent = (
     state: MatchState<DiceThroneCore>,
     settlement: DiceThroneCore['pendingBonusDiceSettlement'],
@@ -307,7 +332,12 @@ function isResolvedPromptBackedByInteraction(
         sourceId?: unknown;
         options?: Array<{
             id?: unknown;
-            value?: { customId?: unknown };
+            value?: {
+                statusId?: unknown;
+                tokenId?: unknown;
+                value?: unknown;
+                customId?: unknown;
+            };
         }>;
     } | undefined;
     if (data?.sourceId !== sourceAbilityId || !Array.isArray(data.options)) {
@@ -319,10 +349,42 @@ function isResolvedPromptBackedByInteraction(
         : undefined;
     if (!option) return false;
 
-    const customId = resolvedEvent.payload.customId;
-    return typeof customId === 'string'
-        && customId.length > 0
-        && option.value?.customId === customId;
+    const optionValue = option.value;
+    if (!optionValue || typeof optionValue !== 'object') return false;
+
+    const resolvedPayload = resolvedEvent.payload;
+    const resolvedValue = typeof resolvedPayload.value === 'number' && Number.isFinite(resolvedPayload.value)
+        ? resolvedPayload.value
+        : undefined;
+    const optionNumericValue = typeof optionValue?.value === 'number' && Number.isFinite(optionValue.value)
+        ? optionValue.value
+        : undefined;
+
+    return optionValue?.customId === resolvedPayload.customId
+        && optionValue?.tokenId === resolvedPayload.tokenId
+        && optionValue?.statusId === resolvedPayload.statusId
+        && optionNumericValue === resolvedValue;
+}
+
+function restoreResolvedChoiceAnchorFromInteraction(
+    state: MatchState<DiceThroneCore>,
+    sourceAbilityId: string | undefined,
+): MatchState<DiceThroneCore> {
+    if (
+        typeof sourceAbilityId !== 'string'
+        || sourceAbilityId.length === 0
+        || hasCurrentChoiceAnchor(state.core, sourceAbilityId)
+    ) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            currentChoiceSourceAbilityId: sourceAbilityId,
+        },
+    };
 }
 
 function syncCurrentChoiceAnchorWithInteraction(
@@ -643,7 +705,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         });
 
                         const compareRollInteraction = createCompareRollChoice(
-                            `compare-roll-${payload.sourceAbilityId}-${eventTimestamp}`,
+                            buildChoiceInteractionId(newState, 'compare-roll', payload.sourceAbilityId, payload.playerId),
                             payload.playerId,
                             {
                                 title: payload.titleKey,
@@ -691,7 +753,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     });
 
                     const interaction = createSimpleChoice(
-                        `choice-${payload.sourceAbilityId}-${eventTimestamp}`,
+                        buildChoiceInteractionId(newState, 'choice', payload.sourceAbilityId, payload.playerId),
                         payload.playerId,
                         payload.titleKey,
                         promptOptions,
@@ -1121,12 +1183,16 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     if (isStaleOffensiveRollEndChoiceResolved(newState.core, resolvedEvent)) {
                         continue;
                     }
+                    const isInteractionBackedChoice = isResolvedPromptBackedByInteraction(event, resolvedEvent);
+                    if (isInteractionBackedChoice) {
+                        newState = restoreResolvedChoiceAnchorFromInteraction(newState, resolvedEvent.payload.sourceAbilityId);
+                    }
                     nextEvents.push(resolvedEvent);
                     const customId = resolvedEvent.payload.customId;
                     if (customId) {
                         const followupHandler = getChoiceResolvedEventHandler(customId);
                         const hasChoiceAnchor = hasCurrentChoiceAnchor(newState.core, resolvedEvent.payload.sourceAbilityId)
-                            || isResolvedPromptBackedByInteraction(event, resolvedEvent);
+                            || isInteractionBackedChoice;
                         if (followupHandler && hasChoiceAnchor) {
                             nextEvents.push(...followupHandler({
                                 state: newState.core,
@@ -1292,7 +1358,7 @@ export function handlePromptResolved(
         ? payload.value.value
         : undefined;
     
-    return {
+    const resolvedEvent: ChoiceResolvedEvent = {
         type: 'CHOICE_RESOLVED',
         payload: {
             playerId: payload.playerId,
@@ -1304,5 +1370,17 @@ export function handlePromptResolved(
         },
         sourceCommandType: 'RESOLVE_CHOICE',
         timestamp: eventTimestamp,
+    };
+
+    if (!isResolvedPromptBackedByInteraction(event, resolvedEvent)) {
+        return resolvedEvent;
+    }
+
+    return {
+        ...resolvedEvent,
+        payload: {
+            ...resolvedEvent.payload,
+            interactionBacked: true,
+        },
     };
 }

@@ -2,7 +2,7 @@ import type { PlayerId } from '../../../engine/types';
 import { getCardDef } from '../data/cards';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildOngoingDetachedEvent } from './ongoingDetach';
-import { reduce } from './reduce';
+import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent';
 import {
     getConsumableProtectionSource,
     isMinionProtected,
@@ -542,7 +542,7 @@ export function filterSemanticProtectedAffectEvents(
 
     const flushPendingEvents = () => {
         for (const pendingEvent of pendingEvents) {
-            workingCore = reduce(workingCore, pendingEvent);
+            workingCore = applyPostProcessPrefixEvent(workingCore, pendingEvent);
         }
         pendingEvents = [];
         pendingSourceKey = undefined;
@@ -560,7 +560,7 @@ export function filterSemanticProtectedAffectEvents(
                 pendingSourceKey = sourceKey;
                 pendingEvents.push(event);
             } else {
-                workingCore = reduce(workingCore, event);
+                workingCore = applyPostProcessPrefixEvent(workingCore, event);
             }
             continue;
         }
@@ -577,7 +577,7 @@ export function filterSemanticProtectedAffectEvents(
                 pendingSourceKey = sourceKey;
                 pendingEvents.push(event);
             } else {
-                workingCore = reduce(workingCore, event);
+                workingCore = applyPostProcessPrefixEvent(workingCore, event);
             }
             continue;
         }
@@ -606,7 +606,7 @@ export function filterSemanticProtectedAffectEvents(
                 pendingEvents.push(...extraEvents);
             } else {
                 for (const extraEvent of extraEvents) {
-                    workingCore = reduce(workingCore, extraEvent);
+                    workingCore = applyPostProcessPrefixEvent(workingCore, extraEvent);
                 }
             }
             continue;
@@ -617,7 +617,7 @@ export function filterSemanticProtectedAffectEvents(
             pendingSourceKey = sourceKey;
             pendingEvents.push(event);
         } else {
-            workingCore = reduce(workingCore, event);
+            workingCore = applyPostProcessPrefixEvent(workingCore, event);
         }
     }
 

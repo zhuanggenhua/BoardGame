@@ -87,10 +87,12 @@ export function recoverLocalAiOnAppVisible(args: {
     lastVisibleAiActionAtRef: RefBox<number | null>;
     aiCommandEffectByTokenRef: RefBox<Record<string, LocalAiCommandEffect>>;
     onRetry: () => void;
+    automationDisabled?: boolean;
 }): void {
     if (resolveLocalAiAutomationBlockReason({
         seatControllers: args.seatControllers,
         localPregameControlledPlayerId: args.localPregameControlledPlayerId,
+        automationDisabled: args.automationDisabled,
     })) {
         return;
     }

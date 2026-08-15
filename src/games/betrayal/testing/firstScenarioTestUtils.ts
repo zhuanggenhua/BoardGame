@@ -165,15 +165,43 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
     && type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
     && nextCore.pendingEventRollResolution
   ) {
-    return applyBetrayalCommand(
+    return acknowledgePendingEventRollResolution(nextCore, timestamp, random);
+  }
+  return nextCore;
+}
+
+export function acknowledgePendingEventRollResolution(
+  core: BetrayalCore,
+  timestamp = 100,
+  random: RandomFn = BETRAYAL_FIXED_RANDOM,
+): BetrayalCore {
+  let nextCore = core;
+  let safety = 0;
+  while (nextCore.pendingEventRollResolution) {
+    if (safety >= 20) {
+      throw new Error("山屋测试夹具确认事件骰超过安全上限");
+    }
+    const pendingResolution = nextCore.pendingEventRollResolution;
+    const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
+      ? pendingResolution.requiredPlayerIds
+      : nextCore.playerIds.length > 0
+        ? nextCore.playerIds
+        : [pendingResolution.playerId];
+    const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
+    const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
+    if (!nextPlayerId) {
+      throw new Error("山屋测试夹具发现事件骰确认状态无法继续推进");
+    }
+    nextCore = applyBetrayalCommand(
       nextCore,
       BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-      nextCore.pendingEventRollResolution.playerId,
-      { rollId: nextCore.pendingEventRollResolution.rollId },
-      timestamp,
+      nextPlayerId,
+      { rollId: pendingResolution.rollId },
+      timestamp + safety,
       random,
       false,
     );
+    safety += 1;
   }
   return nextCore;
 }
@@ -1135,12 +1163,7 @@ export function createDustHauntCore(
     );
   }
   if (core.pendingEventRollResolution) {
-    core = applyBetrayalCommand(
-      core,
-      BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-      "0",
-      { rollId: core.pendingEventRollResolution.rollId },
-    );
+    core = acknowledgePendingEventRollResolution(core);
   }
   core = acknowledgePendingCardResolutions(core);
   if (core.phase !== "haunt" || !core.scenarioRuntime.dust) {

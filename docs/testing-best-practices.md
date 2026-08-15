@@ -139,7 +139,7 @@
 - 同一种交互模式通常只保留 1 条代表性完整流程；只有当入口位置、控件形态、链路阶段、布局风险或跨系统协作明显不同，才新增第二条 E2E。
 - 写完整流程 E2E 前必须先锁定规则时序家族，例如 `先选择后投骰`、`先投骰后选择`、`投骰后直接结算`、`可选是否触发`。不同家族不能互相代表；测试标题、截图名和 evidence 必须写清本用例证明的是哪一种时序。
 - 完整流程的状态覆盖、截图证据资格和用户目标对账统一由 [`.spec/knowledge/standards/e2e-verification.md`](../.spec/knowledge/standards/e2e-verification.md) 承载；本文只规定测试如何分层、如何选工具和如何表达测试 seam。
-- `passed` 只证明测试命令通过，不自动等于 E2E、截图或 UI 验收通过；需要判断截图是否足够、是否完成真实链路时，回到 `e2e-verification`，需要 AI 图面 `PASS/REVISE` 时再读系统 `ui-audit-loop`。
+- `passed` 只证明测试命令通过，不自动等于 E2E、截图或 UI 验收通过；截图资格、真实链路和玩家视角判定必须按 `.spec` 的 E2E / UI 验收入口裁决。
 - 如果测试只验证“交互出现”“可以进入下一步”“某个中间选择器可点”，标题必须明确写成中间态/入口验证，不能写成已经完成整条能力效果。
 - 业务最终状态、事件顺序、边界分支优先交给 `GameTestRunner` / smoke；E2E 只保留对 UI 和真实链路有独立价值的代表性流程。
 
@@ -824,6 +824,4 @@ test: {
 
 E2E 的运行命令、`GameTestContext` API、就绪检查、截图产物目录和启动日志统一由 [`docs/automated-testing.md`](automated-testing.md) 承载。
 
-E2E 的真实入口、状态注入与真实链路边界、流程阶段、截图证据资格、视觉结果和对外结论以 [`.spec/knowledge/standards/e2e-verification.md`](../.spec/knowledge/standards/e2e-verification.md) 为唯一正文。这里不再复制 E2E 截图清单、人工看图要求或用户开图步骤。
-
-涉及玩家视角 UI 审计时，追加系统 [`ui-audit-loop`](D:/codex-home/skills/ui-audit-loop/SKILL.md) 和项目 [`ui-change-gates`](../.spec/knowledge/standards/ui-change-gates.md)；涉及把最终图片展示给用户时，追加系统 [`show-image-to-user`](D:/codex-home/skills/show-image-to-user/SKILL.md)；涉及 BoardGame 证据目录、项目脚本或相册约定时，再读项目 [`screenshot-delivery`](../.spec/skills/screenshot-delivery/SKILL.md)。测试通过、截图落盘和 AI 核图分别证明不同事实，不能互相替代。
+E2E 的真实入口、状态注入与真实链路边界、流程阶段、截图证据资格、视觉结果和对外结论以 [`.spec/knowledge/standards/e2e-verification.md`](../.spec/knowledge/standards/e2e-verification.md) 为唯一正文。玩家视角 UI 审计、最终图片展示和多图标记由 `.spec` 的 UI / 开图入口承担；测试通过、截图落盘、AI 核图和用户可见开图分别证明不同事实，不能互相替代。

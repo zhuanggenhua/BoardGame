@@ -156,7 +156,7 @@ test('素材 SSH 发布使用显式 known_hosts，私钥文件可选', () => {
     }
 });
 
-test('无 SSH 的协作者只配置素材 token 即使用正式 HTTP 上传入口', () => {
+test('纯净环境默认使用正式 HTTP 上传入口，不回退 SSH', () => {
     assert.equal(
         resolveAssetUploadUrl({ uploadUrl: '', uploadToken: 'asset-token' }),
         'https://assets-upload.easyboardgame.top/asset-publish',
@@ -165,7 +165,10 @@ test('无 SSH 的协作者只配置素材 token 即使用正式 HTTP 上传入�
         resolveAssetUploadUrl({ uploadUrl: 'https://internal.example/asset-publish', uploadToken: 'asset-token' }),
         'https://internal.example/asset-publish',
     );
-    assert.equal(resolveAssetUploadUrl({ uploadUrl: '', uploadToken: '' }), '');
+    assert.equal(
+        resolveAssetUploadUrl({ uploadUrl: '', uploadToken: '' }),
+        'https://assets-upload.easyboardgame.top/asset-publish',
+    );
     assert.equal(
         resolveAssetUploadUrl({ uploadUrl: '', uploadToken: '', allowUnauthenticated: true }),
         'https://assets-upload.easyboardgame.top/asset-publish',
@@ -259,7 +262,6 @@ test('匿名 HTTP 上传模式不发送 Authorization 头', async () => {
             stagingRoot: staged.stagingRoot,
             uploadUrl: `http://127.0.0.1:${address.port}/asset-publish`,
             token: '',
-            allowUnauthenticated: true,
         });
         assert.ok(receivedAuthorization.length > 0);
         assert.ok(receivedAuthorization.every((value) => value === ''));

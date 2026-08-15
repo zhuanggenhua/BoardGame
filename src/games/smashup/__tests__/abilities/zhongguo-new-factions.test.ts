@@ -819,7 +819,7 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
 
         const sys = createInitialSystemState(['0', '1'], smashUpSystemsForTest, undefined);
         sys.phase = 'playCards';
-        let state: MatchState<SmashUpCore> = { core, sys };
+        const state: MatchState<SmashUpCore> = { core, sys };
 
         const advance = executePipeline(
             { domain: SmashUpDomain, systems: smashUpSystemsForTest },
@@ -829,27 +829,8 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             ['0', '1'],
         );
         expect(advance.success).toBe(true);
-        state = advance.state;
 
-        const passP0 = executePipeline(
-            { domain: SmashUpDomain, systems: smashUpSystemsForTest },
-            state,
-            { type: 'RESPONSE_PASS', playerId: '0', payload: undefined, timestamp: 2 } as unknown as SmashUpCommand,
-            defaultTestRandom,
-            ['0', '1'],
-        );
-        expect(passP0.success).toBe(true);
-
-        const passP1 = executePipeline(
-            { domain: SmashUpDomain, systems: smashUpSystemsForTest },
-            passP0.state,
-            { type: 'RESPONSE_PASS', playerId: '1', payload: undefined, timestamp: 3 } as unknown as SmashUpCommand,
-            defaultTestRandom,
-            ['0', '1'],
-        );
-        expect(passP1.success).toBe(true);
-
-        const finalState = passP1.state.core;
+        const finalState = advance.state.core;
         expect(finalState.players['0'].hand.some(card => card.uid === 'draw-0')).toBe(true);
         expect(finalState.players['1'].hand.some(card => card.uid === 'draw-1')).toBe(true);
         expect(finalState.players['0'].deck.some(card => card.uid === 'draw-0')).toBe(false);

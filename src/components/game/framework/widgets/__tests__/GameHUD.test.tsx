@@ -15,7 +15,15 @@ vi.mock('../../../../../core', () => ({
 }));
 
 vi.mock('../../../../system/FabMenu', () => ({
-    FabMenu: () => <div data-testid="fab-menu-stub" />,
+    FabMenu: ({ items }: { items: Array<{ id: string; label: string }> }) => (
+        <div data-testid="fab-menu-stub">
+            {items.map((item) => (
+                <span key={item.id} data-testid={`fab-action-${item.id}`}>
+                    {item.label}
+                </span>
+            ))}
+        </div>
+    ),
 }));
 
 vi.mock('../../../../system/AboutModal', () => ({
@@ -161,5 +169,36 @@ describe('GameHUD', () => {
         );
 
         expect(screen.getByTestId('opponent-offline-banner')).toBeInTheDocument();
+    });
+
+    it('联机赛前 setup 阶段仍显示强制结束 AI 阶段入口', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="dicethrone"
+                myPlayerId="0"
+                isPregameSetupPhase={true}
+                showForceEndAiPhase={true}
+                onForceEndAiPhase={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByTestId('fab-action-force-actions')).toBeInTheDocument();
+    });
+
+    it('联机赛前 setup 阶段不因普通弹窗强关单独显示强制操作入口', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="dicethrone"
+                myPlayerId="0"
+                isPregameSetupPhase={true}
+                showForceDismissPopup={true}
+            />,
+        );
+
+        expect(screen.queryByTestId('fab-action-force-actions')).toBeNull();
     });
 });

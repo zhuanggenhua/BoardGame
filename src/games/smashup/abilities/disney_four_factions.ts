@@ -1507,8 +1507,8 @@ function jungleParadiseAfterMinionDiscarded(ctx: TriggerContext): AbilityResult 
     const playerId = ctx.triggerMinion?.controller ?? ctx.playerId;
     if (baseIndex === undefined || ctx.baseIndex !== baseIndex || !ctx.triggerMinion) return { events: [] };
     if (ctx.triggerMinion.controller !== playerId) return { events: [] };
-    const targets = collectMinions(ctx.state, (minion, candidateBaseIndex) =>
-        candidateBaseIndex === baseIndex && minion.controller === playerId,
+    const targets = collectMinions(ctx.state, (minion) =>
+        minion.controller === playerId,
     );
     if (targets.length === 0 || !ctx.matchState) return { events: [] };
     return promptMinion({

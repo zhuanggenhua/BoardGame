@@ -9,6 +9,7 @@ type RefBox<T> = {
 export type LocalAiAutomationBlockReason =
     | 'no-ai-seat'
     | 'pregame-controlled'
+    | 'disabled'
     | null;
 
 export function hasAutomatedSeat(
@@ -20,7 +21,11 @@ export function hasAutomatedSeat(
 export function resolveLocalAiAutomationBlockReason(args: {
     seatControllers: Record<string, AiSeatController>;
     localPregameControlledPlayerId: string | null;
+    automationDisabled?: boolean;
 }): LocalAiAutomationBlockReason {
+    if (args.automationDisabled) {
+        return 'disabled';
+    }
     if (!hasAutomatedSeat(args.seatControllers)) {
         return 'no-ai-seat';
     }

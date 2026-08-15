@@ -124,6 +124,9 @@
       "errorContext": "错误上下文",
       "recentAction": "最近动作",
       "activeElement": "当前焦点",
+      "loading": "正在加载完整详情…",
+      "summaryOnly": "已先显示摘要，完整内容、截图、操作日志会在详情加载后展开。",
+      "copyPending": "详情加载后可复制",
       "expand": "展开",
       "collapse": "收起"
     },

@@ -123,6 +123,9 @@ test.describe('反馈 UI E2E', () => {
         await seedLoggedInUser(page, user);
         await mockCommonAuthedApis(page, user);
 
+        let myFeedbackDeleted = false;
+        let myFeedbackRequestedSummaryOnly = false;
+        let myFeedbackDetailRequested = false;
         await page.route('**/admin/feedback?*', async (route) => {
             const url = new URL(route.request().url());
             if (url.pathname !== '/admin/feedback') {
@@ -133,12 +136,14 @@ test.describe('反馈 UI E2E', () => {
                 await route.fallback();
                 return;
             }
+            myFeedbackRequestedSummaryOnly = url.searchParams.get('summaryOnly') === 'true';
             await route.fulfill({
                 status: 200,
                 json: {
-                    items: [{
+                    items: myFeedbackDeleted ? [] : [{
                         _id: 'my_feedback_1',
-                        content: '基地描述抽牌数量看起来不对。',
+                        contentPreview: '基地描述抽牌数量看起来不对。',
+                        hasEmbeddedImage: false,
                         type: 'bug',
                         status: 'closed',
                         gameName: '大杀四方',
@@ -149,10 +154,41 @@ test.describe('反馈 UI E2E', () => {
                 },
             });
         });
+        await page.route('**/admin/feedback/my_feedback_1', async (route) => {
+            if (route.request().method() === 'GET') {
+                myFeedbackDetailRequested = true;
+                await route.fulfill({
+                    status: 200,
+                    json: {
+                        _id: 'my_feedback_1',
+                        content: '基地描述抽牌数量看起来不对。完整详情里补充：回合结束后抽牌数量仍显示旧文本。',
+                        contentPreview: '基地描述抽牌数量看起来不对。',
+                        hasEmbeddedImage: false,
+                        type: 'bug',
+                        status: 'closed',
+                        gameName: '大杀四方',
+                        closedReason: '已核对为旧描述残留，现已按最新规则修正。',
+                        rewardPoints: 1,
+                        createdAt: '2026-06-06T10:00:00.000Z',
+                    },
+                });
+                return;
+            }
+            if (route.request().method() !== 'DELETE') {
+                await route.fallback();
+                return;
+            }
+            myFeedbackDeleted = true;
+            await route.fulfill({
+                status: 200,
+                json: { ok: true },
+            });
+        });
 
         await waitForFrontendRoute(page, '/');
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
+        await expect(page.getByTestId('user-menu-trigger')).toBeVisible({ timeout: 30_000 });
         const triggerBadge = page.getByTestId('user-menu-trigger').getByTestId('reward-points-badge');
         await expect(triggerBadge).toHaveText('7');
 
@@ -170,13 +206,27 @@ test.describe('反馈 UI E2E', () => {
         const myFeedbackModal = page.getByTestId('my-feedback-modal');
         await expect(myFeedbackModal).toBeVisible();
         await expect(myFeedbackModal).toContainText('我的反馈');
+        expect(myFeedbackRequestedSummaryOnly).toBe(true);
+        expect(myFeedbackDetailRequested).toBe(false);
+        await expect(myFeedbackModal).toContainText('基地描述抽牌数量看起来不对。');
         await expect(myFeedbackModal).toContainText('已核对为旧描述残留，现已按最新规则修正。');
         await expect(myFeedbackModal.getByTestId('reward-points-badge')).toContainText('+1');
+        await myFeedbackModal.getByTestId('my-feedback-expand').click();
+        await expect(myFeedbackModal).toContainText('完整详情里补充');
+        expect(myFeedbackDetailRequested).toBe(true);
 
         await page.screenshot({
             path: `${SCREENSHOT_DIR}/02-my-feedback-modal-with-close-reason-and-reward.png`,
             fullPage: true,
         });
+
+        page.once('dialog', async (dialog) => {
+            expect(dialog.message()).toContain('确定删除这条反馈');
+            await dialog.accept();
+        });
+        await myFeedbackModal.getByTestId('my-feedback-delete').click();
+        await expect(myFeedbackModal.locator('[data-testid="my-feedback-item"][data-feedback-id="my_feedback_1"]')).toHaveCount(0);
+        await expect(myFeedbackModal).toContainText('你还没有提交过反馈');
     });
 
     test('反馈提交成功后应显示积分 +1 toast，并同步更新右上角积分', async ({ page }) => {
@@ -225,7 +275,6 @@ test.describe('反馈 UI E2E', () => {
         await feedbackModal.getByPlaceholder(/请描述问题或建议/).fill('反馈成功积分样式验证');
         await feedbackModal.getByRole('button', { name: '提交反馈' }).click();
 
-        const rewardToast = page.getByText('反馈成功').locator('..');
         await expect(page.getByText('反馈成功')).toBeVisible();
         await expect(page.locator('[data-testid="reward-points-badge"]', { hasText: '+1' }).last()).toBeVisible();
         await expect(page.getByTestId('user-menu-trigger').getByTestId('reward-points-badge')).toHaveText('4');

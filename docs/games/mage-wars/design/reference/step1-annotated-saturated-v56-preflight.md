@@ -6,7 +6,7 @@
 
 | 类型 | 文件 / 来源 | 结论 |
 | --- | --- | --- |
-| 全局 UI 设计链路 | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | 卡面已有字段不得复写成 UI chip；看不清应放大、hover / focus 或详情检视 |
+| 项目 UI 设计链路 | `.spec/skills/ui-design-pipeline/SKILL.md` | 卡面已有字段不得复写成 UI chip；看不清应放大、hover / focus 或详情检视 |
 | 项目桌游 UI 出稿门禁 | `.spec/skills/boardgame-ui-imagegen/SKILL.md` | 当前可执行卡必须可读；卡牌浏览区要区分当前可执行、可浏览候选和归档入口 |
 | 项目 UI 门禁 | `.spec/knowledge/standards/ui-change-gates.md` | 卡面已有字段不得复写成标签墙；不可用小牌墙冒充主交互 |
 | 项目 UI/UX | `.spec/knowledge/standards/ui-ux.md` | 正式素材已含信息时不得复读；重复信息不能靠填充制造“信息更满” |

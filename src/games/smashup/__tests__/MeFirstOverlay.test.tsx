@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MeFirstOverlay } from '../ui/MeFirstOverlay';
 import type { MatchState } from '../../../engine/types';
-import type { SmashUpCore } from '../domain/types';
+import { SU_COMMANDS, type SmashUpCore } from '../domain/types';
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: { defaultValue?: string; player?: string }) => {
@@ -98,6 +98,72 @@ function createState(overrides?: Partial<MatchState<SmashUpCore>>): MatchState<S
         },
         ...(overrides ?? {}),
     } as MatchState<SmashUpCore>;
+}
+
+function createVisibleMeFirstState(): MatchState<SmashUpCore> {
+    const base = createState();
+    return createState({
+        core: {
+            ...base.core,
+            bases: [{
+                defId: 'base_pirate_cove',
+                minions: [{
+                    uid: 'host-minion-1',
+                    defId: 'dino_war_raptor',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 1,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                }],
+                ongoingActions: [],
+            }],
+            players: {
+                ...base.core.players,
+                '0': {
+                    ...base.core.players['0'],
+                    hand: [{
+                        uid: 'before-card-1',
+                        defId: 'pirate_full_sail',
+                        type: 'action',
+                        owner: '0',
+                    }],
+                },
+            },
+        },
+        sys: {
+            ...base.sys,
+            responseWindow: {
+                current: {
+                    ...base.sys.responseWindow!.current!,
+                    windowType: 'meFirst',
+                },
+            },
+            resolution: {
+                activeFrameId: 'frame-1',
+                frames: [{
+                    ...(base.sys.resolution!.frames![0] as any),
+                    kind: 'smashup:reaction:score-before',
+                    step: 'optional',
+                    metadata: {
+                        smashupReactionSession: {
+                            frameId: 'frame-1',
+                            frameKind: 'score-before',
+                            phase: 'optional',
+                            activePlayerId: '0',
+                            currentPlayerId: '0',
+                            consecutivePasses: 0,
+                            responseWindowType: 'meFirst',
+                            sourceBaseIndex: 0,
+                        },
+                    },
+                }],
+            },
+        },
+    });
 }
 
 describe('SmashUp MeFirstOverlay regressions', () => {
@@ -238,6 +304,28 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.getByTestId('me-first-pass-button')).toBeInTheDocument();
         expect(screen.getByText('Me First!')).toBeInTheDocument();
         expect(screen.getByTestId('me-first-progress')).toBeInTheDocument();
+    });
+
+    it('点击让过时应发 Smash Up 专用 reaction pass，不再发通用 RESPONSE_PASS', () => {
+        const dispatch = vi.fn();
+        const onSelectCard = vi.fn();
+
+        render(
+            <MeFirstOverlay
+                G={createVisibleMeFirstState()}
+                dispatch={dispatch}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={onSelectCard}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('me-first-pass-button'));
+
+        expect(onSelectCard).toHaveBeenCalledWith(null);
+        expect(dispatch).toHaveBeenCalledWith(SU_COMMANDS.REACTION_PASS);
+        expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
     });
 
     it('已有真实交互时应隐藏，避免与场景操作叠层', () => {

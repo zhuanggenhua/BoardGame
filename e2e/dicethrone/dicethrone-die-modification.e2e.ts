@@ -6,7 +6,18 @@ import {
 } from '../helpers/dicethrone';
 import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../../src/games/dicethrone/heroes/zhanshujia/tokens';
-import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
+import {
+    expectRightTrayBonusDiceConfirmation,
+    expectRightTrayBonusDiceReadOnlyReview,
+    settleCurrentBonusDice,
+} from './bonus-dice-flow';
+
+const HUMAN_DICE_MODIFICATION_QUERY = { playerID: '0', disableLocalAiAutomation: true };
+const HUMAN_DEFENDER_DICE_MODIFICATION_QUERY = {
+    playerID: '1',
+    seat1: 'human',
+    disableLocalAiAutomation: true,
+};
 
 const randomValueForDieFace = (value: number): number => {
     const normalized = Math.max(1, Math.min(6, Math.floor(value)));
@@ -180,7 +191,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('card-me-too 复制骰面时重复点源骰不会提前完成，点目标骰后才结算', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
 
         await game.setupScene({
             gameId: 'dicethrone',
@@ -309,7 +320,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('card-play-six 应通过 framework 场景完成改骰到 6', async ({ page, game }) => {
-        await game.openTestGame('dicethrone');
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
 
         await game.setupScene({
             gameId: 'dicethrone',
@@ -399,7 +410,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('主要阶段待结算奖励骰不得放行掷骰时机牌', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone');
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
 
         await game.setupScene({
             gameId: 'dicethrone',
@@ -532,7 +543,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('终极来源的未结算骰允许改骰并在确认后结算', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone');
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
 
         await game.setupScene({
             gameId: 'dicethrone',
@@ -654,18 +665,37 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             const state = await game.getState();
             return {
                 pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
-                currentRollContext: state?.core?.currentRollContext ?? null,
+                currentRollContext: state?.core?.currentRollContext
+                    ? {
+                        kind: state.core.currentRollContext.kind ?? null,
+                        sourceAbilityId: state.core.currentRollContext.sourceAbilityId ?? null,
+                        ownerPlayerId: state.core.currentRollContext.ownerPlayerId ?? null,
+                        targetPlayerId: state.core.currentRollContext.targetPlayerId ?? null,
+                        status: state.core.currentRollContext.status ?? null,
+                        replayOnly: state.core.currentRollContext.display?.replayOnly ?? false,
+                        diceValues: state.core.currentRollContext.dice?.map((die: any) => die.value) ?? [],
+                    }
+                    : null,
             };
         }, { timeout: 5000 }).toMatchObject({
             pendingBonusDiceSettlement: null,
-            currentRollContext: null,
+            currentRollContext: {
+                kind: 'bonus',
+                sourceAbilityId: 'e2e-ultimate-locked',
+                ownerPlayerId: '0',
+                targetPlayerId: '1',
+                status: 'settled',
+                replayOnly: true,
+                diceValues: [6],
+            },
         });
+        await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [6] });
 
         await game.screenshot('终极来源骰-改骰后确认结算', testInfo);
     });
 
     test('野蛮人临时奖励骰确认后恢复主攻击骰，不切给僧侣或对手回合', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone');
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
@@ -864,7 +894,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('闪避骰进入当前骰区后，战术优势可重掷并重新计算免伤', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone', { playerID: '1', seat1: 'human' });
+        await game.openTestGame('dicethrone', HUMAN_DEFENDER_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {
@@ -1113,7 +1143,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('战术家真实战争贩子奖励骰可用战术优势重投军刀，并在确认后才进入 5 点攻击结算', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             randomQueue: [randomValueForDieFace(3), randomValueForDieFace(1)],
@@ -1281,7 +1311,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('战争贩子军刀奖励骰确认后进入防御投掷，不能以零伤害提前收口', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             randomQueue: [randomValueForDieFace(1)],
@@ -1372,7 +1402,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
     });
 
     test('战术家可从真实主骰入口主动使用战术优势重掷', async ({ page, game }, testInfo) => {
-        await game.openTestGame('dicethrone', { playerID: '0' });
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
             player0: {

@@ -1,8 +1,7 @@
 # 新增音频素材合同
 
 > 本文是“新增外部音频素材”这条链路的目录、命名、产物和验收合同。
-> 执行步骤、汇报模板、/dev/audio 收口动作已下沉到项目 skill `.spec/skills/audio-integration/SKILL.md`。
-> 如果任务是“查已有库里的 key 并接到代码”，不要直接套本文，先走该 skill 的 A 类流程。
+> 查已有库里的 key 并接到代码不属于本文；本文只记录新增素材产物合同。
 
 ## 0. 适用范围
 
@@ -11,10 +10,7 @@
 - 往 `public/assets/common/audio/` 新增源文件
 - 需要压缩、重建 registry、补中文友好名、刷新文档和目录
 
-如果不是新增素材，而是复用现有音效库 key，请改走：
-
-- `.spec/skills/audio-integration/SKILL.md`
-- `docs/audio/audio-usage.md`
+如果不是新增素材，而是复用现有音效库 key，请只参考 `docs/audio/audio-usage.md` 的检索资料。
 
 ## 1. 前置条件
 

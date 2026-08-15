@@ -5,7 +5,7 @@
  * - D8：验证"第一个随从时"使用 post-reduce 计数器（minionsPlayed === 1）
  * - D8 子项：验证额度授予时机在 playCards 阶段可消费
  * 
- * 参考文档：docs/ai-rules/testing-audit.md D8 维度
+ * 参考文档：.spec/knowledge/standards/testing-audit.md D8 维度
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';

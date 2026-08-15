@@ -221,6 +221,7 @@ function createEnv(overrides = {}) {
         PW_USE_DEV_SERVERS: 'false',
         PW_ALLOW_DEV_SERVER_TESTS: 'false',
         PW_START_SERVERS: 'false',
+        PW_SERVER_WATCH: process.env.PW_SERVER_WATCH ?? 'false',
         ...overrides,
     };
 }
@@ -391,6 +392,16 @@ function resolveRequestedServiceReuse(envOverrides = {}) {
     return value;
 }
 
+function isMultiWorkerRequest(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+        return false;
+    }
+
+    const workers = Number.parseInt(raw, 10);
+    return Number.isFinite(workers) && workers > 1;
+}
+
 function shouldAutoPreferSharedSingleRun({
     mode,
     modeEnv,
@@ -409,7 +420,7 @@ function shouldAutoPreferSharedSingleRun({
         return false;
     }
 
-    if (process.env.PW_WORKERS || envOverrides.PW_WORKERS) {
+    if (isMultiWorkerRequest(process.env.PW_WORKERS) || isMultiWorkerRequest(envOverrides.PW_WORKERS)) {
         return false;
     }
 
@@ -525,8 +536,8 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         mode !== 'dev'
         && mode !== 'parallel'
         && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'
-        && !process.env.PW_WORKERS
-        && !envOverrides.PW_WORKERS
+        && !isMultiWorkerRequest(process.env.PW_WORKERS)
+        && !isMultiWorkerRequest(envOverrides.PW_WORKERS)
         && !resolveUseDevServers(modeEnv)
         && !isListMode
     );

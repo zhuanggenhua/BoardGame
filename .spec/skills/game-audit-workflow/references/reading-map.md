@@ -12,7 +12,7 @@
 | --------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | 卡牌、技能、Token、状态、阶段、伤害、资源、升级版效果不对 | ./.spec/skills/rule-bug-fix-workflow/SKILL.md                        | rule-contract-audit.md、regression-closeout.md；涉及全面审计时再进入本 skill                                       |
 | 用户问“为什么审计没审出来 / 重审 / 审计收口”              | ./.spec/skills/game-audit-workflow/SKILL.md                          | testing-audit.md、testing-audit-core-principles.md、D 维度索引、audit-evidence-template.md、regression-closeout.md |
-| 只改 UI、交互入口、提示、布局、截图证据                   | .spec/knowledge/standards/ui-change-gates.md + .spec/knowledge/standards/e2e-verification.md | 项目 ui-audit-loop；用户开图、项目证据目录、脚本和相册约定统一读项目 show-image-to-user |
+| 只改 UI、交互入口、提示、布局、截图证据                   | .spec/knowledge/standards/ui-change-gates.md + .spec/knowledge/standards/e2e-verification.md | 需要玩家视角审图或用户开图时，按 `.spec` 的 UI / 开图入口执行 |
 | 需要编写或运行 Vitest / Playwright                        | docs/automated-testing.md                                            | docs/testing-tools-quick-reference.md；截图和证据规则仍回 e2e-verification.md                                      |
 | 需要选择测试、注入状态、控制骰子或读取 TestHarness        | docs/testing-tools-quick-reference.md                                | 只读具体 API；不得把工具存在当成业务链路通过                                                                       |
 | 需要查项目脚本、构建、资产、端口或启动命令                | docs/tools.md                                                        | 按脚本类别读取对应专项文档；工具清单不是规则审计规范                                                               |

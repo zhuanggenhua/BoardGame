@@ -4,7 +4,7 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
-import { canStartDuel, startDuel } from '../domain/duel';
+import { canStartDuel, startDuelWithEvents } from '../domain/duel';
 import {
     addPowerCounter,
     addTempPower,
@@ -463,16 +463,17 @@ const samuraiCombatEnemyPromptProgram = createPromptProgram<SamuraiCombatPromptC
         if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
         const selected = value as MinionChoice | undefined;
         if (!context.friendlyMinionUid || !selected?.minionUid) return { events: [] };
+        const duelStarted = startDuelWithEvents(state, {
+            sourceId: context.sourceId,
+            sourcePlayerId: context.playerId,
+            challengerMinionUid: context.friendlyMinionUid,
+            challengedMinionUid: selected.minionUid,
+            outcome: context.outcome,
+            destroyReason: context.destroyReason,
+        }, timestamp);
         return {
-            events: [],
-            matchState: startDuel(state, {
-                sourceId: context.sourceId,
-                sourcePlayerId: context.playerId,
-                challengerMinionUid: context.friendlyMinionUid,
-                challengedMinionUid: selected.minionUid,
-                outcome: context.outcome,
-                destroyReason: context.destroyReason,
-            }, timestamp),
+            events: duelStarted.events,
+            matchState: duelStarted.state,
         };
     },
 });

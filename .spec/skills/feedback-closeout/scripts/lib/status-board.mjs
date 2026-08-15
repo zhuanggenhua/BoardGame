@@ -62,8 +62,40 @@ function groupFeedbackIds(group) {
     ].filter((id) => typeof id === 'string' && id.trim().length > 0);
 }
 
-function toBoardItem(group, feedbackId, summaryPath, nowIso) {
+function historicalRemoteStatusMirrorFields(group, summaryPath, fetchedAt) {
+    const evidence = normalizeStringArray([group.packetPath, summaryPath]);
+    const status = group.status || 'open';
+
+    if (status === 'resolved') {
+        return {
+            evidence,
+            verification: [
+                `线上反馈接口在 ${fetchedAt} 返回该记录状态为 resolved；本地状态板仅同步历史状态，不代表本轮重新复验具体修复。`,
+            ],
+            notes: '线上真实反馈记录已是“已修复”状态；本地状态板仅同步历史状态，本轮未重新复验具体修复。',
+        };
+    }
+
+    if (status === 'closed') {
+        return {
+            evidence,
+            verification: [
+                `线上反馈接口在 ${fetchedAt} 返回该记录状态为 closed；本地状态板仅同步历史状态。`,
+            ],
+            notes: '线上真实反馈记录已是“已关闭”状态；本地状态板仅同步历史状态。',
+        };
+    }
+
+    return {
+        evidence: [],
+        verification: [],
+        notes: '',
+    };
+}
+
+function toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt) {
     const allGroupIds = groupFeedbackIds(group);
+    const mirrorFields = historicalRemoteStatusMirrorFields(group, summaryPath, fetchedAt);
 
     return {
         id: feedbackId,
@@ -84,10 +116,10 @@ function toBoardItem(group, feedbackId, summaryPath, nowIso) {
         packetPath: group.packetPath || '',
         summaryPath,
         duplicateIds: allGroupIds.filter((id) => id !== feedbackId),
-        evidence: [],
-        verification: [],
+        evidence: mirrorFields.evidence,
+        verification: mirrorFields.verification,
         screenshots: normalizeScreenshotPaths(group.screenshotPaths),
-        notes: '',
+        notes: mirrorFields.notes,
         closedReason: '',
         resolvedMethod: '',
         updatedAt: nowIso,
@@ -117,9 +149,20 @@ function mergeItem(baseItem, existingItem, summaryPath) {
         summaryPath,
         duplicateIds: baseItem.duplicateIds,
         lastFetchedStatus: baseItem.lastFetchedStatus,
+        evidence: mergeUnique(
+            normalizeStringArray(existingItem.evidence),
+            baseItem.evidence,
+        ),
+        verification: mergeUnique(
+            normalizeStringArray(existingItem.verification),
+            baseItem.verification,
+        ),
         screenshots: normalizeStringArray(existingItem.screenshots).length > 0
             ? normalizeStringArray(existingItem.screenshots)
             : baseItem.screenshots,
+        notes: typeof existingItem.notes === 'string' && existingItem.notes.trim()
+            ? existingItem.notes
+            : baseItem.notes,
         closedReason: typeof existingItem.closedReason === 'string'
             ? existingItem.closedReason
             : baseItem.closedReason,
@@ -138,10 +181,11 @@ export function buildBoardFromSummary(summary, summaryPath, existingBoard = null
     const existingItems = Array.isArray(existingBoard?.items) ? existingBoard.items : [];
     const existingMap = new Map(existingItems.map((item) => [item.feedbackId || item.id, item]));
     const mergedItems = [];
+    const fetchedAt = summary.generatedAt || nowIso;
 
     for (const group of summary.groups) {
         for (const feedbackId of groupFeedbackIds(group)) {
-            const baseItem = toBoardItem(group, feedbackId, summaryPath, nowIso);
+            const baseItem = toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt);
             const existingItem = existingMap.get(feedbackId);
             mergedItems.push(mergeItem(baseItem, existingItem, summaryPath));
         }

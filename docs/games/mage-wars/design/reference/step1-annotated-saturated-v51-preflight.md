@@ -15,7 +15,7 @@
 
 | 层级 | 文件 | 角色 | 本轮动作 |
 | --- | --- | --- | --- |
-| 全局 skill | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` | `canonical-source` | 已补“开放式设计不是边框数量问题，而是交互裁决顺序”：能由真实对象本体承接时，UI 只能高亮 / 贴短状态 / 降噪，不能再做同义代理工作台 |
+| 项目 skill | `.spec/skills/ui-design-pipeline/SKILL.md` | `canonical-source` | 已补“开放式设计不是边框数量问题，而是交互裁决顺序”：能由真实对象本体承接时，UI 只能高亮 / 贴短状态 / 降噪，不能再做同义代理工作台 |
 | 项目 skill | `.spec/skills/boardgame-ui-imagegen/SKILL.md` | `adapter` | 继续引用全局“规则对象实体锚点守恒”和“开放式直选裁决顺序”，不另写一套独立真相 |
 | 本文件 | `docs/games/mage-wars/design/reference/step1-annotated-saturated-v51-preflight.md` | `evidence / task-contract` | 记录 Mage Wars v51 如何消费这条理论；不作为跨项目规范来源 |
 | 审计 / README | `docs/games/mage-wars/design/generated/**`、`docs/games/mage-wars/design/README.md` | `evidence / index` | 只记录 v50 失败、v51 状态和截图证据，不创造新规则 |

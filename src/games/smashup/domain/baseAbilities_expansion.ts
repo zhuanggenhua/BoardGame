@@ -10,6 +10,8 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
+    CardInstance,
+    CardsDrawnEvent,
     CardsDiscardedEvent,
     MinionPlayedEvent,
     PendingPostScoringAction,
@@ -55,7 +57,6 @@ import {
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
 } from './branchingChoice';
-import { reduce } from './reduce';
 import { executeAbilityProgram } from './abilityRuntime';
 import {
     createEffectDslProgram,
@@ -87,6 +88,35 @@ function buildTableTopDiscardOptions(
         _source: 'hand' as const,
         displayMode: 'card' as const,
     }));
+}
+
+function buildHandAfterDrawEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    drawEvents: readonly SmashUpEvent[],
+): CardInstance[] {
+    const player = core.players[playerId];
+    if (!player) return [];
+
+    const drawnUids = drawEvents
+        .filter((event): event is CardsDrawnEvent => (
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && event.payload.playerId === playerId
+        ))
+        .flatMap(event => event.payload.cardUids);
+    if (drawnUids.length === 0) {
+        return player.hand;
+    }
+
+    const cardsByUid = new Map(
+        [...player.hand, ...player.deck, ...player.discard]
+            .map(card => [card.uid, card] as const),
+    );
+    const drawnCards = drawnUids
+        .map(uid => cardsByUid.get(uid))
+        .filter((card): card is CardInstance => card !== undefined);
+
+    return [...player.hand, ...drawnCards];
 }
 
 function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
@@ -850,12 +880,11 @@ export function registerExpansionBaseAbilities(): void {
         if (!winner) return { events: [] };
 
         const drawEvents = buildStandardDrawEvents(ctx.state, winnerId, 3, ctx.random, ctx.now);
-        const previewState = drawEvents.reduce((state, event) => reduce(state, event), ctx.state);
-        const previewWinner = previewState.players[winnerId];
-        if (!previewWinner || previewWinner.hand.length === 0) {
+        const handAfterDraw = buildHandAfterDrawEvents(ctx.state, winnerId, drawEvents);
+        if (handAfterDraw.length === 0) {
             return { events: drawEvents };
         }
-        if (previewWinner.hand.length <= 2) {
+        if (handAfterDraw.length <= 2) {
             return {
                 events: [
                     ...drawEvents,
@@ -863,7 +892,7 @@ export function registerExpansionBaseAbilities(): void {
                         type: SU_EVENTS.CARDS_DISCARDED,
                         payload: {
                             playerId: winnerId,
-                            cardUids: previewWinner.hand.map((card) => card.uid),
+                            cardUids: handAfterDraw.map((card) => card.uid),
                         },
                         timestamp: ctx.now,
                     } as CardsDiscardedEvent,
@@ -878,7 +907,7 @@ export function registerExpansionBaseAbilities(): void {
                         type: SU_EVENTS.CARDS_DISCARDED,
                         payload: {
                             playerId: winnerId,
-                            cardUids: previewWinner.hand.slice(0, 2).map((card) => card.uid),
+                            cardUids: handAfterDraw.slice(0, 2).map((card) => card.uid),
                         },
                         timestamp: ctx.now,
                     } as CardsDiscardedEvent,
@@ -890,7 +919,7 @@ export function registerExpansionBaseAbilities(): void {
             `base_tabletop_${ctx.now}`,
             winnerId,
             '桌游桌：选择 2 张手牌弃掉',
-            buildTableTopDiscardOptions(previewWinner.hand),
+            buildTableTopDiscardOptions(handAfterDraw),
             {
                 sourceId: 'base_tabletop',
                 targetType: 'hand',
@@ -1226,7 +1255,7 @@ export function registerExpansionBaseAbilities(): void {
 
     // ── 绵羊神社（Sheep Shrine）──────────────────────────────
     // "这张基地入场后，每位玩家可以移动一个他们的随从到这。"
-    // 通过 onBaseRevealed 扩展时机触发，在 scoreOneBase 中 BASE_REPLACED 后调用
+    // 通过 onBaseRevealed 扩展时机触发，在 BASE_REPLACED 正式落地后的事件后处理中调用
     registerExtendedBase('base_sheep_shrine', 'onBaseRevealed', (ctx) => {
         if (!ctx.matchState) return { events: [] };
         let ms = ctx.matchState;

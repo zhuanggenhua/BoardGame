@@ -22,11 +22,15 @@ import {
     revealDeckTop,
     shuffleHandIntoDeck,
 } from '../domain/abilityHelpers';
+import {
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { registerCustomBreakpointModifiers, registerPowerModifier } from '../domain/ongoingModifiers';
 import { buildSemanticOngoingAttachEvents } from '../domain/abilityHelpers';
-import { reduce } from '../domain/reduce';
 import type {
     BaseMetadataUpdatedEvent,
     CardInstance,
@@ -72,9 +76,12 @@ type TransformContext = {
     sourceCardUid?: string;
     sourceBaseIndex?: number;
     playFromPlayerId?: PlayerId;
-    attachCardUid?: string;
-    attachDefId?: string;
-    attachOwnerId?: PlayerId;
+};
+
+type TransformResult = {
+    events: SmashUpEvent[];
+    playedMinionUid?: string;
+    targetBaseIndex: number;
 };
 
 type SearchContext = {
@@ -83,6 +90,37 @@ type SearchContext = {
     sourceBaseIndex?: number;
     searchDefId: string;
     playBaseIndices?: number[];
+};
+
+type RussianPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type FoolishMagicianContext = RussianPromptContext & {
+    random: RandomFn;
+};
+
+type SearchPromptRuntimeContext = RussianPromptContext & {
+    title: string;
+    searchContext: SearchContext;
+};
+
+type SearchPromptAfterEventsContext = SearchPromptRuntimeContext & {
+    leadingEvents: SmashUpEvent[];
+};
+
+type FrogPrincessAttachContext = RussianPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    attachOwnerId: PlayerId;
+    targetBaseIndex: number;
+    targetMinionUid: string;
+};
+
+type FrogPrincessAttachAfterEventsContext = FrogPrincessAttachContext & {
+    leadingEvents: SmashUpEvent[];
 };
 
 type FetchContext = {
@@ -120,15 +158,14 @@ function getPlayerLabel(core: SmashUpCore, playerId: PlayerId): string {
     return core.players[playerId]?.name ?? `玩家 ${playerId}`;
 }
 
-function simulateMatchState(
-    matchState: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    let core = matchState.core;
-    for (const event of events) {
-        core = reduce(core, event);
-    }
-    return { ...matchState, core };
+function runtimeToAbilityResult(result: {
+    events: SmashUpEvent[];
+    matchState?: MatchState<SmashUpCore>;
+}): AbilityResult {
+    return {
+        events: result.events,
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
 }
 
 function cardToDeckTop(
@@ -331,14 +368,14 @@ function buildPlayMinionOffTopEvents(params: {
     return { events, playedMinionUid: played.uid };
 }
 
-function buildTransformMinionEvents(
+function buildTransformMinionResult(
     state: MatchState<SmashUpCore>,
     selected: { minion: MinionOnBase; baseIndex: number },
     playerId: PlayerId,
     random: RandomFn,
     now: number,
     context: TransformContext,
-): SmashUpEvent[] {
+): TransformResult {
     const sourceDefId = context.sourceDefId;
     const playFromPlayerId = context.playFromPlayerId ?? selected.minion.owner;
     const minionCard: CardInstance = {
@@ -360,7 +397,9 @@ function buildTransformMinionEvents(
         reason: sourceDefId,
         now,
     });
-    if (!hasBottomDeckEvent(bottomEvents, selected.minion.uid)) return bottomEvents;
+    if (!hasBottomDeckEvent(bottomEvents, selected.minion.uid)) {
+        return { events: bottomEvents, targetBaseIndex: selected.baseIndex };
+    }
 
     const replacement = buildPlayMinionOffTopEvents({
         core: state.core,
@@ -372,24 +411,23 @@ function buildTransformMinionEvents(
         sourcePlayerId: playerId,
         bottomedCardForPlayDeck: playFromPlayerId === selected.minion.owner ? minionCard : undefined,
     });
-    const attachSourceState = context.attachCardUid && replacement.playedMinionUid
-        ? simulateMatchState(state, [...bottomEvents, ...replacement.events])
-        : state;
-    const attachEvents = context.attachCardUid && context.attachDefId && context.attachOwnerId && replacement.playedMinionUid
-        ? buildSemanticOngoingAttachEvents(attachSourceState, {
-            cardUid: context.attachCardUid,
-            defId: context.attachDefId,
-            ownerId: context.attachOwnerId,
-            ...(context.attachOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
-            targetBaseIndex: selected.baseIndex,
-            targetMinionUid: replacement.playedMinionUid,
-            talentUsed: true,
-            removeFromDiscard: true,
-            now,
-        })
-        : [];
 
-    return [...bottomEvents, ...replacement.events, ...attachEvents];
+    return {
+        events: [...bottomEvents, ...replacement.events],
+        playedMinionUid: replacement.playedMinionUid,
+        targetBaseIndex: selected.baseIndex,
+    };
+}
+
+function buildTransformMinionEvents(
+    state: MatchState<SmashUpCore>,
+    selected: { minion: MinionOnBase; baseIndex: number },
+    playerId: PlayerId,
+    random: RandomFn,
+    now: number,
+    context: TransformContext,
+): SmashUpEvent[] {
+    return buildTransformMinionResult(state, selected, playerId, random, now, context).events;
 }
 
 function buildShuffleMinionsIntoOwnersDeckEvents(
@@ -493,6 +531,162 @@ function queueSearchPrompt(
     };
 }
 
+const russianSearchPromptProgram = createEffectProgram<SearchPromptRuntimeContext, SmashUpCore, SmashUpEvent>(
+    (context) => queueSearchPrompt(
+        context.matchState,
+        context.playerId,
+        context.now,
+        context.title,
+        context.searchContext,
+    ),
+);
+
+const russianSearchPromptAfterEventsProgram = createEffectProgram<SearchPromptAfterEventsContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const { leadingEvents: _leadingEvents, ...searchContext } = context;
+        return {
+            events: context.leadingEvents,
+            context: searchContext,
+            nextProgram: russianSearchPromptProgram,
+        };
+    },
+);
+
+const foolishMagicianPromptProgram = createPromptProgram<RussianPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'russian_fairy_tales_foolish_magician',
+    buildInteraction: (context) => {
+        const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
+        const count = Math.min(3, hand.length);
+        return createSimpleChoice<CardChoice>(
+            `russian_fairy_tales_foolish_magician_${context.now}`,
+            context.playerId,
+            '愚蠢的魔术师：选择三张手牌放到牌库顶和/或底',
+            hand.flatMap((card, index) => [
+                {
+                    id: `top-${index}`,
+                    label: `${cardLabel(card.defId)}：放到牌库顶`,
+                    value: { cardUid: card.uid, defId: card.defId, zone: 'hand' as const, placement: 'top' as const },
+                    displayMode: 'card' as const,
+                },
+                {
+                    id: `bottom-${index}`,
+                    label: `${cardLabel(card.defId)}：放到牌库底`,
+                    value: { cardUid: card.uid, defId: card.defId, zone: 'hand' as const, placement: 'bottom' as const },
+                    displayMode: 'card' as const,
+                },
+            ]),
+            {
+                sourceId: 'russian_fairy_tales_foolish_magician',
+                targetType: 'hand',
+                multi: { min: count, max: count },
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : [value]) as CardChoice[];
+        const hand = state.core.players[playerId]?.hand ?? [];
+        const requiredCount = Math.min(3, hand.length);
+        const seen = new Set<string>();
+        const top: CardInstance[] = [];
+        const bottom: CardInstance[] = [];
+        for (const choice of choices) {
+            if (!choice?.cardUid || !choice.defId || (choice.placement !== 'top' && choice.placement !== 'bottom')) continue;
+            if (seen.has(choice.cardUid)) {
+                return { events: [] };
+            }
+            const card = hand.find(candidate => candidate.uid === choice.cardUid && candidate.defId === choice.defId);
+            if (!card) continue;
+            seen.add(card.uid);
+            if (choice.placement === 'top') top.push(card);
+            if (choice.placement === 'bottom') bottom.push(card);
+        }
+        if (seen.size !== requiredCount) return { events: [] };
+        const events: SmashUpEvent[] = [];
+        for (const card of [...top].reverse()) {
+            events.push(cardToDeckTop(card, card.owner, 'russian_fairy_tales_foolish_magician', timestamp, playerId));
+        }
+        for (const card of bottom) {
+            events.push(...buildValidatedCardToDeckBottomEvents(state, {
+                cardUid: card.uid,
+                defId: card.defId,
+                ownerId: card.owner,
+                expectedLocation: 'hand',
+                sourcePlayerId: playerId,
+                sourceDefId: 'russian_fairy_tales_foolish_magician',
+                sourceControllerId: playerId,
+                reason: 'russian_fairy_tales_foolish_magician',
+                now: timestamp,
+            }));
+        }
+        return { events };
+    },
+});
+
+const foolishMagicianPromptAfterCommittedDrawProgram = createEffectProgram<FoolishMagicianContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
+        if (hand.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: {
+                matchState: context.matchState,
+                playerId: context.playerId,
+                now: context.now,
+            },
+            nextProgram: foolishMagicianPromptProgram,
+        };
+    },
+);
+
+const foolishMagicianProgram = createEffectProgram<FoolishMagicianContext, SmashUpCore, SmashUpEvent>(
+    (context) => ({
+        events: buildStandardDrawEvents(
+            context.matchState.core,
+            context.playerId,
+            3,
+            context.random,
+            context.now,
+        ),
+        context,
+        nextProgram: foolishMagicianPromptAfterCommittedDrawProgram,
+    }),
+);
+
+const frogPrincessAttachProgram = createEffectProgram<FrogPrincessAttachContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const target = context.matchState.core.bases[context.targetBaseIndex]?.minions.find(
+            minion => minion.uid === context.targetMinionUid,
+        );
+        if (!target) return { events: [] };
+        return {
+            events: buildSemanticOngoingAttachEvents(context.matchState, {
+                cardUid: context.sourceCardUid,
+                defId: 'russian_fairy_tales_the_frog_princess',
+                ownerId: context.attachOwnerId,
+                ...(context.attachOwnerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                targetBaseIndex: context.targetBaseIndex,
+                targetMinionUid: target.uid,
+                talentUsed: true,
+                removeFromDiscard: true,
+                now: context.now,
+            }),
+        };
+    },
+);
+
+const frogPrincessAttachAfterEventsProgram = createEffectProgram<FrogPrincessAttachAfterEventsContext, SmashUpCore, SmashUpEvent>(
+    (context) => {
+        const { leadingEvents: _leadingEvents, ...attachContext } = context;
+        return {
+            events: context.leadingEvents,
+            context: attachContext,
+            nextProgram: frogPrincessAttachProgram,
+        };
+    },
+);
+
 function transformation(ctx: AbilityContext): AbilityResult {
     const candidates = collectAllMinions(ctx.state);
     if (candidates.length === 0) return { events: [] };
@@ -560,24 +754,31 @@ function frogPrincessTalent(ctx: AbilityContext): AbilityResult {
     const host = findMinionByAttachedCard(ctx.state, ctx.cardUid);
     if (!host) return { events: [] };
     const attached = host.minion.attachedActions.find(action => action.uid === ctx.cardUid);
-    return {
-        events: buildTransformMinionEvents(
-            ctx.matchState,
-            host,
-            ctx.playerId,
-            ctx.random,
-            ctx.now,
-            {
-                sourceDefId: 'russian_fairy_tales_the_frog_princess',
-                sourceCardUid: ctx.cardUid,
-                sourceBaseIndex: host.baseIndex,
-                playFromPlayerId: ctx.playerId,
-                attachCardUid: ctx.cardUid,
-                attachDefId: 'russian_fairy_tales_the_frog_princess',
-                attachOwnerId: attached?.ownerId ?? ctx.playerId,
-            },
-        ),
-    };
+    const transform = buildTransformMinionResult(
+        ctx.matchState,
+        host,
+        ctx.playerId,
+        ctx.random,
+        ctx.now,
+        {
+            sourceDefId: 'russian_fairy_tales_the_frog_princess',
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: host.baseIndex,
+            playFromPlayerId: ctx.playerId,
+        },
+    );
+    if (!attached || !transform.playedMinionUid) return { events: transform.events };
+    return runtimeToAbilityResult(executeAbilityProgram(frogPrincessAttachAfterEventsProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: host.baseIndex,
+        attachOwnerId: attached.ownerId,
+        targetBaseIndex: transform.targetBaseIndex,
+        targetMinionUid: transform.playedMinionUid,
+        leadingEvents: transform.events,
+    }));
 }
 
 function waterOfLife(ctx: AbilityContext): AbilityResult {
@@ -773,37 +974,12 @@ function grayWolf(ctx: AbilityContext): AbilityResult {
 }
 
 function foolishMagician(ctx: AbilityContext): AbilityResult {
-    const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now);
-    const projected = simulateMatchState(ctx.matchState, drawEvents);
-    const hand = projected.core.players[ctx.playerId]?.hand ?? [];
-    if (hand.length === 0) return { events: drawEvents };
-    const interaction = createSimpleChoice<CardChoice>(
-        `russian_fairy_tales_foolish_magician_${ctx.now}`,
-        ctx.playerId,
-        '愚蠢的魔术师：选择三张手牌放到牌库顶和/或底',
-        hand.flatMap((card, index) => [
-            {
-                id: `top-${index}`,
-                label: `${cardLabel(card.defId)}：放到牌库顶`,
-                value: { cardUid: card.uid, defId: card.defId, zone: 'hand' as const, placement: 'top' as const },
-                displayMode: 'card' as const,
-            },
-            {
-                id: `bottom-${index}`,
-                label: `${cardLabel(card.defId)}：放到牌库底`,
-                value: { cardUid: card.uid, defId: card.defId, zone: 'hand' as const, placement: 'bottom' as const },
-                displayMode: 'card' as const,
-            },
-        ]),
-        {
-            sourceId: 'russian_fairy_tales_foolish_magician',
-            targetType: 'hand',
-            multi: { min: Math.min(3, hand.length), max: Math.min(3, hand.length) },
-            autoResolveIfSingle: false,
-            responseValidationMode: 'live',
-        },
-    );
-    return { events: drawEvents, matchState: queueInteraction(projected, interaction) };
+    return runtimeToAbilityResult(executeAbilityProgram(foolishMagicianProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        random: ctx.random,
+        now: ctx.now,
+    }));
 }
 
 function toad(ctx: AbilityContext): AbilityResult {
@@ -949,23 +1125,20 @@ function theBirchTurnStart(ctx: TriggerContext): AbilityResult {
         sourceBaseIndex: ctx.sourceBaseIndex,
         sourceKind: 'nonAction',
     });
-    const search = queueSearchPrompt(
-        simulateMatchState(ctx.matchState, destroyEvents),
-        ctx.sourceControllerId,
-        ctx.now,
-        '白桦木：寻找白桦木女神加入手牌或打到这里',
-        {
+    return runtimeToAbilityResult(executeAbilityProgram(russianSearchPromptAfterEventsProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.sourceControllerId,
+        now: ctx.now,
+        title: '白桦木：寻找白桦木女神加入手牌或打到这里',
+        leadingEvents: destroyEvents,
+        searchContext: {
             sourceDefId: 'russian_fairy_tales_the_birch',
             sourceCardUid: source.uid,
             sourceBaseIndex: ctx.sourceBaseIndex,
             searchDefId: 'russian_fairy_tales_the_birch_woman',
             playBaseIndices: [ctx.sourceBaseIndex],
         },
-    );
-    return {
-        events: [...destroyEvents, ...search.events],
-        ...(search.matchState ? { matchState: search.matchState } : {}),
-    };
+    }));
 }
 
 function canTheBirchTurnStart(ctx: TriggerContext): boolean {
@@ -1262,45 +1435,6 @@ export function registerRussianFairyTalesInteractionHandlers(): void {
                 }),
             ],
         };
-    });
-
-    registerInteractionHandler('russian_fairy_tales_foolish_magician', (state, playerId, value, _data, _random, timestamp) => {
-        const choices = (Array.isArray(value) ? value : [value]) as CardChoice[];
-        const hand = state.core.players[playerId]?.hand ?? [];
-        const requiredCount = Math.min(3, hand.length);
-        const seen = new Set<string>();
-        const top: CardInstance[] = [];
-        const bottom: CardInstance[] = [];
-        for (const choice of choices) {
-            if (!choice?.cardUid || !choice.defId || (choice.placement !== 'top' && choice.placement !== 'bottom')) continue;
-            if (seen.has(choice.cardUid)) {
-                return { state, events: [] };
-            }
-            const card = hand.find(candidate => candidate.uid === choice.cardUid && candidate.defId === choice.defId);
-            if (!card) continue;
-            seen.add(card.uid);
-            if (choice.placement === 'top') top.push(card);
-            if (choice.placement === 'bottom') bottom.push(card);
-        }
-        if (seen.size !== requiredCount) return { state, events: [] };
-        const events: SmashUpEvent[] = [];
-        for (const card of [...top].reverse()) {
-            events.push(cardToDeckTop(card, card.owner, 'russian_fairy_tales_foolish_magician', timestamp, playerId));
-        }
-        for (const card of bottom) {
-            events.push(...buildValidatedCardToDeckBottomEvents(state, {
-                cardUid: card.uid,
-                defId: card.defId,
-                ownerId: card.owner,
-                expectedLocation: 'hand',
-                sourcePlayerId: playerId,
-                sourceDefId: 'russian_fairy_tales_foolish_magician',
-                sourceControllerId: playerId,
-                reason: 'russian_fairy_tales_foolish_magician',
-                now: timestamp,
-            }));
-        }
-        return { state, events };
     });
 
     registerInteractionHandler('russian_fairy_tales_toad', (state, playerId, value, data, random, timestamp) => {

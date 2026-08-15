@@ -93,6 +93,7 @@
     "test:e2e:isolated": "node scripts/infra/run-e2e-command.mjs isolated",
     "test:e2e:ci": "node scripts/infra/run-e2e-command.mjs ci",
     "test:e2e:ci:file": "node scripts/infra/run-e2e-single.mjs ci",
+    "test:e2e:batch": "node scripts/infra/run-e2e-batch.mjs",
     "test:e2e:ci:all": "cross-env PW_ALLOW_FULL_RUN=true node scripts/infra/run-e2e-command.mjs ci",
     "test:e2e:critical": "node scripts/infra/run-e2e-command.mjs critical",
     "test:e2e:cleanup": "node scripts/infra/cleanup_test_connections.js",

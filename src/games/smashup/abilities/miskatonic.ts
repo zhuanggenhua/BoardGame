@@ -21,7 +21,6 @@ import {
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { reduce } from '../domain/reduce';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -38,44 +37,42 @@ function resolvePlayedActionExecutor(defId: string) {
 function requirePlayedActionExecutor(defId: string) {
     const def = getCardDef(defId);
     if (def?.type === 'action' && def.subtype === 'special') {
-        if (resolveSpecial(defId)) return requireSpecial(defId, 'miskatonic.appendResolvedActionAbility');
-        return requireOnPlay(defId, 'miskatonic.appendResolvedActionAbility');
+        if (resolveSpecial(defId)) return requireSpecial(defId, 'miskatonic.resolvedActionAfterPlayed');
+        return requireOnPlay(defId, 'miskatonic.resolvedActionAfterPlayed');
     }
-    return requireOnPlay(defId, 'miskatonic.appendResolvedActionAbility');
+    return requireOnPlay(defId, 'miskatonic.resolvedActionAfterPlayed');
 }
 
-function appendResolvedActionAbility(
-    state: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-    playerId: string,
-    cardUid: string,
-    defId: string,
-    random: AbilityContext['random'],
-    timestamp: number,
-    baseIndex: number,
-    targetMinionUid?: string,
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const executor = resolvePlayedActionExecutor(defId) ?? requirePlayedActionExecutor(defId);
+type MiskatonicResolvedActionAfterPlayedContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: AbilityContext['playerId'];
+    cardUid: string;
+    defId: string;
+    random: AbilityContext['random'];
+    now: number;
+    baseIndex: number;
+    targetMinionUid?: string;
+};
 
-    let simCore = state.core;
-    for (const evt of events) {
-        simCore = reduce(simCore, evt);
-    }
+const miskatonicResolvedActionAfterPlayedProgram = createEffectProgram<
+    MiskatonicResolvedActionAfterPlayedContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    const executor = resolvePlayedActionExecutor(context.defId) ?? requirePlayedActionExecutor(context.defId);
     const abilityCtx: AbilityContext = {
-        state: simCore,
-        matchState: { ...state, core: simCore },
-        playerId,
-        cardUid,
-        defId,
-        baseIndex,
-        targetMinionUid,
-        random,
-        now: timestamp,
+        state: context.matchState.core,
+        matchState: context.matchState,
+        playerId: context.playerId,
+        cardUid: context.cardUid,
+        defId: context.defId,
+        baseIndex: context.baseIndex,
+        targetMinionUid: context.targetMinionUid,
+        random: context.random,
+        now: context.now,
     };
-    const result = executor(abilityCtx);
-    events.push(...result.events);
-    return { state: result.matchState ?? state, events };
-}
+    return executor(abilityCtx);
+});
 
 type MiskatonicMadnessBoostPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -138,6 +135,13 @@ type MiskatonicLibrarianPodPromptContext = {
     cardUid: string;
     sourceId: 'miskatonic_librarian_pod' | 'miskatonic_librarian_pod_play_madness';
     baseIndex?: number;
+};
+
+type MiskatonicLibrarianAfterDiscardContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: AbilityContext['playerId'];
+    now: number;
+    random: AbilityContext['random'];
 };
 
 type MiskatonicItJustMightWorkPodPromptContext = {
@@ -984,17 +988,19 @@ const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<Miska
             isExtraAction: true,
             timestamp,
         }) as SmashUpEvent];
-        const appended = appendResolvedActionAbility(
-            state,
+        return {
             events,
-            playerId,
-            card.uid,
-            card.defId,
-            random,
-            timestamp,
-            context.baseIndex ?? 0,
-        );
-        return { events: appended.events, matchState: appended.state };
+            context: {
+                matchState: state,
+                playerId,
+                cardUid: card.uid,
+                defId: card.defId,
+                random,
+                now: timestamp,
+                baseIndex: context.baseIndex ?? 0,
+            } satisfies MiskatonicResolvedActionAfterPlayedContext,
+            nextProgram: miskatonicResolvedActionAfterPlayedProgram,
+        };
     },
 });
 
@@ -1355,13 +1361,20 @@ function miskatonicProfessorTalent(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
+const miskatonicLibrarianAfterDiscardProgram = createEffectProgram<
+    MiskatonicLibrarianAfterDiscardContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => ({
+    events: buildStandardDrawEvents(context.matchState.core, context.playerId, 1, context.random, context.now),
+}));
+
 /**
  * 图书管理员 talent：弃1张疯狂卡 → 抽1张牌
  *
  * 官方规则：Discard a Madness card. If you do, draw a card.
  */
-function miskatonicLibrarianTalent(ctx: AbilityContext): AbilityResult {
-    const events: SmashUpEvent[] = [];
+const miskatonicLibrarianTalentProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const player = ctx.state.players[ctx.playerId];
 
     // 检查手中是否有疯狂卡
@@ -1374,14 +1387,18 @@ function miskatonicLibrarianTalent(ctx: AbilityContext): AbilityResult {
         payload: { playerId: ctx.playerId, cardUids: [madnessCard.uid] },
         timestamp: ctx.now,
     } as SmashUpEvent;
-    events.push(discardEvent);
 
-    // 抽1张牌
-    const drawState = reduce(ctx.state, discardEvent);
-    events.push(...buildStandardDrawEvents(drawState, ctx.playerId, 1, ctx.random, ctx.now));
-
-    return { events };
-}
+    return {
+        events: [discardEvent],
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            random: ctx.random,
+        } satisfies MiskatonicLibrarianAfterDiscardContext,
+        nextProgram: miskatonicLibrarianAfterDiscardProgram,
+    };
+});
 
 // ============================================================================
 // Priority 2: 需要 Prompt 的疯狂卡能力
@@ -1720,8 +1737,8 @@ export function registerMiskatonicAbilities(): void {
         },
     });
     // 图书管理员（power 4, talent）：弃1张疯狂卡 → 抽1张牌
-    registerAbility('miskatonic_librarian', 'talent', {
-        execute: miskatonicLibrarianTalent,
+    registerAbilityProgram('miskatonic_librarian', 'talent', {
+        program: miskatonicLibrarianTalentProgram,
         validateUse: (ctx) => {
             const player = ctx.state.players[ctx.playerId];
             return player.hand.some(c => c.defId === MADNESS_CARD_DEF_ID) ? null : '手中没有疯狂卡';

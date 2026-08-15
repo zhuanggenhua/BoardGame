@@ -1486,7 +1486,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 canResolve={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
                 locale={locale}
                 onResolveOption={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: sysInteraction?.id });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: compareRollInteraction.id });
                 }}
                 onConfirm={() => {
                     dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });

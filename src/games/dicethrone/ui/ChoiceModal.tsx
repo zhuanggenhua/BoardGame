@@ -146,6 +146,8 @@ export const ChoiceModal = ({
                                 disabled={!canResolve}
                                 variant="primary"
                                 className="min-w-[140px]"
+                                data-option-id={confirmOption.id}
+                                data-choice-custom-id={confirmOption.customId}
                             >
                                 {t(choice!.slider!.confirmLabelKey, { count: 1 })}
                             </GameButton>
@@ -155,6 +157,8 @@ export const ChoiceModal = ({
                                     disabled={!canResolve}
                                     variant="secondary"
                                     className="min-w-[100px]"
+                                    data-option-id={skipOption.id}
+                                    data-choice-custom-id={skipOption.customId}
                                 >
                                     {skipLabel}
                                 </GameButton>
@@ -208,6 +212,8 @@ export const ChoiceModal = ({
                                             disabled={!canResolve || option.disabled}
                                             variant="secondary"
                                             className="min-w-[100px]"
+                                            data-option-id={option.id}
+                                            data-choice-custom-id={option.customId}
                                         >
                                             {resolveOptionLabel(option)}
                                         </GameButton>
@@ -228,6 +234,8 @@ export const ChoiceModal = ({
                                             disabled={!canResolve || option.disabled}
                                             variant={isCancelOption ? 'secondary' : canResolve ? 'primary' : 'secondary'}
                                             className="min-w-[120px]"
+                                            data-option-id={option.id}
+                                            data-choice-custom-id={option.customId}
                                         >
                                             {resolveOptionLabel(option)}
                                         </GameButton>
@@ -282,6 +290,8 @@ const TokenChoiceIcon = ({
             aria-label={name}
             disabled={!canResolve}
             className="relative flex flex-col items-center gap-2 border-0 bg-transparent p-0 cursor-pointer disabled:cursor-not-allowed"
+            data-option-id={option.id}
+            data-choice-custom-id={option.customId}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={() => onResolve(option.id)}

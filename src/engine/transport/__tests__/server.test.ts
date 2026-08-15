@@ -1890,7 +1890,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         expect(candidate?.resolution.action.commands).toEqual([]);
     });
 
-    it('DiceThrone afterRollConfirmed 当前响应者为 human 时，不应回退成 active-turn-legal-only', () => {
+    it('DiceThrone afterRollConfirmed 当前响应者为 human 且当前回合属于 AI 时，应先强关响应窗口', () => {
         const sharedState = {
             core: {
                 activePlayerId: '3',
@@ -1929,7 +1929,13 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
             seatStates: {},
         });
 
-        expect(candidate).toBeNull();
+        expect(candidate?.playerId).toBe('3');
+        expect(candidate?.reason).toBe('response-window');
+        expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
+        expect(candidate?.resolution.action.commands).toEqual([{
+            type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE',
+            payload: {},
+        }]);
     });
 
     it('DiceThrone afterCardPlayed 存在 pendingInteractionId 锁时，应优先检查 hidden interaction 而不是退成 RESPONSE_PASS', () => {
@@ -6661,12 +6667,12 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(feedbackReporter).not.toHaveBeenCalled();
     });
 
-    it('online AI watchdog 在 human 当前响应窗口中不应误判为 AI 卡死', async () => {
+    it('online AI watchdog 在 AI 当前阶段卡住 human 响应窗口时，应先强关响应窗口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
 
-        await storage.createMatch('match-watchdog-response-window-human', {
+        await storage.createMatch('match-watchdog-response-window-human-during-ai-phase', {
             initialState: createOnlineAiRecoveryState({
                 activePlayerId: '1', // AI 回合
                 phase: 'main2',
@@ -6703,10 +6709,49 @@ describe('GameTransportServer（离座与重连）', () => {
             ) => Promise<boolean>;
         };
 
-        const match = await serverInternal.loadMatch('match-watchdog-response-window-human');
+        const match = await serverInternal.loadMatch('match-watchdog-response-window-human-during-ai-phase');
         const executed: string[] = [];
         vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType) => {
             executed.push(commandType);
+
+            if (commandType === 'SYS_RESPONSE_WINDOW_FORCE_CLOSE') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: {
+                            ...(activeMatch.state.sys?.eventStream ?? {}),
+                            nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                        },
+                        responseWindow: {
+                            ...(activeMatch.state.sys?.responseWindow ?? {}),
+                            current: undefined,
+                        },
+                    },
+                };
+                activeMatch.stateID += 1;
+                return true;
+            }
+
+            if (commandType === 'ADVANCE_PHASE') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: {
+                            ...(activeMatch.state.sys?.eventStream ?? {}),
+                            nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                        },
+                    },
+                };
+                activeMatch.stateID += 1;
+                return true;
+            }
 
             return false;
         });
@@ -6715,14 +6760,73 @@ describe('GameTransportServer（离座与重连）', () => {
         await serverInternal.runOnlineAiRecoveryTick();
         await nextTick();
 
-        expect(executed).toEqual([]);
+        expect(executed).toEqual(['SYS_RESPONSE_WINDOW_FORCE_CLOSE', 'ADVANCE_PHASE']);
+        expect(match.state.sys.responseWindow.current).toBeUndefined();
+        expect(match.state.sys.phase).toBe('main2');
+        expect(match.state.core.activePlayerId).toBe('0');
+        expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-response-window-human-during-ai-phase',
+            playerId: '1',
+            incidentKind: 'force-end-turn-failed',
+        }));
+    });
+
+    it('online AI watchdog 在 human 自己回合的 human 响应窗口中不应强制关窗', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-response-window-human-own-turn', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '0',
+                phase: 'main2',
+                responseWindow: {
+                    current: {
+                        id: 'rw-human-own-turn',
+                        windowType: 'test',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-response-window-human-own-turn');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockResolvedValue(false);
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
         expect(match.state.sys.responseWindow.current).toMatchObject({
-            id: 'rw-1',
+            id: 'rw-human-own-turn',
             responderQueue: ['0'],
             currentResponderIndex: 0,
         });
-        expect(match.state.sys.phase).toBe('main2');
-        expect(match.state.core.activePlayerId).toBe('1');
+        expect(match.state.core.activePlayerId).toBe('0');
         expect(feedbackReporter).not.toHaveBeenCalled();
     });
 
@@ -21436,7 +21540,7 @@ describe('GameTransportServer（离座与重连）', () => {
         const match = await serverInternal.loadMatch('match-watchdog-live-interaction-snapshot');
         await serverInternal.runOnlineAiRecoveryTick();
         await serverInternal.runOnlineAiRecoveryTick();
-        await nextTick();
+        for (let i = 0; i < 10; i++) { await nextTick(); }
         await nextTick();
 
         expect(match.state.core.activePlayerId).toBe('0');
@@ -21984,6 +22088,167 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(match.state.core.activePlayerId).toBe('0');
     });
 
+    it('即时服务端 AI 在 SmashUp 公开选阵营阶段应走正常 AI 动作，不写恢复反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-smashup-immediate-ai-faction-select', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                        factionSelection: {
+                            takenFactions: ['aliens'],
+                            playerSelections: {
+                                '0': ['aliens'],
+                                '1': [],
+                            },
+                            completedPlayers: [],
+                        },
+                    },
+                    sys: {
+                        phase: 'factionSelect',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'smashup',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch')
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: {
+                    playerId: '1',
+                    action: {
+                        actionId: 'select-faction:robots',
+                        kind: 'select-faction',
+                        label: '选择派系 robots',
+                        commands: [{
+                            type: 'su:select_faction',
+                            payload: { factionId: 'robots' },
+                        }],
+                    },
+                    attemptKey: 'immediate-smashup-faction-select',
+                    source: 'local-ai',
+                },
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('smashup')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiImmediateExecution: (match: any, trigger: 'command-succeeded' | 'sync') => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean; reportFailureFeedback?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
+            activeMatch,
+            playerID,
+            commandType,
+            payload,
+        ) => {
+            expect(playerID).toBe('1');
+            expect(commandType).toBe('su:select_faction');
+            expect(payload).toEqual({ factionId: 'robots' });
+
+            const core = activeMatch.state.core as {
+                factionSelection: {
+                    takenFactions: string[];
+                    playerSelections: Record<string, string[]>;
+                    completedPlayers: string[];
+                };
+            };
+
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    activePlayerId: '0',
+                    currentPlayerIndex: 0,
+                    factionSelection: {
+                        ...core.factionSelection,
+                        takenFactions: [...core.factionSelection.takenFactions, 'robots'],
+                        playerSelections: {
+                            ...core.factionSelection.playerSelections,
+                            '1': ['robots'],
+                        },
+                    },
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    eventStream: { nextId: 2 },
+                },
+            };
+            activeMatch.stateID += 1;
+            return true;
+        });
+        const recoverySpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction');
+
+        try {
+            const match = await serverInternal.loadMatch('match-smashup-immediate-ai-faction-select');
+            await serverInternal.runOnlineAiImmediateExecution(match, 'command-succeeded');
+
+            expect(executeSpy.mock.calls.map(([, , commandType]) => commandType)).toEqual(['su:select_faction']);
+            expect(match.state.core.activePlayerId).toBe('0');
+            expect(match.state.core.factionSelection.playerSelections['1']).toEqual(['robots']);
+            expect(recoverySpy).not.toHaveBeenCalled();
+            expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+                incidentKind: 'legal-action-recovered',
+            }));
+        } finally {
+            recoverySpy.mockRestore();
+            executeSpy.mockRestore();
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('即时服务端 AI 执行拿不到合法动作且游戏允许强制恢复时，应立即回落到恢复序列', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -22027,6 +22292,10 @@ describe('GameTransportServer（离座与重连）', () => {
             ) => Promise<boolean>;
         };
         const match = await serverInternal.loadMatch(matchID);
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'idle',
+            idleReason: 'no-action',
+        });
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockResolvedValue({
             applied: false,
             resolved: false,
@@ -22069,6 +22338,7 @@ describe('GameTransportServer（离座与重连）', () => {
         } finally {
             tryRecoverSpy.mockRestore();
             executeSpy.mockRestore();
+            resolutionSpy.mockRestore();
         }
     });
 
@@ -22163,6 +22433,7 @@ describe('GameTransportServer（离座与重连）', () => {
     it('Betrayal 在线普通 AI 应在人类选探索者命令成功后连续收口多个 AI 座位', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
         const playerIds = ['0', '1', '2'];
         const random = createQueuedRandom([1]);
         const setupCore = betrayalEngineConfig.domain.setup(playerIds, random);
@@ -22207,32 +22478,49 @@ describe('GameTransportServer（离座与重连）', () => {
             ),
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 8000,
+            onlineAiFeedbackReporter: feedbackReporter,
         });
 
         const serverInternal = server as unknown as {
             loadMatch: (matchID: string) => Promise<any>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<any>;
         };
         await serverInternal.loadMatch('match-betrayal-immediate-online-ai-character-select');
-        const commandSucceeded = await server.executeCommand(
-            'match-betrayal-immediate-online-ai-character-select',
-            '0',
-            'SELECT_EXPLORER',
-            { explorerId: 'jaden-jones' },
-        );
-        expect(commandSucceeded).toBe(true);
+        const recoverySpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction');
 
-        const persisted = await storage.fetch('match-betrayal-immediate-online-ai-character-select', { state: true });
-        const core = (persisted.state?.G as any).core;
-        expect(core.phase).toBe('characterSelect');
-        expect(core.selectedExplorerByPlayerId['0']).toBe('jaden-jones');
-        expect(core.selectedExplorerByPlayerId['1']).toBeTruthy();
-        expect(core.selectedExplorerByPlayerId['2']).toBeTruthy();
-        expect(core.selectedExplorerByPlayerId['1']).not.toBe('jaden-jones');
-        expect(core.selectedExplorerByPlayerId['2']).not.toBe('jaden-jones');
-        expect(core.readyPlayerIds).toEqual(expect.arrayContaining(['1', '2']));
-        expect(core.readyPlayerIds).not.toContain('0');
-        expect(core.scenarioCardConfirmations['1']).toBe(core.proposedScenarioCardId);
-        expect(core.scenarioCardConfirmations['2']).toBe(core.proposedScenarioCardId);
+        try {
+            const commandSucceeded = await server.executeCommand(
+                'match-betrayal-immediate-online-ai-character-select',
+                '0',
+                'SELECT_EXPLORER',
+                { explorerId: 'jaden-jones' },
+            );
+            expect(commandSucceeded).toBe(true);
+
+            const persisted = await storage.fetch('match-betrayal-immediate-online-ai-character-select', { state: true });
+            const core = (persisted.state?.G as any).core;
+            expect(core.phase).toBe('characterSelect');
+            expect(core.selectedExplorerByPlayerId['0']).toBe('jaden-jones');
+            expect(core.selectedExplorerByPlayerId['1']).toBeTruthy();
+            expect(core.selectedExplorerByPlayerId['2']).toBeTruthy();
+            expect(core.selectedExplorerByPlayerId['1']).not.toBe('jaden-jones');
+            expect(core.selectedExplorerByPlayerId['2']).not.toBe('jaden-jones');
+            expect(core.readyPlayerIds).toEqual(expect.arrayContaining(['1', '2']));
+            expect(core.readyPlayerIds).not.toContain('0');
+            expect(core.scenarioCardConfirmations['1']).toBe(core.proposedScenarioCardId);
+            expect(core.scenarioCardConfirmations['2']).toBe(core.proposedScenarioCardId);
+            expect(recoverySpy).not.toHaveBeenCalled();
+            expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+                incidentKind: 'legal-action-recovered',
+            }));
+        } finally {
+            recoverySpy.mockRestore();
+        }
     });
 
     it('online AI watchdog 在 summonerwars 公开选阵营阶段也应代 AI 执行 legal action', async () => {

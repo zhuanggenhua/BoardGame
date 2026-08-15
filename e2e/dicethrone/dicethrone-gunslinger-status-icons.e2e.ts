@@ -209,14 +209,25 @@ const readBadgeImageSnapshot = async (page: Page, testId: string): Promise<Badge
 };
 
 const waitForBadgeImageFromAtlas = async (page: Page, testId: string, expectedPathPart: string) => {
-    await expect.poll(async () => {
-        const snapshot = await readBadgeImageSnapshot(page, testId).catch(() => null);
-        if (!snapshot) return false;
-        const source = snapshot.sourceUrl || snapshot.src;
-        return snapshot.naturalWidth > 0
-            && snapshot.naturalHeight > 0
-            && source.includes(expectedPathPart);
-    }, { timeout: 20000, intervals: [200, 400, 800] }).toBe(true);
+    try {
+        await expect.poll(async () => {
+            const snapshot = await readBadgeImageSnapshot(page, testId).catch(() => null);
+            if (!snapshot) return false;
+            const source = snapshot.sourceUrl || snapshot.src;
+            return snapshot.naturalWidth > 0
+                && snapshot.naturalHeight > 0
+                && source.includes(expectedPathPart);
+        }, { timeout: 20000, intervals: [200, 400, 800] }).toBe(true);
+    } catch (error) {
+        const snapshot = await readStatusTokenDebugSnapshot(page, '[data-tutorial-id="status-tokens"]').catch((snapshotError) => ({
+            snapshotError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError),
+        }));
+        const badgeSnapshot = await readBadgeImageSnapshot(page, testId).catch((snapshotError) => ({
+            snapshotError: snapshotError instanceof Error ? snapshotError.message : String(snapshotError),
+        }));
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`${message}\n目标徽章 ${testId} 快照:\n${JSON.stringify(badgeSnapshot, null, 2)}\n状态 token DOM 快照:\n${JSON.stringify(snapshot, null, 2)}`);
+    }
 };
 
 const readStatusTokenImageSources = async (page: Page, rootSelector: string): Promise<string[]> =>

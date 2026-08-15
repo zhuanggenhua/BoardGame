@@ -8,6 +8,7 @@ import {
     getAssetsBaseUrl,
     getLocalizedLocalAssetPath,
     getPreloadedImageElement,
+    getResolvedImageCandidateUrl,
     getRuntimeImageCandidateUrls,
     markImageCandidateFailed,
     markImageLoaded,
@@ -263,13 +264,24 @@ const resolveLoadedStatusCandidateUrl = (candidateUrls: string[]) => {
         if (loadedStatusImage?.renderUrl) {
             return candidateUrl;
         }
+    }
 
+    const resolvedUrl = getResolvedImageCandidateUrl(candidateUrls);
+    if (resolvedUrl) {
+        const normalizedResolvedUrl = normalizeComparableUrl(resolvedUrl);
+        const matched = normalizedCandidates.find((candidate) => candidate.normalized === normalizedResolvedUrl);
+        if (matched) {
+            return matched.candidateUrl;
+        }
+    }
+
+    for (const candidateUrl of candidateUrls) {
         const img = getPreloadedImageElement(candidateUrl);
         if (!hasUsableStatusImage(img)) {
             continue;
         }
 
-        for (const src of [img.currentSrc, img.src, candidateUrl]) {
+        for (const src of [img.currentSrc, img.src]) {
             const normalizedSrc = normalizeComparableUrl(src);
             if (!normalizedSrc) continue;
             const matched = normalizedCandidates.find((candidate) => candidate.normalized === normalizedSrc);
@@ -335,12 +347,19 @@ const loadSingleStatusImageCandidate = async (url: string): Promise<LoadedStatus
                 if (!blob.type.toLowerCase().startsWith('image/')) {
                     return null;
                 }
-                const result = {
-                    url,
-                    renderUrl: url,
-                };
-                statusImageLoadedResults.set(url, result);
-                return result;
+                if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+                    const objectUrl = URL.createObjectURL(blob);
+                    const img = await loadStatusImageElement(objectUrl, false);
+                    if (img) {
+                        const result = { url, renderUrl: objectUrl, img, objectUrl };
+                        statusImageLoadedResults.set(url, result);
+                        markImageLoaded(url, undefined, img, url);
+                        return result;
+                    }
+                    if (typeof URL.revokeObjectURL === 'function') {
+                        URL.revokeObjectURL(objectUrl);
+                    }
+                }
             }
         } catch {
             // Fall through to normal Image loading. Some environments do not support CORS fetch.
@@ -423,9 +442,14 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         },
         [effectiveLocale, sourcePath],
     );
+    const isStatusAtlasSource = !!sourcePath && /status-icons-atlas/i.test(sourcePath);
     const loadedCandidateUrl = React.useMemo(
         () => resolveLoadedStatusCandidateUrl(candidateUrls),
         [candidateUrls],
+    );
+    const hasLoadedStatusCandidate = !!(
+        loadedCandidateUrl
+        && statusImageLoadedResults.get(loadedCandidateUrl)?.renderUrl
     );
     const initialCandidateIndex = React.useMemo(() => {
         if (candidateUrls.length === 0) return -1;
@@ -455,7 +479,10 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
     }, [activeSourceUrl]);
 
     React.useEffect(() => {
-        if (!sourcePath || candidateUrls.length === 0 || loadedCandidateUrl) {
+        if (!sourcePath || candidateUrls.length === 0) {
+            return;
+        }
+        if (loadedCandidateUrl && (!isStatusAtlasSource || hasLoadedStatusCandidate)) {
             return;
         }
 
@@ -480,7 +507,7 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         return () => {
             cancelled = true;
         };
-    }, [candidateUrls, effectiveLocale, loadedCandidateUrl, sourcePath]);
+    }, [candidateUrls, effectiveLocale, hasLoadedStatusCandidate, isStatusAtlasSource, loadedCandidateUrl, sourcePath]);
 
     React.useEffect(() => {
         if (!sourcePath || candidateUrls.length === 0) {
@@ -491,6 +518,13 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
             if (!candidateUrls.includes(url)) {
                 return;
             }
+            if (isStatusAtlasSource) {
+                const loadedStatusImage = statusImageLoadedResults.get(url);
+                if (!loadedStatusImage?.renderUrl) {
+                    return;
+                }
+                setResolvedImage(loadedStatusImage);
+            }
             if (!hasUsableStatusImage(getPreloadedImageElement(url))) {
                 return;
             }
@@ -499,7 +533,7 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
                 setCandidateIndex(nextIndex);
             }
         });
-    }, [candidateUrls, sourcePath]);
+    }, [candidateUrls, isStatusAtlasSource, sourcePath]);
 
     const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
         if (!sourcePath) return;
@@ -511,7 +545,23 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         markImageLoaded(sourcePath, effectiveLocale, img, activeSourceUrl);
     };
 
-    const handleError = () => {
+    const advanceToNextCandidate = () => {
+        setCandidateIndex((currentIndex) => {
+            if (currentIndex !== candidateIndex) {
+                return currentIndex;
+            }
+            const nextIndex = currentIndex + 1;
+            return nextIndex < candidateUrls.length ? nextIndex : -1;
+        });
+    };
+
+    const handleError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+        const failedUrl = event.currentTarget.currentSrc || event.currentTarget.src || '';
+        const failedCandidateIndex = findCandidateIndex(candidateUrls, failedUrl);
+        if (failedCandidateIndex >= 0 && failedCandidateIndex !== candidateIndex) {
+            return;
+        }
+
         if (
             sourcePath
             && /status-icons-atlas/i.test(sourcePath)
@@ -552,18 +602,12 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
                     }
                     return;
                 }
-                setCandidateIndex((currentIndex) => {
-                    const nextIndex = currentIndex + 1;
-                    return nextIndex < candidateUrls.length ? nextIndex : -1;
-                });
+                advanceToNextCandidate();
             });
             return;
         }
 
-        setCandidateIndex((currentIndex) => {
-            const nextIndex = currentIndex + 1;
-            return nextIndex < candidateUrls.length ? nextIndex : -1;
-        });
+        advanceToNextCandidate();
     };
 
     return {

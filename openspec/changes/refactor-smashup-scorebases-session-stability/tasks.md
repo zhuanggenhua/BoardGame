@@ -11,7 +11,7 @@
 ## 1. 特征测试与迁移契约
 - [ ] 1.1 在改动旧链前补事务级特征测试：规则步骤单调、每个领域事件仅正式归约一次、暂停只由子 frame 表示
 - [x] 1.2 补 `BASE_CLEARED` 后才生成 `onMinionDiscardedFromBase` 的回归：First Mate 被移走时无弃牌触发；真实清场后抽牌/洗牌能看到新弃牌区
-- [ ] 1.3 补 reaction 候选合同：同一 builder 同时决定“是否可响应”和实际选项，覆盖 Me First / After Scoring / 基地限制
+- [x] 1.3 补 reaction 候选合同：同一 builder 同时决定“是否可响应”和实际选项，覆盖 Me First / After Scoring / 基地限制
 
 ## 2. 计分事务唯一权威
 - [ ] 2.1 将 SmashUp `scoring session` 收敛为 `smashup:score-bases` resolution frame 的完整规则步骤，明确当前基地、剩余基地、延迟动作与力量快照的唯一落点
@@ -28,6 +28,10 @@
 
 ## 3. Reaction 与表现解耦
 - [ ] 3.1 让 SmashUp reaction frame/session 成为唯一 responder 权威，移除 ResponseWindow 镜像、双向 pass 桥接和重复 guard
+- [x] 3.1a reaction presentation、AI 结束阶段与相对效用判断直接读取 live ReactionSession；镜像 responseWindow 丢失时不得把未完成反应误判为可结束阶段
+- [x] 3.1b 真人 UI 与 Smash Up AI 正常让过改走 `su:reaction_pass`；该请求只由 live optional ReactionSession 消费，通用 `RESPONSE_PASS` 仅保留为外部/恢复兼容 adapter
+- [x] 3.1c live ReactionSession 不再写入通用 ResponseWindow 镜像；reaction presentation 直接来自 live session，旧 `RESPONSE_PASS` bridge 仅作为 legacy/recovery 兼容入口保留
+- [x] 3.1d 正常规则回归测试不再用通用 `RESPONSE_PASS` 驱动 Me First / After Scoring live reaction；legacy / online transport / recovery 兼容测试保留
 - [x] 3.2a 删除 `buildPreviewStateWithPendingDomainEvents()`，interaction 后续反应只从正式归约状态继续
 - [x] 3.2b 删除 `mergePromptResultCoreWithPreEventState()`，handler 发出领域事件时不得再通过手工 core 合并避免双重归约
 - [x] 3.2c 删除 `postProcessSystemEvents()` 基于 `_ppseInputEventsReduced` 的 sys 隐藏轮次通道，改为 pipeline 显式参数
@@ -40,11 +44,11 @@
 - [x] 3.2j 清理 Marvel/Avengers 中可安全迁移的 prompt 续链投影：Ultimates Heroic Landing、Spider-Verse deck selection/order、Avengers Hulk Smash artifact → replacement
 - [x] 3.2k 扩展 ability runtime continuation 可注入 pipeline 当前随机源，并迁移 Marvel / Avengers / Marvel Villains 剩余 runtime 卡牌级投影：Cosmic Knowledge、Shield Rescue Mission、Hawkeye’s Arrows、Hawkeye、J.A.R.V.I.S.、Red Skull、Hail Hydra、Baron Strucker、Kree Prepare to Engage
 - [x] 3.2l 迁移剩余 Anansi / Russian Fairy Tales 手写 interaction 卡牌级投影；对 transformation / draw 后 prompt / destroy 后 search 等链路，先收敛到正式 continuation 或等价 frame，不机械删除
-- [ ] 3.3 移除 `_waitForPostScoringReduce`、`_waitForScoreBasesInteractionReduce`、`_waitForStartTurnInteractionReduce` 的规则续链职责
-- [ ] 3.4 把 post-scoring reveal 动画延迟迁到客户端事件表现层；领域 frame、AI recovery 与恢复逻辑不再读取视觉 deadline
+- [x] 3.3 移除 `_waitForPostScoringReduce`、`_waitForScoreBasesInteractionReduce`、`_waitForStartTurnInteractionReduce` 的规则续链职责
+- [x] 3.4 把 post-scoring reveal 动画延迟迁到客户端事件表现层；领域 frame、AI recovery 与恢复逻辑不再读取视觉 deadline
 
 ## 4. Validation
-- [ ] 4.1 运行事务特征测试及既有事故回归：`scoreBases-mefirst-window`、`base-tortuga-recovery`、`deferred-finalization`、`multi-base-chain-recovery`、`afterScoring-rescoring`、`beforeScoring-window-stuck`
-- [ ] 4.2 运行单基地、多基地、基地能力与随从触发、After Scoring 重算、延迟清场/换基地只触发一次的领域组合
-- [ ] 4.3 运行复杂端到端/近端到端链路，并在 evidence 或测试输出中证明多基地 + After Scoring + First Mate + response window 真实链路稳定
-- [ ] 4.4 运行 `npx eslint` 针对修改文件、必要时补 `npx tsc --noEmit`，并执行 `openspec validate refactor-smashup-scorebases-session-stability --strict --no-interactive`
+- [x] 4.1 运行事务特征测试及既有事故回归：`scoreBases-mefirst-window`、`base-tortuga-recovery`、`deferred-finalization`、`multi-base-chain-recovery`、`afterScoring-rescoring`、`beforeScoring-window-stuck`
+- [x] 4.2 运行单基地、多基地、基地能力与随从触发、After Scoring 重算、延迟清场/换基地只触发一次的领域组合
+- [x] 4.3 运行复杂端到端/近端到端链路，并在 evidence 或测试输出中证明多基地 + After Scoring + First Mate + response window 真实链路稳定
+- [x] 4.4 运行 `npx eslint` 针对修改文件、必要时补 `npx tsc --noEmit`，并执行 `openspec validate refactor-smashup-scorebases-session-stability --strict --no-interactive`

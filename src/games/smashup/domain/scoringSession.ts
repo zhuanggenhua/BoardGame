@@ -32,9 +32,17 @@ export type SerializedPostScoringEvent = {
 export type SmashUpScoringStep =
     | 'idle'
     | 'resolving-base'
+    | 'awaiting-before-scoring-reduce'
+    | 'awaiting-before-reaction-reduce'
+    | 'awaiting-before-response-window'
+    | 'awaiting-when-scoring-reduce'
+    | 'awaiting-when-reaction-reduce'
+    | 'awaiting-score-award-reduce'
+    | 'awaiting-after-scoring-reduce'
+    | 'awaiting-after-reaction-reduce'
     | 'awaiting-interactions'
     | 'awaiting-response-window'
-    | 'awaiting-post-scoring-delay'
+    | 'awaiting-post-scoring-finalize'
     | 'awaiting-post-reduce';
 
 export const SMASHUP_SCORE_BASES_FRAME_ID = 'smashup:score-bases';
@@ -209,9 +217,17 @@ export function isScoringSessionAwaitingDeferredResolution(
     if (!session?.currentBaseRef) {
         return false;
     }
-    return session.currentStep === 'awaiting-interactions'
+    return session.currentStep === 'awaiting-before-scoring-reduce'
+        || session.currentStep === 'awaiting-before-reaction-reduce'
+        || session.currentStep === 'awaiting-before-response-window'
+        || session.currentStep === 'awaiting-when-scoring-reduce'
+        || session.currentStep === 'awaiting-when-reaction-reduce'
+        || session.currentStep === 'awaiting-score-award-reduce'
+        || session.currentStep === 'awaiting-after-scoring-reduce'
+        || session.currentStep === 'awaiting-after-reaction-reduce'
+        || session.currentStep === 'awaiting-interactions'
         || session.currentStep === 'awaiting-response-window'
-        || session.currentStep === 'awaiting-post-scoring-delay';
+        || session.currentStep === 'awaiting-post-scoring-finalize';
 }
 
 export function getDeferredReplacementBaseDefId(
@@ -228,6 +244,12 @@ const DEFERRED_REPLACEMENT_BASE_DECK_REORDER_REASONS = new Set([
     'base_the_nexus',
     'time_travelers_time_is_fleeting',
 ]);
+
+function removeFirstBaseDefId(values: readonly string[], defId: string): string[] {
+    const index = values.indexOf(defId);
+    if (index < 0) return [...values];
+    return [...values.slice(0, index), ...values.slice(index + 1)];
+}
 
 export function getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents(
     events: readonly SmashUpEvent[],
@@ -258,15 +280,37 @@ export function replaceDeferredPostScoringReplacementBase(
 
     let changed = false;
     const previousReplacementBaseDefIds = new Set<string>();
-    const selectedBaseAlreadyMovedToDeck = state.core.baseDeck.includes(newBaseDefId);
+    const originalReplacementEvent = deferredEvents.find(event => event.type === SU_EVENT_TYPES.BASE_REPLACED);
+    const originalReplacementPayload = originalReplacementEvent?.payload as { oldBaseDefId?: unknown } | undefined;
+    const oldReplacementBaseDefId = typeof originalReplacementPayload?.oldBaseDefId === 'string'
+        ? originalReplacementPayload.oldBaseDefId
+        : undefined;
     const nextDeferredEvents = deferredEvents.flatMap((event) => {
         if (
-            selectedBaseAlreadyMovedToDeck
-            && event.type === SU_EVENT_TYPES.BASE_DECK_SHUFFLED
+            event.type === SU_EVENT_TYPES.BASE_DECK_SHUFFLED
             && (event.payload as { reason?: string } | undefined)?.reason === 'base_deck_empty_reshuffle_discard'
         ) {
+            const payload = event.payload as {
+                newBaseDeckDefIds?: unknown[];
+                reason?: string;
+                clearBaseDiscard?: boolean;
+                newBaseDiscardDefIds?: string[];
+            } | undefined;
+            const shuffledDeck = payload?.newBaseDeckDefIds?.filter((defId): defId is string => typeof defId === 'string') ?? [];
+            const remainingAfterSelected = removeFirstBaseDefId(shuffledDeck, newBaseDefId);
+            const hasPreExistingDiscardRemainder = remainingAfterSelected.some(defId => defId !== oldReplacementBaseDefId);
             changed = true;
-            return [];
+            if (!hasPreExistingDiscardRemainder) {
+                return [];
+            }
+            return [{
+                ...event,
+                payload: {
+                    ...payload,
+                    newBaseDeckDefIds: [newBaseDefId, ...remainingAfterSelected],
+                    clearBaseDiscard: true,
+                },
+            }];
         }
         if (event.type !== SU_EVENT_TYPES.BASE_REPLACED) {
             return [event];

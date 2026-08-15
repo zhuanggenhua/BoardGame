@@ -31,7 +31,6 @@ import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { buildBuryCardEvents } from '../domain/bury';
-import { reduce } from '../domain/reduce';
 import {
     createEffectProgram,
     createPromptProgram,
@@ -125,17 +124,6 @@ function getVampireSourceMinionDefId(
     sourceBaseIndex: number,
 ): string | undefined {
     return state.bases[sourceBaseIndex]?.minions.find((minion) => minion.uid === sourceMinionUid)?.defId;
-}
-
-function applyEventsToMatchState(
-    state: MatchState<SmashUpCore>,
-    events: SmashUpEvent[],
-): MatchState<SmashUpCore> {
-    if (events.length === 0) return state;
-    return {
-        ...state,
-        core: events.reduce((core, event) => reduce(core, event), state.core),
-    };
 }
 
 // ============================================================================
@@ -978,10 +966,9 @@ const vampireCullTheWeakChooseCardPromptProgram = createPromptProgram<VampireBas
             .length;
         if (remainingMinions <= 0) return { events };
 
-        const simulatedState = applyEventsToMatchState(state, events);
         return {
             events,
-            context: createVampirePromptContext(simulatedState, context.playerId, timestamp, {
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
                 minionUid: context.minionUid,
                 baseIndex: context.baseIndex,
             }),

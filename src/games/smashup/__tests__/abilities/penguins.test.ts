@@ -28,7 +28,6 @@ import {
     respondToPrompt,
     respondToPromptOption,
     respondToPromptOptions,
-    triggerBaseAbilityWithMS,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 import type { RandomFn } from '../../../../engine/types';
@@ -70,6 +69,17 @@ beforeEach(() => {
     resetAbilityInit();
     initAllAbilities();
 });
+
+function resolveReactionBySourceDefId(state: any, sourceDefId: string) {
+    const triggersById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+    return respondToPromptOption(
+        state,
+        option => triggersById.get(option.value?.triggerId)?.sourceDefId === sourceDefId,
+        sourceDefId,
+        '0',
+        defaultTestRandom,
+    );
+}
 
 describe('企鹅派系能力', () => {
     it('冲浪企鹅可移动这里的己方伙伴到另一个合法基地，并支持跳过敌方目标', () => {
@@ -792,65 +802,54 @@ describe('企鹅派系能力', () => {
         const core = penguinCore({
             players: {
                 '0': makePlayer('0', {
-                    minionsPlayedPerBase: { 0: 1 },
+                    hand: [makeCard('first', 'penguins_snazzy_penguin', 'minion', '0')],
                     deck: [makeCard('top', 'penguins_baby_penguin', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase('base_the_colony', [
-                makeMinion('first', 'penguins_surfing_penguin', '0', 3),
-            ])],
+            bases: [makeBase('base_the_colony')],
         });
 
-        const result = triggerBaseAbilityWithMS('base_the_colony', 'onMinionPlayed', {
-            state: core,
-            matchState: makeMatchState(core),
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            baseIndex: 0,
-            baseDefId: 'base_the_colony',
-            minionUid: 'first',
-            minionDefId: 'penguins_surfing_penguin',
-            minionPower: 3,
-            random: defaultTestRandom,
-            now: 90,
-        });
-        const finalCore = applyEvents(core, result.events);
+            payload: { cardUid: 'first', baseIndex: 0 },
+        } as any);
+        const colonyResolved = resolveReactionBySourceDefId(result.finalState, 'base_the_colony');
 
-        expect(finalCore.bases[0].minions.map(minion => minion.uid)).toEqual(['first', 'top']);
-        expect(finalCore.players['0'].deck).toEqual([]);
+        expect(result.success, result.error).toBe(true);
+        expect(colonyResolved.success, colonyResolved.error).toBe(true);
+        expect(colonyResolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first', 'top']);
+        expect(colonyResolved.finalState.core.players['0'].deck).toEqual([]);
     });
 
     it('企鹅殖民地额外打出的企鹅宝宝会继续打开宝宝的手牌额外打出交互', () => {
         const core = penguinCore({
             players: {
                 '0': makePlayer('0', {
-                    minionsPlayedPerBase: { 0: 1 },
-                    hand: [makeCard('hand-helper', 'penguins_baby_penguin', 'minion', '0')],
+                    hand: [
+                        makeCard('first', 'penguins_snazzy_penguin', 'minion', '0'),
+                        makeCard('hand-helper', 'penguins_baby_penguin', 'minion', '0'),
+                    ],
                     deck: [makeCard('top-baby', 'penguins_baby_penguin', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase('base_the_colony', [
-                makeMinion('first', 'penguins_surfing_penguin', '0', 3),
-            ])],
+            bases: [makeBase('base_the_colony')],
         });
 
-        const result = triggerBaseAbilityWithMS('base_the_colony', 'onMinionPlayed', {
-            state: core,
-            matchState: makeMatchState(core),
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            baseIndex: 0,
-            baseDefId: 'base_the_colony',
-            minionUid: 'first',
-            minionDefId: 'penguins_surfing_penguin',
-            minionPower: 3,
-            random: defaultTestRandom,
-            now: 91,
-        });
+            payload: { cardUid: 'first', baseIndex: 0 },
+        } as any);
+        const colonyResolved = resolveReactionBySourceDefId(result.finalState, 'base_the_colony');
 
-        const babyPrompt = getSimpleChoicePrompt(result.matchState!, 'penguins_baby_penguin');
+        expect(result.success, result.error).toBe(true);
+        expect(colonyResolved.success, colonyResolved.error).toBe(true);
+        const babyPrompt = getSimpleChoicePrompt(colonyResolved.finalState, 'penguins_baby_penguin');
         const handHelper = getPromptOption(babyPrompt, option => option.value?.cardUid === 'hand-helper', '企鹅宝宝手牌伙伴');
-        const resolved = respondToPrompt(result.matchState!, handHelper.id, '0');
+        const resolved = respondToPrompt(colonyResolved.finalState, handHelper.id, '0');
 
         expect(resolved.success, resolved.error).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first', 'top-baby', 'hand-helper']);
@@ -863,7 +862,7 @@ describe('企鹅派系能力', () => {
         const core = penguinCore({
             players: {
                 '0': makePlayer('0', {
-                    minionsPlayedPerBase: { 0: 1 },
+                    hand: [makeCard('first', 'penguins_snazzy_penguin', 'minion', '0')],
                     deck: [
                         makeCard('top-snazzy', 'penguins_snazzy_penguin', 'minion', '0'),
                         makeCard('draw-1', 'penguins_secret_mission', 'action', '0'),
@@ -872,28 +871,21 @@ describe('企鹅派系能力', () => {
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase('base_the_colony', [
-                makeMinion('first', 'penguins_surfing_penguin', '0', 3),
-            ])],
+            bases: [makeBase('base_the_colony')],
         });
 
-        const result = triggerBaseAbilityWithMS('base_the_colony', 'onMinionPlayed', {
-            state: core,
-            matchState: makeMatchState(core),
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            baseIndex: 0,
-            baseDefId: 'base_the_colony',
-            minionUid: 'first',
-            minionDefId: 'penguins_surfing_penguin',
-            minionPower: 3,
-            random: defaultTestRandom,
-            now: 92,
-        });
-        const finalCore = applyEvents(core, result.events);
+            payload: { cardUid: 'first', baseIndex: 0 },
+        } as any);
+        const colonyResolved = resolveReactionBySourceDefId(result.finalState, 'base_the_colony');
 
-        expect(finalCore.bases[0].minions.map(minion => minion.uid)).toEqual(['first', 'top-snazzy']);
-        expect(finalCore.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
-        expect(finalCore.players['0'].deck).toEqual([]);
+        expect(result.success, result.error).toBe(true);
+        expect(colonyResolved.success, colonyResolved.error).toBe(true);
+        expect(colonyResolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first', 'top-snazzy']);
+        expect(colonyResolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
+        expect(colonyResolved.finalState.core.players['0'].deck).toEqual([]);
     });
 
     it('冰滑道会在计分后为从这里进入弃牌堆的己方伙伴抽牌', () => {

@@ -33,10 +33,12 @@ export function startLocalAiAutomationEffect(args: {
     scheduleRetry: () => void;
     onVisibleActionAt: (timestamp: number) => void;
     idleRetryMs: number;
+    automationDisabled?: boolean;
 }): () => void {
     const blockReason = resolveLocalAiAutomationBlockReason({
         seatControllers: args.seatControllers,
         localPregameControlledPlayerId: args.localPregameControlledPlayerId,
+        automationDisabled: args.automationDisabled,
     });
     if (blockReason) {
         resetLocalAiTransientState({

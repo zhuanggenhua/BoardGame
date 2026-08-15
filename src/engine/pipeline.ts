@@ -341,6 +341,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
     for (let round = 0; round < maxRounds; round++) {
         ctx.afterEventsRound = round;
+        ctx.pendingAfterEventsToReduceCount = 0;
         let hasNewEvents = false;
         let hasStateChange = false;
         const roundEvents: GameEvent[] = [];
@@ -350,6 +351,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
         // 调用每个系统的 afterEvents hook
         for (const system of systems) {
             if (!system.afterEvents) continue;
+            ctx.pendingAfterEventsToReduceCount = roundEvents.length;
             
             const result = system.afterEvents(ctx);
             if (!result) continue;
@@ -427,6 +429,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
         // 这样可以在阶段自动推进之前捕获胜利条件（如 end 阶段的印戒胜利）
         currentState = applyGameoverCheck(currentState);
         ctx.state = currentState;
+        ctx.pendingAfterEventsToReduceCount = 0;
 
         if (!hasNewEvents && !hasStateChange) break;
 

@@ -1,23 +1,7 @@
 # 音频资源使用参考
 
 > 本文只承载 BoardGame 音频资源的目录、生成命令、查找/试听、BGM 分配和项目接入参考。
-> 跨游戏运行时架构、共享音频包路径和音效触发时机主源是 `.spec/knowledge/standards/audio-assets.md`；执行型 workflow 走项目 skill：`.spec/skills/audio-integration/SKILL.md`。
-> 如果任务是“对接音效 / 查匹配 key / 新增素材 / 补预加载 / 做试听收口”，先走该 skill，再回到本文查具体命令、目录和示例。
-
-## 0. 文档分工
-
-- `.spec/skills/audio-integration/SKILL.md`
-  承担执行步骤、查找链路、汇报模板、/dev/audio 收口动作
-- `docs/audio/add-audio.md`
-  承担新增外部音频素材的目录、命名、产物和示例
-- `docs/audio/audio-catalog.md`
-  承担语义目录检索入口
-- `docs/audio/registry.ai.json`
-  承担 AI 精简检索入口
-- `public/assets/common/audio/registry.json`
-  承担运行时完整注册表
-- `.spec/knowledge/standards/audio-assets.md`
-  承担跨游戏运行时架构、共享包路径和音效触发时机主合同
+> 跨游戏运行时架构、共享音频包路径和音效触发时机以 `.spec/knowledge/standards/audio-assets.md` 为准；本文只提供命令、目录和示例。
 
 ## 1. 运行时架构合同入口
 
@@ -261,7 +245,7 @@ Android 已安装包、共享音频包和 `common-audio` 的相对路径合同�
 - [ ] 若交付的是候选矩阵，已明确它是否跨族群
 - [ ] BGM 已做跨游戏重复检查；若重复，已写明例外理由
 - [ ] 新增素材时已按 `docs/audio/add-audio.md` 生成产物
-- [ ] 音效对接时已按 `audio-integration` skill 留查询证据和汇报
+- [ ] 音效对接时已留查询证据和汇报
 - [ ] 运行时失败已提供可见反馈，不能只留控制台日志或静默 `return null`
 - [ ] 若删了旧候选来源，已同步补新接线或新候选矩阵
 - [ ] 若用户要中文搜索，`public` 与 `src` 两份 phrase mapping 都已补齐

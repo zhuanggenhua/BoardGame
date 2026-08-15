@@ -468,6 +468,54 @@ describe('极客派系隐藏实现批', () => {
         expect(returned.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1']);
     });
 
+    it('无限循环额外打出的行动若被反制，不应结算该行动或弹出回手提示', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('loop-1', 'geeks_non_infinite_loop', 'action', '0'),
+                        makeCard('justice-1', 'superheroes_justice_friends', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('force-1', 'geeks_force_of_wil', 'action', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [makeBase('base_a', [
+                makeMinion('dragon-1', 'dragons_imperial_dragon', '0', 5),
+            ])],
+        }));
+
+        const played = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'loop-1' },
+        });
+
+        const loopCounterPrompt = getSimpleChoicePrompt(played.finalState, 'smashup_action_counter_choose');
+        const afterLoopPass = respondToPrompt(played.finalState, 'pass', '1', fixedRandom as any);
+
+        const actionPrompt = getSimpleChoicePrompt(afterLoopPass.finalState, 'geeks_non_infinite_loop_action');
+        const justiceOption = actionPrompt.options.find((option: any) => option.value?.cardUid === 'justice-1');
+        expect(justiceOption).toBeTruthy();
+
+        expect(loopCounterPrompt).toBeTruthy();
+        const afterActionChoice = respondToPrompt(afterLoopPass.finalState, justiceOption.id, '0', fixedRandom as any);
+        const counterPrompt = getSimpleChoicePrompt(afterActionChoice.finalState, 'smashup_action_counter_choose');
+        const forceOption = counterPrompt.options.find((option: any) => option.value?.cardUid === 'force-1');
+        expect(forceOption).toBeTruthy();
+
+        const countered = respondToPrompt(afterActionChoice.finalState, forceOption.id, '1', fixedRandom as any);
+        const dragon = countered.finalState.core.bases[0].minions.find((minion) => minion.uid === 'dragon-1')!;
+
+        expect(getEffectivePower(countered.finalState.core, dragon, 0)).toBe(5);
+        expect(getPromptsBySourceId(countered.finalState, 'geeks_non_infinite_loop_return')).toHaveLength(0);
+        expect(countered.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1', 'justice-1']);
+        expect(countered.finalState.core.players['1'].discard.map((card) => card.uid)).toEqual(['force-1']);
+    });
+
     it('无限循环打出会自己创建 prompt 的标准行动时，会先完成该行动交互再出现回手提示', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 0,

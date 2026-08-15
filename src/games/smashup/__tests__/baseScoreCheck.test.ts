@@ -1,19 +1,15 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import { SmashUpDomain } from '../domain';
-import { smashUpFlowHooks } from '../domain/index';
-import { createFlowSystem, createBaseSystems } from '../../../engine';
 import type { SmashUpCore, SmashUpCommand } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
+import { smashUpSystemsForTest } from '../game';
 
 const PLAYER_IDS = ['0', '1'];
-const systems = [
-    createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-    ...createBaseSystems<SmashUpCore>(),
-];
+const systems = smashUpSystemsForTest;
 const rng: RandomFn = {
     random: () => 0.5,
     d: (max: number) => Math.ceil(max / 2),
@@ -52,9 +48,7 @@ describe('baseScoreCheck', () => {
         sys.phase = 'playCards';
         const state: MatchState<SmashUpCore> = { core, sys };
 
-        // Step 1: ADVANCE_PHASE from playCards → scoreBases
-        // 这会打开 Me First! 响应窗口
-        let current = executePipeline(
+        const result = executePipeline(
             { domain: SmashUpDomain, systems },
             state,
             { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 1 } as unknown as SmashUpCommand,
@@ -62,25 +56,7 @@ describe('baseScoreCheck', () => {
             PLAYER_IDS,
         );
 
-        // Step 2: 两位玩家都 PASS Me First! 响应窗口
-        current = executePipeline(
-            { domain: SmashUpDomain, systems },
-            current.state,
-            { type: 'RESPONSE_PASS', playerId: '0', payload: undefined, timestamp: 2 } as unknown as SmashUpCommand,
-            rng,
-            PLAYER_IDS,
-        );
-
-        current = executePipeline(
-            { domain: SmashUpDomain, systems },
-            current.state,
-            { type: 'RESPONSE_PASS', playerId: '1', payload: undefined, timestamp: 3 } as unknown as SmashUpCommand,
-            rng,
-            PLAYER_IDS,
-        );
-
-        const result = current;
-
+        expect(result.state.sys.responseWindow?.current).toBeUndefined();
         const entries = getEventStreamEntries(result.state);
         const scored = entries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
 

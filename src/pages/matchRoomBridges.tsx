@@ -7,6 +7,7 @@ import type { OnlineAiDebugWindow } from './onlineAiRuntimeSupport';
 
 export type MatchRoomSeatValidationSnapshot = {
     players: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+    revision?: number;
     transportReady: boolean;
     lastConfirmedAt: number | null;
 };
@@ -90,8 +91,25 @@ export const OnlineSeatValidationBridge = ({
     onSnapshotChange,
 }: OnlineSeatValidationBridgeProps) => {
     const { matchPlayers, isConnected } = useGameClient();
+    const observationRef = useRef<{
+        isConnected: boolean | null;
+        matchPlayers: typeof matchPlayers | null;
+        revision: number;
+    }>({
+        isConnected: null,
+        matchPlayers: null,
+        revision: 0,
+    });
 
     useEffect(() => {
+        const observation = observationRef.current;
+        if (observation.isConnected === isConnected && observation.matchPlayers === matchPlayers) {
+            return;
+        }
+        observation.isConnected = isConnected;
+        observation.matchPlayers = matchPlayers;
+        observation.revision += 1;
+
         const transportReady = isConnected && matchPlayers.length > 0;
         onSnapshotChange({
             players: matchPlayers.map((player) => ({
@@ -99,6 +117,7 @@ export const OnlineSeatValidationBridge = ({
                 name: player.name,
                 isConnected: player.isConnected,
             })),
+            revision: observation.revision,
             transportReady,
             lastConfirmedAt: transportReady ? Date.now() : null,
         });
