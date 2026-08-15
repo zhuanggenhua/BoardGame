@@ -5552,7 +5552,7 @@ function BetrayalHouseDice3DGroup({
         data-dice-boundary-highlight="runtime-visible"
         className="pointer-events-none absolute inset-[10px] z-30 rounded-[28px]"
         style={{
-          background: "none",
+          backgroundImage: "none",
           border: "0",
           boxShadow: "none",
         }}
