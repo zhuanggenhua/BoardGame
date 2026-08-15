@@ -11,8 +11,11 @@ import {
 } from '../abilities/ongoing_modifiers';
 import {
     applyEvents,
+    expectNoPrompt,
     findInteractionOption,
     getFirstPrompt,
+    getOptionalSimpleChoicePrompt,
+    getPromptOption,
     getPromptSourceId,
     getPromptOptions,
     getSimpleChoicePrompt,
@@ -21,6 +24,7 @@ import {
     makeMatchState,
     makeMinion,
     makePlayer,
+    respondToPrompt,
     resolveInteractionChain,
     scoreBaseViaFlow,
     triggerBaseAbilityWithMS,
@@ -66,15 +70,10 @@ describe('yuanhou 四派系代表性玩法行为', () => {
     };
 
     const skipImmediateExtraMinionPrompt = (state: any) => {
-        const prompt = state.sys.interaction.current;
-        if (prompt?.data?.sourceId !== 'smashup_immediate_extra_minion') return state;
-        const skip = findInteractionOption(prompt, candidate => candidate.value?.skip === true);
-        expect(skip).toBeTruthy();
-        const skipped = runCommand(state, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: prompt.playerId,
-            payload: { optionId: skip.id },
-        } as any);
+        const prompt = getOptionalSimpleChoicePrompt(state, 'smashup_immediate_extra_minion');
+        if (!prompt) return state;
+        const skip = getPromptOption(prompt, candidate => candidate.value?.skip === true, 'immediate extra minion skip option');
+        const skipped = respondToPrompt(state, skip.id, prompt.playerId);
         expect(skipped.success).toBe(true);
         return skipped.finalState;
     };
@@ -98,7 +97,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
     };
 
     const isBaseClearedMinionDiscardedReactionPrompt = (prompt: any) => (
-        prompt?.data?.sourceId === 'smashup_reaction_choose'
+        getPromptSourceId(prompt) === 'smashup_reaction_choose'
         && (
             prompt.resolutionFrameId?.startsWith('base-cleared-minion-discarded-frame:')
             || prompt.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')
@@ -106,20 +105,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         )
     );
 
-    const resolveBaseClearedMinionDiscardedPromptIfPresent = (
-        state: any,
-        timestamp = 1001,
-    ) => {
-        const prompt = state.sys.interaction.current;
+    const resolveBaseClearedMinionDiscardedPromptIfPresent = (state: any) => {
+        const prompt = getFirstPrompt(state);
         if (!isBaseClearedMinionDiscardedReactionPrompt(prompt)) return state;
-        const triggerOption = findInteractionOption(prompt, candidate => candidate.value?.kind === 'trigger');
-        expect(triggerOption).toBeTruthy();
-        const resolved = runCommand(state, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: prompt.playerId,
-            payload: { optionId: triggerOption.id },
-            timestamp,
-        } as any);
+        const triggerOption = getPromptOption(prompt, candidate => candidate.value?.kind === 'trigger', 'base cleared minion discarded trigger option');
+        const resolved = respondToPrompt(state, triggerOption.id, prompt.playerId);
         expect(resolved.success).toBe(true);
         return resolved.finalState;
     };
@@ -8665,7 +8655,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(advance.success).toBe(true);
-        expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(getSimpleChoicePrompt(advance.finalState, 'smashup_reaction_choose')).toBeDefined();
 
         const resolved = resolveInteractionChain(advance.finalState, (prompt, state) => {
             expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
@@ -8717,7 +8707,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(advance.success).toBe(true);
-        expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(getSimpleChoicePrompt(advance.finalState, 'smashup_reaction_choose')).toBeDefined();
 
         const resolved = resolveInteractionChain(advance.finalState, (prompt, state) => {
             expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
@@ -12096,7 +12086,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         let reactionState = advance.finalState;
         let reactionPrompt = reactionState.sys.interaction.current!;
         expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
-        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState, 1001);
+        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState);
         if (reactionState !== advance.finalState) {
             reactionPrompt = reactionState.sys.interaction.current!;
             expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
@@ -12141,8 +12131,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState, 1004);
-        expect(afterDiscardTrigger.sys.interaction.current).toBeUndefined();
+        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState);
+        expectNoPrompt(afterDiscardTrigger);
         expect(afterDiscardTrigger.sys.responseWindow?.current).toBeUndefined();
         const afterNestedPass = finalizePostScoringIfNeeded(afterDiscardTrigger, '0');
         expect(afterNestedPass.finalState.core.triggerQueue?.some(trigger => trigger.sourceDefId === 'base_portal_room') === true).toBe(false);
@@ -12189,7 +12179,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         let reactionState = advance.finalState;
         let reactionPrompt = reactionState.sys.interaction.current!;
-        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState, 1001);
+        reactionState = resolveBaseClearedMinionDiscardedPromptIfPresent(reactionState);
         if (reactionState !== advance.finalState) {
             reactionPrompt = reactionState.sys.interaction.current!;
             expect(reactionPrompt.data.sourceId).toBe('smashup_reaction_choose');
@@ -12232,8 +12222,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState, 1004);
-        expect(afterDiscardTrigger.sys.interaction.current).toBeUndefined();
+        const afterDiscardTrigger = resolveBaseClearedMinionDiscardedPromptIfPresent(passPortalRoom.finalState);
+        expectNoPrompt(afterDiscardTrigger);
         expect(afterDiscardTrigger.sys.responseWindow?.current).toBeUndefined();
         const afterNestedPass = finalizePostScoringIfNeeded(afterDiscardTrigger, '0');
         expect(afterNestedPass.finalState.core.bases[0].defId).toBe('base_faceless_city');
