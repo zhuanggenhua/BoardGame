@@ -56,6 +56,8 @@ type AssetPickerState = {
   commitRawValue: (rawValue: string) => void;
 };
 
+type BetrayalConfigTranslate = ReturnType<typeof useTranslation>['t'];
+
 const ASSET_VARIANT_ORDER = ['png', 'jpg', 'jpeg', 'webp'] as const;
 const betrayalManifestFiles = (betrayalAssetManifest as BetrayalAssetManifest).files ?? {};
 
@@ -303,6 +305,7 @@ function ExplorerAssetPreview({
   locale,
   panelAsset,
   tokenAsset,
+  t,
   onSelectPanel,
   onSelectToken,
 }: {
@@ -310,6 +313,7 @@ function ExplorerAssetPreview({
   locale: string;
   panelAsset: string;
   tokenAsset: string;
+  t: BetrayalConfigTranslate;
   onSelectPanel: () => void;
   onSelectToken: () => void;
 }) {
@@ -331,8 +335,8 @@ function ExplorerAssetPreview({
       <button
         type="button"
         className="group relative overflow-hidden rounded-[6px] border border-[#5a3720]/35 bg-[#1d130c] text-left outline-none transition hover:ring-2 hover:ring-[#c08a45] focus-visible:ring-2 focus-visible:ring-[#c08a45]"
-        title={`选择玩家面板资源：${panelAsset}`}
-        aria-label={`选择 ${row.displayName} 玩家面板资源`}
+        title={t('configReview.assets.selectPanelTitle', { asset: panelAsset })}
+        aria-label={t('configReview.assets.selectPanelAria', { explorer: row.displayName })}
         data-testid="betrayal-config-explorer-asset-panel-button"
         onClick={onSelectPanel}
       >
@@ -340,20 +344,20 @@ function ExplorerAssetPreview({
           <OptimizedImage
             src={panelAsset}
             locale={locale}
-            alt={`${row.displayName} 玩家面板资源`}
+            alt={t('configReview.assets.panelAlt', { explorer: row.displayName })}
             draggable={false}
             className="h-full w-full object-contain"
           />
         ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
         <span className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/55 px-1 py-0.5 text-center text-[9px] font-bold text-[#f6deb4]">
-          面板
+          {t('configReview.assets.panelShortLabel')}
         </span>
       </button>
       <button
         type="button"
         className="group relative overflow-hidden rounded-[6px] border border-[#5a3720]/35 bg-[#1d130c] text-left outline-none transition hover:ring-2 hover:ring-[#c08a45] focus-visible:ring-2 focus-visible:ring-[#c08a45]"
-        title={`选择地图 Token：${tokenAsset}`}
-        aria-label={`选择 ${row.displayName} 地图 Token`}
+        title={t('configReview.assets.selectTokenTitle', { asset: tokenAsset })}
+        aria-label={t('configReview.assets.selectTokenAria', { explorer: row.displayName })}
         data-testid="betrayal-config-explorer-asset-token-button"
         onClick={onSelectToken}
       >
@@ -361,13 +365,13 @@ function ExplorerAssetPreview({
           <OptimizedImage
             src={tokenAsset}
             locale={locale}
-            alt={`${row.displayName} 地图角色 token`}
+            alt={t('configReview.assets.tokenAlt', { explorer: row.displayName })}
             draggable={false}
             className="h-full w-full object-contain"
           />
         ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
         <span className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/55 px-1 py-0.5 text-center text-[9px] font-bold text-[#f6deb4]">
-          Token
+          {t('configReview.assets.tokenShortLabel')}
         </span>
       </button>
     </div>
@@ -381,6 +385,7 @@ function AssetPickerFieldCell({
   value,
   displayValue,
   locale,
+  t,
   onOpen,
 }: {
   row: BetrayalConfigReviewRow;
@@ -389,14 +394,16 @@ function AssetPickerFieldCell({
   value: string;
   displayValue: string;
   locale: string;
+  t: BetrayalConfigTranslate;
   onOpen: () => void;
 }) {
+  const assetPathSuffix = value ? t('configReview.assets.assetPathSuffix', { asset: value }) : '';
   return (
     <button
       type="button"
       className="group flex min-h-[42px] w-full items-center gap-2 rounded-[5px] px-1.5 py-1 text-left text-[11px] font-semibold text-[#3f2718] transition hover:bg-[#efe0bd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/25"
-      title={`点击选择${fieldLabel}：${displayValue}${value ? `；素材路径：${value}` : ''}`}
-      aria-label={`选择 ${row.displayName} ${fieldLabel}`}
+      title={t('configReview.assets.pickerCellTitle', { label: fieldLabel, displayValue, assetPath: assetPathSuffix })}
+      aria-label={t('configReview.assets.pickerCellAria', { explorer: row.displayName, label: fieldLabel })}
       data-testid={`betrayal-config-asset-picker-cell-${fieldKey}`}
       data-asset={value}
       data-display-value={displayValue}
@@ -407,14 +414,14 @@ function AssetPickerFieldCell({
           <OptimizedImage
             src={value}
             locale={locale}
-            alt={`${row.displayName} ${fieldLabel}`}
+            alt={t('configReview.assets.pickerCellAlt', { explorer: row.displayName, label: fieldLabel })}
             draggable={false}
             className="h-full w-full object-contain"
           />
         ) : <ImageOff aria-hidden="true" className="m-auto h-4 w-4 text-[#8f6642]" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[10px] font-bold text-[#7b5a40]">{fieldLabel} · 点击选择候选</span>
+        <span className="block text-[10px] font-bold text-[#7b5a40]">{t('configReview.assets.pickerCellLabel', { label: fieldLabel })}</span>
         <span className="block break-words">{displayValue}</span>
       </span>
     </button>
@@ -424,17 +431,19 @@ function AssetPickerFieldCell({
 function AssetTraceCell({
   rawValue,
   displayValue,
+  t,
 }: {
   rawValue: string;
   displayValue: string;
+  t: BetrayalConfigTranslate;
 }) {
   return (
     <span
       className="block min-h-[34px] rounded-[5px] px-1.5 py-1 text-[11px] font-semibold leading-4 text-[#3f2718]"
-      title={rawValue || '未配置'}
+      title={rawValue || t('configReview.assets.unconfigured')}
       data-asset={rawValue}
     >
-      <span className="block text-[10px] font-bold text-[#7b5a40]">技术追踪</span>
+      <span className="block text-[10px] font-bold text-[#7b5a40]">{t('configReview.assets.traceLabel')}</span>
       <span className="block break-words">{displayValue}</span>
     </span>
   );
@@ -443,10 +452,12 @@ function AssetTraceCell({
 function AssetPickerOverlay({
   picker,
   locale,
+  t,
   onClose,
 }: {
   picker: AssetPickerState | null;
   locale: string;
+  t: BetrayalConfigTranslate;
   onClose: () => void;
 }) {
   if (!picker) return null;
@@ -463,7 +474,7 @@ function AssetPickerOverlay({
         <div className="flex items-start justify-between gap-4 border-b border-[#8f6642]/35 bg-[#3f2718] px-4 py-3 text-[#f3e3c3]">
           <div>
             <div className="text-lg font-bold" data-testid="betrayal-config-asset-picker-title">
-              为 {picker.rowDisplayName} 选择{picker.fieldLabel}
+              {t('configReview.assets.overlayTitle', { explorer: picker.rowDisplayName, label: picker.fieldLabel })}
             </div>
             <div className="mt-2 flex min-h-[34px] items-center gap-2 text-xs text-[#d9bd8c]">
               {picker.currentValue ? (
@@ -471,21 +482,23 @@ function AssetPickerOverlay({
                   <OptimizedImage
                     src={picker.currentValue}
                     locale={locale}
-                    alt={`当前${picker.fieldLabel} ${currentDisplayName}`}
+                    alt={t('configReview.assets.currentAssetAlt', { label: picker.fieldLabel, displayName: currentDisplayName })}
                     draggable={false}
                     className="h-full w-full object-contain"
                   />
                 </span>
               ) : null}
               <span className="font-bold text-[#fff1cf]">
-                {isTokenPicker ? '当前 Token' : `当前选择：${currentDisplayName}`}
+                {isTokenPicker
+                  ? t('configReview.assets.currentToken')
+                  : t('configReview.assets.currentSelection', { displayName: currentDisplayName })}
               </span>
             </div>
           </div>
           <button
             type="button"
             className="rounded-full p-2 text-[#f3e3c3]/70 transition hover:bg-white/10 hover:text-[#fff7df] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3e3c3]/45"
-            aria-label="关闭候选列表"
+            aria-label={t('configReview.assets.closePicker')}
             data-testid="betrayal-config-asset-picker-close"
             onClick={onClose}
           >
@@ -493,7 +506,7 @@ function AssetPickerOverlay({
           </button>
         </div>
         <div className="border-b border-[#8f6642]/20 bg-[#fff1cf] px-4 py-2 text-xs font-semibold text-[#5e3d27]">
-          {isTokenPicker ? '点击正确 Token 图；提交前只是草稿。' : '候选来自正式素材索引；选择后只写入待提交修正，不会直接改正式源。'}
+          {isTokenPicker ? t('configReview.assets.tokenPickerHint') : t('configReview.assets.assetPickerHint')}
         </div>
         <div
           className={[
@@ -516,8 +529,8 @@ function AssetPickerOverlay({
                     : 'flex min-h-[164px] flex-col gap-2 rounded-[8px] border bg-[#fff8e6] p-2 text-left shadow-sm transition hover:border-[#9d6a35] hover:bg-[#fff1cf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/35',
                   isSelected ? 'border-[#5f351a] ring-2 ring-[#5f351a]/25' : 'border-[#8f6642]/28',
                 ].join(' ')}
-                title={`候选：${candidate.label}；素材路径：${candidate.asset}；源图：${candidate.sourceFile}`}
-                aria-label={`选择${picker.fieldLabel} ${candidate.label}`}
+                title={t('configReview.assets.candidateTitle', { label: candidate.label, asset: candidate.asset, sourceFile: candidate.sourceFile })}
+                aria-label={t('configReview.assets.candidateAria', { fieldLabel: picker.fieldLabel, label: candidate.label })}
                 data-testid="betrayal-config-asset-picker-option"
                 data-asset={candidate.asset}
                 data-source-file={candidate.sourceFile}
@@ -533,7 +546,7 @@ function AssetPickerOverlay({
                   <OptimizedImage
                     src={candidate.asset}
                     locale={locale}
-                    alt={`${picker.fieldLabel}候选 ${candidate.label}`}
+                    alt={t('configReview.assets.candidateAlt', { fieldLabel: picker.fieldLabel, label: candidate.label })}
                     draggable={false}
                     className="h-full w-full object-contain"
                   />
@@ -541,12 +554,12 @@ function AssetPickerOverlay({
                 {!isTokenPicker ? (
                   <>
                     <span className="text-xs font-bold text-[#3f2718]">{candidate.label}</span>
-                    {isSelected ? <span className="mt-auto rounded-[4px] bg-[#5f351a] px-2 py-1 text-center text-[10px] font-bold text-[#fff4d5]">当前选择</span> : null}
+                    {isSelected ? <span className="mt-auto rounded-[4px] bg-[#5f351a] px-2 py-1 text-center text-[10px] font-bold text-[#fff4d5]">{t('configReview.assets.currentSelectionBadge')}</span> : null}
                   </>
                 ) : null}
                 {isTokenPicker && isSelected ? (
                   <span className="pointer-events-none absolute bottom-1 left-1 right-1 rounded-[4px] bg-[#5f351a]/92 px-1 py-0.5 text-center text-[10px] font-bold text-[#fff4d5]">
-                    当前
+                    {t('configReview.assets.currentBadge')}
                   </span>
                 ) : null}
               </button>
@@ -646,6 +659,7 @@ export const BetrayalConfigReview = () => {
               value={value}
               displayValue={displayValue}
               locale={locale}
+              t={t}
               onOpen={() => openAssetPicker(row, fieldKey, value, (rawValue) => commitRawValue(fieldKey, rawValue))}
             />
           );
@@ -656,6 +670,7 @@ export const BetrayalConfigReview = () => {
             <AssetTraceCell
               rawValue={rawValue}
               displayValue={formatAssetTraceDisplayValue(fieldKey, rawValue)}
+              t={t}
             />
           );
         }
@@ -669,6 +684,7 @@ export const BetrayalConfigReview = () => {
               locale={locale}
               panelAsset={panelAsset}
               tokenAsset={tokenAsset}
+              t={t}
               onSelectPanel={() => openAssetPicker(row, 'panelAsset', panelAsset, (rawValue) => commitRawValue('panelAsset', rawValue))}
               onSelectToken={() => openAssetPicker(row, 'mapTokenAsset', tokenAsset, (rawValue) => commitRawValue('mapTokenAsset', rawValue))}
             />
@@ -714,7 +730,7 @@ export const BetrayalConfigReview = () => {
       runtimeContext={{ mode: 'local', gameId: 'betrayal' }}
       testIdPrefix="betrayal-config"
     />
-    <AssetPickerOverlay picker={assetPicker} locale={locale} onClose={() => setAssetPicker(null)} />
+    <AssetPickerOverlay picker={assetPicker} locale={locale} t={t} onClose={() => setAssetPicker(null)} />
     <MagnifyOverlay isOpen={Boolean(magnifiedRoom)} onClose={() => setMagnifiedRoom(null)} closeLabel={t('configReview.material.closePreview')} overlayClassName="bg-black/55" overlayTestId="betrayal-config-room-magnify">
       {magnifiedRoom ? (
         <div className="flex max-h-[88vh] w-[min(88vw,760px)] flex-col gap-3 rounded-[14px] bg-[#2a1a10] p-4 text-[#f7e6c6] shadow-2xl">

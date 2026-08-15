@@ -5590,12 +5590,12 @@ const buildSubsetAssignments = ({
 const QidahenRegionMaskTool: React.FC = () => {
     const { t: translate } = useTranslation('game-qidahen');
     const t = React.useCallback(
-        (key: string, options?: Record<string, unknown>) => String(translate(key as never, options as never)),
+        (key: string, options?: Record<string, unknown>) => String(translate(key as never, { defaultValue: key, ...(options ?? {}) } as never)),
         [translate],
     );
     const tr = React.useCallback(
-        (key: string, defaultValue: string, params?: Record<string, string | number>) => t(key, { defaultValue, ...(params ?? {}) }),
-        [t],
+        (key: string, defaultValue: string, params?: Record<string, string | number>) => String(translate(key as never, { defaultValue, ...(params ?? {}) } as never)),
+        [translate],
     );
     const bgCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const boundarySourceReferenceCanvasRef = React.useRef<HTMLCanvasElement>(null);

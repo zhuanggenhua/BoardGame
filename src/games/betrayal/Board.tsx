@@ -11171,7 +11171,7 @@ export default function BetrayalBoard({
           }))
         }
       >
-        取消
+        {t("board.roll.cancelModifier")}
       </button>
       <button
         type="button"
@@ -11179,7 +11179,7 @@ export default function BetrayalBoard({
         className="min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d]"
         onClick={confirmSelectedRollModifier}
       >
-        确认使用{selectedRollModifierCard?.name}
+        {t("board.roll.confirmModifier", { card: selectedRollModifierCard?.name ?? "" })}
       </button>
     </div>
   ) : canCurrentViewerFinalizeLatestDiscoveryEventRoll ? (
@@ -11189,7 +11189,7 @@ export default function BetrayalBoard({
       className="pointer-events-auto min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[12px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
       onClick={finalizePendingEventRoll}
     >
-      确认最终结果（{latestDiscoveryEventRollProgressText}）
+      {t("board.roll.confirmFinalResult", { progress: latestDiscoveryEventRollProgressText })}
     </button>
   ) : pendingLatestDiscoveryEventRoll ? (
     <span
@@ -11197,8 +11197,8 @@ export default function BetrayalBoard({
       className="rounded-[6px] border border-[rgba(214,181,109,0.34)] bg-[rgba(18,17,13,0.74)] px-4 py-2 text-[12px] font-semibold tracking-[0.08em] text-[#eadbb0]"
     >
       {hasCurrentViewerConfirmedLatestDiscoveryEventRoll
-        ? `已确认，等待其他玩家确认（${latestDiscoveryEventRollProgressText}）`
-        : `等待其他玩家确认最终结果（${latestDiscoveryEventRollProgressText}）`}
+        ? t("board.roll.waitingForOtherConfirmations", { progress: latestDiscoveryEventRollProgressText })
+        : t("board.roll.waitingForFinalResult", { progress: latestDiscoveryEventRollProgressText })}
     </span>
   ) : null;
   const activePendingCardResolution =
