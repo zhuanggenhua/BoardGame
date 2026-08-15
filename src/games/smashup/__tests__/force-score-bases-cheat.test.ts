@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { smashUpCheatModifier } from '../cheatModifier';
+import { forceScoreSmashUpBasesWithMinions } from '../cheatModifier';
 import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 
 function makeMinion(uid: string, defId: string, owner: string, power: number): MinionOnBase {
@@ -65,12 +65,12 @@ function makeCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
     } as SmashUpCore;
 }
 
-describe('forceScoreBasesWithMinions', () => {
+describe('forceScoreSmashUpBasesWithMinions', () => {
     it('将有随从的基地分上限设为 0', () => {
         const core = makeCore();
         
         // 执行强制结算
-        const result = smashUpCheatModifier.forceScoreBasesWithMinions!(core);
+        const result = forceScoreSmashUpBasesWithMinions(core);
         
         // 验证：基地 0（无随从）不应有修正
         expect(result.tempBreakpointModifiers['0']).toBeUndefined();
@@ -84,7 +84,7 @@ describe('forceScoreBasesWithMinions', () => {
 
     it('不影响其他状态', () => {
         const core = makeCore();
-        const result = smashUpCheatModifier.forceScoreBasesWithMinions!(core);
+        const result = forceScoreSmashUpBasesWithMinions(core);
         
         // 验证其他状态不变
         expect(result.players).toEqual(core.players);
@@ -98,7 +98,7 @@ describe('forceScoreBasesWithMinions', () => {
             tempBreakpointModifiers: { '0': -5 }, // 已有修正
         });
         
-        const result = smashUpCheatModifier.forceScoreBasesWithMinions!(core);
+        const result = forceScoreSmashUpBasesWithMinions(core);
         
         // 验证：基地 0（无随从）的旧修正被保留
         expect(result.tempBreakpointModifiers['0']).toBe(-5);
@@ -111,7 +111,7 @@ describe('forceScoreBasesWithMinions', () => {
     it('空基地列表时不报错', () => {
         const core = makeCore({ bases: [] });
         
-        const result = smashUpCheatModifier.forceScoreBasesWithMinions!(core);
+        const result = forceScoreSmashUpBasesWithMinions(core);
         
         expect(result.tempBreakpointModifiers).toEqual({});
     });

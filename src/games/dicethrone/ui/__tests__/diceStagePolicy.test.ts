@@ -17,6 +17,7 @@ const baseParams = {
     currentResponderId: undefined,
     rootPid: '1',
     diceInteractionPlayerId: undefined,
+    canOperateOwnedCompareRoll: false,
     isRollPhase: true,
     rollCount: 1,
     isRolling: false,
@@ -48,6 +49,15 @@ describe('diceStagePolicy', () => {
             isRollPhase: false,
             diceInteractionPlayerId: '1',
             hasDiceMultistepInteraction: true,
+        })).toBe(true);
+    });
+
+    it('自己拥有的 Duel/对掷当前骰区应允许在右侧骰盘确认，不依赖中心视图焦点', () => {
+        expect(canInteractDiceForCurrentBoard({
+            ...baseParams,
+            isSelfView: false,
+            isViewRolling: false,
+            canOperateOwnedCompareRoll: true,
         })).toBe(true);
     });
 

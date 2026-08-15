@@ -109,20 +109,40 @@ describe('DamageCalculation', () => {
       expect(result.breakdown.steps[1].runningTotal).toBe(10);
     });
 
-    it('关闭 autoCollectBonusDamage 后不应重复收集 pendingAttack.bonusDamage', () => {
-      const state = mockState();
-      state.core.pendingAttack = {
-        attackerId: '0',
-        defenderId: '1',
-        sourceAbilityId: 'test',
-        bonusDamage: 4,
-      };
-
+    it('默认从显式攻击上下文收集加伤', () => {
       const calc = createDamageCalculation({
         source: { playerId: '0', abilityId: 'test' },
         target: { playerId: '1' },
         baseDamage: 5,
-        state,
+        state: mockState(),
+        attackDamageContext: {
+          attackerId: '0',
+          defenderId: '1',
+          bonusDamage: 4,
+        },
+        autoCollectTokens: false,
+        autoCollectStatus: false,
+        autoCollectShields: false,
+      });
+
+      const result = calc.resolve();
+      expect(result.finalDamage).toBe(9);
+      expect(result.breakdown.steps).toHaveLength(1);
+      expect(result.breakdown.steps[0].sourceId).toBe('attack_modifier');
+      expect(result.breakdown.steps[0].value).toBe(4);
+    });
+
+    it('关闭 autoCollectBonusDamage 后不应重复收集显式攻击上下文加伤', () => {
+      const calc = createDamageCalculation({
+        source: { playerId: '0', abilityId: 'test' },
+        target: { playerId: '1' },
+        baseDamage: 5,
+        state: mockState(),
+        attackDamageContext: {
+          attackerId: '0',
+          defenderId: '1',
+          bonusDamage: 4,
+        },
         additionalModifiers: [
           { id: 'explicit-bonus', type: 'flat', value: 4, source: 'attack_modifier' },
         ],
@@ -563,6 +583,89 @@ describe('DamageCalculation', () => {
         const result = calc.resolve();
         expect(result.sideEffectEvents).toHaveLength(1);
         expect(result.sideEffectEvents[0].payload.stacks).toBe(4);
+      });
+    });
+
+    describe('consumeOnTrigger', () => {
+      it('onDamageReceived 触发后移除自身 debuff', () => {
+        const state = makePassiveTriggerState({
+          targetStatusEffects: { targeted: 1 },
+          tokenDefs: [{
+            id: 'targeted',
+            name: '锁定',
+            category: 'debuff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              consumeOnTrigger: true,
+              actions: [
+                { type: 'modifyStat', value: 2 },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+          timestamp: 1000,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(7);
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0]).toMatchObject({
+          type: 'STATUS_REMOVED',
+          payload: {
+            targetId: '1',
+            statusId: 'targeted',
+            stacks: 1,
+          },
+          timestamp: 1000,
+        });
+      });
+
+      it('onDamageReceived 触发后消耗自身 token', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { ward: 2 },
+          tokenDefs: [{
+            id: 'ward',
+            name: '护符',
+            category: 'buff',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              consumeOnTrigger: true,
+              actions: [
+                { type: 'modifyStat', value: -1 },
+              ],
+            },
+          }],
+        });
+
+        const calc = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        });
+
+        const result = calc.resolve();
+        expect(result.finalDamage).toBe(3);
+        expect(result.sideEffectEvents).toHaveLength(1);
+        expect(result.sideEffectEvents[0]).toMatchObject({
+          type: 'TOKEN_CONSUMED',
+          payload: {
+            playerId: '1',
+            tokenId: 'ward',
+            amount: 2,
+            newTotal: 0,
+          },
+        });
       });
     });
 

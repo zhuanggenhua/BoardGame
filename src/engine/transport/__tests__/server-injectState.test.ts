@@ -89,7 +89,7 @@ describe('GameTransportServer.injectState', () => {
             const server = new GameTransportServer({
                 io,
                 storage,
-                games: [createMockGameEngine('smashup')],
+                games: [createMockGameEngine('test-game')],
             });
 
             const matchId = 'match-1';
@@ -101,7 +101,7 @@ describe('GameTransportServer.injectState', () => {
             // 先设置初始状态
             await storage.setMetadata(matchId, {
                 matchID: matchId,
-                gameName: 'smashup',
+                gameName: 'test-game',
                 players: {
                     0: { id: 0, name: 'Player 0', credentials: '', isConnected: false },
                     1: { id: 1, name: 'Player 1', credentials: '', isConnected: false },
@@ -136,7 +136,7 @@ describe('GameTransportServer.injectState', () => {
             const server = new GameTransportServer({
                 io,
                 storage,
-                games: [createMockGameEngine('smashup')],
+                games: [createMockGameEngine('test-game')],
             });
 
             const state: MatchState<unknown> = {
@@ -155,7 +155,7 @@ describe('GameTransportServer.injectState', () => {
             const server = new GameTransportServer({
                 io,
                 storage,
-                games: [createMockGameEngine('smashup')],
+                games: [createMockGameEngine('test-game')],
             });
 
             const state: MatchState<unknown> = {
@@ -198,7 +198,7 @@ describe('GameTransportServer.injectState', () => {
             const server = new GameTransportServer({
                 io,
                 storage: failingStorage,
-                games: [createMockGameEngine('smashup')],
+                games: [createMockGameEngine('test-game')],
             });
 
             const matchId = 'match-1';
@@ -210,7 +210,7 @@ describe('GameTransportServer.injectState', () => {
             // 设置初始状态
             await failingStorage.setMetadata(matchId, {
                 matchID: matchId,
-                gameName: 'smashup',
+                gameName: 'test-game',
                 players: {
                     0: { id: 0, name: 'Player 0', credentials: '', isConnected: false },
                     1: { id: 1, name: 'Player 1', credentials: '', isConnected: false },
@@ -256,7 +256,7 @@ describe('GameTransportServer.injectState', () => {
                         const server = new GameTransportServer({
                             io,
                             storage: testStorage,
-                            games: [createMockGameEngine('smashup')],
+                            games: [createMockGameEngine('test-game')],
                         });
 
                         const state: MatchState<unknown> = {
@@ -267,7 +267,7 @@ describe('GameTransportServer.injectState', () => {
                         // 设置初始状态
                         await testStorage.setMetadata(matchId, {
                             matchID: matchId,
-                            gameName: 'smashup',
+                            gameName: 'test-game',
                             players: {
                                 0: { id: 0, name: 'Player 0', credentials: '', isConnected: false },
                                 1: { id: 1, name: 'Player 1', credentials: '', isConnected: false },

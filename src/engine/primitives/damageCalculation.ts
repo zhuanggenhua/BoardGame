@@ -56,6 +56,19 @@ export interface DamageContext {
 }
 
 /**
+ * 当前伤害所属的攻击上下文。
+ *
+ * 游戏层负责把自己的攻击账本投影成这个通用合同；引擎层不读取游戏 core 中的
+ * pending attack / combat session 等私有字段。
+ */
+export interface AttackDamageContext {
+  attackerId: PlayerId;
+  defenderId: PlayerId;
+  bonusDamage?: number;
+  isUltimate?: boolean;
+}
+
+/**
  * PassiveTrigger handler 注入接口
  *
  * 游戏层实现此接口，注入到 DamageCalculationConfig 中，
@@ -98,7 +111,10 @@ export interface DamageCalculationConfig extends DamageContext {
   /** 是否自动收集护盾减免（默认 false，护盾由 reducer 统一消耗） */
   autoCollectShields?: boolean;
 
-  /** 是否自动收集 pendingAttack.bonusDamage（默认 true） */
+  /** 当前伤害所属的攻击上下文，用于攻击限定修正、终极攻击判定和显式加伤 */
+  attackDamageContext?: AttackDamageContext;
+
+  /** 是否自动收集 attackDamageContext.bonusDamage（默认 true） */
   autoCollectBonusDamage?: boolean;
   
   /** PassiveTrigger handler（游戏层注入） */
@@ -192,10 +208,22 @@ export class DamageCalculation {
   /**
    * 统一获取核心状态。
    * - 兼容包装态：{ core, sys }
-   * - 兼容直传态：DiceThroneCore / 其他游戏 core
+   * - 兼容直传态：任意游戏 core
    */
   private getCoreState(): any {
     return this.config.state?.core ?? this.config.state;
+  }
+
+  private getMatchingAttackDamageContext(): AttackDamageContext | null {
+    const attackContext = this.config.attackDamageContext;
+    if (!attackContext) return null;
+    if (
+      attackContext.attackerId !== this.config.source.playerId
+      || attackContext.defenderId !== this.config.target.playerId
+    ) {
+      return null;
+    }
+    return attackContext;
   }
 
   /**
@@ -212,15 +240,11 @@ export class DamageCalculation {
     if (scope === 'opponentAttackDamage') {
       if (this.config.damageScope === 'direct') return false;
 
-      const pendingAttack = this.getCoreState()?.pendingAttack;
-      if (!pendingAttack) {
-        return this.config.damageScope !== 'direct'
-          && this.config.source.playerId !== this.config.target.playerId;
-      }
+      const attackContext = this.config.attackDamageContext;
+      const matchingAttackContext = this.getMatchingAttackDamageContext();
+      if (attackContext && !matchingAttackContext) return false;
 
-      return pendingAttack.attackerId === this.config.source.playerId
-        && pendingAttack.defenderId === this.config.target.playerId
-        && this.config.source.playerId !== this.config.target.playerId;
+      return this.config.source.playerId !== this.config.target.playerId;
     }
 
     return true;
@@ -258,7 +282,7 @@ export class DamageCalculation {
       this.collectShieldModifiers();
     }
     
-    // 2.5. 自动收集 pendingAttack.bonusDamage（攻击修正卡）
+    // 2.5. 自动收集显式攻击上下文加伤
     if (this.config.autoCollectBonusDamage !== false) {
       this.collectBonusDamage();
     }
@@ -282,7 +306,7 @@ export class DamageCalculation {
   /**
    * 收集 Token 修正
    * 
-   * 从攻击方收集加伤 Token（如 DiceThrone 的火焰精通）
+   * 从攻击方收集加伤 Token
    */
   private collectTokenModifiers(): void {
     const { source } = this.config;
@@ -315,7 +339,7 @@ export class DamageCalculation {
   /**
    * 收集伤害来源身上的出伤修正状态。
    *
-   * DiceThrone 的“凋零”这类效果挂在攻击者身上，修正的是该玩家造成的攻击伤害，
+   * 某些出伤修正状态挂在攻击者身上，修正的是该玩家造成的攻击伤害，
    * 不能走目标侧 onDamageReceived 收集逻辑。
    */
   private collectSourceStatusModifiers(): void {
@@ -343,20 +367,15 @@ export class DamageCalculation {
 
       const scope = def.passiveTrigger.damageTriggerScope ?? 'anyDamage';
       if (scope === 'opponentAttackDamage') {
-        const pendingAttack = coreState?.pendingAttack;
-        if (pendingAttack) {
-          if (
-            pendingAttack.attackerId !== source.playerId
-            || pendingAttack.defenderId !== target.playerId
-          ) {
-            continue;
-          }
+        const attackContext = this.config.attackDamageContext;
+        if (attackContext && !this.getMatchingAttackDamageContext()) {
+          continue;
         }
       }
 
       for (const action of def.passiveTrigger.actions || []) {
         if (action.type !== 'modifyStat' || typeof action.value !== 'number') continue;
-        if (def.passiveTrigger.ignoreModifierOnUltimateDamage && coreState?.pendingAttack?.isUltimate === true) {
+        if (def.passiveTrigger.ignoreModifierOnUltimateDamage && this.getMatchingAttackDamageContext()?.isUltimate === true) {
           continue;
         }
         const value = action.value * stacks;
@@ -411,6 +430,7 @@ export class DamageCalculation {
    * - modifyStat: 转为 flat modifier（已有逻辑）
    * - removeStatus: 生成 STATUS_REMOVED 事件
    * - custom: 调用 passiveTriggerHandler，将 preventAmount 转为负值 flat modifier
+   * - consumeOnTrigger: 触发后移除自身状态 / 消耗自身 token
    */
   private collectStatusModifiers(): PendingOnDamageReceivedCustomAction[] {
     const { target } = this.config;
@@ -505,6 +525,37 @@ export class DamageCalculation {
             break;
         }
       }
+
+      if (!def.passiveTrigger.consumeOnTrigger) continue;
+
+      if (statusStacks >= tokenStacks && statusStacks > 0) {
+        this.collectedSideEffects.push({
+          type: 'STATUS_REMOVED',
+          payload: {
+            targetId: target.playerId,
+            statusId: def.id,
+            stacks: Math.min(statusStacks, stacks),
+          },
+          sourceCommandType: 'ABILITY_EFFECT',
+          timestamp,
+        } as GameEvent);
+        continue;
+      }
+
+      if (tokenStacks > 0) {
+        const removedAmount = Math.min(tokenStacks, stacks);
+        this.collectedSideEffects.push({
+          type: 'TOKEN_CONSUMED',
+          payload: {
+            playerId: target.playerId,
+            tokenId: def.id,
+            amount: removedAmount,
+            newTotal: Math.max(0, tokenStacks - removedAmount),
+          },
+          sourceCommandType: 'ABILITY_EFFECT',
+          timestamp,
+        } as GameEvent);
+      }
     }
 
     return customActions;
@@ -567,7 +618,7 @@ export class DamageCalculation {
   /**
    * 收集护盾修正
    * 
-   * 从目标收集护盾减免（DiceThrone 的 damageShields）
+   * 从目标收集护盾减免
    */
   private collectShieldModifiers(): void {
     const { target } = this.config;
@@ -594,17 +645,14 @@ export class DamageCalculation {
   }
   
   /**
-   * 收集 pendingAttack.bonusDamage（攻击修正卡）
-   * 
-   * 从 pendingAttack 收集攻击修正卡的伤害加成（如"红热"卡牌）
+   * 收集显式攻击上下文中的加伤。
    */
   private collectBonusDamage(): void {
-    const coreState = this.getCoreState();
-    const pendingAttack = coreState?.pendingAttack;
+    const attackContext = this.getMatchingAttackDamageContext();
     
-    if (!pendingAttack || pendingAttack.attackerId !== this.config.source.playerId) return;
+    if (!attackContext) return;
 
-    const bonusDamage = pendingAttack.bonusDamage ?? 0;
+    const bonusDamage = attackContext.bonusDamage ?? 0;
     if (bonusDamage === 0) return;
     
     this.modifierStack = addModifier(this.modifierStack, {

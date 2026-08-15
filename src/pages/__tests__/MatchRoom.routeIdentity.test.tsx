@@ -65,6 +65,17 @@ async function loadMatchRoomWithOnlineMocks(args?: {
                     reduce: (core: unknown) => core,
                 },
                 systems: [],
+                onlineAiRecovery: {
+                    resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }: {
+                        type: string;
+                        payload: unknown;
+                    }) => (
+                        type === 'su:select_faction'
+                        && typeof (payload as { factionId?: unknown } | undefined)?.factionId === 'string'
+                            ? 'select-faction'
+                            : undefined
+                    ),
+                },
             },
             latencyConfig: undefined,
             ai: null,
@@ -175,7 +186,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         }),
     }));
 
-    vi.doMock('../../hooks/useGameImplementationReady', () => ({
+    vi.doMock('../../games/useGameImplementationReady', () => ({
         useGameImplementationReady: () => ({
             isGameImplementationReady: true,
             gameImplementationError: null,
@@ -225,8 +236,11 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         }),
     }));
 
-    vi.doMock('../../games/mobileSupport', () => ({
+    vi.doMock('../../shared/mobileSupport', () => ({
         getGamePageDataAttributes: () => ({}),
+        resolveGameMobileSupport: (config: { preferredOrientation?: unknown }) => ({
+            preferredOrientation: config.preferredOrientation,
+        }),
         syncGamePageDocumentAttributes: () => undefined,
     }));
 

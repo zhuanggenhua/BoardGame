@@ -679,7 +679,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
                     const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
 
-                    // compare-roll-choice：双骰特写 + 分支选择 / 自动确认
+                    // compare-roll-choice：对掷结果 + 分支选择 / 自动确认；骰面本体仍由右侧骰盘承接。
                     if (payload.compareRoll?.contestants?.length === 2) {
                         const compareOptions: PromptOption<{
                             statusId?: string;

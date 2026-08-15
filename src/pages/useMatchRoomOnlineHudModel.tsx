@@ -1,11 +1,14 @@
 import { type ComponentProps } from 'react';
 import { GameHUD, resolveGameHudPhase } from '../components/game/framework/widgets/GameHUD';
+import type { MatchSeatSwapConfig } from '../components/game/framework';
 import { type AiSeatController } from '../engine/ai';
 import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import { useGameClient } from '../engine/transport/react';
 import { useMatchRoomHudForceDismiss } from './useMatchRoomHudForceDismiss';
 import { useMatchRoomHudPresenceModel } from './useMatchRoomHudPresenceModel';
 import { useMatchRoomHudSeatSwapModel } from './useMatchRoomHudSeatSwapModel';
+
+type MatchRoomOnlineHudModel = ComponentProps<typeof GameHUD>;
 
 export type MatchRoomOnlineHudBridgeProps = {
     matchId?: string;
@@ -22,10 +25,13 @@ export type MatchRoomOnlineHudBridgeProps = {
     showForceEndAiPhase?: boolean;
     isLoading?: boolean;
     seatControllers: Record<string, AiSeatController>;
+    seatSwapConfig?: MatchSeatSwapConfig | null;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    preferredFullscreenOrientation?: MatchRoomOnlineHudModel['preferredFullscreenOrientation'];
+    renderRuntimeSettings?: MatchRoomOnlineHudModel['renderRuntimeSettings'];
+    availableEmotes?: MatchRoomOnlineHudModel['availableEmotes'];
+    resolveEmote?: MatchRoomOnlineHudModel['resolveEmote'];
 };
-
-type MatchRoomOnlineHudModel = ComponentProps<typeof GameHUD>;
 
 export function useMatchRoomOnlineHudModel({
     matchId,
@@ -42,7 +48,12 @@ export function useMatchRoomOnlineHudModel({
     showForceEndAiPhase,
     isLoading,
     seatControllers,
+    seatSwapConfig,
     engineConfig,
+    preferredFullscreenOrientation,
+    renderRuntimeSettings,
+    availableEmotes,
+    resolveEmote,
 }: MatchRoomOnlineHudBridgeProps): MatchRoomOnlineHudModel {
     const { state, dispatch, matchPlayers, isConnected } = useGameClient();
     const hudPresence = useMatchRoomHudPresenceModel({
@@ -65,7 +76,7 @@ export function useMatchRoomOnlineHudModel({
         engineConfig,
     });
     const seatSwapModel = useMatchRoomHudSeatSwapModel({
-        gameId,
+        seatSwapConfig,
         state,
         dispatch,
         myPlayerId,
@@ -94,5 +105,9 @@ export function useMatchRoomOnlineHudModel({
         ...seatSwapModel,
         isPregameSetupPhase,
         isLoading,
+        preferredFullscreenOrientation,
+        renderRuntimeSettings,
+        availableEmotes,
+        resolveEmote,
     };
 }

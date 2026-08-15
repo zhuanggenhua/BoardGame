@@ -23,10 +23,10 @@
  * 若未来需要精确支持，需在 reducer 中计算 netDamage 并写回事件或侧信道。
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
 import type { DamageDealtEvent, HealAppliedEvent, HeroState, AbilityDef } from '../domain/types';
-import type { CpChangedEvent, AttackResolvedEvent } from '../domain/events';
+import type { CpChangedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';
 import { getStatusEffectIconNode } from '../ui/statusEffects';
@@ -53,6 +53,11 @@ interface AnimStep {
     frozenHp: number;
     /** 伤害值（用于受击反馈强度计算），治疗步骤为 0 */
     damage: number;
+    /** 命中时需要反馈的资源条；HP 仅伤害触发，CP 变化触发 CP 条 */
+    impactTarget?: {
+        resource: 'hp' | 'cp';
+        playerId: PlayerId;
+    };
 }
 
 /** 护盾值阈值：>= 此值视为"完全免疫"（如暗影守护 999 护盾） */
@@ -111,7 +116,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     /** 视觉状态缓冲：HP 在飞行动画到达前保持冻结 */
     damageBuffer: UseVisualStateBufferReturn;
     /** FX 事件 ID → { bufferKey, damage } 映射，供 onEffectImpact 释放 + 触发受击反馈 */
-    fxImpactMapRef: React.RefObject<Map<string, { bufferKey: string; damage: number }>>;
+    fxImpactMapRef: React.RefObject<Map<string, { bufferKey: string; damage: number; impactTarget?: AnimStep['impactTarget'] }>>;
     /** 推进动画队列：优先在 impact 时推进，onEffectComplete 仅作兜底 */
     advanceQueue: (completedFxId: string) => void;
 } {
@@ -131,12 +136,15 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     // ========================================================================
     // 事件流消费：通用游标（自动处理首次挂载跳过 + Undo 重置）
     // ========================================================================
-    const { consumeNew } = useEventStreamCursor({ entries: eventStreamEntries });
+    const { consumeNew } = useEventStreamCursor({
+        entries: eventStreamEntries,
+        consumeOnReconcile: true,
+    });
 
     // 视觉状态缓冲：HP 在飞行动画到达前保持冻结
     const damageBuffer = useVisualStateBuffer();
     // FX 事件 ID → { bufferKey, damage } 映射（飞行动画到达时释放对应 key + 触发受击反馈）
-    const fxImpactMapRef = useRef(new Map<string, { bufferKey: string; damage: number }>());
+    const fxImpactMapRef = useRef(new Map<string, { bufferKey: string; damage: number; impactTarget?: AnimStep['impactTarget'] }>());
 
     /**
      * 从玩家技能列表中查找技能的 sfxKey（支持变体 ID）
@@ -226,6 +234,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
             bufferKey,
             frozenHp,
             damage,
+            impactTarget: { resource: 'hp', playerId: targetId },
         };
     }, [currentPlayerId, opponentId, opponent, player, getAbilityStartPos, findAbilitySfxKey, refs.opponentHeader, refs.opponentHp, refs.selfHp]);
 
@@ -270,7 +279,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
             frozenHp,
             damage: 0,
         };
-    }, [opponentId, opponent, player, getAbilityStartPos, refs.opponentHp, refs.selfHp]);
+    }, [currentPlayerId, opponentId, opponent, player, getAbilityStartPos, refs.opponentHp, refs.selfHp]);
 
     /**
      * 构建单个 CP 变化事件的 FX 参数
@@ -304,6 +313,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
                 bufferKey: '',
                 frozenHp: -1,
                 damage: 0,
+                impactTarget: { resource: 'cp', playerId },
             };
         }
 
@@ -321,6 +331,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
                 bufferKey: '',
                 frozenHp: -1,
                 damage: 0,
+                impactTarget: { resource: 'cp', playerId },
             };
         }
 
@@ -340,28 +351,26 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     const pendingStepsRef = useRef<AnimStep[]>([]);
     // 当前正在播放的 fxId（用于 advanceQueue 匹配）
     const activeFxIdRef = useRef<string | null>(null);
-    // render 阶段计算出的待推送步骤（effect 中消费）
-    // 注意：这里必须是“累积队列”，不能被新批次覆盖。
-    // 否则 AI 高频命令下，后一批事件会顶掉前一批，导致动画偶发不播。
-    const pendingPushRef = useRef<AnimStep[]>([]);
     // 去重：防止 rollback/reconnect 场景同一 EventStream id 被重复消费
     const processedEventIdsRef = useRef<Set<number>>(new Set());
 
     /** 推入队列中的下一步，返回是否成功 */
     const pushNextStep = useCallback(() => {
-        const next = pendingStepsRef.current.shift();
-        if (!next) {
-            activeFxIdRef.current = null;
-            return;
+        while (pendingStepsRef.current.length > 0) {
+            const next = pendingStepsRef.current.shift();
+            if (!next) break;
+            const fxId = fxBus.push(next.cue, {}, next.params);
+            if (fxId) {
+                fxImpactMapRef.current.set(fxId, {
+                    bufferKey: next.bufferKey,
+                    damage: next.damage,
+                    impactTarget: next.impactTarget,
+                });
+                activeFxIdRef.current = fxId;
+                return;
+            }
         }
-        const fxId = fxBus.push(next.cue, {}, next.params);
-        if (fxId) {
-            fxImpactMapRef.current.set(fxId, { bufferKey: next.bufferKey, damage: next.damage });
-            activeFxIdRef.current = fxId;
-        } else {
-            // cue 未注册或被跳过，继续推进
-            pushNextStep();
-        }
+        activeFxIdRef.current = null;
     }, [fxBus]);
 
     /**
@@ -377,37 +386,39 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         }
     }, [pushNextStep]);
 
-    // ── 阶段 1：render 阶段同步消费事件 + freezeSync ──
-    // consumeNew() 是幂等的（内部游标 ref 保证同一批 entries 只消费一次），
-    // 在 render 中调用安全（无 setState，仅写 ref）。
-    const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
-    if (didReset || didOptimisticRollback) {
-        pendingStepsRef.current = [];
-        pendingPushRef.current = [];
-        activeFxIdRef.current = null;
-        fxImpactMapRef.current.clear();
-        // render 阶段只清 ref，避免 setState；effect 阶段通过 commitSync 同步到 UI
-        damageBuffer.clearSync();
-        if (didReset) {
-            processedEventIdsRef.current.clear();
-        }
-    }
+    // ── 已提交 DOM 后消费事件 + freezeSync + push FX ──
+    // 不在 render 阶段推进 EventStream 游标或写 ref；React 并发/确认重渲染可能丢弃 render，
+    // 若游标已推进但对应 effect 没提交，伤害事件就会被跳过，导致 HP 已扣但浮字不出现。
+    useLayoutEffect(() => {
+        const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
 
-    const dedupedEntries = newEntries.filter((entry) => {
-        if (processedEventIdsRef.current.has(entry.id)) {
-            return false;
-        }
-        processedEventIdsRef.current.add(entry.id);
-        if (processedEventIdsRef.current.size > MAX_TRACKED_EVENT_IDS) {
-            const [oldestId] = processedEventIdsRef.current;
-            if (oldestId !== undefined) {
-                processedEventIdsRef.current.delete(oldestId);
+        if (didReset || didOptimisticRollback) {
+            pendingStepsRef.current = [];
+            activeFxIdRef.current = null;
+            fxImpactMapRef.current.clear();
+            damageBuffer.clearSync();
+            damageBuffer.commitSync();
+            if (didReset) {
+                processedEventIdsRef.current.clear();
             }
         }
-        return true;
-    });
 
-    if (dedupedEntries.length > 0) {
+        const dedupedEntries = newEntries.filter((entry) => {
+            if (processedEventIdsRef.current.has(entry.id)) {
+                return false;
+            }
+            processedEventIdsRef.current.add(entry.id);
+            if (processedEventIdsRef.current.size > MAX_TRACKED_EVENT_IDS) {
+                const [oldestId] = processedEventIdsRef.current;
+                if (oldestId !== undefined) {
+                    processedEventIdsRef.current.delete(oldestId);
+                }
+            }
+            return true;
+        });
+
+        if (dedupedEntries.length === 0) return;
+
         const damageSteps: AnimStep[] = [];
         const healSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
@@ -432,7 +443,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
             if (event.type === 'DAMAGE_DEALT') {
                 const step = buildDamageStep(
                     event as unknown as DamageDealtEvent,
-                    shieldedTargets
+                    shieldedTargets,
                 );
                 if (step) damageSteps.push(step);
             } else if (event.type === 'HEAL_APPLIED') {
@@ -445,38 +456,33 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         }
 
         const allSteps = [...damageSteps, ...healSteps, ...cpSteps];
-        if (allSteps.length > 0) {
-            // 同步冻结 HP（仅写 ref，render 阶段安全）— 跳过 CP 步骤（无需冻结）
-            for (const step of allSteps) {
-                if (!step.bufferKey) continue;
-                const currentFrozen = damageBuffer.get(step.bufferKey, -1);
-                if (currentFrozen === -1) {
-                    damageBuffer.freezeSync(step.bufferKey, step.frozenHp);
-                }
+        if (allSteps.length === 0) return;
+
+        let needsBufferCommit = false;
+        for (const step of allSteps) {
+            if (!step.bufferKey) continue;
+            const currentFrozen = damageBuffer.get(step.bufferKey, -1);
+            if (currentFrozen === -1) {
+                damageBuffer.freezeSync(step.bufferKey, step.frozenHp);
+                needsBufferCommit = true;
             }
-            // 缓存待推送步骤，effect 中消费（追加，避免覆盖前一批）
-            pendingPushRef.current.push(...allSteps);
         }
-    }
-
-    // ── 阶段 2：effect 中 commitSync + push FX ──
-    useEffect(() => {
-        const queuedSteps = pendingPushRef.current;
-        if (queuedSteps.length === 0) return;
-        const steps = queuedSteps.splice(0, queuedSteps.length);
-
-        // 将 freezeSync 写入的 ref 同步到 React state
-        damageBuffer.commitSync();
+        if (needsBufferCommit) {
+            damageBuffer.commitSync();
+        }
 
         // 统一入主队列；只有在空闲时才启动播放，避免覆盖正在播放的 active FX。
-        pendingStepsRef.current.push(...steps);
+        pendingStepsRef.current.push(...allSteps);
         if (activeFxIdRef.current === null) {
             pushNextStep();
         }
     }, [
-        eventStreamEntries,
-        pushNextStep,
+        consumeNew,
+        buildDamageStep,
+        buildHealStep,
+        buildCpStep,
         damageBuffer,
+        pushNextStep,
     ]);
 
     // ========================================================================

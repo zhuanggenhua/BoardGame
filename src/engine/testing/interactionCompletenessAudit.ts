@@ -3,11 +3,11 @@
  *
  * 通用交互完整性检查，覆盖两种交互模式：
  *
- * 模式 A（UI 状态机）：SummonerWars 风格
+ * 模式 A（UI 状态机）：逐步收集命令 payload
  *   UI 逐步收集 payload 字段 → 最终发送给执行器
  *   → 使用 interactionChainAudit.ts 的三类检查
  *
- * 模式 B（Interaction 链）：SmashUp 风格
+ * 模式 B（Interaction 链）：由引擎 Interaction 继续后续选择
  *   执行器创建 createSimpleChoice(sourceId) → 玩家选择 → InteractionHandler 处理
  *   → 使用本文件的 Handler 注册覆盖检查
  *
@@ -48,7 +48,7 @@ export interface AuditableInteractionSource {
  * Handler 链声明
  *
  * 描述一个 InteractionHandler 处理后可能创建的后续 Interaction。
- * 用于检测多步链的完整性（如 zombie_lord_choose_minion → zombie_lord_choose_base）。
+ * 用于检测多步链的完整性（例如 select_object → select_destination）。
  */
 export interface HandlerChainLink {
   /** 当前 handler 的 sourceId */
@@ -123,7 +123,7 @@ export interface ChainCompletenessConfig {
  * 生成链式完整性测试
  *
  * 确保 handler 内部创建的后续 Interaction 也有对应 handler。
- * 检测多步链断裂（如 zombie_lord_choose_minion → zombie_lord_choose_base 缺失）。
+ * 检测多步链断裂（例如 select_object → select_destination 缺失）。
  */
 export function createChainCompletenessCheck(config: ChainCompletenessConfig): void {
   describe(config.suiteName, () => {

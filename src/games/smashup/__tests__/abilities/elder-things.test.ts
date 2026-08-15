@@ -1476,18 +1476,7 @@ describe('elder_things_pod 专项行为', () => {
             ],
         });
 
-        const ms = makeMatchState(core);
-        (ms.sys as any).phase = 'scoreBases';
-        (ms.sys as any).responseWindow = {
-            current: {
-                id: 'rw1',
-                windowType: 'meFirst',
-                sourceId: 'test',
-                responderQueue: ['0'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-            },
-        };
+        const ms = attachBeforeScoringWindow(core, 0, '0');
 
         const result = runCommand(
             ms,

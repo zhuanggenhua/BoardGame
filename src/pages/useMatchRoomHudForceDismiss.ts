@@ -105,7 +105,7 @@ export function useMatchRoomHudForceDismiss(args: {
 
         const matchState = state as MatchState<unknown> | null | undefined;
         const hasSystemLock = hasSystemLockSurface(matchState);
-        if (hasSystemLock) {
+        if (hasSystemLock && matchState) {
             const currentPlayerId = resolveOnlineAiCurrentPlayerId(matchState, {
                 engineConfig,
                 gameId,
@@ -117,7 +117,6 @@ export function useMatchRoomHudForceDismiss(args: {
                 && !isOnlineAiWatchdogPublicPregameLegalActionPhase({
                     state: matchState,
                     engineConfig,
-                    gameId,
                 }),
             );
 
@@ -127,7 +126,6 @@ export function useMatchRoomHudForceDismiss(args: {
                     lastIssuedMarker: buildAiProgressMarker(matchState, { engineConfig, gameId }),
                     advancePhaseCommandType: resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
                         engineConfig,
-                        gameId,
                     }),
                     remainingSteps: FORCE_END_TURN_MAX_COMMAND_STEPS,
                 }

@@ -250,8 +250,8 @@ describe('FlowSystem', () => {
                 activeFrameId: 'frame-1',
                 frames: [{
                     id: 'frame-1',
-                    kind: 'smashup:score-bases',
-                    ownerGame: 'smashup',
+                    kind: 'test:scoring-frame',
+                    ownerGame: 'test-game',
                     ordering: 'explicit',
                     status: 'blocked',
                     phase: 'phase1',
@@ -281,8 +281,8 @@ describe('FlowSystem', () => {
                 activeFrameId: 'frame-1',
                 frames: [{
                     id: 'frame-1',
-                    kind: 'smashup:reaction:score-after',
-                    ownerGame: 'smashup',
+                    kind: 'test:reaction-after-scoring',
+                    ownerGame: 'test-game',
                     ordering: 'explicit',
                     status: 'blocked',
                     phase: 'phase1',
@@ -316,8 +316,8 @@ describe('FlowSystem', () => {
                 activeFrameId: 'frame-1',
                 frames: [{
                     id: 'frame-1',
-                    kind: 'smashup:score-bases',
-                    ownerGame: 'smashup',
+                    kind: 'test:scoring-frame',
+                    ownerGame: 'test-game',
                     ordering: 'explicit',
                     status: 'blocked',
                     phase: 'phase1',

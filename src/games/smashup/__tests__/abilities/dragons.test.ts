@@ -4,7 +4,6 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { getBaseDef, getCardDef } from '../../data/cards';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../../domain/baseAbilities';
-import { scoreOneBase } from '../../domain/index';
 import { queueImmediateExtraPlayInteractions } from '../../domain/extraPlay';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { fireTriggers } from '../../domain/ongoingEffects';
@@ -21,6 +20,7 @@ import {
     makePlayer,
     makeState,
     respondCommand,
+    scoreBaseViaFlow,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
@@ -799,7 +799,7 @@ describe('龙派系可复用实现批', () => {
             baseDiscard: [],
         });
 
-        const result = scoreOneBase(
+        const result = scoreBaseViaFlow(
             core,
             0,
             core.baseDeck,
@@ -843,7 +843,7 @@ describe('龙派系可复用实现批', () => {
             baseDiscard: [],
         });
 
-        const result = scoreOneBase(
+        const result = scoreBaseViaFlow(
             core,
             0,
             core.baseDeck,

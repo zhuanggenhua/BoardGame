@@ -3,46 +3,61 @@ import {
     getAvailableEmotesForGame,
     getEmoteById,
     isEmoteAllowedForGame,
+    type EmoteDefinition,
 } from '../emotes';
 
-describe('emote catalog', () => {
-    it('exposes the current shared emotes in every game picker', () => {
-        const diceThroneEmotes = getAvailableEmotesForGame('dicethrone');
-        const smashupEmotes = getAvailableEmotesForGame('smashup');
+const catalog: readonly EmoteDefinition[] = [
+    {
+        id: 'common.wave',
+        scope: 'common',
+        emotion: 'wave',
+        label: '招手',
+        assetPath: 'common/emotes/wave',
+        enabled: true,
+    },
+    {
+        id: 'game-alpha.cheer',
+        scope: 'game',
+        gameId: 'game-alpha',
+        emotion: 'cheer',
+        label: '欢呼',
+        assetPath: 'game-alpha/emotes/cheer',
+        enabled: true,
+    },
+    {
+        id: 'game-beta.disabled',
+        scope: 'game',
+        gameId: 'game-beta',
+        emotion: 'sleep',
+        label: '休眠',
+        assetPath: 'game-beta/emotes/disabled',
+        enabled: false,
+    },
+];
 
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.speechless-facepalm');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.speechless-facepalm');
-        expect(getEmoteById('dicethrone.moon-elf.speechless-facepalm')?.assetPath)
-            .toBe('dicethrone/emotes/moon-elf/speechless-facepalm-chibi-v1');
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
-        expect(getEmoteById('dicethrone.moon-elf.smug-v1')?.assetPath)
-            .toBe('dicethrone/emotes/moon-elf/smug-v1');
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.confused-v1');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.confused-v1');
-        expect(getEmoteById('dicethrone.moon-elf.confused-v1')?.assetPath)
-            .toBe('dicethrone/emotes/moon-elf/confused-v2');
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
-        expect(getEmoteById('dicethrone.barbarian.thumbs-up-v1')?.assetPath)
-            .toBe('dicethrone/emotes/barbarian/thumbs-up-v2');
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('smashup.supreme-overlord.smug-v1');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('smashup.supreme-overlord.smug-v1');
-        expect(getEmoteById('smashup.supreme-overlord.smug-v1')?.assetPath)
-            .toBe('smashup/emotes/supreme-overlord/smug-v1');
-        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('smashup.raider.angry-v1');
-        expect(smashupEmotes.map((emote) => emote.id)).toContain('smashup.raider.angry-v1');
-        expect(getEmoteById('smashup.raider.angry-v1')?.assetPath)
-            .toBe('smashup/emotes/raider/angry-v1');
+describe('emote helpers', () => {
+    it('filters enabled common and matching game emotes from an injected catalog', () => {
+        const gameAlphaEmotes = getAvailableEmotesForGame(catalog, 'GAME-ALPHA');
+        const gameBetaEmotes = getAvailableEmotesForGame(catalog, 'game-beta');
+
+        expect(gameAlphaEmotes.map((emote) => emote.id)).toEqual([
+            'common.wave',
+            'game-alpha.cheer',
+        ]);
+        expect(gameBetaEmotes.map((emote) => emote.id)).toEqual(['common.wave']);
     });
 
-    it('allows current shared emotes across games and still rejects unknown ids', () => {
-        expect(isEmoteAllowedForGame('dicethrone.moon-elf.speechless-facepalm', 'smashup')).toBe(true);
-        expect(isEmoteAllowedForGame('dicethrone.moon-elf.smug-v1', 'smashup')).toBe(true);
-        expect(isEmoteAllowedForGame('dicethrone.moon-elf.confused-v1', 'smashup')).toBe(true);
-        expect(isEmoteAllowedForGame('dicethrone.barbarian.thumbs-up-v1', 'smashup')).toBe(true);
-        expect(isEmoteAllowedForGame('smashup.supreme-overlord.smug-v1', 'dicethrone')).toBe(true);
-        expect(isEmoteAllowedForGame('smashup.raider.angry-v1', 'dicethrone')).toBe(true);
-        expect(isEmoteAllowedForGame('unknown.emote', 'dicethrone')).toBe(false);
+    it('resolves enabled emotes and rejects disabled or unknown ids', () => {
+        expect(getEmoteById(catalog, 'common.wave')?.assetPath).toBe('common/emotes/wave');
+        expect(getEmoteById(catalog, 'game-beta.disabled')).toBeUndefined();
+        expect(isEmoteAllowedForGame(catalog, 'game-alpha.cheer', 'game-alpha')).toBe(true);
+        expect(isEmoteAllowedForGame(catalog, 'game-alpha.cheer', 'game-beta')).toBe(false);
+        expect(isEmoteAllowedForGame(catalog, 'missing', 'game-alpha')).toBe(false);
+    });
+
+    it('treats invalid injected catalogs as empty instead of crashing the HUD', () => {
+        expect(getAvailableEmotesForGame({} as unknown as readonly EmoteDefinition[], 'game-alpha')).toEqual([]);
+        expect(getEmoteById({} as unknown as readonly EmoteDefinition[], 'common.wave')).toBeUndefined();
+        expect(isEmoteAllowedForGame({} as unknown as readonly EmoteDefinition[], 'common.wave', 'game-alpha')).toBe(false);
     });
 });

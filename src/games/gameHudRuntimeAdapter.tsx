@@ -4,7 +4,6 @@ import {
     defaultGameRuntimeAdapter,
     type GameHudForceDismissInput,
     type GameHudRuntimeMode,
-    type GameHudRuntimeSuppressionInput,
     type GameRuntimeSettingsSectionProps,
 } from './gameRuntimeAdapter';
 
@@ -13,11 +12,6 @@ type GameHudRuntimeSettingsSectionPublicProps = GameRuntimeSettingsSectionProps 
 };
 
 export type { GameHudRuntimeMode };
-
-export function shouldSuppressGameHudFab(args: GameHudRuntimeSuppressionInput): boolean {
-    void args;
-    return false;
-}
 
 export function tryHandleGameHudForceDismiss(args: GameHudForceDismissInput): boolean {
     return getGameImplementation(args.gameId ?? '')?.runtimeAdapter?.forceDismissHud?.(args)

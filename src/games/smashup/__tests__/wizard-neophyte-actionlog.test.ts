@@ -173,8 +173,8 @@ describe('学徒 ActionLog 完整链路', () => {
             'su:reveal_deck_top',
             'su:cards_drawn',
             'su:action_played',
-            'su:cards_drawn',
             'su:limit_modified',
+            'su:cards_drawn',
         ]);
         const drawEntries = log2.filter(e => e.kind === 'su:cards_drawn');
         expect(drawEntries).toHaveLength(2);

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { syncGamePageDocumentAttributes } from '../games/mobileSupport';
+import { syncGamePageDocumentAttributes } from '../shared/mobileSupport';
 import { appendMatchLoadTrace } from '../lib/matchLoadTrace';
 import { logMobileRuntimeCritical } from '../lib/mobile/mobileRuntimeDebug';
 import { isNativeAndroidRuntime } from '../lib/mobile/androidRuntime';

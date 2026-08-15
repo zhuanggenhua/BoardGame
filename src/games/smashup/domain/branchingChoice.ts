@@ -595,10 +595,6 @@ function frameOwnsInteraction(state: MatchState<SmashUpCore>, frameId: string): 
     return (state.sys.interaction?.queue ?? []).some((interaction) => interaction.resolutionFrameId === frameId);
 }
 
-function frameOwnsResponseWindow(state: MatchState<SmashUpCore>, frameId: string): boolean {
-    return state.sys.responseWindow?.current?.resolutionFrameId === frameId;
-}
-
 function frameHasLiveChild(state: MatchState<SmashUpCore>, frameId: string): boolean {
     return getResolutionFrames(state).some((frame) =>
         frame.parentFrameId === frameId && frame.status !== 'completed',
@@ -639,7 +635,6 @@ export function resumePendingBranchingChoiceFrames(
         if (liveFrame.status !== 'running' || liveFrame.blockedBy) continue;
         if (frameHasLiveChild(nextState, liveFrame.id)) continue;
         if (frameOwnsInteraction(nextState, liveFrame.id)) continue;
-        if (frameOwnsResponseWindow(nextState, liveFrame.id)) continue;
 
         const meta = getBranchingChoiceFrameMeta(nextState, liveFrame.id);
         if (meta?.pendingPlan) {

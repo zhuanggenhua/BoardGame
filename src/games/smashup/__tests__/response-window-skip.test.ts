@@ -42,11 +42,9 @@ function findOptionId(
     return getPromptOption(choice, predicate, message).id;
 }
 
-function expectMirroredIndex(state: MatchState<SmashUpCore>, index: number) {
-    const mirroredWindow = state.sys.responseWindow?.current;
-    if (mirroredWindow?.sourceId === 'smashup_reaction_choose') {
-        expect(mirroredWindow.currentResponderIndex).toBe(index);
-    }
+function expectReactionPresentationIndex(state: MatchState<SmashUpCore>, index: number) {
+    const presentation = getSmashUpReactionWindowPresentation(state);
+    expect(presentation?.currentResponderIndex).toBe(index);
 }
 
 function makeMinion(
@@ -124,7 +122,6 @@ describe('响应窗口跳过逻辑', () => {
             random,
             100,
             { kind: 'pass' },
-            { suspendAfterDomainEvents: true },
         );
 
         expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
@@ -169,7 +166,6 @@ describe('响应窗口跳过逻辑', () => {
             random,
             101,
             { kind: 'trigger', triggerId: 'chosen-trigger-1' },
-            { suspendAfterDomainEvents: true },
         );
 
         expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
@@ -312,7 +308,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(firstChoice?.sourceId).toBe('smashup_reaction_choose');
         expect(firstChoice?.playerId).toBe('0');
         expect(getReactionSession(runner.getState())?.responseWindowType).toBe('meFirst');
-        expectMirroredIndex(runner.getState(), 0);
+        expectReactionPresentationIndex(runner.getState(), 0);
 
         const playOptionId = findOptionId(
             firstChoice!,
@@ -331,7 +327,7 @@ describe('响应窗口跳过逻辑', () => {
         const stateAfterPlay = runner.getState();
         expect(getReactionSession(stateAfterPlay)?.activePlayerId).toBe('0');
         expect(getCurrentChoice(stateAfterPlay)?.sourceId).toBe('smashup_reaction_choose');
-        expectMirroredIndex(stateAfterPlay, 0);
+        expectReactionPresentationIndex(stateAfterPlay, 0);
 
         const firstPass = runner.resolveInteraction('0', { optionId: 'pass' });
         expect(firstPass.success).toBe(true);
@@ -608,7 +604,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(getCurrentChoice(prompted!.state)?.options.some(option =>
             option.value?.kind === 'play_action' && option.value?.cardUid === 'card-a1',
         )).toBe(true);
-        expectMirroredIndex(prompted!.state, 0);
+        expectReactionPresentationIndex(prompted!.state, 0);
     });
 
     it('reactionWindowState 读取到 ghost session 时，也应回退到合法当前玩家而不是暴露非法 responder', () => {
@@ -794,7 +790,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(presentation?.passedPlayers).toEqual([]);
     });
 
-    it('reactionWindowState 读取 legacy responderQueue 时，也应过滤 ghost responder 并回退到合法当前玩家', () => {
+    it('reactionWindowState 不再从 legacy responderQueue 生成 Smash Up 响应上下文', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -823,14 +819,10 @@ describe('响应窗口跳过逻辑', () => {
         } as any;
 
         const context = getSmashUpReactionWindowContext(ms);
-        expect(context?.activePlayerId).toBe('0');
-        expect(context?.currentPlayerId).toBe('0');
+        expect(context).toBeUndefined();
 
         const presentation = getSmashUpReactionWindowPresentation(ms);
-        expect(presentation?.activePlayerId).toBe('0');
-        expect(presentation?.currentPlayerId).toBe('0');
-        expect(presentation?.responderQueue).toEqual(['0', '1']);
-        expect(presentation?.currentResponderIndex).toBe(0);
+        expect(presentation).toBeUndefined();
     });
 
     it('smashup_reaction_choose 的旧 activate_special option 若已从 live base 消失，应刷新并保留当前响应者的剩余 live 选项', () => {
@@ -996,7 +988,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(reactionChoice?.sourceId).toBe('smashup_reaction_choose');
         expect(reactionChoice?.playerId).toBe('0');
         expect(getReactionSession(runner.getState())?.activePlayerId).toBe('0');
-        expectMirroredIndex(runner.getState(), 0);
+        expectReactionPresentationIndex(runner.getState(), 0);
 
         const playOptionId = findOptionId(
             reactionChoice!,
@@ -1046,11 +1038,8 @@ describe('响应窗口跳过逻辑', () => {
         expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
         expect(resumedChoice?.playerId).toBe('1');
         expect(getReactionSession(stateAfterFailedChildInteraction)?.activePlayerId).toBe('1');
-        const mirroredWindow = stateAfterFailedChildInteraction.sys.responseWindow?.current;
-        if (mirroredWindow?.sourceId === 'smashup_reaction_choose') {
-            expect(mirroredWindow.currentResponderIndex).toBe(1);
-            expect(mirroredWindow.pendingInteractionId).toBeUndefined();
-        }
+        expectReactionPresentationIndex(stateAfterFailedChildInteraction, 1);
+        expect(stateAfterFailedChildInteraction.sys.responseWindow?.current).toBeUndefined();
     });
     it('tail responder interaction should not close response window early', () => {
         const runner = new GameTestRunner<SmashUpCore, any, any>({
@@ -1114,7 +1103,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(reactionChoice?.sourceId).toBe('smashup_reaction_choose');
         expect(reactionChoice?.playerId).toBe('1');
         expect(getReactionSession(runner.getState())?.activePlayerId).toBe('1');
-        expectMirroredIndex(runner.getState(), 1);
+        expectReactionPresentationIndex(runner.getState(), 1);
 
         const playOptionId = findOptionId(
             reactionChoice!,
@@ -1140,7 +1129,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
         expect(resumedChoice?.playerId).toBe('0');
         expect(getReactionSession(stateAfterResolve)?.activePlayerId).toBe('0');
-        expectMirroredIndex(stateAfterResolve, 0);
+        expectReactionPresentationIndex(stateAfterResolve, 0);
     });
 
 });

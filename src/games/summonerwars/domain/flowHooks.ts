@@ -21,6 +21,7 @@ import {
   postProcessDeathChecks,
 } from './execute/helpers';
 import { getYonghengPostProcessEvents } from './yonghengMechanics';
+import { getPhaseEndAbilityResolved } from './phaseEndResolution';
 
 /**
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
@@ -275,7 +276,7 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
       core,
       playerId,
       from as GamePhase,
-      state.sys.summonerWars?.phaseEndAbilityResolved,
+      getPhaseEndAbilityResolved(state),
     );
     events.push(...getYonghengPostProcessEvents(core, events, timestamp));
     if (needsConfirmation) {
@@ -369,7 +370,7 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     const phase = core.phase;
     const playerId = core.currentPlayer;
     // 仍有需要确认的技能 → 不自动推进
-    if (hasConfirmablePhaseEndAbility(core, playerId, phase, state.sys.summonerWars?.phaseEndAbilityResolved)) return;
+    if (hasConfirmablePhaseEndAbility(core, playerId, phase, getPhaseEndAbilityResolved(state))) return;
     return { autoContinue: true, playerId };
   },
 };

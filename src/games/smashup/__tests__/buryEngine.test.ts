@@ -15,6 +15,7 @@ import {
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent, uncoverBuriedCard } from '../domain/bury';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../domain/abilityRuntime';
 
 beforeAll(() => {
     clearRegistry();
@@ -218,8 +219,16 @@ describe('bury engine', () => {
             reason: 'test_uncover_fairies_enchantment_minus',
         });
 
-        const prompt = getSimpleChoicePrompt(uncovered.state, 'fairies_enchantment');
-        expect(uncovered.state.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+        const continuation = uncovered.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+        expect(continuation).toBeDefined();
+
+        const committedCore = applyEvents(
+            core,
+            uncovered.events.filter(event => !isAbilityRuntimeContinuationEvent(event as any)) as any,
+        );
+        const committedState = makeMatchState(committedCore);
+
+        expect(committedState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 uid: 'buried-enchantment',
                 defId: 'fairies_enchantment',
@@ -227,8 +236,16 @@ describe('bury engine', () => {
             }),
         ]));
 
+        const resumed = resumeAbilityRuntimeContinuationEvent(
+            committedState,
+            continuation as any,
+            defaultTestRandom,
+        );
+        expect(resumed).toBeDefined();
+        const prompt = getSimpleChoicePrompt(resumed!.state, 'fairies_enchantment');
+
         const minusOption = getPromptOption(prompt, option => option.value?.branchId === 'minus', 'buried fairies enchantment minus option');
-        const resolved = respondToPrompt(uncovered.state, minusOption.id, '0', defaultTestRandom);
+        const resolved = respondToPrompt(resumed!.state, minusOption.id, '0', defaultTestRandom);
 
         expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ONGOING_ATTACHED,

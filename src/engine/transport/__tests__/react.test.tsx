@@ -103,9 +103,6 @@ vi.mock('react-i18next', () => ({
 
 import { GameProvider, useGameClient } from '../react';
 import { useEventStreamRollback } from '../../hooks/EventStreamRollbackContext';
-import { ToastProvider } from '../../../contexts/ToastContext';
-import { PromptOverlay } from '../../../games/smashup/ui/PromptOverlay';
-import { normalizeSmashUpMatchStateForUi } from '../../../games/smashup/ui/normalizeRuntimeState';
 
 function StateProbe(): JSX.Element {
     const { state } = useGameClient();
@@ -117,20 +114,15 @@ function RollbackProbe(): JSX.Element {
     return <pre data-testid="rollback">{JSON.stringify(rollback)}</pre>;
 }
 
-function SmashUpPromptProbe({ playerID }: { playerID: string }): JSX.Element {
-    const { state, dispatch } = useGameClient();
+function WaitingPromptProbe({ playerID }: { playerID: string }): JSX.Element {
+    const { state } = useGameClient();
     const interaction = (state as any)?.sys?.interaction?.current;
 
-    return (
-        <ToastProvider>
-            <PromptOverlay
-                interaction={interaction}
-                dispatch={dispatch}
-                playerID={playerID}
-                playerNames={{ '0': 'Host-SU-E2E', '1': 'Guest-SU-E2E' }}
-            />
-        </ToastProvider>
-    );
+    if (interaction && interaction.playerId !== playerID) {
+        return <div>{'正在等待 {{player}}'}</div>;
+    }
+
+    return <div data-testid="no-waiting-prompt" />;
 }
 
 describe('GameProvider transport baseline', () => {
@@ -145,10 +137,20 @@ describe('GameProvider transport baseline', () => {
         cleanup();
     });
 
-    const smashupRuntimeNormalizedEngineConfig = {
-        gameId: 'smashup',
+    const runtimeNormalizedEngineConfig = {
+        gameId: 'runtime-normalization-test',
         domain: {
-            normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
+            normalizeRuntimeState: (state: any) => ({
+                ...state,
+                core: {
+                    ...state.core,
+                    dirtyList: state.core.dirtyList ?? [],
+                    transientFlag: undefined,
+                    legacyItems: Array.isArray(state.core.legacyItems)
+                        ? state.core.legacyItems.map((item: { id?: unknown }) => item.id)
+                        : state.core.legacyItems,
+                },
+            }),
         },
     } as any;
 
@@ -200,13 +202,13 @@ describe('GameProvider transport baseline', () => {
         }));
     });
 
-    it('normalizes SmashUp authoritative runtime-guard dirty state before patch baseline and render state', () => {
+    it('normalizes authoritative runtime-guard dirty state before patch baseline and render state', () => {
         render(
             <GameProvider
                 server="http://127.0.0.1:3000"
-                matchId="match-react-smashup-runtime-guard-normalize"
+                matchId="match-react-runtime-guard-normalize"
                 playerId="0"
-                engineConfig={smashupRuntimeNormalizedEngineConfig}
+                engineConfig={runtimeNormalizedEngineConfig}
             >
                 <StateProbe />
             </GameProvider>,
@@ -217,39 +219,11 @@ describe('GameProvider transport baseline', () => {
 
         const dirtyState = {
             core: {
-                players: {
-                    '0': {
-                        id: '0',
-                        vp: 0,
-                        hand: [],
-                        deck: [],
-                        discard: [],
-                        minionsPlayed: 0,
-                        minionLimit: 1,
-                        actionsPlayed: 0,
-                        actionLimit: 1,
-                        factions: ['minions_of_cthulhu', 'innsmouth'],
-                        pendingMinionPlayEffects: null,
-                        usedDiscardPlayAbilities: null,
-                    },
-                },
-                turnOrder: ['0'],
-                currentPlayerIndex: 0,
-                bases: [
-                    {
-                        defId: 'base_tortuga',
-                        minions: [],
-                        ongoingActions: [],
-                        buriedCards: null,
-                    },
-                ],
-                baseDeck: [],
-                baseDiscard: [],
-                turnNumber: 3,
-                nextUid: 5,
-                madnessDeck: [
-                    { uid: 'mad-1', defId: 'special_madness', type: 'action', owner: '0' },
-                    { uid: 'mad-2', defId: 'special_madness', type: 'action', owner: '0' },
+                dirtyList: null,
+                transientFlag: null,
+                legacyItems: [
+                    { id: 'legacy-a' },
+                    { id: 'legacy-b' },
                 ],
             },
             sys: {
@@ -270,42 +244,23 @@ describe('GameProvider transport baseline', () => {
         expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith({
             ...dirtyState,
             core: expect.objectContaining({
-                madnessDeck: ['special_madness', 'special_madness'],
-                players: expect.objectContaining({
-                    '0': expect.objectContaining({
-                        pendingMinionPlayEffects: [],
-                        usedDiscardPlayAbilities: undefined,
-                    }),
-                }),
-                bases: expect.arrayContaining([
-                    expect.objectContaining({
-                        buriedCards: [],
-                    }),
-                ]),
+                dirtyList: [],
+                transientFlag: undefined,
+                legacyItems: ['legacy-a', 'legacy-b'],
             }),
         });
         expect(client.updateLatestState).toHaveBeenCalledTimes(1);
         expect(client.updateLatestState).toHaveBeenLastCalledWith({
             ...dirtyState,
             core: expect.objectContaining({
-                madnessDeck: ['special_madness', 'special_madness'],
-                players: expect.objectContaining({
-                    '0': expect.objectContaining({
-                        pendingMinionPlayEffects: [],
-                        usedDiscardPlayAbilities: undefined,
-                    }),
-                }),
-                bases: expect.arrayContaining([
-                    expect.objectContaining({
-                        buriedCards: [],
-                    }),
-                ]),
+                dirtyList: [],
+                transientFlag: undefined,
+                legacyItems: ['legacy-a', 'legacy-b'],
             }),
         });
-        expect(screen.getByTestId('state').textContent).toContain('"pendingMinionPlayEffects":[]');
-        expect(screen.getByTestId('state').textContent).not.toContain('"usedDiscardPlayAbilities":null');
-        expect(screen.getByTestId('state').textContent).toContain('"buriedCards":[]');
-        expect(screen.getByTestId('state').textContent).toContain('"madnessDeck":["special_madness","special_madness"]');
+        expect(screen.getByTestId('state').textContent).toContain('"dirtyList":[]');
+        expect(screen.getByTestId('state').textContent).not.toContain('"transientFlag":null');
+        expect(screen.getByTestId('state').textContent).toContain('"legacyItems":["legacy-a","legacy-b"]');
     });
 
     it('clears stale owner-only current prompt from rendered state when authoritative update closes it', () => {
@@ -509,14 +464,14 @@ describe('GameProvider transport baseline', () => {
         expect(screen.getByTestId('state').textContent).not.toContain('"isBlocked":true');
     });
 
-    it('removes SmashUp waiting prompt from rendered UI when authoritative close reaches the non owner page', () => {
+    it('removes waiting prompt from rendered UI when authoritative close reaches the non owner page', () => {
         render(
             <GameProvider
                 server="http://127.0.0.1:3000"
-                matchId="match-react-smashup-waiting-close"
+                matchId="match-react-waiting-close"
                 playerId="0"
             >
-                <SmashUpPromptProbe playerID="0" />
+                <WaitingPromptProbe playerID="0" />
             </GameProvider>,
         );
 
@@ -532,7 +487,7 @@ describe('GameProvider transport baseline', () => {
                         kind: 'simple-choice',
                         playerId: '1',
                         data: {
-                            title: '由 Guest-SU-E2E 选择',
+                            title: '由 Guest 选择',
                             sourceId: 'shared_visible_prompt',
                             targetType: 'button',
                             options: [
@@ -937,7 +892,7 @@ describe('GameProvider transport baseline', () => {
                 matchId="match-react-app-visible-waiting-close-same-stateid"
                 playerId="0"
             >
-                <SmashUpPromptProbe playerID="0" />
+                <WaitingPromptProbe playerID="0" />
             </GameProvider>,
         );
 
@@ -954,7 +909,7 @@ describe('GameProvider transport baseline', () => {
                         kind: 'simple-choice',
                         playerId: '1',
                         data: {
-                            title: '由 Guest-SU-E2E 选择',
+                            title: '由 Guest 选择',
                             sourceId: 'shared_visible_prompt',
                             targetType: 'button',
                             options: [

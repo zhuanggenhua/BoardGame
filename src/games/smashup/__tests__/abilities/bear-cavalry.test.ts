@@ -1061,13 +1061,18 @@ describe('bear_cavalry_superiority_pod 低层合同：保护模式', () => {
             0,
             dummyRandom,
         );
-        const afterTurnStart = reduce(protectResult.state.core, {
+        const protectedCore = protectResult.events.reduce(
+            (core, event) => reduce(core, event as any),
+            protectResult.state.core,
+        );
+        const afterTurnStart = reduce(protectedCore, {
             type: SU_EVENTS.TURN_STARTED,
             payload: { playerId: '0', turnNumber: 2 },
             timestamp: 1,
         } as TurnStartedEvent);
 
-        expect(isMinionProtected(protectResult.state.core, myMinion, 0, '1', 'destroy')).toBe(true);
+        expect(protectResult.events.some(event => event.type === SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED)).toBe(true);
+        expect(isMinionProtected(protectedCore, myMinion, 0, '1', 'destroy')).toBe(true);
         expect(isMinionProtected(afterTurnStart, myMinion, 0, '1', 'destroy')).toBe(false);
     });
 
@@ -1156,7 +1161,12 @@ describe('bear_cavalry_superiority_pod 低层合同：保护模式', () => {
         );
 
         expect(drawResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
-        expect(isMinionProtected(drawResult.state.core, myMinion, 0, '1', 'destroy')).toBe(false);
+        expect(drawResult.events.some(event => event.type === SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED)).toBe(true);
+        const resolvedCore = drawResult.events.reduce(
+            (core, event) => reduce(core, event as any),
+            drawResult.state.core,
+        );
+        expect(isMinionProtected(resolvedCore, myMinion, 0, '1', 'destroy')).toBe(false);
     });
 });
 

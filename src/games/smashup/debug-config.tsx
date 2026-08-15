@@ -8,6 +8,7 @@ import type { SmashUpCore } from './domain/types';
 import { getCardDef } from './data/cards';
 import { useTranslation } from 'react-i18next';
 import { resolveCardDisplayName } from '../../components/game/framework/debug/cardNameResolver';
+import { SMASHUP_CHEAT_COMMANDS } from './cheatModifier';
 
 interface SmashUpDebugConfigProps {
     G: { core: SmashUpCore };
@@ -96,7 +97,7 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                                 nextBases: core?.baseDeck?.slice(0, Math.min(core?.bases?.length ?? 0, core?.baseDeck?.length ?? 0)),
                                 baseDeckLength: core?.baseDeck?.length,
                             });
-                            dispatch('SYS_CHEAT_REFRESH_ALL_BASES');
+                            dispatch(SMASHUP_CHEAT_COMMANDS.REFRESH_ALL_BASES);
                         }}
                         disabled={!core?.bases || core.bases.length === 0}
                         className="w-full px-3 py-1.5 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -126,7 +127,7 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                                     minionCount: b.minions.length,
                                 })),
                             });
-                            dispatch('SYS_CHEAT_FORCE_SCORE_BASES_WITH_MINIONS');
+                            dispatch(SMASHUP_CHEAT_COMMANDS.FORCE_SCORE_BASES_WITH_MINIONS);
                         }}
                         disabled={!core?.bases || core.bases.every(b => b.minions.length === 0)}
                         className="w-full px-3 py-1.5 bg-orange-500 text-white rounded text-xs font-bold hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"

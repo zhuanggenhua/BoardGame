@@ -107,6 +107,30 @@ type DefaultRegionMaskRegionsData = {
     }>;
 };
 
+const createImageDataFromPixels = (
+    pixels: Uint8Array | Uint8ClampedArray,
+    width: number,
+    height: number,
+): ImageData => {
+    const clampedPixels = new Uint8ClampedArray(pixels.byteLength);
+    clampedPixels.set(pixels);
+    return new ImageData(clampedPixels, width, height);
+};
+
+const copyBytesToArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+    const copied = new Uint8Array(bytes.byteLength);
+    copied.set(bytes);
+    return copied.buffer;
+};
+
+const createFileFromBytes = (bytes: Uint8Array, fileName: string, type: string): File => (
+    new File([copyBytesToArrayBuffer(bytes)], fileName, { type })
+);
+
+const createZipObjectUrl = (zipBytes: Uint8Array): string => {
+    return URL.createObjectURL(new Blob([copyBytesToArrayBuffer(zipBytes)], { type: 'application/zip' }));
+};
+
 type PainterRegion = {
     id: string;
     name: string;
@@ -808,7 +832,7 @@ const buildMaskDataUrl = (mask: Uint8Array) => {
         pixels[offset + 2] = 255;
         pixels[offset + 3] = 255;
     }
-    context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     return canvas.toDataURL('image/png');
 };
 
@@ -844,7 +868,7 @@ const buildMaskCropDataUrl = ({
             }
         }
     }
-    context.putImageData(new ImageData(pixels, crop.width, crop.height), 0, 0);
+    context.putImageData(createImageDataFromPixels(pixels, crop.width, crop.height), 0, 0);
     return canvas.toDataURL('image/png');
 };
 
@@ -884,7 +908,7 @@ const buildColoredMaskCropDataUrl = ({
             }
         }
     }
-    context.putImageData(new ImageData(pixels, crop.width, crop.height), 0, 0);
+    context.putImageData(createImageDataFromPixels(pixels, crop.width, crop.height), 0, 0);
     return canvas.toDataURL('image/png');
 };
 
@@ -1010,7 +1034,7 @@ const buildBoundaryTraceTemplateDataUrl = ({
         throw new Error('无法创建描边参考模板画布');
     }
 
-    context.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    context.putImageData(createImageDataFromPixels(sourcePixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     context.save();
     context.fillStyle = 'rgba(244, 63, 94, 0.18)';
     context.strokeStyle = 'rgba(244, 63, 94, 0.82)';
@@ -1097,7 +1121,7 @@ const buildRegionTraceTemplateDataUrl = ({
     if (!sourceContext) {
         throw new Error('无法创建局部描边源画布');
     }
-    sourceContext.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    sourceContext.putImageData(createImageDataFromPixels(sourcePixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
 
     const canvas = document.createElement('canvas');
     canvas.width = cropWidth;
@@ -1172,7 +1196,7 @@ const makeSourceCanvas = (sourcePixels: Uint8ClampedArray) => {
     if (!context) {
         throw new Error('无法创建底图画布');
     }
-    context.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    context.putImageData(createImageDataFromPixels(sourcePixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     return canvas;
 };
 
@@ -1208,7 +1232,7 @@ const buildMaskDataUrlFromAssignments = ({
         width: MASK_WIDTH,
         height: MASK_HEIGHT,
     });
-    context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     return canvas.toDataURL('image/png');
 };
 
@@ -3995,7 +4019,7 @@ const buildCropDataUrl = ({
     if (!scratchContext) {
         throw new Error('无法创建诊断预览画布');
     }
-    scratchContext.putImageData(new ImageData(pixels, width, height), 0, 0);
+    scratchContext.putImageData(createImageDataFromPixels(pixels, width, height), 0, 0);
 
     const canvas = document.createElement('canvas');
     canvas.width = crop.width * scale;
@@ -4361,7 +4385,7 @@ const normalizeLoadedBoundaryPresets = (value: unknown): BoundaryPreset[] => {
 
         const rgb = Array.isArray(loaded?.rgb) && loaded.rgb.length === 3
             && loaded.rgb.every((channel) => Number.isFinite(channel))
-            ? loaded.rgb as RgbColor
+            ? loaded.rgb as unknown as RgbColor
             : preset.rgb;
 
         return {
@@ -5564,12 +5588,13 @@ const buildSubsetAssignments = ({
 };
 
 const QidahenRegionMaskTool: React.FC = () => {
-    const { t } = useTranslation('game-qidahen');
+    const { t: translate } = useTranslation('game-qidahen');
+    const t = React.useCallback(
+        (key: string, options?: Record<string, unknown>) => String(translate(key as never, options as never)),
+        [translate],
+    );
     const tr = React.useCallback(
-        (key: string, defaultValue: string, params?: Record<string, string | number>) => t(
-            key as never,
-            { defaultValue, ...(params ?? {}) } as never,
-        ),
+        (key: string, defaultValue: string, params?: Record<string, string | number>) => t(key, { defaultValue, ...(params ?? {}) }),
         [t],
     );
     const bgCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -5694,7 +5719,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         return `?${normalized.toString()}`;
     }, []);
     const isIsolatedWorkspace = workspaceQuery.length > 0;
-    const currentWorkspaceKey = React.useMemo(() => {
+    const currentWorkspaceKey: string = React.useMemo((): string => {
         if (typeof window === 'undefined') {
             return '';
         }
@@ -5714,6 +5739,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [statusMessage, setStatusMessage] = React.useState<string>('正在读取上次保存的边界、区域和连线。');
     const displayScale = fitZoom * zoom;
     const shouldShowBestAvailableWorkspaceSwitcher = showAdvancedWorkbench && isIsolatedWorkspace && currentWorkspaceKey.startsWith('best-available-');
+    const workspaceComparisonKey = String(currentWorkspaceKey);
     React.useEffect(() => {
         if (typeof window === 'undefined') {
             return;
@@ -7903,6 +7929,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                         pixelCount,
                         method: bestBaseRadialCandidate.method,
                         score: weightedBoundaryScore(alignment, pixelCount),
+                        supportRatio: alignment.supportRatio,
                         guideShape,
                     };
                 })
@@ -8406,7 +8433,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
         });
-        context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     }, [regions]);
 
     const renderPartitionPreview = React.useCallback(() => {
@@ -8439,7 +8466,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 pixels[offset + 3] = 72;
             }
         }
-        context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     }, [boundaryClosureDiagnostics.matchedPartitions, hasBoundaryDraft, hasGeneratedRegions, showPartitionPreviewOverlay]);
 
     const renderBoundarySourceReference = React.useCallback(() => {
@@ -8512,9 +8539,9 @@ const QidahenRegionMaskTool: React.FC = () => {
             thickness: 2,
             alpha: 255,
         });
-        context.putImageData(new ImageData(outerPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
-        context.putImageData(new ImageData(glowPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
-        context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(outerPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(glowPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     }, [selectedRegionIndex, showSelectedOutline]);
 
     const renderBarrierOverlay = React.useCallback(() => {
@@ -8549,7 +8576,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
         });
-        context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+        context.putImageData(createImageDataFromPixels(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     }, [realMapBoundaryCandidateMask, showRealMapBoundarySupportOverlay]);
 
     const renderBarrierBrushPreviewStroke = React.useCallback((from: MaskPoint, to: MaskPoint, operation: BarrierHintOperation) => {
@@ -9011,7 +9038,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                             ? { x: persistedNode.x, y: persistedNode.y }
                             : null;
                         const point = persistedPoint
-                            ? { x: persistedNode.x, y: persistedNode.y }
+                            ? persistedPoint
                             : loadedCenter
                                 ? { x: loadedCenter.x, y: loadedCenter.y }
                                 : region.seed;
@@ -11399,12 +11426,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                     const seedIndex = (region.seed.y * MASK_WIDTH) + region.seed.x;
                     if (visibleFallbackMask[seedIndex] === 0 && exclusionMask[seedIndex] === 0) {
                         for (let offsetY = -10; offsetY <= 10; offsetY += 1) {
-                            const y = region.seed.y + offsetY;
+                            const y: number = region.seed.y + offsetY;
                             if (y < 0 || y >= MASK_HEIGHT) {
                                 continue;
                             }
                             for (let offsetX = -10; offsetX <= 10; offsetX += 1) {
-                                const x = region.seed.x + offsetX;
+                                const x: number = region.seed.x + offsetX;
                                 if (x < 0 || x >= MASK_WIDTH || (offsetX * offsetX) + (offsetY * offsetY) > 100) {
                                     continue;
                                 }
@@ -12152,7 +12179,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 entries['qidahen-boundary-candidate-reference-transparent.png'] = await dataUrlToUint8Array(candidateReferenceDataUrl);
             }
             const zipBytes = zipSync(entries, { level: 9 });
-            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const objectUrl = createZipObjectUrl(zipBytes);
             const link = document.createElement('a');
             link.href = objectUrl;
             link.download = 'qidahen-boundary-trace-kit.zip';
@@ -12279,7 +12306,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             }, null, 2));
             entries['README.txt'] = new TextEncoder().encode(readme);
             const zipBytes = zipSync(entries, { level: 9 });
-            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const objectUrl = createZipObjectUrl(zipBytes);
             const link = document.createElement('a');
             link.href = objectUrl;
             link.download = 'qidahen-region-trace-templates.zip';
@@ -12741,7 +12768,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             }, null, 2));
 
             const zipBytes = zipSync(entries, { level: 9 });
-            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const objectUrl = createZipObjectUrl(zipBytes);
             const link = document.createElement('a');
             link.href = objectUrl;
             link.download = 'qidahen-boundary-repair-package.zip';
@@ -12804,7 +12831,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 },
             }, null, 2));
             const zipBytes = zipSync(entries, { level: 9 });
-            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const objectUrl = createZipObjectUrl(zipBytes);
             const link = document.createElement('a');
             link.href = objectUrl;
             link.download = 'qidahen-region-acceptance-package.zip';
@@ -13045,19 +13072,22 @@ const QidahenRegionMaskTool: React.FC = () => {
                             const type = typeof record.type === 'string' && record.type.trim() ? record.type : null;
                             const name = typeof record.name === 'string' && record.name.trim() ? record.name : null;
                             const crop = record.crop;
+                            const cropLeft = typeof crop?.left === 'number' && Number.isInteger(crop.left) ? crop.left : null;
+                            const cropTop = typeof crop?.top === 'number' && Number.isInteger(crop.top) ? crop.top : null;
+                            const cropWidth = typeof crop?.width === 'number' && Number.isInteger(crop.width) ? crop.width : null;
+                            const cropHeight = typeof crop?.height === 'number' && Number.isInteger(crop.height) ? crop.height : null;
                             if (
                                 entryName
-                                && crop
-                                && Number.isInteger(crop.left)
-                                && Number.isInteger(crop.top)
-                                && Number.isInteger(crop.width)
-                                && Number.isInteger(crop.height)
-                                && crop.left >= 0
-                                && crop.top >= 0
-                                && crop.width > 0
-                                && crop.height > 0
-                                && crop.left + crop.width <= MASK_WIDTH
-                                && crop.top + crop.height <= MASK_HEIGHT
+                                && cropLeft !== null
+                                && cropTop !== null
+                                && cropWidth !== null
+                                && cropHeight !== null
+                                && cropLeft >= 0
+                                && cropTop >= 0
+                                && cropWidth > 0
+                                && cropHeight > 0
+                                && cropLeft + cropWidth <= MASK_WIDTH
+                                && cropTop + cropHeight <= MASK_HEIGHT
                             ) {
                                 repairCropTargets.push({
                                     id,
@@ -13067,10 +13097,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     problemEntryName,
                                     problemSourceEntryName,
                                     crop: {
-                                        left: crop.left,
-                                        top: crop.top,
-                                        width: crop.width,
-                                        height: crop.height,
+                                        left: cropLeft,
+                                        top: cropTop,
+                                        width: cropWidth,
+                                        height: cropHeight,
                                     },
                                 });
                             }
@@ -13127,7 +13157,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (!selectedBytes) {
                     throw new Error('选中的边界层为空');
                 }
-                const boundaryFile = new File([selectedBytes], entryName.split('/').pop() ?? 'boundary.png', { type: 'image/png' });
+                const boundaryFile = createFileFromBytes(selectedBytes, entryName.split('/').pop() ?? 'boundary.png', 'image/png');
                 const { pixels, width, height } = await readNativeImagePixelsFromFile(boundaryFile);
                 if (width !== MASK_WIDTH || height !== MASK_HEIGHT) {
                     throw new Error(`${entryName} 尺寸是 ${width}x${height}，必须是 ${MASK_WIDTH}x${MASK_HEIGHT} 的全图透明边界层`);
@@ -13181,7 +13211,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     if (!cropBytes) {
                         continue;
                     }
-                    const cropFile = new File([cropBytes], target.entryName.split('/').pop() ?? 'repair-crop.png', { type: 'image/png' });
+                    const cropFile = createFileFromBytes(cropBytes, target.entryName.split('/').pop() ?? 'repair-crop.png', 'image/png');
                     const { pixels: cropPixels, width, height } = await readNativeImagePixelsFromFile(cropFile);
                     if (width !== target.crop.width || height !== target.crop.height) {
                         setStatusMessage(`导入补边包失败：${target.entryName} 尺寸是 ${width}x${height}，但 manifest crop 要求 ${target.crop.width}x${target.crop.height}。`);
@@ -13241,8 +13271,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                     if (!problemBytes || !sourceBytes) {
                         continue;
                     }
-                    const problemFile = new File([problemBytes], target.problemEntryName.split('/').pop() ?? 'problem.png', { type: 'image/png' });
-                    const sourceFile = new File([sourceBytes], target.problemSourceEntryName.split('/').pop() ?? 'problem-source.png', { type: 'image/png' });
+                    const problemFile = createFileFromBytes(problemBytes, target.problemEntryName.split('/').pop() ?? 'problem.png', 'image/png');
+                    const sourceFile = createFileFromBytes(sourceBytes, target.problemSourceEntryName.split('/').pop() ?? 'problem-source.png', 'image/png');
                     const { pixels: problemPixels, width, height } = await readNativeImagePixelsFromFile(problemFile);
                     const { pixels: sourceProblemPixels, width: sourceWidth, height: sourceHeight } = await readNativeImagePixelsFromFile(sourceFile);
                     if (width !== target.crop.width || height !== target.crop.height || sourceWidth !== target.crop.width || sourceHeight !== target.crop.height) {
@@ -13603,7 +13633,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 return;
             }
 
-            let nextBoundaryMask = (barrierMaskRef.current ?? boundaryDraftMaskRef.current)?.slice()
+            let nextBoundaryMask: Uint8Array = (barrierMaskRef.current ?? boundaryDraftMaskRef.current)?.slice()
                 ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
             let importedCount = 0;
             let skippedUnknownCount = 0;
@@ -13625,7 +13655,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     continue;
                 }
                 try {
-                    const entryFile = new File([bytes], entryName.split(/[\\/]/u).pop() ?? entryName, { type: 'image/png' });
+                    const entryFile = createFileFromBytes(bytes, entryName.split(/[\\/]/u).pop() ?? entryName, 'image/png');
                     const result = await buildRegionTraceImportOutcome({
                         file: entryFile,
                         targetRegion,
@@ -14736,7 +14766,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         setPassages((current) => (
             current.some((passage) => passage.id === id)
                 ? current
-                : [...current, { id, from, to, boundaryType: 'plain' }]
+                : [...current, createPlainPassage(from, to)]
         ));
         setSelectedPassageId(id);
         const fromName = regions.find((region) => region.id === from)?.name ?? from;
@@ -16246,9 +16276,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => openWorkspaceRoute(BEST_AVAILABLE_BOUNDARY_WORKSPACE)}
                                         data-testid="qidahen-open-best-available-boundary-workspace"
-                                        disabled={currentWorkspaceKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE}
+                                        disabled={workspaceComparisonKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE}
                                         className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (
-                                            currentWorkspaceKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE
+                                            workspaceComparisonKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE
                                                 ? 'cursor-not-allowed border-stone-700 bg-stone-950/40 text-stone-500'
                                                 : 'border-amber-400/45 bg-amber-500/10 text-amber-100 hover:border-amber-200'
                                         )}
@@ -16260,9 +16290,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => openWorkspaceRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
                                         data-testid="qidahen-open-best-available-move-cost-ready-workspace"
-                                        disabled={currentWorkspaceKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE}
+                                        disabled={workspaceComparisonKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE}
                                         className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (
-                                            currentWorkspaceKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE
+                                            workspaceComparisonKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE
                                                 ? 'cursor-not-allowed border-stone-700 bg-stone-950/40 text-stone-500'
                                                 : 'border-sky-400/45 bg-sky-500/10 text-sky-100 hover:border-sky-200'
                                         )}
@@ -16615,7 +16645,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     <Route size={15} />
                                     {tr('devtools.regionMaskTool.detour.openRegionPathDraft', '改方向：直接进入区域 + 通路 + 移动代价')}
                                 </button>
-                                {isIsolatedWorkspace && currentWorkspaceKey !== BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE ? (
+                                {isIsolatedWorkspace && workspaceComparisonKey !== BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE ? (
                                     <div className="mt-2 grid gap-2">
                                         <button
                                             type="button"
@@ -17447,7 +17477,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         <div className="mt-3 grid gap-2">
                                             <button
                                                 type="button"
-                                                onClick={generateRealMapRegionColorDraft}
+                                                onClick={() => generateRealMapRegionColorDraft()}
                                                 data-testid="qidahen-generate-real-map-region-color-draft"
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
                                                 title={tr('devtools.regionMaskTool.workflow.secondaryRouteDraftTitle', '改方向入口：先按真实底图底色生成可编辑区域草稿，再微调区域，不把它当成正式边界成果。')}

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { UI_Z_INDEX } from '../../../../core';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
-import { getEmoteById } from '../../../../shared/emotes';
+import type { EmoteDefinition } from '../../../../shared/emotes';
 import type { MatchEmoteEvent } from '../../../../services/matchSocket';
 
 interface SeatEmoteOverlayProps {
     events: MatchEmoteEvent[];
+    resolveEmote: (emoteId: string) => EmoteDefinition | undefined;
 }
 
 const EMOTE_LIFETIME_MS = 3000;
@@ -56,7 +57,7 @@ const resolveSeatAnchorPosition = (playerId: string): SeatEmotePosition => {
     };
 };
 
-export const SeatEmoteOverlay = ({ events }: SeatEmoteOverlayProps) => {
+export const SeatEmoteOverlay = ({ events, resolveEmote }: SeatEmoteOverlayProps) => {
     const [now, setNow] = useState(() => Date.now());
     const latestEventKey = events.length > 0
         ? `${events[events.length - 1].playerId}:${events[events.length - 1].createdAt}`
@@ -107,7 +108,7 @@ export const SeatEmoteOverlay = ({ events }: SeatEmoteOverlayProps) => {
             data-testid="seat-emote-overlay"
         >
             {visibleEmotes.map((event) => {
-                const emote = getEmoteById(event.emoteId);
+                const emote = resolveEmote(event.emoteId);
                 if (!emote) return null;
                 const position = resolveSeatAnchorPosition(event.playerId);
                 const key = `${event.playerId}:${event.createdAt}`;

@@ -13,7 +13,6 @@ import {
     closeDebugPanelIfOpen,
     dispatchDiceThroneCommand,
     dispatchDiceThroneCommandWithTimeout,
-    maybePassResponse,
     readyAndStartGame,
     selectCharacter,
     setupOnlineMatch,
@@ -64,18 +63,6 @@ const screenshot = async (page: Page, testName: string, fileName: string) => {
     return path;
 };
 
-const screenshotLocator = async (
-    locator: ReturnType<Page['locator']>,
-    testName: string,
-    fileName: string,
-) => {
-    const dir = join(evidenceRoot, testName);
-    mkdirSync(dir, { recursive: true });
-    const path = join(dir, fileName);
-    await locator.screenshot({ path });
-    return path;
-};
-
 const closeMatchContexts = async (match: MatchSetup) => {
     const closeWithTimeout = async (close: () => Promise<void>) => {
         await Promise.race([
@@ -90,7 +77,10 @@ const closeMatchContexts = async (match: MatchSetup) => {
 };
 
 const setupNinjaMatch = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
-    const match = await setupOnlineMatch(browser, baseURL);
+    const match = await setupOnlineMatch(browser, baseURL, {
+        skipImageGate: true,
+        characterSelectionTimeout: 90000,
+    });
     if (!match) {
         test.skip(true, '游戏服务器不可用');
         throw new Error('Game server unavailable');
@@ -176,6 +166,116 @@ const readHarnessState = async (page: Page): Promise<JsonRecord> => {
     return asRecord(state?.G ?? state);
 };
 
+const readAttackCloseoutSnapshot = async (page: Page): Promise<JsonRecord> => {
+    const state = await readHarnessState(page);
+    const core = asRecord(state.core);
+    const sys = asRecord(state.sys);
+    const pendingAttack = asRecord(core.pendingAttack);
+    const pendingDamage = asRecord(core.pendingDamage);
+    const currentInteraction = asRecord(asRecord(sys.interaction).current);
+    const currentInteractionData = asRecord(currentInteraction.data);
+    const currentInteractionOptions = Array.isArray(currentInteractionData.options)
+        ? currentInteractionData.options.map((option) => {
+            const optionRecord = asRecord(option);
+            const value = asRecord(optionRecord.value);
+            return {
+                id: optionRecord.id,
+                disabled: optionRecord.disabled,
+                customId: value.customId,
+                value: value.value,
+            };
+        })
+        : undefined;
+    return {
+        pendingAttack: Boolean(core.pendingAttack),
+        pendingDamage: Boolean(core.pendingDamage),
+        pendingBonusDiceSettlement: Boolean(core.pendingBonusDiceSettlement),
+        pendingDamageResponderId: pendingDamage.responderId,
+        phase: sys.phase ?? core.phase,
+        settlementStage: pendingAttack.settlementStage,
+        preDefenseResolved: pendingAttack.preDefenseResolved,
+        defenseResolved: pendingAttack.defenseResolved,
+        isDefendable: pendingAttack.isDefendable,
+        bonusDamage: pendingAttack.bonusDamage,
+        currentInteractionId: currentInteraction.id,
+        currentInteractionKind: currentInteraction.kind,
+        currentInteractionPlayerId: currentInteraction.playerId,
+        currentInteractionSourceId: currentInteractionData.sourceId,
+        currentInteractionOptions,
+        currentResponseWindowType: asRecord(asRecord(sys.responseWindow).current).windowType,
+        currentRollKind: asRecord(core.currentRollContext).kind,
+        currentRollStatus: asRecord(core.currentRollContext).status,
+        activeResolutionFrameId: asRecord(sys.resolution).activeFrameId,
+        resolutionFrames: Array.isArray(asRecord(sys.resolution).frames)
+            ? asRecord(sys.resolution).frames
+            : undefined,
+    };
+};
+
+const readCurrentInteraction = async (page: Page): Promise<JsonRecord | null> => {
+    const state = await readHarnessState(page);
+    const current = asRecord(asRecord(asRecord(state.sys).interaction).current);
+    return Object.keys(current).length > 0 ? current : null;
+};
+
+const readCurrentResponseWindow = async (page: Page): Promise<JsonRecord | null> => {
+    const state = await readHarnessState(page);
+    const current = asRecord(asRecord(asRecord(state.sys).responseWindow).current);
+    return Object.keys(current).length > 0 ? current : null;
+};
+
+const getResponseWindowCurrentResponderId = (responseWindow: JsonRecord): string | null => {
+    const responderQueue = Array.isArray(responseWindow.responderQueue)
+        ? responseWindow.responderQueue.map(String)
+        : [];
+    const currentResponderIndex = typeof responseWindow.currentResponderIndex === 'number'
+        ? responseWindow.currentResponderIndex
+        : 0;
+    return responderQueue[currentResponderIndex] ?? null;
+};
+
+const getPagePlayerId = (page: Page): string | null => {
+    const playerId = new URL(page.url()).searchParams.get('playerID');
+    return playerId ? String(playerId) : null;
+};
+
+const findOpenResponseWindow = async (
+    pages: Page[],
+    timeoutMs: number,
+): Promise<{ page: Page; current: JsonRecord } | null> => {
+    const deadline = Date.now() + timeoutMs;
+    do {
+        for (const page of pages) {
+            const current = await readCurrentResponseWindow(page).catch(() => null);
+            if (current) {
+                return { page, current };
+            }
+        }
+        await pages[0]?.waitForTimeout(100);
+    } while (Date.now() < deadline);
+    return null;
+};
+
+const findOpenInteraction = async (
+    pages: Page[],
+    timeoutMs: number,
+): Promise<{ page: Page; current: JsonRecord } | null> => {
+    const deadline = Date.now() + timeoutMs;
+    do {
+        for (const page of pages) {
+            const current = await readCurrentInteraction(page).catch(() => null);
+            if (current) {
+                return { page, current };
+            }
+        }
+        await pages[0]?.waitForTimeout(100);
+    } while (Date.now() < deadline);
+    return null;
+};
+
+const didPhaseAdvanceAffectState = (before: JsonRecord, after: JsonRecord): boolean =>
+    JSON.stringify(before) !== JSON.stringify(after);
+
 const closeCardSpotlightIfOpen = async (page: Page) => {
     const closeButton = page.getByRole('button', { name: /关闭特写|Close/i }).first();
     if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -186,7 +286,7 @@ const closeCardSpotlightIfOpen = async (page: Page) => {
 
 const chooseVariantByLabelIfVisible = async (page: Page, label: RegExp) => {
     const variantTitle = page.getByRole('heading', { name: '选择发动变体' }).first();
-    if (!await variantTitle.isVisible({ timeout: 1500 }).catch(() => false)) {
+    if (!await variantTitle.isVisible({ timeout: 5000 }).catch(() => false)) {
         return;
     }
     const optionButton = page.getByRole('button', { name: label }).first();
@@ -196,11 +296,37 @@ const chooseVariantByLabelIfVisible = async (page: Page, label: RegExp) => {
 };
 
 const dismissAttackShowcaseIfVisible = async (page: Page) => {
+    const foregroundModal = page.locator('#modal-root [role="dialog"]');
+    if (await foregroundModal.first().isVisible({ timeout: 300 }).catch(() => false)) {
+        return;
+    }
+
     const continueButton = page.getByRole('button', { name: /开始防御|继续|Start Defense|Continue/i }).first();
     if (await continueButton.isVisible({ timeout: 1500 }).catch(() => false)) {
-        await continueButton.click();
+        await continueButton.click({ timeout: 1500 }).catch(() => undefined);
         await expect(continueButton).toBeHidden({ timeout: 5000 }).catch(() => {});
     }
+};
+
+const tryPassResponseByUi = async (page: Page, timeout = 500): Promise<boolean> => {
+    await dismissAttackShowcaseIfVisible(page);
+    const passButton = page.getByTestId('dicethrone-response-pass-button')
+        .or(page.getByRole('button', { name: /^(Pass|跳过|让过)$/i }))
+        .first();
+    if (!await passButton.isVisible({ timeout }).catch(() => false)) {
+        return false;
+    }
+
+    const clicked = await passButton.click({ timeout }).then(() => true).catch(async () => {
+        await dismissAttackShowcaseIfVisible(page);
+        return false;
+    });
+    if (!clicked) {
+        return false;
+    }
+
+    await page.waitForTimeout(300);
+    return true;
 };
 
 const resolveDefenseOnPage = async (page: Page) => {
@@ -254,6 +380,11 @@ const resolveDefenseOnPage = async (page: Page) => {
 
     await clickAdvancePhase(page, '0');
 
+    const afterDefenseAdvance = await readHarnessCoreState(page);
+    if (afterDefenseAdvance.pendingBonusDiceSettlement) {
+        await settleCurrentBonusDice(page, () => readHarnessCoreState(page), {});
+    }
+
     const rootedChoiceVisible = await rootedChoiceTitle.isVisible({ timeout: 3000 }).catch(() => false);
     if (rootedChoiceVisible) {
         const rootedChoiceButton = page.getByRole('button', { name: /养成后：幼种 1/i }).first();
@@ -274,35 +405,268 @@ const resolveDefenseOnPage = async (page: Page) => {
 };
 
 const drainResponseWindows = async (...pages: Page[]) => {
-    for (let round = 0; round < 4; round += 1) {
-        let passed = false;
+    for (let round = 0; round < 8; round += 1) {
         for (const page of pages) {
-            // 某些攻击会在结束防御后进入 token/response 窗口；不显式 pass 会导致 pendingAttack 卡住不收口。
-            const didPass = await maybePassResponse(page);
-            passed = passed || didPass;
+            await dismissAttackShowcaseIfVisible(page);
         }
-        if (!passed) {
+
+        const observed = await findOpenResponseWindow(pages, round === 0 ? 1200 : 500);
+        if (!observed) {
             return;
         }
+
+        if (observed.current.pendingInteractionId || observed.current.requiredInteractionId) {
+            throw new Error(`响应窗口仍被交互锁定，不能直接让过：${JSON.stringify(observed.current)}`);
+        }
+
+        let passedByUi = false;
+        for (const page of pages) {
+            // 某些攻击会在结束防御后进入 token/response 窗口；不显式 pass 会导致 pendingAttack 卡住不收口。
+            const didPass = await tryPassResponseByUi(page, 700);
+            passedByUi = passedByUi || didPass;
+        }
+        if (passedByUi) {
+            await observed.page.waitForTimeout(350);
+            continue;
+        }
+
+        const responderId = getResponseWindowCurrentResponderId(observed.current);
+        if (!responderId) {
+            throw new Error(`响应窗口缺少当前响应者，不能让过：${JSON.stringify(observed.current)}`);
+        }
+
+        const responderPage = pages.find(page => getPagePlayerId(page) === responderId) ?? observed.page;
+        const result = await dispatchDiceThroneCommandWithTimeout(responderPage, {
+            type: 'RESPONSE_PASS',
+            playerId: responderId,
+            payload: { forPlayerId: responderId },
+        }, 3000);
+        if (result !== 'ok') {
+            throw new Error(`响应者 ${responderId} 让过失败：${result}; 窗口=${JSON.stringify(observed.current)}`);
+        }
+        await responderPage.waitForTimeout(350);
     }
+
+    const remaining = await findOpenResponseWindow(pages, 200);
+    if (remaining) {
+        throw new Error(`响应窗口超过最大让过轮次仍未关闭：${JSON.stringify(remaining.current)}`);
+    }
+};
+
+const isEnabledPromptOption = (option: JsonRecord): boolean => option.disabled !== true;
+
+const getPromptOptionCustomId = (option: JsonRecord): string | undefined => {
+    const value = asRecord(option.value);
+    return typeof value.customId === 'string' ? value.customId : undefined;
+};
+
+const getPromptOptionNumericValue = (option: JsonRecord): number | undefined => {
+    const value = asRecord(option.value).value;
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+};
+
+const chooseSimpleChoiceOptionId = (interaction: JsonRecord): string | null => {
+    const data = asRecord(interaction.data);
+    const options = Array.isArray(data.options)
+        ? data.options.map(asRecord).filter(isEnabledPromptOption)
+        : [];
+    if (options.length === 0) return null;
+
+    const sourceId = typeof data.sourceId === 'string' ? data.sourceId : undefined;
+    const playerId = typeof interaction.playerId === 'string' ? interaction.playerId : undefined;
+    if (sourceId === 'smoke-screen-2-main' && playerId !== undefined) {
+        const playerNumber = Number(playerId);
+        if (Number.isFinite(playerNumber)) {
+            const selfSmokeScreenOptionValue = (playerNumber + 1) * 10 + 1;
+            const selfSmokeScreenOption = options.find(option =>
+                getPromptOptionCustomId(option) === 'ninja-smoke-screen-2-choice'
+                && getPromptOptionNumericValue(option) === selfSmokeScreenOptionValue,
+            );
+            if (typeof selfSmokeScreenOption?.id === 'string') {
+                return selfSmokeScreenOption.id;
+            }
+        }
+    }
+
+    const skipOption = options.find(option =>
+        getPromptOptionCustomId(option) === 'skip'
+        || option.id === 'skip'
+        || option.labelKey === 'tokenResponse.skip',
+    );
+    if (typeof skipOption?.id === 'string') return skipOption.id;
+
+    const firstOption = options.find(option => typeof option.id === 'string');
+    return typeof firstOption?.id === 'string' ? firstOption.id : null;
+};
+
+const settleBlockingInteractionIfNeeded = async (
+    actors: Array<{ page: Page; playerId: string }>,
+): Promise<boolean> => {
+    const pages = actors.map(actor => actor.page);
+    for (let round = 0; round < 6; round += 1) {
+        const observed = await findOpenInteraction(pages, round === 0 ? 250 : 100);
+        if (!observed) {
+            return round > 0;
+        }
+
+        const kind = observed.current.kind;
+        const responderId = typeof observed.current.playerId === 'string'
+            ? observed.current.playerId
+            : null;
+        if (!responderId) {
+            throw new Error(`当前交互缺少决策玩家，不能收口：${JSON.stringify(observed.current)}`);
+        }
+
+        const responderPage = actors.find(actor => actor.playerId === responderId)?.page ?? observed.page;
+        for (const page of pages) {
+            await dismissAttackShowcaseIfVisible(page);
+        }
+
+        if (kind === 'dt:token-response') {
+            const result = await dispatchDiceThroneCommandWithTimeout(responderPage, {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: responderId,
+                payload: {},
+            }, 3000);
+            if (result !== 'ok') {
+                throw new Error(`Token 响应跳过失败：${result}; 交互=${JSON.stringify(observed.current)}`);
+            }
+            await responderPage.waitForTimeout(300);
+            continue;
+        }
+
+        if (kind === 'dt:bonus-dice') {
+            const result = await dispatchDiceThroneCommandWithTimeout(responderPage, {
+                type: 'SKIP_BONUS_DICE_REROLL',
+                playerId: responderId,
+                payload: {},
+            }, 3000);
+            if (result !== 'ok') {
+                throw new Error(`奖励骰确认失败：${result}; 交互=${JSON.stringify(observed.current)}`);
+            }
+            await responderPage.waitForTimeout(300);
+            continue;
+        }
+
+        if (kind === 'simple-choice') {
+            const optionId = chooseSimpleChoiceOptionId(observed.current);
+            if (!optionId) {
+                throw new Error(`simple-choice 没有可用选项，不能收口：${JSON.stringify(observed.current)}`);
+            }
+
+            const result = await dispatchDiceThroneCommandWithTimeout(responderPage, {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: responderId,
+                payload: {
+                    interactionId: observed.current.id,
+                    optionId,
+                },
+            }, 3000);
+            if (result !== 'ok') {
+                throw new Error(`simple-choice 响应失败：${result}; optionId=${optionId}; 交互=${JSON.stringify(observed.current)}`);
+            }
+            await responderPage.waitForTimeout(300);
+            continue;
+        }
+
+        return round > 0;
+    }
+
+    const remaining = await findOpenInteraction(pages, 100);
+    if (remaining) {
+        throw new Error(`交互超过最大收口轮次仍未关闭：${JSON.stringify(remaining.current)}`);
+    }
+    return true;
 };
 
 const clickAdvancePhase = async (page: Page, playerId: string) => {
     await closeDebugPanelIfOpen(page);
     await closeCardSpotlightIfOpen(page);
+    const before = await readAttackCloseoutSnapshot(page).catch(() => ({}));
     const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
     if (
         await advanceButton.isVisible({ timeout: 2000 }).catch(() => false)
         && await advanceButton.isEnabled({ timeout: 500 }).catch(() => false)
     ) {
         const clicked = await advanceButton.click({ timeout: 2000 }).then(() => true).catch(() => false);
-        if (clicked) return;
+        if (clicked) {
+            await page.waitForTimeout(500);
+            const after = await readAttackCloseoutSnapshot(page).catch(() => ({}));
+            if (didPhaseAdvanceAffectState(before, after)) return;
+        }
     }
     await dispatchDiceThroneCommand(page, {
         type: 'ADVANCE_PHASE',
         playerId,
         payload: {},
     });
+};
+
+const tryAdvancePhase = async (page: Page, playerId: string): Promise<boolean> => {
+    await closeDebugPanelIfOpen(page);
+    await closeCardSpotlightIfOpen(page);
+    const before = await readAttackCloseoutSnapshot(page).catch(() => ({}));
+    const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
+    if (
+        await advanceButton.isVisible({ timeout: 1000 }).catch(() => false)
+        && await advanceButton.isEnabled({ timeout: 500 }).catch(() => false)
+    ) {
+        const clicked = await advanceButton.click({ timeout: 1500 }).then(() => true).catch(() => false);
+        if (clicked) {
+            await page.waitForTimeout(500);
+            const after = await readAttackCloseoutSnapshot(page).catch(() => ({}));
+            if (didPhaseAdvanceAffectState(before, after)) return true;
+        }
+    }
+
+    const result = await dispatchDiceThroneCommandWithTimeout(page, {
+        type: 'ADVANCE_PHASE',
+        playerId,
+        payload: {},
+    }, 3000);
+    if (result === 'ok') {
+        await page.waitForTimeout(500);
+    }
+    return result === 'ok';
+};
+
+const settlePendingAttackIfNeeded = async (
+    actors: Array<{ page: Page; playerId: string }>,
+) => {
+    for (let round = 0; round < 6; round += 1) {
+        const core = await readHarnessCoreState(actors[0].page);
+        if (!core.pendingAttack && !core.pendingDamage) return;
+
+        const settledInteraction = await settleBlockingInteractionIfNeeded(actors);
+        if (settledInteraction) {
+            await actors[0].page.waitForTimeout(350);
+            continue;
+        }
+        await drainResponseWindows(...actors.map(actor => actor.page));
+
+        const afterDrain = await readHarnessCoreState(actors[0].page);
+        if (!afterDrain.pendingAttack && !afterDrain.pendingDamage) return;
+
+        const settledAfterDrain = await settleBlockingInteractionIfNeeded(actors);
+        if (settledAfterDrain) {
+            await actors[0].page.waitForTimeout(350);
+            continue;
+        }
+
+        let advanced = false;
+        for (const actor of actors) {
+            advanced = await tryAdvancePhase(actor.page, actor.playerId) || advanced;
+        }
+        if (!advanced) {
+            break;
+        }
+        await actors[0].page.waitForTimeout(500);
+    }
+
+    const finalSnapshot = await readAttackCloseoutSnapshot(actors[0].page);
+    if (finalSnapshot.pendingAttack || finalSnapshot.pendingDamage) {
+        throw new Error(`攻击未收口状态快照：${JSON.stringify(finalSnapshot, null, 2)}`);
+    }
 };
 
 const advanceOutOfOffensiveRollAfterAttackIfNeeded = async (page: Page, playerId: string) => {
@@ -352,14 +716,17 @@ const clickAbilitySlot = async (
         if (!element) return null;
 
         const rect = element.getBoundingClientRect();
-        const xFractions = [0.18, 0.5, 0.82];
-        const yFractions = [0.12, 0.28, 0.5, 0.72, 0.88];
+        const xFractions = [0.5, 0.28, 0.72, 0.18, 0.82];
+        const yFractions = [0.5, 0.68, 0.34, 0.82, 0.18];
 
         for (const yFraction of yFractions) {
             for (const xFraction of xFractions) {
                 const x = rect.left + rect.width * xFraction;
                 const y = rect.top + rect.height * yFraction;
                 const topElement = document.elementFromPoint(x, y);
+                if (topElement?.closest?.('button')) {
+                    continue;
+                }
                 const hitSlot = topElement?.closest?.('[data-ability-slot]');
                 if (hitSlot === element) {
                     return { x, y };
@@ -461,19 +828,43 @@ const setNinjaScenario = async (
             pendingAttack: null,
             pendingDamage: null,
             pendingBonusDiceSettlement: undefined,
+            currentRollContext: undefined,
             activatingAbilityId: undefined,
+            currentChoiceSourceAbilityId: undefined,
+            currentChoiceContext: undefined,
+            afterRollResponseWindowSequence: undefined,
+            afterRollResponseWindowSignature: undefined,
         };
         root.sys = forceFixedDieQueue({
             ...sys,
             phase: 'offensiveRoll',
             currentPlayerIndex: 1,
-            interaction: { ...asRecord(sys.interaction), current: undefined },
+            interaction: { ...asRecord(sys.interaction), current: undefined, queue: [], isBlocked: false },
             responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+            resolution: undefined,
         }, options.randomValues ?? values);
         return state;
     });
     await closeDebugPanelIfOpen(match.guestPage);
     await closeCardSpotlightIfOpen(match.guestPage);
+    await dismissAttackShowcaseIfVisible(match.guestPage);
+    await dismissAttackShowcaseIfVisible(match.hostPage);
+    await expect.poll(async () => {
+        const snapshot = await readAttackCloseoutSnapshot(match.guestPage);
+        return {
+            pendingAttack: snapshot.pendingAttack,
+            pendingDamage: snapshot.pendingDamage,
+            pendingBonusDiceSettlement: snapshot.pendingBonusDiceSettlement,
+            currentInteractionKind: snapshot.currentInteractionKind ?? null,
+            currentResponseWindowType: snapshot.currentResponseWindowType ?? null,
+        };
+    }, { timeout: 10000 }).toEqual({
+        pendingAttack: false,
+        pendingDamage: false,
+        pendingBonusDiceSettlement: false,
+        currentInteractionKind: null,
+        currentResponseWindowType: null,
+    });
     await expect(match.guestPage.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', 'ninja', { timeout: 10000 });
 };
 
@@ -548,6 +939,10 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'shadow-step-2-main');
             await chooseVariantByLabelIfVisible(match.guestPage, /暗影步 II（4个面具）/);
             await clickAdvancePhase(match.guestPage, '1');
+            await settlePendingAttackIfNeeded([
+                { page: match.guestPage, playerId: '1' },
+                { page: match.hostPage, playerId: '0' },
+            ]);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -576,6 +971,10 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await clickResolvedAbilitySlot(match.guestPage, 'lotus', 'smoke-screen-2-main');
             await clickAdvancePhase(match.guestPage, '1');
             await chooseFirstSimpleChoiceIfVisible(match.guestPage, /选择烟雾阵 II 的目标/i, /令2号玩家获得|2号玩家获得|P2/i);
+            await settlePendingAttackIfNeeded([
+                { page: match.guestPage, playerId: '1' },
+                { page: match.hostPage, playerId: '0' },
+            ]);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -605,6 +1004,10 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await screenshot(match.guestPage, testName, '05-assassinate-before-click.png');
             await clickResolvedAbilitySlot(match.guestPage, 'ultimate', 'ninja-assassinate');
             await clickAdvancePhase(match.guestPage, '1');
+            await settlePendingAttackIfNeeded([
+                { page: match.guestPage, playerId: '1' },
+                { page: match.hostPage, playerId: '0' },
+            ]);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -645,6 +1048,7 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             });
             await screenshot(match.guestPage, testName, '01-poison-blade-2-mask-before-click.png');
             await clickResolvedAbilitySlot(match.guestPage, 'combo', 'poison-blade');
+            await drainResponseWindows(match.hostPage, match.guestPage);
             await clickAdvancePhase(match.guestPage, '1');
 
             await expectRightTrayBonusDiceConfirmation(match.guestPage, () => readHarnessCoreState(match.guestPage), {});
@@ -652,6 +1056,10 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await settleCurrentBonusDice(match.guestPage, () => readHarnessCoreState(match.guestPage), {});
             await resolveDefenseOnPage(match.hostPage);
             await drainResponseWindows(match.hostPage, match.guestPage);
+            await settlePendingAttackIfNeeded([
+                { page: match.hostPage, playerId: '0' },
+                { page: match.guestPage, playerId: '1' },
+            ]);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -683,28 +1091,39 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
         try {
             await setNinjaScenario(match, [1, 2, 3, 4, 5], {
                 upgradedAbilityIds: ['death-blossom'],
-                defenderSneak: 1,
                 randomValues: [1, 4, 5, 6, 6],
             });
             await screenshot(match.guestPage, testName, '01-death-blossom-2-before-click.png');
             await clickResolvedAbilitySlot(match.guestPage, 'sky', 'death-blossom');
+            await drainResponseWindows(match.hostPage, match.guestPage);
             await clickAdvancePhase(match.guestPage, '1');
             await expectRightTrayBonusDiceConfirmation(match.guestPage, () => readHarnessCoreState(match.guestPage), {});
             await screenshot(match.guestPage, testName, '02-death-blossom-2-right-tray-before-confirm.png');
             await settleCurrentBonusDice(match.guestPage, () => readHarnessCoreState(match.guestPage), {});
+            await settlePendingAttackIfNeeded([
+                { page: match.guestPage, playerId: '1' },
+                { page: match.hostPage, playerId: '0' },
+            ]);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
                 const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
                 const p1Tokens = asRecord(p1.tokens) as Record<string, number>;
                 return {
                     settlementOpen: Boolean(core.pendingBonusDiceSettlement),
                     ninjutsu: p1Tokens[TOKEN_IDS.NINJUTSU] ?? 0,
+                    delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
                     pendingAttack: Boolean(core.pendingAttack),
                 };
             }, { timeout: 10000 }).toEqual({
                 settlementOpen: false,
-                ninjutsu: 1,
+                ninjutsu: 0,
+                delayedPoison: 1,
+                opponentHp: 25,
                 pendingAttack: false,
             });
             await screenshot(match.guestPage, testName, '04-death-blossom-2-after-closeout.png');

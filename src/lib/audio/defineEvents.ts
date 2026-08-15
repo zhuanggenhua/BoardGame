@@ -266,7 +266,7 @@ export function createFeedbackResolver<T extends EventDefinitions>(
  * playSound(getUISound(EVENTS.DAMAGE_DEALT));        // ❌ 编译错误
  * ```
  */
-export function getUISound<T extends { audio: 'ui'; sound: string | null }>(
+export function getUISound<T extends { type: string; audio: 'ui'; sound: string | null }>(
   eventDef: T
 ): string {
   if (!eventDef.sound) {

@@ -50,18 +50,6 @@ export const GameControls: React.FC<GameControlsProps> = ({ G, dispatch, playerI
     // 检查玩家是否是申请者（用于显示等待状态）
     const isRequester = requesterId === normalizedPlayerId;
 
-    // 临时日志：排查撤销按钮不显示及请求未同步问题
-    console.log('[UndoDebug]', {
-        playerID: normalizedPlayerId,
-        currentPlayer: normalizedCurrentPlayer,
-        isCurrentPlayer,
-        historyLen: snapshotCount,
-        request,
-        canRequest,
-        canReview,
-        isRequester,
-    });
-
     if (isRequester) {
         return (
             <div className="flex items-center gap-4 bg-neon-void/90 border border-neon-blue/50 p-4 rounded-lg shadow-[0_0_15px_rgba(0,243,255,0.3)] animate-pulse">

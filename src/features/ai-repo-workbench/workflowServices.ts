@@ -39,6 +39,11 @@ export interface PublishArtifactBundlePayload {
     nodeId: 'publish-artifact-bundle';
 }
 
+const joinWorkbenchPath = (root: string, ...segments: string[]) => [
+    root.replace(/[\\/]+$/, ''),
+    ...segments.map((segment) => segment.replace(/^[\\/]+|[\\/]+$/g, '')),
+].filter(Boolean).join('/');
+
 export type WorkflowMutationResult = WorkbenchJournal | Promise<WorkbenchJournal>;
 
 export interface LocalRuntime {
@@ -229,7 +234,12 @@ export function createLocalWorkflowOrchestrator(deps: WorkflowOrchestratorDeps):
                 },
                 outputRef: 'capture-faction-intent.output.intent',
                 outputSnapshot: {
-                    workingDirectory: `${activeWorktree.worktreePath}\\temp\\workbench\\${deps.sanitizeFactionPathSegment(subject)}`,
+                    workingDirectory: joinWorkbenchPath(
+                        activeWorktree.worktreePath,
+                        'temp',
+                        'workbench',
+                        deps.sanitizeFactionPathSegment(subject),
+                    ),
                     requestedOutcome: '生成规则驱动的派系定义草案与 ArtifactBundle',
                 },
                 startedAt: createdAt,

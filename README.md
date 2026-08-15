@@ -54,6 +54,8 @@ AI 驱动的现代化桌游平台，专注于**桌游教学**与**联机对战**
 ## 📦 项目结构
 
 ```
+├── .spec/              # AI 规范唯一真相源（Agent / Skill / knowledge / rules）
+├── openspec/           # 产品规格、提案和任务编排
 ├── src/
 │   ├── games/           # 游戏实现（每个游戏一个目录）
 │   ├── engine/          # 引擎层（Undo / Flow / Prompt / Tutorial / EventStream / Transport 等系统）
@@ -70,16 +72,20 @@ AI 驱动的现代化桌游平台，专注于**桌游教学**与**联机对战**
 ├── server.ts            # 游戏服务器入口（Koa + GameTransportServer）
 ├── docker/              # Dockerfile 与 Nginx 配置
 ├── scripts/             # 构建 / 部署 / 资源处理脚本
-├── docs/                # 项目文档
-│   └── logging-system.md  # 日志系统文档
+├── docs/                # 项目事实资料、规则来源、工具参考和历史说明
+├── evidence/            # 可复查证据、截图账本和审计结论
+├── temp/                # 临时数据、探针输出和中间截图（不入 Git）
+├── test-results/        # 测试结果和可引用测试产物（不入 Git）
 └── e2e/                 # Playwright 端到端测试
 ```
+
+更细的文档落点见 [`docs/README.md`](docs/README.md)；项目文档链接格式见 [`documentation-style`](.spec/knowledge/standards/documentation-style.md)。
 
 ## 🚀 快速开始
 
 ### 前置要求
 
-- [Node.js](https://nodejs.org/) >= 18
+- [Node.js](https://nodejs.org/) 24.1.0（以 `.nvmrc`、`.node-version`、`package.json#engines.node` 为准）
 - [Git](https://git-scm.com/)
 - [Docker](https://www.docker.com/)（可选，用于 MongoDB）
 
@@ -118,30 +124,6 @@ npm run dev:lite
 
 启动后访问 http://localhost:4273 即可；若该端口已被占用，启动日志会显示自动选出的本地地址。
 
-### Open Design MCP（协作者可选）
-
-这个仓库默认使用 Open Design 作为设计工具入口。协作者需要让 Codex / OpenClaw 使用本地设计 MCP 时，优先运行仓库内命令：
-
-```bash
-npm run setup:design:mcp
-```
-
-如果本机没有 Open Design 源码或 `od` 命令，脚本会安装到当前项目的 `.tools/open-design`：
-
-```bash
-npm run setup:open-design:install
-```
-
-启动本地 Open Design daemon：
-
-```bash
-npm run start:open-design
-```
-
-执行完成后需要**重启 Codex / OpenClaw 会话**，当前会话不会自动出现新 MCP 工具。
-
-更完整的协作者接入说明见 [docs/infra/open-design.md](docs/infra/open-design.md)。
-
 ### 环境变量
 
 开发环境只需复制 `.env.example` 即可运行。核心变量：
@@ -160,25 +142,30 @@ npm run start:open-design
 
 项目内置了完整的 AI 辅助创建工作流，分 6 个阶段逐步完成（骨架 → 类型 → 领域逻辑 → 系统组装 → UI → 收尾）。
 
-<details>
-<summary>新 clone 后交给 AI 的首次接管提示词</summary>
+协作者首次配置环境时，可以展开复制下面的提示词交给自己的 AI；GitHub 会给代码块右上角提供复制按钮。
 
-新 clone 本仓库后，直接把下面这段话交给 AI。它只负责把本机制作环境跑通，完成后即可专注游戏制作；不会擅自发布、部署或改动无关功能。
+<details>
+<summary>展开复制：从零配置本机环境并克隆项目</summary>
 
 ```text
-这是刚 clone 的 BoardGame 项目。请直接接管首次本地搭建，不要只告诉我命令。
+请把 BoardGame 配置到本机可打开页面。用户是编程新手；环境验证完成后停止，等待具体游戏需求。
 
-1. 先阅读 README.md、AGENTS.md、.spec/AGENTS.md，并只加载“本地运行、测试、资源上传检查、创建游戏”直接相关的项目规范。
-2. 检查 Node、npm、Git 和可选 Docker 是否可用；安装项目依赖，按 .env.example 建立本地 .env。
-3. 启动项目：优先 npm run dev；Docker 或 MongoDB 不可用时改用 npm run dev:lite。确认启动日志给出的本地地址（默认 `http://localhost:4273`）可访问，并运行一项与本次环境相符的最小本地测试。
-4. 验证资源上传通道，但绝对不要真实上传：只运行 npm run assets:check。只有输出“已获取服务器对象清单”才算上传入口连通；若输出 SSH 回退、本地扫描、缺 token 或连接错误，只报告“上传入口未验证”及缺少的最小环境条件，不得改用 npm run assets:upload、SSH、部署或索要/输出密钥。
-5. Open Design 是可选项：仅当我说要做设计稿、设计系统或使用 Open Design MCP 时，才运行 npm run setup:open-design、npm run start:open-design，并检查 http://127.0.0.1:7456/api/health；安装后提醒我重启 Codex。未提出设计需求时跳过它。
-6. 最后用简短中文汇报：本地地址、实际启动模式、测试结果、上传入口是否已验证、Open Design 是否跳过/可用、以及任何阻塞的最小补救动作。环境完成后，不要继续扫描、重构、部署或处理其它系统；等我提出具体游戏制作任务。
+仓库：https://github.com/zhuanggenhua/BoardGame.git
+
+执行要点：
+- 用中文说明关键动作和结果，能直接执行的安装、克隆、配置、启动和验证动作就直接执行。
+- 准备 Git、Node.js 24.1.0、npm 和浏览器；Node 以当前终端 `node -v` 为准。
+- 克隆仓库后读取仓库入口文档，按项目规范加载本地启动和新增游戏相关入口。
+- 执行 `npm install`，按 `.env.example` 创建本地 `.env`。
+- 优先用 `npm run dev:lite` 验证本地页面可访问；缺 Docker 或 MongoDB 时按轻量本地启动处理。
+- 范围到本地制作环境和新增游戏前置准备为止。
+
+收尾汇报：Git / Node / npm 版本、项目路径、本地访问地址、启动模式、是否可以开始新增游戏；如遇阻塞，说清现实后果、证据和最小补救动作。
 ```
 
 </details>
 
-使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.spec/skills/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
+准备添加新游戏时，把游戏需求交给支持项目规范的 AI 编辑器即可，它会按仓库内工作流引导你完成。
 
 数据录入使用的截图工具推荐pixpin
 
@@ -249,11 +236,7 @@ npm run check:arch         # 架构检查
 node scripts/audio/generate_common_audio_registry.js  # 重新生成音频注册表
 npm run assets:download -- --game <gameId> # 按游戏从服务器下载本地运行时素材
 npm run assets:upload    # 上传压缩资源到服务器素材主源
-npm run setup:design:mcp  # 给当前协作者补 Codex/OpenClaw 的 Open Design MCP 配置
-npm run setup:open-design:install # 首次使用源码版 Open Design 时安装并接入
-npm run start:open-design # 启动本地 Open Design daemon
 
-git push --no-verify
 ```
 
 > **注意**：新增或修改音频文件后，需要依次执行 `compress:audio` → `generate_common_audio_registry.js` → `assets:upload`，否则服务器素材主源的 `registry.json` 缺少新 key 会导致音频无法播放。
@@ -277,6 +260,10 @@ npm run test:dicethrone
 
 # 运行 E2E 测试
 npm run test:e2e
+
+# 本机没有 Playwright Chromium 时，可临时使用已安装的 Edge 或 Chrome
+npx cross-env PW_BROWSER_CHANNEL=msedge npm run test:e2e
+npx cross-env PW_BROWSER_CHANNEL=chrome npm run test:e2e
 ```
 
 详见 [自动化测试文档](docs/automated-testing.md)。
@@ -320,6 +307,8 @@ git clone https://github.com/zhuanggenhua/BoardGame.git
 4. 提交更改：`git commit -m "用中文准确描述改动"`
 5. 推送到自己的 fork：`git push origin feature/amazing-feature`
 6. 向 `zhuanggenhua/BoardGame` 的 `main` 分支创建 Pull Request。
+
+更新主分支、同步 PR 或遇到冲突时，协作者不需要自己手动解。把现场交给 AI，让它按项目 Git 工作流处理，并用人话询问必要选择。
 
 也可以先直接 clone 主仓再添加自己的 fork 作为可写远端；关键不是 clone 哪个仓库，而是不要把没有权限的上游主仓当作 push 目标。只有确认自己拥有主仓写权限时，才直接 push `zhuanggenhua/BoardGame`。普通代码 PR 不需要生产服务器 SSH 私钥、服务器主机指纹或部署权限；这些只属于发布、素材上传或远端回查场景。
 

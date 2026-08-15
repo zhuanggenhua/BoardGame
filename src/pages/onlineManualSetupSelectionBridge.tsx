@@ -20,7 +20,7 @@ type PendingManualSetupSelection = {
 export const OnlineManualSetupSelectionBridge = ({
     children,
     seatControllers,
-    dispatchManualSetupCommand: _dispatchManualSetupCommand,
+    dispatchManualSetupCommand,
     engineConfig,
 }: OnlineManualSetupSelectionBridgeProps) => {
     const { state, dispatch, requestManualSetupSelection } = useGameClient();
@@ -99,22 +99,31 @@ export const OnlineManualSetupSelectionBridge = ({
             if (!actionKind || !selectionId) {
                 return;
             }
-            const accepted = requestManualSetupSelection?.({
-                targetPlayerId: latestManualSetupPlayerId,
-                actionKind,
-                selectionId,
-            }, (result) => {
-                if (!result.accepted) {
-                    setPendingManualSetupSelection(null);
-                }
-            }) ?? false;
+            const accepted = requestManualSetupSelection
+                ? requestManualSetupSelection({
+                    targetPlayerId: latestManualSetupPlayerId,
+                    actionKind,
+                    selectionId,
+                }, (result) => {
+                    if (!result.accepted) {
+                        setPendingManualSetupSelection(null);
+                    }
+                })
+                : dispatchManualSetupCommand?.(latestManualSetupPlayerId, type, payload) ?? false;
             if (!accepted) {
                 setPendingManualSetupSelection(null);
             }
             return;
         }
         dispatch(type, payload);
-    }, [dispatch, engineConfig, requestManualSetupSelection, seatControllers, setPendingManualSetupSelection]);
+    }, [
+        dispatch,
+        dispatchManualSetupCommand,
+        engineConfig,
+        requestManualSetupSelection,
+        seatControllers,
+        setPendingManualSetupSelection,
+    ]);
 
     return (
         <GameClientOverrideProvider

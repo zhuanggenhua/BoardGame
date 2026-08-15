@@ -65,6 +65,16 @@ const workspaceAssetUrl = (workspace: string, fileName: string, nonce: number) =
     `/temp/devtools/qidahen-region-mask-workspaces/${encodeURIComponent(workspace)}/${fileName}?t=${nonce}`
 );
 
+const createImageDataFromPixels = (
+    pixels: Uint8Array | Uint8ClampedArray,
+    width: number,
+    height: number,
+): ImageData => {
+    const clampedPixels = new Uint8ClampedArray(pixels.byteLength);
+    clampedPixels.set(pixels);
+    return new ImageData(clampedPixels, width, height);
+};
+
 type RuntimeGuideCandidate = QidahenRegionMaskRuntimeGuideCandidate;
 
 type SharedPrintedRuntimePreviewCard = {
@@ -276,7 +286,7 @@ const QidahenRuntimePreview: React.FC = () => {
                     if (!previewContext) {
                         return null;
                     }
-                    previewContext.putImageData(new ImageData(preview.pixels, preview.width, preview.height), 0, 0);
+                    previewContext.putImageData(createImageDataFromPixels(preview.pixels, preview.width, preview.height), 0, 0);
                     const imageUrl = previewCanvas.toDataURL('image/png');
                     return {
                         printedRegionId: preview.printedRegionId,

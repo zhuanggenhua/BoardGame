@@ -17,13 +17,11 @@ import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import {
     createFlowSystem, createActionLogSystem, createUndoSystem,
-    createInteractionSystem, createRematchSystem, createResponseWindowSystem,
+    createInteractionSystem, createRematchSystem,
     createTutorialSystem, createEventStreamSystem, createSimpleChoiceSystem,
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import type { ActionCardDef } from '../domain/types';
-import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type { SmashUpCore, SmashUpEvent, MinionOnBase, CardInstance, BaseInPlay } from '../domain/types';
@@ -106,27 +104,6 @@ function buildSystems(): EngineSystem<SmashUpCore>[] {
         createInteractionSystem<SmashUpCore>(),
         createSimpleChoiceSystem<SmashUpCore>(),
         createRematchSystem<SmashUpCore>(),
-        createResponseWindowSystem<SmashUpCore>({
-            allowedCommands: ['su:play_action'],
-            commandWindowTypeConstraints: {
-                'su:play_action': ['meFirst'],
-            },
-            responseAdvanceEvents: [
-                { eventType: 'su:action_played', windowTypes: ['meFirst'] },
-            ],
-            loopUntilAllPass: true,
-            hasRespondableContent: (state, playerId, windowType) => {
-                if (windowType !== 'meFirst') return true;
-                const core = state as SmashUpCore;
-                const player = core.players[playerId];
-                if (!player) return false;
-                return player.hand.some(c => {
-                    if (c.type !== 'action') return false;
-                    const def = getCardDef(c.defId) as ActionCardDef | undefined;
-                    return def?.subtype === 'special' || def?.responseWindowTiming === 'beforeScoring';
-                });
-            },
-        }),
         createTutorialSystem<SmashUpCore>(),
         createEventStreamSystem<SmashUpCore>(),
         createSmashUpEventSystem(),
@@ -2735,7 +2712,7 @@ describe('P3: pirate_buccaneer_move（海盗被消灭时移动）触发链', () 
 describe('P3: multi_base_scoring（多基地计分）触发链', () => {
     it('通过直接设置交互测试：选择先计分的基地', () => {
         // 多基地计分交互由 scoring 流程触发，这里直接注入交互测试 handler
-        // 使用真实基地 defId（scoreOneBase 需要 baseDef.vpAwards）
+        // 使用真实基地 defId（scoreBaseViaFlow 需要 baseDef.vpAwards）
         const core = makeState({
             players: {
                 '0': makePlayer('0', { factions: ['pirates', 'aliens'] as [string, string] }),
@@ -2776,7 +2753,7 @@ describe('P3: multi_base_scoring（多基地计分）触发链', () => {
         // 选择先计分 base0
         const r1 = respond(state, '0', 'base_0', 'multi_base_scoring: 选基地');
 
-        // handler 调用 scoreOneBase，关键是 handler 被正确调用且不报错
+        // handler 调用 scoreBaseViaFlow，关键是 handler 被正确调用且不报错
         expect(r1.steps[0]?.success).toBe(true);
     });
 });

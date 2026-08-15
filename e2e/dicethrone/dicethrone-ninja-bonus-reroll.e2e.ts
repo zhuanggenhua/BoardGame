@@ -116,12 +116,8 @@ async function clickResolvedAbilitySlot(
 async function clearIncidentalHandHover(page: any): Promise<void> {
     await page.mouse.move(8, 8);
     await expect.poll(async () => (
-        page.locator('[data-testid="hand-area"]').evaluateAll((nodes: Element[]) => {
-            return nodes.every((node) => (
-                node.getAnimations({ subtree: true }).every((animation) => animation.playState !== 'running')
-            ));
-        })
-    ), { timeout: 10000 }).toBe(true);
+        page.locator('[data-testid="hand-area"] [data-card-id]:hover').count()
+    ), { timeout: 5000 }).toBe(0);
     await expect.poll(async () => (
         page.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]').evaluateAll((nodes: Element[]) => {
             return nodes.every((node) => {

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ManifestGameThumbnail } from '../components/lobby/thumbnails';
 import { GAME_CLIENT_MANIFEST } from '../games/manifest.client';
 import type { GameCategory, GameManifestEntry } from '../games/manifest.types';
-import { resolveGameManifestEntry } from '../games/mobileSupport';
+import { resolveGameManifestEntry } from '../shared/mobileSupport';
 import { UGC_API_URL } from './server';
 import type {
     UgcAssetManifestEntry,
@@ -164,12 +164,12 @@ const buildUgcEntry = async (pkg: UgcPackageSummary): Promise<GameConfig | null>
     if (!pkg?.packageId) return null;
     const manifest = pkg.coverAssetId ? await fetchPublishedManifest(pkg.packageId) : null;
     const coverUrl = resolveCoverUrl(manifest, pkg.coverAssetId);
-    const metadata = manifest?.metadata ?? {};
-    const authorName = typeof (metadata as Record<string, unknown>).author === 'string'
-        ? (metadata as Record<string, unknown>).author.trim()
+    const metadata = (manifest?.metadata ?? {}) as Record<string, unknown>;
+    const authorName = typeof metadata.author === 'string'
+        ? metadata.author.trim()
         : '';
-    const playerOptions = parseNumberArray((metadata as Record<string, unknown>).playerOptions);
-    const bestPlayers = parseNumberArray((metadata as Record<string, unknown>).bestPlayers);
+    const playerOptions = parseNumberArray(metadata.playerOptions);
+    const bestPlayers = parseNumberArray(metadata.bestPlayers);
     const title = pkg.name?.trim() || `UGC ${pkg.packageId}`;
     const description = pkg.description?.trim() || DEFAULT_UGC_DESCRIPTION;
 

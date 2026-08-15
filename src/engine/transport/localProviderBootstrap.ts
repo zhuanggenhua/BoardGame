@@ -1,11 +1,9 @@
-import type { Command, GameEvent, MatchState, RandomFn } from '../types';
+import type { MatchState, RandomFn } from '../types';
 import type { EngineSystem } from '../systems/types';
 import type { GameEngineConfig } from './server';
 import {
-    executePipeline,
     createSeededRandom,
     createInitialSystemState,
-    type PipelineConfig,
 } from '../pipeline';
 import { TestHarness, isTestEnvironment } from '../testing';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
@@ -19,150 +17,13 @@ type LocalProviderRandom = RandomFn & {
     getCursor: () => number;
 };
 
-type LocalProviderTestConfig = {
-    skipInitialization?: boolean;
-    skipFactionSelect?: boolean;
-    player0Factions?: string[];
-    player1Factions?: string[];
-};
-
-function readLocalProviderTestConfig(): LocalProviderTestConfig | undefined {
+function readLocalProviderTestConfig(): Record<string, unknown> | undefined {
     if (typeof window === 'undefined') {
         return undefined;
     }
     return (window as Window & {
-        __BG_TEST_CONFIG__?: LocalProviderTestConfig;
+        __BG_TEST_CONFIG__?: Record<string, unknown>;
     }).__BG_TEST_CONFIG__;
-}
-
-function buildSkippedInitializationState(args: {
-    config: GameEngineConfig;
-    setupPlayerIds: string[];
-    aiSeatIds: string[];
-}): MatchState<unknown> {
-    const { config, setupPlayerIds, aiSeatIds } = args;
-    const core: {
-        players: Record<string, {
-            id: string;
-            vp: number;
-            hand: unknown[];
-            deck: unknown[];
-            discard: unknown[];
-            factions: [string, string];
-        }>;
-        turnOrder: string[];
-        currentPlayerIndex: number;
-        bases: unknown[];
-        baseDeck: unknown[];
-        turnNumber: number;
-        nextUid: number;
-    } = {
-        players: {},
-        turnOrder: setupPlayerIds,
-        currentPlayerIndex: 0,
-        bases: [],
-        baseDeck: [],
-        turnNumber: 1,
-        nextUid: 1,
-    };
-
-    for (const playerId of setupPlayerIds) {
-        core.players[playerId] = {
-            id: playerId,
-            vp: 0,
-            hand: [],
-            deck: [],
-            discard: [],
-            factions: ['', ''],
-        };
-    }
-
-    const sys = createInitialSystemState(
-        setupPlayerIds,
-        config.systems as EngineSystem[],
-    );
-    sys.phase = 'playCards';
-    return setUndoAiSeatIds(
-        normalizeStateForConfig(config, { sys, core }),
-        aiSeatIds,
-    );
-}
-
-function buildSkippedFactionSelectionState(args: {
-    config: GameEngineConfig;
-    random: LocalProviderRandom;
-    setupData: unknown;
-    setupPlayerIds: string[];
-    aiSeatIds: string[];
-    testConfig: LocalProviderTestConfig;
-}): MatchState<unknown> {
-    const {
-        config,
-        random,
-        setupData,
-        setupPlayerIds,
-        aiSeatIds,
-        testConfig,
-    } = args;
-    const core = config.domain.setup(setupPlayerIds, random, setupData) as unknown;
-    const sys = createInitialSystemState(
-        setupPlayerIds,
-        config.systems as EngineSystem[],
-    );
-    let currentState: MatchState<unknown> = setUndoAiSeatIds({ sys, core }, aiSeatIds);
-
-    const selectionOrder: Array<{ playerId: string; factionIndex: number }> = [
-        { playerId: '0', factionIndex: 0 },
-        { playerId: '1', factionIndex: 0 },
-        { playerId: '1', factionIndex: 1 },
-        { playerId: '0', factionIndex: 1 },
-    ];
-
-    const pipelineConfig: PipelineConfig<unknown, Command, GameEvent> = {
-        domain: config.domain,
-        systems: config.systems as EngineSystem<unknown>[],
-        systemsConfig: config.systemsConfig,
-    };
-
-    for (const { playerId, factionIndex } of selectionOrder) {
-        const factions = playerId === '0'
-            ? testConfig.player0Factions
-            : testConfig.player1Factions;
-        const factionId = factions?.[factionIndex];
-
-        if (!factionId) {
-            console.warn(`[LocalGameProvider] 玩家 ${playerId} 的第 ${factionIndex + 1} 个派系未指定，跳过`);
-            continue;
-        }
-
-        const command: Command = {
-            type: 'su:select_faction',
-            playerId,
-            payload: { factionId },
-            timestamp: Date.now(),
-            skipValidation: true,
-        };
-
-        const result = executePipeline(
-            pipelineConfig,
-            currentState,
-            command,
-            random,
-            setupPlayerIds,
-        );
-
-        if (!result.success) {
-            console.error('[LocalGameProvider] 派系选择失败:', result.error);
-            break;
-        }
-
-        currentState = result.state;
-    }
-
-    return setUndoAiSeatIds(
-        normalizeStateForConfig(config, currentState),
-        aiSeatIds,
-    );
 }
 
 export function createLocalProviderRandom(seed: string, initialCursor = 0): LocalProviderRandom {
@@ -261,27 +122,20 @@ export function createInitialLocalProviderState(args: {
     }
 
     const testConfig = readLocalProviderTestConfig();
-    if (testConfig?.skipInitialization) {
-        return buildSkippedInitializationState({
-            config,
-            setupPlayerIds,
-            aiSeatIds,
-        });
-    }
-
-    const shouldSkipFactionSelect = testConfig?.skipFactionSelect === true
-        && Array.isArray(testConfig.player0Factions)
-        && testConfig.player0Factions.length > 0;
-
-    if (shouldSkipFactionSelect && testConfig) {
-        return buildSkippedFactionSelectionState({
-            config,
+    if (testConfig) {
+        const testInitialState = config.createLocalTestInitialState?.({
+            testConfig,
             random: initialRandom,
             setupData,
             setupPlayerIds,
             aiSeatIds,
-            testConfig,
         });
+        if (testInitialState) {
+            return setUndoAiSeatIds(
+                normalizeStateForConfig(config, testInitialState),
+                aiSeatIds,
+            );
+        }
     }
 
     const core = config.domain.setup(setupPlayerIds, initialRandom, setupData);

@@ -40,19 +40,40 @@ type JsonRecord = Record<string, unknown>;
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
+type EvidenceScreenshotAnimationMode = 'allow' | 'disabled';
 
-async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: string) {
+async function saveEvidenceScreenshot(
+    page: Page,
+    testInfo: TestInfo,
+    name: string,
+    options: { animations?: EvidenceScreenshotAnimationMode } = {},
+) {
     const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({
         path,
         fullPage: false,
-        animations: 'disabled',
+        animations: options.animations ?? 'disabled',
         timeout: 10_000,
     }));
     testInfo.annotations.push({
         type: 'evidence-screenshot',
         description: path,
     });
+}
+
+const ATTACHMENT_TYPE_LABEL_TEXTS = ['装备', '结界', 'Equipment', 'Enchantment', 'Enchantments', 'Ongoing', 'Attached'];
+
+async function expectNoExternalAttachmentTypeLabel(attachment: Locator) {
+    const externalLabels = await attachment.evaluate((element, labelTexts) => {
+        const candidates = Array.from(element.children)
+            .filter((child) => child.getAttribute('data-card-atlas-frame') !== 'true')
+            .map((child) => child.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+            .filter(Boolean);
+
+        return candidates.filter((text) => labelTexts.includes(text));
+    }, ATTACHMENT_TYPE_LABEL_TEXTS);
+
+    expect(externalLabels).toEqual([]);
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -147,6 +168,11 @@ async function readServerCoreSnapshot(
                 'kind',
                 'actionReady',
                 'damage',
+                'revealed',
+                'anchoredToObjectId',
+                'anchoredToPlayerId',
+                'anchoredToZoneId',
+                'restrainedByObjectId',
                 'statusTokens',
             ]),
         ])),
@@ -202,18 +228,59 @@ async function collectFailureEvidence(
     };
 }
 
-async function openOnlineBoard(page: Page) {
+type VisibleImageLoadFailure = {
+    alt: string | null;
+    src: string;
+    complete: boolean;
+    naturalWidth: number;
+    naturalHeight: number;
+    rect: { x: number; y: number; width: number; height: number };
+    nearestTestId: string | null;
+};
+
+async function readVisibleImageLoadFailures(page: Page): Promise<VisibleImageLoadFailure[]> {
+    return page.evaluate(() => Array.from(document.images)
+        .map((image) => {
+            const rect = image.getBoundingClientRect();
+            const nearestTestId = image.closest('[data-testid]')?.getAttribute('data-testid') ?? null;
+            return {
+                alt: image.getAttribute('alt'),
+                src: image.currentSrc || image.src,
+                complete: image.complete,
+                naturalWidth: image.naturalWidth,
+                naturalHeight: image.naturalHeight,
+                rect: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                },
+                nearestTestId,
+            };
+        })
+        .filter((image) => image.rect.width > 10 && image.rect.height > 10)
+        .filter((image) => image.naturalWidth <= 0 || image.naturalHeight <= 0)
+        .map((image) => ({
+            ...image,
+            src: image.src.length > 240 ? `${image.src.slice(0, 237)}...` : image.src,
+        })));
+}
+
+async function waitForVisibleImagesLoaded(page: Page, label: string) {
+    await expect.poll(async () => readVisibleImageLoadFailures(page), {
+        message: `${label} Mage Wars 棋盘仍有可见图片没有真实尺寸`,
+        timeout: 30_000,
+        intervals: [250, 500, 1_000],
+    }).toEqual([]);
+}
+
+async function openOnlineBoard(page: Page, label: string) {
     await waitForFrontendAssets(page, 45_000);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     const board = page.getByTestId('mage-wars-board');
-    await expect(board).toBeVisible({ timeout: 30_000 });
+    await expect(board).toBeVisible({ timeout: 90_000 });
     await expect(board).toContainText('正式竞技场');
-    await page.waitForFunction(() => Array.from(document.images)
-        .filter((image) => {
-            const rect = image.getBoundingClientRect();
-            return rect.width > 10 && rect.height > 10;
-        })
-        .every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0), undefined, { timeout: 30_000 });
+    await waitForVisibleImagesLoaded(page, label);
 }
 
 async function readPhase(page: Page): Promise<string | null> {
@@ -274,6 +341,24 @@ async function readOnlineBoardSnapshot(page: Page) {
     };
 }
 
+async function readZoneFieldCardSnapshot(
+    page: Page,
+    zoneId: string,
+    sourceCardId: number,
+    contextLabel: string,
+) {
+    const snapshot = await readOnlineBoardSnapshot(page);
+    const zone = snapshot.zones.find((candidate) => candidate.zoneId === zoneId);
+    const card = zone?.fieldCards.find((candidate) => candidate.sourceCardId === String(sourceCardId));
+    if (!card) {
+        throw new Error([
+            `${contextLabel} 未在 ${zoneId} 找到 CardID ${sourceCardId}`,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    }
+    return card;
+}
+
 async function readHitTest(locator: Locator) {
     return locator.evaluate((element) => {
         const rect = element.getBoundingClientRect();
@@ -317,6 +402,120 @@ async function readHitTest(locator: Locator) {
     });
 }
 
+type MageWarsFxAudit = {
+    sourceRow: string | null;
+    sourceCol: string | null;
+    targetRow: string | null;
+    targetCol: string | null;
+    hasSourceWake: boolean;
+    hasImpact: boolean;
+    hasTravel: boolean;
+};
+
+async function waitForFxSourceImpactAudit(page: Page, kind: 'spell' | 'attack'): Promise<MageWarsFxAudit> {
+    const handle = await page.waitForFunction((fxKind) => {
+        const travel = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`);
+        const sourceWake = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-source-wake"]`);
+        const impact = document.querySelector<HTMLElement>(
+            fxKind === 'spell'
+                ? '[data-testid="mage-wars-fx-spell-cast"]'
+                : '[data-testid="mage-wars-fx-attack-impact"]',
+        );
+        if (!sourceWake || !impact) return null;
+        return {
+            sourceRow: travel?.dataset.sourceRow ?? null,
+            sourceCol: travel?.dataset.sourceCol ?? null,
+            targetRow: travel?.dataset.targetRow ?? null,
+            targetCol: travel?.dataset.targetCol ?? null,
+            hasSourceWake: true,
+            hasImpact: true,
+            hasTravel: Boolean(travel),
+        };
+    }, kind, { timeout: 5_000 });
+    const audit = await handle.jsonValue() as MageWarsFxAudit;
+    expect(audit.hasSourceWake).toBe(true);
+    expect(audit.hasImpact).toBe(true);
+    return audit;
+}
+
+async function waitForFxTravelAudit(page: Page, kind: 'spell' | 'attack') {
+    const audit = await waitForFxSourceImpactAudit(page, kind);
+    expect(audit.hasTravel).toBe(true);
+    expect(audit.sourceRow).toMatch(/^\d+$/);
+    expect(audit.sourceCol).toMatch(/^\d+$/);
+    expect(audit.targetRow).toMatch(/^\d+$/);
+    expect(audit.targetCol).toMatch(/^\d+$/);
+    expect(`${audit.sourceRow}:${audit.sourceCol}`).not.toBe(`${audit.targetRow}:${audit.targetCol}`);
+    return audit;
+}
+
+function resolveFxImpactTestId(kind: 'spell' | 'attack'): string {
+    return kind === 'spell'
+        ? 'mage-wars-fx-spell-cast'
+        : 'mage-wars-fx-attack-impact';
+}
+
+async function captureMageWarsFxProcessScreenshots(
+    page: Page,
+    testInfo: TestInfo,
+    kind: 'spell' | 'attack',
+    label: string,
+    options: {
+        expectTravel?: boolean;
+        expectDamageFloat?: boolean;
+    } = {},
+): Promise<MageWarsFxAudit> {
+    const audit = options.expectTravel
+        ? await waitForFxTravelAudit(page, kind)
+        : await waitForFxSourceImpactAudit(page, kind);
+
+    await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(resolveFxImpactTestId(kind))).toBeVisible({ timeout: 5_000 });
+    await page.waitForTimeout(80);
+    await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        options.expectTravel ? `${label}-来源唤醒过程帧` : `${label}-来源唤醒和命中过程帧`,
+        { animations: 'allow' },
+    );
+
+    if (options.expectTravel) {
+        const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`);
+        await expect(travel).toBeVisible({ timeout: 5_000 });
+        await page.waitForTimeout(260);
+        await saveEvidenceScreenshot(page, testInfo, `${label}-投射物飞行中`, { animations: 'allow' });
+    } else {
+        expect(audit.hasTravel).toBe(false);
+        return audit;
+    }
+
+    await page.waitForTimeout(280);
+    await expect(page.getByTestId(resolveFxImpactTestId(kind))).toBeVisible({ timeout: 5_000 });
+    if (options.expectDamageFloat) {
+        await page.waitForFunction(() => {
+            const float = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
+            if (!float) return false;
+            const rect = float.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = float;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            return rect.width > 0
+                && rect.height > 0
+                && effectiveOpacity > 0.35
+                && (float.textContent?.includes('-') ?? false);
+        }, undefined, { timeout: 5_000 });
+        await saveEvidenceScreenshot(page, testInfo, `${label}-命中动画和伤害飘字过程帧`, { animations: 'allow' });
+    } else {
+        await saveEvidenceScreenshot(page, testInfo, `${label}-命中动画过程帧`, { animations: 'allow' });
+    }
+
+    return audit;
+}
+
 async function selectPreparedSpell(page: Page, preparedCard: Locator, contextLabel: string) {
     await preparedCard.scrollIntoViewIfNeeded();
     const beforeHit = await readHitTest(preparedCard);
@@ -333,6 +532,45 @@ async function selectPreparedSpell(page: Page, preparedCard: Locator, contextLab
         ]);
         throw new Error([
             `${contextLabel} 点击后没有进入选中态`,
+            message,
+            `beforeHit=${JSON.stringify(beforeHit, null, 2)}`,
+            `afterHit=${JSON.stringify(afterHit, null, 2)}`,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    });
+}
+
+async function clickFieldObject(page: Page, fieldObject: Locator, contextLabel: string) {
+    await expect(fieldObject).toBeVisible({ timeout: 3_000 }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const snapshot = await readOnlineBoardSnapshot(page);
+        throw new Error([
+            `${contextLabel} 场上对象不可见`,
+            message,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    });
+    await expect(fieldObject).toBeEnabled({ timeout: 3_000 }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const snapshot = await readOnlineBoardSnapshot(page);
+        throw new Error([
+            `${contextLabel} 场上对象不可点击`,
+            message,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    });
+
+    const beforeHit = await readHitTest(fieldObject);
+    await fieldObject.click({ timeout: 3_000 }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const [afterHit, snapshot] = await Promise.all([
+            readHitTest(fieldObject).catch((hitError: unknown) => ({
+                error: hitError instanceof Error ? hitError.message : String(hitError),
+            })),
+            readOnlineBoardSnapshot(page),
+        ]);
+        throw new Error([
+            `${contextLabel} 点击场上对象失败`,
             message,
             `beforeHit=${JSON.stringify(beforeHit, null, 2)}`,
             `afterHit=${JSON.stringify(afterHit, null, 2)}`,
@@ -410,9 +648,12 @@ async function clickTurnEndIfEnabled(page: Page): Promise<boolean> {
         return true;
     } catch (error: unknown) {
         if (await turnEnd.isEnabled({ timeout: 200 }).catch(() => false)) {
-            await turnEnd.click({ timeout: 800, force: true });
-            await page.waitForTimeout(120);
-            return true;
+            return turnEnd.click({ timeout: 1_500, force: true })
+                .then(async () => {
+                    await page.waitForTimeout(120);
+                    return true;
+                })
+                .catch(() => false);
         }
         return false;
     }
@@ -519,6 +760,10 @@ async function waitForZoneFieldCard(
 
 async function advanceBothPlayersToPlanning(match: MageWarsOnlineMatch) {
     const preparationPhases = new Set(['reset', 'channel', 'upkeep']);
+    const diagnostics = [
+        { label: 'host', diagnostics: attachPageDiagnostics(match.hostPage) },
+        { label: 'guest', diagnostics: attachPageDiagnostics(match.guestPage) },
+    ];
     for (let index = 0; index < 24; index += 1) {
         const phases = await Promise.all([
             readPhase(match.hostPage),
@@ -537,10 +782,21 @@ async function advanceBothPlayersToPlanning(match: MageWarsOnlineMatch) {
         ]);
     }
 
-    await expect.poll(async () => Promise.all([
+    const [hostPhase, guestPhase] = await Promise.all([
         readPhase(match.hostPage),
         readPhase(match.guestPage),
-    ])).toEqual(['planning', 'planning']);
+    ]);
+    const failureEvidence = await collectFailureEvidence(match.hostPage, {
+        match,
+        playerId: '0',
+        diagnostics,
+    });
+    throw new Error([
+        '正式联机未能从准备阶段推进到计划阶段',
+        `expectedPhase=["planning","planning"]`,
+        `actualPhase=${JSON.stringify([hostPhase, guestPhase])}`,
+        `failureEvidence=${JSON.stringify(failureEvidence, null, 2)}`,
+    ].join('\n'));
 }
 
 async function setupOnlineMageWars(
@@ -610,7 +866,7 @@ async function setupOnlineMageWars(
     await seedMatchCredentials(guestContext, 'mage-wars', matchId, '1', guestCredentials);
     await guestPage.goto(`/play/mage-wars/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
 
-    await Promise.all([openOnlineBoard(hostPage), openOnlineBoard(guestPage)]);
+    await Promise.all([openOnlineBoard(hostPage, '房主'), openOnlineBoard(guestPage, '访客')]);
     return {
         hostContext,
         guestContext,
@@ -653,7 +909,26 @@ async function selectFirstVisibleSpellbookCard(page: Page): Promise<string> {
 }
 
 async function selectNamedSpellbookCard(page: Page, name: string) {
+    await page.getByRole('button', { name: '全部', exact: true }).click();
+    const previousPage = page.getByRole('button', { name: '上一页', exact: true });
     for (let index = 0; index < 8; index += 1) {
+        if (await previousPage.isDisabled().catch(() => true)) break;
+        await previousPage.click();
+    }
+    await expect(previousPage).toBeDisabled({ timeout: 3_000 });
+
+    const seenPages: string[][] = [];
+    for (let index = 0; index < 8; index += 1) {
+        const visibleNames = await page.getByTestId('mage-wars-desktop-spellbook-card').evaluateAll((cards) => (
+            cards
+                .filter((card) => {
+                    const rect = card.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                })
+                .map((card) => card.getAttribute('aria-label') ?? '')
+                .filter(Boolean)
+        ));
+        seenPages.push(visibleNames);
         const card = page.locator(`[data-testid="mage-wars-desktop-spellbook-card"][aria-label="${name}"]`).first();
         if (await card.isVisible().catch(() => false) && await card.isEnabled().catch(() => false)) {
             await card.click();
@@ -664,7 +939,19 @@ async function selectNamedSpellbookCard(page: Page, name: string) {
         if (await nextPage.isDisabled().catch(() => true)) break;
         await nextPage.click();
     }
-    throw new Error(`正式联机法术书中没有找到卡牌：${name}`);
+    throw new Error(`正式联机法术书中没有找到卡牌：${name}；已查看页面：${seenPages.map((names, pageIndex) => `第${pageIndex + 1}页=${names.join('、') || '空'}`).join('；')}`);
+}
+
+async function selectNamedSpellbookCards(page: Page, names: string[]) {
+    for (const name of names) {
+        await selectNamedSpellbookCard(page, name);
+    }
+}
+
+async function planNamedSpells(page: Page, names: string[]) {
+    await selectNamedSpellbookCards(page, names);
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`计划 ${names.length} 张`);
+    await page.getByTestId('mage-wars-plan-spells').click();
 }
 
 function selfPreparedCardByName(page: Page, name: string): Locator {
@@ -684,6 +971,48 @@ function hasSpellAttackRolledEvent(
             && payload.targetObjectId === targetObjectId
             && Array.isArray(payload.diceResults);
     });
+}
+
+function hasArenaObjectSnapshot(
+    snapshot: JsonRecord,
+    options: {
+        sourceSpellCardId: number;
+        kind: string;
+        ownerId?: '0' | '1';
+        anchoredToObjectId?: string;
+        anchoredToPlayerId?: '0' | '1';
+        anchoredToZoneId?: string;
+        revealed?: boolean;
+        restrainedByObjectId?: string;
+    },
+): boolean {
+    const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+    return Object.values(objects).some((candidate) => {
+        if (!isRecord(candidate)) return false;
+        return candidate.sourceSpellCardId === options.sourceSpellCardId
+            && candidate.kind === options.kind
+            && (options.ownerId === undefined || candidate.ownerId === options.ownerId)
+            && (options.anchoredToObjectId === undefined || candidate.anchoredToObjectId === options.anchoredToObjectId)
+            && (options.anchoredToPlayerId === undefined || candidate.anchoredToPlayerId === options.anchoredToPlayerId)
+            && (options.anchoredToZoneId === undefined || candidate.anchoredToZoneId === options.anchoredToZoneId)
+            && (options.revealed === undefined || candidate.revealed === options.revealed)
+            && (options.restrainedByObjectId === undefined || candidate.restrainedByObjectId === options.restrainedByObjectId);
+    });
+}
+
+async function expectServerObject(
+    page: Page,
+    match: MageWarsOnlineMatch,
+    playerId: '0' | '1',
+    options: Parameters<typeof hasArenaObjectSnapshot>[1],
+    message: string,
+) {
+    await expect.poll(async () => (
+        hasArenaObjectSnapshot(await readServerCoreSnapshot(page, match, playerId), options)
+    ), {
+        message,
+        timeout: 5_000,
+    }).toBe(true);
 }
 
 async function deployBothPlayers(
@@ -719,6 +1048,55 @@ async function deployBothPlayers(
         diagnostics,
     });
     await match.guestPage.getByTestId('mage-wars-turn-end').click();
+}
+
+async function castPreparedSpellOnMage(
+    page: Page,
+    spellName: string,
+    targetPlayerId: '0' | '1',
+) {
+    const prepared = selfPreparedCardByName(page, spellName);
+    await advanceUntilEnabled(page, prepared);
+    await selectPreparedSpell(page, prepared, spellName);
+    await page.locator(`[data-testid="mage-wars-zone-mage-entity"][data-player-id="${targetPlayerId}"]`).first().click();
+}
+
+async function castPreparedSpellOnFieldObject(
+    page: Page,
+    spellName: string,
+    target: Locator,
+    beforeTargetClick?: () => void,
+) {
+    const prepared = selfPreparedCardByName(page, spellName);
+    await advanceUntilEnabled(page, prepared);
+    await selectPreparedSpell(page, prepared, spellName);
+    await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
+    beforeTargetClick?.();
+    await clickFieldObject(page, target, `${spellName} 选择目标`);
+}
+
+async function resolveCurrentActorOrder(
+    match: MageWarsOnlineMatch,
+    contextLabel: string,
+    diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
+): Promise<Array<'0' | '1'>> {
+    const board = match.hostPage.getByTestId('mage-wars-board');
+    for (let index = 0; index < 80; index += 1) {
+        const actorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
+        if (actorId === '0') return ['0', '1'];
+        if (actorId === '1') return ['1', '0'];
+        await match.hostPage.waitForTimeout(120);
+    }
+
+    const failureEvidence = await collectFailureEvidence(match.hostPage, {
+        match,
+        playerId: '0',
+        diagnostics,
+    });
+    throw new Error([
+        `${contextLabel} 未能读取当前行动方`,
+        `failureEvidence=${JSON.stringify(failureEvidence, null, 2)}`,
+    ].join('\n'));
 }
 
 async function advanceToPlayerCreatureAction(
@@ -958,11 +1336,19 @@ test.describe('Mage Wars formal online runtime', () => {
             const preparedCharge = selfPreparedCardByName(match.hostPage, '冲锋陷阵');
             await expect(preparedCharge).toBeEnabled();
             await preparedCharge.click();
-            const wolfCard = match.hostPage.locator('[data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
+            const wolfCard = match.hostPage.locator('[data-testid="mage-wars-arena-zone-a3"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
             await expect(wolfCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
+            const chargeFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                match.hostPage,
+                testInfo,
+                'spell',
+                '03A-冲锋陷阵同格法术',
+                { expectTravel: false },
+            );
             await wolfCard.click();
+            const chargeFxAudit = await chargeFxAuditPromise;
+            expect(chargeFxAudit.hasTravel).toBe(false);
 
-            await expect(match.hostPage.getByTestId('mage-wars-fx-spell-cast')).toBeVisible();
             await expect.poll(async () => match.hostPage.getByTestId('mage-wars-mage-hud-self').innerText()).toMatch(/法力\s+[\s\S]*7/);
             await expect(match.hostPage.getByTestId('mage-wars-discard-pile')).toContainText('弃牌 2');
             await expect(match.hostPage.locator(`${SELF_PREPARED_CARD_SELECTOR}[aria-label="冲锋陷阵"]`)).toHaveCount(0);
@@ -1069,6 +1455,169 @@ test.describe('Mage Wars formal online runtime', () => {
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
             await saveEvidenceScreenshot(match.guestPage, testInfo, '08-攻击行动结束后-进入终末快速施法窗口');
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
+    test('正式联机入口覆盖两派系法术类型代表链', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(420_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage);
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage);
+        const diagnostics = [
+            { label: 'host', diagnostics: hostDiagnostics },
+            { label: 'guest', diagnostics: guestDiagnostics },
+        ];
+
+        try {
+            await advanceBothPlayersToPlanning(match);
+            await planNamedSpells(match.hostPage, ['野性山猫']);
+            await planNamedSpells(match.guestPage, ['阿希拉牧师']);
+            await deployBothPlayers(match, '野性山猫', '阿希拉牧师', 'a3', 'd1', diagnostics);
+
+            const hostBobcatSnapshot = await readZoneFieldCardSnapshot(match.hostPage, 'a3', 2906, '野性山猫部署后');
+            const guestClericSnapshot = await readZoneFieldCardSnapshot(match.guestPage, 'd1', 2811, '阿希拉牧师部署后');
+            const hostBobcatObjectId = hostBobcatSnapshot.objectId;
+            const guestClericObjectId = guestClericSnapshot.objectId;
+            if (!hostBobcatObjectId) throw new Error('野性山猫没有对象 ID，无法核对后续结界锚点');
+            if (!guestClericObjectId) throw new Error('阿希拉牧师没有对象 ID，无法核对后续魔物锚点');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '09-两派系生物部署后-兽王女祭司各有场上生物');
+
+            await advanceToReadyFieldObjectAction(match, '0', 'a3', 2906, '野性山猫', diagnostics);
+            await clickFieldObject(
+                match.hostPage,
+                match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first(),
+                '野性山猫移动前选择来源',
+            );
+            await clickLegalMoveZone(match.hostPage, 'a2', '野性山猫移动到相邻格以验证攻击法术路径');
+            await waitForZoneFieldCard(match.hostPage, 'a2', 2906, '野性山猫移动后', {
+                match,
+                playerId: '0',
+                diagnostics,
+            });
+            const hostBobcatById = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+
+            await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpells(match.hostPage, ['巨熊皮甲', '巨熊力量']);
+            await planNamedSpells(match.guestPage, ['风龙皮甲', '公牛耐力']);
+            const secondRoundOrder = await resolveCurrentActorOrder(match, '装备和结界代表链', diagnostics);
+            for (const actorId of secondRoundOrder) {
+                if (actorId === '0') {
+                    await castPreparedSpellOnMage(match.hostPage, '巨熊皮甲', '0');
+                    await expectServerObject(match.hostPage, match, '0', {
+                        sourceSpellCardId: 3711,
+                        kind: 'equipment',
+                        ownerId: '0',
+                        anchoredToPlayerId: '0',
+                    }, '兽王装备巨熊皮甲应通过正式页面施放并附着到兽王法师');
+
+                    await castPreparedSpellOnFieldObject(match.hostPage, '巨熊力量', hostBobcatById);
+                    await expectServerObject(match.hostPage, match, '0', {
+                        sourceSpellCardId: 1914,
+                        kind: 'enchantment',
+                        ownerId: '0',
+                        anchoredToObjectId: hostBobcatObjectId,
+                    revealed: true,
+                }, '兽王结界巨熊力量应通过正式页面施放并附着到野性山猫');
+                await match.hostPage.getByTestId('mage-wars-turn-end').click();
+                continue;
+            }
+
+                await castPreparedSpellOnMage(match.guestPage, '风龙皮甲', '1');
+                await expectServerObject(match.guestPage, match, '1', {
+                    sourceSpellCardId: 3708,
+                    kind: 'equipment',
+                    ownerId: '1',
+                    anchoredToPlayerId: '1',
+                }, '女祭司装备风龙皮甲应通过正式页面施放并附着到女祭司法师');
+
+                const guestClericById = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
+                await castPreparedSpellOnFieldObject(match.guestPage, '公牛耐力', guestClericById);
+                await expectServerObject(match.guestPage, match, '1', {
+                    sourceSpellCardId: 1808,
+                    kind: 'enchantment',
+                    ownerId: '1',
+                    anchoredToObjectId: guestClericObjectId,
+                    revealed: true,
+                }, '女祭司结界公牛耐力应通过正式页面施放并附着到阿希拉牧师');
+                await match.guestPage.getByTestId('mage-wars-turn-end').click();
+            }
+            const hostMageEquipment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="3711"][data-attachment-kind="equipment"]').first();
+            const guestMageEquipment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="3708"][data-attachment-kind="equipment"]').first();
+            const hostCreatureEnchantment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="1914"][data-attachment-kind="enchantment"]').first();
+            const guestCreatureEnchantment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="1808"][data-attachment-kind="enchantment"]').first();
+            const attachedCards = [hostMageEquipment, guestMageEquipment, hostCreatureEnchantment, guestCreatureEnchantment];
+            for (const attachedCard of attachedCards) {
+                await expect(attachedCard).toBeVisible();
+                await expectNoExternalAttachmentTypeLabel(attachedCard);
+            }
+            await expect(match.hostPage.locator('[data-testid="mage-wars-zone-field-card"][data-source-card-id="3711"]')).toHaveCount(0);
+            await expect(match.hostPage.locator('[data-testid="mage-wars-zone-field-card"][data-source-card-id="3708"]')).toHaveCount(0);
+            await expect(match.hostPage.locator('[data-testid="mage-wars-zone-field-card"][data-source-card-id="1914"]')).toHaveCount(0);
+            await expect(match.hostPage.locator('[data-testid="mage-wars-zone-field-card"][data-source-card-id="1808"]')).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '10-装备和结界作为附件结算后-两派系附着关系可见');
+
+            await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpells(match.hostPage, ['缠绕藤蔓', '间歇喷泉']);
+            await planNamedSpells(match.guestPage, ['圣光之柱']);
+            const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
+            for (const actorId of thirdRoundOrder) {
+                if (actorId === '0') {
+                    const hostTargetBobcat = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+                    await castPreparedSpellOnFieldObject(match.hostPage, '缠绕藤蔓', hostTargetBobcat);
+                    await expectServerObject(match.hostPage, match, '0', {
+                        sourceSpellCardId: 2224,
+                        kind: 'conjuration',
+                        ownerId: '0',
+                        anchoredToObjectId: hostBobcatObjectId,
+                    }, '兽王魔物缠绕藤蔓应通过正式页面施放并锚定同区野性山猫');
+                    await expect.poll(async () => {
+                        const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                        const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                        const bobcat = isRecord(objects[hostBobcatObjectId]) ? objects[hostBobcatObjectId] : {};
+                        return typeof bobcat.restrainedByObjectId === 'string' && bobcat.restrainedByObjectId.length > 0;
+                    }, {
+                        message: '缠绕藤蔓结算后野性山猫应进入被束缚状态',
+                        timeout: 5_000,
+                    }).toBe(true);
+
+                    let geyserAttackFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
+                    await castPreparedSpellOnFieldObject(match.hostPage, '间歇喷泉', hostTargetBobcat, () => {
+                        geyserAttackFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                            match.hostPage,
+                            testInfo,
+                            'attack',
+                            '11A-间歇喷泉攻击法术',
+                            {
+                                expectTravel: true,
+                                expectDamageFloat: true,
+                            },
+                        );
+                    });
+                    if (!geyserAttackFxAuditPromise) {
+                        throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
+                    }
+                    const geyserAttackFxAudit = await geyserAttackFxAuditPromise;
+                    expect(geyserAttackFxAudit.targetRow).toBe('1');
+                    expect(geyserAttackFxAudit.targetCol).toBe('0');
+                    await expect.poll(async () => (
+                        hasSpellAttackRolledEvent(await readServerCoreSnapshot(match.hostPage, match, '0'), 1710, hostBobcatObjectId)
+                    ), {
+                        message: '兽王攻击法术间歇喷泉应通过正式页面产生攻击掷骰事件',
+                        timeout: 5_000,
+                    }).toBe(true);
+                    await match.hostPage.getByTestId('mage-wars-turn-end').click();
+                    continue;
+                }
+
+                await match.guestPage.getByTestId('mage-wars-turn-end').click();
+            }
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }

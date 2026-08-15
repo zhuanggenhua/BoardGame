@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { FriendList } from './FriendList';
 import { ChatWindow } from './ChatWindow';
 import { SystemNotificationView } from './SystemNotificationView';
@@ -8,6 +8,12 @@ import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { FRIENDS_CHAT_DETAIL_CONTENT_CLASS } from './layoutContracts';
 import { SYSTEM_NOTIFICATION_ID } from './constants';
+
+type ModalViewportCssVars = {
+    '--modal-active-viewport-height': string;
+    '--modal-active-bottom-inset': string;
+    '--modal-max-height': string;
+};
 
 interface FriendsChatModalProps {
     isOpen: boolean;
@@ -30,7 +36,7 @@ export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId 
         <div
             className="modal-base-container fixed inset-0 z-50 flex items-center justify-center p-4"
             data-lock-layout-viewport="true"
-            style={{
+            style={({
                 '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
                 '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
                 '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100vh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset))))',
@@ -38,7 +44,7 @@ export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId 
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))',
                 paddingLeft: 'max(1rem, var(--safe-area-left))',
-            }}
+            } as CSSProperties & ModalViewportCssVars)}
         >
             {/* 遮罩层 */}
             <motion.div

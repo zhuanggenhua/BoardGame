@@ -527,6 +527,11 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
 
             const bonusEvents = eventsOfType(events, 'BONUS_DAMAGE_ADDED');
             const settlement = getVolleySettlement(events);
+            expect(settlement.continuation).toMatchObject({
+                kind: 'attack',
+                settlementStage: 'preDamage',
+                markBonusDiceResolved: true,
+            });
             expect(settlement.dice).toHaveLength(5);
             expect(settlement.dice.filter((die: any) => die.face === FACES.BOW)).toHaveLength(5);
             expect(bonusEvents).toHaveLength(0);
@@ -592,6 +597,12 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 random: () => 1 / 6, // d(6)→1 → bow
             }));
             const settlementEvents = settlePendingBonusDice(state, events);
+            const requested = reduceAll(state, events);
+            expect(requested.pendingBonusDiceSettlement?.continuation).toMatchObject({
+                kind: 'attack',
+                settlementStage: 'preDamage',
+                markBonusDiceResolved: true,
+            });
 
             const bonusEvents = eventsOfType(settlementEvents, 'BONUS_DAMAGE_ADDED');
             expect(bonusEvents).toHaveLength(1);
@@ -600,7 +611,6 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 amount: 2,
                 sourceCardId: 'watch-out',
             });
-            const requested = reduceAll(state, events);
             const reduced = reduceAll(requested, settlementEvents);
             expect(reduced.pendingAttack?.bonusDamage).toBe(2);
             expect(reduced.pendingAttack?.attackModifierBonusDamage).toBe(2);
@@ -710,7 +720,7 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
         });
     });
 
-    describe('锁定 (Targeted) 持续效果验证', () => {
+    describe('锁定 (Targeted) 触发效果验证', () => {
         it('锁定使受到的伤害+2（通过 tokenDefinitions 的 onDamageReceived 触发）', async () => {
             // 锁定的 +2 伤害通过 TokenDef.passiveTrigger.actions[modifyStat] 实现，
             // 由 createDamageCalculation 的 collectStatusModifiers 自动处理。
@@ -721,20 +731,18 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
             expect(targetedDef!.category).toBe('debuff');
             expect(targetedDef!.stackLimit).toBe(1);
             expect(targetedDef!.passiveTrigger?.timing).toBe('onDamageReceived');
-            // 只有 modifyStat +2，没有 removeStatus
+            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
+            // 伤害修正由 modifyStat +2 表达，移除由 consumeOnTrigger 统一表达。
             const actions = targetedDef!.passiveTrigger?.actions ?? [];
             expect(actions).toHaveLength(1);
             expect(actions[0].type).toBe('modifyStat');
             expect(actions[0].value).toBe(2);
         });
 
-        it('锁定是持续效果，不会在受伤后自动移除', async () => {
+        it('锁定受到对手进攻伤害后自动移除', async () => {
             const { MOON_ELF_TOKENS } = await import('../heroes/moon_elf/tokens');
             const targetedDef = MOON_ELF_TOKENS.find((t: any) => t.id === STATUS_IDS.TARGETED);
-            const actions = targetedDef!.passiveTrigger?.actions ?? [];
-            // 确认没有 removeStatus action
-            const removeActions = actions.filter((a: any) => a.type === 'removeStatus');
-            expect(removeActions).toHaveLength(0);
+            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
         });
 
         it('moon_elf-targeted-removal handler 已被移除', () => {

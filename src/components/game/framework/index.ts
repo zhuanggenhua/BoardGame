@@ -83,6 +83,7 @@ export type {
 } from './useMatchPlayerViewModel';
 export type {
     MatchSeatSwapContext,
+    MatchSeatSwapConfig,
     MatchSeatSwapMode,
     PendingSeatSwapRequest,
     ResolveMatchSeatSwapContextArgs,

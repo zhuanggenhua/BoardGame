@@ -9,6 +9,7 @@ import {
     isGraphInterrupt,
     task,
 } from '@langchain/langgraph';
+import { join } from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Types — shared with frontend runtime but kept self-contained so the backend
@@ -418,8 +419,7 @@ function buildArtifactBundle(state: WorkflowState, now: string): ArtifactBundleO
     const sourceId = state.selectedRuleSource ?? 'wiki';
     const opt = getRuleSourceOption(sourceId);
     const e2eEnabled = state.enabledNodeIds.includes('run-e2e-validation');
-    const screenshotBasePath =
-        'D:\\gongzuo\\webgame\\BoardGame-wt-ai-repo-workbench\\evidence\\_shared\\assets\\ai-repo-workbench-e2e';
+    const screenshotBasePath = join(state.worktreePath, 'evidence', '_shared', 'assets', 'ai-repo-workbench-e2e');
     const screenshotRoute = '/devtools/ai-repo-workbench/assets/e2e';
 
     return {
@@ -452,7 +452,7 @@ function buildArtifactBundle(state: WorkflowState, now: string): ArtifactBundleO
                     title: '会话工作流等待决策态',
                     kind: 'e2e',
                     stage: 'waiting_decision',
-                    absolutePath: `${screenshotBasePath}\\node-graph-waiting-decision.png`,
+                    absolutePath: join(screenshotBasePath, 'node-graph-waiting-decision.png'),
                     assetPath: `${screenshotRoute}/node-graph-waiting-decision.png`,
                     alt: 'AI 仓库工作台等待决策态工作流截图',
                 },
@@ -461,7 +461,7 @@ function buildArtifactBundle(state: WorkflowState, now: string): ArtifactBundleO
                     title: '会话工作流完成态',
                     kind: 'e2e',
                     stage: 'completed',
-                    absolutePath: `${screenshotBasePath}\\node-graph-complete.png`,
+                    absolutePath: join(screenshotBasePath, 'node-graph-complete.png'),
                     assetPath: `${screenshotRoute}/node-graph-complete.png`,
                     alt: 'AI 仓库工作台完成态工作流截图',
                 },
@@ -491,7 +491,7 @@ function captureFactionIntentNode(state: WorkflowState) {
     const now = toIso();
     const nodeId: WorkflowNodeId = 'capture-faction-intent';
     const output = {
-        workingDirectory: `${state.worktreePath}\\temp\\workbench\\${state.factionName}`,
+        workingDirectory: join(state.worktreePath, 'temp', 'workbench', state.factionName),
         requestedOutcome: '生成规则驱动的派系定义草案与 ArtifactBundle',
     };
 

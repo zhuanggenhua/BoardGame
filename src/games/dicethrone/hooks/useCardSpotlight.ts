@@ -509,7 +509,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
 
                 if (cardCandidateIndex >= 0) {
                     const cardCandidate = nextCardSpotlightQueue[cardCandidateIndex];
-                    if (suppressBonusDiceInCardSpotlight && hasBonusDiceSettlement) {
+                    if (suppressBonusDiceInCardSpotlight) {
                         spotlightLogger.info('bonus-bound-to-card-suppressed', {
                             cardId: cardCandidate.id,
                             eventType: type,
@@ -518,7 +518,8 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                         continue;
                     }
                     if (isSummaryEvent) {
-                        // 汇总事件：添加到 summaryText 字段
+                        // 历史兼容字段；DiceThrone Board 已通过 suppressBonusDiceInCardSpotlight
+                        // 禁止奖励骰汇总进入中央卡牌特写。
                         spotlightLogger.info('bonus-summary-event', {
                             cardId: cardCandidate.id,
                             effectKey: bonusEffectKey,

@@ -360,9 +360,11 @@ test.describe('Mage Wars foundation runtime board', () => {
                 }))
                 : [];
             return {
+                playerId: mage.dataset.playerId ?? null,
                 mageId: mage.dataset.mageId ?? null,
                 zoneId: mage.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]')?.dataset.testid ?? null,
                 ownerSide: lane?.dataset.laneOwnerSide ?? null,
+                lanePlayerId: lane?.dataset.lanePlayerId ?? null,
                 laneCount: lanes.length,
                 ownLaneMageCount: lanes.find((entry) => entry.ownerSide === lane?.dataset.laneOwnerSide)?.mageEntityCount ?? 0,
                 otherLaneMageCount: lanes
@@ -374,6 +376,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         defaultMageLayout.forEach((mage) => {
             expect(mage.zoneId).not.toBeNull();
             expect(mage.ownerSide).not.toBeNull();
+            expect(mage.ownerSide).toBe(mage.playerId === '0' ? 'seat-left' : 'seat-right');
+            expect(mage.lanePlayerId).toBe(mage.playerId);
             expect(mage.laneCount).toBe(2);
             expect(mage.ownLaneMageCount).toBe(1);
             expect(mage.otherLaneMageCount).toBe(0);
@@ -614,8 +618,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         });
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
-        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.ownerSide).toBe('self');
-        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.ownerSide).toBe('opponent');
+        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.ownerSide).toBe('seat-left');
+        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.ownerSide).toBe('seat-right');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('来源');
@@ -692,11 +696,11 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.fieldCards).toHaveLength(10);
         expect(desktopLayoutAudit.fieldCards.every((card) => card.zoneId === 'a2')).toBe(true);
         expect(desktopLayoutAudit.fieldCards.filter((card) => card.role === 'target').length).toBeGreaterThan(0);
-        expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'self')).toHaveLength(5);
-        expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'opponent')).toHaveLength(5);
+        expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'seat-left')).toHaveLength(5);
+        expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'seat-right')).toHaveLength(5);
         expect(desktopLayoutAudit.ownershipLanes).toEqual([
-            { zoneId: 'a2', ownerSide: 'self', fieldCardCount: 5, mageEntityCount: 1 },
-            { zoneId: 'a2', ownerSide: 'opponent', fieldCardCount: 5, mageEntityCount: 1 },
+            { zoneId: 'a2', ownerSide: 'seat-left', fieldCardCount: 5, mageEntityCount: 1 },
+            { zoneId: 'a2', ownerSide: 'seat-right', fieldCardCount: 5, mageEntityCount: 1 },
         ]);
         desktopLayoutAudit.fieldCards.forEach((card) => {
             expect(card.rect).not.toBeNull();

@@ -1,6 +1,10 @@
 import type { GameManifestEntry } from '../manifest.types';
 import {
+    QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
     QIDAHEN_PLAYER_OPTIONS,
+    QIDAHEN_PREGAME_CHOICE_FIELDS,
+    QIDAHEN_SCENARIO_SETUP_OPTIONS,
+    QIDAHEN_SCENARIO_SETUP_FIELD,
 } from './roomSetup';
 
 const entry: GameManifestEntry = {
@@ -17,6 +21,26 @@ const entry: GameManifestEntry = {
     cursorTheme: 'qidahen-tactical',
     allowLocalMode: false,
     playerOptions: [...QIDAHEN_PLAYER_OPTIONS],
+    createRoomSetup: {
+        hiddenSelectionKeys: [
+            QIDAHEN_SCENARIO_SETUP_FIELD,
+            ...QIDAHEN_PREGAME_CHOICE_FIELDS.map((field) => field.key),
+        ],
+        forcedSelections: {
+            [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+        },
+        showSetupOptions: false,
+    },
+    publicRoomSetupSummary: {
+        scenario: {
+            options: Object.fromEntries(
+                QIDAHEN_SCENARIO_SETUP_OPTIONS.map((option) => [
+                    option.value,
+                    { labelKey: option.labelKey },
+                ]),
+            ),
+        },
+    },
     tags: ['card_driven', 'tactical'],
     bestPlayers: [3],
     ai: {
@@ -80,6 +104,12 @@ const entry: GameManifestEntry = {
     mobileLayoutPreset: 'map-shell',
     mobileBattlefieldZoom: 'game-owned',
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
+    pageShell: {
+        tutorialCatalogTheme: {
+            className: 'tutorial-catalog-stage--qidahen',
+            chapterAccents: ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'],
+        },
+    },
     mobileDelivery: {
         mode: 'package-managed',
         runtimeChannel: 'stable',

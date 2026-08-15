@@ -23,7 +23,7 @@ import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay'
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { getCardAtlasSource } from '../../components/common/media/cardAtlasRegistry';
 import { getLocalizedAssetPath, getOptimizedImageUrls } from '../../core/AssetLoader';
-import { MOBILE_MAX_VIEWPORT_WIDTH } from '../mobileSupport';
+import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../shared/mobileSupport';
 import type { SpriteAtlasConfig, SpriteAtlasFrame } from '../../engine/primitives/spriteAtlas';
 import type {
     QidahenActionChoice,

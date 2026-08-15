@@ -5,7 +5,7 @@
  * 教程系统也依赖作弊命令注入固定手牌/资源。
  */
 
-import type { PlayerId } from '../types';
+import type { MatchState, PipelineContext, PlayerId } from '../types';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
@@ -30,10 +30,6 @@ export const CHEAT_COMMANDS = {
     DEAL_CARD_BY_INDEX: 'SYS_CHEAT_DEAL_CARD_BY_INDEX',
     /** 根据图集索引将牌库卡牌移入弃牌堆 */
     DEAL_CARD_TO_DISCARD: 'SYS_CHEAT_DEAL_CARD_TO_DISCARD',
-    /** 刷新基地（SmashUp 专用） */
-    REFRESH_BASE: 'SYS_CHEAT_REFRESH_BASE',
-    /** 刷新所有基地（SmashUp 专用） */
-    REFRESH_ALL_BASES: 'SYS_CHEAT_REFRESH_ALL_BASES',
     /** 设置骰子面 */
     SET_DICE: 'SYS_CHEAT_SET_DICE',
     /** 设置 Token 数量 */
@@ -46,8 +42,6 @@ export const CHEAT_COMMANDS = {
     MERGE_STATE: 'SYS_CHEAT_MERGE_STATE',
     /** 删除手牌（按 uid 从手牌移入弃牌堆） */
     REMOVE_HAND_CARD: 'SYS_CHEAT_REMOVE_HAND_CARD',
-    /** 强制有随从的基地立即结算（SmashUp 专用） */
-    FORCE_SCORE_BASES_WITH_MINIONS: 'SYS_CHEAT_FORCE_SCORE_BASES_WITH_MINIONS',
 } as const;
 
 // ============================================================================
@@ -119,11 +113,6 @@ export interface DealCardToDiscardPayload {
     atlasIndex: number;
 }
 
-export interface RefreshBasePayload {
-    /** 要刷新的基地索引 */
-    baseIndex: number;
-}
-
 export interface RemoveHandCardPayload {
     playerId: PlayerId;
     /** 手牌的 uid */
@@ -133,6 +122,10 @@ export interface RemoveHandCardPayload {
 // ============================================================================
 // 通用资源修改器接口
 // ============================================================================
+
+export type CheatCommandHandler<TCore> = (
+    ctx: PipelineContext<TCore>,
+) => HookResult<TCore> | void;
 
 export interface CheatResourceModifier<TCore> {
     /** 获取玩家资源值 */
@@ -155,14 +148,10 @@ export interface CheatResourceModifier<TCore> {
     addCardToHandByCardId?: (core: TCore, playerId: PlayerId, cardId: string) => TCore;
     /** 根据图集索引将牌库卡牌移入弃牌堆（可选） */
     dealCardToDiscard?: (core: TCore, playerId: PlayerId, atlasIndex: number) => TCore;
-    /** 刷新基地（可选，SmashUp 专用） */
-    refreshBase?: (core: TCore, baseIndex: number) => { core: TCore; events: Array<{ type: string; payload: unknown; timestamp: number }> };
-    /** 刷新所有基地（可选，SmashUp 专用） */
-    refreshAllBases?: (core: TCore) => { core: TCore; events: Array<{ type: string; payload: unknown; timestamp: number }> };
     /** 删除手牌（按 uid 从手牌移入弃牌堆，可选） */
     removeHandCard?: (core: TCore, playerId: PlayerId, cardUid: string) => TCore;
-    /** 强制有随从的基地立即结算（可选，SmashUp 专用） */
-    forceScoreBasesWithMinions?: (core: TCore) => TCore;
+    /** 游戏侧调试命令扩展；引擎只按 command.type 路由，不承载游戏语义 */
+    customCommands?: Record<string, CheatCommandHandler<TCore>>;
 }
 
 // ============================================================================
@@ -208,7 +197,8 @@ export function createCheatSystem<TCore>(
         name: 'Cheat 系统',
         priority: 1, // 最高优先级，确保作弊命令最先处理
 
-        beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+        beforeCommand: (ctx): HookResult<TCore> | void => {
+            const { state, command } = ctx;
             // 通用状态注入命令不依赖游戏专用 modifier。
             if (command.type === CHEAT_COMMANDS.SET_STATE) {
                 const payload = command.payload as SetStatePayload<TCore>;
@@ -380,27 +370,6 @@ export function createCheatSystem<TCore>(
                 };
             }
 
-            // 处理刷新基地命令（SmashUp 专用）
-            if (command.type === CHEAT_COMMANDS.REFRESH_BASE && modifier.refreshBase) {
-                const payload = command.payload as RefreshBasePayload;
-                const result = modifier.refreshBase(state.core, payload.baseIndex);
-                return {
-                    halt: true,
-                    state: { ...state, core: result.core },
-                    events: result.events,
-                };
-            }
-
-            // 处理刷新所有基地命令（SmashUp 专用）
-            if (command.type === CHEAT_COMMANDS.REFRESH_ALL_BASES && modifier.refreshAllBases) {
-                const result = modifier.refreshAllBases(state.core);
-                return {
-                    halt: true,
-                    state: { ...state, core: result.core },
-                    events: result.events,
-                };
-            }
-
             // 处理删除手牌命令
             if (command.type === CHEAT_COMMANDS.REMOVE_HAND_CARD && modifier.removeHandCard) {
                 const payload = command.payload as RemoveHandCardPayload;
@@ -415,14 +384,8 @@ export function createCheatSystem<TCore>(
                 };
             }
 
-            // 处理强制有随从的基地立即结算命令（SmashUp 专用）
-            if (command.type === CHEAT_COMMANDS.FORCE_SCORE_BASES_WITH_MINIONS && modifier.forceScoreBasesWithMinions) {
-                const newCore = modifier.forceScoreBasesWithMinions(state.core);
-                return {
-                    halt: true,
-                    state: { ...state, core: newCore },
-                };
-            }
+            const customCommand = modifier.customCommands?.[command.type];
+            if (customCommand) return customCommand(ctx);
 
         },
     };

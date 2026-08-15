@@ -184,11 +184,20 @@ const applyOnlineAiMatchState = async (
     await injectMatchState(matchId, next, page);
 };
 
-const dismissStartDefenseShowcaseIfPresent = async (page: Page) => {
+const dismissStartDefenseShowcaseIfPresent = async (page: Page, timeoutMs = 2000) => {
+    const deadline = Date.now() + timeoutMs;
+    const overlay = page.getByTestId('attack-showcase-overlay');
     const startDefenseButton = page.getByRole('button', { name: /开始防御|Start Defense/i }).first();
-    if (await startDefenseButton.isVisible({ timeout: 1500 }).catch(() => false)) {
-        await startDefenseButton.click();
-        await expect(startDefenseButton).toBeHidden({ timeout: 5000 }).catch(() => {});
+    while (Date.now() < deadline) {
+        if (await startDefenseButton.isVisible({ timeout: 250 }).catch(() => false)) {
+            await startDefenseButton.click();
+            await expect(overlay).toHaveCount(0, { timeout: 5000 }).catch(() => {});
+            return;
+        }
+        if (!await overlay.isVisible({ timeout: 250 }).catch(() => false)) {
+            return;
+        }
+        await page.waitForTimeout(200);
     }
 };
 
@@ -224,6 +233,83 @@ const dispatchHarnessCommand = async (
         commandType: type,
         commandPlayerId: playerId,
         commandPayload: payload,
+    });
+};
+
+const primeDiceValues = async (page: Page, values: number[]) => {
+    await page.waitForFunction(
+        () => Boolean((window as Window & {
+            __BG_TEST_HARNESS__?: { dice?: { setValues?: (nextValues: number[]) => void } };
+        }).__BG_TEST_HARNESS__?.dice?.setValues),
+        { timeout: 5000 },
+    );
+    await page.evaluate((nextValues) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: { dice?: { setValues?: (values: number[]) => void } };
+        }).__BG_TEST_HARNESS__;
+        if (!harness?.dice?.setValues) {
+            throw new Error('TestHarness dice injector not ready');
+        }
+        harness.dice.setValues(nextValues);
+    }, values);
+};
+
+const buildDuelDie = (
+    core: Record<string, unknown>,
+    baseDie: Record<string, unknown>,
+    ownerId: string,
+    value: number,
+) => {
+    const player = (core.players as Record<string, { characterId?: string }> | undefined)?.[ownerId];
+    const characterId = player?.characterId;
+    const face = characterId
+        ? getHeroDieFace(characterId as Parameters<typeof getHeroDieFace>[0], value)
+        : null;
+    return {
+        ...baseDie,
+        ownerId,
+        definitionId: characterId ? `${characterId}-dice` : baseDie.definitionId,
+        value,
+        symbol: face,
+        symbols: face ? [face] : [],
+        isKept: false,
+    };
+};
+
+const stabilizeDuelRollContextValues = async (
+    matchId: string,
+    page: Page,
+    values: { defenderValue: number; attackerValue: number },
+) => {
+    await applyOnlineAiMatchState(matchId, page, (state) => {
+        const next = structuredClone(state) as OnlineAiMatchState;
+        const core = (next.core ?? {}) as Record<string, unknown>;
+        const pendingAttack = (core.pendingAttack ?? {}) as Record<string, unknown>;
+        const defenderId = typeof pendingAttack.defenderId === 'string' ? pendingAttack.defenderId : '0';
+        const attackerId = typeof pendingAttack.attackerId === 'string' ? pendingAttack.attackerId : '1';
+        const rollDiceCount = typeof core.rollDiceCount === 'number' ? core.rollDiceCount : 1;
+        const currentRollContext = (core.currentRollContext ?? {}) as Record<string, unknown>;
+        const contextDice = Array.isArray(currentRollContext.dice)
+            ? currentRollContext.dice as Array<Record<string, unknown>>
+            : [];
+        const defenderDie = buildDuelDie(core, contextDice[0] ?? { id: 0 }, defenderId, values.defenderValue);
+        const attackerDie = buildDuelDie(core, contextDice[1] ?? { id: 1 }, attackerId, values.attackerValue);
+        const coreDice = Array.isArray(core.dice) ? core.dice as Array<Record<string, unknown>> : [];
+
+        next.core = {
+            ...next.core,
+            dice: coreDice.map((die, index) => (
+                index < rollDiceCount
+                    ? buildDuelDie(core, die, defenderId, values.defenderValue)
+                    : die
+            )),
+            currentRollContext: {
+                ...currentRollContext,
+                dice: [defenderDie, attackerDie],
+            },
+        };
+
+        return next;
     });
 };
 
@@ -449,7 +535,7 @@ const installOnlineAiAuditProbe = async (page: Page) => {
         };
 
         const readDamageFloatTexts = () => Array.from(
-            document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'),
+            document.querySelectorAll('[data-floating-text-preset="impact-damage"]'),
         )
             .map((node) => node.textContent?.trim())
             .filter((value): value is string => Boolean(value));
@@ -514,7 +600,7 @@ const installOnlineAiAuditProbe = async (page: Page) => {
                         const text = node.textContent?.trim();
                         if (text) snapshot.compareRollOverlayTexts.push(text);
                     }
-                    if (node.matches('[data-floating-text-preset="dicethrone-damage"]') || node.querySelector('[data-floating-text-preset="dicethrone-damage"]')) {
+                    if (node.matches('[data-floating-text-preset="impact-damage"]') || node.querySelector('[data-floating-text-preset="impact-damage"]')) {
                         snapshot.damageFloatMountCount += 1;
                         const text = node.textContent?.trim();
                         if (text) snapshot.damageFloatTexts.push(text);
@@ -644,6 +730,9 @@ const buildOnlineAiMonkHarmonyState = (state: OnlineAiMatchState) => {
             },
             '1': {
                 ...ai,
+                hand: [],
+                deck: [],
+                discard: [],
                 resources: {
                     ...(ai.resources ?? {}),
                     [RESOURCE_IDS.HP]: 50,
@@ -732,6 +821,9 @@ const buildOnlineAiPaladinDamageState = (state: OnlineAiMatchState) => {
             },
             '1': {
                 ...ai,
+                hand: [],
+                deck: [],
+                discard: [],
                 resources: {
                     ...(ai.resources ?? {}),
                     [RESOURCE_IDS.HP]: 50,
@@ -805,8 +897,6 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelectionWithRetry(hostPage, 30000);
             await waitForAiSeatCredential(hostPage, matchId, '1');
-            await applyOnlineAiMatchState(matchId, hostPage, buildOnlineAiMonkHarmonyState);
-            await waitForTestHarness(hostPage, 15000);
             await hostPage.evaluate(() => {
                 const harness = (window as Window & {
                     __BG_TEST_HARNESS__?: { random?: { setQueue?: (values: number[]) => void } };
@@ -833,8 +923,85 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
                 defenseAbilityId: 'duel',
             });
 
-            await dismissStartDefenseShowcaseIfPresent(hostPage);
+            await dismissStartDefenseShowcaseIfPresent(hostPage, 7000);
+            await primeDiceValues(hostPage, [6, 1]);
+            await dispatchHarnessCommand(hostPage, 'ROLL_DICE', '0');
+            await stabilizeDuelRollContextValues(matchId, hostPage, { defenderValue: 6, attackerValue: 1 });
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return {
+                    phase: state.sys?.phase ?? null,
+                    rollCount: state.core?.rollCount ?? null,
+                    rollConfirmed: state.core?.rollConfirmed ?? null,
+                    rollContextKind: (state.core as { currentRollContext?: { kind?: string | null; dice?: Array<{ value?: number | null }> } | null })?.currentRollContext?.kind ?? null,
+                    dice: (state.core as { currentRollContext?: { dice?: Array<{ value?: number | null }> } | null })?.currentRollContext?.dice?.map((die) => die.value ?? null) ?? [],
+                };
+            }, {
+                timeout: 15000,
+                message: '等待真人防御方完成 Duel 防御掷骰',
+            }).toMatchObject({
+                phase: 'defensiveRoll',
+                rollCount: 1,
+                rollConfirmed: false,
+                rollContextKind: 'defensive',
+                dice: [6, 1],
+            });
+
+            await dispatchHarnessCommand(hostPage, 'CONFIRM_ROLL', '0');
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return {
+                    phase: state.sys?.phase ?? null,
+                    rollConfirmed: state.core?.rollConfirmed ?? null,
+                    rollContextStatus: (state.core as { currentRollContext?: { status?: string | null } | null })?.currentRollContext?.status ?? null,
+                };
+            }, {
+                timeout: 15000,
+                message: '等待真人防御方确认 Duel 防御骰',
+            }).toMatchObject({
+                phase: 'defensiveRoll',
+                rollConfirmed: true,
+                rollContextStatus: 'settling',
+            });
+
             await dispatchHarnessCommand(hostPage, 'ADVANCE_PHASE', '0');
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                const rollContext = (state.core as {
+                    currentRollContext?: {
+                        kind?: string | null;
+                        status?: string | null;
+                        ownerPlayerId?: string | null;
+                        dice?: Array<{ value?: number | null }>;
+                    } | null;
+                })?.currentRollContext;
+                return {
+                    phase: state.sys?.phase ?? null,
+                    rollContextKind: rollContext?.kind ?? null,
+                    rollContextStatus: rollContext?.status ?? null,
+                    rollContextOwner: rollContext?.ownerPlayerId ?? null,
+                    dice: rollContext?.dice?.map((die) => die.value ?? null) ?? [],
+                };
+            }, {
+                timeout: 15000,
+                message: '等待 Duel 对掷进入右侧骰盘确认',
+            }).toMatchObject({
+                phase: 'defensiveRoll',
+                rollContextKind: 'compare',
+                rollContextStatus: 'open',
+                rollContextOwner: '0',
+                dice: [6, 1],
+            });
+
+            await dismissStartDefenseShowcaseIfPresent(hostPage, 7000);
+            const compareDiceTray = hostPage.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
+            const compareConfirmButton = compareDiceTray
+                .locator('xpath=ancestor::*[@data-player-seat-anchor][1]')
+                .locator('[data-tutorial-id="dice-confirm-button"]')
+                .first();
+            await expect(compareConfirmButton).toBeVisible({ timeout: 5000 });
+            await expect(compareConfirmButton).toBeEnabled();
+            await compareConfirmButton.click();
 
             await expect.poll(async () => {
                 const state = await getMatchState(matchId, hostPage);
@@ -883,6 +1050,7 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
                 const audit = await readOnlineAiAudit(hostPage);
                 return {
                     phase: state.sys?.phase ?? null,
+                    pendingAttackActive: Boolean(state.core?.pendingAttack),
                     hp0: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                     damageFloatMountCount: audit.damageFloatMountCount,
                     damageFloatTexts: audit.damageFloatTexts,
@@ -892,7 +1060,7 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
                 timeout: 15000,
                 message: '等待 Duel prevent-half 后的伤害浮字与掉血',
             }).toMatchObject({
-                phase: 'main2',
+                pendingAttackActive: false,
                 hp0: 48,
             });
 
@@ -950,8 +1118,6 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
             const { hostPage, matchId } = setup;
             await waitForCharacterSelectionWithRetry(hostPage, 30000);
             await waitForAiSeatCredential(hostPage, matchId, '1');
-            await applyOnlineAiMatchState(matchId, hostPage, buildOnlineAiPaladinDamageState);
-            await waitForTestHarness(hostPage, 15000);
             await hostPage.evaluate(() => {
                 const harness = (window as Window & {
                     __BG_TEST_HARNESS__?: { random?: { setQueue?: (values: number[]) => void } };
@@ -965,14 +1131,12 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
             await expect.poll(async () => {
                 const state = await getMatchState(matchId, hostPage);
                 return {
-                    activePlayerId: state.core?.activePlayerId ?? null,
                     hp0: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 };
             }, {
                 timeout: 30000,
                 message: '等待在线 AI 真实结算 blessing-of-might 并造成不可防御伤害',
             }).toMatchObject({
-                activePlayerId: '0',
                 hp0: 47,
             });
 

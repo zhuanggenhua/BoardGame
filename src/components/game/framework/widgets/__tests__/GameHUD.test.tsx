@@ -15,15 +15,38 @@ vi.mock('../../../../../core', () => ({
 }));
 
 vi.mock('../../../../system/FabMenu', () => ({
-    FabMenu: ({ items }: { items: Array<{ id: string; label: string }> }) => (
-        <div data-testid="fab-menu-stub">
-            {items.map((item) => (
-                <span key={item.id} data-testid={`fab-action-${item.id}`}>
-                    {item.label}
-                </span>
-            ))}
-        </div>
-    ),
+    FabMenu: ({
+        items,
+    }: {
+        items: Array<{
+            id: string;
+            label: string;
+            content?: React.ReactNode | ((context: { closePanel: () => void }) => React.ReactNode);
+        }>;
+    }) => {
+        const renderContent = (
+            content?: React.ReactNode | ((context: { closePanel: () => void }) => React.ReactNode),
+        ) => (typeof content === 'function'
+            ? content({ closePanel: () => undefined })
+            : content);
+
+        return (
+            <div data-testid="fab-menu-stub">
+                {items.map((item) => (
+                    <div key={item.id}>
+                        <span data-testid={`fab-action-${item.id}`}>
+                            {item.label}
+                        </span>
+                        {item.content && (
+                            <div data-testid={`fab-content-${item.id}`}>
+                                {renderContent(item.content)}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    },
 }));
 
 vi.mock('../../../../system/AboutModal', () => ({
@@ -78,6 +101,10 @@ vi.mock('../ActionLogSegments', () => ({
     ActionLogSegments: () => null,
 }));
 
+vi.mock('../AudioControlSection', () => ({
+    AudioControlSection: () => <div data-testid="audio-control-section-stub" />,
+}));
+
 vi.mock('../../../registry/cardPreviewRegistry', () => ({
     getCardPreviewGetter: () => null,
     getCardPreviewMaxDim: () => 0,
@@ -95,10 +122,6 @@ vi.mock('../../../../../lib/logger', () => ({
 
 vi.mock('../../../../../lib/mobile/androidRuntime', () => ({
     isNativeAndroidRuntime: () => false,
-}));
-
-vi.mock('../../../../../games/gameHudRuntimeAdapter', () => ({
-    GameHudRuntimeSettingsSection: () => null,
 }));
 
 vi.mock('../../../../common/media/OptimizedImage', () => ({
@@ -200,5 +223,53 @@ describe('GameHUD', () => {
         );
 
         expect(screen.queryByTestId('fab-action-force-actions')).toBeNull();
+    });
+
+    it('具体游戏不得在共享 HUD 层整体隐藏 FAB 菜单', () => {
+        const { rerender } = renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="qidahen"
+                myPlayerId="0"
+                isPregameSetupPhase={true}
+            />,
+        );
+
+        expect(screen.getByTestId('fab-menu-stub')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+
+        rerender(
+            <MemoryRouter>
+                <GameHUD
+                    mode="online"
+                    matchId="match-1"
+                    gameId="betrayal"
+                    myPlayerId="0"
+                    isPregameSetupPhase={true}
+                />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByTestId('fab-menu-stub')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+    });
+
+    it('设置面板渲染调用方注入的游戏运行时设置', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="fantasyrealms"
+                myPlayerId="0"
+                isPregameSetupPhase={false}
+                renderRuntimeSettings={() => (
+                    <div data-testid="runtime-settings-slot">runtime settings</div>
+                )}
+            />,
+        );
+
+        expect(screen.getByTestId('fab-content-settings')).toBeInTheDocument();
+        expect(screen.getByTestId('runtime-settings-slot')).toHaveTextContent('runtime settings');
     });
 });

@@ -141,7 +141,7 @@ function syncResolutionBlocker<TCore>(
             changed = true;
             return {
                 ...frame,
-                status: 'blocked',
+                status: 'blocked' as const,
                 blockedBy: nextBlocker,
                 foregroundOwner: current?.owner,
             };

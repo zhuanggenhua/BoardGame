@@ -58,7 +58,7 @@ export function createActionLogSystem<TCore>(
 
         afterEvents: ({ state, command, events, afterEventsRound }): HookResult<TCore> | void => {
             // ✅ 移除 afterEventsRound 限制，记录所有轮次的事件
-            // 原因：SmashUpEventSystem 等游戏层系统会在后续轮次产生重要事件（如交互解决产生的 POWER_COUNTER_ADDED）
+            // 原因：游戏层系统会在后续轮次产生重要事件（如交互解决后追加领域事件）
             // 这些事件也需要被记录到 ActionLog
             if (!shouldRecordCommand(command.type, normalizedAllowlist)) return;
             if (!formatEntry) return;

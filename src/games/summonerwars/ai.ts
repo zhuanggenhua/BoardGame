@@ -3269,6 +3269,7 @@ export const summonerWarsAiRuntime: GameAiRuntime = {
     gameId: 'summonerwars',
     buildLegalActions: buildSummonerWarsAiLegalActions,
     defaultMinimumActionDelayMs: 1000,
+    localHiddenCommandTypes: [SW_COMMANDS.END_PHASE],
     buildFeatureSnapshot(args) {
         const playerId = asSummonerWarsPlayerId(args.playerId);
         if (!playerId) return null;

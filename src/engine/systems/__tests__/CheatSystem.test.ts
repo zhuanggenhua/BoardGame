@@ -209,4 +209,78 @@ describe('CheatSystem', () => {
             'special_madness',
         ]);
     });
+
+    it('customCommands: 由游戏侧 adapter 处理自定义作弊命令', () => {
+        const system = createCheatSystem<TestCore>({
+            getResource: () => 0,
+            setResource: (core) => core,
+            customCommands: {
+                'test:cheat_focus': ({ state, command }) => {
+                    const payload = command.payload as { playerId: string; amount: number };
+                    const player = state.core.players[payload.playerId];
+                    if (!player) return;
+                    return {
+                        halt: true,
+                        state: {
+                            ...state,
+                            core: {
+                                ...state.core,
+                                players: {
+                                    ...state.core.players,
+                                    [payload.playerId]: {
+                                        ...player,
+                                        statusEffects: {
+                                            ...player.statusEffects,
+                                            focused: payload.amount,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    };
+                },
+            },
+        });
+        const state = createTestState({ players: { '0': { statusEffects: {} } } });
+        const command: Command = {
+            type: 'test:cheat_focus',
+            playerId: '0',
+            payload: { playerId: '0', amount: 3 },
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.state?.core.players['0'].statusEffects.focused).toBe(3);
+    });
+
+    it('customCommands: 未注册的自定义命令不应被通用作弊系统吞掉', () => {
+        const system = createCheatSystem<TestCore>({
+            getResource: () => 0,
+            setResource: (core) => core,
+            customCommands: {},
+        });
+        const state = createTestState({ players: { '0': { statusEffects: {} } } });
+        const command: Command = {
+            type: 'test:unknown_custom_cheat',
+            playerId: '0',
+            payload: {},
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result).toBeUndefined();
+    });
 });

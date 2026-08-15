@@ -2,10 +2,7 @@ import type { AiLegalAction, GameAiRuntime, LocalAiActionVisibility } from './ty
 
 const FAST_AI_COMMAND_TYPES = new Set([
     'ADVANCE_PHASE',
-    'sw:end_phase',
     'RESPONSE_PASS',
-    'REROLL_BONUS_DIE',
-    'SKIP_BONUS_DICE_REROLL',
 ]);
 
 const DEFAULT_HIDDEN_ACTION_KINDS = new Set([
@@ -26,9 +23,16 @@ function resolveVisibleStepConfig(runtime?: Pick<GameAiRuntime, 'localVisibleSte
     return runtime?.localVisibleStepDelayConfig ?? runtime?.localFollowUpDelayConfig;
 }
 
+function resolveHiddenCommandTypes(runtime?: Pick<GameAiRuntime, 'localHiddenCommandTypes'> | null): Set<string> {
+    return new Set([
+        ...FAST_AI_COMMAND_TYPES,
+        ...(runtime?.localHiddenCommandTypes ?? []),
+    ]);
+}
+
 export function resolveLocalAiActionVisibility(
     action: Pick<AiLegalAction, 'kind' | 'commands' | 'metadata'>,
-    runtime?: Pick<GameAiRuntime, 'localVisibleStepDelayConfig' | 'localFollowUpDelayConfig'> | null,
+    runtime?: Pick<GameAiRuntime, 'localVisibleStepDelayConfig' | 'localFollowUpDelayConfig' | 'localHiddenCommandTypes'> | null,
 ): LocalAiActionVisibility {
     if (typeof action.kind === 'string' && ALWAYS_VISIBLE_ACTION_KINDS.has(action.kind)) {
         return 'visible';
@@ -65,7 +69,8 @@ export function resolveLocalAiActionVisibility(
     if (!Array.isArray(action.commands) || action.commands.length === 0) {
         return 'hidden';
     }
-    if (action.commands.every((command) => typeof command.type === 'string' && FAST_AI_COMMAND_TYPES.has(command.type))) {
+    const hiddenCommandTypes = resolveHiddenCommandTypes(runtime);
+    if (action.commands.every((command) => typeof command.type === 'string' && hiddenCommandTypes.has(command.type))) {
         return 'hidden';
     }
     return 'visible';

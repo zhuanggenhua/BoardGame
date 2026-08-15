@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveAllowedPlayerCountsForGame, buildGamePublicRoomSummary } from '../../roomSetupRegistry';
+import { resolveAllowedPlayerCountsForGame } from '../../../shared/roomSetup';
+import { buildGamePublicRoomSummary } from '../../roomSetupRegistry';
 import manifest from '../manifest';
 import {
     FANTASY_REALMS_CURSED_HOARD_SUITS_SETUP_VALUE,

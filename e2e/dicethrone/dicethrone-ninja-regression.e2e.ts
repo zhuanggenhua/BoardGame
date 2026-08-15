@@ -76,7 +76,10 @@ const setupNinjaRegressionMatch = async (
     browser: Browser,
     baseURL: string | undefined,
 ): Promise<MatchSetup> => {
-    const match = await setupOnlineMatch(browser, baseURL);
+    const match = await setupOnlineMatch(browser, baseURL, {
+        skipImageGate: true,
+        characterSelectionTimeout: 90000,
+    });
     if (!match) {
         test.skip(true, '游戏服务器不可用');
         throw new Error('Game server unavailable');
@@ -374,6 +377,8 @@ test.describe('DiceThrone Ninja 回归修复', () => {
                     phase: 'defensiveRoll',
                     rollCount: 1,
                     rollConfirmed: true,
+                    rollDiceCount: 3,
+                    dice: createNinjaDiceWithValues([1, 4, 6]),
                     pendingAttack: {
                         attackerId: '0',
                         defenderId: '1',
@@ -406,7 +411,7 @@ test.describe('DiceThrone Ninja 回归修复', () => {
                     attackerHp: p0Resources[RESOURCE_IDS.HP],
                     smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
                 };
-            }, { timeout: 10000 }).toEqual({ attackerHp: 27, smokeBomb: 1 });
+            }, { timeout: 10000 }).toEqual({ attackerHp: 27, smokeBomb: 0 });
             await screenshot(match.guestPage, testName, '02-blink-after-defense-advance.png');
 
             await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
@@ -432,6 +437,8 @@ test.describe('DiceThrone Ninja 回归修复', () => {
                     phase: 'defensiveRoll',
                     rollCount: 1,
                     rollConfirmed: true,
+                    rollDiceCount: 3,
+                    dice: createNinjaDiceWithValues([1, 4, 6]),
                     pendingAttack: {
                         attackerId: '0',
                         defenderId: '1',

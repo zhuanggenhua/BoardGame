@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { scoreOneBase } from '../domain';
+import { scoreBaseViaFlow } from './helpers';
 import type { SmashUpCore } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
@@ -66,7 +66,7 @@ describe('afterScoring 未注册 trigger 守门', () => {
             ],
         };
 
-        const result = scoreOneBase(state, 0, [], '0', 1000);
+        const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
         const feedbackEvents = result.events.filter(event => event.type === SU_EVENTS.ABILITY_FEEDBACK);
         const consumedEvents = result.events.filter(event => event.type === SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED);
 

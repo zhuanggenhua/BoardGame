@@ -1,5 +1,5 @@
 import React from 'react';
-import { OverlayLayerContext } from './overlayLayer';
+import { OverlayLayerContext, type OverlayLayerContextValue } from './overlayLayer';
 
 export const OverlayLayerProvider: React.FC<{
     children: React.ReactNode;

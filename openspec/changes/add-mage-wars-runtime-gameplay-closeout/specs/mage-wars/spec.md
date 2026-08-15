@@ -27,3 +27,12 @@ The gameplay closeout SHALL report the formal Beastmaster/Priestess two-faction 
 #### Scenario: Closeout reports deferred scope
 - **WHEN** the formal Beastmaster/Priestess gameplay loop passes its runtime and E2E gates
 - **THEN** the closeout MUST still list full catalog, free construction, four-player mode, deluxe arena, expansion mages, full AI, tutorial, action-log UI, and undo UI as deferred unless separately implemented and verified
+
+### Requirement: Mage Wars Completion Coverage Matrix
+The gameplay closeout SHALL use an explicit coverage matrix before it claims that the two-faction flow is complete.
+
+#### Scenario: Representative chains do not imply full spell coverage
+- **WHEN** the closeout reports Beastmaster/Priestess flow coverage
+- **THEN** it MUST list the current runtime spell/object pool, the representative E2E chain for each claimed family, the screenshots or tests that prove each family, and the families that remain uncovered
+- **AND** it MUST mark wall / wall-spell play, wall-edge targeting, line of sight blocking, passage attacks, full catalog coverage, and any unlisted spell family as deferred unless each has its own runtime object, legal target UI, domain state, browser E2E, and screenshot evidence
+- **AND** it MUST NOT infer wall coverage from creature, equipment, enchantment, incantation, attack, or conjuration representative chains

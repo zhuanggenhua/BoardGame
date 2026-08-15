@@ -1,5 +1,13 @@
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
 import https from 'https';
+
+const DATA_OUTPUT_PATH = 'temp/smashup/wiki-cards-with-descriptions.json';
+const REPORT_OUTPUT_PATH = 'evidence/smashup/wiki-comparison/WIKI-CARDS-DETAILED-REPORT.md';
+
+function ensureParentDir(filePath) {
+  mkdirSync(dirname(filePath), { recursive: true });
+}
 
 // 派系映射
 const FACTION_WIKI_NAMES = {
@@ -189,8 +197,9 @@ async function main() {
   }
   
   // 保存详细数据
-  writeFileSync('wiki-cards-with-descriptions.json', JSON.stringify(allFactions, null, 2));
-  console.log('\n✅ 详细数据已保存到 wiki-cards-with-descriptions.json');
+  ensureParentDir(DATA_OUTPUT_PATH);
+  writeFileSync(DATA_OUTPUT_PATH, JSON.stringify(allFactions, null, 2));
+  console.log(`\n✅ 详细数据已保存到 ${DATA_OUTPUT_PATH}`);
   
   // 生成可读报告
   let report = '# Wiki 卡牌详细信息\n\n';
@@ -234,8 +243,9 @@ async function main() {
     report += `---\n\n`;
   }
   
-  writeFileSync('WIKI-CARDS-DETAILED-REPORT.md', report);
-  console.log('✅ 可读报告已保存到 WIKI-CARDS-DETAILED-REPORT.md');
+  ensureParentDir(REPORT_OUTPUT_PATH);
+  writeFileSync(REPORT_OUTPUT_PATH, report);
+  console.log(`✅ 可读报告已保存到 ${REPORT_OUTPUT_PATH}`);
   
   // 打印统计
   console.log('\n📊 统计：');

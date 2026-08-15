@@ -41,6 +41,10 @@ const cloneJsonValue = <T,>(value: T): T | undefined => {
     }
 };
 
+const asFeedbackRecord = (value: unknown): Record<string, unknown> => (
+    value && typeof value === 'object' ? value as Record<string, unknown> : {}
+);
+
 export const buildGameFeedbackActionLog = (
     state: MatchState<unknown>,
     actionLogRows: FeedbackActionLogRow[] = [],
@@ -66,24 +70,35 @@ export const buildGameFeedbackActionLog = (
             phase: state.sys?.phase,
             turnNumber: state.sys?.turnNumber,
             humanReadableLog,
-            actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((entry) => ({
-                text: typeof entry?.text === 'string' ? entry.text : undefined,
-                type: entry?.event?.type,
-                timestamp: entry?.timestamp,
-            })),
-            eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((entry) => ({
-                type: entry?.type,
-                timestamp: entry?.timestamp,
-                payload: cloneJsonValue(entry?.payload),
-            })),
+            actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((rawEntry) => {
+                const entry = asFeedbackRecord(rawEntry);
+                const event = asFeedbackRecord(entry.event);
+                return {
+                    text: typeof entry.text === 'string' ? entry.text : undefined,
+                    type: event.type,
+                    timestamp: entry.timestamp,
+                };
+            }),
+            eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((rawEntry) => {
+                const entry = asFeedbackRecord(rawEntry);
+                return {
+                    type: entry.type,
+                    timestamp: entry.timestamp,
+                    payload: cloneJsonValue(entry.payload),
+                };
+            }),
             interaction,
             responseWindow,
-            undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((snapshot, index) => ({
-                index: undoSnapshots.length - Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT) + index,
-                turnNumber: snapshot?.sys?.turnNumber,
-                phase: snapshot?.sys?.phase,
-                core: sanitizeFeedbackCore(snapshot?.core),
-            })),
+            undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((rawSnapshot, index) => {
+                const snapshot = asFeedbackRecord(rawSnapshot);
+                const sys = asFeedbackRecord(snapshot.sys);
+                return {
+                    index: undoSnapshots.length - Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT) + index,
+                    turnNumber: sys.turnNumber,
+                    phase: sys.phase,
+                    core: sanitizeFeedbackCore(snapshot.core),
+                };
+            }),
             currentStateSummary: {
                 turnNumber: state.sys?.turnNumber,
                 phase: state.sys?.phase,

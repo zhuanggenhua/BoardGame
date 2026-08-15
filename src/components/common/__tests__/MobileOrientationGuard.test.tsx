@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { MobileOrientationGuard } from '../MobileOrientationGuard';
+import { MobileOrientationGuard, type GameMobileEntry } from '../MobileOrientationGuard';
 
 const lockOrientationMock = vi.hoisted(() => vi.fn(async () => undefined));
 
@@ -10,6 +10,47 @@ vi.mock('@capacitor/screen-orientation', () => ({
         lock: lockOrientationMock,
     },
 }));
+
+const TEST_GAME_MOBILE_ENTRIES: Record<string, GameMobileEntry> = {
+    smashup: {
+        mobileProfile: 'landscape-adapted',
+        preferredOrientation: 'landscape',
+        mobileLayoutPreset: 'board-shell',
+        shellTargets: ['pwa'],
+        mobileDelivery: { mode: 'builtin' },
+    },
+    betrayal: {
+        mobileProfile: 'landscape-adapted',
+        preferredOrientation: 'landscape',
+        mobileLayoutPreset: 'board-shell',
+        shellTargets: ['pwa'],
+        mobileDelivery: { mode: 'builtin' },
+    },
+    'the-gang': {
+        mobileProfile: 'landscape-adapted',
+        preferredOrientation: 'landscape',
+        mobileLayoutPreset: 'board-shell',
+        shellTargets: ['pwa'],
+        mobileDelivery: { mode: 'builtin' },
+    },
+    tictactoe: {
+        mobileProfile: 'portrait-adapted',
+        preferredOrientation: 'portrait',
+        mobileLayoutPreset: 'portrait-simple',
+        shellTargets: ['pwa'],
+        mobileDelivery: { mode: 'builtin' },
+    },
+};
+
+const resolveTestGameMobileEntry = (gameId: string): GameMobileEntry | undefined => (
+    TEST_GAME_MOBILE_ENTRIES[gameId]
+);
+
+const TestMobileOrientationGuard = ({ children }: { children: React.ReactNode }) => (
+    <MobileOrientationGuard resolveGameMobileEntry={resolveTestGameMobileEntry}>
+        {children}
+    </MobileOrientationGuard>
+);
 
 const setViewport = (width: number, height: number) => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
@@ -37,25 +78,25 @@ const setAndroidBridgeShell = () => {
 
 const renderGuard = () => render(
     <MemoryRouter initialEntries={["/play/smashup/room-1"]}>
-        <MobileOrientationGuard>
+        <TestMobileOrientationGuard>
             <div data-testid="game-content">game content</div>
-        </MobileOrientationGuard>
+        </TestMobileOrientationGuard>
     </MemoryRouter>,
 );
 
 const renderBetrayalGuard = () => render(
     <MemoryRouter initialEntries={["/play/betrayal/tutorial/basic-setup-and-turn"]}>
-        <MobileOrientationGuard>
+        <TestMobileOrientationGuard>
             <div data-testid="game-content">game content</div>
-        </MobileOrientationGuard>
+        </TestMobileOrientationGuard>
     </MemoryRouter>,
 );
 
 const renderTheGangGuard = () => render(
     <MemoryRouter initialEntries={['/play/the-gang/local']}>
-        <MobileOrientationGuard>
+        <TestMobileOrientationGuard>
             <div data-testid="game-content">game content</div>
-        </MobileOrientationGuard>
+        </TestMobileOrientationGuard>
     </MemoryRouter>,
 );
 
@@ -69,9 +110,9 @@ const renderGuardAndFlushViewport = () => {
 
 const renderHomeGuard = (entry = '/') => render(
     <MemoryRouter initialEntries={[entry]}>
-        <MobileOrientationGuard>
+        <TestMobileOrientationGuard>
             <div data-testid="home-content">home content</div>
-        </MobileOrientationGuard>
+        </TestMobileOrientationGuard>
     </MemoryRouter>,
 );
 
@@ -165,9 +206,9 @@ describe('MobileOrientationGuard game orientation banner', () => {
 
         render(
             <MemoryRouter initialEntries={['/play/tictactoe']}>
-                <MobileOrientationGuard>
+                <TestMobileOrientationGuard>
                     <div data-testid="game-content">game content</div>
-                </MobileOrientationGuard>
+                </TestMobileOrientationGuard>
             </MemoryRouter>,
         );
         act(() => {
@@ -202,9 +243,9 @@ describe('MobileOrientationGuard game orientation banner', () => {
 
         render(
             <MemoryRouter initialEntries={['/']}>
-                <MobileOrientationGuard>
+                <TestMobileOrientationGuard>
                     <div data-testid="home-content">home content</div>
-                </MobileOrientationGuard>
+                </TestMobileOrientationGuard>
             </MemoryRouter>,
         );
         act(() => {

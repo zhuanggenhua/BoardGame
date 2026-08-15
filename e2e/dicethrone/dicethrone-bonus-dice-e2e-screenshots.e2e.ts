@@ -17,6 +17,7 @@ import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
 import { MOON_ELF_CARDS } from '../../src/games/dicethrone/heroes/moon_elf/cards';
 import {
+    expectNoCentralBonusDicePresentation,
     expectRightTrayBonusDiceAwaitingResponse,
     expectRightTrayBonusDiceConfirmation,
     settleCurrentBonusDice,
@@ -44,6 +45,7 @@ async function screenshotStep(
     testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
     name: string,
 ): Promise<string> {
+    await expectNoCentralBonusDicePresentation(page);
     const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({ path, fullPage: false, timeout: 20000 }));
     return path;
@@ -84,62 +86,73 @@ async function updateCoreState(matchId: string, page: Page, mutate: (core: Mutab
     await updateOnlineCoreState(matchId, page, mutate);
 }
 
-async function readResponseHintHandGeometry(page: Page) {
+async function readResponseHintViewportGeometry(page: Page) {
     return page.evaluate(() => {
         const hint = document.querySelector<HTMLElement>('[data-testid="dicethrone-response-window-hint"]');
         const hand = document.querySelector<HTMLElement>('[data-testid="hand-area"]');
-        if (!hint || !hand) return null;
+        if (!hint) return null;
         const hintRect = hint.getBoundingClientRect();
-        const cardRects = Array.from(hand.querySelectorAll<HTMLElement>('[data-card-id]'))
+        const cardRects = hand ? Array.from(hand.querySelectorAll<HTMLElement>('[data-card-id]'))
             .map((card) => card.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card)
             .map((card) => card.getBoundingClientRect())
             .filter((rect) => rect.width > 0 && rect.height > 0)
-            .map((rect) => rect.top);
-        const hoveredCard = hand.querySelector<HTMLElement>('[data-card-id]:hover');
+            .map((rect) => rect.top) : [];
+        const hoveredCard = hand?.querySelector<HTMLElement>('[data-card-id]:hover') ?? null;
         const hoveredCardVisual = hoveredCard?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? hoveredCard;
         return {
             viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
             hintCenterX: hintRect.left + hintRect.width / 2,
+            hintTop: hintRect.top,
             hintBottom: hintRect.bottom,
+            hintBottomInset: window.innerHeight - hintRect.bottom,
+            position: getComputedStyle(hint).position,
+            anchor: hint.dataset.anchor ?? null,
+            placement: hint.dataset.placement ?? null,
             visibleHandTop: cardRects.length > 0 ? Math.min(...cardRects) : null,
             hoveredHandTop: hoveredCardVisual?.getBoundingClientRect().top ?? null,
         };
     });
 }
 
-function assertResponseHintGap(
-    geometry: NonNullable<Awaited<ReturnType<typeof readResponseHintHandGeometry>>>,
-    minGap: number,
-    maxGap: number,
-    message: string,
-): void {
-    expect(Math.abs(geometry.hintCenterX - geometry.viewportWidth / 2)).toBeLessThan(4);
-    expect(geometry.visibleHandTop, '响应窗口必须有可见手牌作为锚点').not.toBeNull();
-    const gap = geometry.visibleHandTop! - geometry.hintBottom;
-    expect(gap, message).toBeGreaterThanOrEqual(minGap);
-    expect(gap, message).toBeLessThanOrEqual(maxGap);
-}
-
-async function assertResponseHintAboveHand(page: Page): Promise<void> {
-    const geometry = await readResponseHintHandGeometry(page);
+async function assertResponseHintFixedHandLiftSlot(page: Page): Promise<NonNullable<Awaited<ReturnType<typeof readResponseHintViewportGeometry>>>> {
+    const geometry = await readResponseHintViewportGeometry(page);
     expect(geometry).not.toBeNull();
-    assertResponseHintGap(geometry!, 8, 20, '响应条必须贴在可见手牌顶边上方');
+    expect(geometry!.position).toBe('fixed');
+    expect(geometry!.anchor).toBe('viewport');
+    expect(geometry!.placement).toBe('fixed-hand-lift-slot');
+    expect(Math.abs(geometry!.hintCenterX - geometry!.viewportWidth / 2)).toBeLessThan(4);
+    expect(geometry!.hintTop).toBeGreaterThan(0);
+    expect(geometry!.hintBottom).toBeLessThan(geometry!.viewportHeight);
+    expect(geometry!.hintBottom, '响应条应靠近手牌抬起区，不能回到牌桌正中央').toBeGreaterThan(geometry!.viewportHeight * 0.50);
+    expect(geometry!.hintBottomInset).toBeGreaterThan(128);
+    if (geometry!.visibleHandTop !== null) {
+        expect(geometry!.visibleHandTop - geometry!.hintBottom, '固定响应条默认态必须贴近但不遮住可见手牌顶部').toBeGreaterThanOrEqual(8);
+        expect(geometry!.visibleHandTop - geometry!.hintBottom, '固定响应条默认态不应高到牌桌正中').toBeLessThanOrEqual(96);
+    }
+    return geometry!;
 }
 
-async function assertResponseHintClearsHoveredHandCard(page: Page, cardId: string): Promise<void> {
+async function assertResponseHintStableDuringHandHover(
+    page: Page,
+    cardId: string,
+): Promise<void> {
     const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
-    const initialGeometry = await readResponseHintHandGeometry(page);
-    expect(initialGeometry).not.toBeNull();
+    const initialGeometry = await assertResponseHintFixedHandLiftSlot(page);
 
     await card.hover();
     await page.waitForTimeout(520);
 
-    const hoveredGeometry = await readResponseHintHandGeometry(page);
+    const hoveredGeometry = await readResponseHintViewportGeometry(page);
     expect(hoveredGeometry).not.toBeNull();
-    expect(hoveredGeometry!.hoveredHandTop, '悬浮手牌必须成为响应条锚点').not.toBeNull();
-    expect(hoveredGeometry!.hoveredHandTop!).toBeLessThan(initialGeometry!.visibleHandTop! - 20);
-    expect(hoveredGeometry!.hintBottom).toBeLessThan(initialGeometry!.hintBottom - 20);
-    assertResponseHintGap(hoveredGeometry!, 6, 20, '响应条必须为悬浮抬起的手牌让位');
+    expect(hoveredGeometry!.hoveredHandTop, '悬浮手牌应抬起，但响应条不能跟随抬高').not.toBeNull();
+    expect(initialGeometry.visibleHandTop, '测试场景必须有可见手牌用于制造 hover 扰动').not.toBeNull();
+    expect(hoveredGeometry!.hoveredHandTop!).toBeLessThan(initialGeometry.visibleHandTop! - 20);
+    expect(Math.abs(hoveredGeometry!.hintTop - initialGeometry.hintTop)).toBeLessThan(2);
+    expect(Math.abs(hoveredGeometry!.hintBottom - initialGeometry.hintBottom)).toBeLessThan(2);
+    expect(hoveredGeometry!.position).toBe('fixed');
+    expect(hoveredGeometry!.anchor).toBe('viewport');
+    expect(hoveredGeometry!.placement).toBe('fixed-hand-lift-slot');
 }
 
 async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<void> {
@@ -152,77 +165,6 @@ async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<v
             && handArea.querySelectorAll('.atlas-shimmer').length === 0;
     }, cardId, { timeout: 15000, polling: 100 });
     await page.waitForTimeout(700);
-}
-
-async function waitForCardSpotlightVisualReady(page: Page, cardId: string) {
-    await expect(page.getByTestId('attack-showcase-overlay')).toHaveCount(0, { timeout: 15000 });
-
-    const spotlight = page.locator(`[data-testid="card-spotlight-overlay"][data-card-id="${cardId}"]`).first();
-    await expect(spotlight).toBeVisible({ timeout: 15000 });
-
-    let lastVisualState: unknown = null;
-    let lastMountedVisualState: unknown = null;
-    const readVisualState = async () => {
-        const visualState = await page.evaluate((expectedCardId) => {
-        const attackShowcase = document.querySelector('[data-testid="attack-showcase-overlay"]');
-        const overlay = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="card-spotlight-overlay"]'))
-            .find((node) => node.dataset.cardId === expectedCardId);
-        if (!overlay) {
-            return { ready: false, reason: 'missing-overlay' };
-        }
-
-        const rect = overlay.getBoundingClientRect();
-        const atlasFrame = overlay.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
-        const atlasImage = overlay.querySelector<HTMLImageElement>('[data-card-atlas-img="true"]');
-        const image = atlasImage ?? overlay.querySelector<HTMLImageElement>('img');
-        const hasShimmer = overlay.querySelector('.atlas-shimmer') !== null;
-        const imageReady = image ? image.complete && image.naturalWidth > 16 && image.naturalHeight > 16 : false;
-        const cardLargeEnough = rect.width > window.innerWidth * 0.1 && rect.height > window.innerHeight * 0.25;
-        const settledNearMainView =
-            rect.left > window.innerWidth * 0.2
-            && rect.right < window.innerWidth * 0.8
-            && rect.top > window.innerHeight * 0.03
-            && rect.bottom < window.innerHeight * 0.86;
-
-        return {
-            ready: Boolean(
-                !attackShowcase
-                && overlay.dataset.cardId === expectedCardId
-                && cardLargeEnough
-                && settledNearMainView
-                && imageReady
-                && (atlasFrame ? !hasShimmer : true),
-            ),
-            cardId: overlay.dataset.cardId ?? null,
-            attackShowcaseVisible: Boolean(attackShowcase),
-            hasShimmer,
-            imageReady,
-            rect: {
-                left: rect.left,
-                right: rect.right,
-                top: rect.top,
-                bottom: rect.bottom,
-                width: rect.width,
-                height: rect.height,
-            },
-            reason: 'not-ready',
-        };
-        }, cardId);
-        lastVisualState = visualState;
-        if (visualState.reason !== 'missing-overlay') {
-            lastMountedVisualState = visualState;
-        }
-        return visualState;
-    };
-
-    try {
-        await expect.poll(readVisualState, { timeout: 15000, intervals: [100, 200, 500] }).toMatchObject({ ready: true });
-    } catch {
-        throw new Error(`卡牌特写未达到可读状态: ${JSON.stringify({ lastMountedVisualState, lastVisualState })}`);
-    }
-
-    await page.waitForTimeout(500);
-    return spotlight;
 }
 
 async function closeCardSpotlightIfVisible(page: Page): Promise<void> {
@@ -594,11 +536,6 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await dismissAttackShowcaseIfVisible(guestPage);
             await dragHandCardToPlay(hostPage, 'volley');
             await dismissAttackShowcaseIfVisible(guestPage);
-            const volleySpotlight = await waitForCardSpotlightVisualReady(guestPage, 'volley');
-            await expect(volleySpotlight.locator('[data-testid="card-spotlight-summary-text"]'))
-                .toHaveCount(0);
-            await screenshotStep(guestPage, testInfo, '02-万箭齐发-卡牌特写与右侧2D奖励骰盘');
-
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
                 sourceAbilityId: 'volley',
                 customResolutionId: 'moon-elf-volley',
@@ -606,6 +543,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 windowType: 'afterRollConfirmed',
                 currentResponderId: '1',
             });
+            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+                sourceAbilityId: 'volley',
+            });
+            await screenshotStep(guestPage, testInfo, '02-万箭齐发-无中央特写且右侧2D奖励骰盘可见');
             await normalizePendingBonusDice(setup.matchId, hostPage, [1, 2, 3, 4, 5], moonElfFaceForValue);
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
                 diceValues: [1, 2, 3, 4, 5],
@@ -619,10 +560,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
             await expect(guestPage.getByRole('button', { name: /^(跳过|Pass)$/i }).first()).toBeVisible({ timeout: 5000 });
-            await assertResponseHintAboveHand(guestPage);
-            await screenshotStep(guestPage, testInfo, '03a-万箭齐发-奖励骰响应提示贴在手牌上沿');
-            await assertResponseHintClearsHoveredHandCard(guestPage, 'card-flick');
-            await screenshotStep(guestPage, testInfo, '03b-万箭齐发-悬浮手牌时响应提示自动避让');
+            await assertResponseHintFixedHandLiftSlot(guestPage);
+            await screenshotStep(guestPage, testInfo, '03a-万箭齐发-奖励骰响应提示固定在手牌抬起区上方');
+            await assertResponseHintStableDuringHandHover(guestPage, 'card-flick');
+            await screenshotStep(guestPage, testInfo, '03b-万箭齐发-悬浮手牌时响应提示位置稳定');
 
             await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
@@ -635,6 +576,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect(selectedVolleyDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
             await expect(selectedVolleyDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
             await expect(selectedVolleyDie).toHaveAttribute('data-display-value', String(volleyChoice.beforeValue), { timeout: 5000 });
+            await expectNoCentralBonusDicePresentation(guestPage);
             await screenshotStep(guestPage, testInfo, '04-万箭齐发-弹一手选择奖励骰改前');
 
             await dispatch(guestPage, 'MODIFY_DIE', '1', {
@@ -647,7 +589,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 volleyChoice.beforeValue,
                 volleyChoice.afterValue,
             ), { timeout: 5000 }).toBe(true);
-            await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+            await expectNoCentralBonusDicePresentation(guestPage);
             await screenshotStep(guestPage, testInfo, '05-万箭齐发-弹一手已修改奖励骰');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
@@ -772,10 +714,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: 'thunder-strike',
             });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
-            await assertResponseHintAboveHand(guestPage);
-            await screenshotStep(guestPage, testInfo, '03a-雷霆万钧-奖励骰响应提示贴在手牌上沿');
-            await assertResponseHintClearsHoveredHandCard(guestPage, 'card-flick');
-            await screenshotStep(guestPage, testInfo, '03b-雷霆万钧-悬浮手牌时响应提示自动避让');
+            await assertResponseHintFixedHandLiftSlot(guestPage);
+            await screenshotStep(guestPage, testInfo, '03a-雷霆万钧-奖励骰响应提示固定在手牌抬起区上方');
+            await assertResponseHintStableDuringHandHover(guestPage, 'card-flick');
+            await screenshotStep(guestPage, testInfo, '03b-雷霆万钧-悬浮手牌时响应提示位置稳定');
 
             await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
@@ -788,6 +730,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect(selectedThunderDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
             await expect(selectedThunderDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
             await expect(selectedThunderDie).toHaveAttribute('data-display-value', String(thunderChoice.beforeValue), { timeout: 5000 });
+            await expectNoCentralBonusDicePresentation(guestPage);
             await screenshotStep(guestPage, testInfo, '04-雷霆万钧-弹一手选择奖励骰改前');
 
             await dispatch(guestPage, 'MODIFY_DIE', '1', {
@@ -800,7 +743,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 thunderChoice.beforeValue,
                 thunderChoice.afterValue,
             ), { timeout: 5000 }).toBe(true);
-            await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+            await expectNoCentralBonusDicePresentation(guestPage);
             await screenshotStep(guestPage, testInfo, '05-雷霆万钧-弹一手已修改奖励骰');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');

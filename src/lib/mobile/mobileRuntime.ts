@@ -56,8 +56,8 @@ export const getNativeMobileRuntimeDiagnostics = (options?: {
     );
     const capacitorRuntime = options?.capacitor ?? runtimeWindow?.Capacitor;
 
-    const importCapacitorPlatform = safeInvoke(() => capacitorRuntime.getPlatform?.());
-    const importCapacitorNative = safeInvoke(() => capacitorRuntime.isNativePlatform?.());
+    const importCapacitorPlatform = safeInvoke(() => capacitorRuntime?.getPlatform?.());
+    const importCapacitorNative = safeInvoke(() => capacitorRuntime?.isNativePlatform?.());
     const windowCapacitorPlatform = safeInvoke(() => runtimeWindow?.Capacitor?.getPlatform?.());
     const windowCapacitorNative = safeInvoke(() => runtimeWindow?.Capacitor?.isNativePlatform?.());
     const hasAndroidBridge = Boolean(runtimeWindow?.androidBridge);

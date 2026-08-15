@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getAllGames } from '../../config/games.config';
-import { resolveGameMobileSupport } from '../mobileSupport';
+import { resolveGameMobileSupport } from '../../shared/mobileSupport';
 
 describe('mobile orientation policy', () => {
     it('all enabled games use landscape except tictactoe and match the Android orientation map', () => {

@@ -4,6 +4,11 @@
  */
 
 import type { StoredMatchCredentials, OwnerActiveMatch, ExitMatchResult } from '../../hooks/match/useMatchStatus';
+import type {
+    GameManifestEntry,
+    GameManifestTranslationLabel,
+    GameSetupSelectOption,
+} from '../../shared/gameManifest.types';
 
 // ============================================================================
 // 类型
@@ -56,6 +61,7 @@ export interface ActiveMatchInfo {
 }
 
 export type RoomLabelTranslator = (key: string, options?: Record<string, unknown>) => string;
+type RoomSetupSummaryManifest = Pick<GameManifestEntry, 'id' | 'setupOptions' | 'publicRoomSetupSummary'>;
 
 // ============================================================================
 // 工具函数
@@ -63,81 +69,80 @@ export type RoomLabelTranslator = (key: string, options?: Record<string, unknown
 
 export const normalizeGameName = (name?: string) => (name || '').toLowerCase();
 
+const normalizeGameScopedLabelKey = (gameId: string, labelKey: string) => {
+    const gamePrefix = `games.${gameId}.`;
+    return labelKey.startsWith(gamePrefix)
+        ? labelKey.slice(gamePrefix.length)
+        : labelKey;
+};
+
+const resolveManifestLabel = (
+    t: RoomLabelTranslator,
+    gameManifest: RoomSetupSummaryManifest,
+    label: GameManifestTranslationLabel,
+    fallbackValue: string,
+) => t(
+    label.namespace ? label.labelKey : normalizeGameScopedLabelKey(gameManifest.id, label.labelKey),
+    {
+        ns: label.namespace ?? `game-${gameManifest.id}`,
+        defaultValue: label.defaultValue ?? fallbackValue,
+    },
+);
+
+const getSetupFieldOptions = (field: NonNullable<GameManifestEntry['setupOptions']>[string]): GameSetupSelectOption[] => {
+    if (field.type === 'multi-select') {
+        return field.options;
+    }
+
+    return [
+        ...(field.options ?? []),
+        ...Object.values(field.optionsByPlayerCount ?? {}).flatMap((options) => options ?? []),
+    ];
+};
+
+const findSetupOptionLabel = (
+    gameManifest: RoomSetupSummaryManifest | undefined,
+    optionValue: string,
+): GameManifestTranslationLabel | null => {
+    for (const field of Object.values(gameManifest?.setupOptions ?? {})) {
+        const option = getSetupFieldOptions(field).find((candidate) => candidate.value === optionValue);
+        if (option) {
+            return { labelKey: option.labelKey };
+        }
+    }
+    return null;
+};
+
 export const resolveRoomExpansionLabel = (
     t: RoomLabelTranslator,
-    gameName: string | undefined,
+    _gameName: string | undefined,
     expansionId: string,
+    gameManifest?: RoomSetupSummaryManifest,
 ): string => {
-    const normalizedGameName = gameName?.trim().toLowerCase();
-    if (normalizedGameName === 'fantasyrealms' && expansionId === 'cursed-hoard-suits') {
-        return t('setup.expansion.cursedHoardSuits', {
-            ns: 'game-fantasyrealms',
-            defaultValue: expansionId,
-        });
-    }
-    if (normalizedGameName !== 'smashup') {
-        return expansionId;
-    }
-    if (expansionId === 'titans') {
-        return t('setup.expansions.titans', {
-            ns: 'game-smashup',
-            defaultValue: expansionId,
-        });
-    }
-    if (expansionId === 'diy') {
-        return t('setup.expansions.diy', {
-            ns: 'game-smashup',
-            defaultValue: expansionId,
-        });
-    }
-    if (expansionId === 'deckQuery') {
-        return t('setup.deckQuery.label', {
-            ns: 'game-smashup',
-            defaultValue: expansionId,
-        });
-    }
-    return expansionId;
+    const label = gameManifest?.publicRoomSetupSummary?.enabledExpansions?.[expansionId]
+        ?? findSetupOptionLabel(gameManifest, expansionId);
+    return label ? resolveManifestLabel(t, gameManifest!, label, expansionId) : expansionId;
 };
 
 export const resolveRoomScenarioLabel = (
     t: RoomLabelTranslator,
-    gameName: string | undefined,
+    _gameName: string | undefined,
     scenarioId: string,
+    gameManifest?: RoomSetupSummaryManifest,
 ): string => {
-    const normalizedGameName = gameName?.trim().toLowerCase();
-    if (normalizedGameName === 'betrayal') {
-        if (scenarioId === 'first-scenario') {
-            return t('setup.scenario.firstScenario', {
-                ns: 'game-betrayal',
-                defaultValue: '赤红杰克归来',
-            });
-        }
-        return scenarioId;
-    }
-    if (normalizedGameName !== 'qidahen') {
-        return scenarioId;
-    }
+    const label = gameManifest?.publicRoomSetupSummary?.scenario?.options?.[scenarioId]
+        ?? findSetupOptionLabel(gameManifest, scenarioId);
+    return label ? resolveManifestLabel(t, gameManifest!, label, scenarioId) : scenarioId;
+};
 
-    if (scenarioId === 'post-sarhu-1619') {
-        return t('setup.scenario.postSarhu1619', {
-            ns: 'game-qidahen',
-            defaultValue: scenarioId,
-        });
-    }
-    if (scenarioId === 'shanhaiguan-1622') {
-        return t('setup.scenario.shanhaiguan1622', {
-            ns: 'game-qidahen',
-            defaultValue: scenarioId,
-        });
-    }
-    if (scenarioId === 'dingmao-rebellion-1627') {
-        return t('setup.scenario.dingmaoRebellion1627', {
-            ns: 'game-qidahen',
-            defaultValue: scenarioId,
-        });
-    }
-
-    return scenarioId;
+export const resolveRoomScenarioPendingLabel = (
+    t: RoomLabelTranslator,
+    gameManifest?: RoomSetupSummaryManifest,
+): string => {
+    const label = gameManifest?.publicRoomSetupSummary?.scenario?.pendingLabel;
+    return label && gameManifest
+        ? resolveManifestLabel(t, gameManifest, label, label.defaultValue ?? '')
+        : '';
 };
 
 export const shouldPromptExitActiveMatch = (activeMatchID: string | null, targetMatchID: string) => (

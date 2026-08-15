@@ -25,6 +25,7 @@ interface OpponentHeaderProps {
     opponentName: string;
     viewMode: ViewMode;
     isOpponentShaking: boolean;
+    isOpponentCpShaking?: boolean;
     hitStopActive?: boolean;
     hitStopConfig?: HitStopConfig;
     shouldAutoObserve: boolean;
@@ -57,6 +58,7 @@ export const OpponentHeader = ({
     opponentName,
     viewMode,
     isOpponentShaking,
+    isOpponentCpShaking,
     hitStopActive,
     hitStopConfig,
     shouldAutoObserve,
@@ -132,7 +134,10 @@ export const OpponentHeader = ({
         ? 'px-[0.24vw] py-[0.08vw] text-[0.48vw]'
         : 'px-[0.3vw] py-[0.1vw] text-[0.55vw]';
     const statClassName = compact ? 'text-[0.66vw]' : 'text-[0.75vw]';
-    const iconDotClassName = compact ? 'w-[0.42vw] h-[0.42vw]' : 'w-[0.5vw] h-[0.5vw]';
+    const statBoxClassName = compact
+        ? 'min-w-[2.25vw] h-[1.08vw] px-[0.24vw] border-[0.12vw] text-[0.56vw]'
+        : 'min-w-[2.75vw] h-[1.28vw] px-[0.3vw] border-[0.14vw] text-[0.62vw]';
+    const statLabelClassName = compact ? 'text-[0.42vw]' : 'text-[0.48vw]';
     const handIconClassName = compact ? 'w-[0.62vw] h-[0.62vw]' : 'w-[0.7vw] h-[0.7vw]';
     const shieldClassName = compact ? 'w-[0.95vw] h-[0.95vw]' : 'w-[1.1vw] h-[1.1vw]';
     const shieldTextClassName = compact ? 'text-[0.42vw]' : 'text-[0.5vw]';
@@ -164,106 +169,109 @@ export const OpponentHeader = ({
             )}
 
             <div className="flex justify-center items-center pointer-events-auto">
-                <ShakeContainer
-                    isShaking={isOpponentShaking}
+                <div
                     onClick={() => {
                         if (disabled || shouldAutoObserve) return;
                         onToggleView();
                     }}
                     className={[
-                        'relative overflow-visible group shadow-lg transition-all duration-300 border',
+                        'relative overflow-visible group shadow-lg transition-[background-color,border-color,box-shadow,opacity,filter] duration-300 border',
                         disabled ? 'cursor-not-allowed' : 'cursor-pointer',
                         shellClassName,
                         stateClassName,
-                        isOpponentShaking ? '!border-red-500 !shadow-[0_0_12px_rgba(239,68,68,0.3)]' : '',
                     ].join(' ')}
                 >
-                    <HitStopContainer
-                        isActive={!!hitStopActive}
-                        {...(hitStopConfig ?? {})}
-                        className="w-full h-full"
-                    >
-                        <div className={`relative flex items-center ${bodyGapClassName} overflow-visible`}>
-                            <div className={`${portraitClassName} border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner`}>
-                                <div className="w-full h-full transform transition-transform duration-500 group-hover:scale-110" style={getPortraitStyle(opponent.characterId, locale)} />
-                                <div className={`absolute inset-0 pointer-events-none bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-all duration-300 ${isObserved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                    <svg viewBox="0 0 24 24" className={`${eyeClassName} ${accent.eye}`}>
-                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                    </svg>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-[0.2vw] items-start">
-                                <div className={`flex items-center ${bodyGapClassName}`}>
-                                    <span className={`${nameClassName} ${accent.text}`}>
-                                        {opponentName}
-                                    </span>
-                                    <span className={`${badgeClassName} ${accent.badge} font-bold uppercase tracking-widest rounded border shadow-sm`}>
-                                        {heroLabel}
-                                    </span>
-
-                                    <div ref={opponentHpRef} className={`flex items-center gap-[0.3vw] ${compact ? 'ml-[0.05vw]' : 'ml-[0.2vw]'}`}>
-                                        <div className="flex items-center gap-[0.2vw]">
-                                            <div className={`${iconDotClassName} bg-red-500 rounded-full shadow-[0_0_6px_rgba(239,68,68,0.4)]`} />
-                                            <span
-                                                className={`text-red-400 font-bold ${statClassName}`}
-                                                data-testid={testId ? `${testId}-hp` : undefined}
-                                            >
-                                                {overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}
-                                            </span>
-                                        </div>
-                                        <div ref={opponentCpRef} className="flex items-center gap-[0.2vw]">
-                                            <div className={`${iconDotClassName} bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]`} />
-                                            <span className={`text-amber-500 font-bold ${statClassName}`}>{opponent.resources[RESOURCE_IDS.CP] ?? 0}</span>
-                                        </div>
-                                        <div className="flex items-center gap-[0.2vw]">
-                                            <Layers className={`${handIconClassName} text-sky-400 drop-shadow-[0_0_4px_rgba(56,189,248,0.5)]`} />
-                                            <span className={`text-sky-400 font-bold ${statClassName}`}>{opponent.hand.length}</span>
-                                        </div>
-                                        {opponent.damageShields && opponent.damageShields.length > 0 && (
-                                            <div className={`relative ${shieldClassName} flex items-center justify-center`}>
-                                                <svg className="w-full h-full text-cyan-500 drop-shadow-md" viewBox="0 1 24 25" fill="currentColor">
-                                                    <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                                                </svg>
-                                                <span className={`absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10 pb-[1px] ${shieldTextClassName}`}>
-                                                    {opponent.damageShields.reduce((sum, s) => sum + s.value, 0)}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div ref={opponentBuffRef} className={`flex gap-[0.2vw] ${buffMinHeightClassName}`}>
-                                    <TokensContainer
-                                        tokens={opponent.tokens || {}}
-                                        size="tiny"
-                                        maxPerRow={10}
-                                        locale={locale}
-                                        atlas={statusIconAtlas}
-                                        tokenDefinitions={tokenDefinitions}
-                                        tokenStackLimits={opponent.tokenStackLimits}
-                                        testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
-                                    />
-                                    <StatusEffectsContainer
-                                        effects={opponent.statusEffects || {}}
-                                        size="tiny"
-                                        maxPerRow={10}
-                                        locale={locale}
-                                        atlas={statusIconAtlas}
-                                        testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
-                                    />
-                                </div>
+                    <div className={`relative flex items-center ${bodyGapClassName} overflow-visible`}>
+                        <div className={`${portraitClassName} border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner`}>
+                            <div className="w-full h-full transform transition-transform duration-500 group-hover:scale-110" style={getPortraitStyle(opponent.characterId, locale)} />
+                            <div className={`absolute inset-0 pointer-events-none bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-[opacity,background-color] duration-300 ${isObserved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <svg viewBox="0 0 24 24" className={`${eyeClassName} ${accent.eye}`}>
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
                             </div>
                         </div>
-                    </HitStopContainer>
 
-                    <DamageFlash
-                        active={!!damageFlashActive}
-                        damage={damageFlashDamage ?? 1}
-                        intensity={(damageFlashDamage ?? 0) >= 5 ? 'strong' : 'normal'}
-                        showNumber={false}
-                    />
-                </ShakeContainer>
+                        <div className="flex flex-col gap-[0.2vw] items-start">
+                            <div className={`flex items-center ${bodyGapClassName}`}>
+                                <span className={`${nameClassName} ${accent.text}`}>
+                                    {opponentName}
+                                </span>
+                                <span className={`${badgeClassName} ${accent.badge} font-bold uppercase tracking-widest rounded border shadow-sm`}>
+                                    {heroLabel}
+                                </span>
+
+                                <div className={`flex items-center gap-[0.32vw] ${compact ? 'ml-[0.05vw]' : 'ml-[0.2vw]'}`}>
+                                    <div ref={opponentHpRef}>
+                                        <ShakeContainer isShaking={isOpponentShaking}>
+                                            <HitStopContainer
+                                                isActive={!!hitStopActive}
+                                                {...(hitStopConfig ?? {})}
+                                                className="w-full"
+                                            >
+                                                <div
+                                                    className={`${statBoxClassName} relative box-border flex items-center justify-between gap-[0.18vw] bg-red-950/70 border-red-500/90 text-red-100 shadow-[0_0_8px_rgba(239,68,68,0.22)]`}
+                                                    data-testid={testId ? `${testId}-hp` : undefined}
+                                                >
+                                                    <span className={`${statLabelClassName} font-black tracking-[0.08em] text-red-200/80`}>HP</span>
+                                                    <span className="font-black">{overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}</span>
+                                                    <DamageFlash
+                                                        active={!!damageFlashActive}
+                                                        damage={damageFlashDamage ?? 1}
+                                                        intensity={(damageFlashDamage ?? 0) >= 5 ? 'strong' : 'normal'}
+                                                        showNumber={false}
+                                                    />
+                                                </div>
+                                            </HitStopContainer>
+                                        </ShakeContainer>
+                                    </div>
+                                    <div ref={opponentCpRef}>
+                                        <ShakeContainer isShaking={!!isOpponentCpShaking}>
+                                            <div className={`${statBoxClassName} box-border flex items-center justify-between gap-[0.18vw] bg-amber-950/70 border-amber-400/90 text-amber-100 shadow-[0_0_8px_rgba(245,158,11,0.2)]`}>
+                                                <span className={`${statLabelClassName} font-black tracking-[0.08em] text-amber-200/80`}>CP</span>
+                                                <span className="font-black">{opponent.resources[RESOURCE_IDS.CP] ?? 0}</span>
+                                            </div>
+                                        </ShakeContainer>
+                                    </div>
+                                    <div className="flex items-center gap-[0.2vw]">
+                                        <Layers className={`${handIconClassName} text-sky-400 drop-shadow-[0_0_4px_rgba(56,189,248,0.5)]`} />
+                                        <span className={`text-sky-400 font-bold ${statClassName}`}>{opponent.hand.length}</span>
+                                    </div>
+                                    {opponent.damageShields && opponent.damageShields.length > 0 && (
+                                        <div className={`relative ${shieldClassName} flex items-center justify-center`}>
+                                            <svg className="w-full h-full text-cyan-500 drop-shadow-md" viewBox="0 1 24 25" fill="currentColor">
+                                                <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
+                                            </svg>
+                                            <span className={`absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10 pb-[1px] ${shieldTextClassName}`}>
+                                                {opponent.damageShields.reduce((sum, s) => sum + s.value, 0)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div ref={opponentBuffRef} className={`flex gap-[0.2vw] ${buffMinHeightClassName}`}>
+                                <TokensContainer
+                                    tokens={opponent.tokens || {}}
+                                    size="tiny"
+                                    maxPerRow={10}
+                                    locale={locale}
+                                    atlas={statusIconAtlas}
+                                    tokenDefinitions={tokenDefinitions}
+                                    tokenStackLimits={opponent.tokenStackLimits}
+                                    testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
+                                />
+                                <StatusEffectsContainer
+                                    effects={opponent.statusEffects || {}}
+                                    size="tiny"
+                                    maxPerRow={10}
+                                    locale={locale}
+                                    atlas={statusIconAtlas}
+                                    testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UI_Z_INDEX } from '../../core';
 import { useModalStack } from '../../contexts/ModalStackContext';
-import { extractGameIdFromPlayPath } from '../../games/mobileSupport';
+import { extractGameIdFromPlayPath } from '../../shared/mobileSupport';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
 import { navigateBackToLobbyWithModalCleanup } from '../../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import { copyToClipboard } from '../../lib/utils';

@@ -1170,6 +1170,7 @@ export class DiceBoxThreeEngine {
         for (const materialIndex of faceMaterialIndexes) {
             const material = materials[materialIndex];
             const faceValue = this.getFaceValueForMaterialIndex(materialIndex);
+            if (faceValue === null) continue;
             const canvas = skin.faceCanvases[faceValue] ?? edgeCanvas;
             if (!material || !canvas) continue;
 

@@ -23,10 +23,6 @@ vi.mock('../SpotlightContainer', () => ({
     ),
 }));
 
-vi.mock('../RollSpotlightDiceContent', () => ({
-    default: ({ value }: { value: number }) => <div data-testid="roll-spotlight-dice-content">{value}</div>,
-}));
-
 describe('CompareRollOverlay', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -120,5 +116,24 @@ describe('CompareRollOverlay', () => {
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
         expect(screen.getByTestId('compare-roll-waiting').textContent).toBe('compareRoll.waitingForOwnerChoice');
         expect(screen.queryByRole('button', { name: 'choices.gunslingerDuel.deal3' })).toBeNull();
+    });
+
+    it('结果选择层不应再渲染中间骰子特写', () => {
+        render(
+            <CompareRollOverlay
+                compareRoll={compareRoll}
+                isVisible={true}
+                canResolve={true}
+                onResolveOption={vi.fn()}
+                onConfirm={vi.fn()}
+                usePortal={false}
+            />,
+        );
+
+        expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
+        expect(screen.getByTestId('compare-roll-participant-0')).toBeTruthy();
+        expect(screen.getByTestId('compare-roll-participant-1')).toBeTruthy();
+        expect(screen.queryByTestId('roll-spotlight-dice-content')).toBeNull();
+        expect(screen.queryByTestId('dice-2d')).toBeNull();
     });
 });

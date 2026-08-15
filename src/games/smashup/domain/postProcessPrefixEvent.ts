@@ -128,6 +128,7 @@ import {
     reduceVpAwardedEvent,
     reduceWhenScoringClearedEvent,
     reduceWhenScoringTriggeredEvent,
+    reduce as reduceSmashUpEvent,
 } from './reduce';
 import { applyTriggerQueueFactEvent } from './triggerQueueFacts';
 
@@ -184,8 +185,19 @@ export function applyPostProcessPrefixEvent(core: SmashUpCore, event: SmashUpEve
             return reduceCardRecoveredFromDiscardEvent(core, event as CardRecoveredFromDiscardEvent);
         case SU_EVENTS.CARD_REMOVED_FROM_GAME:
             return reduceCardRemovedFromGameEvent(core, event as CardRemovedFromGameEvent);
+        case SU_EVENTS.CARD_REMOVED_FROM_DECK:
+        case SU_EVENTS.CARD_BOXED:
+        case SU_EVENTS.CARD_STORED:
+        case SU_EVENTS.STORED_CARD_RELEASED:
+        case SU_EVENTS.STORED_CARD_COUNTER_CHANGED:
+        case SU_EVENTS.MINION_SWAPPED:
+        case SU_EVENTS.STAKEOUT_POD_BLOCK_ADDED:
+            return reduceSmashUpEvent(core, event);
         case SU_EVENTS.CARD_BURIED:
             return reduceCardBuriedEvent(core, event as CardBuriedEvent);
+        case SU_EVENTS.BURIED_CARD_UNCOVERED:
+        case SU_EVENTS.BURIED_CARDS_DISCARDED_WITH_BASE:
+            return reduceSmashUpEvent(core, event);
         case SU_EVENTS.BURIED_CARD_RETURNED_TO_HAND:
             return reduceBuriedCardReturnedToHandEvent(core, event as BuriedCardReturnedToHandEvent);
         case SU_EVENTS.CARD_TO_DECK_TOP:
@@ -208,10 +220,21 @@ export function applyPostProcessPrefixEvent(core: SmashUpCore, event: SmashUpEve
             return reduceMunchkinMonsterPlayedEvent(core, event as MunchkinMonsterPlayedEvent);
         case SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED:
             return reduceMunchkinMonsterDefeatedEvent(core, event as MunchkinMonsterDefeatedEvent);
+        case SU_EVENTS.MUNCHKIN_MONSTER_CONTROL_CHANGED:
+        case SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM:
+            return reduceSmashUpEvent(core, event);
         case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED:
             return reduceMunchkinTreasureRewardRevealedEvent(core, event as MunchkinTreasureRewardRevealedEvent);
         case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED:
             return reduceMunchkinTreasureRewardDistributedEvent(core, event as MunchkinTreasureRewardDistributedEvent);
+        case SU_EVENTS.MUNCHKIN_TREASURES_DRAWN:
+        case SU_EVENTS.MUNCHKIN_TREASURES_MILLED:
+        case SU_EVENTS.MUNCHKIN_TREASURE_RECOVERED_FROM_DISCARD:
+        case SU_EVENTS.MUNCHKIN_TREASURE_FOUND_FROM_DECK:
+        case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_CLAIMED:
+        case SU_EVENTS.MUNCHKIN_TREASURE_DECK_SHUFFLED:
+        case SU_EVENTS.MUNCHKIN_TREASURE_TO_DECK_BOTTOM:
+            return reduceSmashUpEvent(core, event);
         case SU_EVENTS.BASE_DECK_REORDERED:
             return reduceBaseDeckReorderedEvent(core, event as BaseDeckReorderedEvent);
         case SU_EVENTS.BASE_DECK_SHUFFLED:
@@ -297,6 +320,18 @@ export function applyPostProcessPrefixEvent(core: SmashUpCore, event: SmashUpEve
                 suppressedBasesUntilTurnStart: [...previous, { baseIndex, suppressorPlayerId }],
             };
         }
+        case SU_EVENTS.BASE_METADATA_UPDATED:
+        case SU_EVENTS.ACTION_DEF_BLOCKED_THIS_TURN:
+        case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED:
+        case SU_EVENTS.MINION_PLAY_EFFECT_CONSUMED:
+        case SU_EVENTS.DISCARD_ABILITY_USED:
+        case SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED:
+        case SU_EVENTS.STARTING_HAND_MULLIGAN_USED:
+        case SU_EVENTS.WRAITHRUSTLERS_HQ_BONUS_UPDATED:
+        case SU_EVENTS.CARD_SUPPRESSED:
+        case SU_EVENTS.CARDS_SUPPRESSED_UNTIL_TURN_END:
+        case SU_EVENTS.BASE_ABILITY_USED:
+            return reduceSmashUpEvent(core, event);
         case SU_EVENTS.TURN_STARTED:
             return reduceTurnStartedEvent(core, event);
         case SU_EVENTS.TURN_ENDED:
@@ -348,6 +383,9 @@ export function applyPostProcessPrefixEvent(core: SmashUpCore, event: SmashUpEve
         case SU_EVENTS.REACTION_PASS_REQUESTED:
             return core;
         default:
+            if (typeof event.type === 'string' && event.type.startsWith('SYS_')) {
+                return core;
+            }
             throw new Error(
                 `[smashup/postProcessPrefixEvent] unsupported prefix event: ${String(event.type)}`,
             );

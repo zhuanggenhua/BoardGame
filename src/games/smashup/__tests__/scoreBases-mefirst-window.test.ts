@@ -194,11 +194,7 @@ describe('scoreBases / Me First! 窗口门禁', () => {
             ] as any[],
         });
 
-        const mirroredWindow = result.finalState.sys.responseWindow?.current;
-        if (mirroredWindow) {
-            expect(mirroredWindow.sourceId).toBe('smashup_reaction_choose');
-            expect(['meFirst', 'afterScoring']).toContain(mirroredWindow.windowType);
-        }
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
 
         // 验证：应该停在 scoreBases，统一反应交互或具体基地交互已创建
         expect(result.finalState.sys.phase).toBe('scoreBases');
@@ -225,11 +221,7 @@ describe('scoreBases / Me First! 窗口门禁', () => {
 
         // 验证：停在 scoreBases，海盗湾交互已创建
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        const mirroredWindowAfterPass = result.finalState.sys.responseWindow?.current;
-        if (mirroredWindowAfterPass) {
-            expect(mirroredWindowAfterPass.sourceId).toBe('smashup_reaction_choose');
-            expect(mirroredWindowAfterPass.windowType).toBe('afterScoring');
-        }
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
         const prompt = getFirstPrompt(result.finalState);
         expect(prompt).toBeDefined();
         expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(getPromptSourceId(prompt));

@@ -11,16 +11,15 @@
  * ```
  *
  * 历史债务说明：
- * summonerwars 有部分 UI 状态机（abilityMode/hasActiveEventMode）尚未迁移到
- * sys.interaction，需在 Board 层额外 || 合并：
+ * 若某个游戏还有私有 UI 状态机尚未迁移到 sys.interaction，
+ * 只能在该游戏 Board 层额外合并私有 busy 状态，不能写进框架 Hook：
  * ```tsx
  * const engineBusy = useIsInteractionBusy(G, playerID);
- * const isBusy = engineBusy || !!abilityMode || interaction.hasActiveEventMode;
+ * const isBusy = engineBusy || hasGamePrivateBusyState;
  * ```
  * 迁移完成后可直接使用 useIsInteractionBusy，删除手动合并逻辑。
  */
 
-import { useMemo } from 'react';
 import type { MatchState } from '../../../../engine/types';
 
 /**
@@ -34,10 +33,8 @@ export function useIsInteractionBusy<TCore>(
     G: MatchState<TCore>,
     playerID: string | null,
 ): boolean {
-    return useMemo(() => {
-        if (!playerID) return false;
-        const current = G.sys.interaction?.current;
-        if (!current) return false;
-        return current.playerId === playerID;
-    }, [G.sys.interaction?.current, playerID]);
+    if (!playerID) return false;
+    const current = G.sys.interaction?.current;
+    if (!current) return false;
+    return current.playerId === playerID;
 }

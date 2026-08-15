@@ -1,11 +1,16 @@
 import type { AiSeatController } from '../../../engine/ai';
 import type { MatchState } from '../../../engine/types';
-import { getGameImplementation } from '../../../games/registry';
-import type { GameRuntimeSeatSwapConfig, GameRuntimeSeatSwapMode } from '../../../games/gameRuntimeAdapter';
 import { resolveOrderedPlayerIds } from './playerDisplay';
 
 type CoreRecord = Record<string, unknown>;
-export type MatchSeatSwapMode = GameRuntimeSeatSwapMode;
+export type MatchSeatSwapMode = 'request' | 'instant';
+
+export type MatchSeatSwapConfig = {
+    mode: MatchSeatSwapMode;
+    requestCommandType: string;
+    respondCommandType?: string | null;
+    cancelCommandType?: string | null;
+};
 
 export interface PendingSeatSwapRequest {
     requesterId: string;
@@ -23,7 +28,7 @@ export interface MatchSeatSwapContext {
 }
 
 export interface ResolveMatchSeatSwapContextArgs {
-    gameId?: string | null;
+    seatSwapConfig?: MatchSeatSwapConfig | null;
     state?: MatchState<unknown> | null;
     myPlayerId?: string | null;
     seatControllers?: Record<string, AiSeatController>;
@@ -31,14 +36,6 @@ export interface ResolveMatchSeatSwapContextArgs {
 
 function isRecord(value: unknown): value is CoreRecord {
     return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function resolveSeatSwapConfig(gameId?: string | null): GameRuntimeSeatSwapConfig | null {
-    if (!gameId) {
-        return null;
-    }
-
-    return getGameImplementation(gameId)?.runtimeAdapter?.seatSwap ?? null;
 }
 
 function canUseSeatSwap(seatSwapMode: MatchSeatSwapMode, state: MatchState<unknown>, coreRecord: CoreRecord): boolean {
@@ -143,12 +140,11 @@ function resolvePendingSeatSwapRequest(
 }
 
 export function resolveMatchSeatSwapContext({
-    gameId,
+    seatSwapConfig,
     state,
     myPlayerId,
     seatControllers = {},
 }: ResolveMatchSeatSwapContextArgs): MatchSeatSwapContext | null {
-    const seatSwapConfig = resolveSeatSwapConfig(gameId);
     if (!seatSwapConfig || !state || myPlayerId == null || !isRecord(state.core)) {
         return null;
     }

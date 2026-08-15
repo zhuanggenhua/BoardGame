@@ -17,7 +17,7 @@
  *  6. agents / skills frontmatter:只允许 name + description,且 name 与文件 / 目录名一致。
  *  7. 名册一致(双向):agents/ 下每个角色必须出现在 AGENTS.md 名册表;名册表每行也必须有
  *     对应的 .agent.md 文件(幽灵行)。
- *  8. 软链接存活:.claude/agents、.claude/skills、.agents/skills 必须存在且解析进 .spec/。
+ *  8. 软链接存活:.claude/agents、.claude/skills、.agents/skills、.codex/skill 必须存在且解析进 .spec/。
  *  9. 任务卡 frontmatter:.spec/tasks/ 根目录每张卡(README 除外)必须有 frontmatter,
  *     且只允许 status 字段,枚举 pending / in_progress / completed(契约见 tasks/README.md);
  *     子目录不校验。
@@ -202,7 +202,7 @@ for (const file of walk(join(SPEC, 'skills'), (p) => basename(p) === 'SKILL.md')
 }
 
 // ── 8. 软链接存活 ─────────────────────────────────────────────────────────
-for (const rel of ['.claude/agents', '.claude/skills', '.agents/skills']) {
+for (const rel of ['.claude/agents', '.claude/skills', '.agents/skills', '.codex/skill']) {
   const link = join(ROOT, rel)
   try {
     lstatSync(link)

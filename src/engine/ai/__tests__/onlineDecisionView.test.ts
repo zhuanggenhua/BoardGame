@@ -2,7 +2,46 @@ import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../types';
 import { registerGameAiRuntime, resolveNextAiDispatch } from '../index';
 import { resolveOnlineAiDecisionView } from '../onlineDecisionView';
-import { smashUpAiRuntime } from '../../../games/smashup/ai';
+import type { GameAiRuntime } from '../types';
+
+const reactionOrderingRuntime: GameAiRuntime = {
+    gameId: '__test_reaction_ordering_visibility__',
+    buildLegalActions: () => [],
+    resolveOnlineDecisionVisibility({ sharedState }) {
+        const sourceId = (sharedState.sys?.interaction?.current?.data as { sourceId?: unknown } | undefined)?.sourceId;
+        return sourceId === 'test_reaction_choose'
+            ? 'shared'
+            : undefined;
+    },
+};
+
+const decisionOwnerRuntime: GameAiRuntime = {
+    gameId: '__test_online_ai_decision_owner__',
+    buildLegalActions: () => [],
+    resolveCurrentDecisionPlayerId({ state }) {
+        const ownerId = (state.core as { decisionOwnerId?: unknown } | undefined)?.decisionOwnerId;
+        return typeof ownerId === 'string' ? ownerId : undefined;
+    },
+};
+
+function buildDecisionOwnerState(): MatchState<unknown> {
+    return {
+        core: {
+            currentPlayerId: '0',
+            decisionOwnerId: '1',
+        },
+        sys: {
+            phase: 'testDecisionPhase',
+            turnNumber: 2,
+            eventStream: {
+                nextId: 24,
+                entries: [],
+            },
+            interaction: { current: null, queue: [], isBlocked: false },
+            responseWindow: { current: null },
+        },
+    } as MatchState<unknown>;
+}
 
 function buildCompareRollSharedState(): MatchState<unknown> {
     return {
@@ -10,7 +49,7 @@ function buildCompareRollSharedState(): MatchState<unknown> {
             currentPlayerId: '1',
         },
         sys: {
-            phase: 'defensiveRoll',
+            phase: 'testContestRoll',
             turnNumber: 3,
             eventStream: {
                 nextId: 42,
@@ -22,10 +61,10 @@ function buildCompareRollSharedState(): MatchState<unknown> {
                     kind: 'compare-roll-choice',
                     playerId: '0',
                     data: {
-                        title: 'compareRoll.gunslingerDuel.title',
+                        title: 'compareRoll.testContest.title',
                         contestants: [
-                            { playerId: '0', roll: 5, labelKey: 'compareRoll.gunslingerDuel.attacker' },
-                            { playerId: '1', roll: 3, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                            { playerId: '0', roll: 5, labelKey: 'compareRoll.testContest.left' },
+                            { playerId: '1', roll: 3, labelKey: 'compareRoll.testContest.right' },
                         ],
                         options: [
                             { id: 'accept', label: '确认' },
@@ -46,7 +85,7 @@ function buildCompareRollSeatState(): MatchState<unknown> {
             currentPlayerId: '1',
         },
         sys: {
-            phase: 'defensiveRoll',
+            phase: 'testContestRoll',
             turnNumber: 3,
             eventStream: {
                 nextId: 42,
@@ -58,10 +97,10 @@ function buildCompareRollSeatState(): MatchState<unknown> {
                     kind: 'compare-roll-choice',
                     playerId: '0',
                     data: {
-                        title: 'compareRoll.gunslingerDuel.title',
+                        title: 'compareRoll.testContest.title',
                         contestants: [
-                            { playerId: '0', roll: 5, labelKey: 'compareRoll.gunslingerDuel.attacker' },
-                            { playerId: '1', roll: 3, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                            { playerId: '0', roll: 5, labelKey: 'compareRoll.testContest.left' },
+                            { playerId: '1', roll: 3, labelKey: 'compareRoll.testContest.right' },
                         ],
                         options: [
                             { id: 'accept', label: '确认' },
@@ -90,7 +129,7 @@ function buildCompareRollVisibleState(args?: {
             currentPlayerId: args?.currentPlayerId ?? '1',
         },
         sys: {
-            phase: 'defensiveRoll',
+            phase: 'testContestRoll',
             turnNumber: 3,
             eventStream: {
                 nextId: args?.eventStreamNextId ?? 42,
@@ -102,13 +141,13 @@ function buildCompareRollVisibleState(args?: {
                     kind: 'compare-roll-choice',
                     playerId: args?.interactionPlayerId ?? '0',
                     data: {
-                        title: 'compareRoll.gunslingerDuel.title',
+                        title: 'compareRoll.testContest.title',
                         contestants: contestantPlayerIds.map((playerId, index) => ({
                             playerId,
                             roll: 5 - index,
                             labelKey: index === 0
-                                ? 'compareRoll.gunslingerDuel.attacker'
-                                : 'compareRoll.gunslingerDuel.defender',
+                                ? 'compareRoll.testContest.left'
+                                : 'compareRoll.testContest.right',
                         })),
                         options: [
                             { id: 'accept', label: '确认' },
@@ -123,7 +162,7 @@ function buildCompareRollVisibleState(args?: {
     } as MatchState<unknown>;
 }
 
-function buildSmashUpReactionChoiceState(args: {
+function buildReactionChoiceState(args: {
     currentPlayerId?: string;
     interactionPlayerId?: string;
     eventStreamNextId?: number;
@@ -142,11 +181,11 @@ function buildSmashUpReactionChoiceState(args: {
             },
             interaction: {
                 current: {
-                    id: 'smashup-reaction-1',
+                    id: 'test-reaction-1',
                     kind: 'simple-choice',
                     playerId: args.interactionPlayerId ?? '1',
                     data: {
-                        sourceId: 'smashup_reaction_choose',
+                        sourceId: 'test_reaction_choose',
                         options: args.optionSpecs.map((spec) => ({
                             id: spec.id,
                             label: spec.id,
@@ -169,7 +208,7 @@ function buildPendingResponseWindowState(args?: {
     interactionId?: string;
     interactionPlayerId?: string;
 }): MatchState<unknown> {
-    const pendingInteractionId = args?.pendingInteractionId ?? 'dt-interaction-card-bye-bye-1';
+    const pendingInteractionId = args?.pendingInteractionId ?? 'test-private-response-1';
     return {
         core: {
             currentPlayerId: '0',
@@ -185,10 +224,10 @@ function buildPendingResponseWindowState(args?: {
                 current: args?.includeInteraction
                     ? {
                         id: args.interactionId ?? pendingInteractionId,
-                        kind: 'dt:card-interaction',
+                        kind: 'test:private-card-interaction',
                         playerId: args.interactionPlayerId ?? '1',
                         data: {
-                            sourceCardId: 'card-bye-bye',
+                            sourceCardId: 'test-card',
                             interactionType: 'selectStatus',
                         },
                     }
@@ -211,6 +250,33 @@ function buildPendingResponseWindowState(args?: {
 }
 
 describe('resolveOnlineAiDecisionView', () => {
+    it('默认不从游戏私有字段推导决策者，runtime 声明后才要求对应 seat 私有视图', () => {
+        const sharedState = buildDecisionOwnerState();
+        const seatState = structuredClone(sharedState);
+
+        const defaultResolved = resolveOnlineAiDecisionView({
+            sharedState,
+            privateOverlay: seatState,
+            playerId: '1',
+        });
+
+        expect(defaultResolved.visibility).toBe('shared');
+        expect(defaultResolved.canDecide).toBe(true);
+        expect(defaultResolved.visibleState).toBe(sharedState);
+
+        const runtimeResolved = resolveOnlineAiDecisionView({
+            runtime: decisionOwnerRuntime,
+            sharedState,
+            privateOverlay: seatState,
+            playerId: '1',
+        });
+
+        expect(runtimeResolved.visibility).toBe('private-required');
+        expect(runtimeResolved.canDecide).toBe(true);
+        expect(runtimeResolved.blockedReason).toBeNull();
+        expect(runtimeResolved.visibleState).toBe(seatState);
+    });
+
     it('phase 为空但 event/currentPlayer 对齐时，不应把私有视角误判为过期', async () => {
         const gameId = '__test_online_ai_phase_less_private_overlay__';
         registerGameAiRuntime({
@@ -401,23 +467,23 @@ describe('resolveOnlineAiDecisionView', () => {
         expect(dispatch.idleReason).toBe('no-action');
     });
 
-    it('smashup_reaction_choose 在 shared 可见时，若 seat 选项集漂移，不应继续复用 seat snapshot', () => {
-        const sharedState = buildSmashUpReactionChoiceState({
+    it('reaction choice 在 shared 可见时，若 seat 选项集漂移，不应继续复用 seat snapshot', () => {
+        const sharedState = buildReactionChoiceState({
             optionSpecs: [
-                { id: 'time_travelers_jumper', kind: 'trigger' },
+                { id: 'trigger-a', kind: 'trigger' },
                 { id: 'pass', kind: 'pass' },
             ],
         });
-        const staleSeatState = buildSmashUpReactionChoiceState({
+        const staleSeatState = buildReactionChoiceState({
             optionSpecs: [
-                { id: 'time_travelers_jumper', kind: 'trigger' },
-                { id: 'shapeshifters_doppelganger', kind: 'trigger' },
+                { id: 'trigger-a', kind: 'trigger' },
+                { id: 'trigger-b', kind: 'trigger' },
                 { id: 'pass', kind: 'pass' },
             ],
         });
 
         const resolved = resolveOnlineAiDecisionView({
-            runtime: smashUpAiRuntime,
+            runtime: reactionOrderingRuntime,
             sharedState,
             privateOverlay: staleSeatState,
             playerId: '1',
@@ -535,7 +601,7 @@ describe('resolveOnlineAiDecisionView', () => {
                     actionId: `select-faction-${playerId}`,
                     kind: 'select-faction',
                     label: `select-faction-${playerId}`,
-                    commands: [{ type: 'su:select_faction', payload: { factionId: `faction-${playerId}` } }],
+                    commands: [{ type: 'TEST_SELECT_FACTION', payload: { factionId: `faction-${playerId}` } }],
                 }];
             },
             localPolicies: {
@@ -605,7 +671,7 @@ describe('resolveOnlineAiDecisionView', () => {
         }
         expect(dispatch.resolution.playerId).toBe('2');
         expect(dispatch.resolution.action.commands).toEqual([
-            { type: 'su:select_faction', payload: { factionId: 'faction-2' } },
+            { type: 'TEST_SELECT_FACTION', payload: { factionId: 'faction-2' } },
         ]);
     });
 });

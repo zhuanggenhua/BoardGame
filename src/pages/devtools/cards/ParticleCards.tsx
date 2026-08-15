@@ -209,7 +209,7 @@ export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   const stopRef = useRef<(() => void) | null>(null);
   
   // 使用 FX 系统（完整反馈：视觉+音效+震动）
-  const { shakeStyle, triggerShake } = useScreenShake();
+  const { shakeTargetRef, triggerShake } = useScreenShake();
   const fxBus = useFxBus(summonerWarsFxRegistry, {
     playSound,
     triggerShake,
@@ -258,7 +258,7 @@ export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
       </>}
     >
       {/* 震动容器 */}
-      <div className="absolute inset-0 overflow-hidden rounded-lg" style={shakeStyle}>
+      <div ref={shakeTargetRef} className="absolute inset-0 overflow-hidden rounded-lg">
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/3 w-44 h-32 rounded border border-slate-600/30">
           <CardSprite className="absolute inset-0 rounded" />
         </div>
@@ -336,7 +336,7 @@ export const CombatShockwaveCard: React.FC<PreviewCardProps> = ({ iconColor }) =
   const stopRef = useRef<(() => void) | null>(null);
   
   // 使用 FX 系统（完整反馈：视觉+音效+震动）
-  const { shakeStyle, triggerShake } = useScreenShake();
+  const { shakeTargetRef, triggerShake } = useScreenShake();
   const fxBus = useFxBus(summonerWarsFxRegistry, {
     playSound,
     triggerShake,
@@ -386,7 +386,7 @@ export const CombatShockwaveCard: React.FC<PreviewCardProps> = ({ iconColor }) =
         <TriggerButton label={t('devtools.effectPreview.particle.combat_shockwave.buttons.ranged_strong')} onClick={() => trigger('ranged', true)} color="bg-blue-700 hover:bg-blue-600" />
       </>}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-lg" style={shakeStyle}>
+      <div ref={shakeTargetRef} className="absolute inset-0 overflow-hidden rounded-lg">
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/3 w-44 h-32 rounded border border-slate-600/30">
           <CardSprite className="absolute inset-0 rounded" />
         </div>

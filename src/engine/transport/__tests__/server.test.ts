@@ -1401,55 +1401,36 @@ describe('buildAiProgressMarker（响应窗口语义指纹）', () => {
     });
 });
 
-describe('resolveCurrentPlayerId（防御阶段操作者）', () => {
-    it('defensiveRoll 且存在 pendingAttack.defenderId 时，应返回 defenderId', () => {
+describe('resolveOnlineAiCurrentPlayerId（恢复操作者扩展点）', () => {
+    it('默认返回通用当前回合玩家', () => {
         const state = createOnlineAiRecoveryState({
             activePlayerId: '1',
-            phase: 'defensiveRoll',
         }).G as any;
 
-        state.core.pendingAttack = {
-            attackerId: '1',
-            defenderId: '0',
-            isDefendable: true,
-        };
-
-        expect(resolveOnlineAiCurrentPlayerId(state, {
-            engineConfig: diceThroneEngineConfig,
-            gameId: 'dicethrone',
-        })).toBe('0');
+        expect(resolveOnlineAiCurrentPlayerId(state)).toBe('1');
     });
 
-    it('defensiveRoll 已进入伤害响应时，应返回 pendingDamage.responderId', () => {
+    it('游戏可通过 onlineAiRecovery.resolveCurrentPlayerId 声明当前恢复操作者', () => {
         const state = createOnlineAiRecoveryState({
             activePlayerId: '1',
-            phase: 'defensiveRoll',
+            phase: 'testDecisionPhase',
         }).G as any;
 
-        state.core.pendingAttack = {
-            attackerId: '1',
-            defenderId: '0',
-            settlementStage: 'afterDefense',
-            isDefendable: true,
-            defenseResolved: true,
-        };
-        state.core.pendingDamage = {
-            id: 'damage-after-defense',
-            sourcePlayerId: '1',
-            targetPlayerId: '0',
-            originalDamage: 5,
-            currentDamage: 5,
-            sourceAbilityId: 'holy-blade-3',
-            damageScope: 'attack',
-            responseType: 'beforeDamageDealt',
-            responderId: '1',
-            isFullyEvaded: false,
-        };
+        state.core.decisionOwnerId = '0';
 
         expect(resolveOnlineAiCurrentPlayerId(state, {
-            engineConfig: diceThroneEngineConfig,
-            gameId: 'dicethrone',
-        })).toBe('1');
+            engineConfig: {
+                ...createEngineConfig(),
+                gameId: 'test-game',
+                onlineAiRecovery: {
+                    resolveCurrentPlayerId: ({ state: inputState, fallbackPlayerId }) => {
+                        const ownerId = (inputState.core as { decisionOwnerId?: unknown }).decisionOwnerId;
+                        return typeof ownerId === 'string' ? ownerId : fallbackPlayerId;
+                    },
+                },
+            },
+            gameId: 'test-game',
+        })).toBe('0');
     });
 });
 
@@ -1553,6 +1534,20 @@ describe('resolveLocalAiActionVisibility（可见步骤分类）', () => {
             label: '打牌',
             commands: [{ type: 'PLAY_CARD', payload: {} }],
         })).toBe('visible');
+    });
+
+    it('游戏特殊快进命令应由 runtime 声明为隐藏步骤', () => {
+        const action = {
+            actionId: 'game-fast-step',
+            kind: 'watchdog-follow-up',
+            label: '游戏快进步骤',
+            commands: [{ type: 'game:end_phase', payload: {} }],
+        };
+
+        expect(resolveLocalAiActionVisibility(action)).toBe('visible');
+        expect(resolveLocalAiActionVisibility(action, {
+            localHiddenCommandTypes: ['game:end_phase'],
+        })).toBe('hidden');
     });
 });
 
@@ -2355,7 +2350,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(receivedPlayerIds).toEqual(['0', '1']);
     });
 
-    it('offline adjudication should use domain cancel command for dt card interaction', async () => {
+    it('offline adjudication should use generic cancel for unknown interaction kinds', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         let lastCommandType: string | undefined;
@@ -2368,8 +2363,8 @@ describe('GameTransportServer（离座与重连）', () => {
                     turnNumber: 1,
                     interaction: {
                         current: {
-                            id: 'dt-interaction-1',
-                            kind: 'dt:card-interaction',
+                            id: 'custom-interaction-1',
+                            kind: 'game-card-interaction',
                             playerId: '0',
                             data: {
                                 id: 'interaction-1',
@@ -2386,7 +2381,7 @@ describe('GameTransportServer（离座与重连）', () => {
             randomCursor: 0,
         };
 
-        await storage.createMatch('match-offline-dt', {
+        await storage.createMatch('match-offline-unknown-kind', {
             initialState,
             metadata: createMetadata('offline-cred'),
         });
@@ -2414,19 +2409,17 @@ describe('GameTransportServer（离座与重连）', () => {
             runOfflineAdjudication: (match: unknown, playerID: string) => Promise<void>;
         };
 
-        const match = await serverInternal.loadMatch('match-offline-dt');
+        const match = await serverInternal.loadMatch('match-offline-unknown-kind');
         expect(match).toBeTruthy();
 
         await serverInternal.runOfflineAdjudication(match, '0');
 
-        expect(lastCommandType).toBe('SYS_INTERACTION_CANCEL'); // 已迁移到 InteractionSystem
+        expect(lastCommandType).toBe('SYS_INTERACTION_CANCEL');
     });
 
     it.each([
         ['simple-choice', 'SYS_INTERACTION_CANCEL'],
-        ['dt:token-response', 'SKIP_TOKEN_RESPONSE'],
-        ['dt:bonus-dice', null],
-    ])('离线裁决应按 kind=%s 映射命令 %s', async (kind, expectedCommand) => {
+    ])('离线裁决默认表应按 kind=%s 映射命令 %s', async (kind, expectedCommand) => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         let lastCommandType: string | undefined;
@@ -2482,6 +2475,78 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const match = await serverInternal.loadMatch(`match-offline-${kind}`);
+        expect(match).toBeTruthy();
+
+        await serverInternal.runOfflineAdjudication(match, '0');
+
+        expect(lastCommandType).toBe(expectedCommand ?? undefined);
+    });
+
+    it.each([
+        ['custom-token-response', 'CUSTOM_SKIP_TOKEN_RESPONSE'],
+        ['custom-bonus-dice', null],
+    ])('离线裁决应使用游戏配置映射 kind=%s 为命令 %s', async (kind, expectedCommand) => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        let lastCommandType: string | undefined;
+
+        const initialState: StoredMatchState = {
+            G: {
+                core: { currentPlayer: '0' },
+                sys: {
+                    phase: 'main',
+                    turnNumber: 1,
+                    interaction: {
+                        current: {
+                            id: `interaction-${kind}`,
+                            kind,
+                            playerId: '0',
+                            data: {},
+                        },
+                        queue: [],
+                    },
+                },
+            },
+            _stateID: 0,
+            randomSeed: 'seed',
+            randomCursor: 0,
+        };
+
+        await storage.createMatch(`match-offline-configured-${kind}`, {
+            initialState,
+            metadata: createMetadata('offline-cred'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            domain: {
+                ...createEngineConfig().domain,
+                validate: (_state, command) => {
+                    lastCommandType = command.type;
+                    return { valid: true };
+                },
+                execute: () => [],
+            },
+            onlineAiRecovery: {
+                offlineAdjudicationCommandByInteractionKind: {
+                    'custom-token-response': 'CUSTOM_SKIP_TOKEN_RESPONSE',
+                    'custom-bonus-dice': null,
+                },
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<unknown>;
+            runOfflineAdjudication: (match: unknown, playerID: string) => Promise<void>;
+        };
+
+        const match = await serverInternal.loadMatch(`match-offline-configured-${kind}`);
         expect(match).toBeTruthy();
 
         await serverInternal.runOfflineAdjudication(match, '0');
@@ -16797,10 +16862,15 @@ describe('GameTransportServer（离座与重连）', () => {
         } as any);
 
         try {
+            const engineConfig = createEngineConfigWithId(gameId);
+            engineConfig.onlineAiRecovery = {
+                ...engineConfig.onlineAiRecovery,
+                humanTurnLegalActionProbePhases: ['defensiveRoll'],
+            };
             const server = new GameTransportServer({
                 io: io as unknown as any,
                 storage,
-                games: [createEngineConfigWithId(gameId)],
+                games: [engineConfig],
                 onlineAiRecoveryTickMs: 0,
                 onlineAiRecoveryTimeoutMs: 0,
             });
@@ -16877,10 +16947,15 @@ describe('GameTransportServer（离座与重连）', () => {
         } as any);
 
         try {
+            const engineConfig = createEngineConfigWithId(gameId);
+            engineConfig.onlineAiRecovery = {
+                ...engineConfig.onlineAiRecovery,
+                humanTurnLegalActionProbePhases: ['defensiveRoll'],
+            };
             const server = new GameTransportServer({
                 io: io as unknown as any,
                 storage,
-                games: [createEngineConfigWithId(gameId)],
+                games: [engineConfig],
                 onlineAiRecoveryTickMs: 0,
                 onlineAiRecoveryTimeoutMs: 0,
             });
@@ -22958,10 +23033,16 @@ describe('GameTransportServer（离座与重连）', () => {
             }),
         });
 
+        const engineConfig = createEngineConfigWithId(gameId);
+        engineConfig.onlineAiRecovery = {
+            ...engineConfig.onlineAiRecovery,
+            humanTurnLegalActionProbePhases: ['defensiveRoll'],
+        };
+
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId(gameId)],
+            games: [engineConfig],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,

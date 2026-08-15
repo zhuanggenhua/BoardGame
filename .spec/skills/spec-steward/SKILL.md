@@ -82,6 +82,7 @@ description: 维护 BoardGame .spec 结构、规范落点、索引和名册；�
 - `knowledge/README.md` 强制被入口加载，导航行保持一句话。
 - `rules/` 管禁止，`standards/` 管怎么做，别混。
 - BoardGame 项目 skill 的落点是 `.spec/skills/`；宿主目录通过链接暴露，不维护第二份正文。
+- 项目文档里的文件链接格式以 [`documentation-style`](../../knowledge/standards/documentation-style.md) 为准：指向仓内真实文件或目录时使用相对 Markdown 链接，不写 Windows 绝对路径或裸路径代替链接。
 
 ## 验证
 

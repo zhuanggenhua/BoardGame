@@ -5,6 +5,7 @@ import { clearRegistry, resolveOnPlay, resolveSpecial, resolveTalent } from '../
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearOngoingEffectRegistry, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { reduce } from '../../domain/reduce';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import {
@@ -30,6 +31,23 @@ beforeAll(() => {
     clearInteractionHandlers();
     initAllAbilities();
 });
+
+function attachBeforeScoringReactionSession(
+    matchState: ReturnType<typeof makeMatchState>,
+    sourceBaseIndex: number,
+): ReturnType<typeof makeMatchState> {
+    matchState.sys.phase = 'scoreBases';
+    return startSmashUpReactionSession(matchState, {
+        frameId: `score-before:${sourceBaseIndex}:mythic-horses-test`,
+        frameKind: 'score-before',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex,
+        responseWindowType: 'meFirst',
+    });
+}
 
 describe('Mythic Horses abilities', () => {
     it('mythic_horses_seastar 有其他己方随从基地时授予这里一次额外随从', () => {
@@ -232,19 +250,7 @@ describe('Mythic Horses abilities', () => {
                 ongoingActions: [],
             }],
         });
-        const matchState = makeMatchState(core);
-        matchState.sys.phase = 'scoreBases';
-        matchState.sys.responseWindow = {
-            current: {
-                id: 'me-first-test',
-                windowType: 'meFirst',
-                sourceId: 'test',
-                responderQueue: ['0', '1'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-                sourceBaseIndex: 0,
-            },
-        } as any;
+        const matchState = attachBeforeScoringReactionSession(makeMatchState(core), 0);
 
         const played = runCommand(
             matchState,

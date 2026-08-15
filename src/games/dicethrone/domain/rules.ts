@@ -77,6 +77,12 @@ export const getPlayerDieFace = (state: DiceThroneCore, playerId: PlayerId, valu
     return getHeroDieFace(player.characterId, value);
 };
 
+export const getPlayerDiceDefinitionId = (state: DiceThroneCore, playerId: PlayerId): string | null => {
+    const characterId = state.players[playerId]?.characterId;
+    if (!characterId || characterId === 'unselected') return null;
+    return CHARACTER_DATA_MAP[characterId]?.diceDefinitionId ?? null;
+};
+
 /**
  * 统计活跃骰子的各骰面数量
  * 使用骰子的 symbol 字段（已通过 diceSystem 解析）
@@ -816,8 +822,8 @@ const getAttackModifierPlayFailureReason = (
 };
 
 /**
- * 仅临时骰上下文可以代替主骰的“已投掷 / 已确认”前提。
- * 普通攻击、防御与目标骰仍必须遵守自身的确认时机；当前骰区不能越权放行。
+ * 开放的当前骰区可以代替主骰的“已投掷 / 已确认”前提。
+ * 普通攻击、防御与目标骰仍必须遵守自身的确认时机；已结算只读回看不能越权放行。
  */
 const hasCurrentDiceTargetForCard = (
     state: DiceThroneCore,
@@ -834,7 +840,6 @@ const hasCurrentDiceTargetForCard = (
     const currentRollContext = resolveCurrentRollContext(state, phase);
     return Boolean(
         currentRollContext
-        && currentRollContext.kind === 'bonus'
         && currentRollContext.policy.allowDiceCardTargeting === true
         && currentRollContext.display.replayOnly !== true
         && currentRollContext.dice.length > 0,

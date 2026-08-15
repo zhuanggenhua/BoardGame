@@ -23,6 +23,10 @@ const entry: GameManifestEntry = {
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'board-shell',
+    mobileBoardShellLayout: {
+        designWidth: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
+        designHeight: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
+    },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,

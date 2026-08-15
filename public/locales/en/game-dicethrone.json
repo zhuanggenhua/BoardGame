@@ -314,7 +314,7 @@
     "targeted": {
       "name": "Targeted",
       "description": [
-        "Incoming damage +2. Persistent."
+        "When you take attack damage from an opponent, take +2 damage. Then remove this token."
       ]
     },
     "bind": {

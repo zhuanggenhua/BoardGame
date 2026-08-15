@@ -10,14 +10,12 @@ import type {
 } from './types';
 import { SU_EVENTS } from './types';
 import { collectTriggers } from './ongoingEffects';
-import { getEffectivePower, getRealtimeScoringEligibleBaseIndices } from './ongoingModifiers';
+import { getEffectivePower } from './ongoingModifiers';
 import { reduce } from './reducer';
 import {
     buildPendingPostScoringActionEvents,
     consumeScoringFrameDeferredPayload,
-    createScoringBaseRef,
     getScoringSession,
-    isSameScoringBaseRef,
     markScoringBaseCompleted,
     resolveScoringBaseRefSlotIndex,
     type SmashUpScoringBaseRef,
@@ -185,14 +183,19 @@ export function finalizeCurrentScoringBase(
     const deferredEvents = consumedDeferred.deferredEvents;
     const hydratedDeferredEvents = deferredEvents.map(materializeScoringFrameDeferredEvent);
     events.push(...hydratedDeferredEvents);
-    const postDeferredCore = events.reduce(
+
+    // 本地批内视图只用于把“清场/换基地后才能生成”的 deferred actions
+    // 物化成领域事件；不得把该视图写回 scoring session 或 MatchState。
+    // 下一座达标基地必须等这些事件被 pipeline 正式归约后，由
+    // refreshPendingScoringBaseRefs() 基于权威 core 重新计算。
+    const cleanupBatchCoreView = events.reduce(
         (core, event) => reduce(core, event),
         workingState.core,
     );
 
     events.push(
         ...buildPendingPostScoringActionEvents(
-            { core: postDeferredCore },
+            { core: cleanupBatchCoreView },
             consumedDeferred.deferredActions,
             now,
         ),
@@ -203,24 +206,10 @@ export function finalizeCurrentScoringBase(
         (currentSession) => currentSession
             ? {
                 ...currentSession,
-                currentStep: 'awaiting-post-reduce',
+                currentStep: 'idle',
             }
             : currentSession,
     );
-    const completedSession = getScoringSession(completedState);
-    if (completedSession) {
-        const liveEligibleRefs = getRealtimeScoringEligibleBaseIndices(postDeferredCore)
-            .map((baseIndex) => createScoringBaseRef({ ...postDeferredCore }, baseIndex))
-            .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
-            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)));
-
-        completedState = updateScoringSession(completedState, (currentSession) => currentSession
-            ? {
-                ...currentSession,
-                lockedBaseRefs: liveEligibleRefs,
-            }
-            : currentSession);
-    }
     const awaitingReduceState = {
         ...completedState,
         sys: {

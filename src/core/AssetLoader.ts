@@ -830,16 +830,29 @@ function hasPersistentImageReadyHint(src: string, locale?: string): boolean {
 
 function getSynchronousImageProbeUrls(src: string, locale?: string): string[] {
     const urls = new Set<string>();
+    const pushProbeUrl = (url: string) => {
+        if (!url) return;
+        urls.add(url);
+
+        // 无 query 的探测只对 Capacitor 本地文件有价值：部分 Android
+        // WebView 对 file-like URL 的 query 支持不稳定。对普通 HTTP 资源，
+        // 给 Image.src 赋值就是一次真实网络请求；再探测无版本 URL 会把
+        // 同一张大图按第二个缓存键重新下载。
+        if (!isCapacitorFileAssetUrl(url)) return;
+        const unversioned = stripVersionParam(url);
+        if (unversioned) {
+            urls.add(unversioned);
+        }
+    };
+
     const exactKey = assetsPath(src);
     if (exactKey) {
-        urls.add(exactKey);
-        urls.add(stripVersionParam(exactKey));
+        pushProbeUrl(exactKey);
     }
 
     const normalizedKey = normalizePreloadedImageCacheKey(src, locale);
     if (normalizedKey) {
-        urls.add(normalizedKey);
-        urls.add(stripVersionParam(normalizedKey));
+        pushProbeUrl(normalizedKey);
     }
 
     return [...urls].filter(Boolean);
@@ -1327,6 +1340,63 @@ const isLocalBrowserAssetOrigin = () => {
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
 };
 
+const isSameOriginAsCurrentPage = (url: string) => {
+    if (typeof window === 'undefined' || !window.location?.origin) {
+        return false;
+    }
+    try {
+        return new URL(url, window.location.href).origin === window.location.origin;
+    } catch {
+        return false;
+    }
+};
+
+const shouldCollapseSameOriginAssetCandidates = () => (
+    isHttpUrl(assetsBaseUrl) && isSameOriginAsCurrentPage(assetsBaseUrl)
+);
+
+const getEquivalentAssetCandidateKey = (url: string) => {
+    if (!url || isCapacitorFileAssetUrl(url)) {
+        return '';
+    }
+
+    const { path } = splitUrlParts(url);
+    let candidatePath = path;
+    if (isHttpUrl(path)) {
+        try {
+            candidatePath = new URL(path).pathname;
+        } catch {
+            candidatePath = path;
+        }
+    }
+
+    const relative = stripKnownAssetPrefixes(candidatePath);
+    if (!relative) {
+        return '';
+    }
+
+    return relative.replace(/^official\//, '');
+};
+
+const collapseSameOriginAssetCandidates = (candidateUrls: string[]) => {
+    const exactUnique = candidateUrls.filter((url, index, list): url is string => (
+        Boolean(url) && list.indexOf(url) === index
+    ));
+
+    if (!shouldCollapseSameOriginAssetCandidates()) {
+        return exactUnique;
+    }
+
+    const seen = new Set<string>();
+    return exactUnique.filter((url) => {
+        const key = getEquivalentAssetCandidateKey(url);
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+
 /** 移除扩展名 */
 const stripExtension = (src: string) => {
     if (isPassthroughSource(src)) return src;
@@ -1632,7 +1702,7 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
         }
     });
 
-    return candidates.filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
+    return collapseSameOriginAssetCandidates(candidates);
 }
 
 /**

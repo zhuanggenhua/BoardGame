@@ -136,6 +136,10 @@ function setViewport(width: number, height: number) {
     });
 }
 
+function searchFaction(value: string) {
+    fireEvent.change(screen.getByTestId('faction-search-input'), { target: { value } });
+}
+
 describe('FactionSelection POD/旧版派系统一占用', () => {
     afterEach(() => {
         vi.clearAllMocks();
@@ -261,11 +265,22 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
     it('DIY 角标只出现在真实 DIY 派系候选卡上', () => {
         renderSelection();
 
+        searchFaction('huluwawa');
         expect(screen.getByTestId('faction-diy-badge-huluwawa')).toHaveTextContent('DIY');
+
+        searchFaction('paladins');
         expect(screen.queryByTestId('faction-diy-badge-paladins')).not.toBeInTheDocument();
+
+        searchFaction('round_table_knights');
         expect(screen.queryByTestId('faction-diy-badge-round_table_knights')).not.toBeInTheDocument();
+
+        searchFaction('goblins');
         expect(screen.queryByTestId('faction-diy-badge-goblins')).not.toBeInTheDocument();
+
+        searchFaction('diy_killers');
         expect(screen.queryByTestId('faction-diy-badge-diy_killers')).not.toBeInTheDocument();
+
+        searchFaction('diy_clowns');
         expect(screen.queryByTestId('faction-diy-badge-diy_clowns')).not.toBeInTheDocument();
     });
 
@@ -294,7 +309,10 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             SMASHUP_FACTION_IDS.TRUCKERS,
             SMASHUP_FACTION_IDS.DISCO_DANCERS,
         ]));
-        expect(orderedIds).toEqual(expectedOrderedIds);
+        const virtualWindow = screen.getByTestId('faction-virtual-window');
+        expect(Number(virtualWindow.dataset.totalFactions)).toBe(expectedOrderedIds.length);
+        expect(Number(virtualWindow.dataset.renderedFactions)).toBeLessThan(expectedOrderedIds.length);
+        expect(orderedIds).toEqual(expectedOrderedIds.slice(0, orderedIds.length));
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
     });
 
@@ -305,6 +323,7 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         renderSelection(vi.fn(), core);
 
         expect(screen.queryByTestId('faction-option-huluwawa')).not.toBeInTheDocument();
+        searchFaction('paladins');
         expect(screen.getByTestId('faction-option-paladins')).toBeInTheDocument();
         expect(getVisibleFactionVariantGroups('zh-CN', ['titans']).map(group => group.groupId))
             .not.toContain(SMASHUP_FACTION_IDS.HULUWAWA);

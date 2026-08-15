@@ -30,7 +30,7 @@ export interface UseEndgameOptions {
     matchData?: MatchPlayerInfo[];
     /** 是否多人模式（来自 BoardProps） */
     isMultiplayer?: boolean;
-    /** 自定义 isGameOver 判定（如 SummonerWars 需要等动画播完） */
+    /** 自定义 isGameOver 判定（如某些游戏需要等表现层收口后再展示终局） */
     isGameOverOverride?: boolean;
 }
 

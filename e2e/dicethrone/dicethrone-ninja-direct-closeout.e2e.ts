@@ -90,6 +90,8 @@ async function readDefenseDebugState(page: any): Promise<any> {
         const state = window.__BG_TEST_HARNESS__?.state?.get?.();
         return {
             phase: state?.sys?.phase ?? null,
+            interaction: state?.sys?.interaction?.current ?? null,
+            responseWindow: state?.sys?.responseWindow?.current ?? null,
             pendingAttack: state?.core?.pendingAttack ?? null,
             pendingDamage: state?.core?.pendingDamage ?? null,
             pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
@@ -159,6 +161,91 @@ async function alignDirectPageToAttackerControl(page: any): Promise<void> {
     });
 }
 
+async function drainOpenResponseWindows(page: any, maxRounds = 8): Promise<boolean> {
+    let drained = false;
+    for (let round = 0; round < maxRounds; round += 1) {
+        const state = await readHarnessState(page);
+        const responseWindow = state?.sys?.responseWindow?.current ?? null;
+        if (!responseWindow) {
+            return drained;
+        }
+
+        if (responseWindow.pendingInteractionId || responseWindow.requiredInteractionId) {
+            throw new Error(`响应窗口仍被交互锁定，不能直接让过：${JSON.stringify(responseWindow)}`);
+        }
+
+        const responderQueue = Array.isArray(responseWindow.responderQueue)
+            ? responseWindow.responderQueue.map(String)
+            : [];
+        const currentResponderIndex = typeof responseWindow.currentResponderIndex === 'number'
+            ? responseWindow.currentResponderIndex
+            : 0;
+        const responderId = responderQueue[currentResponderIndex];
+        if (!responderId) {
+            throw new Error(`响应窗口缺少当前响应者，不能让过：${JSON.stringify(responseWindow)}`);
+        }
+
+        await dispatchDiceThroneCommand(page, {
+            type: 'RESPONSE_PASS',
+            playerId: responderId,
+            payload: { forPlayerId: responderId },
+        });
+        await page.waitForTimeout(250);
+        drained = true;
+    }
+
+    throw new Error(`响应窗口超过最大让过轮次仍未关闭：${JSON.stringify(await readDefenseDebugState(page))}`);
+}
+
+function getSimpleChoiceSkipOptionId(interaction: any): string | null {
+    if (interaction?.kind !== 'simple-choice') return null;
+    const options = Array.isArray(interaction?.data?.options) ? interaction.data.options : [];
+    const skipOption = options.find((option: any) => {
+        if (!option || option.disabled === true) return false;
+        return option.id === 'skip'
+            || option.labelKey === 'tokenResponse.skip'
+            || option.value?.customId === 'skip'
+            || option.value?.labelKey === 'tokenResponse.skip';
+    });
+    return typeof skipOption?.id === 'string' ? skipOption.id : null;
+}
+
+async function skipOpenSimpleChoiceIfAvailable(page: any): Promise<boolean> {
+    const state = await readHarnessState(page);
+    const interaction = state?.sys?.interaction?.current ?? null;
+    const optionId = getSimpleChoiceSkipOptionId(interaction);
+    if (!optionId) {
+        return false;
+    }
+
+    const playerId = typeof interaction?.playerId === 'string' ? interaction.playerId : null;
+    const interactionId = typeof interaction?.id === 'string' ? interaction.id : null;
+    if (!playerId || !interactionId) {
+        throw new Error(`simple-choice 缺少决策玩家或交互 ID，不能跳过：${JSON.stringify(interaction)}`);
+    }
+
+    await dispatchDiceThroneCommand(page, {
+        type: 'SYS_INTERACTION_RESPOND',
+        playerId,
+        payload: { interactionId, optionId },
+    });
+    await page.waitForTimeout(300);
+    return true;
+}
+
+async function clickResolveAttackIfAvailable(page: any): Promise<boolean> {
+    const resolveAttackButton = page.getByRole('button', { name: /^(Resolve Attack|结算攻击)$/i }).first();
+    if (
+        await resolveAttackButton.isVisible({ timeout: 500 }).catch(() => false)
+        && await resolveAttackButton.isEnabled({ timeout: 500 }).catch(() => false)
+    ) {
+        await resolveAttackButton.click({ timeout: 2000 });
+        await page.waitForTimeout(300);
+        return true;
+    }
+    return false;
+}
+
 async function resolveTreantDefenseIfNeeded(
     page: any,
     options: {
@@ -176,6 +263,21 @@ async function resolveTreantDefenseIfNeeded(
         if (!pendingAttack) {
             return;
         }
+        if (state?.sys?.responseWindow?.current) {
+            await drainOpenResponseWindows(page);
+            continue;
+        }
+        if (await skipOpenSimpleChoiceIfAvailable(page)) {
+            continue;
+        }
+        if (phase === 'offensiveRoll' && pendingAttack.defenderId === '1' && pendingAttack.isDefendable !== false) {
+            if (await clickResolveAttackIfAvailable(page)) {
+                continue;
+            }
+            await clickAdvancePhase(page, pendingAttack.attackerId ?? '0');
+            await page.waitForTimeout(250);
+            continue;
+        }
         if (phase === 'defensiveRoll' && pendingAttack.defenderId === '1') {
             defenseState = state;
             break;
@@ -184,7 +286,10 @@ async function resolveTreantDefenseIfNeeded(
     }
 
     if (!defenseState) {
-        throw new Error('攻击已进入可防御链路，但 direct 场景未进入树精 defensiveRoll');
+        throw new Error(
+            `攻击已进入可防御链路，但 direct 场景未进入树精 defensiveRoll: ` +
+            `${JSON.stringify(await readDefenseDebugState(page))}`,
+        );
     }
 
     await alignDirectPageToDefenderControl(page);

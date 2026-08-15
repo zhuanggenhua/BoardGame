@@ -519,8 +519,8 @@ describe('Property 17: 基地能力事件顺序', () => {
         expect(vpIdx).toBeLessThan(scoredIdx);
     });
 
-    it('whenScoring 事件在 BASE_SCORED 之前（通过 scoreOneBase 保证）', () => {
-        // scoreOneBase 中：
+    it('whenScoring 事件在 BASE_SCORED 之前（通过 scoreBaseViaFlow 保证）', () => {
+        // scoreBaseViaFlow 中：
         // 1. 先调用 triggerBaseAbility(whenScoring)
         // 2. 再生成 BASE_SCORED 事件
         // 此处验证注册表能正确返回 whenScoring 事件
@@ -549,7 +549,7 @@ describe('Property 17: 基地能力事件顺序', () => {
         const { events } = triggerBaseAbility('base_rhodes_plaza', 'whenScoring' as any, ctx);
         expect(events.length).toBe(1);
         expect(events[0].type).toBe(SU_EVENTS.VP_AWARDED);
-        // 在实际 scoreOneBase 中，这些事件会在 BASE_SCORED 之前被 push
+        // 在实际 scoreBaseViaFlow 中，这些事件会在 BASE_SCORED 之前被 push
     });
 });
 

@@ -108,7 +108,7 @@ function extractSourceId(payload: DamageLogPayload): string | undefined {
 /**
  * 构建 breakdown segment（带 tooltip 的数值片段）
  *
- * 适用于有修改器明细的伤害（如 DiceThrone 的技能伤害）。
+ * 适用于有修改器明细的伤害。
  * 游戏层只需提供 payload + resolver，框架层自动构建 BreakdownLine[]。
  *
  * @param damage 最终伤害数值
@@ -201,7 +201,7 @@ export function buildDamageBreakdownSegment(
         });
     }
     
-    // 添加护盾消耗行（DiceThrone 专用）
+    // 添加护盾消耗行
     if (payload.shieldsConsumed && payload.shieldsConsumed.length > 0) {
         // 如果没有基础伤害行，先添加一个
         if (lines.length === 0) {

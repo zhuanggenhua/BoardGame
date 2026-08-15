@@ -12,6 +12,7 @@ import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { getSimpleChoicePrompt } from './helpers';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 beforeAll(() => {
     // 系统已在 game.ts 中初始化
@@ -158,11 +159,7 @@ describe('便衣忍者无随从场景', () => {
             ] as any[],
         });
 
-        const mirroredWindow = result.finalState.sys.responseWindow?.current;
-        if (mirroredWindow) {
-            expect(mirroredWindow.sourceId).toBe('smashup_reaction_choose');
-            expect(mirroredWindow.windowType).toBe('afterScoring');
-        }
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
 
         // 验证：应该停在 scoreBases，统一反应交互已创建
         expect(result.finalState.sys.phase).toBe('scoreBases');
@@ -196,8 +193,9 @@ describe('便衣忍者无随从场景', () => {
 
         // 验证：Me First! 窗口应该保持打开（因为便衣忍者有随从可选）
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.responseWindow?.current).toBeDefined();
-        expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('meFirst');
-        expect(result.finalState.sys.responseWindow?.current?.responderQueue).toContain('0');
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation?.windowType).toBe('meFirst');
+        expect(presentation?.responderQueue).toContain('0');
     });
 });

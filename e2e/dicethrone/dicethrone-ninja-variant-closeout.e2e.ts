@@ -62,6 +62,68 @@ async function dismissAttackShowcaseIfVisible(page: any): Promise<void> {
     }
 }
 
+async function readHarnessDebugState(page: any): Promise<any> {
+    return await page.evaluate(() => {
+        const state = window.__BG_TEST_HARNESS__?.state?.get?.();
+        return {
+            phase: state?.sys?.phase ?? null,
+            pendingAttack: state?.core?.pendingAttack ?? null,
+            pendingDamage: state?.core?.pendingDamage ?? null,
+            interaction: state?.sys?.interaction?.current ?? null,
+            responseWindow: state?.sys?.responseWindow?.current ?? null,
+        };
+    });
+}
+
+async function maybePassResponse(page: any): Promise<boolean> {
+    const passButton = page.getByTestId('dicethrone-response-pass-button')
+        .or(page.getByRole('button', { name: /^(Pass|跳过|让过)$/i }))
+        .first();
+    if (await passButton.isVisible({ timeout: 700 }).catch(() => false)) {
+        await passButton.click();
+        await page.waitForTimeout(300);
+        return true;
+    }
+    return false;
+}
+
+async function settlePendingAttackCloseout(page: any, playerId: string): Promise<void> {
+    for (let round = 0; round < 8; round += 1) {
+        const state = await page.evaluate(() => window.__BG_TEST_HARNESS__?.state?.get?.());
+        const pendingAttack = state?.core?.pendingAttack ?? null;
+        const pendingDamage = state?.core?.pendingDamage ?? null;
+        if (!pendingAttack && !pendingDamage) {
+            return;
+        }
+
+        if (await maybePassResponse(page)) {
+            continue;
+        }
+
+        const pendingDamageResponderId = pendingDamage?.responderId;
+        if (typeof pendingDamageResponderId === 'string' && pendingDamageResponderId.length > 0) {
+            await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', pendingDamageResponderId);
+            await page.waitForTimeout(300);
+            continue;
+        }
+
+        const resolveAttackButton = page.getByRole('button', { name: /^(Resolve Attack|结算攻击)$/i }).first();
+        if (
+            await resolveAttackButton.isVisible({ timeout: 700 }).catch(() => false)
+            && await resolveAttackButton.isEnabled({ timeout: 500 }).catch(() => false)
+        ) {
+            await resolveAttackButton.click({ timeout: 2000 });
+            await page.waitForTimeout(300);
+            continue;
+        }
+
+        await clickAdvancePhase(page, playerId);
+        await page.waitForTimeout(300);
+    }
+
+    throw new Error(`攻击收口超过最大轮次仍未完成：${JSON.stringify(await readHarnessDebugState(page))}`);
+}
+
 async function chooseVariantByLabelIfVisible(page: any, label: RegExp): Promise<void> {
     const variantModal = page.getByRole('heading', { name: '选择发动变体' }).first();
     if (!await variantModal.isVisible({ timeout: 1200 }).catch(() => false)) {
@@ -265,6 +327,7 @@ test.describe('DiceThrone Ninja 分支技能真实收口', () => {
         await chooseVariantByLabelIfVisible(page, /暗影步 II（4个面具）/i);
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
+        await settlePendingAttackCloseout(page, '0');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -301,6 +364,7 @@ test.describe('DiceThrone Ninja 分支技能真实收口', () => {
         await chooseVariantByLabelIfVisible(page, /勒杀|暗影步 II（3个面具）/i);
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
+        await settlePendingAttackCloseout(page, '0');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -338,6 +402,7 @@ test.describe('DiceThrone Ninja 分支技能真实收口', () => {
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
         await chooseFirstSimpleChoiceIfVisible(page, /选择烟雾阵 II 的目标/i, /1号玩家|P1|2号玩家|P2/i);
+        await settlePendingAttackCloseout(page, '0');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -375,6 +440,7 @@ test.describe('DiceThrone Ninja 分支技能真实收口', () => {
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
         await chooseFirstSimpleChoiceIfVisible(page, /选择九字切的目标/i, /两次 4 点真实伤害|2号玩家|P2/i);
+        await settlePendingAttackCloseout(page, '0');
 
         await expect.poll(async () => {
             const state = await game.getState();

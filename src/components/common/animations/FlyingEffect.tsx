@@ -28,12 +28,14 @@ export interface FlyingEffectData {
     /** 特效质量档：reduced 保留飞行主体和少量拖尾，降低全屏 canvas 成本 */
     quality?: FxQuality;
     /** 可选：覆盖飘字的视觉预设 */
-    floatingTextPreset?: 'default' | 'dicethrone-damage';
+    floatingTextPreset?: 'default' | 'impact-damage';
     /** 飞行体到达目标（冲击帧）时触发的回调，用于同步播放音效/震屏等 */
     onImpact?: () => void;
 }
 
-const DICETHRONE_DAMAGE_Z_INDEX = UI_Z_INDEX.overlayRaised + 120;
+const IMPACT_DAMAGE_Z_INDEX = UI_Z_INDEX.overlayRaised + 120;
+const isImpactDamagePreset = (preset: FlyingEffectData['floatingTextPreset']): boolean =>
+    preset === 'impact-damage';
 
 // ============================================================================
 // 工具函数
@@ -347,26 +349,26 @@ const FloatingTextInner: React.FC<{
     preset?: FlyingEffectData['floatingTextPreset'];
     onComplete: () => void;
 }> = ({ content, x, y, floatColor, intensity, preset = 'default', onComplete }) => {
-    const isDiceThroneDamage = preset === 'dicethrone-damage';
-    const floatingZIndex = isDiceThroneDamage ? DICETHRONE_DAMAGE_Z_INDEX : UI_Z_INDEX.overlayRaised + 1;
+    const isImpactDamage = isImpactDamagePreset(preset);
+    const floatingZIndex = isImpactDamage ? IMPACT_DAMAGE_Z_INDEX : UI_Z_INDEX.overlayRaised + 1;
     const [scope, animate] = useAnimate();
-    const isCritical = intensity >= 5 && !isDiceThroneDamage;
-    const fontSize = isDiceThroneDamage
+    const isCritical = intensity >= 5 && !isImpactDamage;
+    const fontSize = isImpactDamage
         ? 1.58
         : isCritical
             ? Math.min(2.2, 1.4 + intensity * 0.08)
             : Math.min(1.6, 1.0 + intensity * 0.06);
 
-    const popScale = isDiceThroneDamage ? 1.52 : isCritical ? 1.8 : 1.3;
-    const holdScale = isDiceThroneDamage ? 1.02 : isCritical ? 1.15 : 1.0;
+    const popScale = isImpactDamage ? 1.52 : isCritical ? 1.8 : 1.3;
+    const holdScale = isImpactDamage ? 1.02 : isCritical ? 1.15 : 1.0;
     // 使用 vw 相对值，使飘字运动距离自适应视口尺寸（在 1920px 下与原 50/20px 一致）
     const vw = typeof window !== 'undefined' ? window.innerWidth / 100 : 19.2;
-    const floatDistance = isDiceThroneDamage ? Math.round(1.8 * vw) : Math.round(2.6 * vw);
-    const driftX = isDiceThroneDamage ? Math.round(0.2 * vw) : Math.round(1 * vw);
-    // DiceThrone 伤害跳字整段生命周期统一按 3 秒控制，避免来伤/反伤刚出现就消失。
-    const popDuration = isDiceThroneDamage ? 0.12 : 0.06;
-    const holdDuration = isDiceThroneDamage ? 1.18 : 0.1;
-    const floatDuration = isDiceThroneDamage ? 1.7 : 0.5;
+    const floatDistance = isImpactDamage ? Math.round(1.8 * vw) : Math.round(2.6 * vw);
+    const driftX = isImpactDamage ? Math.round(0.2 * vw) : Math.round(1 * vw);
+    // 强调型伤害跳字整段生命周期统一按 3 秒控制，避免连续结算刚出现就消失。
+    const popDuration = isImpactDamage ? 0.12 : 0.06;
+    const holdDuration = isImpactDamage ? 1.18 : 0.1;
+    const floatDuration = isImpactDamage ? 1.7 : 0.5;
     const burstClipPath = 'polygon(50% 0%,58% 17%,75% 8%,75% 28%,96% 25%,84% 43%,100% 55%,78% 61%,88% 82%,66% 76%,57% 100%,45% 78%,24% 92%,28% 68%,4% 70%,20% 52%,0% 39%,23% 32%,15% 10%,38% 20%)';
 
     React.useEffect(() => {
@@ -415,11 +417,11 @@ const FloatingTextInner: React.FC<{
                 translateX: '-50%', translateY: '-50%',
                 x, y,
                 opacity: 0,
-                scale: isDiceThroneDamage ? 0.5 : 0.3,
+                scale: isImpactDamage ? 0.5 : 0.3,
                 zIndex: floatingZIndex,
             }}
         >
-            {isDiceThroneDamage ? (
+            {isImpactDamage ? (
                 <div
                     className="relative inline-flex items-center justify-center"
                     style={{
@@ -517,11 +519,12 @@ const FlyingEffectItem: React.FC<{
     const intensity = effect.intensity ?? 1;
     const quality = effect.quality ?? 'full';
     const flightDuration = calcFlightDuration(deltaX, deltaY);
-    const effectZIndex = effect.floatingTextPreset === 'dicethrone-damage'
-        ? DICETHRONE_DAMAGE_Z_INDEX
+    const isImpactDamage = isImpactDamagePreset(effect.floatingTextPreset);
+    const effectZIndex = isImpactDamage
+        ? IMPACT_DAMAGE_Z_INDEX
         : UI_Z_INDEX.overlayRaised + 1;
-    const trailZIndex = effect.floatingTextPreset === 'dicethrone-damage'
-        ? DICETHRONE_DAMAGE_Z_INDEX - 1
+    const trailZIndex = isImpactDamage
+        ? IMPACT_DAMAGE_Z_INDEX - 1
         : UI_Z_INDEX.overlayRaised;
     const trailBox = React.useMemo(() => createFxScreenPathBox(
         effect.startPos,

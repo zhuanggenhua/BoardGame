@@ -1,0 +1,76 @@
+{
+  "goal": "彻底完成 Smash Up 计分事务重构，不保留 legacy/后续迁出项",
+  "status": "complete",
+  "acceptance_criteria": [
+    {
+      "id": "C1",
+      "description": "OpenSpec tasks 中 refactor-smashup-scorebases-session-stability 无未完成项，且提案记录最终无 post-reduce 等待态",
+      "status": "pass",
+      "evidence": [
+        "openspec/changes/refactor-smashup-scorebases-session-stability/tasks.md: 0.1-4.6 均为 [x]",
+        "tasks.md 3.3a 已记录移除 awaiting-post-reduce session 轮次等待态",
+        "proposal/design/spec 已同步 no awaiting-post-reduce 合同"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "生产代码中不再存在 legacy ResponseWindow/RESPONSE_PASS 作为 Smash Up live reaction 桥",
+      "status": "pass",
+      "evidence": [
+        "rg production scan for RESPONSE_PASS / ResponseWindowSystem bridge / responseWindow mirror / clearLegacySmashUpResponseWindowMirror -> no matches (exit 1)",
+        "npx vitest run reactionQueueDirectTriggerCallerContract.test.ts reactionQueueOrdering.test.ts response-window-skip.test.ts --reporter=dot -> 3 files / 86 tests passed"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "计分 finalization/deferred cleanup/replacement 只由 scoring frame/session 驱动，且不再使用 post-reduce 轮次等待态",
+      "status": "pass",
+      "evidence": [
+        "rg production scan for scoreOneBase / standaloneCore / hasAuthoritativeScoringSession / _waitFor...Reduce / awaiting-post-reduce -> no matches (exit 1)",
+        "src/games/smashup/domain/scoringFinalization.ts: current base completion now sets currentStep to idle",
+        "src/games/smashup/domain/systems.ts: removed afterEvents release logic for awaiting-post-reduce",
+        "npx vitest run scoreBases-flowHalted-recovery.test.ts scoreBases-deferred-finalization.test.ts scoreBases-multi-base-chain-recovery.test.ts scoreBases-auto-continue.test.ts --reporter=dot -> 4 files / 68 tests passed"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "剩余投影均为只读 batch/query/probe view，不能写回 MatchState/session 或创建真实续链",
+      "status": "pass",
+      "evidence": [
+        "rg production scan for buildPreviewStateWithPendingDomainEvents / mergePromptResultCoreWithPreEventState / simulateMatchState / suspendResultCoreAfterDomainEvents / applyEventsToCore -> no matches (exit 1)",
+        "scoring finalizer cleanupBatchCoreView is documented and constrained to materializing deferred action events only",
+        "reaction contract tests forbid old preview-core/merge-core and suspending-domain-events adapters"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "事务级与历史事故 Smash Up 测试通过，类型检查通过",
+      "status": "pass",
+      "evidence": [
+        "npx tsc --noEmit --pretty false --incremental false -> passed",
+        "npx vitest run scoreBases-flowHalted-recovery.test.ts scoreBases-deferred-finalization.test.ts scoreBases-multi-base-chain-recovery.test.ts scoreBases-auto-continue.test.ts --reporter=dot -> 4 files / 68 tests passed",
+        "npx vitest run reactionQueueDirectTriggerCallerContract.test.ts reactionQueueOrdering.test.ts response-window-skip.test.ts --reporter=dot -> 3 files / 86 tests passed",
+        "npx vitest run smashup.smoke.test.ts --reporter=dot -> 1 file / 203 tests passed",
+        "npx vitest run baseScoring.test.ts baseScoredNormalFlow.test.ts baseScoredRaceCondition.test.ts --reporter=dot -> 3 files / 52 tests passed",
+        "npx vitest run munchkinMechanics.test.ts reactionQueueActionPlayedExternalDiscard.test.ts reactionQueueOnMinionDiscardedFromBase.test.ts --reporter=dot -> 3 files / 101 tests passed"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "openspec/changes/refactor-smashup-scorebases-session-stability/tasks.md",
+      "description": "OpenSpec 任务清单",
+      "required": true
+    },
+    {
+      "path": "openspec/changes/refactor-smashup-scorebases-session-stability/specs/smashup-scoring-session/spec.md",
+      "description": "计分 session 合同增量",
+      "required": true
+    }
+  ],
+  "notes": [
+    "生产扫描范围：src/games/smashup/domain, src/games/smashup/game.ts, src/games/smashup/ai.ts, src/games/smashup/ui；排除测试目录。",
+    "通用 ResponseWindowSystem 未删除，因为它属于其它游戏共享能力；本次删除的是 Smash Up live reaction 对它的镜像和桥接依赖。",
+    "保留的 projection/query view 只作为本地只读视图，用于合法性 probe 或同批事件派生；不得写回 MatchState、session 续链、真实 interaction/reaction 或 Flow continuation。"
+  ]
+}

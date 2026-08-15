@@ -245,7 +245,7 @@ export const createCompareRollContext = (
         metadata: options.metadata,
     },
     display: {
-        surface: 'compactOverlay',
+        surface: 'diceTray',
         replayOnly: false,
     },
 });

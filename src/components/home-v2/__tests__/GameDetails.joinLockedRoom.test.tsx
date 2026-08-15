@@ -383,6 +383,17 @@ describe('HomeV2 GameDetails locked room join', () => {
                 playersKey: 'games.smashup.players',
                 icon: 'SU',
                 playerOptions: [2, 4],
+                setupOptions: {
+                    expansions: {
+                        type: 'multi-select',
+                        labelKey: 'games.smashup.setup.expansions.label',
+                        options: [
+                            { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+                            { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
+                            { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+                        ],
+                    },
+                },
             },
         }));
 
@@ -420,6 +431,13 @@ describe('HomeV2 GameDetails locked room join', () => {
                 playersKey: 'games.qidahen.players',
                 icon: '恨',
                 playerOptions: [3],
+                publicRoomSetupSummary: {
+                    scenario: {
+                        options: {
+                            'shanhaiguan-1622': { labelKey: 'setup.scenario.shanhaiguan1622' },
+                        },
+                    },
+                },
             },
         }));
 

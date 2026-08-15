@@ -226,7 +226,7 @@ describe('computeModifiedValue', () => {
 // ============================================================================
 
 describe('复杂管线', () => {
-  it('DiceThrone 场景：base dmg + flat bonus + percent buff + 条件减伤', () => {
+  it('战斗数值场景：base dmg + flat bonus + percent buff + 条件减伤', () => {
     interface CombatCtx { targetHasShield: boolean }
     const stack = addModifiers<CombatCtx>(createModifierStack<CombatCtx>(), [
       // 基础加成
@@ -252,18 +252,18 @@ describe('复杂管线', () => {
     expect(r2.finalValue).toBe(14.5);
   });
 
-  it('SmashUp 场景：power 计算用 compute', () => {
-    interface SmashCtx { minionsOnBase: number }
-    const defs: ModifierDef<SmashCtx>[] = [
+  it('实体力量场景：power 计算用 compute', () => {
+    interface PowerCtx { alliesAtLocation: number }
+    const defs: ModifierDef<PowerCtx>[] = [
       {
-        id: 'war-raptor-ongoing',
+        id: 'ally-count-ongoing',
         type: 'compute',
-        computeFn: (val, ctx) => val + ctx.minionsOnBase,
-        source: 'war-raptor',
+        computeFn: (val, ctx) => val + ctx.alliesAtLocation,
+        source: 'ally-count',
       },
     ];
-    const stack = addModifiers(createModifierStack<SmashCtx>(), defs);
-    expect(computeModifiedValue(stack, 3, { minionsOnBase: 4 })).toBe(7);
+    const stack = addModifiers(createModifierStack<PowerCtx>(), defs);
+    expect(computeModifiedValue(stack, 3, { alliesAtLocation: 4 })).toBe(7);
   });
 });
 

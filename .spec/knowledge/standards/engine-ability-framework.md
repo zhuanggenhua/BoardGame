@@ -24,11 +24,18 @@ metadata:
 2. `getRegisteredIds()` 用于 `entity-chain-integrity.test.ts` 契约测试
 3. 条件评估复用 `primitives/condition`（`AbilityDef.condition` 使用 `ConditionNode`）
 4. **新游戏必须使用 `constraints` 字段声明约束**（见下方「通用能力约束系统」节）
+5. **能力事件必须保留表现合同所需 provenance**：任何会产生玩家可见表现的能力、法术、攻击、移动、治疗、附着、召唤或摧毁，执行结果事件必须携带足够还原这次效果的来源、目标、结果和时序身份，例如 source player/object/card/ability、target player/object/zone/edge/card、effect instance id 或 EventStream id、结果数值 / token / 状态变化。禁止只发“结果已发生”或只发目标格，让表现层无法知道谁触发、打到哪里、命中后释放什么结果。
 
 ### 两种执行模式（可混合）
 
 - **声明式**：`AbilityDef` 数据 → `AbilityRegistry` → `executeEffects()` 执行效果列表（效果结构统一时）
 - **命令式**：`AbilityExecutor` 函数 → `AbilityExecutorRegistry` → `resolve(id, tag?)` 调用（逻辑差异大时）
+
+### 能力表现边界
+
+- 能力系统只负责规则验证、费用、目标合法性、事件和状态结果；不得为了播放动画而延迟 reducer / execute 层的真实结算。
+- 表现层必须通过 EventStream / FX 读取能力事件，并按 [`ui-animation-patterns`](ui-animation-patterns.md) 的来源、轨迹、冲击和结果阶段播放。需要“动画命中时才让玩家看见结果”时，使用 [`engine-visual-events`](engine-visual-events.md) 的视觉状态缓冲和冲击帧释放，而不是把规则状态拆成第二套 UI 状态。
+- 如果某个能力事件无法明确说出“谁触发、触发到哪里、目标发生了什么变化”，该能力事件合同不完整；应先补事件 provenance，再实现或验收动效。
 
 ### 现有游戏迁移状态
 

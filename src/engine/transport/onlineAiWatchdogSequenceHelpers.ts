@@ -50,7 +50,7 @@ export function mapOnlineAiRecoveryCommand(args: {
         return { type: 'UNKNOWN', payload: {} };
     }
     if (command.type === 'ADVANCE_PHASE' && advancePhaseCommandType !== 'ADVANCE_PHASE') {
-        return { ...command, type: advancePhaseCommandType };
+        return { ...command, type: advancePhaseCommandType, payload: command.payload ?? {} };
     }
     return {
         type: typeof command.type === 'string' ? command.type : 'UNKNOWN',
@@ -1167,7 +1167,9 @@ export function resolveOnlineAiForcedRecoveryCommandDecisionFromRuntime(args: {
         actionRecovery: args.actionRecovery,
         blockedFailureReason: args.blockedFailureReason,
         recoveryCommands: args.currentCandidate.resolution.action.commands,
-        advancePhaseCommandType: resolveOnlineAiWatchdogAdvancePhaseCommandType(args.gameId),
+        advancePhaseCommandType: resolveOnlineAiWatchdogAdvancePhaseCommandType({
+            engineConfig: args.engineConfig,
+        }),
         state: args.state,
         seatControllers: args.seatControllers,
         engineConfig: args.engineConfig,

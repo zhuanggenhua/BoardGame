@@ -9,12 +9,11 @@ import type {
     Command,
     DomainCore,
     GameEvent,
-    GameOverResult,
     MatchState,
     PlayerId,
-    RandomFn,
 } from './types';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
+import type { GameEventTelemetryFormatter } from './transport/server';
 import {
     createInitialSystemState,
     createSeededRandom,
@@ -40,6 +39,8 @@ export interface AdapterConfig<
     maxPlayers?: number;
     /** 显式命令类型列表（用于命令校验与调试面板展示） */
     commandTypes?: string[];
+    /** 游戏事件遥测格式化；通用传输层只负责写入返回的结构化日志 */
+    eventTelemetry?: GameEventTelemetryFormatter<TEvent>;
     /** 是否禁用撤销 */
     disableUndo?: boolean;
 }
@@ -98,6 +99,7 @@ export function createGameEngine<
         systems: config.systems,
         systemsConfig: config.systemsConfig,
         commandTypes: config.commandTypes,
+        eventTelemetry: config.eventTelemetry,
         minPlayers: config.minPlayers,
         maxPlayers: config.maxPlayers,
         disableUndo: config.disableUndo,

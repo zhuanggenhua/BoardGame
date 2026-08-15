@@ -20,8 +20,10 @@ import {
 } from './shared';
 
 // 从真实 meta 获取图标和颜色（无 sprite atlas 环境下 fallback 到 emoji）
-const FM_META = TOKEN_META[TOKEN_IDS.FIRE_MASTERY] || { icon: '🔥', color: 'from-orange-500 to-red-600' };
-const PROTECT_META = TOKEN_META[TOKEN_IDS.PROTECT] || { icon: '🛡️', color: 'from-amber-500 to-yellow-600' };
+const FM_META = TOKEN_META[TOKEN_IDS.FIRE_MASTERY] || { color: 'from-orange-500 to-red-600' };
+const PROTECT_META = TOKEN_META[TOKEN_IDS.PROTECT] || { color: 'from-amber-500 to-yellow-600' };
+const FM_ICON = '🔥';
+const PROTECT_ICON = '🛡️';
 
 // ============================================================================
 // 序列特效预览
@@ -63,7 +65,7 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
         cue: DT_FX.TOKEN,
         ctx: {},
         params: {
-          content: FM_META.icon ?? '🔥',
+          content: FM_ICON,
           color: 'from-slate-400 to-slate-600',
           startPos: getCenter(buffRef),
           isRemove: true,
@@ -105,7 +107,7 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
         cue: DT_FX.TOKEN,
         ctx: {},
         params: {
-          content: PROTECT_META.icon ?? '🛡️',
+          content: PROTECT_ICON,
           color: PROTECT_META.color ?? 'from-amber-500 to-yellow-600',
           startPos: getCenter(hpRef),
           endPos: getCenter(buffRef),
@@ -129,7 +131,7 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   const fireParallel = useCallback(() => {
     setStepLog([t('devtools.effectPreview.sequence.logs.parallel')]);
     fxBus.push(DT_FX.TOKEN, {}, {
-      content: FM_META.icon ?? '🔥',
+      content: FM_ICON,
       color: 'from-slate-400 to-slate-600',
       startPos: getCenter(buffRef),
       isRemove: true,
@@ -159,7 +161,7 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
           ref={buffRef}
           className="absolute left-[30%] top-[45%] -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-600/30 flex items-center gap-1.5 text-xs text-slate-400"
         >
-          {FM_META.icon}×3 {PROTECT_META.icon}×1
+          {FM_ICON}×3 {PROTECT_ICON}×1
         </div>
         <div className="absolute left-[30%] top-[62%] -translate-x-1/2 text-[9px] text-slate-600">
           {t('devtools.effectPreview.sequence.preview.buff_zone')}

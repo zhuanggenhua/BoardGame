@@ -42,8 +42,7 @@ export type SmashUpScoringStep =
     | 'awaiting-after-reaction-reduce'
     | 'awaiting-interactions'
     | 'awaiting-response-window'
-    | 'awaiting-post-scoring-finalize'
-    | 'awaiting-post-reduce';
+    | 'awaiting-post-scoring-finalize';
 
 export const SMASHUP_SCORE_BASES_FRAME_ID = 'smashup:score-bases';
 

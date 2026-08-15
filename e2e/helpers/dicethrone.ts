@@ -738,11 +738,6 @@ export const setupDTOnlineMatch = async (
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
     await gotoDTMatchRoom(hostPage, matchId, '0');
-    await waitForCharacterSelectionInRoom(hostPage, {
-        matchId,
-        playerId: '0',
-        timeout: options?.characterSelectionTimeout,
-    });
 
     const guestContext = await browser.newContext({ baseURL });
     await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
@@ -754,11 +749,18 @@ export const setupDTOnlineMatch = async (
 
     await seedDTMatchCredentials(guestContext, matchId, '1', guestCredentials);
     await gotoDTMatchRoom(guestPage, matchId, '1');
-    await waitForCharacterSelectionInRoom(guestPage, {
-        matchId,
-        playerId: '1',
-        timeout: options?.characterSelectionTimeout,
-    });
+    await Promise.all([
+        waitForCharacterSelectionInRoom(hostPage, {
+            matchId,
+            playerId: '0',
+            timeout: options?.characterSelectionTimeout,
+        }),
+        waitForCharacterSelectionInRoom(guestPage, {
+            matchId,
+            playerId: '1',
+            timeout: options?.characterSelectionTimeout,
+        }),
+    ]);
 
     return { hostContext, guestContext, hostPage, guestPage, matchId };
 };
@@ -783,7 +785,7 @@ export const setupDTOnlineMatchWithPlayers = async (
     const joinPlayerIds = options.joinPlayerIds?.length
         ? options.joinPlayerIds
         : Array.from({ length: numPlayers - 1 }, (_, index) => String(index + 1));
-    const shouldBatchWaitForCharacterSelection = !options.skipCharacterSelectionWait && joinPlayerIds.length > 1;
+    const shouldBatchWaitForCharacterSelection = !options.skipCharacterSelectionWait && joinPlayerIds.length > 0;
     const contextInitOptions = {
         blockLobbySocket: options.blockLobbySocket,
         skipImageGate: options.skipImageGate,

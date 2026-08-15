@@ -859,17 +859,7 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
                 makeMinion('ally', 'spider_verse_ghost_spider', '0', 4),
             ])],
         });
-        const meFirstState = makeMatchState(core);
-        meFirstState.sys.phase = 'scoreBases';
-        (meFirstState.sys as any).responseWindow = {
-            current: {
-                windowType: 'meFirst',
-                responderQueue: ['0', '1'],
-                currentResponderIndex: 0,
-                sourceBaseIndex: 0,
-                passedPlayers: [],
-            },
-        };
+        const meFirstState = attachBeforeScoringReactionSession(makeMatchState(core), 0);
 
         const specialPlayed = invokeRegisteredAbilityContract('spider_verse_miles_morales', 'onPlay', {
             state: core,

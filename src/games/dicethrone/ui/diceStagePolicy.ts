@@ -11,6 +11,7 @@ export interface DiceStagePolicyParams {
     currentResponderId?: string;
     rootPid: string;
     diceInteractionPlayerId?: string;
+    canOperateOwnedCompareRoll: boolean;
     isRollPhase: boolean;
     rollCount: number;
     isRolling: boolean;
@@ -23,11 +24,13 @@ export function canInteractDiceForCurrentBoard(params: DiceStagePolicyParams): b
     const canOperateOwnedDiceInteraction = !params.isSpectator
         && params.hasDiceMultistepInteraction
         && params.diceInteractionPlayerId === params.rootPid;
+    const canOperateOwnedCompareRoll = !params.isSpectator
+        && params.canOperateOwnedCompareRoll;
     const canOperateResponseDice = !params.isSpectator
         && params.diceInteractionPlayerId === params.rootPid
         && (params.isManualSelfResponseWindow || params.isDirectDiceActor || params.currentResponderId === params.rootPid);
 
-    return (canOperateOwnRoll || canOperateOwnedDiceInteraction || canOperateResponseDice)
+    return (canOperateOwnRoll || canOperateOwnedDiceInteraction || canOperateOwnedCompareRoll || canOperateResponseDice)
         && !params.isAttackShowcaseVisible
         && !params.isDuelDirectDefenseOnly;
 }

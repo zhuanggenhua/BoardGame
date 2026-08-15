@@ -302,6 +302,24 @@ const translationMap: Record<string, string> = {
     'ota.footer.ariaBundleAndAppMismatch': 'current update number {{bundleVersion}}, app version {{appVersion}}, latest update number {{latestVersion}}, versions are not aligned',
 };
 
+const mockAndroidLiveUpdatesModule = () => {
+    vi.doMock('../../lib/mobile/androidLiveUpdates', () => ({
+        readAndroidLiveUpdateConfig: vi.fn(() => ({
+            enabled: nativeAndroidRuntimeState.value,
+            manifestUrl: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            channel: 'stable',
+            appReadyTimeoutMs: 10000,
+        })),
+        readAndroidLiveUpdateSnapshot: vi.fn(async () => androidLiveUpdateSnapshotState.value),
+        readAndroidLiveUpdateActivityState: vi.fn(() => androidLiveUpdateActivityState.value),
+        subscribeAndroidLiveUpdateActivityState: vi.fn((listener: (state: typeof androidLiveUpdateActivityState.value) => void) => {
+            listener(androidLiveUpdateActivityState.value);
+            return () => undefined;
+        }),
+        requestAndroidLiveUpdateCheck: (...args: unknown[]) => mockRequestAndroidLiveUpdateCheck(...args),
+    }));
+};
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, unknown>) => {
@@ -756,7 +774,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup'));
 
         await waitFor(() => {
@@ -800,7 +818,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup'));
 
         await waitFor(() => {
@@ -836,7 +854,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup', { includeTutorial: true }));
 
         await waitFor(() => {
@@ -889,7 +907,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup', { includeTutorial: true }));
 
         await waitFor(() => {
@@ -954,7 +972,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup', {
             includeTutorial: true,
             tutorialId: 'cowboys-duel',
@@ -998,7 +1016,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup', {
             includeTutorial: true,
         }));
@@ -1041,7 +1059,7 @@ describe('useGameImplementationReady', () => {
             subscribeGameImplementationReady: mockSubscribeGameImplementationReady,
         }));
 
-        const { useGameImplementationReady } = await import('../../hooks/useGameImplementationReady');
+        const { useGameImplementationReady } = await import('../../games/useGameImplementationReady');
         const { result } = renderHook(() => useGameImplementationReady('smashup', {
             includeTutorial: true,
             tutorialId: 'missing-subtutorial',
@@ -1507,7 +1525,14 @@ describe('Home missing match confirmation', () => {
 });
 
 describe('Home native runtime footer', () => {
+    const renderHomeVersionFooter = async () => {
+        const { HomeVersionFooter } = await import('../../components/home/HomeVersionFooter');
+        return render(<HomeVersionFooter />);
+    };
+
     beforeEach(() => {
+        vi.resetModules();
+        mockAndroidLiveUpdatesModule();
         cleanup();
         nativeAndroidRuntimeState.value = false;
         androidLiveUpdateSnapshotState.value = {
@@ -1535,7 +1560,7 @@ describe('Home native runtime footer', () => {
     });
 
     it('网页端只显示单一版本号，不显示 Bundle/App/OTA 信息', async () => {
-        render(<Home />);
+        await renderHomeVersionFooter();
 
         await waitFor(() => {
             expect(screen.getByText(currentAppVersionLabel)).toBeInTheDocument();
@@ -1550,7 +1575,7 @@ describe('Home native runtime footer', () => {
     it('原生 Android 下即使快照未返回也显示 Bundle/App 骨架信息', async () => {
         nativeAndroidRuntimeState.value = true;
 
-        render(<Home />);
+        await renderHomeVersionFooter();
 
         await waitFor(() => {
             expect(screen.getByText(`更新号 ${currentAppVersionLabel}`)).toBeInTheDocument();
@@ -1574,7 +1599,7 @@ describe('Home native runtime footer', () => {
             manifestDisplayVersion: '601',
         };
 
-        render(<Home />);
+        await renderHomeVersionFooter();
 
         await waitFor(() => {
             expect(screen.getByText('更新号 600')).toBeInTheDocument();
@@ -1601,7 +1626,7 @@ describe('Home native runtime footer', () => {
             manifestDisplayVersion: '601',
         };
 
-        render(<Home />);
+        await renderHomeVersionFooter();
 
         const footerButton = await screen.findByRole('button', {
             name: /versions are not aligned/i,
@@ -1633,7 +1658,7 @@ describe('Home native runtime footer', () => {
             manifestDisplayVersion: '601',
         };
 
-        render(<Home />);
+        await renderHomeVersionFooter();
 
         const footerButton = await screen.findByRole('button', {
             name: /current update number 601, app version 0\.5\.1/i,

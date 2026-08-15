@@ -8,7 +8,6 @@ function getReactionSessionFromResolution(
 ): SmashUpReactionSession | undefined {
     const resolutionFrames = state.sys.resolution?.frames ?? [];
     const frameIds = [
-        state.sys.responseWindow?.current?.resolutionFrameId,
         state.sys.resolution?.activeFrameId,
         ...resolutionFrames.map((frame) => frame.id).reverse(),
     ].filter((frameId): frameId is string => !!frameId);
@@ -40,14 +39,6 @@ export interface SmashUpReactionWindowPresentation extends SmashUpReactionWindow
     passedPlayers: PlayerId[];
     showsPassWindow: boolean;
 }
-
-type LegacyReactionWindowState = {
-    windowType?: 'meFirst' | 'afterScoring';
-    responderQueue?: PlayerId[];
-    currentResponderIndex?: number;
-    sourceBaseIndex?: number;
-    passedPlayers?: PlayerId[];
-};
 
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
     const idx = turnOrder.indexOf(startingPlayerId);
@@ -95,64 +86,10 @@ function normalizeReactionSessionPlayers(
     };
 }
 
-function getNormalizedLegacyReactionWindow(
-    state: MatchState<SmashUpCore>,
-    legacyWindow: {
-        windowType?: 'meFirst' | 'afterScoring';
-        responderQueue?: PlayerId[];
-        currentResponderIndex?: number;
-        sourceBaseIndex?: number;
-        passedPlayers?: PlayerId[];
-    },
-): SmashUpReactionWindowPresentation | undefined {
-    const turnOrder = state.core.turnOrder ?? [];
-    if (turnOrder.length === 0) return undefined;
-
-    const liveCurrentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
-    const currentPlayerId = liveCurrentPlayerId && turnOrder.includes(liveCurrentPlayerId)
-        ? liveCurrentPlayerId
-        : turnOrder[0];
-    if (!currentPlayerId) return undefined;
-    const activePlayerId = currentPlayerId;
-
-    const responderQueue = getClockwiseOrder(turnOrder, currentPlayerId);
-    return {
-        windowType: legacyWindow.windowType!,
-        activePlayerId,
-        currentPlayerId,
-        sourceBaseIndex: typeof legacyWindow.sourceBaseIndex === 'number'
-            ? legacyWindow.sourceBaseIndex
-            : undefined,
-        responderQueue,
-        currentResponderIndex: Math.max(0, responderQueue.indexOf(activePlayerId)),
-        passedPlayers: (legacyWindow.passedPlayers ?? []).filter(playerId => responderQueue.includes(playerId)),
-        showsPassWindow: true,
-    };
-}
-
 export function getSmashUpReactionWindowContext(
     state: MatchState<SmashUpCore>,
 ): SmashUpReactionWindowContext | undefined {
-    const liveContext = getLiveSmashUpReactionWindowContext(state);
-    if (liveContext) return liveContext;
-
-    const legacyWindow = state.sys.responseWindow?.current;
-    const legacyWindowType = legacyWindow?.windowType;
-    if (
-        (legacyWindowType === 'meFirst' || legacyWindowType === 'afterScoring')
-        && legacyWindow.responderQueue?.length
-    ) {
-        const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, legacyWindow);
-        if (!normalizedLegacyWindow) return undefined;
-        return {
-            windowType: normalizedLegacyWindow.windowType,
-            activePlayerId: normalizedLegacyWindow.activePlayerId,
-            currentPlayerId: normalizedLegacyWindow.currentPlayerId,
-            sourceBaseIndex: normalizedLegacyWindow.sourceBaseIndex,
-        };
-    }
-
-    return undefined;
+    return getLiveSmashUpReactionWindowContext(state);
 }
 
 export function getLiveSmashUpReactionWindowContext(
@@ -179,7 +116,6 @@ export function getSmashUpReactionWindowPresentation(
     state: MatchState<SmashUpCore>,
 ): SmashUpReactionWindowPresentation | undefined {
     const session = getReactionSessionFromResolution(state);
-    const responseWindow = state.sys.responseWindow?.current;
 
     if (session?.responseWindowType) {
         const normalizedSession = normalizeReactionSessionPlayers(state, session);
@@ -207,45 +143,6 @@ export function getSmashUpReactionWindowPresentation(
         };
     }
 
-    const fallbackContext = getSmashUpReactionWindowContext(state);
-    if (!fallbackContext || !responseWindow?.responderQueue?.length) {
-        return undefined;
-    }
-
-    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as LegacyReactionWindowState);
-    if (normalizedLegacyWindow) {
-        return normalizedLegacyWindow;
-    }
-
-    return {
-        ...fallbackContext,
-        responderQueue: responseWindow.responderQueue,
-        currentResponderIndex: responseWindow.currentResponderIndex,
-        passedPlayers: responseWindow.passedPlayers ?? [],
-        showsPassWindow: true,
-    };
-}
-
-export function hasBlockingLegacyResponseWindow(
-    state: MatchState<SmashUpCore>,
-): boolean {
-    const responseWindow = state.sys.responseWindow?.current;
-    if (!responseWindow) {
-        return false;
-    }
-
-    if (!getReactionSessionFromResolution(state)) {
-        return false;
-    }
-
-    // 新响应链统一镜像为 smashup_reaction_choose；这里仅拦截仍未收口的旧窗口状态。
-    if (responseWindow.sourceId === 'smashup_reaction_choose') {
-        return false;
-    }
-
-    const interactionSourceId = (
-        state.sys.interaction?.current?.data as { sourceId?: string } | undefined
-    )?.sourceId;
-    return interactionSourceId !== 'smashup_reaction_choose';
+    return undefined;
 }
 

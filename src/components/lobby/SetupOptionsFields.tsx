@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import type { TFunction } from 'i18next';
-import type { GameManifestEntry } from '../../games/manifest.types';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     isMultiSelectField,
     isSelectField,
     type GameSetupSelections,
-} from '../../games/setupOptions';
+} from '../../shared/gameSetupOptions';
 
 interface SetupOptionsFieldsProps {
     gameManifest: GameManifestEntry;
@@ -77,7 +77,7 @@ export function SetupOptionsFields({
                 const fieldValue = selections[fieldKey];
 
                 if (isSelectField(field)) {
-                    const options = field.optionsByPlayerCount?.[numPlayers] ?? field.options;
+                    const options = field.optionsByPlayerCount?.[numPlayers] ?? field.options ?? [];
                     const fallbackValue = (
                         field.default && options.some((option) => option.value === field.default)
                             ? field.default

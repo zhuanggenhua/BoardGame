@@ -81,6 +81,12 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 3. 在 `FxLayer.onEffectImpact` 回调中 `release` 对应 key
 4. UI 组件通过 `buffer.get(key, coreValue)` 读取视觉值
 
+### 可见结算时机（强制）
+
+- 引擎层同步完成规则结算；表现层负责让玩家按动画节奏看见结算。用户体验上的“动画命中时才产生效果”，在工程上应实现为“规则状态已结算，但相关可见值 / 位置 / token / 离场结果被视觉缓冲冻结，直到 `onEffectImpact` 释放”。
+- 能力、法术和攻击事件必须先入 EventStream，再由 FX / 动画层消费；不得在按钮点击时先播来源到目标的动效，再赌命令一定验证成功。
+- 若效果有来源和目标，FX 事件应携带来源和目标坐标 / 对象引用；如果渲染器只消费目标位置而忽略来源，不能宣称已经完成来源到目标的技能表现。
+
 ### 禁止事项
 
 - ❌ 禁止在 UI 组件中用 `useState<Map>` 自行实现快照逻辑，必须使用 `useVisualStateBuffer`

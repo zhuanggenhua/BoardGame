@@ -19,7 +19,7 @@ export const TextEntryAutoScrollAgent = () => {
         }
 
         const isCoarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
-        const shouldHandleTarget = (target: HTMLElement) => {
+        const shouldHandleTarget = (target: Element) => {
             if (!isCoarsePointer()) return false;
             if (isTextEntryProxyEligible(target)) {
                 return false;
@@ -54,6 +54,7 @@ export const TextEntryAutoScrollAgent = () => {
 
         const handleFocusIn = (event: FocusEvent) => {
             const target = event.target;
+            if (!(target instanceof Element)) return;
             if (!isTextEntryElement(target)) return;
             if (!shouldHandleTarget(target)) return;
             scheduleScroll(target);

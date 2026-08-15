@@ -18,7 +18,10 @@ const isNativeCapacitorRuntime = () => {
     }
 
     try {
-        return Boolean(globalThis.window?.Capacitor?.isNativePlatform?.());
+        const capacitorBridge = (
+            globalThis.window as (Window & { Capacitor?: { isNativePlatform?: () => boolean } }) | undefined
+        )?.Capacitor;
+        return Boolean(capacitorBridge?.isNativePlatform?.());
     } catch {
         return false;
     }

@@ -17,7 +17,7 @@
  *    - base_mushroom_kingdom: 蘑菇王国
  *    - base_cat_fanciers_alley: 诡猫巷
  *
- * 3. afterScoring: FlowHooks.onPhaseExit('scoreBases') → scoreOneBase → Interaction
+ * 3. afterScoring: FlowHooks.onPhaseExit('scoreBases') → scoreBaseViaFlow → Interaction
  *    - base_ninja_dojo: 忍者道场
  *    - base_the_mothership: 母舰
  *    - base_pirate_cove: 海盗湾
@@ -539,7 +539,7 @@ describe('集成: base_cat_fanciers_alley 诡猫巷 (onTurnStart)', () => {
 
 
 // ============================================================================
-// 路径③: afterScoring — FlowHooks.onPhaseExit('scoreBases') → scoreOneBase 完整链路
+// 路径③: afterScoring — FlowHooks.onPhaseExit('scoreBases') → scoreBaseViaFlow 完整链路
 // 需要基地力量达到 breakpoint 才会触发记分
 // ============================================================================
 

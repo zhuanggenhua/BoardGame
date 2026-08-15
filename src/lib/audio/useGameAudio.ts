@@ -450,6 +450,10 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
                     resolvedKey: key,
                     payload: event.payload,
                 });
+            }
+
+            if (!key) continue;
+            if (gameId === 'dicethrone' && event.type === 'ATTACK_INITIATED') {
                 console.log('[Audio Debug] ATTACK_INITIATED - About to check playedKeys:', {
                     key,
                     hasKey: playedKeys.has(key),
@@ -457,8 +461,6 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
                     playedKeysArray: Array.from(playedKeys),
                 });
             }
-            
-            if (!key) continue;
             // 立即播放（去重）
             if (!playedKeys.has(key)) {
                 playedKeys.add(key);

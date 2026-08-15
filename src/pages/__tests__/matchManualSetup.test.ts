@@ -5,6 +5,7 @@ import type { MatchState } from '../../engine/types';
 import {
     resolveManualSetupSelectionTakeoverPlayerId,
     resolveManualSetupAttemptReleaseSource,
+    resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
     shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
     shouldReleaseManualSetupAttemptFromSharedState,
@@ -37,6 +38,18 @@ describe('matchManualSetup', () => {
             playerId: '1',
             actionKind: 'setup-select-draft',
             selectionId: 'ranger',
+        })).toBeNull();
+    });
+
+    it('通用 fallback 只按前置选择 payload 解析 action kind，不识别具体游戏命令名', () => {
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'game:select_faction',
+            payload: { factionId: 'ranger' },
+        })).toBe('setup-select-faction');
+
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'game:select_draft',
+            payload: { draftId: 'ranger' },
         })).toBeNull();
     });
 

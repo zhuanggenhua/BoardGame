@@ -512,7 +512,7 @@ function handleVolley(context: CustomActionContext): DiceThroneEvent[] {
             customResolutionId: MOON_ELF_VOLLEY_SETTLEMENT_ID,
             allowDiceModification: true,
             opensAfterRollConfirmedResponseWindow: bowCount > 0,
-            continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
         },
     ));
 
@@ -552,7 +552,7 @@ function handleWatchOut(context: CustomActionContext): DiceThroneEvent[] {
         timestamp + 1,
         {
             customResolutionId: MOON_ELF_WATCH_OUT_SETTLEMENT_ID,
-            continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
         },
     )];
 }
@@ -646,9 +646,8 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
     return events;
 }
 
-// 閿佸畾 (Targeted) 鏄寔缁晥鏋滐紝鍙椾激鏃?+2 浼ゅ锛屼笉浼氳嚜鍔ㄧЩ闄ゃ€?
-// 浼ゅ淇閫氳繃 TokenDef.passiveTrigger.actions[modifyStat]锛岀敱 createDamageCalculation 鐨?collectStatusModifiers 鑷姩澶勭悊銆?
-// 绉婚櫎鍙兘閫氳繃鍑€鍖栫瓑涓诲姩鎵嬫銆?
+// 锁定 (Targeted) 的 +2 伤害由 TokenDef.passiveTrigger.actions[modifyStat] 处理。
+// 受对手进攻伤害后移除由 consumeOnTrigger 统一处理，不再注册月精灵专用移除 handler。
 
 // ============================================================================
 // 娉ㄥ唽
@@ -792,6 +791,6 @@ export function registerMoonElfCustomActions(): void {
     registerCustomActionHandler('moon_elf-entangle-effect', handleEntangleEffect, {
         categories: ['dice', 'status'],
     });
-    // 閿佸畾 (Targeted) 鏄寔缁晥鏋滐紝鏃犻渶娉ㄥ唽绉婚櫎 handler
+    // 锁定 (Targeted) 的移除由 consumeOnTrigger 统一处理，无需注册专用 handler。
 }
 

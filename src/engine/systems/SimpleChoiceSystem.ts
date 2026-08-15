@@ -102,7 +102,7 @@ export function createSimpleChoiceSystem<TCore>(
                     value: onlyOption.value,
                     sourceId: data.sourceId,
                     interactionData: stripNonSerializableFromData({
-                        ...current.data,
+                        ...data,
                         options: availableOptions,
                     }),
                 },

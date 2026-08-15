@@ -149,6 +149,27 @@ describe('TutorialSystem', () => {
         expect(result?.state?.sys.tutorial.step?.id).toBe('step-2');
     });
 
+    it('afterEvents: 旧持久化状态缺少 tutorial 时视为教程未开启', () => {
+        const state = createTestState();
+        const legacyState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                tutorial: undefined,
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const result = system.afterEvents?.({
+            state: legacyState,
+            command: { type: 'NOOP', playerId: '0', payload: {} },
+            events: [{ type: 'TEST_EVENT', payload: {}, timestamp: 1 } as GameEvent],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result).toBeUndefined();
+    });
+
     it('afterEvents: 传输裁剪 steps 后仍使用已启动 manifest 推进下一步', () => {
         const sys = createTutorialSystem<TestCore>();
         const manifest: TutorialManifest = {

@@ -1,4 +1,4 @@
-import type { GameSetupSelections } from '../setupOptions';
+import type { GameSetupSelections } from '../../shared/gameSetupOptions';
 import type { GameSetupSelectField } from '../manifest.types';
 import type { PublicSetupSummary } from '../../shared/lobby';
 import type {

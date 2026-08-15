@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     LogOut,
     Trash2,
@@ -31,7 +32,7 @@ import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { matchSocket, type MatchChatMessage, type MatchEmoteEvent } from '../../../../services/matchSocket';
 import { MAX_CHAT_LENGTH, MAX_CHAT_MESSAGES } from '../../../../shared/chat';
-import { getAvailableEmotesForGame } from '../../../../shared/emotes';
+import type { EmoteDefinition } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
 import { useOptionalSocial } from '../../../../contexts/SocialContext';
@@ -42,12 +43,10 @@ import { generateId, copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
-import { GameHudRuntimeSettingsSection } from '../../../../games/gameHudRuntimeAdapter';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
-import { GAME_MANIFEST_BY_ID } from '../../../../games/manifest';
-import { resolveGameMobileSupport } from '../../../../games/mobileSupport';
+import type { GameOrientationPreference } from '../../../../shared/gameManifest.types';
 import {
     buildGameFeedbackActionLog,
     buildGameFeedbackStateSnapshot,
@@ -85,7 +84,13 @@ interface GameHUDProps {
     seatSwapContent?: FabAction['content'];
     isPregameSetupPhase?: boolean;
     isLoading?: boolean;
+    preferredFullscreenOrientation?: GameOrientationPreference;
+    renderRuntimeSettings?: (t: TFunction) => ReactNode;
+    availableEmotes?: readonly EmoteDefinition[];
+    resolveEmote?: (emoteId: string) => EmoteDefinition | undefined;
 }
+
+const EMPTY_EMOTES: readonly EmoteDefinition[] = [];
 
 type HudPhaseStateLike = {
     sys?: {
@@ -164,6 +169,10 @@ export const GameHUD = ({
     seatSwapContent,
     isPregameSetupPhase,
     isLoading = false,
+    preferredFullscreenOrientation,
+    renderRuntimeSettings,
+    availableEmotes = EMPTY_EMOTES,
+    resolveEmote,
 }: GameHUDProps) => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('game');
@@ -199,13 +208,6 @@ export const GameHUD = ({
     const isTutorial = mode === 'tutorial';
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
-    const currentPhase = resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined);
-    const suppressGlobalFab = _gameId === 'qidahen'
-        || (_gameId === 'betrayal' && (
-            isPregameSetupPhase
-            || currentPhase === 'characterSelect'
-            || currentPhase === 'endgame'
-        ));
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
@@ -225,8 +227,10 @@ export const GameHUD = ({
     const isChatPanelOpenRef = useRef(false);
     const unreadChatCount = unreadChatState.matchId === matchId ? unreadChatState.count : 0;
     const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
-    const availableEmotes = useMemo(() => getAvailableEmotesForGame(_gameId), [_gameId]);
     const canUseSeatEmotes = isOnline && !isSpectator && !isSetupPhase && !!matchId && !!myPlayerId && availableEmotes.length > 0;
+    const resolveHudEmote = useCallback((emoteId: string) => (
+        resolveEmote?.(emoteId) ?? availableEmotes.find((emote) => emote.id === emoteId)
+    ), [availableEmotes, resolveEmote]);
 
     const myDisplayName = useMemo(() => {
         if (user?.username) return user.username;
@@ -453,11 +457,6 @@ export const GameHUD = ({
 
     // 全屏状态
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
-    const preferredFullscreenOrientation = useMemo(() => {
-        if (!_gameId) return undefined;
-        const gameManifest = GAME_MANIFEST_BY_ID[_gameId];
-        return resolveGameMobileSupport(gameManifest).preferredOrientation;
-    }, [_gameId]);
 
     const toggleFullscreen = async () => {
         const result = await toggleDocumentFullscreen({
@@ -696,7 +695,7 @@ export const GameHUD = ({
                             </div>
                         ))}
                         {localChatEmotes.map((event) => {
-                            const emote = availableEmotes.find((item) => item.id === event.emoteId);
+                            const emote = resolveHudEmote(event.emoteId);
                             if (!emote) return null;
                             return (
                                 <div key={`${event.playerId}:${event.createdAt}`} className="flex flex-col items-end" data-testid={`hud-chat-local-emote-${event.emoteId}`}>
@@ -811,7 +810,7 @@ export const GameHUD = ({
                     </div>
                 )}
 
-                <GameHudRuntimeSettingsSection gameId={_gameId} t={t} />
+                {renderRuntimeSettings?.(t)}
 
                 <AudioControlSection isDark={true} />
             </div>
@@ -1166,7 +1165,7 @@ export const GameHUD = ({
                     name={opponentName}
                 />
             )}
-            <SeatEmoteOverlay events={seatEmoteEvents} />
+            <SeatEmoteOverlay events={seatEmoteEvents} resolveEmote={resolveHudEmote} />
             <FabMenu
                 isDark={true}
                 items={items}

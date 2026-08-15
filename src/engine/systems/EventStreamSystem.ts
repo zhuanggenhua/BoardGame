@@ -18,6 +18,12 @@ export interface EventStreamSystemConfig {
     maxEntries?: number;
 }
 
+export interface EventStreamDelta {
+    newEntries: EventStreamEntry[];
+    nextLastSeenId: number;
+    shouldReset: boolean;
+}
+
 // ============================================================================
 // 创建事件流系统
 // ============================================================================
@@ -87,4 +93,38 @@ export function createEventStreamSystem<TCore>(
 
 export function getEventStreamEntries<TCore>(state: MatchState<TCore>): EventStreamEntry[] {
     return state.sys.eventStream?.entries ?? [];
+}
+
+export function computeEventStreamDelta(
+    entries: EventStreamEntry[],
+    lastSeenEventId: number,
+): EventStreamDelta {
+    if (entries.length === 0) {
+        return {
+            newEntries: [],
+            nextLastSeenId: lastSeenEventId > -1 ? -1 : lastSeenEventId,
+            shouldReset: lastSeenEventId > -1,
+        };
+    }
+
+    const lastEntryId = entries[entries.length - 1].id;
+    if (lastSeenEventId > -1 && lastEntryId < lastSeenEventId) {
+        return {
+            newEntries: entries,
+            nextLastSeenId: lastEntryId,
+            shouldReset: true,
+        };
+    }
+
+    const newEntries = lastSeenEventId < 0
+        ? entries
+        : entries.filter(entry => entry.id > lastSeenEventId);
+
+    return {
+        newEntries,
+        nextLastSeenId: newEntries.length > 0
+            ? newEntries[newEntries.length - 1].id
+            : lastSeenEventId,
+        shouldReset: false,
+    };
 }

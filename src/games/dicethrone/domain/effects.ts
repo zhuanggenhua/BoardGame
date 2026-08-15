@@ -543,6 +543,13 @@ function resolveEffectAction(
                     && !ctx.isDefensiveContext
                     && state.pendingAttack?.attackerId === attackerId
                     && state.pendingAttack?.defenderId === dmgTargetId;
+                const attackDamageContext = isCurrentAttackDamage && state.pendingAttack
+                    ? {
+                        attackerId,
+                        defenderId: dmgTargetId,
+                        isUltimate: state.pendingAttack.isUltimate,
+                    }
+                    : undefined;
                 const dazzlePercent = isCurrentAttackDamage
                     ? state.pendingAttack?.dazzleDamagePercent
                     : undefined;
@@ -570,6 +577,7 @@ function resolveEffectAction(
                     target: { playerId: dmgTargetId },
                     state,
                     damageScope: action.damageScope ?? 'attack',
+                    attackDamageContext,
                     autoCollectTokens: true,
                     autoCollectStatus: true,
                     // 护盾统一由 reducer 消耗，避免在计算管线与 reducer 间被重复扣减。

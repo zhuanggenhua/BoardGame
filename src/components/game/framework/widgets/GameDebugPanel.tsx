@@ -19,7 +19,7 @@ import {
     resolveSeatControllersFromSearchParams,
 } from '../../../../engine/ai';
 import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
-import type { GameManifestAiSupport } from '../../../../games/manifest.types';
+import type { GameManifestAiSupport } from '../../../../shared/gameManifest.types';
 
 const DEBUG_BUTTON_SIZE = 48;
 const EDGE_PADDING = 16;
@@ -637,8 +637,8 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                                     createResult.matchID,
                                                     '0',
                                                     {
-                                                        token,
-                                                        guestId: guestId,
+                                                        token: token ?? undefined,
+                                                        guestId: guestId ?? undefined,
                                                         playerName,
                                                     }
                                                 );

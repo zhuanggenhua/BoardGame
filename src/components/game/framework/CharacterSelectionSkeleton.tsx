@@ -12,9 +12,7 @@ import { MagnifyOverlay } from '../../common/overlays/MagnifyOverlay';
 import { UI_Z_INDEX } from '../../../core';
 import clsx from 'clsx';
 import type { PlayerId } from '../../../engine/types';
-import {
-    buildRuntimeInlineUnitValue,
-} from '../../../games/mobileSupport';
+import { buildRuntimeInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 import { CharacterSelectionBadge } from './CharacterSelectionBadge';
 import type {
     CharacterBadgeDef,

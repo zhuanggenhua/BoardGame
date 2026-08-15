@@ -98,12 +98,11 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             SU_COMMANDS.USE_TALENT,
             // 选择派系（低频但重要）
             SU_COMMANDS.SELECT_FACTION,
-            // 交互响应和响应窗口跳过必须即时发送，绕过批处理窗口
+            // 交互响应和 reaction pass 必须即时发送，绕过批处理窗口
             // 防止快速连点时多个交互命令被聚合，导致重复消费/状态异常
             'SYS_INTERACTION_RESPOND',
             'SYS_INTERACTION_CANCEL',
             SU_COMMANDS.REACTION_PASS,
-            'RESPONSE_PASS',
         ],
     },
 };

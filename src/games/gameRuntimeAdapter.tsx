@@ -1,14 +1,9 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
+import type { MatchSeatSwapConfig } from '../components/game/framework/matchSeatSwap';
+import type { GameSetupSelections } from '../shared/gameSetupOptions';
 
 export type GameHudRuntimeMode = 'local' | 'online' | 'tutorial' | 'test';
-
-export type GameHudRuntimeSuppressionInput = {
-    gameId?: string;
-    mode?: GameHudRuntimeMode;
-    state?: MatchState<unknown> | null;
-    playerId?: string | null;
-};
 
 export type GameHudForceDismissInput = {
     gameId?: string;
@@ -25,22 +20,28 @@ export type GameRuntimePageProviderProps = {
     children: ReactNode;
 };
 
-export type GameRuntimeSeatSwapMode = 'request' | 'instant';
+export type GameRuntimeSeatSwapMode = MatchSeatSwapConfig['mode'];
+export type GameRuntimeSeatSwapConfig = MatchSeatSwapConfig;
 
-export type GameRuntimeSeatSwapConfig = {
-    mode: GameRuntimeSeatSwapMode;
-    requestCommandType: string;
-    respondCommandType?: string | null;
-    cancelCommandType?: string | null;
+export type GameRuntimeLocalSetupContext = {
+    searchParams: URLSearchParams;
+    tutorialId?: string;
+    tutorialMode?: boolean;
+};
+
+export type GameRuntimeLocalSetupResult = {
+    numPlayers: number;
+    setupSelections?: GameSetupSelections;
+    setupData?: Record<string, unknown>;
 };
 
 export type GameRuntimeAdapter = {
     PageProvider?: ComponentType<GameRuntimePageProviderProps>;
     dismissTransientUi?: () => boolean;
-    shouldSuppressHudFab?: (args: GameHudRuntimeSuppressionInput) => boolean;
     forceDismissHud?: (args: GameHudForceDismissInput) => boolean;
     HudSettingsSection?: ComponentType<GameRuntimeSettingsSectionProps>;
     seatSwap?: GameRuntimeSeatSwapConfig;
+    resolveLocalSetup?: (context: GameRuntimeLocalSetupContext) => GameRuntimeLocalSetupResult | null;
 };
 
 function DefaultGamePageRuntimeProvider({ children }: GameRuntimePageProviderProps) {
@@ -50,6 +51,5 @@ function DefaultGamePageRuntimeProvider({ children }: GameRuntimePageProviderPro
 export const defaultGameRuntimeAdapter: GameRuntimeAdapter = {
     PageProvider: DefaultGamePageRuntimeProvider,
     dismissTransientUi: () => false,
-    shouldSuppressHudFab: () => false,
     forceDismissHud: () => false,
 };

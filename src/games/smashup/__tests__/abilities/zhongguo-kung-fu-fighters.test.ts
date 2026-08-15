@@ -4,7 +4,6 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
-import { scoreOneBase } from '../../domain/index';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../../domain/ongoingEffects';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -23,6 +22,7 @@ import {
     respondToPrompt,
     respondToPromptOptions,
     respondToPromptWithMergedValue,
+    scoreBaseViaFlow,
     triggerBaseAbilityWithMS,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
@@ -572,7 +572,7 @@ describe('功夫斗士首批能力实现', () => {
     });
 
     it('比武擂台在唯一第一名与并列第一时都会按零战力玩家数给额外 VP', () => {
-        const uniqueFirstResult = scoreOneBase(
+        const uniqueFirstResult = scoreBaseViaFlow(
             makeState({
                 players: {
                     '0': makePlayer('0'),
@@ -626,7 +626,7 @@ describe('功夫斗士首批能力实现', () => {
             ],
             baseDeck: ['base_a'],
         });
-        const tiedResult = scoreOneBase(
+        const tiedResult = scoreBaseViaFlow(
             tiedFirstCore,
             0,
             tiedFirstCore.baseDeck,

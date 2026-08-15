@@ -14,17 +14,11 @@ import {
 import { readCompletedTutorialIds } from './useMatchRoomTutorialLifecycle';
 import { getVisibleTutorialCatalogEntries } from './useMatchRoomRuntimeSetup';
 
-const tutorialChapterAccentByGame = {
-    qidahen: ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'],
-    betrayal: ['#b8975b', '#496246', '#d8c29a', '#8b6f45', '#7e2f2a', '#b8975b'],
-} as const;
-
 const fallbackTutorialChapterAccents = ['#d2b775', '#9f3426', '#ead7a7', '#c59152', '#b85b47', '#d2b775'] as const;
 
-const resolveTutorialCatalogThemeClass = (gameId: string) => {
-    if (gameId === 'betrayal') return 'tutorial-catalog-stage--betrayal';
-    if (gameId === 'qidahen') return 'tutorial-catalog-stage--qidahen';
-    return 'tutorial-catalog-stage--default';
+export type MatchRoomTutorialCatalogTheme = {
+    className?: string;
+    chapterAccents?: readonly string[];
 };
 
 export type MatchRoomTutorialBoardStageModel = {
@@ -32,6 +26,7 @@ export type MatchRoomTutorialBoardStageModel = {
     gameId?: string;
     tutorialId?: string;
     tutorialCatalog: TutorialCollection | null;
+    tutorialCatalogTheme?: MatchRoomTutorialCatalogTheme;
     runtime: MatchRoomTutorialBoardStageRuntimeModel | null;
 };
 
@@ -56,9 +51,10 @@ const MatchRoomTutorialCatalogStage = ({ stage }: { stage: MatchRoomTutorialBoar
         ? entries[0]?.[0]
         : tutorialCatalog.defaultTutorialId;
 
-    const chapterAccents = tutorialChapterAccentByGame[stage.gameId as keyof typeof tutorialChapterAccentByGame]
-        ?? fallbackTutorialChapterAccents;
-    const catalogThemeClass = resolveTutorialCatalogThemeClass(stage.gameId);
+    const chapterAccents = stage.tutorialCatalogTheme?.chapterAccents?.length
+        ? stage.tutorialCatalogTheme.chapterAccents
+        : fallbackTutorialChapterAccents;
+    const catalogThemeClass = stage.tutorialCatalogTheme?.className ?? 'tutorial-catalog-stage--default';
 
     return (
         <div data-testid="tutorial-catalog-stage" className={`tutorial-catalog-stage ${catalogThemeClass}`}>

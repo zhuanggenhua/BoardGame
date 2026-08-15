@@ -114,8 +114,8 @@ export interface UseEventStreamCursorReturn {
  * const { consumeNew } = useEventStreamCursor({ entries });
  * useLayoutEffect(() => {
  *   const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
- *   if (didReset) { clearPendingAttack(); setAbilityMode(null); }
- *   if (didOptimisticRollback) { resetGate(); clearPendingAttack(); }
+ *   if (didReset) { clearPendingVisualState(); setAbilityMode(null); }
+ *   if (didOptimisticRollback) { resetGate(); clearPendingVisualState(); }
  *   if (newEntries.length === 0) return;
  *   // ... 处理 newEntries
  * }, [entries, consumeNew]);
@@ -188,7 +188,7 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
                 suppressEmptyResetRef.current = curLen === 0;
                 // 重置游标到当前最新位置，跳过所有已有事件
                 syncCursorToLatest();
-                // 返回 didOptimisticRollback: true 通知消费者清理 gate/pendingAttack 等状态
+                // 返回 didOptimisticRollback: true 通知消费者清理 gate / pending UI 状态
                 return { entries: [], didReset: false, didOptimisticRollback: true };
             }
         }

@@ -63,7 +63,7 @@ describe('trainingData', () => {
         } as const;
         const sample = buildTrainingDecisionSample({
             rulesVersion: 'test-rules-v1',
-            gameId: 'smashup',
+            gameId: 'test-card-game',
             matchId: 'match-1',
             playerId: '0',
             seatControllerType: 'human',
@@ -78,7 +78,7 @@ describe('trainingData', () => {
                         current: {
                             id: 'i-1',
                             kind: 'simple-choice',
-                            sourceId: 'robot_hoverbot',
+                            sourceId: 'test_hoverbot',
                             playerId: '0',
                             data: {
                                 options: [{
@@ -106,12 +106,12 @@ describe('trainingData', () => {
 
         expect(sample).toMatchObject({
             schemaVersion: 1,
-            gameId: 'smashup',
+            gameId: 'test-card-game',
             matchId: 'match-1',
             seatControllerType: 'human',
             interactionBefore: {
                 id: 'i-1',
-                sourceId: 'robot_hoverbot',
+                sourceId: 'test_hoverbot',
             },
             interactionAfter: null,
         });
@@ -275,7 +275,7 @@ describe('trainingData', () => {
     it('recorder 应继续归档既有 raw 日志', async () => {
         const baseDir = await mkdtemp(path.join(os.tmpdir(), 'bg-training-data-'));
         tempDirs.push(baseDir);
-        const rawDir = path.join(baseDir, 'raw', 'v1', 'dicethrone');
+        const rawDir = path.join(baseDir, 'raw', 'v1', 'legacy-dice-game');
         await mkdir(rawDir, { recursive: true });
         await writeFile(path.join(rawDir, '2026-03-10.jsonl'), '{"matchId":"match-old"}\n', 'utf8');
         const recorder = new JsonlTrainingDataRecorder({
@@ -286,7 +286,7 @@ describe('trainingData', () => {
 
         await recorder.archiveExpiredRawFiles();
 
-        const archivedPath = path.join(baseDir, 'archive', 'v1', 'dicethrone', '2026-03-10.jsonl');
+        const archivedPath = path.join(baseDir, 'archive', 'v1', 'legacy-dice-game', '2026-03-10.jsonl');
         expect(JSON.parse((await readFile(archivedPath, 'utf8')).trim())).toMatchObject({
             matchId: 'match-old',
         });

@@ -14,7 +14,7 @@ import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoRepor
  *
  * ```tsx
  * <GameProvider ...>
- *   <BoardBridge board={DiceThroneBoard} />
+ *   <BoardBridge board={GameBoard} />
  * </GameProvider>
  * ```
  */

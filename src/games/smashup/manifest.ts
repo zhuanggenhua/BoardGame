@@ -56,6 +56,9 @@ const entry: GameManifestEntry = {
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'board-shell',
     mobileBattlefieldZoom: 'shell-pinch-pan',
+    mobileBoardShellLayout: {
+        designWidth: 1160,
+    },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {
         mode: 'package-managed',

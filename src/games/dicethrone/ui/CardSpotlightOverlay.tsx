@@ -12,38 +12,9 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import type { CardPreviewRef } from '../../../core';
 import { UI_Z_INDEX } from '../../../core';
 import SpotlightContainer from './SpotlightContainer';
-import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 
 const SPOTLIGHT_CARD_WIDTH = '16vw';
 const SPOTLIGHT_CARD_ASPECT_RATIO = 0.61;
-
-/** 汇总文本组件（显示伤害加成等信息） */
-const SummaryText: React.FC<{
-    effectKey: string;
-    effectParams: Record<string, string | number>;
-    locale?: string;
-}> = ({ effectKey, effectParams }) => {
-    const { t, i18n } = useTranslation('game-dicethrone');
-    const text = i18n.exists(effectKey, { ns: 'game-dicethrone' })
-        ? t(effectKey, { ...effectParams, defaultValue: effectKey })
-        : effectKey;
-    
-    return (
-        <motion.div
-            data-testid="card-spotlight-summary-text"
-            data-effect-key={effectKey}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-white text-[1.45vw] font-black italic tracking-wider whitespace-nowrap bg-black/60 px-[1.5vw] py-[0.4vw] rounded-full border border-white/20 shadow-lg"
-            style={{
-                textShadow: '0 0 1vw rgba(251, 191, 36, 0.5)',
-            }}
-        >
-            {text}
-        </motion.div>
-    );
-};
 
 /** 特写队列项 */
 export interface CardSpotlightItem {
@@ -138,7 +109,6 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
         return null;
     }
     const currentCardId = getCardIdFromSpotlightItem(currentItem);
-    const hasSummaryText = !!currentItem.summaryText;
 
 
     return (
@@ -163,7 +133,6 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                 data-card-id={currentCardId}
                 data-player-id={String(currentItem.playerId)}
                 data-spotlight-item-id={currentItem.id}
-                className={hasSummaryText ? 'flex items-center gap-[1.5vw]' : undefined}
             >
                 {/* 卡牌（左） */}
                 <CardPreview
@@ -177,20 +146,6 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                         boxShadow: '0 0 1.5vw 0.3vw rgba(251, 191, 36, 0.4)',
                     }}
                 />
-
-                {/* 奖励骰不再进入中央特写；右侧骰盘是唯一的骰子展示与确认入口。 */}
-                {hasSummaryText && (
-                    <div className="flex flex-col items-center gap-[1vw] relative z-[1]">
-                        {/* 汇总文本（如"2个弓面：伤害+2"） */}
-                        {currentItem.summaryText && (
-                            <SummaryText
-                                effectKey={currentItem.summaryText.effectKey}
-                                effectParams={currentItem.summaryText.effectParams}
-                                locale={locale}
-                            />
-                        )}
-                    </div>
-                )}
             </div>
 
 

@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RoomList } from '../RoomList';
+import type { GameManifestEntry } from '../../../shared/gameManifest.types';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -35,10 +36,56 @@ const baseProps = {
     onSpectate: vi.fn(),
 };
 
+const smashUpManifest = {
+    id: 'smashup',
+    type: 'game',
+    enabled: true,
+    titleKey: 'games.smashup.title',
+    descriptionKey: 'games.smashup.description',
+    category: 'card',
+    playersKey: 'games.smashup.players',
+    icon: 'SU',
+    setupOptions: {
+        expansions: {
+            type: 'multi-select',
+            labelKey: 'games.smashup.setup.expansions.label',
+            options: [
+                { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+                { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
+                { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+            ],
+        },
+    },
+} satisfies GameManifestEntry;
+
+const betrayalManifest = {
+    id: 'betrayal',
+    type: 'game',
+    enabled: true,
+    titleKey: 'games.betrayal.title',
+    descriptionKey: 'games.betrayal.description',
+    category: 'card',
+    playersKey: 'games.betrayal.players',
+    icon: '屋',
+    publicRoomSetupSummary: {
+        scenario: {
+            options: {
+                'first-scenario': { labelKey: 'setup.scenario.firstScenario' },
+            },
+            pendingLabel: {
+                labelKey: 'rooms.scenarioPending',
+                namespace: 'lobby',
+                defaultValue: '未定剧本',
+            },
+        },
+    },
+} satisfies GameManifestEntry;
+
 describe('RoomList 扩展摘要', () => {
     it('房间卡片展示已开启扩展，并保留完整展示名', () => {
         render(createElement(RoomList, {
             ...baseProps,
+            gameManifest: smashUpManifest,
             gameTranslationNamespace: 'game-smashup',
             roomItems: [
                 {
@@ -76,6 +123,7 @@ describe('RoomList 扩展摘要', () => {
     it('山屋惊魂房间展示当前剧本或未定剧本', () => {
         render(createElement(RoomList, {
             ...baseProps,
+            gameManifest: betrayalManifest,
             gameTranslationNamespace: 'game-betrayal',
             roomItems: [
                 {

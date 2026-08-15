@@ -54,4 +54,39 @@ describe('Dice2D', () => {
         expect(container.querySelectorAll('[data-face-id]')).toHaveLength(6);
         expect(container.querySelector('canvas')).toBeNull();
     });
+
+    it('同一英雄骰贴图加载过后，新骰子实例不应先闪回白底数字兜底面', async () => {
+        const first = render(
+            <Dice2D
+                value={6}
+                isRolling={false}
+                size="48px"
+                locale="zh-CN"
+                characterId="gunslinger"
+                definitionId="gunslinger-dice"
+            />,
+        );
+
+        const firstSprite = first.container.querySelector('img');
+        expect(firstSprite).not.toBeNull();
+        fireEvent.load(firstSprite!);
+        await waitFor(() => {
+            expect(first.getByTestId('dice-2d')).toHaveAttribute('data-sprite-ready', 'true');
+        });
+        first.unmount();
+
+        const second = render(
+            <Dice2D
+                value={2}
+                isRolling={false}
+                size="48px"
+                locale="zh-CN"
+                characterId="gunslinger"
+                definitionId="gunslinger-dice"
+            />,
+        );
+
+        expect(second.getByTestId('dice-2d')).toHaveAttribute('data-sprite-ready', 'true');
+        expect(second.container.querySelectorAll('[data-face-fallback="glyph"]')).toHaveLength(0);
+    });
 });

@@ -36,14 +36,27 @@ declare module '@3d-dice/dice-box-threejs' {
 
     export interface DiceBoxMaterialInstance {
         map?: {
-            image?: CanvasImageSource;
+            image?: CanvasImageSource & {
+                width?: number;
+                height?: number;
+                naturalWidth?: number;
+                naturalHeight?: number;
+            };
             needsUpdate?: boolean;
             flipY?: boolean;
             generateMipmaps?: boolean;
             colorSpace?: string;
+            minFilter?: unknown;
+            magFilter?: unknown;
             clone?: () => NonNullable<DiceBoxMaterialInstance['map']>;
+            dispose?: () => void;
         } | null;
-        bumpMap?: unknown;
+        bumpMap?: { dispose?: () => void } | null;
+        normalMap?: { dispose?: () => void } | null;
+        roughnessMap?: { dispose?: () => void } | null;
+        metalnessMap?: { dispose?: () => void } | null;
+        emissiveMap?: { dispose?: () => void } | null;
+        alphaMap?: { dispose?: () => void } | null;
         color?: { set: (value: number | string) => void };
         emissive?: { set: (value: number | string) => void };
         emissiveIntensity?: number;
@@ -55,12 +68,15 @@ declare module '@3d-dice/dice-box-threejs' {
         alphaTest?: number;
         depthTest?: boolean;
         depthWrite?: boolean;
+        visible?: boolean;
         needsUpdate?: boolean;
         clone?: () => DiceBoxMaterialInstance;
+        dispose?: () => void;
     }
 
     export interface DiceBoxPreset {
         labels: Array<string | HTMLImageElement | HTMLCanvasElement>;
+        values?: number[];
     }
 
     export interface DiceBoxFactory {
@@ -85,6 +101,9 @@ declare module '@3d-dice/dice-box-threejs' {
             getAttribute?: (name: string) => {
                 array: ArrayLike<number>;
             };
+            index?: {
+                array: ArrayLike<number>;
+            } | null;
             boundingBox?: {
                 min: {
                     x: number;
@@ -166,17 +185,61 @@ declare module '@3d-dice/dice-box-threejs' {
         updateMatrixWorld?: (force?: boolean) => void;
     }
 
+    export interface DiceBoxSceneLike {
+        children?: Array<{
+            type?: string;
+            name?: string;
+            isMesh?: boolean;
+            geometry?: {
+                boundingBox?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
+                computeBoundingBox?: () => void;
+            };
+            position?: { x?: number; y?: number; z?: number };
+            scale?: { x?: number; y?: number; z?: number };
+            visible?: boolean;
+            material?: unknown;
+        }>;
+        traverse?: (visitor: (object: unknown) => void) => void;
+        updateMatrixWorld?: (force?: boolean) => void;
+    }
+
+    export interface DiceBoxCameraLike {
+        fov?: number;
+        aspect?: number;
+        zoom?: number;
+        position?: { x?: number; y?: number; z?: number };
+        near?: number;
+        far?: number;
+        updateProjectionMatrix?: () => void;
+        updateMatrixWorld?: (force?: boolean) => void;
+    }
+
+    export interface DiceBoxRendererLike {
+        domElement: HTMLCanvasElement;
+        render: (scene: unknown, camera: unknown) => void;
+        setClearColor?: (color: number | string, alpha?: number) => void;
+        setClearAlpha?: (alpha: number) => void;
+        clear?: () => void;
+        getClearAlpha?: () => number;
+        getContext?: () => WebGLRenderingContext | WebGL2RenderingContext | null;
+        getContextAttributes?: () => WebGLContextAttributes | null;
+        getRenderTarget?: () => unknown;
+        info?: unknown;
+        outputColorSpace?: unknown;
+        physicallyCorrectLights?: boolean;
+        toneMapping?: unknown;
+        dispose?: () => void;
+        forceContextLoss?: () => void;
+    }
+
     export default class DiceBox {
         constructor(selector: string, config?: DiceBoxConfig);
         initialized: boolean;
         rolling: boolean;
         diceList: DiceBoxDie[];
-        camera: unknown;
-        scene: unknown;
-        renderer: {
-            domElement: HTMLCanvasElement;
-            render: (scene: unknown, camera: unknown) => void;
-        };
+        camera: DiceBoxCameraLike;
+        scene: DiceBoxSceneLike;
+        renderer: DiceBoxRendererLike;
         DiceFactory?: DiceBoxFactory;
         initialize(): Promise<void>;
         roll(notation: string): Promise<unknown>;

@@ -93,7 +93,19 @@ export function buildInteractionSelectabilityDiagnostic(
     const minSelectionCount = typeof multi?.min === 'number' ? multi.min : 1;
     const recoverableOptionIds = minSelectionCount === 0
         ? ['__empty_selection__']
-        : enabledOptions.filter((option) => isEnabledControlChoiceOption(option)).map((option) => option.id);
+        : enabledOptions
+            .filter((option) => {
+                const displayMode = option.displayMode === 'card' || option.displayMode === 'button'
+                    ? option.displayMode
+                    : undefined;
+                return isEnabledControlChoiceOption({
+                    ...option,
+                    label: option.label ?? option.id,
+                    value: option.value,
+                    displayMode,
+                });
+            })
+            .map((option) => option.id);
 
     const selectionState: InteractionSelectabilityDiagnostic['selectionState'] = options.length === 0
         ? 'no-options'

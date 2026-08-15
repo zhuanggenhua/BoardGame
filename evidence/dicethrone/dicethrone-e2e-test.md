@@ -13,10 +13,10 @@
    - 验证 `offensiveRoll -> defensiveRoll` 转换
    - 断言 `pendingAttack` 的 attacker / defender / ability / damage
 
-2. `regression: targeted adds 2 damage and persists`
+2. `regression: targeted adds 2 damage and removes after hit`
    - 构造 `TARGETED` 目标与 `longbow-3-1`
    - 验证结算后目标生命从 `50 -> 45`
-   - 验证 `TARGETED` 未被错误清掉
+   - 验证 `TARGETED` 在触发 +2 伤害后被移除
 
 3. `ui stability: die lock toggle syncs state`
    - 点击骰子锁定/解锁
@@ -47,7 +47,7 @@ npx playwright test e2e/dicethrone/dicethrone.e2e.ts --workers=1
 ```text
 Running 3 tests using 1 worker
   ok 1 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › main flow: moon elf reaches defensive roll
-  ok 2 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › regression: targeted adds 2 damage and persists
+  ok 2 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › regression: targeted adds 2 damage and removes after hit
   ok 3 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › ui stability: die lock toggle syncs state
 
   3 passed
@@ -56,7 +56,7 @@ Running 3 tests using 1 worker
 ## 截图证据
 
 - `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/main-flow-moon-elf-reaches-defensive-roll/`
-- `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/regression-targeted-adds-2-damage-and-persists/`
+- `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/regression-targeted-adds-2-damage-and-removes-after-hit/`
 - `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/ui-stability-die-lock-toggle-syncs-state/`
 
 ## 备注

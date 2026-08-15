@@ -227,6 +227,12 @@ threshold
 edge_check.txt
 scan_results.txt
 .codex-write-test.txt
+/findings.md
+/progress.md
+/task_plan.md
+/WIKI-*.md
+/wiki-*.json
+/pr*.bundle
 .learnings/
 .npm-cache/
 .android-user/

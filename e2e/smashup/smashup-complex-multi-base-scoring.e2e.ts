@@ -57,10 +57,19 @@ async function clickInteractionOption(page: Page, optionId: string, label?: stri
     throw new Error(`交互选项不可点击: ${optionId}`);
 }
 
-async function readCurrentInteraction(page: Page): Promise<null | {
+type CurrentInteraction = {
     sourceId: string;
     options: Array<{ id: string; label?: string; value?: any }>;
-}> {
+};
+
+function isPassOption(option: { id: string; value?: any }): boolean {
+    return option.id === 'skip'
+        || option.id === 'pass'
+        || option.value?.kind === 'pass'
+        || option.value?.skip === true;
+}
+
+async function readCurrentInteraction(page: Page): Promise<null | CurrentInteraction> {
     return page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
         const current = state?.sys?.interaction?.current;
@@ -77,15 +86,57 @@ async function readCurrentInteraction(page: Page): Promise<null | {
     });
 }
 
+async function waitForInteractionSourceIn(page: Page, sourceIds: string[], timeout = 20000): Promise<string> {
+    await page.waitForFunction(
+        (expectedSourceIds: string[]) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const sourceId = state?.sys?.interaction?.current?.data?.sourceId ?? null;
+            return typeof sourceId === 'string' && expectedSourceIds.includes(sourceId);
+        },
+        sourceIds,
+        { timeout, polling: 100 },
+    );
+
+    return page.evaluate(() =>
+        (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId ?? '',
+    );
+}
+
+function findNonPassOptionMatching(
+    interaction: CurrentInteraction | null,
+    matcher: (option: CurrentInteraction['options'][number]) => boolean,
+) {
+    return interaction?.options.find((option) => !isPassOption(option) && matcher(option));
+}
+
+async function chooseReactionOptionMatching(
+    page: Page,
+    matcher: (option: CurrentInteraction['options'][number]) => boolean,
+    description: string,
+): Promise<void> {
+    const currentInteraction = await readCurrentInteraction(page);
+    expect(currentInteraction?.sourceId, `${description}: 当前交互必须是统一反应选择`).toBe('smashup_reaction_choose');
+    const option = findNonPassOptionMatching(currentInteraction, matcher);
+    expect(option, `${description}: 未找到匹配的反应选项`).toBeTruthy();
+    await respondCurrentInteractionByOptionId(page, option!.id);
+}
+
+async function passOpenScoringResponsesUntilClosed(page: Page, maxSteps = 8): Promise<void> {
+    for (let step = 0; step < maxSteps; step += 1) {
+        const currentInteraction = await readCurrentInteraction(page);
+        if (!currentInteraction) {
+            return;
+        }
+        expect(currentInteraction.sourceId, '计分响应收口期间只能停在统一反应选择').toBe('smashup_reaction_choose');
+        await passCurrentSmashupResponse(page);
+    }
+    throw new Error(`计分响应窗口在 ${maxSteps} 次让过后仍未收口`);
+}
+
 async function passCurrentSmashupResponse(page: Page): Promise<void> {
     const currentInteraction = await readCurrentInteraction(page);
     if (currentInteraction) {
-        const skipOption = currentInteraction.options.find((option) => (
-            option.id === 'skip'
-            || option.id === 'pass'
-            || option.value?.kind === 'pass'
-            || option.value?.skip === true
-        ));
+        const skipOption = currentInteraction.options.find(isPassOption);
         if (skipOption) {
             await respondCurrentInteractionByOptionId(page, skipOption.id);
             return;
@@ -216,103 +267,61 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                     phase: state?.sys?.phase,
                     windowType: state?.sys?.responseWindow?.current?.windowType ?? null,
                     interactionId: state?.sys?.interaction?.current?.id ?? null,
-                    interactionSource: state?.sys?.interaction?.current?.sourceId ?? null,
+                    interactionSource: state?.sys?.interaction?.current?.data?.sourceId ?? null,
                     p0Hand: state?.core?.players?.['0']?.hand?.map((card: any) => card.defId) ?? [],
                     scoringEligibleBaseIndices: state?.core?.scoringEligibleBaseIndices ?? null,
                 };
             });
             console.log('[TEST] 推进后状态:', stateAfterAdvance);
 
-            await page.waitForFunction(
-                () => {
-                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                    const windowType = state?.sys?.responseWindow?.current?.windowType;
-                    return state?.sys?.phase === 'scoreBases'
-                        && (windowType === 'meFirst' || windowType === 'afterScoring');
-                },
-                { timeout: 15000, polling: 100 },
-            );
+            await waitForInteractionSourceIn(page, ['smashup_reaction_choose'], 15000);
 
-            const responseWindowState = await page.evaluate(() => {
+            const reactionState = await page.evaluate(() => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                const current = state?.sys?.interaction?.current;
                 return {
                     phase: state?.sys?.phase,
-                    windowType: state?.sys?.responseWindow?.current?.windowType,
-                    currentResponder: state?.sys?.responseWindow?.current?.responderQueue?.[
-                        state?.sys?.responseWindow?.current?.currentResponderIndex ?? 0
-                    ],
+                    sourceId: current?.data?.sourceId ?? null,
+                    playerId: current?.playerId ?? null,
+                    optionIds: (current?.data?.options ?? []).map((option: any) => option.id),
+                    optionLabels: (current?.data?.options ?? []).map((option: any) => option.label),
                 };
             });
 
-            expect(responseWindowState.phase).toBe('scoreBases');
-            expect(['meFirst', 'afterScoring']).toContain(responseWindowState.windowType);
+            expect(reactionState.phase).toBe('scoreBases');
+            expect(reactionState.sourceId).toBe('smashup_reaction_choose');
 
             const overlayVisible = await page.getByTestId('me-first-overlay').isVisible().catch(() => false);
             const reactionPrompt = await readCurrentInteraction(page);
             if (!overlayVisible) {
                 expect(reactionPrompt?.sourceId).toBe('smashup_reaction_choose');
             }
-
-            if (responseWindowState.windowType === 'meFirst') {
-                await game.screenshot('02-me-first-open', testInfo);
-                await passCurrentSmashupResponse(page);
-                await game.screenshot('03-p0-passed-me-first', testInfo);
-
-                await passCurrentSmashupResponse(page);
-
-                await page.waitForFunction(
-                    () => {
-                        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                        return state?.sys?.responseWindow?.current?.windowType === 'afterScoring';
-                    },
-                    { timeout: 15000 },
-                );
-            }
-
-            const afterScoringState = await page.evaluate(() => {
-                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                return {
-                    phase: state?.sys?.phase,
-                    windowType: state?.sys?.responseWindow?.current?.windowType,
-                    currentResponder: state?.sys?.responseWindow?.current?.responderQueue?.[
-                        state?.sys?.responseWindow?.current?.currentResponderIndex ?? 0
-                    ],
-                };
-            });
-
-            expect(afterScoringState.phase).toBe('scoreBases');
-            expect(afterScoringState.windowType).toBe('afterScoring');
-
-            const afterScoringOverlayVisible = await page.getByTestId('me-first-overlay').isVisible().catch(() => false);
-            const afterScoringPrompt = await readCurrentInteraction(page);
-            if (!afterScoringOverlayVisible) {
-                expect(afterScoringPrompt?.sourceId).toBe('smashup_reaction_choose');
-            }
-            await game.screenshot('04-after-scoring-open', testInfo);
+            await expect(
+                page.getByRole('button', { name: /我们乃最强|we are the champions/i }).first(),
+                'afterScoring 应显示玩家可见的“我们乃最强”响应按钮',
+            ).toBeVisible({ timeout: 5000 });
+            await game.screenshot('02-after-scoring-reaction-open', testInfo);
 
             await passCurrentSmashupResponse(page);
-            await game.screenshot('05-p0-passed-after-scoring', testInfo);
+            await game.screenshot('03-p0-passed-after-scoring', testInfo);
 
             const afterFirstAfterScoringPass = await page.evaluate(() => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
                 return {
                     phase: state?.sys?.phase,
-                    windowType: state?.sys?.responseWindow?.current?.windowType ?? null,
-                    currentResponder: state?.sys?.responseWindow?.current?.responderQueue?.[
-                        state?.sys?.responseWindow?.current?.currentResponderIndex ?? 0
-                    ] ?? null,
+                    interactionSource: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
                 };
             });
             console.log('[TEST] afterScoring 首次 PASS 后状态:', afterFirstAfterScoringPass);
 
-            if (afterFirstAfterScoringPass.windowType === 'afterScoring') {
-                await passCurrentSmashupResponse(page);
-            }
+            await passOpenScoringResponsesUntilClosed(page);
 
             await page.waitForFunction(
                 () => {
                     const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                    return !state?.sys?.responseWindow?.current
+                    return !state?.sys?.interaction?.current
+                        && !state?.sys?.responseWindow?.current
                         && state?.sys?.phase === 'playCards'
                         && state?.core?.currentPlayerIndex === 1;
                 },
@@ -325,17 +334,19 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                     phase: state?.sys?.phase,
                     currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
                     responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                    interactionId: state?.sys?.interaction?.current?.id ?? null,
                     p0Vp: state?.core?.players?.['0']?.vp ?? 0,
                     p1Vp: state?.core?.players?.['1']?.vp ?? 0,
                 };
             });
 
             expect(finalState.responseWindowId).toBeNull();
+            expect(finalState.interactionId).toBeNull();
             expect(finalState.phase).toBe('playCards');
             expect(finalState.currentPlayerIndex).toBe(1);
             expect(finalState.p0Vp).toBeGreaterThan(0);
 
-            await game.screenshot('06-final-state', testInfo);
+            await game.screenshot('04-final-state', testInfo);
         } catch (error) {
             if (diagnostics.errors.length > 0) {
                 console.log('[页面诊断]', diagnostics.errors);
@@ -574,12 +585,12 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                 player0: {
                     hand: [],
                     field: [],
-                    factions: ['dinosaurs', 'ninjas'],
+                    factions: ['robots', 'wizards'],
                 },
                 player1: {
                     hand: [],
                     field: [],
-                    factions: ['robots', 'wizards'],
+                    factions: ['dinosaurs', 'ninjas'],
                 },
                 bases: [
                     { defId: 'base_tortuga', minions: [] },
@@ -596,8 +607,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'tortuga-winner-rex',
                                         defId: 'dino_king_rex',
-                                        owner: '0',
-                                        controller: '0',
+                                        owner: '1',
+                                        controller: '1',
                                         basePower: 7,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -608,8 +619,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'tortuga-winner-laser',
                                         defId: 'dino_laser_triceratops',
-                                        owner: '0',
-                                        controller: '0',
+                                        owner: '1',
+                                        controller: '1',
                                         basePower: 4,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -620,8 +631,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'tortuga-winner-assassin',
                                         defId: 'ninja_tiger_assassin',
-                                        owner: '0',
-                                        controller: '0',
+                                        owner: '1',
+                                        controller: '1',
                                         basePower: 4,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -632,8 +643,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'tortuga-winner-shinobi',
                                         defId: 'ninja_shinobi',
-                                        owner: '0',
-                                        controller: '0',
+                                        owner: '1',
+                                        controller: '1',
                                         basePower: 3,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -644,8 +655,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'tortuga-runnerup-archmage',
                                         defId: 'wizard_archmage',
-                                        owner: '1',
-                                        controller: '1',
+                                        owner: '0',
+                                        controller: '0',
                                         basePower: 4,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -662,8 +673,8 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                     {
                                         uid: 'runner-up-traveler',
                                         defId: 'robot_hoverbot',
-                                        owner: '1',
-                                        controller: '1',
+                                        owner: '0',
+                                        controller: '0',
                                         basePower: 3,
                                         powerModifier: 0,
                                         powerCounters: 0,
@@ -700,13 +711,16 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
             await advancePhaseFromUI(page, game);
 
-            await page.waitForFunction(
-                () => {
-                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                    return state?.sys?.interaction?.current?.data?.sourceId === 'base_tortuga';
-                },
-                { timeout: 20000, polling: 100 },
-            );
+            const firstSourceId = await waitForInteractionSourceIn(page, ['smashup_reaction_choose', 'base_tortuga'], 20000);
+            if (firstSourceId === 'smashup_reaction_choose') {
+                await chooseReactionOptionMatching(
+                    page,
+                    (option) => String(option.id).includes('base_tortuga')
+                        || /托尔图加|tortuga|base_tortuga/i.test(String(option.label ?? '')),
+                    '托尔图加 afterScoring',
+                );
+            }
+            await waitForInteractionSourceIn(page, ['base_tortuga'], 20000);
 
             const tortugaInteraction = await readCurrentInteraction(page);
             expect(tortugaInteraction?.sourceId).toBe('base_tortuga');

@@ -1,12 +1,10 @@
 import type { MatchState } from '../types';
-import type { GameAiRuntime } from './types';
+import type { GameAiRuntime, OnlineAiDecisionVisibility } from './types';
 import { resolveCurrentDecisionPlayerId, resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import {
     resolveResponseWindowCurrent,
     resolveResponseWindowPrivateInteractionLockConsistency,
 } from '../responseWindowInteractionLock';
-
-export type OnlineAiDecisionVisibility = 'shared' | 'private-required';
 
 export type OnlineAiDecisionBlockedReason =
     | 'missing-private-overlay'
@@ -65,10 +63,13 @@ export function resolveCurrentPlayerIdFromState(state: MatchState<unknown> | nul
     return resolveCurrentTurnPlayerIdFromState(state);
 }
 
-function resolveCurrentDecisionPlayerIdFromState(state: MatchState<unknown> | null | undefined): string | null {
+function resolveCurrentDecisionPlayerIdFromState(args: {
+    runtime?: GameAiRuntime | null;
+    state: MatchState<unknown> | null | undefined;
+}): string | null {
     return resolveCurrentDecisionPlayerId({
-        state,
-        preferPendingAttackDefenderAsDecisionOwner: true,
+        state: args.state,
+        resolveCurrentDecisionPlayerId: args.runtime?.resolveCurrentDecisionPlayerId,
     });
 }
 
@@ -79,6 +80,7 @@ export function resolveEventStreamNextIdFromState(state: MatchState<unknown> | n
 }
 
 function resolveVisibilityByDefault(args: {
+    runtime?: GameAiRuntime | null;
     sharedState: MatchState<unknown>;
     privateOverlay: MatchState<unknown> | null;
     playerId: string;
@@ -109,7 +111,10 @@ function resolveVisibilityByDefault(args: {
     }
 
     const sharedPhase = resolveStatePhase(args.sharedState);
-    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.sharedState);
+    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState({
+        runtime: args.runtime,
+        state: args.sharedState,
+    });
     const setupLikePhases = new Set(['setup', 'characterSelection', 'characterSelect', 'factionSelect']);
     const isSetupLikePhase = typeof sharedPhase === 'string' && setupLikePhases.has(sharedPhase);
 
@@ -236,6 +241,7 @@ function hasCompatibleCurrentInteractionOptions(args: {
 }
 
 function isPrivateOverlayFreshEnough(args: {
+    runtime?: GameAiRuntime | null;
     sharedState: MatchState<unknown>;
     privateOverlay: MatchState<unknown>;
     playerId: string;
@@ -290,8 +296,14 @@ function isPrivateOverlayFreshEnough(args: {
         }
     }
 
-    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.sharedState);
-    const privateCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.privateOverlay);
+    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState({
+        runtime: args.runtime,
+        state: args.sharedState,
+    });
+    const privateCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState({
+        runtime: args.runtime,
+        state: args.privateOverlay,
+    });
     if (!isResponseWindowDecision && !isInteractionDecision
         && (sharedCurrentPlayerId !== args.playerId || privateCurrentPlayerId !== args.playerId)) {
         return false;
@@ -313,6 +325,7 @@ function isPrivateOverlayFreshEnough(args: {
 }
 
 function shouldPreferSeatSnapshotForSharedVisibility(args: {
+    runtime?: GameAiRuntime | null;
     sharedState: MatchState<unknown>;
     privateOverlay: MatchState<unknown> | null;
     playerId: string;
@@ -334,6 +347,7 @@ function shouldPreferSeatSnapshotForSharedVisibility(args: {
     }
 
     return isPrivateOverlayFreshEnough({
+        runtime: args.runtime,
         sharedState: args.sharedState,
         privateOverlay: args.privateOverlay,
         playerId: args.playerId,
@@ -377,6 +391,7 @@ export function resolveOnlineAiDecisionView(
 
     const visibility = runtimeVisibility
         ?? resolveVisibilityByDefault({
+            runtime: args.runtime,
             sharedState: args.sharedState,
             privateOverlay,
             playerId: args.playerId,
@@ -395,6 +410,7 @@ export function resolveOnlineAiDecisionView(
 
     if (visibility === 'shared') {
         const visibleState = shouldPreferSeatSnapshotForSharedVisibility({
+            runtime: args.runtime,
             sharedState: args.sharedState,
             privateOverlay,
             playerId: args.playerId,
@@ -430,6 +446,7 @@ export function resolveOnlineAiDecisionView(
     }
 
     if (!isPrivateOverlayFreshEnough({
+        runtime: args.runtime,
         sharedState: args.sharedState,
         privateOverlay,
         playerId: args.playerId,

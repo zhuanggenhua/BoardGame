@@ -42,7 +42,7 @@ export interface NativeAppUpdateTaskSnapshot {
     updatedAt?: number;
 }
 
-export interface NativeAppUpdatePrepareResult extends NativeAppUpdateTaskSnapshot {
+export interface NativeAppUpdatePrepareResult extends Omit<NativeAppUpdateTaskSnapshot, 'status'> {
     status?: NativeAppUpdateTaskStatus | 'installer-launched';
 }
 

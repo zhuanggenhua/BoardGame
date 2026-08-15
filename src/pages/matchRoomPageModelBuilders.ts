@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { getGameById } from '../config/games.config';
-import { getGamePageDataAttributes } from '../games/mobileSupport';
+import { getGamePageDataAttributes } from '../shared/mobileSupport';
 import type { MatchRoomBlockingState } from './matchRoomBlockingResolver';
 import type {
     MatchRoomOnlineBoardStageModel,
@@ -12,6 +12,7 @@ import {
 } from './matchRoomStageRuntimeModelBuilders';
 import type { MatchRoomPageIdentityModel } from './useMatchRoomPageIdentity';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
+import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
 import type {
     MatchRoomOnlineStageAdapter,
     MatchRoomPageRuntimeModel,
@@ -35,6 +36,10 @@ export type MatchRoomTutorialHudModel = {
     onDestroy: MatchRoomPageRuntimeModel['tutorialHud']['onDestroy'];
     onForceExit: MatchRoomPageRuntimeModel['tutorialHud']['onForceExit'];
     isLoading: boolean;
+    preferredFullscreenOrientation?: ReturnType<typeof buildGameHudRuntimeProps>['preferredFullscreenOrientation'];
+    renderRuntimeSettings?: ReturnType<typeof buildGameHudRuntimeProps>['renderRuntimeSettings'];
+    availableEmotes: ReturnType<typeof buildGameHudRuntimeProps>['availableEmotes'];
+    resolveEmote: ReturnType<typeof buildGameHudRuntimeProps>['resolveEmote'];
 };
 
 export type MatchRoomPageShellModel = {
@@ -90,6 +95,10 @@ export function buildTutorialHudModel(args: {
         onDestroy: pageRuntime.tutorialHud.onDestroy,
         onForceExit: pageRuntime.tutorialHud.onForceExit,
         isLoading: pageRuntime.tutorialHud.isLoading,
+        ...buildGameHudRuntimeProps({
+            gameId,
+            gameConfig: pageIdentity.gameConfig,
+        }),
     };
 }
 
@@ -109,6 +118,7 @@ export function buildTutorialStageModel(args: {
         gameId,
         tutorialId: stage.tutorialId,
         tutorialCatalog: stage.tutorialCatalog,
+        tutorialCatalogTheme: pageIdentity.gameConfig?.pageShell?.tutorialCatalogTheme,
         runtime: buildMatchRoomTutorialBoardRuntimeModel({
             gameId,
             stage,

@@ -8,6 +8,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SU_COMMANDS } from '../domain/types';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
 import {
     getPromptOptions,
     getPromptSourceId,
@@ -55,15 +57,25 @@ function makeMeFirstState() {
     });
     const matchState = makeMatchState(core);
     matchState.sys.phase = 'scoreBases';
-    matchState.sys.responseWindow.current = {
-        windowId: 'meFirst_scoreBases_1',
-        responderQueue: ['0', '1'],
-        currentResponderIndex: 0,
-        passedPlayers: [],
-        windowType: 'meFirst',
-        sourceId: 'scoreBases',
-    };
-    return matchState;
+    const baseRef = createScoringBaseRef(core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造便衣忍者 Me First 回归测试的基地引用');
+    }
+    const scoringState = setScoringSession(matchState, {
+        ...createScoringSession(core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    return startSmashUpReactionSession(scoringState, {
+        frameId: 'score-before:0:hidden-ninja-interaction-bug',
+        frameKind: 'score-before',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'meFirst',
+    });
 }
 
 describe('便衣忍者交互创建 Bug', () => {

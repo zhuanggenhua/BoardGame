@@ -28,6 +28,7 @@ const FALLBACK_FLOW_HOST_BASELINE: FlowHostBaseline = {
     description: 'flow-host 依赖缺失，当前使用降级基线占位',
     version: 'unknown',
 };
+const FLOW_HOST_CORE_PACKAGE = '@flow-host/core';
 
 const buildForkBaseline = (baseline: FlowHostBaseline): ForkBaseline => ({
     ...baseline,
@@ -55,7 +56,7 @@ export async function resolveFlowHostCatalog(): Promise<WorkbenchFlowHostCatalog
     }
 
     try {
-        const module = await import('@flow-host/core');
+        const module = await import(/* @vite-ignore */ FLOW_HOST_CORE_PACKAGE);
         const baseline = (module as { FLOWISE_HOST_BASELINE?: FlowHostBaseline }).FLOWISE_HOST_BASELINE;
         const workflowPacks = (module as { FLOW_HOST_WORKFLOW_PACK_SUMMARIES?: WorkflowPackSummary[] })
             .FLOW_HOST_WORKFLOW_PACK_SUMMARIES;

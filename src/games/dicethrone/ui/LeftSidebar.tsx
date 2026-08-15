@@ -32,6 +32,7 @@ export const LeftSidebar = ({
     onKnockdownClick,
     canRemoveKnockdown,
     isSelfShaking,
+    isSelfCpShaking,
     selfDamageFlashActive,
     selfDamageFlashDamage,
     overrideHp,
@@ -67,6 +68,8 @@ export const LeftSidebar = ({
     canRemoveKnockdown?: boolean;
     /** 自己是否正在震动（受击） */
     isSelfShaking?: boolean;
+    /** 自己 CP 条是否正在震动 */
+    isSelfCpShaking?: boolean;
     /** 自己受击 DamageFlash 是否激活 */
     selfDamageFlashActive?: boolean;
     /** 自己受击伤害值 */
@@ -158,7 +161,8 @@ export const LeftSidebar = ({
                             cpRef={selfCpRef}
                             hitStopActive={hitStopActive}
                             hitStopConfig={hitStopConfig}
-                            isShaking={isSelfShaking}
+                            isHpShaking={isSelfShaking}
+                            isCpShaking={isSelfCpShaking}
                             damageFlashActive={selfDamageFlashActive}
                             damageFlashDamage={selfDamageFlashDamage}
                             overrideHp={overrideHp}

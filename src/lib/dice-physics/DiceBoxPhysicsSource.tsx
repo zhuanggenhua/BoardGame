@@ -395,7 +395,7 @@ export function DiceBoxPhysicsSource({
                                 lockedIndices: [...lockedIndices],
                             };
                         }
-                    } else if (activeMotionRef.current?.type !== 'reroll' || activeMotionRef.current.key !== rerollMotionKey) {
+                    } else {
                         await playRerollMotion(rerollMotionKey, rerollIndices, values, lockedIndices);
                     }
                     return;

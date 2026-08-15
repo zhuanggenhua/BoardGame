@@ -71,23 +71,7 @@ export function readOnlineAiCurrentInteractionSemanticFingerprint(
     playerId: string,
     engineConfig?: OnlineAiRecoveryEngineConfig | null,
 ): string | null {
-    const currentInteraction = (state.sys?.interaction as {
-        current?: {
-            id?: unknown;
-            playerId?: unknown;
-            kind?: unknown;
-            data?: {
-                sourceId?: unknown;
-                title?: unknown;
-                slider?: unknown;
-                meta?: unknown;
-                confirmValue?: unknown;
-                allowedDieIds?: unknown;
-                completedDieIds?: unknown;
-                options?: unknown;
-            };
-        };
-    } | undefined)?.current;
+    const currentInteraction = (state.sys?.interaction as CurrentInteractionState | undefined)?.current;
     if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
         return null;
     }
@@ -160,7 +144,7 @@ export function resolveOnlineAiRecoveryFingerprint(args: {
             return buildResponseWindowRecoveryFingerprintHint(
                 state,
                 candidate.playerId,
-                candidate.reason,
+                candidateReason === 'response-loop' ? 'response-loop' : 'response-window',
             );
         }
         return candidate.fingerprintHint ?? progressMarker;

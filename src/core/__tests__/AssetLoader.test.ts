@@ -131,6 +131,23 @@ afterEach(() => {
         ]);
     });
 
+    it('同源直连素材时，应收敛 /official 与 /assets 等价候选，避免同图重复下载', () => {
+        const origin = window.location.origin;
+        setAssetsBaseUrl(`${origin}/official`);
+        setAssetHashesForTesting({
+            'i18n/zh-CN/smashup/cards/compressed/goblins.webp': 'f8c7fa52',
+        });
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/smashup/cards/compressed/goblins': 1,
+        });
+
+        const candidates = getLocalizedImageCandidateUrls('smashup/cards/goblins', 'zh-CN');
+
+        expect(candidates).toEqual([
+            `${origin}/official/i18n/zh-CN/smashup/cards/compressed/goblins.webp?v=f8c7fa52`,
+        ]);
+    });
+
     it('当前语言缺图但 fallback 语言存在时，应直接使用 fallback 语言', () => {
         setLocalizedImageIndexForTesting({
             'i18n/en/splendor/compressed/picture': 1,

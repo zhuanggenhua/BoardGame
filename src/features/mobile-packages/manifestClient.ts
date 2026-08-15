@@ -129,6 +129,8 @@ interface RemotePackInfo {
     version?: string | null;
     url?: string | null;
     checksum?: string | null;
+    fallbackUrl?: string | null;
+    fallbackChecksum?: string | null;
     bytes?: number | null;
     fallbackBytes?: number | null;
     fileCount?: number | null;

@@ -699,7 +699,7 @@ export interface DiceThroneRollContextSettlement {
 }
 
 export interface DiceThroneRollContextDisplay {
-    /** 直接可操作的骰子统一进入右侧 2D 骰盘；compactOverlay 只留给需要继续选择的比较/目标层。 */
+    /** 直接可操作和只读回看的骰子统一进入右侧 2D 骰盘；compactOverlay 只留给无骰子本体的结果/选择层。 */
     surface: 'diceTray' | 'compactOverlay' | 'recapOnly';
     replayOnly: boolean;
     summaryKey?: string;

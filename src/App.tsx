@@ -23,12 +23,13 @@ import { MobileTextEntryProxyLayer } from './components/system/MobileTextEntryPr
 import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
-import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
+import { MobileOrientationGuard, type GameMobileEntry } from './components/common/MobileOrientationGuard';
 import { ModalStackRoot } from './components/system/ModalStackRoot';
 import { installGlobalErrorContextCapture } from './lib/feedback/errorContext';
 import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
 import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
+import { GAME_MANIFEST, GAME_MANIFEST_BY_ID } from './games/manifest';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 import { GlobalHUD } from './components/system/GlobalHUD';
 import { CONFIG_REVIEW_PAGE_ROUTES, ConfigReviewRoutePage } from './pages/ConfigReviewRoutes';
@@ -60,6 +61,16 @@ const LazyAndroidNativeUpdateManager = React.lazy(() => import('./components/sys
 const LazyAndroidBackNavigationBridge = React.lazy(() => import('./components/system/AndroidBackNavigationBridge').then((module) => ({ default: module.AndroidBackNavigationBridge })));
 
 const queryClient = new QueryClient();
+
+const resolveBuiltInGameMobileEntry = (gameId: string): GameMobileEntry | undefined => (
+  GAME_MANIFEST_BY_ID[gameId]
+);
+
+const loadDynamicGameMobileEntry = async (gameId: string): Promise<GameMobileEntry | undefined> => {
+  const { getGameById, refreshUgcGames } = await import('./config/games.config');
+  await refreshUgcGames();
+  return getGameById(gameId);
+};
 
 /**
  * 教程路由专用包装组件。
@@ -95,16 +106,18 @@ const MobileReleasePage = React.lazy(() => import('./pages/admin/MobileRelease')
 const SmashUp4PLayoutTest = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/SmashUp4PLayoutTest')) : null;
 const DevMobileEvidenceCaptureAgent = import.meta.env.DEV
   ? React.lazy(() =>
-      import('./components/system/MobileEvidenceCaptureAgent').then(m => ({ default: m.MobileEvidenceCaptureAgent })),
+      import('./games/MobileEvidenceCaptureAgent'),
     )
   : null;
 
 const AppRouteChrome = ({
   isNativeAndroid,
   isNativeMobile,
+  feedbackGameOptions,
 }: {
   isNativeAndroid: boolean;
   isNativeMobile: boolean;
+  feedbackGameOptions: typeof GAME_MANIFEST;
 }) => {
   const location = useLocation();
   const isPlayRoute = location.pathname.startsWith('/play/');
@@ -124,7 +137,7 @@ const AppRouteChrome = ({
       <TextEntryAutoScrollAgent />
       <MobileTextEntryProxyLayer />
       <ViewportDebugProbe />
-      {!isPlayRoute ? <GlobalHUD /> : null}
+      {!isPlayRoute ? <GlobalHUD feedbackGameOptions={feedbackGameOptions} /> : null}
       <ModalStackRoot />
       <React.Suspense fallback={null}>
         <LazyToastViewport />
@@ -217,7 +230,10 @@ const AppContent = () => {
             <TutorialProvider>
               <BrowserRouter>
                 <BrowserCompatibilityGate>
-                <MobileOrientationGuard>
+                <MobileOrientationGuard
+                  resolveGameMobileEntry={resolveBuiltInGameMobileEntry}
+                  loadGameMobileEntry={loadDynamicGameMobileEntry}
+                >
                   <Routes>
                     <Route
                       path="/"
@@ -369,7 +385,11 @@ const AppContent = () => {
                       )}
                     />
                     </Routes>
-                    <AppRouteChrome isNativeAndroid={isNativeAndroid} isNativeMobile={isNativeMobile} />
+                    <AppRouteChrome
+                      isNativeAndroid={isNativeAndroid}
+                      isNativeMobile={isNativeMobile}
+                      feedbackGameOptions={GAME_MANIFEST}
+                    />
                 </MobileOrientationGuard>
                 </BrowserCompatibilityGate>
               </BrowserRouter>

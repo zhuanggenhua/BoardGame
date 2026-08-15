@@ -5,6 +5,7 @@ import { clearRegistry, resolveSpecial } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { reduce } from '../../domain/reduce';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import {
@@ -31,6 +32,23 @@ beforeAll(() => {
     clearInteractionHandlers();
     initAllAbilities();
 });
+
+function attachBeforeScoringReactionSession(
+    matchState: ReturnType<typeof makeMatchState>,
+    sourceBaseIndex: number,
+): ReturnType<typeof makeMatchState> {
+    matchState.sys.phase = 'scoreBases';
+    return startSmashUpReactionSession(matchState, {
+        frameId: `score-before:${sourceBaseIndex}:kitty-cats-test`,
+        frameKind: 'score-before',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex,
+        responseWindowType: 'meFirst',
+    });
+}
 
 describe('Kitty Cats abilities', () => {
     it('kitty_cats_mr_grumpers 打出后选择任意随从并给到回合临时 -2 力量', () => {
@@ -355,19 +373,7 @@ describe('Kitty Cats abilities', () => {
                 ongoingActions: [],
             }],
         });
-        const matchState = makeMatchState(core);
-        matchState.sys.phase = 'scoreBases';
-        matchState.sys.responseWindow = {
-            current: {
-                id: 'me-first-test',
-                windowType: 'meFirst',
-                sourceId: 'test',
-                responderQueue: ['0', '1'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-                sourceBaseIndex: 0,
-            },
-        } as any;
+        const matchState = attachBeforeScoringReactionSession(makeMatchState(core), 0);
 
         const played = runCommand(
             matchState,
@@ -573,19 +579,7 @@ describe('Kitty Cats abilities', () => {
                 ongoingActions: [],
             }],
         });
-        const matchState = makeMatchState(core);
-        matchState.sys.phase = 'scoreBases';
-        matchState.sys.responseWindow = {
-            current: {
-                id: 'me-first-test',
-                windowType: 'meFirst',
-                sourceId: 'test',
-                responderQueue: ['0', '1'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-                sourceBaseIndex: 0,
-            },
-        } as any;
+        const matchState = attachBeforeScoringReactionSession(makeMatchState(core), 0);
 
         const result = special!({
             playerId: '0',

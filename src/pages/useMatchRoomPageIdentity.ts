@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getGameById } from '../config/games.config';
-import { getGamePageDataAttributes } from '../games/mobileSupport';
+import { getGamePageDataAttributes } from '../shared/mobileSupport';
 import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 import { isTutorialRoutePath } from './matchRoomRuntime';

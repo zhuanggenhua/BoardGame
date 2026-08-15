@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
-import { SmashUpDomain, scoreOneBase } from '../domain';
+import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
 import { createSmashUpEventSystem } from '../domain/systems';
@@ -33,6 +33,7 @@ import {
     getPromptOptions,
     getPromptPlayerId,
     getPromptSourceId,
+    scoreBaseViaFlow,
     getSimpleChoicePrompt,
 } from './helpers';
 
@@ -175,7 +176,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 会把基地级总力量修正计入 rankings.power', () => {
+        it('scoreBaseViaFlow 会把基地级总力量修正计入 rankings.power', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -196,7 +197,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED);
 
             expect(scoredEvent).toBeDefined();
@@ -207,7 +208,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 在并列第一时给并列玩家第一位分，并跳过第二位', () => {
+        it('scoreBaseViaFlow 在并列第一时给并列玩家第一位分，并跳过第二位', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -230,7 +231,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -241,7 +242,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 在并列第二时给并列玩家第二位分', () => {
+        it('scoreBaseViaFlow 在并列第二时给并列玩家第二位分', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -264,7 +265,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -275,7 +276,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 在三人并列第一时给所有并列玩家第一位分', () => {
+        it('scoreBaseViaFlow 在三人并列第一时给所有并列玩家第一位分', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -298,7 +299,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -309,7 +310,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 对并列玩家逐个应用巨龙 VP 修正', () => {
+        it('scoreBaseViaFlow 对并列玩家逐个应用巨龙 VP 修正', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.ALIENS] }),
@@ -330,7 +331,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -340,7 +341,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 对并列玩家逐个应用废墟 VP 修正', () => {
+        it('scoreBaseViaFlow 对并列玩家逐个应用废墟 VP 修正', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.ALIENS] }),
@@ -361,7 +362,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -371,7 +372,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 会保留武士 POD 计分弃牌瞬间的有效战力并额外给 1VP', () => {
+        it('scoreBaseViaFlow 会保留武士 POD 计分弃牌瞬间的有效战力并额外给 1VP', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.SAMURAI_POD, SMASHUP_FACTION_IDS.ALIENS] }),
@@ -392,7 +393,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
             const bonusVpEvent = result.events.find((event) =>
                 event.type === SU_EVENTS.VP_AWARDED
@@ -408,7 +409,7 @@ describe('基地记分与力量计算', () => {
             expect(finalState.players['0'].vp).toBe(scoredEvent.payload.rankings[0].vp + 1);
         });
 
-        it('scoreOneBase 会把武士 POD 的临时力量也计入弃牌时的 +1VP 判定', () => {
+        it('scoreBaseViaFlow 会把武士 POD 的临时力量也计入弃牌时的 +1VP 判定', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.SAMURAI_POD, SMASHUP_FACTION_IDS.ALIENS] }),
@@ -429,7 +430,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
             const bonusVpEvent = result.events.find((event) =>
                 event.type === SU_EVENTS.VP_AWARDED
@@ -445,7 +446,7 @@ describe('基地记分与力量计算', () => {
             expect(finalState.players['0'].vp).toBe(scoredEvent.payload.rankings[0].vp + 1);
         });
 
-        it('scoreOneBase 在 matchState.core 已更新时使用最新基地状态计分', () => {
+        it('scoreBaseViaFlow 在 matchState.core 已更新时使用最新基地状态计分', () => {
             const staleState: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -485,7 +486,7 @@ describe('基地记分与力量计算', () => {
                 sys: { interaction: { current: undefined, queue: [] } },
             } as any;
 
-            const result = scoreOneBase(staleState, 0, [], '0', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(staleState, 0, [], '0', 1000, undefined, matchState);
             const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
 
             expect(scoredEvent).toBeDefined();
@@ -495,7 +496,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 会让 Samurai-Chan POD 在基地计分弃牌后抓 1 张牌', () => {
+        it('scoreBaseViaFlow 会让 Samurai-Chan POD 在基地计分弃牌后抓 1 张牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -521,7 +522,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const drawEvent = result.events.find((event) =>
                 event.type === SU_EVENTS.CARDS_DRAWN
                 && (event as any).payload?.playerId === '0'
@@ -531,7 +532,7 @@ describe('基地记分与力量计算', () => {
             expect(drawEvent).toBeDefined();
         });
 
-        it('scoreOneBase 会先清场再让 Samurai-Chan POD 从空牌库重洗弃牌堆抽牌', () => {
+        it('scoreBaseViaFlow 会先清场再让 Samurai-Chan POD 从空牌库重洗弃牌堆抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -557,7 +558,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const clearIndex = result.events.findIndex((event) => event.type === SU_EVENTS.BASE_CLEARED);
             const reshuffleIndex = result.events.findIndex((event) =>
                 event.type === SU_EVENTS.DECK_RESHUFFLED
@@ -578,7 +579,7 @@ describe('基地记分与力量计算', () => {
             expect(finalState.players['0'].discard.map((card: any) => card.uid)).not.toContain('discard-draw-1');
         });
 
-        it('scoreOneBase 会让 Sleeping Beauty 在基地计分弃牌后洗回拥有者牌库', () => {
+        it('scoreBaseViaFlow 会让 Sleeping Beauty 在基地计分弃牌后洗回拥有者牌库', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -604,7 +605,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const reordered = result.events.find((event) =>
                 event.type === SU_EVENTS.DECK_REORDERED
                 && (event as any).payload?.playerId === '0'
@@ -645,7 +646,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const reorderEvents = result.events.filter((event) =>
                 event.type === SU_EVENTS.DECK_REORDERED
                 && (event as any).payload?.playerId === '0'
@@ -659,7 +660,7 @@ describe('基地记分与力量计算', () => {
             expect(finalState.players['0'].discard.map((card: any) => card.uid)).not.toContain('sleep-1');
         });
 
-        it('scoreOneBase 会让 Doppelganger 在基地计分弃牌后提示从牌库打随从到原基地', () => {
+        it('scoreBaseViaFlow 会让 Doppelganger 在基地计分弃牌后提示从牌库打随从到原基地', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -693,7 +694,7 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000, undefined, matchState);
             const current = result.matchState?.sys.interaction.current as any;
             const optionUids = (current?.data?.options ?? [])
                 .map((option: any) => option?.value?.cardUid)
@@ -706,7 +707,7 @@ describe('基地记分与力量计算', () => {
             expect((current?.data?.options ?? []).some((option: any) => option?.value?.skip === true)).toBe(true);
         });
 
-        it('scoreOneBase 会让 Honor the Fallen 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
+        it('scoreBaseViaFlow 会让 Honor the Fallen 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -731,7 +732,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -740,7 +741,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Honor the Fallen POD 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
+        it('scoreBaseViaFlow 会让 Honor the Fallen POD 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -765,7 +766,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -774,7 +775,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Sakura Garden 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
+        it('scoreBaseViaFlow 会让 Sakura Garden 在基地计分弃牌后按离场随从 LKI 抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -799,7 +800,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -834,7 +835,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const drawEvents = result.events.filter(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
                 && (event as any).payload?.playerId === '0'
@@ -845,7 +846,7 @@ describe('基地记分与力量计算', () => {
             expect((drawEvents[0] as any).payload?.cardUids).not.toContain('sakura-draw-b');
         });
 
-        it('scoreOneBase 会让 Samurai Chan 自身在基地计分弃牌后按 self-source LKI 抽牌', () => {
+        it('scoreBaseViaFlow 会让 Samurai Chan 自身在基地计分弃牌后按 self-source LKI 抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -870,7 +871,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -879,7 +880,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 World Champs Samurai Chan 自身在基地计分弃牌后抽 1 张牌', () => {
+        it('scoreBaseViaFlow 会让 World Champs Samurai Chan 自身在基地计分弃牌后抽 1 张牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -904,7 +905,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -939,7 +940,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const drawEvents = result.events.filter(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
                 && (event as any).payload?.playerId === '0'
@@ -950,7 +951,7 @@ describe('基地记分与力量计算', () => {
             expect((drawEvents[0] as any).payload?.cardUids).not.toContain('wc-chan-draw-b');
         });
 
-        it('scoreOneBase 会让 Shogun 在其他己方随从计分弃牌后获得 1 个力量指示物', () => {
+        it('scoreBaseViaFlow 会让 Shogun 在其他己方随从计分弃牌后获得 1 个力量指示物', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -981,7 +982,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.POWER_COUNTER_ADDED
@@ -990,7 +991,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Shogun POD 在其他己方 POD 随从计分弃牌后获得 1 个力量指示物', () => {
+        it('scoreBaseViaFlow 会让 Shogun POD 在其他己方 POD 随从计分弃牌后获得 1 个力量指示物', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1021,7 +1022,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.POWER_COUNTER_ADDED
@@ -1030,7 +1031,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Final Haiku 在宿主计分弃牌后给其他己方随从 +2 临时力量', () => {
+        it('scoreBaseViaFlow 会让 Final Haiku 在宿主计分弃牌后给其他己方随从 +2 临时力量', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1073,7 +1074,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.TEMP_POWER_ADDED
@@ -1087,7 +1088,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(false);
         });
 
-        it('scoreOneBase 会让 Final Haiku POD 在宿主计分弃牌后给其他己方随从 +2 临时力量', () => {
+        it('scoreBaseViaFlow 会让 Final Haiku POD 在宿主计分弃牌后给其他己方随从 +2 临时力量', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1130,7 +1131,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.TEMP_POWER_ADDED
@@ -1144,7 +1145,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(false);
         });
 
-        it('scoreOneBase 会让 Way of the Warrior 标记的随从在计分弃牌后给施放者抽两张', () => {
+        it('scoreBaseViaFlow 会让 Way of the Warrior 标记的随从在计分弃牌后给施放者抽两张', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1186,7 +1187,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -1196,7 +1197,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Way of the Warrior POD 标记的随从在计分弃牌后给施放者抽两张', () => {
+        it('scoreBaseViaFlow 会让 Way of the Warrior POD 标记的随从在计分弃牌后给施放者抽两张', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1238,7 +1239,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -1248,7 +1249,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Viking Funeral 在宿主计分弃牌后奖励 1VP 并移出该宿主', () => {
+        it('scoreBaseViaFlow 会让 Viking Funeral 在宿主计分弃牌后奖励 1VP 并移出该宿主', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1279,7 +1280,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.VP_AWARDED
@@ -1295,7 +1296,7 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
-        it('scoreOneBase 会让 Bewitched 在宿主计分弃牌后提示行动拥有者转移附着', () => {
+        it('scoreBaseViaFlow 会让 Bewitched 在宿主计分弃牌后提示行动拥有者转移附着', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1343,7 +1344,7 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000, undefined, matchState);
             const current = result.matchState?.sys.interaction.current as any;
             const optionUids = (current?.data?.options ?? []).map((option: any) => option?.value?.minionUid);
 
@@ -1407,12 +1408,12 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000, undefined, matchState);
 
             expect(countPromptsBySourceId(result.matchState, 'world_champs_bewitched_transfer')).toBe(1);
         });
 
-        it('scoreOneBase 会让 Gremlin POD 在被他人控制但归自己拥有时计分弃牌后给拥有者抽牌', () => {
+        it('scoreBaseViaFlow 会让 Gremlin POD 在被他人控制但归自己拥有时计分弃牌后给拥有者抽牌', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1450,7 +1451,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
@@ -1502,7 +1503,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '1', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '1', 1000);
             const drawEvents = result.events.filter(event =>
                 event.type === SU_EVENTS.CARDS_DRAWN
                 && (event as any).payload?.playerId === '0',
@@ -1512,7 +1513,7 @@ describe('基地记分与力量计算', () => {
             expect((drawEvents[0] as any).payload?.cardUids).toEqual(['gremlin-draw-a']);
         });
 
-        it('scoreOneBase 会让 Worker POD 在计分弃牌后提示从弃牌堆打到另一基地', () => {
+        it('scoreBaseViaFlow 会让 Worker POD 在计分弃牌后提示从弃牌堆打到另一基地', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1558,7 +1559,7 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000, undefined, matchState);
             const current = result.matchState?.sys.interaction.current as any;
             const optionBaseIndices = (current?.data?.options ?? [])
                 .map((option: any) => option?.value?.baseIndex)
@@ -1616,12 +1617,12 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000, undefined, matchState);
 
             expect(countPromptsBySourceId(result.matchState, 'giant_ant_worker_pod_replay')).toBe(1);
         });
 
-        it('scoreOneBase 会让 Igor 在清场弃牌事实后只影响仍在场的己方随从', () => {
+        it('scoreBaseViaFlow 会让 Igor 在清场弃牌事实后只影响仍在场的己方随从', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1674,7 +1675,7 @@ describe('基地记分与力量计算', () => {
                 sys: createInitialSystemState(PLAYER_IDS, systems),
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000, undefined, matchState);
             const reactionPrompt = getSimpleChoicePrompt(result.matchState!, 'smashup_reaction_choose');
             const igorTrigger = result.matchState!.core.triggerQueue?.find((trigger: any) =>
                 trigger.sourceDefId === 'frankenstein_igor');
@@ -1699,7 +1700,7 @@ describe('基地记分与力量计算', () => {
             expect(optionUids).not.toContain('igor-same-base-ally');
         });
 
-        it('scoreOneBase 会让 Death on Six Legs 在己方随从计分弃牌后获得 1 个力量指示物', () => {
+        it('scoreBaseViaFlow 会让 Death on Six Legs 在己方随从计分弃牌后获得 1 个力量指示物', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1738,7 +1739,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED
@@ -1787,7 +1788,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
             const counterEvents = result.events.filter(event =>
                 event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED
                 && (event as any).payload?.titanUid === 'six-legs-titan-a'
@@ -1798,7 +1799,7 @@ describe('基地记分与力量计算', () => {
             expect((counterEvents[0] as any).payload?.amount).toBe(1);
         });
 
-        it('scoreOneBase 会让 Bushi 自身在基地计分弃牌后按离场力量 LKI 得分', () => {
+        it('scoreBaseViaFlow 会让 Bushi 自身在基地计分弃牌后按离场力量 LKI 得分', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0', {
@@ -1820,7 +1821,7 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
 
             expect(result.events.some(event =>
                 event.type === SU_EVENTS.VP_AWARDED

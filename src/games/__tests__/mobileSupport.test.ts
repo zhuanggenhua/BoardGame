@@ -10,7 +10,7 @@ import {
     resolveGameMobileSupport,
     shouldUseBoardShellScale,
     syncGamePageDocumentAttributes,
-} from '../mobileSupport';
+} from '../../shared/mobileSupport';
 
 describe('mobile support manifest contract', () => {
     it('all enabled entries expose explicit mobileProfile and shellTargets', () => {
@@ -37,7 +37,7 @@ describe('mobile support manifest contract', () => {
         );
         expect(game?.mobileDelivery).toEqual({
             mode: 'package-managed',
-            runtimeChannel: 'stable',
+            runtimeChannel: 'edge',
             modulePackId: 'dicethrone',
             assetPackId: 'dicethrone',
         });
@@ -175,6 +175,10 @@ describe('mobile support helpers', () => {
             mobileLayoutPreset: 'board-shell',
             mobileBattlefieldZoom: 'shell-pinch-pan',
             shellTargets: ['pwa', 'app-webview'],
+            mobileBoardShellLayout: {
+                designWidth: 1160,
+                designHeight: 720,
+            },
         });
 
         expect(attrs['data-game-page']).toBe('true');
@@ -184,6 +188,8 @@ describe('mobile support helpers', () => {
         expect(attrs['data-mobile-layout-preset']).toBe('board-shell');
         expect(attrs['data-mobile-battlefield-zoom']).toBe('shell-pinch-pan');
         expect(attrs['data-shell-targets']).toBe('pwa,app-webview');
+        expect(attrs['data-mobile-board-shell-design-width']).toBe('1160');
+        expect(attrs['data-mobile-board-shell-design-height']).toBe('720');
     });
 
     it('mirrors game page attributes to html and body while the page is mounted', () => {

@@ -27,6 +27,8 @@ const DICE_2D_CUBE_STYLE_TEXT = `
 .animate-dice2d-cube-tumble { animation: dice2d-cube-tumble 1s linear infinite; }
 `;
 
+const loadedDiceSpriteUrls = new Set<string>();
+
 const getSettledTransform = (faceValue: number) => {
     switch (faceValue) {
         case 1: return 'rotateX(0deg) rotateY(0deg)';
@@ -53,11 +55,13 @@ export const Dice2D: React.FC<Dice2DProps> = ({
         [characterId, definitionId, locale],
     );
     const [spriteIndex, setSpriteIndex] = React.useState(0);
-    const [isSpriteReady, setIsSpriteReady] = React.useState(false);
+    const [isSpriteReady, setIsSpriteReady] = React.useState(() => (
+        Boolean(spriteUrls[0] && loadedDiceSpriteUrls.has(spriteUrls[0]))
+    ));
 
     React.useEffect(() => {
         setSpriteIndex(0);
-        setIsSpriteReady(false);
+        setIsSpriteReady(Boolean(spriteUrls[0] && loadedDiceSpriteUrls.has(spriteUrls[0])));
     }, [spriteUrls]);
 
     React.useEffect(() => {
@@ -100,7 +104,10 @@ export const Dice2D: React.FC<Dice2DProps> = ({
                     alt=""
                     aria-hidden="true"
                     className="pointer-events-none absolute h-px w-px opacity-0"
-                    onLoad={() => setIsSpriteReady(true)}
+                    onLoad={() => {
+                        loadedDiceSpriteUrls.add(spriteUrl);
+                        setIsSpriteReady(true);
+                    }}
                     onError={() => {
                         if (hasFallbackCandidate) {
                             setSpriteIndex((index) => index + 1);

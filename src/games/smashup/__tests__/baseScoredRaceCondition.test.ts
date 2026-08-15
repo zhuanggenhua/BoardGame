@@ -4,23 +4,22 @@
  * 模拟场景（P1 客户端视角）：
  * 1. P1 收到 state:sync（EventStream 被 strip）
  * 2. 服务端执行 ADVANCE_PHASE → state:update 到达 P1（P1 无 pending）
- * 3. 服务端执行 P0 RESPONSE_PASS → state:update 到达 P1（P1 无 pending）
- * 4. P1 dispatch RESPONSE_PASS → processCommand 预测成功（wait-confirm）
- * 5. 服务端确认 P1 RESPONSE_PASS → state:update 到达 P1
+ * 3. 服务端执行 P0 su:reaction_pass → state:update 到达 P1（P1 无 pending）
+ * 4. P1 dispatch su:reaction_pass → processCommand 预测成功（wait-confirm）
+ * 5. 服务端确认 P1 su:reaction_pass → state:update 到达 P1
  *    → reconcile → firstCommandConfirmed = true → watermark = null → BASE_SCORED 可见
  *
  * 竞态场景（P1 客户端视角）：
  * 1. P1 收到 state:sync
  * 2. 服务端执行 ADVANCE_PHASE → state:update 到达 P1
- * 3. P1 dispatch RESPONSE_PASS（此时 P0 的 RESPONSE_PASS 还没到达）
- *    → processCommand 预测成功（wait-confirm）→ waitConfirmWatermark 被设置
- * 4. P0 的 RESPONSE_PASS state:update 到达 P1
- *    → reconcile → stateID 匹配但 playerId 不匹配 → firstCommandConfirmed = false
- *    → replayPending 成功 → pendingCommands 不为空 → 返回重放后的预测状态
- * 5. P1 的 RESPONSE_PASS state:update 到达 P1
- *    → reconcile → predictedStateID 可能不匹配（因为 confirmedStateID 在 step 4 更新了）
- *    → firstCommandConfirmed = false → watermark = waitConfirmWatermark
- *    → filterPlayedEvents 可能过滤掉 BASE_SCORED！
+ * 3. P1 dispatch su:reaction_pass（此时 P0 的 su:reaction_pass 还没到达）
+ *    → 本地验证失败，不预测，也不加入 pending
+ * 4. P0 的 su:reaction_pass state:update 到达 P1
+ *    → P1 现在成为当前响应者
+ * 5. P1 再 dispatch su:reaction_pass
+ *    → processCommand 预测成功，BASE_SCORED 可见
+ * 6. P1 的 su:reaction_pass state:update 到达 P1
+ *    → reconcile 后 BASE_SCORED 仍可见
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
@@ -28,8 +27,9 @@ import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
 import type { SmashUpCore, SmashUpCommand } from '../domain/types';
-import { SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
+import { createSmashUpEventSystem } from '../domain/systems';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState, executePipeline, createSeededRandom } from '../../../engine/pipeline';
@@ -40,6 +40,7 @@ const PLAYER_IDS = ['0', '1'];
 const systems = [
     createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
     ...createBaseSystems<SmashUpCore>(),
+    createSmashUpEventSystem(),
 ];
 
 beforeAll(() => { initAllAbilities(); });
@@ -52,8 +53,30 @@ describe('BASE_SCORED 竞态条件验证', () => {
         // ── 构造初始状态：基地已达临界点 ──
         const core: SmashUpCore = {
             players: {
-                '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'dinosaurs'] },
-                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['pirates', 'ninjas'] },
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [{ uid: 'p0-full-sail', defId: 'pirate_full_sail', type: 'action', owner: '0' }],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'dinosaurs'],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [{ uid: 'p1-full-sail', defId: 'pirate_full_sail', type: 'action', owner: '1' }],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['pirates', 'ninjas'],
+                },
             },
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
@@ -87,11 +110,11 @@ describe('BASE_SCORED 竞态条件验证', () => {
         expect(afterAdvance.success).toBe(true);
         const stateAfterAdvance = afterAdvance.state;
 
-        // ── 服务端执行 P0 RESPONSE_PASS（stateID: 2 → 3）──
+        // ── 服务端执行 P0 su:reaction_pass（stateID: 2 → 3）──
         const afterP0Pass = executePipeline(
             { domain: SmashUpDomain, systems },
             stateAfterAdvance,
-            { type: 'RESPONSE_PASS', playerId: '0', payload: undefined, timestamp: 2 } as unknown as SmashUpCommand,
+            { type: SU_COMMANDS.REACTION_PASS, playerId: '0', payload: { reason: 'player_pass' }, timestamp: 2 } as unknown as SmashUpCommand,
             serverRng, PLAYER_IDS,
         );
         expect(afterP0Pass.success).toBe(true);
@@ -125,28 +148,32 @@ describe('BASE_SCORED 竞态条件验证', () => {
             lastCommandPlayerId: '0',
         });
 
-        // ── 竞态：P1 在收到 P0 PASS 之前 dispatch RESPONSE_PASS ──
+        // ── 竞态：P1 在收到 P0 PASS 之前 dispatch su:reaction_pass ──
         // 此时 P1 的 confirmedStateID = 2（ADVANCE_PHASE 确认后）
-        const processResult = engine.processCommand('RESPONSE_PASS', undefined, '1');
-        expect(processResult.stateToRender).toBeTruthy();
+        const prematureProcessResult = engine.processCommand(SU_COMMANDS.REACTION_PASS, { reason: 'player_pass' }, '1');
+        expect(prematureProcessResult.stateToRender).toBeNull();
+        expect(prematureProcessResult.animationMode).toBe('wait-confirm');
 
-        // 检查预测状态是否包含 BASE_SCORED（wait-confirm 应该剥离）
-        const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
-        const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        expect(predictedScored.length).toBeGreaterThan(0);
-
-        // ── P0 RESPONSE_PASS 的 state:update 到达（stateID: 3）──
-        // 此时 P1 有 pending RESPONSE_PASS，但这是 P0 的命令
+        // ── P0 su:reaction_pass 的 state:update 到达（stateID: 3）──
+        // 此时没有 pending 提前 pass，确认状态直接让 P1 成为当前响应者
         const reconcile2 = engine.reconcile(stateAfterP0Pass, {
             stateID: 3,
             lastCommandPlayerId: '0', // P0 的命令
         });
 
-        // ── 服务端执行 P1 RESPONSE_PASS（stateID: 3 → 4）──
+        // ── P1 收到 P0 PASS 后再次 dispatch su:reaction_pass，现已合法可预测 ──
+        const processResult = engine.processCommand(SU_COMMANDS.REACTION_PASS, { reason: 'player_pass' }, '1');
+        expect(processResult.stateToRender).toBeTruthy();
+
+        const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
+        const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
+        expect(predictedScored.length).toBeGreaterThan(0);
+
+        // ── 服务端执行 P1 su:reaction_pass（stateID: 3 → 4）──
         const afterP1Pass = executePipeline(
             { domain: SmashUpDomain, systems },
             stateAfterP0Pass,
-            { type: 'RESPONSE_PASS', playerId: '1', payload: undefined, timestamp: 3 } as unknown as SmashUpCommand,
+            { type: SU_COMMANDS.REACTION_PASS, playerId: '1', payload: { reason: 'player_pass' }, timestamp: 3 } as unknown as SmashUpCommand,
             serverRng, PLAYER_IDS,
         );
         expect(afterP1Pass.success).toBe(true);
@@ -157,7 +184,7 @@ describe('BASE_SCORED 竞态条件验证', () => {
         const serverScored = serverEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
         expect(serverScored.length).toBeGreaterThan(0);
 
-        // ── P1 RESPONSE_PASS 的 state:update 到达（stateID: 4）──
+        // ── P1 su:reaction_pass 的 state:update 到达（stateID: 4）──
         const reconcile3 = engine.reconcile(stateAfterP1Pass, {
             stateID: 4,
             lastCommandPlayerId: '1', // P1 的命令

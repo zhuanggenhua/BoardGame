@@ -11,9 +11,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type MotionStyle } from 'framer-motion';
 import clsx from 'clsx';
-import type { GameManifestEntry, GameSetupField, GameSetupSelectOption } from '../../games/manifest.types';
+import type { GameManifestEntry, GameSetupField, GameSetupSelectOption } from '../../shared/gameManifest.types';
 import { UI_Z_INDEX } from '../../core';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
@@ -29,15 +29,11 @@ import {
 import {
     getDefaultSetupSelections,
     type GameSetupSelections,
-} from '../../games/setupOptions';
+} from '../../shared/gameSetupOptions';
 import {
     applyCreateRoomSetupDefaultsForGame,
     resolveAllowedPlayerCountsForGame,
-} from '../../games/roomSetupRegistry';
-import {
-    QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
-    QIDAHEN_PREGAME_CHOICE_FIELDS,
-} from '../../games/qidahen/roomSetup';
+} from '../../shared/roomSetup';
 import { SetupOptionsFields } from './SetupOptionsFields';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -53,6 +49,12 @@ import {
     homeV2PaperPrimaryButtonClassName,
     homeV2PaperSecondaryButtonClassName,
 } from '../common/overlays/homeV2PaperModalTheme';
+
+type ModalViewportCssVars = {
+    '--modal-active-viewport-height': string;
+    '--modal-active-bottom-inset': string;
+    '--modal-max-height': string;
+};
 
 /** 保存时间选项（秒） */
 const RETENTION_OPTIONS = [
@@ -313,27 +315,29 @@ const toSelectValueRecord = (selections: GameSetupSelections): Record<string, st
 
 const normalizeExtendedSetupSelections = (
     selections: GameSetupSelections,
-    isQidahenRoom: boolean,
-): GameSetupSelections => (
-    isQidahenRoom
-        ? {
-            ...Object.fromEntries(
-                Object.entries(selections).filter(([key]) => (
-                    key !== 'scenario'
-                    && !QIDAHEN_PREGAME_CHOICE_FIELDS.some((field) => field.key === key)
-                )),
-            ),
-            [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
-        }
-        : selections
-);
+    createRoomSetup: GameManifestEntry['createRoomSetup'] | undefined,
+): GameSetupSelections => {
+    const hiddenSelectionKeys = createRoomSetup?.hiddenSelectionKeys ?? [];
+    const forcedSelections = createRoomSetup?.forcedSelections;
+    if (hiddenSelectionKeys.length === 0 && !forcedSelections) {
+        return selections;
+    }
+
+    const hiddenSelectionKeySet = new Set(hiddenSelectionKeys);
+    return {
+        ...Object.fromEntries(
+            Object.entries(selections).filter(([key]) => !hiddenSelectionKeySet.has(key)),
+        ),
+        ...(forcedSelections ?? {}),
+    };
+};
 
 const normalizeCreateRoomSetupSelections = (args: {
     gameManifest: GameManifestEntry;
     setupFields: ReadonlyArray<readonly [string, GameSetupField]>;
     numPlayers: number;
     setupSelections: GameSetupSelections;
-    isQidahenRoom: boolean;
+    createRoomSetup?: GameManifestEntry['createRoomSetup'];
 }): GameSetupSelections => {
     const setupWithDefaults = applyCreateRoomSetupDefaultsForGame({
         gameManifest: args.gameManifest,
@@ -347,7 +351,7 @@ const normalizeCreateRoomSetupSelections = (args: {
             args.numPlayers,
             toSelectValueRecord(setupWithDefaults),
         ),
-    }, args.isQidahenRoom);
+    }, args.createRoomSetup);
 };
 
 export const CreateRoomModal = ({
@@ -361,11 +365,16 @@ export const CreateRoomModal = ({
 }: CreateRoomModalProps) => {
     const gameNamespace = `game-${gameManifest.id}`;
     const { t } = useTranslation(['lobby', gameNamespace]);
+    const createRoomSetup = gameManifest.createRoomSetup;
     const setupFields = useMemo(
-        () => Object.entries(gameManifest.setupOptions ?? {}),
-        [gameManifest.setupOptions],
+        () => {
+            const hiddenSelectionKeySet = new Set(createRoomSetup?.hiddenSelectionKeys ?? []);
+            return Object.entries(gameManifest.setupOptions ?? {})
+                .filter(([fieldKey]) => !hiddenSelectionKeySet.has(fieldKey));
+        },
+        [createRoomSetup?.hiddenSelectionKeys, gameManifest.setupOptions],
     );
-    const isQidahenRoom = gameManifest.id === 'qidahen';
+    const shouldShowSetupOptions = createRoomSetup?.showSetupOptions ?? true;
     const rawDefaultSetupSelections = useMemo(
         () => getDefaultSetupSelections(gameManifest),
         [gameManifest],
@@ -386,8 +395,8 @@ export const CreateRoomModal = ({
         setupFields,
         numPlayers: defaultNumPlayers,
         setupSelections: rawDefaultSetupSelections,
-        isQidahenRoom,
-    }), [defaultNumPlayers, gameManifest, isQidahenRoom, rawDefaultSetupSelections, setupFields]);
+        createRoomSetup,
+    }), [createRoomSetup, defaultNumPlayers, gameManifest, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
@@ -477,9 +486,9 @@ export const CreateRoomModal = ({
             setupFields,
             numPlayers: nextPreferences.numPlayers,
             setupSelections: nextPreferences.setupSelections,
-            isQidahenRoom,
+            createRoomSetup,
         }));
-    }, [defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, isQidahenRoom, setupFields]);
+    }, [createRoomSetup, defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, setupFields]);
 
     useEffect(() => {
         const fallbackPlayerCount = currentPlayerOptions[0];
@@ -504,7 +513,7 @@ export const CreateRoomModal = ({
             const nextSelections = normalizeExtendedSetupSelections({
                 ...current,
                 ...normalizedSelectValues,
-            }, isQidahenRoom);
+            }, createRoomSetup);
             if (
                 isSameSetupValues(currentSelectValues, normalizedSelectValues)
                 && isSameSetupSelections(current, nextSelections)
@@ -513,7 +522,7 @@ export const CreateRoomModal = ({
             }
             return nextSelections;
         });
-    }, [isQidahenRoom, numPlayers, setupFields]);
+    }, [createRoomSetup, numPlayers, setupFields]);
 
     useEffect(() => {
         setSeatControllers((current) => {
@@ -532,7 +541,7 @@ export const CreateRoomModal = ({
     }, [aiMinimumActionDelayMs, gameManifest, numPlayers, setupSelections]);
 
     const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
-        setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
+        setSetupSelections(normalizeExtendedSetupSelections(nextSelections, createRoomSetup));
     };
 
     const handlePlayerCountChange = (nextNumPlayers: number) => {
@@ -543,7 +552,7 @@ export const CreateRoomModal = ({
             setupFields,
             numPlayers: nextNumPlayers,
             setupSelections: current,
-            isQidahenRoom,
+            createRoomSetup,
         }));
         if (enableAi && nextNumPlayers > previousNumPlayers) {
             setSeatControllers((current) => fillNonOwnerSeatsWithAi({
@@ -682,7 +691,7 @@ export const CreateRoomModal = ({
                             : { type: 'spring', stiffness: 300, damping: 30 }}
                         className={`fixed inset-0 flex justify-center p-4 sm:p-8 pointer-events-none ${isHomeV2Style ? 'items-center' : 'modal-base-container items-center'}`}
                         data-lock-layout-viewport="true"
-                        style={{
+                        style={({
                             zIndex: UI_Z_INDEX.modalContent,
                             '--modal-active-viewport-height': lockedViewportHeight,
                             '--modal-active-bottom-inset': lockedBottomInset,
@@ -708,7 +717,7 @@ export const CreateRoomModal = ({
                             paddingLeft: isHomeV2Style
                                 ? 'max(1rem, var(--safe-area-left))'
                                 : 'max(1rem, var(--safe-area-left))',
-                        }}
+                        } as MotionStyle & ModalViewportCssVars)}
                     >
                         {isHomeV2Style ? (
                             <HomeV2PaperModalFrame
@@ -832,7 +841,7 @@ export const CreateRoomModal = ({
                                         </select>
                                     </div>
 
-                                    {!isQidahenRoom ? (
+                                    {shouldShowSetupOptions ? (
                                         <SetupOptionsFields
                                             gameManifest={gameManifest}
                                             selections={setupSelections}
@@ -1121,7 +1130,7 @@ export const CreateRoomModal = ({
                                     </select>
                                 </div>
 
-                                {!isQidahenRoom ? (
+                                {shouldShowSetupOptions ? (
                                     <SetupOptionsFields
                                         gameManifest={gameManifest}
                                         selections={setupSelections}

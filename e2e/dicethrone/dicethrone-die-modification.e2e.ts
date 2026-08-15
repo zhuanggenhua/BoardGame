@@ -1024,17 +1024,25 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await expect(page.getByTestId('token-response-modal')).toHaveCount(0);
         await expect(page.getByTestId('dicethrone-token-response-inline')).toHaveCount(0);
         await expect.poll(() => tokenResponse.evaluate((node) => {
-            const handArea = document.querySelector<HTMLElement>('[data-testid="hand-area"]');
-            const card = handArea?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]');
             const prompt = node.getBoundingClientRect();
-            const hand = handArea?.getBoundingClientRect();
-            const cardRect = card?.getBoundingClientRect();
             return {
                 isFixed: getComputedStyle(node).position === 'fixed',
-                centeredOnHand: hand ? Math.abs((prompt.left + prompt.width / 2) - (hand.left + hand.width / 2)) < 2 : false,
-                aboveHand: cardRect ? prompt.bottom <= cardRect.top - 8 : false,
+                anchoredToViewport: node.getAttribute('data-anchor') === 'viewport',
+                fixedHandLiftSlot: node.getAttribute('data-placement') === 'fixed-hand-lift-slot',
+                centeredOnViewport: Math.abs((prompt.left + prompt.width / 2) - (window.innerWidth / 2)) < 2,
+                insideViewport: prompt.top >= 0 && prompt.bottom <= window.innerHeight,
+                nearHandLiftBand: prompt.bottom > window.innerHeight * 0.50,
+                hasBottomInset: window.innerHeight - prompt.bottom > 128,
             };
-        })).toEqual({ isFixed: true, centeredOnHand: true, aboveHand: true });
+        })).toEqual({
+            isFixed: true,
+            anchoredToViewport: true,
+            fixedHandLiftSlot: true,
+            centeredOnViewport: true,
+            insideViewport: true,
+            nearHandLiftBand: true,
+            hasBottomInset: true,
+        });
         await evasiveToken.click();
 
         await expect.poll(async () => {
@@ -1306,7 +1314,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             damageAmount: 5,
         });
         await expect(page.getByTestId('dt-top-header-1-hp')).toHaveText('45', { timeout: 10000 });
-        await expect(page.locator('[data-floating-text-preset="dicethrone-damage"]')).toHaveCount(0, { timeout: 10000 });
+        await expect(page.locator('[data-floating-text-preset="impact-damage"]')).toHaveCount(0, { timeout: 10000 });
         await game.screenshot('05-战争贩子-防御完成五点伤害已扣血', testInfo);
     });
 

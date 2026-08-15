@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility } from '../../domain/baseAbilities';
-import { scoreOneBase } from '../../domain';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
@@ -21,6 +20,7 @@ import {
     respondToPrompt,
     respondToPromptOptions,
     respondToPromptOption,
+    scoreBaseViaFlow,
     triggerBaseAbilityWithMS,
 } from '../helpers';
 import { runCommand } from '../testRunner';
@@ -71,7 +71,7 @@ describe('迪士尼四派系代表性玩法行为', () => {
                 makeMinion('target-minion', 'lion_king_zazu', '0', 2),
             ])],
         });
-        const result = scoreOneBase(
+        const result = scoreBaseViaFlow(
             core,
             0,
             [],

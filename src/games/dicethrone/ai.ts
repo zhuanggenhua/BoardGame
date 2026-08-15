@@ -102,13 +102,16 @@ const AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG = DICETHRONE_CHARACTER_CATALOG.
     isDiceThroneCharacterReadyForAiSetup,
 );
 
-const resolveDiceThroneOnlineDecisionOwnerId = (
-    state: MatchState<unknown> | null | undefined,
-): PlayerId | null => {
-    const diceThroneState = state as DiceThroneState | null | undefined;
-    if (diceThroneState?.sys?.phase !== 'defensiveRoll') return null;
+const resolveDiceThroneCurrentDecisionPlayerId = (args: {
+    state: MatchState<unknown>;
+    fallbackPlayerId: PlayerId | null;
+}): PlayerId | null | undefined => {
+    const diceThroneState = args.state as DiceThroneState | null | undefined;
+    if (diceThroneState?.sys?.phase !== 'defensiveRoll') return undefined;
     const defenderId = diceThroneState.core?.pendingAttack?.defenderId;
-    return typeof defenderId === 'string' && defenderId.length > 0 ? defenderId : null;
+    return typeof defenderId === 'string' && defenderId.length > 0
+        ? defenderId
+        : args.fallbackPlayerId ?? undefined;
 };
 
 const resolveDiceThroneOnlineDecisionVisibility = (args: {
@@ -116,7 +119,10 @@ const resolveDiceThroneOnlineDecisionVisibility = (args: {
     sharedState: MatchState<unknown>;
     privateOverlay: MatchState<unknown> | null;
 }): OnlineAiDecisionVisibility | null => {
-    const sharedDecisionOwnerId = resolveDiceThroneOnlineDecisionOwnerId(args.sharedState);
+    const sharedDecisionOwnerId = resolveDiceThroneCurrentDecisionPlayerId({
+        state: args.sharedState,
+        fallbackPlayerId: null,
+    });
     if (sharedDecisionOwnerId !== args.playerId) {
         return null;
     }
@@ -4831,6 +4837,10 @@ export const diceThroneAiRuntime: GameAiRuntime = {
     gameId: 'dicethrone',
     buildLegalActions: buildDiceThroneAiLegalActions,
     defaultMinimumActionDelayMs: 1000,
+    localHiddenCommandTypes: [
+        'REROLL_BONUS_DIE',
+        'SKIP_BONUS_DICE_REROLL',
+    ],
     localVisibleStepDelayConfig: {
         mode: 'whitelist',
         actionKinds: [
@@ -4852,6 +4862,7 @@ export const diceThroneAiRuntime: GameAiRuntime = {
             proposedAction,
         });
     },
+    resolveCurrentDecisionPlayerId: resolveDiceThroneCurrentDecisionPlayerId,
     resolveOnlineDecisionVisibility: resolveDiceThroneOnlineDecisionVisibility,
     shouldUseRemoteDecision: shouldUseRemoteDecisionForDiceThrone,
 };

@@ -391,7 +391,8 @@ export const HandArea = ({
 
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
-    const handCardBottomOffset = isCoarsePointer ? '0vw' : '-2vw';
+    const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
+    const handCardBottomOffset = hasRespondableCards ? '0.75vw' : (isCoarsePointer ? '0vw' : '-2vw');
 
     const clearAnimationTimers = React.useCallback(() => {
         dealTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
@@ -538,16 +539,19 @@ export const HandArea = ({
 
         clearAnimationTimers();
         setDealingCardKey(null);
+        const retainedKeys = currentKeys.filter(key => prevKeys.includes(key));
 
         if (removedKeys.length > 0) {
             setVisibleCardKeys(prev => {
                 const next = new Set(prev);
                 removedKeys.forEach(key => next.delete(key));
+                retainedKeys.forEach(key => next.add(key));
                 return next;
             });
             setFlippedCardKeys(prev => {
                 const next = new Set(prev);
                 removedKeys.forEach(key => next.delete(key));
+                retainedKeys.forEach(key => next.add(key));
                 return next;
             });
             setDealInitialOffsetMap(prev => {
@@ -851,8 +855,10 @@ export const HandArea = ({
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning;
+                        const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
+                            && !disableCardPointerEvents;
                         // 动画期间（dealing/returning）统一禁用 hover
-                        const isHovered = hoveredCardKey === cardKey && (canDrag || canClickDiscard) && !isDragging && !isReturning && !isDealing;
+                        const isHovered = hoveredCardKey === cardKey && canHoverCard && !isDragging && !isReturning && !isDealing;
                         const dragValues = dragValueMap.get(cardKey);
                         if (!dragValues) return null;
                         const canAffordCard = playerCp >= card.cpCost;
@@ -891,18 +897,19 @@ export const HandArea = ({
                                 dragElastic={0.1}
                                 dragMomentum={false}
                                 onPointerDown={(event) => handleCardPointerDown(event, cardKey, card)}
-                                onPointerMove={(event) => handleCardPointerMove(event, cardKey)}
+                                onPointerMove={(event) => {
+                                    handleCardPointerMove(event, cardKey);
+                                    if (canHoverCard && !isDragging && !isReturning) {
+                                        setHoveredCardKey(cardKey);
+                                    }
+                                }}
                                 onPointerUp={() => handleCardPointerUp(cardKey)}
                                 onPointerCancel={() => handleCardPointerUp(cardKey)}
                                 onDragStart={() => handleCardDragStart(entry, canDrag, dragValues)}
                                 onDrag={(_, info) => canDrag && handleDrag(cardKey, info)}
                                 onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
                                 onClick={() => handleCardClick(entry, { canClickDiscard, canPreviewCard })}
-                                onHoverStart={() => {
-                                    if ((canDrag || canClickDiscard) && !isDragging && !isReturning) {
-                                        setHoveredCardKey(cardKey);
-                                    }
-                                }}
+                                onHoverStart={() => undefined}
                                 onHoverEnd={() => {
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}

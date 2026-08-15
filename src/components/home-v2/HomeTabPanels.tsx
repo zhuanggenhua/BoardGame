@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { GAME_CHANGELOG_API_URL } from '../../config/server';
+import { assetsPath } from '../../core/AssetLoader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLobbyStats } from '../../hooks/useLobbyStats';
 import { logger } from '../../lib/logger';
@@ -22,6 +23,8 @@ type ChangelogEntry = {
 };
 
 const cardSurfaceClassName = 'px-[4.8%] py-[4.5%]';
+const HOME_V2_ASSET_ROOT = 'common/images/home-v2';
+const HOME_V2_HOLDER_BG = assetsPath(`${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`);
 const cardSurfaceStyle = {
     border: '1px solid rgba(159,111,75,0.28)',
     borderRadius: '16px',

@@ -64,7 +64,7 @@ description: "BoardGame 单游戏移动端适配入口。用于 mobileProfile、
 - 但“只能条件覆盖”不等于“默认可以重排主牌桌”。对固定构图 / `board-shell` / live 牌桌，移动条件覆盖的默认职责是修安全区、触控入口、无遮挡和壳层缩放参数；不得借移动端条件覆盖创造一套和 PC 不同的主 UI 布局。
 - 底部 action rail、右侧 dock、抽屉化、按钮搬家只适用于已经被判定为流式信息区、次要工具区或用户明确要求的移动专版；不得用于承接 PC 牌桌里的主按钮、手牌、顶栏、分数和中央牌区。
 - 移动条件优先级：
-1. `窄视口`：以 [mobileSupport.ts](../../../src/games/mobileSupport.ts) 中的 `1023px` 断点为准。
+1. `窄视口`：以 [mobileSupport.ts](../../../src/shared/mobileSupport.ts) 中的 `1023px` 断点为准。
 2. `manifest / mobile shell`：用于页面级结构切换。
 3. `粗指针 / 触控`：只用于 hover 替代入口显隐，不可单独作为压缩 PC 尺寸的依据。
 - 触屏笔记本仍然属于 PC 布局范围；不能因为 `(pointer: coarse)` 就缩小桌面 UI。

@@ -163,14 +163,16 @@ const loadCriticalImageResolver8 = async () => {
 };
 
 const loadRuntime9 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule] = await Promise.all([
+    const [gameModule, boardModule, runtimeAdapterModule] = await Promise.all([
         import('./qidahen/game'),
         import('./qidahen/Board'),
+        import('./qidahen/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './qidahen/Board'),
         audioConfig: gameModule.audioConfig,
+        runtimeAdapter: runtimeAdapterModule.qidahenGameRuntimeAdapter,
     };
 };
 

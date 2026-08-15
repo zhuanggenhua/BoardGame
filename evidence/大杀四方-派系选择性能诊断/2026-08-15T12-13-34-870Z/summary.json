@@ -1,0 +1,1364 @@
+{
+  "artifactDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-派系选择性能诊断\\2026-08-15T12-13-34-870Z",
+  "matchId": "AA-dNNvZvn6",
+  "url": "http://127.0.0.1:6174/play/smashup/match/AA-dNNvZvn6?playerID=0",
+  "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-派系选择性能诊断\\2026-08-15T12-13-34-870Z\\chrome-trace-smashup-faction-selection.json",
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-派系选择性能诊断\\2026-08-15T12-13-34-870Z\\smashup-faction-selection-captured.png",
+  "domInventoryBefore": {
+    "elementCount": 1896,
+    "factionOptionCount": 108,
+    "transitionAllCount": 1788,
+    "shadowedCount": 229,
+    "backdropFilteredCount": 0,
+    "filteredCount": 111,
+    "animatedCount": 1,
+    "firstSurface": {
+      "className": "\n                        absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-all bg-white p-[3px] lg:p-[4px]\n                        border-white group-hover:border-amber-400 group-hover:shadow-amber-500/30\n                    ",
+      "transitionProperty": "all",
+      "transitionDuration": "0.15s",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.38) 3px 3px 10px 0px",
+      "borderRightColor": "rgb(255, 255, 255)"
+    }
+  },
+  "domInventoryAfter": {
+    "elementCount": 2004,
+    "factionOptionCount": 108,
+    "transitionAllCount": 1896,
+    "shadowedCount": 229,
+    "backdropFilteredCount": 0,
+    "filteredCount": 111,
+    "animatedCount": 1,
+    "firstSurface": {
+      "className": "\n                        absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-all bg-white p-[3px] lg:p-[4px]\n                        border-white group-hover:border-amber-400 group-hover:shadow-amber-500/30\n                    ",
+      "transitionProperty": "all",
+      "transitionDuration": "0.15s",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.38) 3px 3px 10px 0px",
+      "borderRightColor": "rgb(255, 255, 255)"
+    }
+  },
+  "pagePerf": {
+    "longTasks": [
+      {
+        "name": "self",
+        "startTime": 7243.5,
+        "duration": 83
+      },
+      {
+        "name": "self",
+        "startTime": 9362,
+        "duration": 284
+      },
+      {
+        "name": "self",
+        "startTime": 13917.5,
+        "duration": 458
+      },
+      {
+        "name": "self",
+        "startTime": 14413,
+        "duration": 148
+      },
+      {
+        "name": "self",
+        "startTime": 14564.699999988079,
+        "duration": 55
+      },
+      {
+        "name": "self",
+        "startTime": 14638.100000023842,
+        "duration": 71
+      },
+      {
+        "name": "self",
+        "startTime": 14811,
+        "duration": 2181
+      },
+      {
+        "name": "self",
+        "startTime": 17020.80000001192,
+        "duration": 630
+      },
+      {
+        "name": "self",
+        "startTime": 17678.400000035763,
+        "duration": 53
+      },
+      {
+        "name": "self",
+        "startTime": 17741,
+        "duration": 353
+      },
+      {
+        "name": "self",
+        "startTime": 18239.100000023842,
+        "duration": 174
+      },
+      {
+        "name": "self",
+        "startTime": 18450.900000035763,
+        "duration": 57
+      },
+      {
+        "name": "self",
+        "startTime": 18537,
+        "duration": 430
+      },
+      {
+        "name": "self",
+        "startTime": 19002.80000001192,
+        "duration": 90
+      },
+      {
+        "name": "self",
+        "startTime": 19215.19999998808,
+        "duration": 380
+      },
+      {
+        "name": "self",
+        "startTime": 19957.5,
+        "duration": 67
+      },
+      {
+        "name": "self",
+        "startTime": 20416.100000023842,
+        "duration": 53
+      },
+      {
+        "name": "self",
+        "startTime": 20490.100000023842,
+        "duration": 71
+      },
+      {
+        "name": "self",
+        "startTime": 20789.900000035763,
+        "duration": 55
+      },
+      {
+        "name": "self",
+        "startTime": 20927.400000035763,
+        "duration": 62
+      },
+      {
+        "name": "self",
+        "startTime": 21659.69999998808,
+        "duration": 73
+      },
+      {
+        "name": "self",
+        "startTime": 21773.5,
+        "duration": 65
+      },
+      {
+        "name": "self",
+        "startTime": 21841,
+        "duration": 102
+      },
+      {
+        "name": "self",
+        "startTime": 21987.80000001192,
+        "duration": 431
+      },
+      {
+        "name": "self",
+        "startTime": 22451.30000001192,
+        "duration": 50
+      },
+      {
+        "name": "self",
+        "startTime": 22608.5,
+        "duration": 63
+      },
+      {
+        "name": "self",
+        "startTime": 22737.100000023842,
+        "duration": 75
+      },
+      {
+        "name": "self",
+        "startTime": 22833.900000035763,
+        "duration": 70
+      },
+      {
+        "name": "self",
+        "startTime": 23406,
+        "duration": 55
+      },
+      {
+        "name": "self",
+        "startTime": 23657.69999998808,
+        "duration": 74
+      },
+      {
+        "name": "self",
+        "startTime": 23835.5,
+        "duration": 51
+      },
+      {
+        "name": "self",
+        "startTime": 23902.69999998808,
+        "duration": 84
+      },
+      {
+        "name": "self",
+        "startTime": 23987.30000001192,
+        "duration": 51
+      },
+      {
+        "name": "self",
+        "startTime": 24057.100000023842,
+        "duration": 74
+      },
+      {
+        "name": "self",
+        "startTime": 24162.900000035763,
+        "duration": 79
+      },
+      {
+        "name": "self",
+        "startTime": 24289.600000023842,
+        "duration": 51
+      },
+      {
+        "name": "self",
+        "startTime": 24441.5,
+        "duration": 58
+      },
+      {
+        "name": "self",
+        "startTime": 24500.5,
+        "duration": 76
+      },
+      {
+        "name": "self",
+        "startTime": 24868.19999998808,
+        "duration": 379
+      },
+      {
+        "name": "self",
+        "startTime": 25288.100000023842,
+        "duration": 63
+      },
+      {
+        "name": "self",
+        "startTime": 25606.400000035763,
+        "duration": 228
+      },
+      {
+        "name": "self",
+        "startTime": 26020.80000001192,
+        "duration": 245
+      },
+      {
+        "name": "self",
+        "startTime": 26511.69999998808,
+        "duration": 338
+      },
+      {
+        "name": "self",
+        "startTime": 27022.19999998808,
+        "duration": 196
+      },
+      {
+        "name": "self",
+        "startTime": 27412,
+        "duration": 217
+      },
+      {
+        "name": "self",
+        "startTime": 27950.19999998808,
+        "duration": 322
+      },
+      {
+        "name": "self",
+        "startTime": 28403.600000023842,
+        "duration": 377
+      },
+      {
+        "name": "self",
+        "startTime": 28878.400000035763,
+        "duration": 56
+      },
+      {
+        "name": "self",
+        "startTime": 30838.600000023842,
+        "duration": 401
+      },
+      {
+        "name": "self",
+        "startTime": 32039,
+        "duration": 566
+      },
+      {
+        "name": "self",
+        "startTime": 32705.80000001192,
+        "duration": 902
+      },
+      {
+        "name": "self",
+        "startTime": 33622.69999998808,
+        "duration": 433
+      },
+      {
+        "name": "self",
+        "startTime": 34089.80000001192,
+        "duration": 79
+      },
+      {
+        "name": "self",
+        "startTime": 34170.80000001192,
+        "duration": 384
+      },
+      {
+        "name": "self",
+        "startTime": 34556.10000002384,
+        "duration": 388
+      },
+      {
+        "name": "self",
+        "startTime": 35122.19999998808,
+        "duration": 1118
+      },
+      {
+        "name": "self",
+        "startTime": 36305.69999998808,
+        "duration": 146
+      },
+      {
+        "name": "self",
+        "startTime": 36797.80000001192,
+        "duration": 500
+      },
+      {
+        "name": "self",
+        "startTime": 37330.90000003576,
+        "duration": 57
+      },
+      {
+        "name": "self",
+        "startTime": 39796.19999998808,
+        "duration": 523
+      },
+      {
+        "name": "self",
+        "startTime": 42586.60000002384,
+        "duration": 724
+      },
+      {
+        "name": "self",
+        "startTime": 43345.40000003576,
+        "duration": 300
+      },
+      {
+        "name": "self",
+        "startTime": 44033.30000001192,
+        "duration": 421
+      },
+      {
+        "name": "self",
+        "startTime": 44838.69999998808,
+        "duration": 400
+      },
+      {
+        "name": "self",
+        "startTime": 45787,
+        "duration": 327
+      },
+      {
+        "name": "self",
+        "startTime": 48799,
+        "duration": 259
+      },
+      {
+        "name": "self",
+        "startTime": 51796.5,
+        "duration": 226
+      },
+      {
+        "name": "self",
+        "startTime": 54800.60000002384,
+        "duration": 241
+      },
+      {
+        "name": "self",
+        "startTime": 57800.10000002384,
+        "duration": 223
+      },
+      {
+        "name": "self",
+        "startTime": 60787,
+        "duration": 156
+      },
+      {
+        "name": "self",
+        "startTime": 63798.30000001192,
+        "duration": 305
+      },
+      {
+        "name": "self",
+        "startTime": 66793.80000001192,
+        "duration": 232
+      },
+      {
+        "name": "self",
+        "startTime": 69945.19999998808,
+        "duration": 358
+      },
+      {
+        "name": "self",
+        "startTime": 72828.19999998808,
+        "duration": 356
+      },
+      {
+        "name": "self",
+        "startTime": 75808.60000002384,
+        "duration": 268
+      },
+      {
+        "name": "self",
+        "startTime": 78791.40000003576,
+        "duration": 213
+      },
+      {
+        "name": "self",
+        "startTime": 81794.69999998808,
+        "duration": 267
+      },
+      {
+        "name": "self",
+        "startTime": 84828.60000002384,
+        "duration": 452
+      },
+      {
+        "name": "self",
+        "startTime": 87811.80000001192,
+        "duration": 375
+      },
+      {
+        "name": "self",
+        "startTime": 90796.90000003576,
+        "duration": 269
+      },
+      {
+        "name": "self",
+        "startTime": 93799.40000003576,
+        "duration": 286
+      },
+      {
+        "name": "self",
+        "startTime": 96864.10000002384,
+        "duration": 335
+      },
+      {
+        "name": "self",
+        "startTime": 99824.10000002384,
+        "duration": 327
+      },
+      {
+        "name": "self",
+        "startTime": 103415.40000003576,
+        "duration": 298
+      }
+    ],
+    "frameStats": {
+      "samples": 900,
+      "over16ms": 395,
+      "over33ms": 101,
+      "maxMs": 2183.199999999999,
+      "p95Ms": 66.59999999999854,
+      "p99Ms": 416.59999999999854
+    }
+  },
+  "performanceMetricDelta": {
+    "taskDurationMs": 29382.94,
+    "scriptDurationMs": 13232.44,
+    "layoutDurationMs": 312.15,
+    "recalcStyleDurationMs": 3596.3
+  },
+  "traceSummary": {
+    "eventCount": 1278754,
+    "propertyHits": {
+      "border-right-color": 42,
+      "border-left-color": 42,
+      "border-top-color": 42,
+      "border-bottom-color": 42,
+      "box-shadow": 0,
+      "backdrop-filter": 0
+    },
+    "aggregate": {
+      "RunTask": {
+        "count": 501216,
+        "totalMs": 115869.86099999199,
+        "maxMs": 2182.592
+      },
+      "EvaluateScript": {
+        "count": 4,
+        "totalMs": 11.140999999999998,
+        "maxMs": 7.255
+      },
+      "FunctionCall": {
+        "count": 5425,
+        "totalMs": 8137.341000000082,
+        "maxMs": 2177.216
+      },
+      "EventDispatch": {
+        "count": 1231,
+        "totalMs": 382.48899999999895,
+        "maxMs": 45.158
+      },
+      "UpdateLayoutTree": {
+        "count": 911,
+        "totalMs": 2961.8000000000025,
+        "maxMs": 1382.374
+      },
+      "RecalculateStyles": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0
+      },
+      "ScheduleStyleRecalculation": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0
+      },
+      "Layout": {
+        "count": 36,
+        "totalMs": 231.68199999999996,
+        "maxMs": 181.836
+      },
+      "PrePaint": {
+        "count": 1039,
+        "totalMs": 373.9440000000001,
+        "maxMs": 24.632
+      },
+      "Paint": {
+        "count": 22601,
+        "totalMs": 804.7079999999247,
+        "maxMs": 11.375
+      },
+      "CompositeLayers": {
+        "count": 0,
+        "totalMs": 0,
+        "maxMs": 0
+      },
+      "FireAnimationFrame": {
+        "count": 1905,
+        "totalMs": 956.2220000000007,
+        "maxMs": 19.926
+      },
+      "TimerFire": {
+        "count": 128,
+        "totalMs": 42.798000000000016,
+        "maxMs": 4.905
+      }
+    },
+    "longEvents": [
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 2182.59
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 2181.16
+      },
+      {
+        "name": "SimpleWatcher::OnHandleReady",
+        "category": "toplevel",
+        "durationMs": 2181.16
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 2180.99
+      },
+      {
+        "name": "FunctionCall",
+        "category": "devtools.timeline",
+        "durationMs": 2177.22
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "category": "blink,devtools.timeline",
+        "durationMs": 1382.37
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 656.75
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 630.68
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 630.55
+      },
+      {
+        "name": "FunctionCall",
+        "category": "devtools.timeline",
+        "durationMs": 616.67
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 458.72
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 458.64
+      },
+      {
+        "name": "v8.evaluateModule",
+        "category": "v8,devtools.timeline",
+        "durationMs": 453.36
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 431.89
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 431.59
+      },
+      {
+        "name": "SimpleWatcher::OnHandleReady",
+        "category": "toplevel",
+        "durationMs": 431.58
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 431.54
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 430.74
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 430.06
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 430
+      },
+      {
+        "name": "FunctionCall",
+        "category": "devtools.timeline",
+        "durationMs": 419.19
+      },
+      {
+        "name": "FunctionCall",
+        "category": "devtools.timeline",
+        "durationMs": 400.23
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 380.67
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 380.36
+      },
+      {
+        "name": "SimpleWatcher::OnHandleReady",
+        "category": "toplevel",
+        "durationMs": 380.36
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 380.28
+      },
+      {
+        "name": "RunTask",
+        "category": "disabled-by-default-devtools.timeline",
+        "durationMs": 379.87
+      },
+      {
+        "name": "ThreadControllerImpl::RunTask",
+        "category": "toplevel",
+        "durationMs": 379.45
+      },
+      {
+        "name": "SimpleWatcher::OnHandleReady",
+        "category": "toplevel",
+        "durationMs": 379.45
+      },
+      {
+        "name": "v8.callFunction",
+        "category": "v8",
+        "durationMs": 379.4
+      }
+    ],
+    "invalidationEvents": [
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 6,
+            "nodeName": "IMG",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 8,
+            "nodeName": "#text",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 9,
+            "nodeName": "DIV",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 7,
+            "nodeName": "#text",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 10,
+            "nodeName": "DIV",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 4,
+            "nodeName": "DIV",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 5,
+            "nodeName": "DIV id='initial-loader'",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 11,
+            "nodeName": "DIV id='root'",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 12,
+            "nodeName": "DIV id='hud-root'",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 13,
+            "nodeName": "DIV id='modal-root'",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 14,
+            "nodeName": "BODY",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 15,
+            "nodeName": "HTML",
+            "reason": "Removed from layout"
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 16,
+            "nodeName": "HTML",
+            "reason": "Node was inserted into tree",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 18,
+            "nodeName": "#document",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 16,
+            "nodeName": "HTML",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "InvalidateLayout",
+        "category": "disabled-by-default-devtools.timeline",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 18
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 20,
+            "nodeName": "BODY",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 21,
+            "nodeName": "DIV id='root'",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 23,
+            "nodeName": "DIV id='initial-loader'",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 27,
+            "nodeName": "DIV id='hud-root'",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 28,
+            "nodeName": "DIV id='modal-root'",
+            "reason": "Added to layout"
+          }
+        }
+      },
+      {
+        "name": "LayoutInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 18,
+            "nodeName": "#document",
+            "reason": "Scrollbar changed"
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      },
+      {
+        "name": "StyleRecalcInvalidationTracking",
+        "category": "disabled-by-default-devtools.timeline.invalidationTracking",
+        "args": {
+          "data": {
+            "extraData": "",
+            "frame": "2403C7AADECE006C7851DF96E1E39912",
+            "nodeId": 24,
+            "nodeName": "DIV",
+            "reason": "Animation",
+            "subtree": false
+          }
+        }
+      }
+    ]
+  },
+  "diagnostics": []
+}

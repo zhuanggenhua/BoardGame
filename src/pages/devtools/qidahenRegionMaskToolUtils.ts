@@ -1,5 +1,7 @@
 export type RgbColor = readonly [number, number, number];
 
+type BinaryMaskBuffer = Uint8Array<ArrayBufferLike>;
+
 export type BoundaryRule = {
     id: string;
     rgb: RgbColor;
@@ -560,7 +562,7 @@ export const expandBinaryMask = ({
     height: number;
     iterations: number;
 }): Uint8Array => {
-    let expanded = mask.slice();
+    let expanded: BinaryMaskBuffer = mask.slice();
     for (let iteration = 0; iteration < iterations; iteration += 1) {
         expanded = dilateMask(expanded, width, height);
     }
@@ -617,7 +619,7 @@ export const closeBinaryMask = ({
     height: number;
     iterations: number;
 }): Uint8Array => {
-    let closed = mask.slice();
+    let closed: BinaryMaskBuffer = mask.slice();
     for (let iteration = 0; iteration < iterations; iteration += 1) {
         closed = dilateMask(closed, width, height);
     }
@@ -712,7 +714,7 @@ const bridgeBoundaryChainGaps = ({
     eligibleMask: Uint8Array;
     iterations: number;
 }): Uint8Array => {
-    let bridged = mask.slice();
+    let bridged: BinaryMaskBuffer = mask.slice();
     const maxGapPixels = Math.min(2, Math.max(1, iterations + 1));
     for (let iteration = 0; iteration < iterations; iteration += 1) {
         const next = bridgeShortBoundaryChainGaps({

@@ -10,12 +10,18 @@ export interface SoundSprite {
     [key: string]: [number, number]; // [offset, duration] in ms
 }
 
+export interface AudioCategory {
+    group: string;
+    sub: string;
+}
+
 // 单个音效定义
 export interface SoundDefinition {
     src: string | string[];
     volume?: number;
     loop?: boolean;
     sprite?: SoundSprite;
+    category?: AudioCategory;
 }
 
 // BGM 定义
@@ -24,6 +30,7 @@ export interface BgmDefinition {
     name: string;
     src: string | string[];
     volume?: number;
+    category?: AudioCategory;
 }
 
 export type BgmGroupId = 'normal' | 'battle' | (string & {});

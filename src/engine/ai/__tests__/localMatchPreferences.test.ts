@@ -7,27 +7,27 @@ import {
 } from '../localMatchPreferences';
 import type { GameManifestEntry } from '../../../shared/gameManifest.types';
 
-const smashupManifest: GameManifestEntry = {
-    id: 'smashup',
+const defaultSetupManifest: GameManifestEntry = {
+    id: 'test-card-game',
     type: 'game',
     enabled: true,
-    titleKey: 'games.smashup.title',
-    descriptionKey: 'games.smashup.description',
+    titleKey: 'games.test-card-game.title',
+    descriptionKey: 'games.test-card-game.description',
     category: 'card',
-    playersKey: 'games.smashup.players',
+    playersKey: 'games.test-card-game.players',
     icon: '🎲',
     allowLocalMode: false,
     playerOptions: [2, 3, 4],
     setupOptions: {
         expansions: {
             type: 'multi-select',
-            labelKey: 'games.smashup.setup.expansions.label',
+            labelKey: 'games.test-card-game.setup.expansions.label',
             options: [
-                { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
-                { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
-                { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+                { value: 'core', labelKey: 'games.test-card-game.setup.expansions.core' },
+                { value: 'advanced', labelKey: 'games.test-card-game.setup.expansions.advanced' },
+                { value: 'custom', labelKey: 'games.test-card-game.setup.expansions.custom' },
             ],
-            default: ['titans', 'deckQuery', 'diy'],
+            default: ['core', 'advanced', 'custom'],
         },
     },
     ai: {
@@ -75,24 +75,24 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
     });
 
-    it('Smash Up 首次创建默认开启 diy 与余牌查询', () => {
-        const normalized = createDefaultLocalMatchPreferences(smashupManifest);
+    it('首次创建会保留 manifest 声明的 setup 默认值', () => {
+        const normalized = createDefaultLocalMatchPreferences(defaultSetupManifest);
 
         expect(normalized.minimumActionDelayMs).toBe(1000);
         expect(normalized.setupSelections).toEqual({
-            expansions: ['titans', 'deckQuery', 'diy'],
+            expansions: ['core', 'advanced', 'custom'],
         });
     });
 
-    it('The Gang 首次本地开局默认把所有非本地座位设为 AI，避免合作局空座卡住', () => {
+    it('manifest 可声明首次本地开局默认把所有非本地座位设为 AI，避免合作局空座卡住', () => {
         const normalized = createDefaultLocalMatchPreferences({
-            id: 'the-gang',
+            id: 'cooperative-test-game',
             type: 'game',
             enabled: true,
-            titleKey: 'games.the-gang.title',
-            descriptionKey: 'games.the-gang.description',
+            titleKey: 'games.cooperative-test-game.title',
+            descriptionKey: 'games.cooperative-test-game.description',
             category: 'card',
-            playersKey: 'games.the-gang.players',
+            playersKey: 'games.cooperative-test-game.players',
             icon: '🃏',
             allowLocalMode: true,
             playerOptions: [3, 4, 5, 6],
@@ -112,12 +112,12 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
     });
 
-    it('Smash Up 手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
-        const normalized = normalizeLocalMatchPreferences(smashupManifest, {
+    it('手动关闭可选 setup 后，不会在后续归一化时被重新打开', () => {
+        const normalized = normalizeLocalMatchPreferences(defaultSetupManifest, {
             numPlayers: 2,
             minimumActionDelayMs: 2000,
             setupSelections: {
-                expansions: ['titans'],
+                expansions: ['core'],
             },
             seatControllers: {
                 '0': { type: 'human' },
@@ -127,7 +127,7 @@ describe('localMatchPreferences create-room sanitization', () => {
 
         expect(normalized.minimumActionDelayMs).toBe(2000);
         expect(normalized.setupSelections).toEqual({
-            expansions: ['titans'],
+            expansions: ['core'],
         });
     });
 });

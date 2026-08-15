@@ -15,7 +15,7 @@ import type {
     PendingBonusDiceSettlement,
 } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
-import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
+import { NINJA_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { canAdvancePhase, checkPlayCard, getPlayerDieFace } from '../domain/rules';
 import { canManuallyAdvancePhase, getFocusPlayerId } from '../hooks/useDiceThroneState';
@@ -485,15 +485,34 @@ describe('DiceThrone 单槽当前骰区', () => {
         });
     });
 
-    it('修改多颗临时骰中的一颗时，应同步重算单骰说明和汇总说明切换', () => {
+    it('攻击修正自带五颗临时骰未改按原骰结算，改后按最终骰重算加伤和击倒', () => {
         const gunslinger = createCoreWithAttacker('gunslinger');
         const settlement = createBonusSettlement({
+            sourceAbilityId: 'card-eat-my-lead',
+            customResolutionId: 'gunslinger-eat-my-lead',
             dice: createAttackerBonusDice(gunslinger, [1, 1, 2, 2, 3], 'bonusDie.effect.gunslingerEatMyLeadDie'),
             summaryEffectKey: 'bonusDie.effect.gunslingerEatMyLead.resultKnockdown',
             summaryEffectParams: { bulletCount: 5, bonusDamage: 5 },
         });
         const opened = openBonusSettlement(gunslinger, settlement);
         const modified = modifyPendingBonusDie(opened, 4);
+        const openedSettlementEvents = buildSettlementEventsFromState(opened);
+        const modifiedSettlementEvents = buildSettlementEventsFromState(modified);
+
+        expect(opened.pendingBonusDiceSettlement?.summaryEffectKey).toBe('bonusDie.effect.gunslingerEatMyLead.resultKnockdown');
+        expect(opened.pendingBonusDiceSettlement?.summaryEffectParams).toMatchObject({
+            bulletCount: 5,
+            bonusDamage: 5,
+        });
+        expect(findBonusDamageAmount(openedSettlementEvents)).toBe(5);
+        expect(openedSettlementEvents).toContainEqual(expect.objectContaining({
+            type: 'STATUS_APPLIED',
+            payload: expect.objectContaining({
+                targetId: '1',
+                statusId: STATUS_IDS.KNOCKDOWN,
+                sourceAbilityId: 'card-eat-my-lead',
+            }),
+        }));
 
         expect(modified.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
             value: 4,
@@ -505,6 +524,8 @@ describe('DiceThrone 单槽当前骰区', () => {
             bulletCount: 4,
             bonusDamage: 4,
         });
+        expect(findBonusDamageAmount(modifiedSettlementEvents)).toBe(4);
+        expect(modifiedSettlementEvents.some(event => event.type === 'STATUS_APPLIED')).toBe(false);
     });
 
     it('攻击型临时奖励骰确认后恢复被挂起的主攻击骰', () => {
@@ -1685,8 +1706,8 @@ describe('DiceThrone 单槽当前骰区', () => {
             targetPlayerId: '1',
             sourceAbilityId: 'showdown',
             dice: [
-                { id: 0, value: 2, ownerId: '0' },
-                { id: 1, value: 5, ownerId: '1' },
+                { id: 0, definitionId: 'zhanshujia-dice', value: 2, ownerId: '0' },
+                { id: 1, definitionId: 'monk-dice', value: 5, ownerId: '1' },
             ],
             settlement: {
                 mode: 'compare',
@@ -1694,6 +1715,10 @@ describe('DiceThrone 单槽当前骰区', () => {
                     compareKind: 'gunslingerShowdown',
                     bonusDamageOnWin: 2,
                 },
+            },
+            display: {
+                surface: 'diceTray',
+                replayOnly: false,
             },
         });
 
@@ -1740,6 +1765,9 @@ describe('DiceThrone 单槽当前骰区', () => {
         const handler = getCustomActionHandler('gunslinger-duel-resolve');
         expect(handler).toBeDefined();
         if (!handler) return;
+        const playSix = COMMON_CARDS.find((card) => card.id === 'card-play-six');
+        expect(playSix).toBeDefined();
+        if (!playSix) return;
 
         const baseState: DiceThroneCore = {
             ...createCore(),
@@ -1795,8 +1823,8 @@ describe('DiceThrone 单槽当前骰区', () => {
             targetPlayerId: '0',
             sourceAbilityId: 'duel',
             dice: [
-                { id: 0, value: 2, ownerId: '1' },
-                { id: 1, value: 5, ownerId: '0' },
+                { id: 0, definitionId: 'monk-dice', value: 2, ownerId: '1' },
+                { id: 1, definitionId: 'zhanshujia-dice', value: 5, ownerId: '0' },
             ],
             settlement: {
                 mode: 'compare',
@@ -1805,7 +1833,39 @@ describe('DiceThrone 单槽当前骰区', () => {
                     winOnTie: false,
                 },
             },
+            display: {
+                surface: 'diceTray',
+                replayOnly: false,
+            },
         });
+        expect(checkPlayCard(opened, '1', playSix, 'defensiveRoll')).toEqual({ ok: true });
+
+        const unmodifiedConfirmEvents = execute(
+            { core: opened, sys: { phase: 'defensiveRoll' } } as MatchState<DiceThroneCore>,
+            {
+                type: 'CONFIRM_COMPARE_ROLL',
+                playerId: '1',
+                payload: {},
+            } as any,
+            queuedRandom([]),
+        );
+
+        expect(unmodifiedConfirmEvents).toContainEqual(expect.objectContaining({
+            type: 'CHOICE_REQUESTED',
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourceAbilityId: 'duel',
+                compareRoll: expect.objectContaining({
+                    contestants: [
+                        expect.objectContaining({ playerId: '1', roll: 2 }),
+                        expect.objectContaining({ playerId: '0', roll: 5 }),
+                    ],
+                    resultTextKey: 'compareRoll.gunslingerDuel.lose',
+                    resultTone: 'danger',
+                    confirmValue: { value: 1, customId: 'gunslinger-duel-lose' },
+                }),
+            }),
+        }));
 
         const modified = reduce(opened, {
             type: 'DIE_MODIFIED',
@@ -1850,6 +1910,26 @@ describe('DiceThrone 单槽当前骰区', () => {
                 }),
             }),
         }));
+
+        const afterConfirm = applyEvents(modified, confirmEvents as DiceThroneEvent[]);
+        expect(afterConfirm.currentRollContext).toMatchObject({
+            kind: 'compare',
+            status: 'settled',
+            dice: [
+                { id: 0, definitionId: 'monk-dice', value: 6, ownerId: '1' },
+                { id: 1, definitionId: 'zhanshujia-dice', value: 5, ownerId: '0' },
+            ],
+            policy: {
+                modifiableBy: 'none',
+                rerollableBy: 'none',
+                allowDiceCardTargeting: false,
+                blocksPhaseFlow: false,
+            },
+            display: {
+                surface: 'diceTray',
+                replayOnly: true,
+            },
+        });
     });
 
     it('已初始化玩家即使手牌和牌库都为空，进入主阶段也不能被旧存档补救重置血量', () => {

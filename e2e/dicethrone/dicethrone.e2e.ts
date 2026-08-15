@@ -84,7 +84,7 @@ test.describe('DiceThrone 核心 E2E', () => {
         await game.screenshot('01-main-flow-defensive-roll', testInfo);
     });
 
-    test('regression: targeted adds 2 damage and persists', async ({ page, game }, testInfo) => {
+    test('regression: targeted adds 2 damage and removes after hit', async ({ page, game }, testInfo) => {
         test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
         await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
@@ -161,7 +161,7 @@ test.describe('DiceThrone 核心 E2E', () => {
         const afterState = await readDiceThroneHarnessState<DiceThroneMatchState>(page);
         expect(afterState.sys.phase).toBe('main2');
         expect(afterState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(45);
-        expect(afterState.core.players['1'].statusEffects[STATUS_IDS.TARGETED]).toBe(1);
+        expect(afterState.core.players['1'].statusEffects[STATUS_IDS.TARGETED] ?? 0).toBe(0);
 
         await game.screenshot('02-targeted-damage-regression', testInfo);
     });

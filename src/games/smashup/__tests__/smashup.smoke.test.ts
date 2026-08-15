@@ -3457,7 +3457,7 @@ describe('smashup', () => {
             playerId: '0',
             visibleState: stateForAi,
             interaction: null,
-            responseWindow: stateForAi.sys.responseWindow?.current ?? null,
+            responseWindow: null,
             legalActions,
             rulesVersion: null,
             decisionBudgetMs: 250,
@@ -3684,7 +3684,7 @@ describe('smashup', () => {
             playerId: '0',
             visibleState: stateForAi,
             interaction: null,
-            responseWindow: stateForAi.sys.responseWindow?.current ?? null,
+            responseWindow: null,
             legalActions,
             rulesVersion: null,
             decisionBudgetMs: 250,
@@ -6398,11 +6398,15 @@ describe('smashup', () => {
         expect(reactionResult?.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
         expect(getPromptSourceId(boulderInteraction)).toBe('titan_explorers_very_large_boulder_move');
         expect(getPromptPlayerId(boulderInteraction)).toBe('0');
-        expect(reactionResult?.state.core.veryLargeBoulderTriggeredTurnByTitan?.['t-boulder-live']).toBe(4);
+        const reactionCommittedState = {
+            ...reactionResult!.state,
+            core: applyEvents(reactionResult!.state.core, reactionResult!.events),
+        };
+        expect(reactionCommittedState.core.veryLargeBoulderTriggeredTurnByTitan?.['t-boulder-live']).toBe(4);
 
         expect(getPromptOption(boulderInteraction, entry => entry.value?.move === true)).toBeDefined();
         const chooseMoveResult = respondToPromptOption(
-            reactionResult!.state,
+            reactionCommittedState,
             entry => entry.value?.move === true,
             'Very Large Boulder move option',
             '0',
@@ -10993,7 +10997,7 @@ describe('smashup', () => {
 
         const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_frankenstein_the_bride_start_choose_branch');
         expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.skip === true)).toBe(true);
-        expect(getPromptOptions(currentInteraction).map((option: any) => option.label)).toEqual(expect.arrayContaining([
+        expect(getPromptOptions(currentInteraction).map((option: any) => option.labelKey)).toEqual(expect.arrayContaining([
             'ui.titan_the_bride_effect_box',
             'ui.titan_the_bride_effect_destroy',
             'ui.titan_the_bride_effect_remove_counter',
@@ -11448,8 +11452,11 @@ describe('smashup', () => {
             makeMatchState(coreWithQueued, 'startTurn', '0'),
         );
         const runReactionChain = (preferSourceDefId: 'frankenstein_uberserum' | 'frankenstein_the_bride') => {
-            const interactionResult = post.matchState
-                ? resolveInteractionChain(post.matchState, (prompt) => {
+            let currentState = post.matchState ?? makeMatchState(coreWithQueued, 'startTurn', '0');
+            const allEvents: SmashUpEvent[] = [...post.events] as SmashUpEvent[];
+
+            for (let step = 0; step < 4; step += 1) {
+                const interactionResult = resolveInteractionChain(currentState, (prompt) => {
                     const sourceId = getPromptSourceId(prompt);
                     if (sourceId === 'smashup_reaction_choose') {
                         const options = getPromptOptions(prompt);
@@ -11463,10 +11470,26 @@ describe('smashup', () => {
                     }
                     const options = getPromptOptions(prompt);
                     return { optionId: options[0]?.id };
-                }, FIXED_RANDOM)
-                : { finalState: makeMatchState(coreWithQueued, 'startTurn', '0'), events: [] };
+                }, FIXED_RANDOM);
 
-            const allEvents = [...post.events, ...interactionResult.events] as SmashUpEvent[];
+                allEvents.push(...interactionResult.events as SmashUpEvent[]);
+                const committedCore = interactionResult.events.reduce(
+                    (acc, event) => SmashUpDomain.reduce(acc, event as SmashUpEvent),
+                    currentState.core,
+                );
+                const continued = postProcessSystemEvents(
+                    committedCore,
+                    interactionResult.events as SmashUpEvent[],
+                    FIXED_RANDOM,
+                    { ...interactionResult.finalState, core: committedCore },
+                );
+                allEvents.push(...continued.events as SmashUpEvent[]);
+                currentState = continued.matchState ?? { ...interactionResult.finalState, core: committedCore };
+                if (!getOptionalSimpleChoicePrompt(currentState)) {
+                    break;
+                }
+            }
+
             const cardsDrawnEvents = allEvents.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as CardsDrawnEvent[];
             const brideDraw = cardsDrawnEvents.find(event => event.payload.playerId === '0' && event.payload.count === 1);
             expect(brideDraw).toBeDefined();

@@ -6,6 +6,7 @@ import {
     isSkipLikeControlChoiceOption,
     isSystemCancelControlChoiceOption,
     type InteractionDescriptor,
+    type PromptOption,
     type SimpleChoiceData,
 } from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
@@ -30,13 +31,7 @@ export type OnlineAiRecoveryEngineConfig = Pick<GameEngineConfig, 'gameId' | 'on
 type HiddenSimpleChoiceOption = {
     id?: unknown;
     disabled?: unknown;
-    value?: {
-        skip?: unknown;
-        __cancel__?: unknown;
-        done?: unknown;
-        __emergency_skip__?: unknown;
-        kind?: unknown;
-    };
+    value?: unknown;
 };
 
 export type HiddenSimpleChoiceInteraction = {
@@ -46,7 +41,7 @@ export type HiddenSimpleChoiceInteraction = {
     data?: {
         title?: unknown;
         sourceId?: unknown;
-        multi?: { min?: unknown };
+        multi?: { min?: unknown; max?: unknown };
         options?: HiddenSimpleChoiceOption[];
         confirmValue?: unknown;
         slider?: unknown;
@@ -63,7 +58,7 @@ export type HiddenInteractionDescriptor = {
     data?: {
         title?: unknown;
         sourceId?: unknown;
-        multi?: { min?: unknown };
+        multi?: { min?: unknown; max?: unknown };
         options?: HiddenSimpleChoiceOption[];
         confirmValue?: unknown;
         slider?: unknown;
@@ -93,7 +88,9 @@ export type ForceEndTurnStalledAiReason =
     | 'response-loop'
     | 'active-turn'
     | 'active-turn-legal-only'
-    | 'seat-legal-only';
+    | 'seat-legal-only'
+    | 'action-loop'
+    | 'pending-damage';
 
 export const ONLINE_AI_LEGAL_ACTION_ONLY_REASONS = [
     'active-turn-legal-only',
@@ -124,6 +121,7 @@ export type ForceEndTurnStalledAiResolution = {
     requiresConfirmedAdvancePhase?: boolean;
     legalActionOnly?: boolean;
     allowForceCommandAfterLegalActionExhausted?: boolean;
+    loopInfo?: unknown;
     fingerprintHint?: string;
     resolution: AiResolution;
 };
@@ -721,7 +719,6 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
 
     const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
         engineConfig: args.engineConfig,
-        gameId: args.gameId,
     });
     if (!advancePhaseCommandType) {
         return null;
@@ -770,7 +767,7 @@ function getFreshEnabledSimpleChoiceOptions(
     return getFreshSimpleChoiceOptions(
         state,
         current as unknown as InteractionDescriptor<SimpleChoiceData<unknown>>,
-    ).filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
+    ).filter((option): option is PromptOption<unknown> & HiddenSimpleChoiceOption & { id: string } =>
         Boolean(option) && option.disabled !== true && typeof option.id === 'string');
 }
 
@@ -813,13 +810,13 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
-    const enabledTriggerOptions = enabledOptions.filter((option) =>
-        !isControlChoiceOptionShared(option) && option.value?.kind === 'trigger',
-    );
+    const enabledTriggerOptions = enabledOptions.filter((option) => {
+        const value = option.value as { kind?: unknown } | undefined;
+        return !isControlChoiceOptionShared(option) && value?.kind === 'trigger';
+    });
     if (shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice({
         sourceId,
         engineConfig: options?.engineConfig,
-        gameId: options?.gameId,
     })
         && minCount === 1
         && maxCount === 1
@@ -1135,7 +1132,6 @@ export function resolveForceEndTurnForStalledAi(args: {
         state: args.sharedState as MatchState<unknown>,
         phase,
         engineConfig: args.engineConfig,
-        gameId: args.gameId,
     });
     if (currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human') {
         if (shouldSuppressOnlineAiWatchdogActiveTurnCandidate({
@@ -1144,7 +1140,6 @@ export function resolveForceEndTurnForStalledAi(args: {
             currentPlayerId,
             turnNumber,
             engineConfig: args.engineConfig,
-            gameId: args.gameId,
         })) {
             return null;
         }
@@ -1172,7 +1167,6 @@ export function resolveForceEndTurnForStalledAi(args: {
 
         const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
             engineConfig: args.engineConfig,
-            gameId: args.gameId,
         });
 
         // 公开预开局选择阶段的 AI 没动作，通常是 seat 凭据/seat state 还没准备好。
@@ -1335,7 +1329,6 @@ export function resolveManualForceEndAiPhase(args: {
             : '';
         const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
             engineConfig: args.engineConfig,
-            gameId: args.gameId,
         });
         if (!advancePhaseCommandType) {
             return null;
@@ -1373,7 +1366,6 @@ export function resolveManualForceEndAiPhase(args: {
 
     const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
         engineConfig: args.engineConfig,
-        gameId: args.gameId,
     });
     if (!advancePhaseCommandType) {
         return null;

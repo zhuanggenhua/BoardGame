@@ -26,7 +26,7 @@ import { DiceThroneDebugConfig } from './debug-config';
 import { DICETHRONE_MANIFEST } from './manifest';
 import { getElementCenter } from '../../components/common/animations/FlyingEffect';
 import { usePulseGlow } from '../../components/common/animations/PulseGlow';
-import { useImpactFeedback } from '../../components/common/animations';
+import { useImpactFeedback, useShake } from '../../components/common/animations';
 import { useFxBus, FxLayer } from '../../engine/fx';
 import { diceThroneFxRegistry } from './ui/fxSetup';
 import { useToast } from '../../contexts/ToastContext';
@@ -214,11 +214,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const player = G.players[rootPid] || G.players['0'];
     const currentPhase = access.turnPhase;
     const currentRollDice = React.useMemo(() => getCurrentRollDice(G, currentPhase), [G, currentPhase]);
-    const bonusDiceReplayOnlyDice = React.useMemo(() => (
-        G.currentRollContext?.kind === 'bonus' && isSettledReplayOnlyRollContext(G.currentRollContext)
+    const replayOnlyRollDice = React.useMemo(() => (
+        G.currentRollContext && isSettledReplayOnlyRollContext(G.currentRollContext)
             ? G.currentRollContext.dice
             : null
     ), [G.currentRollContext]);
+    const bonusDiceReplayOnlyDice = React.useMemo(() => (
+        G.currentRollContext?.kind === 'bonus'
+            ? replayOnlyRollDice
+            : null
+    ), [G.currentRollContext?.kind, replayOnlyRollDice]);
     const playerNames = playerView.playerNames;
     const isResponseWindowOpen = !!rawG.sys.responseWindow?.current;
     const currentResponseWindow = rawG.sys.responseWindow?.current;
@@ -460,6 +465,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const opponentImpact = useImpactFeedback();
     const selfImpact = useImpactFeedback();
+    const opponentCpShake = useShake();
+    const selfCpShake = useShake();
     const { triggerGlow: triggerAbilityGlow } = usePulseGlow(800);
 
     // DOM 引用
@@ -815,6 +822,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const diceInteractionPlayerId = diceMultistepInteraction?.playerId != null
         ? String(diceMultistepInteraction.playerId)
         : undefined;
+    const canOperateOwnedCompareRoll = Boolean(
+        G.currentRollContext?.kind === 'compare'
+        && G.currentRollContext.status !== 'settled'
+        && G.currentRollContext.ownerPlayerId === rootPid
+    );
     const canInteractDice = canInteractDiceForCurrentBoard({
         isSpectator,
         isSelfView,
@@ -826,6 +838,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         currentResponderId,
         rootPid,
         diceInteractionPlayerId,
+        canOperateOwnedCompareRoll,
         isRollPhase,
         rollCount: G.rollCount,
         isRolling,
@@ -1139,6 +1152,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const pendingBonusDiceRoutedToRightTray = shouldUseRightTrayForPendingBonusDice(currentPendingBonusDiceSettlement);
     const isCurrentBonusDiceContext = G.currentRollContext?.kind === 'bonus';
+    const suppressCardSpotlightForBonusDiceSurface = Boolean(isCurrentBonusDiceContext || G.pendingBonusDiceSettlement);
+    React.useEffect(() => {
+        if (!suppressCardSpotlightForBonusDiceSurface || cardSpotlightQueue.length === 0) {
+            return;
+        }
+        for (const item of cardSpotlightQueue) {
+            handleCardSpotlightClose(item.id);
+        }
+    }, [cardSpotlightQueue, handleCardSpotlightClose, suppressCardSpotlightForBonusDiceSurface]);
     const bonusDiceTrayDice = React.useMemo(() => {
         // 普通确认结算会清掉 pending settlement，但当前 bonus 上下文仍负责右侧只读回看。
         // 这里必须按当前骰上下文路由，不能把 pending 是否存在当成显示资格。
@@ -1187,9 +1209,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [G, currentPhase, diceMultistepInteraction]);
     const interactionDice = React.useMemo(() => {
         if (bonusDiceTrayDice) return bonusDiceTrayDice;
-        if (attackSnapshotInteractionDice) return [...currentRollDice, ...attackSnapshotInteractionDice];
-        return currentRollDice;
-    }, [currentRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice]);
+        const visibleRollDice = replayOnlyRollDice ?? currentRollDice;
+        if (attackSnapshotInteractionDice) return [...visibleRollDice, ...attackSnapshotInteractionDice];
+        return visibleRollDice;
+    }, [currentRollDice, replayOnlyRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice]);
     const rightSidebarDice = React.useMemo(() => {
         if (bonusDiceTrayDice) return bonusDiceTrayDice;
         const baseDice = getRailDiceForCurrentBoard(interactionDice);
@@ -1235,6 +1258,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
         engineMoves.rerollBonusDie(dieIndex);
     }, [canRerollBonusDiceFromRightTray, engineMoves]);
+    const isReplayOnlyRollContextActive = Boolean(replayOnlyRollDice);
+    const canInteractRightSidebarDice = !isReplayOnlyRollContextActive
+        && (canInteractDice || !!rerollSelectingAction || isRightTrayBonusDiceSettlementActive);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -1882,6 +1908,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                     selected={isFocusedHeader}
                                     observed={!isSelfView && isFocusedHeader}
                                     isOpponentShaking={isFocusedHeader && opponentImpact.shake.isShaking}
+                                    isOpponentCpShaking={isFocusedHeader && opponentCpShake.isShaking}
                                     hitStopActive={isFocusedHeader ? opponentImpact.hitStop.isActive : false}
                                     hitStopConfig={isFocusedHeader ? opponentImpact.hitStop.config : undefined}
                                     shouldAutoObserve={shouldAutoObserve}
@@ -1921,12 +1948,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             if (info.bufferKey) {
                                 damageBuffer.release([info.bufferKey]);
                             }
-                            // 根据 bufferKey 判断目标，触发对应面板的受击反馈
-                            if (info.damage > 0) {
-                                const isOpponentHit = info.bufferKey === `hp-${otherPid}`;
-                                if (isOpponentHit) {
+                            // 根据命中资源精确触发对应条：HP 只震血条，CP 只震 CP 条。
+                            if (info.impactTarget?.resource === 'cp') {
+                                if (info.impactTarget.playerId === otherPid) {
+                                    opponentCpShake.triggerShake();
+                                } else if (info.impactTarget.playerId === rootPid) {
+                                    selfCpShake.triggerShake();
+                                }
+                            } else if (info.damage > 0 && info.impactTarget?.resource === 'hp') {
+                                if (info.impactTarget.playerId === otherPid) {
                                     opponentImpact.trigger(info.damage);
-                                } else {
+                                } else if (info.impactTarget.playerId === rootPid) {
                                     selfImpact.trigger(info.damage);
                                 }
                             }
@@ -1969,6 +2001,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onKnockdownClick={() => openUiModal('removeKnockdown')}
                         canRemoveKnockdown={canRemoveKnockdown}
                         isSelfShaking={selfImpact.shake.isShaking}
+                        isSelfCpShaking={selfCpShake.isShaking}
                         selfDamageFlashActive={selfImpact.flash.isActive}
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
@@ -2006,7 +2039,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         rollConfirmed={rollConfirmed}
                         isCompareRoll={isCompareRoll}
                         currentPhase={currentPhase}
-                        canInteractDice={canInteractDice || !!rerollSelectingAction || isRightTrayBonusDiceSettlementActive}
+                        canInteractDice={canInteractRightSidebarDice}
                         isRolling={isRolling}
                         setIsRolling={(rolling: boolean) => setIsRolling(rolling)}
                         rerollingDiceIds={rerollingDiceIds}
@@ -2031,7 +2064,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 completeRightTrayBonusDiceSettlement();
                                 return;
                             }
-                            if (!canInteractDice) return;
+                            if (!canInteractRightSidebarDice) return;
                             if (isCompareRoll) {
                                 engineMoves.confirmCompareRoll();
                                 return;
@@ -2057,7 +2090,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
                         showDiceTray={showRailDiceTray || Boolean(bonusDiceTrayDice)}
-                        showDiceActions={!bonusDiceReplayOnlyDice && !isBonusDiceResponseWindowForOwner && (
+                        showDiceActions={!isReplayOnlyRollContextActive && !isBonusDiceResponseWindowForOwner && (
                             !rightTrayBonusDiceSettlement
                             || Boolean(diceMultistepInteraction)
                             || isRightTrayBonusDiceSettlementActive
@@ -2192,7 +2225,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     viewPlayerBoardFace={viewPlayer.playerBoardFace}
 
                     // 卡牌特写
-                    cardSpotlightQueue={cardSpotlightQueue}
+                    cardSpotlightQueue={suppressCardSpotlightForBonusDiceSurface ? [] : cardSpotlightQueue}
                     onCardSpotlightClose={handleCardSpotlightClose}
                     opponentHeaderRef={opponentHeaderRef}
 

@@ -647,15 +647,17 @@ export const useGamePackageState = ({
                 resolvedManifest = await resolveGamePackageManifest(gameId, normalizedDelivery);
             }
 
-            const isCurrentRuntimeManifest = (manifest?: ResolvedGamePackageManifest | null) =>
+            const isCurrentRuntimeManifest = (
+                manifest?: ResolvedGamePackageManifest | null,
+            ) =>
                 manifest?.gameId === gameId
                 && manifest.runtimeChannel === fallbackManifest.runtimeChannel;
-            const selectedManifest = (
+            const selectedManifest: ResolvedGamePackageManifest = (
                 resolvedManifest?.source === 'remote' && isCurrentRuntimeManifest(resolvedManifest)
                     ? resolvedManifest
                     : previewManifest?.source === 'remote' && isCurrentRuntimeManifest(previewManifest)
                         ? previewManifest
-                        : isCurrentRuntimeManifest(resolvedManifest)
+                        : resolvedManifest && isCurrentRuntimeManifest(resolvedManifest)
                             ? resolvedManifest
                             : fallbackManifest
             );

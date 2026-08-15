@@ -48,10 +48,10 @@
   - 临时拆分 sheet、临时 hand preview、临时 atlas
   - 仅用于核对的 slot 单图、拼图、人工审查导出
 
-### 7. 应删除的文件
+### 7. 应删除或历史归档的文件
 - Git 临时文件（`temp_*.txt`、`tmp_*.txt`、`tmp-*.txt`）
 - 临时状态文件（`threshold`、`edge_check.txt`、`scan_results.txt`）
-- 临时计划文档（`findings.md`、`progress.md`、`task_plan.md`）
+- 临时计划文档（`findings.md`、`progress.md`、`task_plan.md`）默认删除；如果为了避免丢失历史上下文需要保留，只能迁到 [`docs/archive/session-state/`](archive/session-state/README.md)，并明确不是当前任务入口。
 
 ## .gitignore 规则
 
@@ -128,7 +128,7 @@ test-out.txt
 1. **Bug 分析**：直接在 `docs/bugs/` 创建，命名格式 `BUG-<issue-name>.md`
 2. **代码审查**：直接在 `docs/reviews/` 创建，命名格式 `review-<date>-<topic>.md`
 3. **临时脚本**：直接在 `scripts/temp/` 创建，命名格式 `test-<purpose>.mjs`
-4. **临时数据 / 诊断日志**：直接在 `temp/` 创建，任意命名；真机日志、下载日志、排障日志不得写在仓库根目录
+4. **临时数据 / 诊断日志**：直接在 [`temp/`](../temp/) 创建，任意命名；真机日志、下载日志、排障日志不得写在仓库根目录
 5. **临时图片 / 裁图 / OCR 中间产物**：直接在 `temp/<purpose>/` 或 `tmp/<purpose>/` 下创建；不得在仓库根目录创建 `.tmp_*`、`tmp_*` 目录
 6. **临时下载 / HTTP 探针输出**：`curl`、`Invoke-WebRequest`、浏览器保存、接口直连保存等命令必须显式指定 `temp/` 下路径；如果命令默认会落到当前目录，先建 `temp/http-probes/` 再运行，不得事后留下根目录 `temp-*` 文件给提交审查兜底。
 

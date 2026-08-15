@@ -21,6 +21,8 @@ import type { AndroidLiveUpdateActivityState } from '../../lib/mobile/androidLiv
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGate';
 import { toggleDocumentFullscreen } from '../../lib/webFullscreen';
+import { isConfigReviewPath } from '../../config/gameConfigReviewRoutes';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
 const HUD_MODAL_NS = 'hud';
 const LazyAudioProvider = lazy(() => import('../../contexts/AudioContext').then(m => ({ default: m.AudioProvider })));
@@ -34,14 +36,11 @@ const IDLE_OTA_ACTIVITY_STATE: AndroidLiveUpdateActivityState = {
     active: false,
     phase: 'idle',
 };
-const shouldHideOnRoute = (pathname: string) => (
-    pathname === '/games/summonerwars/config'
-    || pathname.startsWith('/games/summonerwars/config/')
-    || pathname === '/games/dicethrone/config'
-    || pathname.startsWith('/games/dicethrone/config/')
-    || pathname === '/games/betrayal/config'
-    || pathname.startsWith('/games/betrayal/config/')
-);
+const shouldHideOnRoute = (pathname: string) => isConfigReviewPath(pathname);
+
+interface GlobalHUDProps {
+    feedbackGameOptions?: readonly GameManifestEntry[];
+}
 
 const openExternalUrlInNewTab = (url: string) => {
     const anchor = document.createElement('a');
@@ -51,7 +50,7 @@ const openExternalUrlInNewTab = (url: string) => {
     anchor.click();
 };
 
-export const GlobalHUD = () => {
+export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const isNativeAndroid = isNativeAndroidRuntime();
     const [otaEnabled, setOtaEnabled] = useState(false);
     const otaEnabledForCurrentShell = isNativeAndroid && otaEnabled;
@@ -122,7 +121,7 @@ export const GlobalHUD = () => {
     const handleOpenAppDownload = async () => {
         const { resolveAndroidWebAppDownload } = await import('../../lib/mobile/androidNativeUpdates');
         const resolvedDownload = await resolveAndroidWebAppDownload();
-        if (!resolvedDownload.url) {
+        if (resolvedDownload.url === null) {
             if (resolvedDownload.reason === 'manifest-unavailable') {
                 toast.error(t('hud.download.resolveFailed'));
                 return;
@@ -368,7 +367,10 @@ export const GlobalHUD = () => {
             )}
             {showFeedback && (
                 <Suspense fallback={null}>
-                    <LazyFeedbackModal onClose={() => setShowFeedback(false)} />
+                    <LazyFeedbackModal
+                        onClose={() => setShowFeedback(false)}
+                        selectableGames={feedbackGameOptions}
+                    />
                 </Suspense>
             )}
         </>

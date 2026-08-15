@@ -7,10 +7,10 @@
  * - 每个游戏创建自己的实例（非全局单例），避免游戏间污染
  * - 提供 getRegisteredIds() 支持引用完整性验证
  *
- * 替代模式：
- * - DiceThrone 的 `customActionRegistry: Map<string, CustomActionEntry>`
- * - SummonerWars 的 abilityResolver.ts if/else 硬编码链
- * - SmashUp 的 `abilityRegistry`（已是注册表模式，可选迁移）
+ * 适用场景：
+ * - 将游戏层 custom action 从散落 Map 收敛到统一注册表
+ * - 将 ability resolver 的 if/else 链收敛到可枚举处理器
+ * - 为已有注册表补齐统一查询与完整性验证能力
  */
 
 // ============================================================================
@@ -45,13 +45,11 @@ interface RegistryEntry<TCtx, TResult> {
  *
  * 使用示例：
  * ```
- * // DiceThrone
- * const customActions = new ActionHandlerRegistry<CustomActionContext, DiceThroneEvent[]>();
- * customActions.register('pyro-details-dmg-per-fm', resolveDmgPerFM, { categories: ['damage'] });
+ * const customActions = new ActionHandlerRegistry<CustomActionContext, GameEvent[]>();
+ * customActions.register('damage-per-resource', resolveDamagePerResource, { categories: ['damage'] });
  *
- * // SummonerWars
  * const customAbilityActions = new ActionHandlerRegistry<AbilityContext, GameEvent[]>();
- * customAbilityActions.register('soul_transfer_request', handleSoulTransfer);
+ * customAbilityActions.register('move-unit-request', handleMoveUnitRequest);
  * ```
  */
 export class ActionHandlerRegistry<TCtx = unknown, TResult = unknown> {

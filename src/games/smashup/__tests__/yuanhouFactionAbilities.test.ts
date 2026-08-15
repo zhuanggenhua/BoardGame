@@ -22,11 +22,11 @@ import {
     makeMinion,
     makePlayer,
     resolveInteractionChain,
+    scoreBaseViaFlow,
     triggerBaseAbilityWithMS,
 } from './helpers';
 import { defaultTestRandom, runCommand } from './testRunner';
 import { resolveSpecial } from '../domain/abilityRegistry';
-import { scoreOneBase } from '../domain';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { triggerBaseAbility } from '../domain/baseAbilities';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
@@ -1955,7 +1955,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         };
 
         expect(isBaseAbilitySuppressed(core, 0)).toBe(false);
-        const scoring = scoreOneBase({ ...core, scoringEligibleBaseIndices: [0] } as any, 0, [], '0', 999);
+        const scoring = scoreBaseViaFlow({ ...core, scoringEligibleBaseIndices: [0] } as any, 0, [], '0', 999);
         expect(scoring.events.some(event => event.type === SU_EVENTS.BASE_SCORED)).toBe(true);
 
         const triggered = fireTriggers(core, 'onTurnStart', {
@@ -8417,7 +8417,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(isBaseAbilitySuppressed(core, 0)).toBe(true);
         expect(getScoringEligibleBaseIndices(core)).toEqual([]);
-        const scoring = scoreOneBase({ ...core, scoringEligibleBaseIndices: [0] } as any, 0, [], '0', 999);
+        const scoring = scoreBaseViaFlow({ ...core, scoringEligibleBaseIndices: [0] } as any, 0, [], '0', 999);
         expect(scoring.events.some(event => event.type === SU_EVENTS.BASE_SCORED)).toBe(false);
 
         const triggered = fireTriggers(core, 'onTurnStart', {
@@ -8613,7 +8613,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             scoringEligibleBaseIndices: [0],
         };
 
-        const scoring = scoreOneBase(
+        const scoring = scoreBaseViaFlow(
             core as any,
             0,
             core.baseDeck,

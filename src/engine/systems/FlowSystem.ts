@@ -326,8 +326,7 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
         id: SYSTEM_IDS.FLOW,
         name: '流程系统',
         // 必须晚于 ResponseWindow(15) / Prompt(20) 的拦截，避免绕过系统级阻塞
-        // ✅ 修复：priority 从 25 改为 60，确保在 CardiaEventSystem (50) 之后执行
-        // 原因：CardiaEventSystem 在 afterEvents 中处理 INTERACTION_RESOLVED 事件，创建新交互并加入队列
+        // priority 高于游戏层事件系统默认值，确保游戏层 afterEvents 有机会响应 INTERACTION_RESOLVED 并创建后续交互
         // FlowSystem 需要在新交互加入队列后再检查 hasQueuedInteractions，否则会误判为"无交互"而自动推进
         priority: 60,
 

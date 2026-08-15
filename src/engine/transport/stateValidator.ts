@@ -61,7 +61,7 @@ export async function validateMatchState(
 
     // 2. 检查 sys 必需字段
     if (state.sys) {
-        const sys = state.sys as Record<string, unknown>;
+        const sys = state.sys as unknown as Record<string, unknown>;
         
         if (!sys.matchId) {
             errors.push({ field: 'sys.matchId', message: 'Missing matchId' });

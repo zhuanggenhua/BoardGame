@@ -27,7 +27,7 @@ import {
 import { addPowerCounter } from './abilityHelpers';
 import { resumePendingBranchingChoiceFrames } from './branchingChoice';
 import { SU_EVENT_TYPES } from './events';
-import { maybeResolveReactionQueueSuspendingDomainEvents } from './reactionQueue';
+import { maybeResolveReactionQueue } from './reactionQueue';
 import {
     buildReactionOptions,
     getSmashUpReactionSession,
@@ -35,9 +35,7 @@ import {
 } from './reactionSession';
 import {
     getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents,
-    getScoringSession,
     replaceDeferredPostScoringReplacementBase,
-    updateScoringSession,
 } from './scoringSession';
 import { getCardDef } from '../data/cards';
 import { createFrankensteinBodyShopDistributionInteraction } from '../abilities/frankenstein';
@@ -304,20 +302,6 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                 return normalized;
             };
 
-            // 同一轮 afterEvents 中，后续系统看不到本轮新发出事件的 reduce 结果。
-            // 计分 session 的 awaiting-post-reduce 表示上一轮已经发出收尾事件；
-            // 到本轮 afterEvents 时这些事件已正式落地，可以释放回 idle 继续下一座基地。
-            if (getScoringSession(newState as MatchState<SmashUpCore>)?.currentStep === 'awaiting-post-reduce') {
-                newState = updateScoringSession(newState, (scoringSession) => (
-                    scoringSession?.currentStep === 'awaiting-post-reduce'
-                        ? {
-                            ...scoringSession,
-                            currentStep: 'idle',
-                        }
-                        : scoringSession
-                ));
-            }
-
             for (const event of events) {
                 const eventTimestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
                 latestTimestamp = Math.max(latestTimestamp, eventTimestamp);
@@ -518,7 +502,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                 && !newState.sys.interaction?.current
                 && !shouldHoldExplicitOptionalPassSession(newState as MatchState<SmashUpCore>, random, latestTimestamp)
             ) {
-                const reactionQueueResult = maybeResolveReactionQueueSuspendingDomainEvents(
+                const reactionQueueResult = maybeResolveReactionQueue(
                     newState as MatchState<SmashUpCore>,
                     random,
                     latestTimestamp,

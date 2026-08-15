@@ -90,7 +90,7 @@ const dispatchHarnessCommand = async (
 };
 
 const readVisibleDamageFloatCenters = async (page: Page) => page.evaluate(() => {
-    return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
+    return Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
         .map((element) => {
             const htmlElement = element as HTMLElement;
             const rect = htmlElement.getBoundingClientRect();
@@ -326,7 +326,7 @@ test.describe('DiceThrone Treant vs Moon Elf Visual Damage', () => {
 
         await page.waitForFunction(() => {
             const threshold = window.innerHeight * 0.55;
-            return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
+            return Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
                 .some((element) => {
                     const htmlElement = element as HTMLElement;
                     const rect = htmlElement.getBoundingClientRect();
@@ -350,7 +350,7 @@ test.describe('DiceThrone Treant vs Moon Elf Visual Damage', () => {
 
         await page.waitForFunction(() => {
             const threshold = window.innerHeight * 0.45;
-            return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
+            return Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
                 .some((element) => {
                     const htmlElement = element as HTMLElement;
                     const rect = htmlElement.getBoundingClientRect();
@@ -376,7 +376,7 @@ test.describe('DiceThrone Treant vs Moon Elf Visual Damage', () => {
                     state?: { get?: () => HarnessState | null };
                 };
             }).__BG_TEST_HARNESS__?.state?.get?.();
-            const floats = Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'));
+            const floats = Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'));
             const allHidden = floats.every((element) => {
                 const htmlElement = element as HTMLElement;
                 const rect = htmlElement.getBoundingClientRect();

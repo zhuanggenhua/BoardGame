@@ -25,7 +25,7 @@ import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { BLINK_2 } from '../../src/games/dicethrone/heroes/ninja/abilities';
 import { NINJA_CARDS } from '../../src/games/dicethrone/heroes/ninja/cards';
 import { TREANT_CARDS } from '../../src/games/dicethrone/heroes/treant/cards';
-import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
+import { expectNoCentralBonusDicePresentation, expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice } from './bonus-dice-flow';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -207,13 +207,10 @@ const screenshotCardSpotlightIfVisible = async (
     page: Page,
     testName: string,
     fileName: string,
-    expectedDiceCount?: number,
 ) => {
     const cardSpotlight = page.getByTestId('card-spotlight-overlay');
     if (!await cardSpotlight.isVisible({ timeout: 1500 }).catch(() => false)) return false;
-    if (typeof expectedDiceCount === 'number') {
-        await expect(cardSpotlight.getByTestId('card-spotlight-die')).toHaveCount(expectedDiceCount);
-    }
+    await expectNoCentralBonusDicePresentation(page, { allowCardSpotlight: true });
     await screenshot(page, testName, fileName);
     await closeCardSpotlightIfOpen(page);
     return true;
@@ -1628,8 +1625,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await screenshotCardSpotlightIfVisible(
                 match.hostPage,
                 testName,
-                '10-mother-tree-spirit-die-result-spotlight.png',
-                1,
+                '10-mother-tree-spirit-card-spotlight-without-central-dice.png',
             );
             await expect(match.hostPage.getByText('母树：选择养成后的树灵')).toBeVisible({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '10-mother-tree-spirit-choice-modal.png');
@@ -1656,8 +1652,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await screenshotCardSpotlightIfVisible(
                 match.hostPage,
                 testName,
-                '13-mother-tree-non-spirit-die-result-spotlight.png',
-                1,
+                '13-mother-tree-non-spirit-card-spotlight-without-central-dice.png',
             );
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);

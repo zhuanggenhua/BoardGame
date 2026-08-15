@@ -83,7 +83,7 @@ import { triggerActiveBaseAbility } from './baseAbilities';
 import { collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
-import { maybeResolveReactionQueueSuspendingDomainEvents } from './reactionQueue';
+import { maybeResolveReactionQueue } from './reactionQueue';
 import { applyTriggerQueueFactEvent } from './triggerQueueFacts';
 import { doesDestroyedMinionEnterOwnerDiscard } from './destroyFacts';
 import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent';
@@ -991,7 +991,6 @@ function executeCommand(
         }
 
         default:
-            // RESPONSE_PASS 由引擎 ResponseWindowSystem.beforeCommand 处理，领域层不生成事件
             return { events: [] };
     }
 }
@@ -1545,7 +1544,7 @@ export function processDestroyTriggers(
         return { events: combined, matchState: msForQueue };
     }
     if (!options?.skipReactionQueueResolution) {
-        const rq = maybeResolveReactionQueueSuspendingDomainEvents(msForQueue, random, now);
+        const rq = maybeResolveReactionQueue(msForQueue, random, now);
         if (rq) {
             return { events: [...combined, ...rq.events], matchState: rq.state };
         }

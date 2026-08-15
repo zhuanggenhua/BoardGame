@@ -6,7 +6,7 @@ import { isStaleChunkError, reloadForStaleChunkOnce } from '../lib/staleChunkRel
 import { isNativeAndroidRuntime } from '../lib/mobile/androidRuntime';
 import { safeMatchMedia } from '../lib/mediaQuery';
 import { appendMatchLoadTrace, captureRecentMatchLoadResources } from '../lib/matchLoadTrace';
-import { isMobileViewport } from './mobileSupport';
+import { isMobileViewport } from '../shared/mobileSupport';
 import { getCriticalImageResolver, registerCriticalImageResolver } from '../core';
 import type { CriticalImageResolver } from '../core/types';
 import type { GameTutorialSource, TutorialCollection, TutorialManifest } from '../engine/types';

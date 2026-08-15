@@ -15,6 +15,8 @@ import { useMatchRoomTutorialLifecycle } from './useMatchRoomTutorialLifecycle';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameManifestAiSupport } from '../games/manifest.types';
+import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
+import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
 
 export type MatchRoomPageRuntimeSetupModel = Pick<
     ReturnType<typeof useMatchRoomRuntimeSetup>,
@@ -29,6 +31,7 @@ export type MatchRoomPageRuntimeSetupModel = Pick<
     | 'tutorialLoadingProgressText'
     | 'boardShell'
     | 'engineConfig'
+    | 'runtimeAdapter'
     | 'latencyConfig'
     | 'onlineBoard'
     | 'tutorialBoard'
@@ -102,6 +105,7 @@ export type MatchRoomTutorialStageAdapter = {
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     aiSupport?: GameManifestAiSupport;
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
+    resolveLocalSetup?: GameRuntimeAdapter['resolveLocalSetup'];
     loadingProgressText: MatchRoomPageRuntimeSetupModel['tutorialLoadingProgressText'];
 };
 
@@ -197,6 +201,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
         engineConfig: runtimeSetup.engineConfig,
         aiSupport: gameConfig?.ai,
         onCommandRejected: stageControllers.handleCommandRejected,
+        resolveLocalSetup: runtimeSetup.runtimeAdapter?.resolveLocalSetup,
         loadingProgressText: runtimeSetup.tutorialLoadingProgressText,
     };
 }
@@ -224,6 +229,8 @@ function buildMatchRoomOnlineConnectionStageAdapter(args: {
 function buildMatchRoomOnlineHudStageAdapter(args: {
     matchId?: string;
     gameId?: string;
+    gameConfig?: MatchRoomPageIdentityModel['gameConfig'];
+    seatSwapConfig?: GameRuntimeAdapter['seatSwap'] | null;
     sessionState: MatchRoomPageSessionStateModel;
     stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
@@ -232,6 +239,8 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
     const {
         matchId,
         gameId,
+        gameConfig,
+        seatSwapConfig,
         sessionState,
         stageControllers,
         exitFlow,
@@ -253,7 +262,12 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         showForceEndAiPhase: sessionState.matchStatus.isHost && sessionState.hasOnlineAiSeat,
         isLoading: exitFlow.isLeaving,
         seatControllers: seatRuntime.seatControllers,
+        seatSwapConfig,
         engineConfig: seatRuntime.engineConfig,
+        ...buildGameHudRuntimeProps({
+            gameId,
+            gameConfig,
+        }),
     };
 }
 
@@ -278,6 +292,8 @@ function buildMatchRoomOnlineSeatRuntimeAdapter(args: {
 function buildMatchRoomOnlineOverlaysStageAdapter(args: {
     matchId?: string;
     gameId?: string;
+    gameConfig?: MatchRoomPageIdentityModel['gameConfig'];
+    seatSwapConfig?: GameRuntimeAdapter['seatSwap'] | null;
     sessionState: MatchRoomPageSessionStateModel;
     stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
@@ -286,6 +302,8 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
     const {
         matchId,
         gameId,
+        gameConfig,
+        seatSwapConfig,
         sessionState,
         stageControllers,
         exitFlow,
@@ -308,6 +326,8 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
         hud: buildMatchRoomOnlineHudStageAdapter({
             matchId,
             gameId,
+            gameConfig,
+            seatSwapConfig,
             sessionState,
             stageControllers,
             exitFlow,
@@ -319,6 +339,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
 function buildMatchRoomOnlineStageAdapter(args: {
     matchId?: string;
     gameId?: string;
+    gameConfig?: MatchRoomPageIdentityModel['gameConfig'];
     runtimeSetup: MatchRoomPageRuntimeSetupModel;
     sessionState: MatchRoomPageSessionStateModel;
     stageControllers: MatchRoomPageStageControllersModel;
@@ -348,6 +369,7 @@ function buildMatchRoomOnlineStageAdapter(args: {
             sessionState,
             exitFlow,
             seatRuntime,
+            seatSwapConfig: runtimeSetup.runtimeAdapter?.seatSwap ?? null,
         }),
         seatRuntime,
     };
@@ -493,6 +515,7 @@ export function useMatchRoomPageRuntimeModel(args: {
             online: buildMatchRoomOnlineStageAdapter({
                 matchId,
                 gameId,
+                gameConfig: pageIdentity.gameConfig,
                 runtimeSetup,
                 sessionState,
                 stageControllers,

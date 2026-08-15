@@ -633,7 +633,7 @@ export const ensureNativeDownloadNotificationPermission = async (): Promise<Nati
     try {
         const result = await plugin.ensureNotificationPermission();
         const normalized = normalizeNotificationPermissionResult(result);
-        logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-result', normalized);
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-result', { ...normalized });
         return normalized;
     } catch (error) {
         logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-failed', {
@@ -652,7 +652,7 @@ export const getNativeDownloadNotificationPermissionStatus = async (): Promise<N
     try {
         const result = await plugin.getNotificationPermissionStatus();
         const normalized = normalizeNotificationPermissionResult(result);
-        logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-status-result', normalized);
+        logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-status-result', { ...normalized });
         return normalized;
     } catch (error) {
         logMobileRuntimeCritical('NativeGamePackagePlugin', 'notification-permission-status-failed', {
@@ -822,7 +822,7 @@ export const createNativeGamePackageInstallHandle = async (
     let currentState = buildBaseState(manifest);
     let listenerHandle: PluginListenerHandle | null = null;
     let terminalResolved = false;
-    let resolveTerminalState: ((state: StoredGamePackageState) => void) | null = null;
+    let resolveTerminalState!: (state: StoredGamePackageState) => void;
     const terminalStatePromise = new Promise<StoredGamePackageState>((resolve) => {
         resolveTerminalState = resolve;
     });
@@ -887,7 +887,7 @@ export const createNativeGamePackageInstallHandle = async (
                             && (normalizedStatus === 'installed' || normalizedStatus === 'failed')
                         ) {
                             terminalResolved = true;
-                            resolveTerminalState?.(currentState);
+                            resolveTerminalState(currentState);
                         }
                     }),
                     2000,
@@ -995,7 +995,7 @@ export const createNativeGamePackageInstallHandle = async (
             options.onStateChange(currentState);
             if (!terminalResolved) {
                 terminalResolved = true;
-                resolveTerminalState?.(currentState);
+                resolveTerminalState(currentState);
             }
             return currentState;
         } catch (error) {
@@ -1024,7 +1024,7 @@ export const createNativeGamePackageInstallHandle = async (
             options.onStateChange(nextState);
             if (!terminalResolved) {
                 terminalResolved = true;
-                resolveTerminalState?.(nextState);
+                resolveTerminalState(nextState);
             }
             return nextState;
         } finally {

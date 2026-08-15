@@ -37,6 +37,62 @@ const SAFETY_CACHE_TTL_MS = 90_000;
 const PREFLIGHT_WRITE_RETRYABLE_CODES = new Set(['EBUSY', 'EPERM']);
 const PREFLIGHT_WRITE_RETRY_COUNT = 6;
 const PREFLIGHT_WRITE_RETRY_DELAY_MS = 50;
+const HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
+const HEAVY_TASK_GUARD_WAIT_POLL_MS = 10 * 1000;
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function parsePositiveIntegerEnv(name, fallback) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '') return fallback;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function isHeavyTaskGuardContention(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return message.includes('已有同类重任务在运行')
+        || message.includes('检测到冲突重任务正在运行');
+}
+
+async function acquireTaskGuardWithQueue(args) {
+    const waitTimeoutMs = parsePositiveIntegerEnv(
+        'BG_HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS',
+        HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS,
+    );
+    const waitPollMs = parsePositiveIntegerEnv(
+        'BG_HEAVY_TASK_GUARD_WAIT_POLL_MS',
+        HEAVY_TASK_GUARD_WAIT_POLL_MS,
+    );
+    const startedAt = Date.now();
+    let attempt = 0;
+
+    while (true) {
+        attempt += 1;
+        try {
+            return acquireTaskGuard(args);
+        } catch (error) {
+            if (!isHeavyTaskGuardContention(error)) {
+                throw error;
+            }
+
+            const elapsedMs = Date.now() - startedAt;
+            if (elapsedMs >= waitTimeoutMs) {
+                throw error;
+            }
+
+            const remainingMs = Math.max(0, waitTimeoutMs - elapsedMs);
+            console.log([
+                '[heavy-task-guard] 已有 E2E/quality-gate 重任务在运行，进入低资源排队等待。',
+                `第 ${attempt} 次检查失败，${Math.ceil(waitPollMs / 1000)}s 后重试。`,
+                `最长还可等待 ${Math.ceil(remainingMs / 1000)}s。`,
+            ].join(' '));
+            await sleep(waitPollMs);
+        }
+    }
+}
 
 function createE2ESessionId() {
     return `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -620,7 +676,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     let heldRuntimeManager = null;
     let globalBudgetHandle = null;
     let managedRuntime = null;
-    const taskGuard = acquireTaskGuard({
+    const taskGuard = await acquireTaskGuardWithQueue({
         name: 'e2e-run',
         conflicts: ['quality-gate'],
         command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
@@ -643,6 +699,10 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
                 group: 'e2e',
                 command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
                 waitForBudget: true,
+                waitTimeoutMs: parsePositiveIntegerEnv(
+                    'BG_HEAVY_WAIT_TIMEOUT_MS',
+                    HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS,
+                ),
                 metadata: {
                     mode,
                     target: explicitTargetPath || '<all>',

@@ -1,9 +1,10 @@
 export type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
 export type FabPosition = { left: number; top: number };
+export type FabOffset = { x: number; y: number };
 export type ExpandedFabLayout = {
     position: FabPosition;
     alignment: FabAlignment;
-    listOffset: FabPosition;
+    listOffset: FabOffset;
     columnCount: number;
     itemsPerColumn: number;
     columnGap: number;

@@ -95,6 +95,31 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
         expect(runtime?.numPlayers).toBe(2);
     });
 
+    it('游戏 runtime adapter 的本地 setup resolver 会透传到教程运行时模型', () => {
+        const resolveLocalSetup = vi.fn(() => ({
+            numPlayers: 3,
+            setupData: { fromAdapter: true },
+        }));
+        const runtime = buildMatchRoomTutorialBoardRuntimeModel({
+            gameId: 'qidahen',
+            tLobby,
+            stage: {
+                tutorialId: 'basic-opening',
+                tutorialManifest: {
+                    id: 'basic-opening',
+                    steps: [],
+                },
+                board,
+                engineConfig,
+                onCommandRejected: vi.fn(),
+                resolveLocalSetup,
+                loadingProgressText: undefined,
+            },
+        });
+
+        expect(runtime?.resolveLocalSetup).toBe(resolveLocalSetup);
+    });
+
     it('目录页接管前，教程运行时模型仍可由页面层按需构建', () => {
         const runtime = buildMatchRoomTutorialBoardRuntimeModel({
             gameId: 'qidahen',

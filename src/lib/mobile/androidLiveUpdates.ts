@@ -677,7 +677,7 @@ export const readAndroidLiveUpdateSnapshot = async (
     });
 
     if (!config.enabled) {
-        emitCriticalOtaLog('snapshot-read-disabled', baseSnapshot);
+        emitCriticalOtaLog('snapshot-read-disabled', { ...baseSnapshot });
         return baseSnapshot;
     }
 
@@ -706,7 +706,7 @@ export const readAndroidLiveUpdateSnapshot = async (
             nativeAndroid: nativeDiagnostics.nativeAndroid,
             updaterLoaded: false,
         };
-        emitCriticalOtaLog('snapshot-read-updater-missing', snapshot);
+        emitCriticalOtaLog('snapshot-read-updater-missing', { ...snapshot });
         return snapshot;
     }
 
@@ -725,7 +725,7 @@ export const readAndroidLiveUpdateSnapshot = async (
             nativeAndroid: nativeDiagnostics.nativeAndroid,
             updaterLoaded: false,
         };
-        emitCriticalOtaLog('snapshot-read-updater-unavailable', snapshot);
+        emitCriticalOtaLog('snapshot-read-updater-unavailable', { ...snapshot });
         return snapshot;
     }
     const compatibility = manifest
@@ -751,7 +751,7 @@ export const readAndroidLiveUpdateSnapshot = async (
         compatible: compatibility?.compatible,
         compatibilityReason: compatibility?.reason,
     };
-    emitCriticalOtaLog('snapshot-read-success', snapshot);
+    emitCriticalOtaLog('snapshot-read-success', { ...snapshot });
     return snapshot;
 };
 
@@ -807,7 +807,6 @@ export const notifyAndroidBundleReady = async () => {
             const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
             const nativeMobile = nativeDiagnostics.nativeMobile;
             logMobileRuntime('OTA', 'notify-app-ready-native-check', {
-                nativeMobile,
                 ...nativeDiagnostics,
             });
             updateOtaDebugState({
@@ -1036,14 +1035,13 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
             const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
             const nativeMobile = nativeDiagnostics.nativeMobile;
             logMobileRuntime('OTA', 'background-check-native-check', {
-                nativeMobile,
                 ...nativeDiagnostics,
             });
             if (!nativeMobile) {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
-                emitCriticalOtaLog('background-check-not-native', nativeDiagnostics);
+                emitCriticalOtaLog('background-check-not-native', { ...nativeDiagnostics });
                 updateOtaDebugState({
                     stage: 'background-check-not-native',
                     resultStatus: 'not-native',

@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 import type { CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
-import type { DieFace } from '../types';
 import SpotlightContainer from './SpotlightContainer';
-import RollSpotlightDiceContent from './RollSpotlightDiceContent';
 import { GameButton } from './components/GameButton';
 import { UI_Z_INDEX } from '../../../core';
 
@@ -30,7 +28,6 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     compareRoll,
     isVisible,
     canResolve = true,
-    locale,
     onResolveOption,
     onConfirm,
     usePortal,
@@ -97,7 +94,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                     </span>
                 </motion.div>
 
-                <div className="flex items-start justify-center gap-[2vw] max-w-[90vw]">
+                <div className="flex items-start justify-center gap-[1vw] max-w-[90vw]">
                     {contestants.map((contestant, index) => {
                         const label = hasTranslation(contestant.labelKey)
                             ? t(contestant.labelKey, contestant.labelParams)
@@ -109,23 +106,12 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.12 }}
-                                className="flex flex-col items-center gap-[0.8vw] min-w-[14vw]"
+                                className="rounded-xl border border-white/15 bg-black/45 px-[1.2vw] py-[0.55vw] text-center min-w-[10vw]"
                                 data-testid={`compare-roll-participant-${index}`}
                             >
-                                <div className="text-white/90 text-[1.1vw] font-bold tracking-[0.06em] uppercase">
+                                <div className="text-white/90 text-[0.95vw] font-bold tracking-[0.06em] uppercase">
                                     {label}
                                 </div>
-                                <RollSpotlightDiceContent
-                                    value={contestant.roll}
-                                    face={contestant.face as DieFace | undefined}
-                                    effectKey={contestant.effectKey}
-                                    effectParams={contestant.effectParams}
-                                    locale={locale}
-                                    size="7vw"
-                                    rollingDurationMs={850 + index * 120}
-                                    presentationKey={compareRoll.id}
-                                    characterId={contestant.characterId}
-                                />
                             </motion.div>
                         );
                     })}

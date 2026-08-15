@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 
 import { CardSpotlightOverlay } from '../CardSpotlightOverlay';
@@ -82,5 +82,41 @@ describe('CardSpotlightOverlay', () => {
             vi.advanceTimersByTime(1);
         });
         expect(onClose).toHaveBeenCalledWith('watch-out-1000');
+    });
+
+    it('旧队列项即便带有奖励骰字段，也不在中央卡牌特写渲染骰子或汇总文本', () => {
+        render(
+            <CardSpotlightOverlay
+                queue={[{
+                    id: 'watch-out-2000',
+                    cardId: 'watch-out',
+                    timestamp: 2000,
+                    playerId: '1',
+                    playerName: '对手',
+                    previewRef: {
+                        type: 'atlas',
+                        atlasId: 'dicethrone-moon-elf-cards',
+                        index: 1,
+                    },
+                    bonusDice: [{
+                        index: 0,
+                        value: 4,
+                        face: 'foot' as any,
+                        timestamp: 2001,
+                    }],
+                    summaryText: {
+                        effectKey: 'bonusDie.effect.volley.result',
+                        effectParams: { bonusDamage: 2 },
+                    },
+                }]}
+                onClose={vi.fn()}
+                autoCloseDelay={3000}
+            />,
+        );
+
+        expect(screen.getByTestId('card-spotlight-overlay')).toBeTruthy();
+        expect(screen.queryByTestId('card-spotlight-die')).toBeNull();
+        expect(screen.queryByTestId('card-spotlight-summary-text')).toBeNull();
+        expect(screen.queryByTestId('dice-2d')).toBeNull();
     });
 });

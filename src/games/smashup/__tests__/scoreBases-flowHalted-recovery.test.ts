@@ -2,7 +2,7 @@
  * scoreBases flowHalted 恢复合同
  *
  * 锁定 `onPhaseExit('scoreBases')` 在 flowHalted 场景下的恢复语义：
- * - 若当前交互已解决，应清除 flowHalted，先发出计分事件并等待正式 reduce
+ * - 若当前交互已解决，应清除 flowHalted，先发出计分事件并由 pipeline 正式 reduce
  * - 计分事件落地后，再继续 After Scoring 并进入后续收尾
  *   此时 BASE_CLEARED / BASE_REPLACED 仍保留在后续 continuation，而不是在本次恢复里立刻发出
  * - 若当前交互仍在进行，应继续 halt，不能越过交互
@@ -19,7 +19,7 @@ import { createScoringSession, getScoringSession, setScoringSession } from '../d
 import { expectNoPrompt, getFirstPrompt } from './helpers';
 
 describe('scoreBases flowHalted 恢复', () => {
-    it('flowHalted=true 且交互已解决时,应该清除 flowHalted 并进入 awaiting-post-reduce', () => {
+    it('flowHalted=true 且交互已解决时,应该清除 flowHalted 并进入计分事件提交屏障', () => {
         // 构造场景: flowHalted=true, 但交互已解决 (current=null)
         const state: MatchState<SmashUpCore> = {
             core: {
@@ -101,7 +101,7 @@ describe('scoreBases flowHalted 恢复', () => {
         if (typeof result === 'object' && result && 'updatedState' in result && result.updatedState) {
             expect(result.updatedState.sys.flowHalted).toBe(false);
             expectNoPrompt(result.updatedState);
-            expect(result.updatedState.sys.responseWindow?.current).toBeUndefined();
+            expect(result.updatedState.sys.responseWindow?.current ?? undefined).toBeUndefined();
             expect(getScoringSession(result.updatedState)).toMatchObject({
                 currentStep: 'awaiting-score-award-reduce',
                 lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],

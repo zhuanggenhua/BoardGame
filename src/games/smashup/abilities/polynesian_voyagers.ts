@@ -19,6 +19,7 @@ import {
     grantContextualExtraMinion,
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
+import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import { SU_EVENTS, type ActionCardDef, type BaseReplacedEvent, type CardInstance, type CardTransferredEvent, type MinionOnBase, type SmashUpCore, type SmashUpEvent } from '../domain/types';
 
 type MinionChoice = { minionUid?: string; minionDefId?: string; baseIndex?: number; skip?: boolean };
@@ -574,7 +575,7 @@ function sunTattooOnPlay(ctx: AbilityContext): AbilityResult {
     if ((target.attachedActions ?? []).length > 0 && ctx.fromDiscard !== true) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     }
-    if (ctx.matchState.sys?.responseWindow?.current?.windowType !== 'afterScoring') {
+    if (getSmashUpReactionWindowContext(ctx.matchState)?.windowType !== 'afterScoring') {
         return { events: [] };
     }
     const destinations = ctx.state.bases

@@ -173,28 +173,30 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
         return null;
     }
 
-    if (isPlainRecord(core.selectedFactions)) {
+    const selectedFactions = isPlainRecord(core.selectedFactions) ? core.selectedFactions : null;
+    if (selectedFactions) {
         if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
-            const currentPlayerFaction = core.selectedFactions?.[args.currentPlayerId];
+            const currentPlayerFaction = selectedFactions[args.currentPlayerId];
             if (typeof currentPlayerFaction !== 'string' || currentPlayerFaction === 'unselected') {
                 return null;
             }
         }
         return manualAiSeatIds.find((playerId) => {
-            const selectedFaction = core.selectedFactions?.[playerId];
+            const selectedFaction = selectedFactions[playerId];
             return typeof selectedFaction !== 'string' || selectedFaction === 'unselected';
         }) ?? null;
     }
 
-    if (isPlainRecord(core.selectedCharacters)) {
+    const selectedCharacters = isPlainRecord(core.selectedCharacters) ? core.selectedCharacters : null;
+    if (selectedCharacters) {
         if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
-            const currentPlayerCharacter = core.selectedCharacters?.[args.currentPlayerId];
+            const currentPlayerCharacter = selectedCharacters[args.currentPlayerId];
             if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
                 return null;
             }
         }
         return manualAiSeatIds.find((playerId) => {
-            const selectedCharacter = core.selectedCharacters?.[playerId];
+            const selectedCharacter = selectedCharacters[playerId];
             return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';
         }) ?? null;
     }
@@ -379,7 +381,5 @@ export function resolveManualSetupSelectionActionKindFromCommand(args: {
     if (typeof args.payload.factionId !== 'string') {
         return null;
     }
-    return args.type === 'su:select_faction'
-        ? 'select-faction'
-        : 'setup-select-faction';
+    return 'setup-select-faction';
 }

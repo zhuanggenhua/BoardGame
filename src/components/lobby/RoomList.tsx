@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
 interface RoomListProps {
     roomItems: RoomItem[];
+    gameManifest?: GameManifestEntry | null;
     gameTranslationNamespace?: string;
     activeMatch: ActiveMatchInfo | null;
     isActionLoading: boolean;
@@ -18,6 +20,7 @@ interface RoomListProps {
 
 export const RoomList = ({
     roomItems,
+    gameManifest,
     gameTranslationNamespace,
     activeMatch,
     isActionLoading,
@@ -154,7 +157,7 @@ export const RoomList = ({
                                                         {t('rooms.enabledExpansions')}
                                                     </span>
                                                     {room.publicSetupSummary.enabledExpansions.map((expansionId) => {
-                                                        const label = resolveRoomExpansionLabel(t, room.gameName, expansionId);
+                                                        const label = resolveRoomExpansionLabel(t, room.gameName, expansionId, gameManifest ?? undefined);
                                                         return (
                                                             <span
                                                                 key={expansionId}
@@ -168,12 +171,9 @@ export const RoomList = ({
                                                 </div>
                                             )}
                                             {(() => {
-                                                const isBetrayalRoom = room.gameName?.trim().toLowerCase() === 'betrayal';
                                                 const scenarioLabel = room.publicSetupSummary?.scenarioId
-                                                    ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
-                                                    : isBetrayalRoom
-                                                        ? t('rooms.scenarioPending', { defaultValue: '未定剧本' })
-                                                        : '';
+                                                    ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId, gameManifest ?? undefined)
+                                                    : resolveRoomScenarioPendingLabel(t, gameManifest ?? undefined);
                                                 return scenarioLabel ? (
                                                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                                         <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-parchment-light-text/85">

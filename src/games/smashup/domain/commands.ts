@@ -53,7 +53,6 @@ import { isCardActionLike, isCardMinionLike } from './utils';
 import {
     getLiveSmashUpReactionWindowContext,
     getSmashUpReactionWindowContext,
-    hasBlockingLegacyResponseWindow,
 } from './reactionWindowState';
 import { getSmashUpReactionSession } from './reactionSession';
 import {
@@ -187,11 +186,6 @@ function getCurrentManualActivationWindow(
     options?: SmashUpValidateOptions,
 ): SmashUpActivationWindow {
     if (getEffectivePhase(state, options) !== 'scoreBases') return 'playCards';
-    const turnOrder = state.core.turnOrder ?? [];
-    const legacyQueue = state.sys.responseWindow?.current?.responderQueue ?? [];
-    if (legacyQueue.some((playerId) => !turnOrder.includes(playerId))) {
-        return 'playCards';
-    }
     const reactionWindow = getSmashUpReactionWindowContext(state);
     if (reactionWindow?.windowType === 'meFirst') return 'beforeScoring';
     if (reactionWindow?.windowType === 'afterScoring') return 'afterScoring';
@@ -272,10 +266,6 @@ function validateManualSpecialScoringBase(
     const eligibleIndices = getManualSpecialScoringBaseIndices(state);
     if (!canSourceFromAnyBase && !eligibleIndices.includes(baseIndex)) {
         return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
-    }
-
-    if (hasBlockingLegacyResponseWindow(state)) {
-        return { valid: false, error: 'Me First! 响应窗口仍在进行中' };
     }
 
     return undefined;
@@ -1558,10 +1548,6 @@ export function validate(
         }
 
         default:
-            // RESPONSE_PASS 由引擎 ResponseWindowSystem 处理，领域层直接放行
-            if ((command as { type: string }).type === 'RESPONSE_PASS') {
-                return { valid: true };
-            }
             return { valid: false, error: '未知命令' };
     }
 }

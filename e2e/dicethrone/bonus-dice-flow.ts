@@ -12,6 +12,10 @@ type RightTrayBonusDiceReviewOptions = {
     expectedValues?: number[];
 };
 
+type NoCentralBonusDicePresentationOptions = {
+    allowCardSpotlight?: boolean;
+};
+
 const readPendingBonusSettlement = async (readState: ReadGameState) => {
     const state = await readState();
     return state?.pendingBonusDiceSettlement
@@ -37,6 +41,26 @@ const rightTrayRail = (page: Page) => {
 };
 
 /**
+ * 奖励骰 / 临时骰流程不能再由中央特写承接。
+ * 玩家要改的骰子必须留在右侧 2D 骰盘，不能被中间浮层抢焦点。
+ */
+export const expectNoCentralBonusDicePresentation = async (
+    page: Page,
+    { allowCardSpotlight = false }: NoCentralBonusDicePresentationOptions = {},
+): Promise<void> => {
+    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+    await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+    await expect(page.locator('[data-testid="card-spotlight-die"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="card-spotlight-summary-text"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="card-spotlight-overlay"] [data-testid="dice-2d"]')).toHaveCount(0);
+    if (!allowCardSpotlight) {
+        await expect(page.getByTestId('card-spotlight-overlay')).toHaveCount(0);
+    }
+};
+
+/**
  * 返回当前页面真实可见的右侧 2D 骰盘。
  * 奖励骰的所有者由页面视角决定，调用方不应再用领域 playerId 猜 DOM 容器。
  */
@@ -53,7 +77,7 @@ export const getRightTrayDie = (page: Page, dieId: number | string) => (
  */
 export const waitForDiceThroneVisualIdle = async (page: Page): Promise<void> => {
     await expect(page.locator('[data-testid^="flying-effect-"]')).toHaveCount(0, { timeout: 10000 });
-    await expect(page.locator('[data-floating-text-preset="dicethrone-damage"]')).toHaveCount(0, { timeout: 10000 });
+    await expect(page.locator('[data-floating-text-preset="impact-damage"]')).toHaveCount(0, { timeout: 10000 });
     await expect.poll(async () => {
         return page.locator('[data-testid="dice-2d"]').evaluateAll((dice) => (
             dice.every((die) => (
@@ -88,9 +112,7 @@ export const expectRightTrayBonusDiceConfirmation = async (
 
     const { diceTray, rail } = rightTrayRail(page);
     const confirmButton = rail.locator('[data-tutorial-id="dice-confirm-button"]').first();
-    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+    await expectNoCentralBonusDicePresentation(page);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
     await expect(confirmButton).toBeVisible({ timeout: 10000 });
     await expect(confirmButton).toBeEnabled();
@@ -117,9 +139,7 @@ export const expectRightTrayBonusDiceAwaitingResponse = async (
     await closeDebugPanelIfVisible(page);
 
     const { diceTray, rail } = rightTrayRail(page);
-    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+    await expectNoCentralBonusDicePresentation(page);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
     await expect(rail.locator('[data-tutorial-id="dice-confirm-button"]')).toHaveCount(0);
 };
@@ -137,9 +157,7 @@ export const expectRightTrayBonusDiceReadOnlyReview = async (
     await closeDebugPanelIfVisible(page);
 
     const { diceTray } = rightTrayRail(page);
-    await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
-    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+    await expectNoCentralBonusDicePresentation(page);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
 
     if (expectedValues) {

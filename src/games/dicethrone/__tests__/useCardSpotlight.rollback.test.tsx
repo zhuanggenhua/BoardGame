@@ -364,7 +364,7 @@ describe('useCardSpotlight rollback consumer', () => {
         });
     });
 
-    it('binds opponent display-only bonus dice to the already visible card spotlight', async () => {
+    it('奖励骰路由到右侧骰盘时，对手分批骰事件不得再附加到中央卡牌特写', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
                 {children}
@@ -417,35 +417,37 @@ describe('useCardSpotlight rollback consumer', () => {
                 timestamp: 5001,
             },
         };
-        const settlementEntry: EventStreamEntry = {
+        const summaryEntry: EventStreamEntry = {
             id: 43,
             event: {
-                type: 'BONUS_DICE_REROLL_REQUESTED',
+                type: 'BONUS_DIE_ROLLED',
                 payload: {
-                    settlement: {
-                        id: 'watch-out',
-                        sourceAbilityId: 'watch-out',
-                        attackerId: '1',
-                        targetId: '0',
-                        dice: [
-                            { index: 0, value: 1, face: 'bow', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 1 } },
-                            { index: 1, value: 2, face: 'bow', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 2 } },
-                        ],
-                        rerollCostTokenId: 'cp',
-                        rerollCostAmount: 1,
-                        rerollCount: 0,
-                        maxRerollCount: 1,
-                        rerollEffectKey: 'bonusDie.effect.watchOut.bow',
-                        readyToSettle: false,
-                        displayOnly: true,
-                    },
+                    playerId: '1',
+                    targetPlayerId: '0',
+                    value: 2,
+                    face: 'bow',
+                    effectKey: 'bonusDie.effect.watchOut.result',
+                    effectParams: { value: 2 },
                 },
-                timestamp: 5000,
+                timestamp: 5002,
             },
         };
 
-        const view = render(<HookProbe streamEntries={[]} />, { wrapper });
-        view.rerender(<HookProbe streamEntries={[cardEntry, firstBonusEntry, secondBonusEntry, settlementEntry]} />);
+        const view = render(
+            <HookProbe
+                streamEntries={[]}
+                suppressStandaloneBonusDie
+                suppressBonusDiceInCardSpotlight
+            />,
+            { wrapper },
+        );
+        view.rerender(
+            <HookProbe
+                streamEntries={[cardEntry]}
+                suppressStandaloneBonusDie
+                suppressBonusDiceInCardSpotlight
+            />,
+        );
 
         await waitFor(() => {
             const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
@@ -454,7 +456,23 @@ describe('useCardSpotlight rollback consumer', () => {
                 id: 'watch-out-4800',
                 playerId: '1',
             });
-            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(2);
+            expect(state.bonusDie.show).toBe(false);
+        });
+
+        view.rerender(
+            <HookProbe
+                streamEntries={[cardEntry, firstBonusEntry, secondBonusEntry, summaryEntry]}
+                suppressStandaloneBonusDie
+                suppressBonusDiceInCardSpotlight
+            />,
+        );
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('watch-out-4800');
+            expect(state.cardSpotlightQueue[0].bonusDice ?? []).toHaveLength(0);
+            expect(state.cardSpotlightQueue[0].summaryText).toBeUndefined();
             expect(state.bonusDie.show).toBe(false);
         });
     });

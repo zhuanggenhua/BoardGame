@@ -12,7 +12,7 @@ import {
     resolveLocalMatchPlayerCount,
 } from './seatControllers';
 import type { AiSeatController } from './types';
-import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
+import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../../shared/roomSetup';
 
 const STORAGE_PREFIX = 'local_ai_match_preferences:';
 

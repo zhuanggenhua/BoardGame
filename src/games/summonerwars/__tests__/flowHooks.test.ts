@@ -16,6 +16,10 @@ import type { MatchState, GameEvent } from '../../../engine/types';
 import { generateInstanceId } from '../domain/utils';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import type { RandomFn } from '../../../engine/types';
+import {
+  getPhaseEndAbilityResolved,
+  withPhaseEndAbilityResolved,
+} from '../domain/phaseEndResolution';
 
 // ============================================================================
 // 辅助
@@ -288,6 +292,29 @@ describe('FlowHooks - onPhaseExit', () => {
 
     expect(repeatedResult.halt).toBe(true);
     expect(repeatedAbilityEvents).toHaveLength(0);
+  });
+
+  it('阶段结束确认缓存迁移时兼容旧 sys 快照并写回 core', () => {
+    const core = createMinimalCore({ phase: 'attack', currentPlayer: '0' });
+    const resolutionKey = '1:attack:feed_beast:test-beast#1';
+    const state = wrapState(core);
+    (state.sys as typeof state.sys & {
+      summonerWars?: { phaseEndAbilityResolved?: Record<string, true> };
+    }).summonerWars = {
+      phaseEndAbilityResolved: {
+        [resolutionKey]: true,
+      },
+    };
+
+    expect(getPhaseEndAbilityResolved(state)?.[resolutionKey]).toBe(true);
+
+    const migrated = withPhaseEndAbilityResolved(state, {
+      [resolutionKey]: true,
+      '1:attack:mogu_decay:test-mogu#1': true,
+    });
+
+    expect(migrated.core.phaseEndAbilityResolved?.[resolutionKey]).toBe(true);
+    expect((migrated.sys as { summonerWars?: unknown }).summonerWars).toBeUndefined();
   });
 
   describe('抽牌阶段退出', () => {

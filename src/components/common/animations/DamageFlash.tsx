@@ -43,6 +43,16 @@ export interface DamageFlashProps {
   showRedPulse?: boolean;
   /** 是否显示伤害数字 */
   showNumber?: boolean;
+  /** 整体延迟启动（毫秒），用于让受击层和投射物命中帧对齐 */
+  startDelayMs?: number;
+  /** 伤害数字延迟（毫秒），用于和命中帧对齐 */
+  numberDelayMs?: number;
+  /** 伤害数字稳定测试选择器 */
+  numberTestId?: string;
+  /** 伤害数字字号倍率 */
+  numberFontScale?: number;
+  /** 伤害数字颜色 class */
+  numberColorClass?: string;
   /** 自定义斜切颜色 */
   slashColor?: string;
   /** 自定义红脉冲颜色 */
@@ -71,6 +81,11 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   showSlash = true,
   showRedPulse = true,
   showNumber = true,
+  startDelayMs = 0,
+  numberDelayMs = 0,
+  numberTestId,
+  numberFontScale,
+  numberColorClass,
   slashColor,
   pulseColor,
   slashDurationMs,
@@ -99,25 +114,33 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
 
     const timers: number[] = [];
 
-    if (showSlash) {
-      setSlashActive(true);
-      timers.push(window.setTimeout(() => setSlashActive(false), slashActiveMs));
-    }
+    const triggerEffects = () => {
+      if (showSlash) {
+        setSlashActive(true);
+        timers.push(window.setTimeout(() => setSlashActive(false), slashActiveMs));
+      }
 
-    if (showRedPulse) {
-      setPulseActive(true);
-      timers.push(window.setTimeout(() => setPulseActive(false), pulseActiveMs ?? (isStrong ? 500 : 350)));
-    }
+      if (showRedPulse) {
+        setPulseActive(true);
+        timers.push(window.setTimeout(() => setPulseActive(false), pulseActiveMs ?? (isStrong ? 500 : 350)));
+      }
 
-    if (showNumber) {
-      setDmgKey(k => k + 1);
+      if (showNumber) {
+        setDmgKey(k => k + 1);
+      }
+    };
+
+    if (startDelayMs > 0) {
+      timers.push(window.setTimeout(triggerEffects, startDelayMs));
+    } else {
+      triggerEffects();
     }
 
     // 完成回调：等最长的效果结束
-    timers.push(window.setTimeout(() => onCompleteRef.current?.(), completeMs));
+    timers.push(window.setTimeout(() => onCompleteRef.current?.(), startDelayMs + completeMs));
 
     return () => timers.forEach(t => window.clearTimeout(t));
-  }, [active, showSlash, showRedPulse, showNumber, isStrong, slashActiveMs, pulseActiveMs, completeMs]);
+  }, [active, showSlash, showRedPulse, showNumber, isStrong, slashActiveMs, pulseActiveMs, startDelayMs, completeMs]);
 
   if (!active) return null;
 
@@ -148,7 +171,17 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
       )}
 
       {/* 伤害数字 */}
-      {showNumber && <DamageNumber triggerKey={dmgKey} damage={damage} strong={isStrong} />}
+      {showNumber && (
+        <DamageNumber
+          triggerKey={dmgKey}
+          damage={damage}
+          strong={isStrong}
+          delay={numberDelayMs / 1000}
+          testId={numberTestId}
+          fontScale={numberFontScale}
+          colorClass={numberColorClass}
+        />
+      )}
     </div>
   );
 };

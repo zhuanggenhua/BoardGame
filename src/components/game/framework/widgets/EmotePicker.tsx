@@ -3,7 +3,7 @@ import { type EmoteDefinition } from '../../../../shared/emotes';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 
 interface EmotePickerProps {
-    emotes: EmoteDefinition[];
+    emotes: readonly EmoteDefinition[];
     onSelect: (emoteId: string) => void;
     disabled?: boolean;
 }

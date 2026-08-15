@@ -110,8 +110,7 @@ export interface ResponseWindowSystemConfig {
      * 到达队列末尾时不会关闭窗口，而是重新从头开始新一轮循环。
      * 只有一整轮中所有人都 pass（没有人执行动作）时才关闭。
      * 
-     * 适用于 Smash Up 的 Me First! 机制：每人可打 1 张特殊牌或让过，
-     * 所有人连续让过才终止。
+     * 适用于“响应者可执行一次响应或让过，所有人连续让过才终止”的顺序响应窗口。
      */
     loopUntilAllPass?: boolean;
 
@@ -124,6 +123,15 @@ export interface ResponseWindowSystemConfig {
         /** 锁定事件类型 */
         requestEvent: string;
     };
+
+    /**
+     * 交互失败/能力无效反馈事件。
+     *
+     * 当响应窗口内的锁定交互被解决但本批事件包含这些失败反馈时，
+     * 窗口只解锁，不直接推进到下一个响应者，除非当前响应者已无可响应内容。
+     * 具体事件类型由游戏 adapter 声明，系统层不识别游戏事件前缀。
+     */
+    interactionFailureEventTypes?: string[];
 }
 
 // ============================================================================
@@ -486,6 +494,9 @@ export function createResponseWindowSystem<TCore>(
     const advanceEvents = config.responseAdvanceEvents ?? [];
     const interactionLock = config.interactionLock;
     const loopUntilAllPass = config.loopUntilAllPass ?? false;
+    const interactionFailureEventTypes = new Set(config.interactionFailureEventTypes ?? []);
+    const hasInteractionFailureEvent = (eventsToCheck: GameEvent[]): boolean =>
+        eventsToCheck.some(event => interactionFailureEventTypes.has(event.type));
 
     /** 判断命令是否为 SYS_ 前缀系统命令（始终放行） */
     const isSysCommand = (type: string) => type.startsWith('SYS_');
@@ -675,7 +686,7 @@ export function createResponseWindowSystem<TCore>(
             let dedupeFallbackClock = 0;
             
             // 检查本轮事件中是否有 INTERACTION_EVENTS.RESOLVED
-            // 如果有，说明本轮可能有更高优先级的系统（如 SmashUpEventSystem priority=50）
+            // 如果有，说明本轮可能有更高优先级的游戏层系统
             // 会创建新的 interaction，此时不应立即解锁响应窗口，等下一轮再检查
             const hasInteractionResolved = events.some(e => e.type === INTERACTION_EVENTS.RESOLVED);
             const completedInteractionIds = new Set(
@@ -833,8 +844,8 @@ export function createResponseWindowSystem<TCore>(
                 //
                 // 注意：当本轮事件包含 INTERACTION_EVENTS.RESOLVED 时，不立即解锁，而是发出
                 // _CHECK_UNLOCK 内部事件，驱动下一轮 afterEvents 再检查。
-                // 原因：priority=15 的 ResponseWindowSystem 先于 priority=50 的 SmashUpEventSystem 执行，
-                // 后者可能在同一轮 afterEvents 中创建新的 interaction（如多步交互的第二步）。
+                // 原因：ResponseWindowSystem 可能先于游戏层系统执行，
+                // 后续游戏层系统可能在同一轮 afterEvents 中创建新的 interaction（如多步交互的第二步）。
                 // 等到下一轮时，若 sys.interaction.current 仍为 null，才真正解锁推进。
                 {
                     const currentWindow = newState.sys.responseWindow?.current;
@@ -847,11 +858,7 @@ export function createResponseWindowSystem<TCore>(
                     ) {
                         // 【修复】检查本轮事件中是否有 ABILITY_FEEDBACK（交互失败）
                         // 交互失败时，解锁但不推进，当前响应者继续响应
-                        const hasAbilityFeedback = events.some(e => 
-                            e.type === 'su:ability_feedback' || 
-                            e.type === 'dt:ability_feedback' ||
-                            e.type === 'sw:ability_feedback'
-                        );
+                        const hasAbilityFeedback = hasInteractionFailureEvent(events);
                         
                         if (hasAbilityFeedback) {
                             // 交互失败：先解锁。如果当前响应者已无可响应内容，则自动推进/关闭，避免循环卡死。
@@ -905,7 +912,7 @@ export function createResponseWindowSystem<TCore>(
                             }
                         } else if (hasInteractionLockRequest) {
                             // 同批事件中有交互锁定请求（如 INTERACTION_REQUESTED），但更高优先级的系统
-                            // （如 DiceThroneEventSystem）尚未执行，sys.interaction.current 还是空的。
+                            // 尚未执行，sys.interaction.current 还是空的。
                             // 此时不能解锁，等下一轮 afterEvents 再检查。
                             // 不做任何操作，等待交互被创建
                         } else if (hasInteractionResolved) {
@@ -958,11 +965,7 @@ export function createResponseWindowSystem<TCore>(
                     const currentWindow = newState.sys.responseWindow?.current;
                     if (currentWindow && currentWindow.pendingInteractionId && !newState.sys.interaction.current) {
                         // 【修复】检查本轮事件中是否有 ABILITY_FEEDBACK（交互失败）
-                        const hasAbilityFeedback = events.some(e => 
-                            e.type === 'su:ability_feedback' || 
-                            e.type === 'dt:ability_feedback' ||
-                            e.type === 'sw:ability_feedback'
-                        );
+                        const hasAbilityFeedback = hasInteractionFailureEvent(events);
                         
                         if (hasAbilityFeedback) {
                             // 交互失败：先解锁。如果当前响应者已无可响应内容，则自动推进/关闭，避免循环卡死。

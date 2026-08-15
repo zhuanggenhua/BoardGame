@@ -10,7 +10,6 @@ import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
 import { SU_COMMANDS, type SmashUpCore } from '../domain/types';
 import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
-import { hasSmashUpResponderDrivenReactionOptionsForResponseWindow } from '../domain/reactionSession';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
 import { getCompactPlayerBadgeLabel } from '../../../components/game/framework/playerDisplay';
@@ -41,33 +40,20 @@ export const MeFirstOverlay: React.FC<{
         onSelectCard(null);
         dispatch(SU_COMMANDS.REACTION_PASS);
     };
-    const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
     // 支持 meFirst 和 afterScoring 两种窗口类型
     if (!reactionWindow) return null;
-    if (hasLockedHiddenInteraction || pendingCard) return null;
+    if (pendingCard) return null;
 
     const currentResponderId = reactionWindow.activePlayerId;
     const isMyResponse = playerID === currentResponderId;
     if (isMyResponse && !reactionWindow.showsPassWindow) return null;
-    const core = G.core;
     const currentResponderName = playerNames?.[currentResponderId] ?? `P${Number(currentResponderId) + 1}`;
 
     // 只要当前玩家已经有真实交互承接层，中央 Me First 壳层就必须退场，避免出现两个并列主入口。
     if (isMyResponse && currentInteraction) return null;
 
-    const hasRespondableCards = playerID
-        ? hasSmashUpResponderDrivenReactionOptionsForResponseWindow(
-            core,
-            playerID,
-            reactionWindow.windowType,
-            {
-                matchState: G,
-                window: G.sys.responseWindow?.current,
-                now: G.sys.turnNumber ?? core.turnNumber ?? 0,
-            },
-        )
-        : false;
+    const hasRespondableCards = reactionWindow.showsPassWindow;
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'

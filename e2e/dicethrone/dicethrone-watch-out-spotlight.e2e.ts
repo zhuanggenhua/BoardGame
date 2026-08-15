@@ -28,6 +28,7 @@ import {
 } from '../helpers/dicethrone';
 import { setChineseLocale, waitForTestHarness } from '../helpers/common';
 import {
+    expectNoCentralBonusDicePresentation,
     expectRightTrayBonusDiceConfirmation,
     expectRightTrayBonusDiceReadOnlyReview,
     getRightTrayDiceTray,
@@ -2276,7 +2277,7 @@ test('bonus die right tray should settle on ordinary confirm in display mode', a
     );
 });
 
-test('opponent display-only bonus settlement should keep old bonus overlay absent when card spotlight already shows dice', async ({ page, game }, testInfo) => {
+test('opponent display-only bonus settlement should keep central bonus dice presentation absent', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -2438,7 +2439,7 @@ test('opponent display-only bonus settlement should keep old bonus overlay absen
 
     const cardSpotlight = page.locator('[data-testid="card-spotlight-overlay"]');
     await expect(cardSpotlight).toBeVisible({ timeout: 5000 });
-    await expect(cardSpotlight.locator('[data-testid="card-spotlight-die"]')).toHaveCount(2, { timeout: 5000 });
+    await expectNoCentralBonusDicePresentation(page);
     await page.waitForTimeout(3600);
     await expect(cardSpotlight).toBeVisible({ timeout: 1000 });
     await expect(cardSpotlight.getByRole('button', { name: /关闭特写|Close Spotlight|Close/i })).toBeVisible({ timeout: 1000 });
@@ -2447,7 +2448,7 @@ test('opponent display-only bonus settlement should keep old bonus overlay absen
         cardSpotlight,
         testInfo,
         'opponent-display-only-bonus-settlement-no-duplicate-overlay',
-        '01-opponent-card-spotlight-with-dice.png',
+        '01-opponent-card-spotlight-without-central-dice.png',
     );
     await page.waitForTimeout(600);
 
@@ -3948,7 +3949,7 @@ test('opponent lucky card should only show card spotlight for viewer', async ({ 
 
         const hostCardSpotlight = hostPage.locator('[data-testid="card-spotlight-overlay"]');
         await expect(hostCardSpotlight).toBeVisible({ timeout: 15000 });
-        await expect(hostPage.locator('[data-testid="card-spotlight-die"]')).toHaveCount(3, { timeout: 15000 });
+        await expectNoCentralBonusDicePresentation(hostPage);
 
         await hostPage.waitForTimeout(1200);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -9,14 +9,20 @@ import { useToast } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
 import { FEEDBACK_API_URL as API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
-import { GAME_MANIFEST } from '../../games/manifest.generated';
 import { buildFeedbackClientContext } from '../../lib/feedback/clientFeedbackContext';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
 const FEEDBACK_MODAL_DEBUG = true;
 const FEEDBACK_DRAFT_STORAGE_PREFIX = 'feedback-modal:draft:v1';
+
+type ModalViewportCssVars = {
+    '--modal-active-viewport-height': string;
+    '--modal-active-bottom-inset': string;
+    '--modal-max-height': string;
+};
 
 const readRectSnapshot = (element: Element | null) => {
     if (!(element instanceof HTMLElement)) {
@@ -64,6 +70,8 @@ interface FeedbackModalProps {
     /** 配置审查表字段级修正提案批量提交；reason 使用用户填写的反馈正文 */
     configProposals?: FeedbackConfigProposalDraft[];
     initialContent?: string;
+    /** 调用方注入可供用户选择的游戏清单，系统弹窗不直接读取游戏 manifest。 */
+    selectableGames?: readonly GameManifestEntry[];
 }
 
 const FeedbackType = {
@@ -223,6 +231,7 @@ export const FeedbackModal = ({
     configProposal,
     configProposals,
     initialContent,
+    selectableGames = [],
 }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
     const { user, token, addFeedbackPoints } = useAuth();
@@ -541,7 +550,7 @@ export const FeedbackModal = ({
             )}
             data-testid="feedback-modal"
             data-lock-layout-viewport="true"
-            style={{
+            style={({
                 zIndex: UI_Z_INDEX.modalContent,
                 '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
                 '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
@@ -552,7 +561,7 @@ export const FeedbackModal = ({
                     ? 'max(0.5rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))'
                     : 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))',
                 paddingLeft: 'max(1rem, var(--safe-area-left))',
-            }}
+            } as CSSProperties & ModalViewportCssVars)}
             role="dialog"
             aria-modal="true"
         >
@@ -604,7 +613,7 @@ export const FeedbackModal = ({
                                 className={formControlClassName}
                             >
                                 <option value="">{t('hud.feedback.gameAll')}</option>
-                                {GAME_MANIFEST
+                                {selectableGames
                                     .filter(g => g.type === 'game' && g.enabled)
                                     .map(g => (
                                         <option key={g.id} value={g.id}>{resolveGameDisplayName(g, t, g.id)}</option>

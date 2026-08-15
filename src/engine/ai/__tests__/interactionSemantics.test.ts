@@ -145,34 +145,34 @@ describe('AI interaction semantics', () => {
         });
     });
 
-    it('诊断 gate 可识别王权骰铸自定义交互适配器', () => {
+    it('诊断 gate 可识别自定义交互适配器', () => {
         const diagnostic = diagnoseAiOwnedBlockingInteraction({
             playerId: '1',
             state: createStateWithInteraction({
                 id: 'targeting-roll',
-                kind: 'dt:defender-choice',
+                kind: 'test:custom-choice',
                 playerId: '1',
                 data: { sourceId: 'targetingRoll' },
             }),
             legalActions: [sampleLegalAction],
-            adapterInteractionKinds: ['dt:defender-choice'],
+            adapterInteractionKinds: ['test:custom-choice'],
         });
 
         expect(diagnostic).toMatchObject({
             status: 'ok',
-            interactionKind: 'dt:defender-choice',
+            interactionKind: 'test:custom-choice',
             hasAdapter: true,
         });
     });
 
-    it('诊断 gate 可识别粉碎狂热 simple-choice 适配器', () => {
+    it('诊断 gate 可识别 simple-choice 适配器', () => {
         const diagnostic = diagnoseAiOwnedBlockingInteraction({
             playerId: '0',
             state: createStateWithInteraction({
-                id: 'smashup-reaction',
+                id: 'test-reaction',
                 kind: 'simple-choice',
                 playerId: '0',
-                data: { sourceId: 'smashup_reaction_choose' },
+                data: { sourceId: 'test_reaction_choose' },
             }),
             legalActions: [sampleLegalAction],
             adapterInteractionKinds: ['simple-choice'],
@@ -181,7 +181,7 @@ describe('AI interaction semantics', () => {
         expect(diagnostic).toMatchObject({
             status: 'ok',
             interactionKind: 'simple-choice',
-            sourceId: 'smashup_reaction_choose',
+            sourceId: 'test_reaction_choose',
             hasAdapter: true,
         });
     });

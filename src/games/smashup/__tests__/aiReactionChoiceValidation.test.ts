@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 
 describe('SmashUp AI reaction choice validation', () => {
-    it('smashup_reaction_choose 已有当前交互 live 选项时，AI 应优先沿 simple-choice 校验来源出动作', () => {
+    it('smashup_reaction_choose 已有当前交互 live 选项时，AI 只提交 live session 与当前交互共同接受的动作', () => {
         const core = makeState({
             currentPlayerIndex: 0,
             players: {
@@ -60,9 +60,9 @@ describe('SmashUp AI reaction choice validation', () => {
             '选择响应',
             [
                 {
-                    id: 'trigger:stale-visible-choice',
-                    label: '保留当前交互里的旧选项',
-                    value: { kind: 'trigger', triggerId: 'stale-visible-choice' },
+                    id: 'trigger:live-trigger',
+                    label: '当前交互仍接受的 live 触发',
+                    value: { kind: 'trigger', triggerId: 'live-trigger' },
                     displayMode: 'button',
                 },
                 {
@@ -80,8 +80,14 @@ describe('SmashUp AI reaction choice validation', () => {
         );
         (interaction.data as any).optionsGenerator = () => [
             {
+                id: 'trigger:live-trigger',
+                label: '当前交互刷新后仍接受的 live 触发',
+                value: { kind: 'trigger', triggerId: 'live-trigger' },
+                displayMode: 'button',
+            },
+            {
                 id: 'trigger:stale-visible-choice',
-                label: '保留当前交互里的旧选项',
+                label: '刷新候选里的旧触发',
                 value: { kind: 'trigger', triggerId: 'stale-visible-choice' },
                 displayMode: 'button',
             },
@@ -103,19 +109,19 @@ describe('SmashUp AI reaction choice validation', () => {
             state: stateForAi,
         });
 
-        expect(legalActions.some((action) => action.metadata?.optionId === 'trigger:stale-visible-choice')).toBe(true);
-        expect(legalActions.some((action) => action.metadata?.optionId === 'trigger:live-trigger')).toBe(false);
+        expect(legalActions.some((action) => action.metadata?.optionId === 'trigger:live-trigger')).toBe(true);
+        expect(legalActions.some((action) => action.metadata?.optionId === 'trigger:stale-visible-choice')).toBe(false);
 
         const chosenAction = legalActions.find(
-            (action) => action.metadata?.optionId === 'trigger:stale-visible-choice',
+            (action) => action.metadata?.optionId === 'trigger:live-trigger',
         );
         expect(chosenAction).toBeDefined();
-        const resolved = respondToPrompt(stateForAi, 'trigger:stale-visible-choice', '0');
+        const resolved = respondToPrompt(stateForAi, 'trigger:live-trigger', '0');
         expect(resolved.success).toBe(true);
 
         expect(chosenAction?.commands[0]?.payload).toMatchObject({
             interactionId: interaction.id,
-            optionId: 'trigger:stale-visible-choice',
+            optionId: 'trigger:live-trigger',
         });
     });
 

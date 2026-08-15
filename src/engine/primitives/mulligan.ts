@@ -4,7 +4,7 @@
  * 提供与游戏无关的纯函数，用于起始手牌重抽逻辑。
  * 任何桌游只需传入不同的条件函数即可复用。
  *
- * @example SmashUp: 若手牌无随从则重抽一次
+ * @example 若起始手牌缺少指定类别，则自动重抽一次
  * ```ts
  * autoMulligan(hand, deck, h => !h.some(c => c.type === 'minion'), 5, random.shuffle);
  * ```
@@ -15,7 +15,7 @@
  * 2. 新增 MULLIGAN_DECIDE 命令（payload: { accept: boolean }）
  * 3. 在 onPhaseEnter(mulligan) 中用 checkMulliganEligible 检查资格
  * 4. 在 onAutoContinueCheck(mulligan) 中等待所有资格玩家决策后推进
- * 参见 SmashUp 官方规则："you may show your hand"——原始规则为可选。
+ * 如果桌游规则要求玩家主动选择是否展示或重抽，应由游戏层通过阶段/命令建模。
  */
 
 // ============================================================================
@@ -91,7 +91,7 @@ export function checkMulliganEligible<T>(
 /**
  * 自动重抽：检查条件 → 满足则执行 performMulligan，最多执行 maxTimes 次。
  *
- * SmashUp 规则：若无随从可重抽一次（必须保留第二次），故 maxTimes=1。
+ * 例如某些规则只允许重抽一次，此时 maxTimes=1。
  *
  * @param hand      当前手牌
  * @param deck      当前牌库

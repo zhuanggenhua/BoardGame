@@ -26,6 +26,7 @@ describe('applyRuntimeViewportCssVars', () => {
         gamePage.setAttribute('data-game-id', 'smashup');
         gamePage.setAttribute('data-mobile-profile', 'landscape-adapted');
         gamePage.setAttribute('data-mobile-layout-preset', 'board-shell');
+        gamePage.setAttribute('data-mobile-board-shell-design-width', '1160');
         document.body.appendChild(gamePage);
 
         applyRuntimeViewportCssVars({ width: 936, height: 432 });
@@ -35,12 +36,14 @@ describe('applyRuntimeViewportCssVars', () => {
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.806897');
     });
 
-    it('fantasyrealms board-shell uses its own design baseline instead of the shared default width', () => {
+    it('board-shell uses manifest-provided design dimensions instead of the shared default width', () => {
         const gamePage = document.createElement('div');
         gamePage.setAttribute('data-game-page', 'true');
         gamePage.setAttribute('data-game-id', 'fantasyrealms');
         gamePage.setAttribute('data-mobile-profile', 'landscape-adapted');
         gamePage.setAttribute('data-mobile-layout-preset', 'board-shell');
+        gamePage.setAttribute('data-mobile-board-shell-design-width', '1920');
+        gamePage.setAttribute('data-mobile-board-shell-design-height', '1080');
         document.body.appendChild(gamePage);
 
         applyRuntimeViewportCssVars({ width: 936, height: 432 });

@@ -2,7 +2,7 @@ import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomA
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { GUNSLINGER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
-import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
+import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDiceDefinitionId, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import type { PendingInteraction } from '../core-types';
@@ -23,6 +23,18 @@ import { createCompareRollContext } from '../rollContext';
 const GUNSLINGER_LOADED_SETTLEMENT_ID = 'gunslinger-loaded-use';
 const GUNSLINGER_EAT_MY_LEAD_SETTLEMENT_ID = 'gunslinger-eat-my-lead';
 const GUNSLINGER_HIGH_NOON_SETTLEMENT_ID = 'gunslinger-high-noon';
+
+const getRequiredPlayerDiceDefinitionId = (
+    state: CustomActionContext['state'],
+    playerId: string,
+    sourceAbilityId: string,
+): string => {
+    const definitionId = getPlayerDiceDefinitionId(state, playerId);
+    if (!definitionId) {
+        throw new Error(`[DiceThrone] ${sourceAbilityId} 对掷骰缺少玩家骰子定义：playerId=${playerId}`);
+    }
+    return definitionId;
+};
 
 function createLoadedChoiceContext(
     state: CustomActionContext['state'],
@@ -176,6 +188,8 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
         : 2;
     const attackerFace = getPlayerDieFace(state, attackerId, attackerRoll);
     const defenderFace = getPlayerDieFace(state, resolvedDefenderId, defenderRoll);
+    const attackerDiceDefinitionId = getRequiredPlayerDiceDefinitionId(state, attackerId, sourceAbilityId);
+    const defenderDiceDefinitionId = getRequiredPlayerDiceDefinitionId(state, resolvedDefenderId, sourceAbilityId);
 
     return [{
         type: 'COMPARE_ROLL_REQUESTED',
@@ -188,7 +202,7 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
                 dice: [
                     {
                         id: 0,
-                        definitionId: `compare:${attackerId}`,
+                        definitionId: attackerDiceDefinitionId,
                         value: attackerRoll,
                         symbol: attackerFace,
                         symbols: attackerFace ? [attackerFace] : [],
@@ -197,7 +211,7 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
                     },
                     {
                         id: 1,
-                        definitionId: `compare:${resolvedDefenderId}`,
+                        definitionId: defenderDiceDefinitionId,
                         value: defenderRoll,
                         symbol: defenderFace,
                         symbols: defenderFace ? [defenderFace] : [],
@@ -246,6 +260,8 @@ function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }
     const winOnTie = action.params?.winOnTie === true;
     const defenderFace = getPlayerDieFace(state, originalDefenderId, defenderRoll);
     const attackerFace = getPlayerDieFace(state, originalAttackerId, attackerRoll);
+    const defenderDiceDefinitionId = getRequiredPlayerDiceDefinitionId(state, originalDefenderId, sourceAbilityId);
+    const attackerDiceDefinitionId = getRequiredPlayerDiceDefinitionId(state, originalAttackerId, sourceAbilityId);
 
     return [{
         type: 'COMPARE_ROLL_REQUESTED',
@@ -258,7 +274,7 @@ function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }
                 dice: [
                     {
                         id: 0,
-                        definitionId: `compare:${originalDefenderId}`,
+                        definitionId: defenderDiceDefinitionId,
                         value: defenderRoll,
                         symbol: defenderFace,
                         symbols: defenderFace ? [defenderFace] : [],
@@ -267,7 +283,7 @@ function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }
                     },
                     {
                         id: 1,
-                        definitionId: `compare:${originalAttackerId}`,
+                        definitionId: attackerDiceDefinitionId,
                         value: attackerRoll,
                         symbol: attackerFace,
                         symbols: attackerFace ? [attackerFace] : [],
@@ -637,7 +653,7 @@ function handlePistolWhipResolve({ attackerId, targetId, state, sourceAbilityId,
         },
         {
             description: '造成 1 点不可防御伤害。',
-            action: { type: 'damage', target: 'opponent', value: 1, unblockable: true },
+            action: { type: 'damage', target: 'opponent', value: 1, unblockable: true, damageScope: 'direct' },
             timing: 'immediate',
         },
     ], 'immediate', {

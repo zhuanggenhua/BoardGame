@@ -6,10 +6,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { executePipeline, createInitialSystemState, createSeededRandom } from '../pipeline';
-import { createEventStreamSystem, getEventStreamEntries } from '../systems/EventStreamSystem';
+import { createEventStreamSystem, computeEventStreamDelta, getEventStreamEntries } from '../systems/EventStreamSystem';
 import { createUndoSystem, setUndoAiSeatIds, UNDO_COMMANDS } from '../systems/UndoSystem';
 import type { Command, DomainCore, GameEvent, MatchState, ValidationResult } from '../types';
-import { computeEventStreamDelta } from '../../games/summonerwars/ui/useGameEvents';
 
 // 最小测试游戏
 interface TestCore { counter: number; turnPhase: string }

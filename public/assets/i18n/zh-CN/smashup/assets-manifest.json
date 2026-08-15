@@ -157,11 +157,29 @@
         }
       }
     },
+    "base/compressed/huluwawa_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "c957d112aca3780013c720d42f14d73367f272a55dd654994dcef7b5bc5cbefd",
+          "bytes": 377686,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/international_incident_bases": {
       "variants": {
         "webp": {
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/longzu": {
+      "variants": {
+        "webp": {
+          "sha256": "946b214749a58ce02135cb1893f46c07cb3ba1f29a0ce87eba6d77368c008438",
+          "bytes": 441940,
           "mime": "image/webp"
         }
       }
@@ -234,6 +252,24 @@
         "webp": {
           "sha256": "f1d07e0fc8a7324fa24b312f439744f3f0be5d3aab9e3d8730582099fe963295",
           "bytes": 638380,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/new_goblins_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "59d5772ad03db29b90fd0f995487b1ac3eba88c4482a82f14829c67cbcb2d7c3",
+          "bytes": 421638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/new_round_table_knights_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "1f74fe28a409ba144b2820861c8185511ae6a21907a4679bab43d9272fdb8f16",
+          "bytes": 443064,
           "mime": "image/webp"
         }
       }
@@ -682,8 +718,8 @@
     "cards/compressed/disney": {
       "variants": {
         "webp": {
-          "sha256": "08144b9d38fcaffea883696734a5c4c57496d85af8249eba6beab33f465a234f",
-          "bytes": 7904228,
+          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
+          "bytes": 7904230,
           "mime": "image/webp"
         }
       }
@@ -718,8 +754,8 @@
     "cards/compressed/excellent_movies_teens": {
       "variants": {
         "webp": {
-          "sha256": "56fe667dcd95ac16a94304f7362a1fd1c6c13e3b094532e21f678dee13569daf",
-          "bytes": 8659584,
+          "sha256": "9af400ebdd443dc5f0f8a03985ca14162e0211932b33fa534e807d56ccc47e2f",
+          "bytes": 5032252,
           "mime": "image/webp"
         }
       }
@@ -778,11 +814,20 @@
         }
       }
     },
+    "cards/compressed/huluwawa_cards": {
+      "variants": {
+        "webp": {
+          "sha256": "e2cb2ea775bcb4ef44f5c783bb9547e2ac911eb845872e7d15a5137ae4418fd0",
+          "bytes": 865614,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/international_incident": {
       "variants": {
         "webp": {
-          "sha256": "963edcbc67b11b5125c8a3f098aca5cfa4053b57137b6abf86baab281b584065",
-          "bytes": 4905358,
+          "sha256": "c106174d2e747c89c7a02b5d3855be7ecd0cd2c7ed8df82bf267b94dad0ce685",
+          "bytes": 969464,
           "mime": "image/webp"
         }
       }
@@ -792,6 +837,15 @@
         "webp": {
           "sha256": "93d8f20afc69fdaaa486d7532090c152c82971f4a5d6bbb04a2fb1c32159e478",
           "bytes": 1090690,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/kaiju_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f178424b2bb49012fb67ffa743fdad657e18cf1c3967b0965c7abe0e6a839df1",
+          "bytes": 1393084,
           "mime": "image/webp"
         }
       }
@@ -826,8 +880,8 @@
     "cards/compressed/marvel_villains": {
       "variants": {
         "webp": {
-          "sha256": "45f5879b5e0c893688a0a78c6dcb45ac8a8debe630fa172f1f881e43580e3577",
-          "bytes": 6351464,
+          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
+          "bytes": 1046742,
           "mime": "image/webp"
         }
       }
@@ -844,8 +898,8 @@
     "cards/compressed/marvel_wave_one": {
       "variants": {
         "webp": {
-          "sha256": "253220422625f448d803e01a442b3e86b66b71cc82c0c3e483dcf6c642c6305d",
-          "bytes": 6887738,
+          "sha256": "50c3addaf130dd61821f25e4f8a1b2767351f1845071f77b30530ae2d89db5ef",
+          "bytes": 1103642,
           "mime": "image/webp"
         }
       }
@@ -972,6 +1026,24 @@
         "webp": {
           "sha256": "42a65958c6623877ffae86eb14f129eb24aad86313b0c0b87f55c6f9ecdd8de1",
           "bytes": 569044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/new_goblins": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c7fa5279f96638a307a82dcd524d6534018dead71b2bd87d9ffcdfb0c5182f",
+          "bytes": 4029816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/new_round_table_knights": {
+      "variants": {
+        "webp": {
+          "sha256": "f8ee8f98e823c96792138ee787b94daa74ddb019c3052054490fd7ef70d6fc03",
+          "bytes": 5265048,
           "mime": "image/webp"
         }
       }
@@ -1327,6 +1399,15 @@
         }
       }
     },
+    "cards/kaiju_pod": {
+      "variants": {
+        "png": {
+          "sha256": "887f27dde9579b9ba77e1c67653f9f29a2da33f76899cbbc479419ad52c901e3",
+          "bytes": 5928968,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/kung_fu_fighters_pod": {
       "variants": {
         "png": {
@@ -1579,6 +1660,15 @@
         }
       }
     },
+    "emotes/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
+          "bytes": 133764,
+          "mime": "image/webp"
+        }
+      }
+    },
     "emotes/raider/angry-v1": {
       "variants": {
         "png": {
@@ -1612,6 +1702,15 @@
           "sha256": "4bddb3080d05b2305cc55f4e275a852070c205f09ac6e627c19952aaf09e4a69",
           "bytes": 2008286,
           "mime": "image/png"
+        }
+      }
+    },
+    "taitan/compressed/huluwawa_titan": {
+      "variants": {
+        "webp": {
+          "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
+          "bytes": 262096,
+          "mime": "image/webp"
         }
       }
     },
@@ -1657,24 +1756,6 @@
           "sha256": "1ae0270532e40348e0a2a03ae6cd576b082c28fcf0488d696c68030a03d829b4",
           "bytes": 71064,
           "mime": "image/webp"
-        }
-      }
-    },
-    "cards/compressed/kaiju_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "f178424b2bb49012fb67ffa743fdad657e18cf1c3967b0965c7abe0e6a839df1",
-          "bytes": 1393084,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "cards/kaiju_pod": {
-      "variants": {
-        "png": {
-          "sha256": "887f27dde9579b9ba77e1c67653f9f29a2da33f76899cbbc479419ad52c901e3",
-          "bytes": 5928968,
-          "mime": "image/png"
         }
       }
     }

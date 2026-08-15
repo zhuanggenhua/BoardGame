@@ -175,25 +175,6 @@ function buildDrawCardFromDeck(playerId: PlayerId, cardUid: string, timestamp: n
     };
 }
 
-function appendTimedPowerModifier(
-    matchState: MatchState<SmashUpCore>,
-    minionUid: string,
-    amount: number,
-    reason: string,
-): MatchState<SmashUpCore> {
-    const expiresOnTurnNumber = matchState.core.turnNumber + matchState.core.turnOrder.length;
-    return {
-        ...matchState,
-        core: {
-            ...matchState.core,
-            timedPowerModifiers: [
-                ...(matchState.core.timedPowerModifiers ?? []),
-                { minionUid, amount, expiresOnTurnNumber, reason },
-            ],
-        },
-    };
-}
-
 function queueMinionPrompt(
     ctx: AbilityContext,
     sourceId: string,
@@ -1083,8 +1064,17 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         const amount = (data?.continuationContext as { amount?: number } | undefined)?.amount ?? 0;
         if (!selected.minionUid || selected.baseIndex === undefined || amount <= 0) return { state, events: [] };
         return {
-            state: appendTimedPowerModifier(state, selected.minionUid, -amount, 'magical_girls_sakura_warrior'),
-            events: [addPermanentPower(selected.minionUid, selected.baseIndex, -amount, 'magical_girls_sakura_warrior', timestamp)],
+            state,
+            events: [
+                addPermanentPower(
+                    selected.minionUid,
+                    selected.baseIndex,
+                    -amount,
+                    'magical_girls_sakura_warrior',
+                    timestamp,
+                    { expiresOnTurnNumber: state.core.turnNumber + state.core.turnOrder.length },
+                ),
+            ],
         };
     });
 

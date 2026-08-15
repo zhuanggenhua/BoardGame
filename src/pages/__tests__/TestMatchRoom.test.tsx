@@ -3,9 +3,11 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GameRuntimeAdapter } from '../../games/gameRuntimeAdapter';
 
 let mockSearchParams = new URLSearchParams();
 let mockGameId = 'fantasyrealms';
+let mockRuntimeAdapter: GameRuntimeAdapter | null = null;
 const localGameProviderSpy = vi.fn();
 const gamePageRuntimeProviderSpy = vi.fn();
 
@@ -41,6 +43,7 @@ vi.mock('../../games/registry', () => ({
             systems: [],
         },
         board: () => <div data-testid="board-stub">board</div>,
+        runtimeAdapter: mockRuntimeAdapter ?? undefined,
     })),
 }));
 
@@ -55,8 +58,16 @@ vi.mock('../../config/games.config', () => ({
                 type: 'select',
                 labelKey: 'games.fantasyrealms.setup.variant.label',
                 options: [
-                    { value: 'standard', labelKey: 'games.fantasyrealms.setup.variant.standard' },
-                    { value: 'duel', labelKey: 'games.fantasyrealms.setup.variant.duel' },
+                    {
+                        value: 'standard',
+                        labelKey: 'games.fantasyrealms.setup.variant.standard',
+                        playerOptions: [3, 4, 5, 6],
+                    },
+                    {
+                        value: 'duel',
+                        labelKey: 'games.fantasyrealms.setup.variant.duel',
+                        playerOptions: [2],
+                    },
                 ],
                 default: 'standard',
             },
@@ -68,6 +79,7 @@ vi.mock('../../config/games.config', () => ({
                     { value: 'cursed-hoard-suits', labelKey: 'games.fantasyrealms.setup.expansion.cursedHoardSuits' },
                 ],
                 default: 'base',
+                createRoomDefault: 'base',
             },
         },
         ai: {
@@ -123,8 +135,11 @@ vi.mock('../../engine/testing/environment', () => ({
     enableTestMode: vi.fn(),
 }));
 
-vi.mock('../../games/mobileSupport', () => ({
+vi.mock('../../shared/mobileSupport', () => ({
     getGamePageDataAttributes: () => ({}),
+    resolveGameMobileSupport: (config: { preferredOrientation?: unknown }) => ({
+        preferredOrientation: config.preferredOrientation,
+    }),
     syncGamePageDocumentAttributes: () => undefined,
 }));
 
@@ -162,25 +177,11 @@ vi.mock('../../games/pageRuntimeAdapter', () => ({
     },
 }));
 
-vi.mock('../../games/qidahen/tutorialSetup', () => ({
-    buildQidahenTutorialSetupData: vi.fn((tutorialId?: string) => (
-        tutorialId === 'water-dispatch'
-            ? {
-                numPlayers: 3,
-                setupSelections: { scenario: 'post-sarhu-1619' },
-                setupData: {
-                    setupSelections: { scenario: 'post-sarhu-1619' },
-                    qidahenTutorialCoreTransform: () => ({ transformed: true }),
-                },
-            }
-            : null
-    )),
-}));
-
 describe('TestMatchRoom', () => {
     beforeEach(() => {
         mockGameId = 'fantasyrealms';
         mockSearchParams = new URLSearchParams();
+        mockRuntimeAdapter = null;
         localGameProviderSpy.mockClear();
         gamePageRuntimeProviderSpy.mockClear();
     });
@@ -282,9 +283,22 @@ describe('TestMatchRoom', () => {
         expect(latestCall.gameId).toBe('fantasyrealms');
     });
 
-    it('七大恨测试路由带 tutorialSetup 时，应使用对应教程前置状态', async () => {
+    it('测试路由带 tutorialSetup 时，应通过游戏 runtime adapter 使用对应教程前置状态', async () => {
         mockGameId = 'qidahen';
         mockSearchParams = new URLSearchParams('tutorialSetup=water-dispatch&players=3&playerID=0');
+        const resolveLocalSetup = vi.fn((context: { tutorialId?: string }) => (
+            context.tutorialId === 'water-dispatch'
+                ? {
+                    numPlayers: 3,
+                    setupSelections: { scenario: 'post-sarhu-1619' },
+                    setupData: {
+                        setupSelections: { scenario: 'post-sarhu-1619' },
+                        qidahenTutorialCoreTransform: () => ({ transformed: true }),
+                    },
+                }
+                : null
+        ));
+        mockRuntimeAdapter = { resolveLocalSetup };
         const { TestMatchRoom } = await import('../TestMatchRoom');
 
         render(<TestMatchRoom />);
@@ -293,6 +307,10 @@ describe('TestMatchRoom', () => {
             expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
         });
 
+        expect(resolveLocalSetup).toHaveBeenCalledWith({
+            searchParams: mockSearchParams,
+            tutorialId: 'water-dispatch',
+        });
         const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
         expect(latestCall.numPlayers).toBe(3);
         expect(latestCall.setupData).toMatchObject({

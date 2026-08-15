@@ -21,7 +21,7 @@ function createState(currentPlayer: string): MatchState<unknown> {
 
 function createConfig() {
     return {
-        gameId: 'fantasyrealms',
+        gameId: 'test-local-ai-game',
     } as any;
 }
 

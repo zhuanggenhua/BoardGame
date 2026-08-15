@@ -74,6 +74,70 @@ describe('useAnimationEffects rollback consumer', () => {
         vi.restoreAllMocks();
     });
 
+    it('wait-confirm 确认同步后应消费新伤害事件，并按护盾后净伤害播放浮字', async () => {
+        let rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={rollbackValue}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const fxBus = {
+            push: vi.fn(() => 'fx-1'),
+        } as unknown as FxBus;
+
+        const oldEntry: EventStreamEntry = {
+            id: 1,
+            event: {
+                type: 'CHOICE_RESOLVED',
+                payload: {},
+                timestamp: 1000,
+            },
+        };
+        const duelHalfDamageEntry: EventStreamEntry = {
+            id: 2,
+            event: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '0',
+                    amount: 5,
+                    actualDamage: 5,
+                    shieldsConsumed: [{ sourceId: 'duel', reductionPercent: 50, absorbed: 3 }],
+                    sourceAbilityId: 'harmony',
+                },
+                timestamp: 2000,
+            },
+        };
+
+        const view = render(<HookProbe entries={[oldEntry]} fxBus={fxBus} />, { wrapper });
+
+        await waitFor(() => {
+            expect(fxBus.push).not.toHaveBeenCalled();
+        });
+
+        rollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 1,
+        };
+
+        view.rerender(<HookProbe entries={[oldEntry, duelHalfDamageEntry]} fxBus={fxBus} />);
+
+        await waitFor(() => {
+            expect(fxBus.push).toHaveBeenCalledTimes(1);
+        });
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.damage',
+            {},
+            expect.objectContaining({ damage: 2 }),
+        );
+    });
+
     it('optimistic rollback 后应清空旧动画队列，并且恢复旧事件时不重播，只消费新的后续事件', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { clearRegistry } from '../domain/abilityRegistry';
@@ -37,6 +38,38 @@ import {
   resourceFootprintsConflict,
 } from '../domain/reactionResources';
 import '../domain/index';
+
+function commitReactionEvents(
+  state: MatchState<SmashUpCore>,
+  events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+  return {
+    ...state,
+    core: applyEvents(state.core, events),
+  };
+}
+
+function advanceReactionQueueThroughCommitBarrier(
+  state: MatchState<SmashUpCore>,
+  random: RandomFn,
+  now: number,
+  maxSteps = 20,
+): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+  let currentState = state;
+  const events: SmashUpEvent[] = [];
+  for (let step = 0; step < maxSteps; step += 1) {
+    const advanced = maybeResolveReactionQueue(currentState, random, now + step);
+    if (!advanced) {
+      return { state: currentState, events };
+    }
+    events.push(...advanced.events);
+    currentState = commitReactionEvents(advanced.state, advanced.events);
+    if (currentState.sys.interaction?.current || advanced.events.length === 0) {
+      return { state: currentState, events };
+    }
+  }
+  throw new Error('Reaction queue did not settle within test commit barrier limit');
+}
 
 // Minimal factories reused from other tests
 function baseCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
@@ -641,13 +674,16 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(queued).toBeDefined();
 
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
-    expect(rq).toBeDefined();
-    expectNoPrompt(rq!.state);
-    expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
-    expect(rq!.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
-    expect(rq!.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+    const rq = advanceReactionQueueThroughCommitBarrier(
+      ms0,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      1,
+    );
+    expectNoPrompt(rq.state);
+    expect(rq.state.core.triggerQueue ?? []).toHaveLength(0);
+    expect(rq.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+    expect(rq.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    expect(rq.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
   });
 
   it('不同 source instance 的 mandatory triggers 不应被误判为需要排序', () => {
@@ -679,12 +715,15 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(queued).toBeDefined();
 
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
-    expect(rq).toBeDefined();
-    expectNoPrompt(rq!.state);
-    expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.MINION_METADATA_UPDATED)).toHaveLength(2);
+    const rq = advanceReactionQueueThroughCommitBarrier(
+      ms0,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      1,
+    );
+    expectNoPrompt(rq.state);
+    expect(rq.state.core.triggerQueue ?? []).toHaveLength(0);
+    expect(rq.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+    expect(rq.events.filter(event => event.type === SU_EVENTS.MINION_METADATA_UPDATED)).toHaveLength(2);
   });
 
   it('singleton mandatory triggers 应先自动收口，排序弹窗只展示真实冲突分量', () => {
@@ -738,11 +777,14 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(queued).toBeDefined();
 
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
-    expect(rq).toBeDefined();
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+    const rq = advanceReactionQueueThroughCommitBarrier(
+      ms0,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      1,
+    );
+    expect(rq.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
 
-    const current = getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose');
+    const current = getSimpleChoicePrompt(rq.state, 'smashup_reaction_choose');
     const optionLabels = getPromptOptions(current).map((option: any) => option.label as string);
     expect(optionLabels.some((label: string) => label.includes('test_component_singleton_a'))).toBe(false);
     expect(optionLabels.some((label: string) => label.includes('test_component_singleton_b'))).toBe(false);
@@ -1080,13 +1122,19 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       2,
       optA.value,
     );
-    expect(r2.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED).length).toBeGreaterThanOrEqual(2);
-    expect(r2.events).toContainEqual(expect.objectContaining({
+    const continued = advanceReactionQueueThroughCommitBarrier(
+      commitReactionEvents(r2.state, r2.events),
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      3,
+    );
+    const allEvents = [...r2.events, ...continued.events];
+    expect(allEvents.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED).length).toBeGreaterThanOrEqual(2);
+    expect(allEvents).toContainEqual(expect.objectContaining({
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: expect.objectContaining({ messageKey: 'after_b' }),
     }));
-    expect(r2.state.core.triggerQueue ?? []).toHaveLength(0);
-    expectNoPrompt(r2.state);
+    expect(continued.state.core.triggerQueue ?? []).toHaveLength(0);
+    expectNoPrompt(continued.state);
   });
 
   it('processMoveTriggers stamps queued onMinionMoved reactions with explicit frame ids', () => {
@@ -1171,7 +1219,8 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: expect.objectContaining({ messageKey: 'discard_from_base_resolved' }),
     }));
-    expect(resolved.state.core.triggerQueue ?? []).toHaveLength(0);
+    const committed = commitReactionEvents(resolved.state, resolved.events);
+    expect(committed.core.triggerQueue ?? []).toHaveLength(0);
   });
 
   it('processAffectTriggers stamps queued onMinionAffected reactions with explicit frame ids', () => {

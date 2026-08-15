@@ -56,7 +56,7 @@ import {
     getSmashUpReactionChoiceOptions,
     isSmashUpReactionChoiceInteraction,
 } from './domain/reactionChoiceInteraction';
-import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
+import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
 import { getSmashUpReactionSession } from './domain/reactionSession';
 import {
     actionLikeNeedsResponseWindowBase,
@@ -313,16 +313,6 @@ const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.isBlocked === true) return false;
     if (getSmashUpReactionSession(state)) return false;
     if (getSmashUpReactionWindowPresentation(state)) return false;
-    if (hasBlockingLegacyResponseWindow(state)) return false;
-    const responseWindow = state.sys.responseWindow?.current as {
-        sourceId?: unknown;
-        responderQueue?: unknown[];
-    } | undefined;
-    const hasLiveLegacyResponders = Array.isArray(responseWindow?.responderQueue)
-        && responseWindow.responderQueue.length > 0;
-    if (responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose' && hasLiveLegacyResponders) {
-        return false;
-    }
     if (state.sys.phase === 'scoreBases' && hasPendingScoreBasesSpecialActivation(state, playerId)) {
         return false;
     }
@@ -831,7 +821,6 @@ const shouldApplySmashUpRelativeUtility = (context: AiDecisionContext): boolean 
     const state = context.visibleState as SmashUpState;
     if (getSmashUpReactionSession(state)) return false;
     if (getSmashUpReactionWindowPresentation(state)) return false;
-    if (hasBlockingLegacyResponseWindow(state)) return false;
     return true;
 };
 
@@ -988,22 +977,6 @@ const buildAiInteractionSnapshotFromState = (state: SmashUpState) => {
     };
 };
 
-const buildAiResponseWindowSnapshotFromState = (state: SmashUpState) => {
-    const current = state.sys.responseWindow?.current as {
-        windowType?: string;
-        sourceId?: string;
-        currentResponderIndex?: number;
-        responderQueue?: string[];
-    } | undefined;
-    if (!current) return null;
-    return {
-        windowType: current.windowType,
-        sourceId: current.sourceId,
-        currentResponderIndex: current.currentResponderIndex,
-        responderQueue: Array.isArray(current.responderQueue) ? [...current.responderQueue] : undefined,
-    };
-};
-
 function simulateSmashUpTalentAction(args: {
     context: AiDecisionContext;
     action: AiLegalAction;
@@ -1064,7 +1037,7 @@ function simulateSmashUpTalentAction(args: {
             ...args.context,
             visibleState: currentState,
             interaction: buildAiInteractionSnapshotFromState(currentState),
-            responseWindow: buildAiResponseWindowSnapshotFromState(currentState),
+            responseWindow: null,
             legalActions: nextLegalActions,
         };
         const followUpEvaluations = evaluateLocalAiActions(followUpContext, smashUpTalentFollowUpScorers);
@@ -2018,34 +1991,7 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
         actions.push(...buildSpecialActions(state, playerId, { includeMinions: true, includeTitans: true }));
         return actions;
     }
-
-    const responseWindow = state.sys.responseWindow?.current as {
-        sourceId?: unknown;
-        responderQueue?: unknown[];
-        currentResponderIndex?: number;
-        windowType?: string;
-    } | undefined;
-    if (!responseWindow || responseWindow.sourceId === 'smashup_reaction_choose') return null;
-
-    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex ?? 0];
-    if (currentResponderId !== playerId) return null;
-    const windowType = responseWindow.windowType ?? 'response';
-
-    const actions: AiLegalAction[] = [{
-        actionId: createAiLegalActionId('response-pass', windowType, playerId),
-        kind: 'response-pass',
-        label: '跳过响应',
-        commands: [{
-            type: 'RESPONSE_PASS',
-            payload: {},
-        }],
-        metadata: {
-            windowType,
-        },
-    }];
-
-    actions.push(...buildPlayableCardActions(state, playerId, { inResponseWindow: true }));
-    return actions;
+    return null;
 };
 
 export function buildSmashUpAiLegalActions(args: {

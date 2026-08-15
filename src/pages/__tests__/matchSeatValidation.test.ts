@@ -75,7 +75,10 @@ import {
 import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
-import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
+import {
+    resolveMatchSeatSwapContext,
+    type MatchSeatSwapConfig,
+} from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 import { resolveExitMatchErrorMessageKey } from '../../components/lobby/roomActions';
 import { diceThroneAiRuntime } from '../../games/dicethrone/ai';
@@ -520,9 +523,28 @@ describe('TutorialMatchRoomWithAudio', () => {
 });
 
 describe('resolveMatchSeatSwapContext', () => {
+    const requestSeatSwapConfig: MatchSeatSwapConfig = {
+        mode: 'request',
+        requestCommandType: 'REQUEST_SEAT_SWAP',
+        respondCommandType: 'RESPOND_SEAT_SWAP',
+        cancelCommandType: 'CANCEL_SEAT_SWAP',
+    };
+    const summonerWarsSeatSwapConfig: MatchSeatSwapConfig = {
+        mode: 'instant',
+        requestCommandType: 'sw:swap_seat',
+        respondCommandType: null,
+        cancelCommandType: null,
+    };
+    const smashUpSeatSwapConfig: MatchSeatSwapConfig = {
+        mode: 'instant',
+        requestCommandType: 'su:swap_seat',
+        respondCommandType: null,
+        cancelCommandType: null,
+    };
+
     it('应优先使用 seatingOrder，并在 setup 阶段暴露请求型换座上下文', () => {
         const context = resolveMatchSeatSwapContext({
-            gameId: 'dicethrone',
+            seatSwapConfig: requestSeatSwapConfig,
             myPlayerId: '1',
             seatControllers: {
                 '0': { type: 'human' },
@@ -560,7 +582,7 @@ describe('resolveMatchSeatSwapContext', () => {
 
     it('当没有显式座位顺序时，应回退到 startingPlayerId 旋转后的玩家顺序', () => {
         const context = resolveMatchSeatSwapContext({
-            gameId: 'summonerwars',
+            seatSwapConfig: summonerWarsSeatSwapConfig,
             myPlayerId: '0',
             state: {
                 sys: { phase: 'factionSelect' },
@@ -583,7 +605,7 @@ describe('resolveMatchSeatSwapContext', () => {
 
     it('应为大杀四方解析即时换座命令类型', () => {
         const context = resolveMatchSeatSwapContext({
-            gameId: 'smashup',
+            seatSwapConfig: smashUpSeatSwapConfig,
             myPlayerId: '0',
             state: {
                 sys: { phase: 'factionSelect' },
@@ -602,7 +624,7 @@ describe('resolveMatchSeatSwapContext', () => {
 
     it('大杀四方在线选派系阶段缺少 hostStarted 时，仍应解析共享换座上下文', () => {
         const context = resolveMatchSeatSwapContext({
-            gameId: 'smashup',
+            seatSwapConfig: smashUpSeatSwapConfig,
             myPlayerId: '0',
             state: {
                 sys: { phase: 'factionSelect' },
@@ -632,7 +654,7 @@ describe('resolveMatchSeatSwapContext', () => {
 
     it('不在可换座阶段时应返回 null', () => {
         const context = resolveMatchSeatSwapContext({
-            gameId: 'dicethrone',
+            seatSwapConfig: requestSeatSwapConfig,
             myPlayerId: '0',
             state: {
                 sys: { phase: 'main1' },

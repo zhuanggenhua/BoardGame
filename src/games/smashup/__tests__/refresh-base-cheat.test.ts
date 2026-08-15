@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { smashUpCheatModifier } from '../cheatModifier';
+import { refreshAllSmashUpBases, refreshSmashUpBase } from '../cheatModifier';
 import type { SmashUpCore, BaseInPlay } from '../domain/types';
 
 describe('刷新基地作弊功能', () => {
@@ -50,7 +50,7 @@ describe('刷新基地作弊功能', () => {
         };
 
         // 执行刷新基地
-        const result = smashUpCheatModifier.refreshBase!(core, 0);
+        const result = refreshSmashUpBase(core, 0);
 
         // 验证状态更新
         expect(result.core.bases[0].defId).toBe('base_new_1');
@@ -113,7 +113,7 @@ describe('刷新基地作弊功能', () => {
             nextUid: 1,
         };
 
-        const result = smashUpCheatModifier.refreshBase!(core, 0);
+        const result = refreshSmashUpBase(core, 0);
 
         // 验证新基地是空的
         expect(result.core.bases[0].minions).toEqual([]);
@@ -157,12 +157,12 @@ describe('刷新基地作弊功能', () => {
         };
 
         // 测试负数索引
-        const result1 = smashUpCheatModifier.refreshBase!(core, -1);
+        const result1 = refreshSmashUpBase(core, -1);
         expect(result1.core).toBe(core);
         expect(result1.events).toEqual([]);
 
         // 测试超出范围的索引
-        const result2 = smashUpCheatModifier.refreshBase!(core, 999);
+        const result2 = refreshSmashUpBase(core, 999);
         expect(result2.core).toBe(core);
         expect(result2.events).toEqual([]);
     });
@@ -203,7 +203,7 @@ describe('刷新基地作弊功能', () => {
             nextUid: 1,
         };
 
-        const result = smashUpCheatModifier.refreshBase!(core, 0);
+        const result = refreshSmashUpBase(core, 0);
         expect(result.core).toBe(core);
         expect(result.events).toEqual([]);
     });
@@ -255,7 +255,7 @@ describe('刷新基地作弊功能', () => {
                 nextUid: 1,
             };
 
-            const result = smashUpCheatModifier.refreshAllBases!(core);
+            const result = refreshAllSmashUpBases(core);
 
             // 验证所有基地都被替换
             expect(result.core.bases[0].defId).toBe('base_new_1');
@@ -321,7 +321,7 @@ describe('刷新基地作弊功能', () => {
                 nextUid: 1,
             };
 
-            const result = smashUpCheatModifier.refreshAllBases!(core);
+            const result = refreshAllSmashUpBases(core);
             // 牌库不足时仍会部分刷新（只刷新可用数量的基地）
             expect(result.core).not.toBe(core);
             expect(result.core.bases).toHaveLength(2); // 只有2张可用

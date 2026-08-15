@@ -2340,9 +2340,22 @@ describe('半场战争扩 prompt 型能力', () => {
             payload: expect.objectContaining({ cardUids: ['pearl-draw'] }),
         })]));
 
+        const crystalCore = {
+            ...core,
+            bases: [
+                {
+                    ...core.bases[0],
+                    minions: core.bases[0].minions.filter(minion =>
+                        minion.uid !== 'topaz'
+                        && minion.uid !== 'power-host',
+                    ),
+                },
+                core.bases[1],
+            ],
+        };
         const crystal = invokeRegisteredAbilityContract('pearl_images_crystal', 'talent', {
-            state: core,
-            matchState: makeMatchState(core),
+            state: crystalCore,
+            matchState: makeMatchState(crystalCore),
             playerId: '0',
             cardUid: 'crystal',
             defId: 'pearl_images_crystal',
@@ -2459,8 +2472,8 @@ describe('半场战争扩 prompt 型能力', () => {
         expect(bikeMoved.events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(2);
 
         const outstanding = invokeRegisteredAbilityContract('pearl_images_truly_outstanding', 'onPlay', {
-            state: core,
-            matchState: makeMatchState(core),
+            state: crystalCore,
+            matchState: makeMatchState(crystalCore),
             playerId: '0',
             cardUid: 'outstanding',
             defId: 'pearl_images_truly_outstanding',

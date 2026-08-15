@@ -1,6 +1,6 @@
 import type { FxCellCoord, FxContext, FxParams } from '../../../engine/fx';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
-import type { MageWarsCore, MageWarsEvent } from '../domain';
+import type { MageWarsCore, MageWarsEvent, MageWarsSpellCasterRef } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import type { ArenaZoneId } from '../domain/ids';
 import { MW_FX, type MageWarsFxCue } from './fxCues';
@@ -28,6 +28,14 @@ function resolveObjectCell(core: MageWarsCore, objectId?: string): FxCellCoord |
     return resolveZoneCell(core, core.objects[objectId]?.zoneId);
 }
 
+function resolveCasterCell(core: MageWarsCore, caster: MageWarsSpellCasterRef | undefined, fallbackPlayerId: PlayerId): FxCellCoord | null {
+    if (!caster) return resolvePlayerCell(core, fallbackPlayerId);
+    if (caster.kind === 'arena-object') {
+        return resolveObjectCell(core, caster.objectId) ?? resolvePlayerCell(core, caster.ownerId);
+    }
+    return resolvePlayerCell(core, caster.playerId);
+}
+
 function resolveIntensity(amount: number | undefined): FxContext['intensity'] {
     return amount !== undefined && amount >= 6 ? 'strong' : 'normal';
 }
@@ -40,7 +48,7 @@ export function mapMageWarsEventToFx(
 
     if (event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED) {
         const payload = event.payload;
-        const source = resolvePlayerCell(core, payload.playerId);
+        const source = resolveCasterCell(core, payload.caster, payload.playerId);
         const target = resolveZoneCell(core, payload.targetZoneId)
             ?? resolvePlayerCell(core, payload.targetPlayerId)
             ?? resolveObjectCell(core, payload.targetObjectId)
@@ -56,6 +64,7 @@ export function mapMageWarsEventToFx(
             },
             params: {
                 source,
+                caster: payload.caster,
                 spellCardId: payload.spellCardId,
                 castMode: payload.castMode,
                 playerId: payload.playerId,
@@ -122,7 +131,8 @@ export function mapMageWarsEventToFx(
         const source = resolveZoneCell(core, payload.chainSourceZoneId)
             ?? resolvePlayerCell(core, payload.playerId);
         const target = resolvePlayerCell(core, payload.targetPlayerId)
-            ?? resolveObjectCell(core, payload.targetObjectId);
+            ?? resolveObjectCell(core, payload.targetObjectId)
+            ?? resolveZoneCell(core, payload.targetZoneId);
         if (!target) return null;
 
         return {

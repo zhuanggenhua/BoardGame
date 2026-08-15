@@ -21,6 +21,11 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function isRegistryLockContention(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return message.includes('获取全局重任务预算锁超时');
+}
+
 function normalizeName(value, fallback) {
     const normalized = String(value ?? fallback).trim().replace(/[^a-zA-Z0-9_-]/g, '-');
     return normalized || fallback;
@@ -424,12 +429,23 @@ export async function acquireGlobalHeavyBudget({
     const entryId = `${normalizedGroup}-${process.pid}-${Date.now()}`;
 
     while (true) {
-        await pruneGlobalHeavyBudget({ logger, cwd });
-        const status = await evaluateBudgetGate({
-            group: normalizedGroup,
-            weight: normalizedWeight,
-            cwd,
-        });
+        let status;
+        try {
+            await pruneGlobalHeavyBudget({ logger, cwd });
+            status = await evaluateBudgetGate({
+                group: normalizedGroup,
+                weight: normalizedWeight,
+                cwd,
+            });
+        } catch (error) {
+            if (!shouldWait || !isRegistryLockContention(error) || (Date.now() - startedAt >= timeoutMs)) {
+                throw error;
+            }
+
+            logger.log?.(`[global-heavy-budget] 注册表锁忙，${Math.ceil(pollMs / 1000)}s 后重试。原因: ${error instanceof Error ? error.message : String(error)}`);
+            await sleep(pollMs);
+            continue;
+        }
 
         if (status.allowed) {
             const entry = normalizeEntry({

@@ -750,7 +750,7 @@ class AudioManagerClass {
             this.soundDefinitions.set(key, definition);
             this._loadingCount++;
             const requestedAt = Date.now();
-            howl = this.createHowlWithFallback(definition.src, {
+            const createdHowl = this.createHowlWithFallback(definition.src, {
                 volume: (definition.volume ?? 1.0) * this._sfxVolume,
                 loop: definition.loop ?? false,
                 sprite: definition.sprite,
@@ -790,22 +790,23 @@ class AudioManagerClass {
                     );
                 }
             });
-            if (!howl) {
+            if (!createdHowl) {
                 return null;
             }
-            this.sounds.set(key, howl);
-            if (howl.state() === 'loading') {
+            howl = createdHowl;
+            this.sounds.set(key, createdHowl);
+            if (createdHowl.state() === 'loading') {
                 const playFreshlyLoadedSound = () => {
                     if (Date.now() - requestedAt > SFX_FRESH_PLAY_WINDOW_MS) {
                         return;
                     }
                     this.resumeContextIfNeeded();
-                    const loadedSoundId = howl.play(spriteKey);
+                    const loadedSoundId = createdHowl.play(spriteKey);
                     if (onEnd && loadedSoundId != null) {
-                        howl.once('end', onEnd, loadedSoundId);
+                        createdHowl.once('end', onEnd, loadedSoundId);
                     }
                 };
-                howl.once('load', playFreshlyLoadedSound);
+                createdHowl.once('load', playFreshlyLoadedSound);
                 return null;
             }
         } else if (howl.state() === 'loading') {
@@ -856,7 +857,7 @@ class AudioManagerClass {
             this._bgmReadyPromise = new Promise<void>(resolve => {
                 this._bgmReadyResolve = resolve;
             });
-            howl = this.createHowlWithFallback(mergedDef.src, {
+            const createdHowl = this.createHowlWithFallback(mergedDef.src, {
                 volume: (mergedDef.volume ?? 1.0) * this._bgmVolume,
                 // 对 html5 BGM 关闭 Howler 内建 loop，改为异步手动重播，
                 // 避免异常媒体状态下出现 _ended -> play 的同步递归。
@@ -906,13 +907,17 @@ class AudioManagerClass {
                     this._bgmReadyResolve = null;
                 },
                 onend: () => {
-                    this.handleBgmEnded(key, howl!);
+                    const currentHowl = this.bgms.get(key);
+                    if (currentHowl) {
+                        this.handleBgmEnded(key, currentHowl);
+                    }
                 },
             });
-            if (!howl) {
+            if (!createdHowl) {
                 return;
             }
-            this.bgms.set(key, howl);
+            howl = createdHowl;
+            this.bgms.set(key, createdHowl);
         }
 
         // BGM 使用 html5: true，走浏览器原生 <audio>，不依赖 WebAudio context。

@@ -322,7 +322,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                     };
                 })();
             if (!resolvedTarget || resolvedTarget.targetBaseIndex === undefined || resolvedTarget.targetBaseIndex < 0) {
-                return { state: currentState, events: [], discardWithoutPlay: true };
+                return { state: matchState, events: [], discardWithoutPlay: true };
             }
             resolvedActionTargetMinionUid = resolvedTarget.targetMinionUid;
             resolvedActionTargetBaseIndex = resolvedTarget.targetBaseIndex;
@@ -363,18 +363,8 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
         targetBaseIndex: isOngoing ? resolvedActionTargetBaseIndex : targetBaseIndex,
         targetMinionUid: isOngoing ? resolvedActionTargetMinionUid : targetMinionUid,
         fromBuried: true,
+        abilityRequirementContext: 'bury.executeUncoveredAction',
     });
-}
-
-function isSpecialTimingAllowed(
-    matchState: MatchState<SmashUpCore>,
-    specialTiming: 'beforeScoring' | 'afterScoring',
-): boolean {
-    const windowType = matchState.sys.responseWindow?.current?.windowType;
-    if (specialTiming === 'beforeScoring') {
-        return windowType === 'meFirst' || matchState.sys.phase === 'scoreBases';
-    }
-    return windowType === 'afterScoring';
 }
 
 function isStandardActionTimingAllowed(matchState: MatchState<SmashUpCore>): boolean {

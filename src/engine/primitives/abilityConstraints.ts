@@ -458,7 +458,7 @@ export function checkAbilityConstraints(
  * @example
  * ```typescript
  * function buildConstraintContext(
- *   core: SummonerWarsCore,
+ *   core: BoardGameCore,
  *   unit: BoardUnit,
  *   playerId: PlayerId,
  * ): ConstraintContext {

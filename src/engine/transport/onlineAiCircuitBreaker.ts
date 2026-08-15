@@ -248,8 +248,7 @@ export class OnlineAiCircuitBreaker {
     }
 
     private snapshot(matchId: string, playerId: string, state: MutableCircuitState): OnlineAiCircuitSnapshot {
-        const visibleState = { ...state };
-        delete visibleState.reportConsumed;
+        const { reportConsumed: _reportConsumed, ...visibleState } = state;
         return {
             matchId,
             playerId,

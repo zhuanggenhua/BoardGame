@@ -1,0 +1,35 @@
+---
+name: documentation-style
+description: 项目文档写作标准：职责落点、相对链接和历史记录边界——写或整理文档时查
+metadata:
+  type: doc
+  status: 已交付
+---
+
+# 项目文档写作标准
+
+本文件只规定 BoardGame 项目内文档怎么写、怎么链接、怎么归位；AI 执行规范正文仍归 [`.spec/AGENTS.md`](../../AGENTS.md)、[`knowledge/README.md`](../README.md)、[`rules/system.md`](../../rules/system.md) 和对应 skill。
+
+## 落点
+
+- AI 规范、workflow、验收门槛和协作者规则写进 [`.spec/`](../../AGENTS.md) 体系；不要写进 [`docs/`](../../../docs/README.md) 当第二套规范。
+- 产品规格、提案和任务编排写进 [`openspec/`](../../../openspec/AGENTS.md)；不要回填到 `.spec/`。
+- 事实资料、规则来源、工具参考、历史记录写进 [`docs/`](../../../docs/README.md)。
+- 可复查证据、截图账本和审计结论写进 [`evidence/`](../../../evidence/README.md)。
+- 临时日志、探针输出、临时截图、临时脚本和测试产物按 [`temp-files-management`](../../../docs/temp-files-management.md) 归位。
+
+## 链接格式
+
+- 项目文档里的文件链接统一使用 Markdown 相对链接，从当前文档所在目录算起，例如本文件引用 [`spec-steward`](../../skills/spec-steward/SKILL.md)。
+- 链接文本用人能看懂的短名；指向具体文件时，优先把准确文件名、skill 名或文档名写进链接文本。
+- 指向仓内真实文件或目录时，禁止用 Windows 绝对路径、`file://`、仓库根绝对路径或无法点击的裸路径来代替内部文件链接。
+- 外部本机资料、系统工具路径、历史日志摘录可以保留原始路径作为来源证据，但必须能从上下文看出它不是当前项目内文件链接，也不能作为新文档的写法样板。
+- 占位路径、命令、日志片段和代码片段可以继续用反引号，例如 `docs/games/<gameId>/`；只有指向真实文件或目录时才写成链接。
+- 同一段里第一次引用某个文件应做成链接，后续紧邻重复提及时可用短名，避免一段文字塞满重复链接。
+
+## 迁移与整理
+
+- 迁移文档前先判断唯一职责落点；能归索引的只做索引，能归证据的只做证据，不把同一句规则复制成多份正文。
+- 移动文件后必须同步更新索引、入口文档和直接引用；至少检查被移动文件名在仓内是否还有旧路径。
+- 根目录只保留工程入口、配置、锁文件和标准工具配置。历史会话记录如需保留，放进 [`docs/archive/session-state/`](../../../docs/archive/session-state/README.md) 并视为历史，不作为当前任务入口。
+- Wiki 对比、卡牌审计和运行证据优先放入对应游戏的 evidence 目录；临时数据只放 [`temp/`](../../../temp/) 或 [`test-results/`](../../../test-results/)。

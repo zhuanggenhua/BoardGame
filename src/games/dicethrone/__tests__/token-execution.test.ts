@@ -857,18 +857,41 @@ describe('锁定 (Targeted) 伤害修正', () => {
         expect(targetedDef!.category).toBe('debuff');
         expect(targetedDef!.passiveTrigger?.timing).toBe('onDamageReceived');
         expect(targetedDef!.passiveTrigger?.removable).toBe(true);
+        expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
         
         const modifyAction = targetedDef!.passiveTrigger?.actions?.find((a: any) => a.type === 'modifyStat');
         expect(modifyAction).toBeDefined();
         expect((modifyAction as any).value).toBe(2);
     });
 
-    it('锁定伤害修正逻辑在 collectStatusModifiers 中处理', () => {
-        // 锁定状态的伤害修正通过 TokenDef.passiveTrigger 定义
-        // createDamageCalculation 的 collectStatusModifiers 会扫描所有 onDamageReceived 时机的 token
-        // 并应用 modifyStat action，将伤害 +2
-        // 完整的集成测试见 moon-elf-abilities.test.ts 的"锁定：受到伤害 +2，结算后移除"测试
-        expect(true).toBe(true);
+    it('锁定伤害修正与触发后移除都在 collectStatusModifiers 中处理', () => {
+        const state = createHeroMatchup('moon_elf', 'barbarian')(['0', '1'], fixedRandom);
+        state.core.players['1'].statusEffects[STATUS_IDS.TARGETED] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'longbow-3-1',
+        } as any;
+
+        const damage = createDamageCalculation({
+            baseDamage: 3,
+            source: { playerId: '0', abilityId: 'longbow-3-1' },
+            target: { playerId: '1' },
+            state: state.core,
+            damageScope: 'attack',
+            timestamp: 100,
+        }).resolve();
+
+        expect(damage.finalDamage).toBe(5);
+        expect(damage.sideEffectEvents).toHaveLength(1);
+        expect(damage.sideEffectEvents[0]).toMatchObject({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: '1',
+                statusId: STATUS_IDS.TARGETED,
+                stacks: 1,
+            },
+        });
     });
 });
 

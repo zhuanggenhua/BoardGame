@@ -11,7 +11,6 @@ import { smashUpFlowHooks } from '../domain/index';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { createInteractionSystem } from '../../../engine/systems/InteractionSystem';
 import { createSimpleChoiceSystem } from '../../../engine/systems/SimpleChoiceSystem';
-import { createResponseWindowSystem } from '../../../engine/systems/ResponseWindowSystem';
 import { createTutorialSystem } from '../../../engine/systems/TutorialSystem';
 import { createEventStreamSystem } from '../../../engine/systems/EventStreamSystem';
 import type { SmashUpCore } from '../domain/types';
@@ -23,21 +22,6 @@ function buildSystems() {
   return [
     createInteractionSystem<SmashUpCore>(),
     createSimpleChoiceSystem<SmashUpCore>(),
-    createResponseWindowSystem<SmashUpCore>({
-      allowedCommands: [],
-      responseAdvanceEvents: [{ eventType: 'su:action_played', windowTypes: ['meFirst'] }],
-      loopUntilAllPass: true,
-      hasRespondableContent: (state, playerId, windowType) => {
-        if (windowType !== 'meFirst') return true;
-        const core = state as SmashUpCore;
-        const player = core.players[playerId];
-        if (!player) return false;
-        return player.hand.some(c => {
-          if (c.type !== 'action') return false;
-          return true;
-        });
-      },
-    }),
     createTutorialSystem<SmashUpCore>(),
     createEventStreamSystem<SmashUpCore>(),
     createSmashUpEventSystem(),

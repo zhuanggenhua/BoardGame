@@ -226,6 +226,8 @@ export interface SummonerWarsCore {
   abilityUsageCount: Record<string, number>;
   /** 单位本回合击杀计数（key: killerUnitInstanceId，回合切换清空） */
   unitKillCountThisTurn?: Record<string, number>;
+  /** 阶段结束能力确认/跳过缓存（key: `${turnNumber}:${phase}:${abilityId}:${sourceUnitId}`，阶段变化时清空） */
+  phaseEndAbilityResolved?: Record<string, true>;
   /** 已掷骰但尚未结算伤害的攻击；用于激励重掷选择。 */
   pendingAttackRoll?: PendingAttackRoll;
 }

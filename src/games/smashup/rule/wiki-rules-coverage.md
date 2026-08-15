@@ -11,8 +11,8 @@
 - **事件归约（写入 SmashUpCore）**：`src/games/smashup/domain/reduce.ts`（`reduce()`）
 - **领域后处理（onPlay/触发链等）**：`src/games/smashup/domain/index.ts`（`postProcessSystemEvents`）
 - **系统 afterEvents 多轮**：`src/engine/pipeline.ts`（步骤 5）+ `src/engine/systems/*`
-- **阶段/计分主流程**：`src/games/smashup/domain/index.ts`（`smashUpFlowHooks`、`scoreOneBase()`）
-- **响应窗口（Me First / After Scoring）**：`src/engine/systems/ResponseWindowSystem.ts` + `src/games/smashup/game.ts`
+- **阶段/计分主流程**：`src/games/smashup/domain/index.ts`（`smashUpFlowHooks`、`SmashUpScoringSession`、`scoreCurrentBaseInSession()`）
+- **计分响应轮（Me First / After Scoring）**：`src/games/smashup/domain/reactionSession.ts`（`SmashUpReactionSession` 驱动当前响应者、让过与强制/可选阶段）
 
 ## 1. Setup（初始设置）
 
@@ -109,21 +109,21 @@
 
 ### 3.2 Step2：多基地达标时由当前玩家选择计分顺序
 - **实现入口**：`domain/index.ts` 多基地交互 `multi_base_scoring_*`
-- **事件链**：交互由 InteractionSystem 维护；选择结果进入 `scoreOneBase(...)`
+- **事件链**：交互由 InteractionSystem 维护；选择结果写入 `SmashUpScoringSession.currentBaseRef`，再由 Flow 推进当前基地事务
 - **结论**：✅ 已实现
 
 ### 3.3 Step3：Before Scoring（Me First! 响应窗口）
 - **实现入口**：`onPhaseEnter(scoreBases)` 打开窗口
 - **事件链**：
-  - 打开：`abilityHelpers.openMeFirstWindow()` → `RESPONSE_WINDOW_EVENTS.OPENED(windowType='meFirst')`
-  - 窗口允许命令：`game.ts` ResponseWindowSystem 配置（仅 `su:play_action/su:play_minion`）
-  - 领域校验二次约束：`commands.ts`（窗口中 `play_action` 只能 special 且 timing 匹配；`specialTiming='triggered'` 的牌不能进入通用计分响应窗口；`play_minion` 仅 beforeScoringPlayable）
+  - 打开：`scoreCurrentBaseInSession()` 收集 Before/When Scoring 触发，并按需启动 `SmashUpReactionSession`
+  - 响应轮：`SmashUpReactionSession` 负责当前响应者、让过计数、强制触发与可选响应推进
+  - 领域校验二次约束：`commands.ts`（计分窗口中 `play_action` 只能 special 且 timing 匹配；`specialTiming='triggered'` 不能进入可选计分响应；`play_minion` 仅 beforeScoringPlayable）
 - **结论**：✅ 已实现
 
 ### 3.4 Step4：Award VPs（VP 结算按当前力量）
-- **实现入口**：`scoreOneBase()`
+- **实现入口**：`scoreCurrentBaseInSession()`
 - **事件链**：
-  - `scoreOneBase` 计算排名 → 发 `SU_EVENTS.BASE_SCORED`
+  - 计分 session 当前基地计算排名 → 发 `SU_EVENTS.BASE_SCORED`
   - reduce：`reduce.ts case BASE_SCORED` 给 `players[pid].vp += vp`
 - **结论**：✅ 已实现
 
@@ -131,10 +131,10 @@
 - **结论**：⏭️ 本次范围跳过
 
 ### 3.6 Step6：After Scoring（AfterScoring 响应窗口）
-- **实现入口**：`scoreOneBase()` 按需打开
+- **实现入口**：`scoreCurrentBaseInSession()` 按需启动 afterScoring reaction frame
 - **事件链**：
   - 条件：若任意玩家手牌存在 `specialTiming:'afterScoring'` 的 special action → 打开 `afterScoring` 窗口
-  - 打开：`openAfterScoringWindow()` → `RESPONSE_WINDOW_OPENED(windowType='afterScoring')`
+  - 打开：`SmashUpReactionSession(responseWindowType='afterScoring')`
   - 校验：`commands.ts` 强约束 timing 匹配
   - 延迟兑现：`SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED/CONSUMED`
 - **结论**：✅ 已实现（实现上还包含“窗口关闭后力量变化→可能重新计分”的工程策略）
@@ -169,7 +169,7 @@
 - **结论**：✅ 已实现（destroy/return/clear 三条路径都会弃附属）
 
 ### 4.3 Special action：只能在特定时机（before/after scoring）打出
-- **实现入口**：`commands.ts` + `ResponseWindowSystem`
+- **实现入口**：`commands.ts` + `SmashUpReactionSession`
 - **结论**：✅ 已实现
 
 ## 5. Zones / Ownership / Controller（区域与归属）

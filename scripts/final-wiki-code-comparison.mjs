@@ -1,7 +1,23 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
+
+const WIKI_DATA_CANDIDATES = [
+  'temp/smashup/wiki-cards-with-descriptions.json',
+  'evidence/smashup/wiki-comparison/wiki-cards-with-descriptions.json'
+];
+const REPORT_OUTPUT_PATH = 'evidence/smashup/wiki-comparison/WIKI-CODE-FINAL-COMPARISON.md';
+const ISSUES_OUTPUT_PATH = 'evidence/smashup/wiki-comparison/wiki-code-issues.json';
 
 // 读取 Wiki 数据
-const wikiData = JSON.parse(readFileSync('wiki-cards-with-descriptions.json', 'utf-8'));
+const wikiDataPath = WIKI_DATA_CANDIDATES.find((candidate) => existsSync(candidate));
+if (!wikiDataPath) {
+  throw new Error(`未找到 Wiki 数据，请先运行 scripts/scrape-wiki-with-descriptions.mjs，期望位置: ${WIKI_DATA_CANDIDATES.join(' 或 ')}`);
+}
+const wikiData = JSON.parse(readFileSync(wikiDataPath, 'utf-8'));
+
+function ensureParentDir(filePath) {
+  mkdirSync(dirname(filePath), { recursive: true });
+}
 
 // 读取代码中的卡牌
 function getCodeCards(factionId) {
@@ -145,12 +161,14 @@ function compareAndReport() {
   report += `- 总计: ${Object.keys(wikiData).length} 个派系\n\n`;
   
   // 保存报告
-  writeFileSync('WIKI-CODE-FINAL-COMPARISON.md', report);
-  console.log('✅ 最终对比报告已保存到 WIKI-CODE-FINAL-COMPARISON.md');
+  ensureParentDir(REPORT_OUTPUT_PATH);
+  writeFileSync(REPORT_OUTPUT_PATH, report);
+  console.log(`✅ 最终对比报告已保存到 ${REPORT_OUTPUT_PATH}`);
   
   // 保存结构化数据
-  writeFileSync('wiki-code-issues.json', JSON.stringify(allIssues, null, 2));
-  console.log('✅ 问题清单已保存到 wiki-code-issues.json');
+  ensureParentDir(ISSUES_OUTPUT_PATH);
+  writeFileSync(ISSUES_OUTPUT_PATH, JSON.stringify(allIssues, null, 2));
+  console.log(`✅ 问题清单已保存到 ${ISSUES_OUTPUT_PATH}`);
   
   // 打印统计
   console.log(`\n📊 统计：`);

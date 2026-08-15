@@ -762,11 +762,9 @@ export function reduceBaseReplacedEvent(state: SmashUpCore, event: BaseReplacedE
         allowMissingFromBaseDeck,
         newBaseInstanceId,
     } = event.payload;
-    // ✅ 修复：使用 indexOf + slice 移除第一个匹配的基地，而不是 filter
-    // 原因：filter 会移除所有匹配的基地，如果 baseDeck 中有重复基地会出错
-    // 而且 scoreOneBase 中已经用 slice(1) 移除了第一个基地，这里应该保持一致
-    // 但是 reduce 是基于事件的，不应该依赖 scoreOneBase 的返回值
-    // 所以这里需要找到 newBaseDefId 在 baseDeck 中的索引，然后移除它
+    // 使用 indexOf + slice 移除第一个匹配的基地，而不是 filter。
+    // 原因：baseDeck 中可能存在重复基地，BASE_REPLACED 只消费事件指定的新基地这一张。
+    // reducer 只以事件 payload 为权威，不依赖计分驱动内部状态。
     const baseDefIdIndex = state.baseDeck.indexOf(newBaseDefId);
     const replacementAlreadyApplied = state.bases[baseIndex]?.defId === newBaseDefId;
     if (baseDefIdIndex < 0 && replacementAlreadyApplied) {
@@ -2001,7 +1999,7 @@ export function reduceActionPlayedEvent(
         }
         return undefined;
     })();
-    const defId = card?.defId ?? buriedLookup?.buried.defId;
+    const defId = card?.defId ?? buriedLookup?.buried.defId ?? (event.payload as any).defId;
     const def = defId ? getCardDef(defId) : undefined;
     const isOngoing = def && def.type === 'action' && (def as ActionCardDef).subtype === 'ongoing';
     const isSpecial = def && def.type === 'action' && (def as ActionCardDef).subtype === 'special';
@@ -3290,8 +3288,7 @@ export function reduceBeforeScoringTriggeredEvent(
 ): SmashUpCore {
     const { baseIndex } = event.payload as { baseIndex: number };
     const existing = state.beforeScoringTriggeredBases ?? [];
-    // 防御性检查：防止重复添加同一个 baseIndex
-    // 正常情况下不应该发生（scoreOneBase 中已有检查），但作为额外保护
+    // 事件重放或重复 marker 到达时保持幂等；计分事务的阶段推进仍由 scoring session 决定。
     if (existing.includes(baseIndex)) return state;
     return {
         ...state,

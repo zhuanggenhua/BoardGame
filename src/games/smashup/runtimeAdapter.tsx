@@ -1,49 +1,12 @@
-import type { MatchState } from '../../engine/types';
 import type {
     GameRuntimeAdapter,
-    GameHudRuntimeSuppressionInput,
     GameRuntimeSettingsSectionProps,
 } from '../gameRuntimeAdapter';
-import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
 import { SMASHUP_FORCE_DISMISS_EVENT } from './ui/CardMagnifyOverlay';
 import {
     SmashUpOverlayProvider,
     useSmashUpOverlay,
 } from './ui/SmashUpOverlayContext';
-import { isSmashUpPromptOwnedByPlayer } from './ui/interactionMode';
-
-function shouldSuppressSmashUpHudFab({
-    mode,
-    state,
-    playerId,
-}: GameHudRuntimeSuppressionInput): boolean {
-    if (!state) return false;
-
-    const currentPrompt = state.sys?.interaction?.current as { playerId?: unknown } | null | undefined;
-    const effectivePlayerId = playerId ?? (
-        (mode === 'local' || mode === 'tutorial')
-            ? ((state.core as Record<string, unknown> | undefined)?.currentPlayer as string | undefined) ?? null
-            : null
-    );
-
-    if (!effectivePlayerId) {
-        return Boolean(currentPrompt) || Boolean(getSmashUpReactionWindowPresentation(state as MatchState<unknown>));
-    }
-
-    if (isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID: effectivePlayerId })) {
-        return true;
-    }
-
-    const reactionWindow = getSmashUpReactionWindowPresentation(state as MatchState<unknown>);
-    if (!reactionWindow) return false;
-
-    if (reactionWindow.activePlayerId === effectivePlayerId) {
-        return true;
-    }
-
-    const pendingInteractionId = state.sys?.responseWindow?.current?.pendingInteractionId;
-    return !currentPrompt && !pendingInteractionId;
-}
 
 function SmashUpHudRuntimeSettingsSection({ t }: GameRuntimeSettingsSectionProps) {
     const { overlayEnabled, interactionMode, toggleOverlay, setInteractionMode } = useSmashUpOverlay();
@@ -108,7 +71,6 @@ export const smashUpGameRuntimeAdapter: GameRuntimeAdapter = {
         window.dispatchEvent(new CustomEvent(SMASHUP_FORCE_DISMISS_EVENT));
         return true;
     },
-    shouldSuppressHudFab: shouldSuppressSmashUpHudFab,
     HudSettingsSection: SmashUpHudRuntimeSettingsSection,
     seatSwap: {
         mode: 'instant',

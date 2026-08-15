@@ -465,9 +465,24 @@ function lastCallValidateUse(ctx: AbilityContext): string | null {
 
 function lastCallSpecial(ctx: AbilityContext): AbilityResult {
     const targetBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    const player = ctx.state.players[ctx.playerId];
+    const cardInHand = player?.hand.find(card =>
+        card.uid === ctx.cardUid
+        && card.defId === HALFLINGS_LAST_CALL
+    );
+    const events: SmashUpEvent[] = cardInHand
+        ? [buildActionPlayedEvent({
+            playerId: ctx.playerId,
+            cardUid: ctx.cardUid,
+            defId: HALFLINGS_LAST_CALL,
+            ownerId: cardInHand.owner,
+            targetBaseIndex,
+            timestamp: ctx.now,
+        })]
+        : [];
     const options = buildHandMinionOptions(ctx.state, ctx.playerId, ctx.cardUid);
     if (targetBaseIndex === undefined || !ctx.state.bases[targetBaseIndex] || options.length === 0) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+        return { events: [...events, buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     }
 
     const interaction = createSimpleChoice<HalflingHandMinionChoice>(
@@ -488,7 +503,7 @@ function lastCallSpecial(ctx: AbilityContext): AbilityResult {
         buildHandMinionOptions(latestState.core as SmashUpCore, ctx.playerId, ctx.cardUid);
 
     return {
-        events: [],
+        events,
         matchState: queueInteraction(ctx.matchState, {
             ...interaction,
             data: {
@@ -2699,9 +2714,24 @@ function potionOfParalysisSpecial(ctx: AbilityContext): AbilityResult {
     if (cardUids.length === 0 || ctx.baseIndex === undefined) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     }
+    const player = ctx.state.players[ctx.playerId];
+    const cardInHand = player?.hand.find(card =>
+        card.uid === ctx.cardUid
+        && card.defId === POTION_OF_PARALYSIS
+    );
+    const events: SmashUpEvent[] = cardInHand
+        ? [buildActionPlayedEvent({
+            playerId: ctx.playerId,
+            cardUid: ctx.cardUid,
+            defId: POTION_OF_PARALYSIS,
+            ownerId: cardInHand.owner,
+            targetBaseIndex: ctx.baseIndex,
+            timestamp: ctx.now,
+        })]
+        : [];
 
     return {
-        events: [{
+        events: [...events, {
             type: SU_EVENTS.CARDS_SUPPRESSED_UNTIL_TURN_END,
             payload: {
                 cardUids,

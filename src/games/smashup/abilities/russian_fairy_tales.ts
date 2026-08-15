@@ -27,6 +27,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { registerCustomBreakpointModifiers, registerPowerModifier } from '../domain/ongoingModifiers';
@@ -1220,8 +1221,8 @@ function findOngoingOwner(core: SmashUpCore, cardUid: string): PlayerId | undefi
 }
 
 function getScoringBaseIndex(matchState: MatchState<SmashUpCore>, fallbackBaseIndex: number): number {
-    const responseWindow = (matchState.sys as { responseWindow?: { current?: { sourceBaseIndex?: unknown } } }).responseWindow?.current;
-    if (typeof responseWindow?.sourceBaseIndex === 'number') return responseWindow.sourceBaseIndex;
+    const reactionWindow = getSmashUpReactionWindowContext(matchState);
+    if (typeof reactionWindow?.sourceBaseIndex === 'number') return reactionWindow.sourceBaseIndex;
     const eligible = matchState.core.scoringEligibleBaseIndices;
     if (Array.isArray(eligible) && eligible.length > 0) return eligible[0];
     return fallbackBaseIndex;

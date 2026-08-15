@@ -18,29 +18,60 @@ describe('sessionContext', () => {
         })).toBe('1');
     });
 
-    it('防御阶段应允许把当前决策者解析为 defender，而不覆盖当前回合玩家', () => {
+    it('默认不从游戏私有字段推导当前决策者', () => {
         const state = {
             core: {
                 turnOrder: ['0', '1'],
                 currentPlayerIndex: 0,
-                pendingAttack: {
-                    attackerId: '0',
-                    defenderId: '1',
+                privateGameState: {
+                    decisionOwnerId: '1',
                 },
             },
             sys: {
-                phase: 'defensiveRoll',
+                phase: 'testDecisionPhase',
             },
         } as MatchState<unknown>;
 
         expect(resolveCurrentDecisionPlayerId({
             state,
-            preferPendingAttackDefenderAsDecisionOwner: true,
+        })).toBe('0');
+
+        expect(resolveSessionActorContext({
+            state,
+        })).toEqual({
+            currentTurnPlayerId: '0',
+            currentDecisionPlayerId: '0',
+        });
+    });
+
+    it('调用方可通过通用解析器声明当前决策者，而不改写当前回合玩家', () => {
+        const state = {
+            core: {
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                decisionOwnerId: '1',
+            },
+            sys: {
+                phase: 'testDecisionPhase',
+            },
+        } as MatchState<unknown>;
+
+        const resolveDecisionOwner = ({ state: inputState }: {
+            state: MatchState<unknown>;
+            fallbackPlayerId: string | null;
+        }) => {
+            const ownerId = (inputState.core as { decisionOwnerId?: unknown } | undefined)?.decisionOwnerId;
+            return typeof ownerId === 'string' ? ownerId : undefined;
+        };
+
+        expect(resolveCurrentDecisionPlayerId({
+            state,
+            resolveCurrentDecisionPlayerId: resolveDecisionOwner,
         })).toBe('1');
 
         expect(resolveSessionActorContext({
             state,
-            preferPendingAttackDefenderAsDecisionOwner: true,
+            resolveCurrentDecisionPlayerId: resolveDecisionOwner,
         })).toEqual({
             currentTurnPlayerId: '0',
             currentDecisionPlayerId: '1',

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SeatEmoteOverlay } from '../SeatEmoteOverlay';
 import type { MatchEmoteEvent } from '../../../../../services/matchSocket';
+import type { EmoteDefinition } from '../../../../../shared/emotes';
 
 vi.mock('../../../../common/media/OptimizedImage', () => ({
     OptimizedImage: ({ src, alt, className }: { src: string; alt: string; className?: string }) => (
@@ -16,6 +17,19 @@ const createEvent = (createdAt: string, playerId = 'p0'): MatchEmoteEvent => ({
     emoteId: 'dicethrone.moon-elf.speechless-facepalm',
     createdAt,
 });
+
+const testEmote: EmoteDefinition = {
+    id: 'dicethrone.moon-elf.speechless-facepalm',
+    scope: 'common',
+    emotion: 'speechless',
+    label: '无语',
+    assetPath: 'dicethrone/emotes/moon-elf/speechless-facepalm-chibi-v1',
+    enabled: true,
+};
+
+const resolveEmote = (emoteId: string) => (
+    emoteId === testEmote.id ? testEmote : undefined
+);
 
 describe('SeatEmoteOverlay', () => {
     const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
@@ -52,6 +66,7 @@ describe('SeatEmoteOverlay', () => {
                     createEvent('2026-05-22T12:00:00.000Z'),
                     createEvent('2026-05-22T12:00:01.000Z'),
                 ]}
+                resolveEmote={resolveEmote}
             />,
         );
 
@@ -82,6 +97,7 @@ describe('SeatEmoteOverlay', () => {
         render(
             <SeatEmoteOverlay
                 events={[createEvent('2026-05-22T12:00:01.000Z', 'p1')]}
+                resolveEmote={resolveEmote}
             />,
         );
 

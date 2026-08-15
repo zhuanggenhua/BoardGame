@@ -259,7 +259,7 @@ describe('Moon Elf 技能定义', () => {
         expect(getAvailableAbilityIds(result.finalState.core, '0', 'offensiveRoll')).toContain('covert-fire');
     });
 
-    it('covert-fire 触发后应能选择并结算锁定，伤害按当前规则落地', () => {
+    it('covert-fire 触发后应能选择并结算锁定，伤害按当前规则落地并移除锁定', () => {
         const random = createQueuedRandom([1, 1, 1, 6, 6, 1, 1, 1, 1, 1]);
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,
@@ -289,7 +289,7 @@ describe('Moon Elf 技能定义', () => {
                 players: {
                     '1': {
                         hp: INITIAL_HEALTH - 6,
-                        statusEffects: { [STATUS_IDS.TARGETED]: 1 },
+                        statusEffects: { [STATUS_IDS.TARGETED]: 0 },
                     },
                 },
             },
@@ -642,7 +642,7 @@ describe('Moon Elf 状态效果逻辑', () => {
                 players: {
                     '1': {
                         hp: INITIAL_HEALTH - 5, // 3基础 + 2锁定
-                        statusEffects: { [STATUS_IDS.TARGETED]: 1 }, // 锁定是持续效果，不会自动移除
+                        statusEffects: { [STATUS_IDS.TARGETED]: 0 }, // 锁定在触发后移除
                     },
                 },
             },

@@ -1,12 +1,16 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import type { FxEvent } from '../../../engine/fx';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
-import type { RandomFn } from '../../../engine/types';
+import type { RandomFn, SystemState } from '../../../engine/types';
 import MageWarsBoard from '../Board';
 import { MageWarsDomain, type MageWarsArenaObjectState, type MageWarsCore } from '../domain';
+import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
 import { ARENA_ZONE_IDS } from '../domain/ids';
+import { AttackImpactRenderer, SpellCastRenderer } from '../ui/fxRenderers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -29,6 +33,41 @@ vi.mock('../../../components/common/media/CardPreview', () => ({
     ),
 }));
 
+vi.mock('../../../components/common/animations/DamageFlash', () => ({
+    DamageFlash: ({
+        damage,
+        intensity,
+        showNumber = true,
+        startDelayMs = 0,
+        numberDelayMs = 0,
+        numberTestId,
+        numberFontScale,
+        numberColorClass,
+    }: {
+        damage?: number;
+        intensity?: string;
+        showNumber?: boolean;
+        startDelayMs?: number;
+        numberDelayMs?: number;
+        numberTestId?: string;
+        numberFontScale?: number;
+        numberColorClass?: string;
+    }) => (
+        <div
+            data-testid="mock-damage-flash"
+            data-show-number={String(showNumber)}
+            data-intensity={intensity ?? ''}
+            data-start-delay-ms={String(startDelayMs)}
+            data-number-delay-ms={String(numberDelayMs)}
+            data-number-testid={numberTestId ?? ''}
+            data-number-font-scale={String(numberFontScale ?? '')}
+            data-number-color-class={numberColorClass ?? ''}
+        >
+            {damage}
+        </div>
+    ),
+}));
+
 const fixedRandom: RandomFn = {
     random: () => 0.5,
     d: () => 3,
@@ -36,7 +75,11 @@ const fixedRandom: RandomFn = {
     shuffle: <T,>(array: T[]) => [...array],
 };
 
-function boardProps(coreOverride?: MageWarsCore): GameBoardProps<MageWarsCore> {
+function boardProps(
+    coreOverride?: MageWarsCore,
+    playerID = '0',
+    sysOverride?: Partial<SystemState>,
+): GameBoardProps<MageWarsCore> {
     const playerIds = ['0', '1'];
     return {
         G: {
@@ -44,13 +87,55 @@ function boardProps(coreOverride?: MageWarsCore): GameBoardProps<MageWarsCore> {
             sys: {
                 ...createInitialSystemState(playerIds, engineConfig.systems, 'local:mage-wars-board-fx'),
                 phase: 'creatureAction',
+                ...sysOverride,
             },
         },
         dispatch: vi.fn(),
-        playerID: '0',
+        playerID,
         isMultiplayer: false,
         isConnected: true,
     };
+}
+
+function creatureObject(
+    id: string,
+    ownerId: string,
+    sourceSpellCardId: number,
+    name: string,
+    zoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS],
+): MageWarsArenaObjectState {
+    return {
+        id,
+        kind: 'creature',
+        ownerId,
+        sourceSpellCardId,
+        sourceObjectId: `spell-${sourceSpellCardId}`,
+        name,
+        zoneId,
+        life: 4,
+        damage: 0,
+        armor: 0,
+        actionReady: true,
+        guarding: false,
+        statusTokens: {},
+    };
+}
+
+const getCellPosition = (row: number, col: number) => ({
+    left: col * 25,
+    top: row * 33.3333,
+    width: 25,
+    height: 33.3333,
+});
+
+function renderFxRenderer(
+    renderer: ReactElement,
+) {
+    return render(
+        <div style={{ position: 'relative', width: 800, height: 600 }}>
+            {renderer}
+        </div>,
+    );
 }
 
 describe('MageWarsBoard FX wiring', () => {
@@ -95,5 +180,237 @@ describe('MageWarsBoard FX wiring', () => {
         expect(fieldCard).not.toBeNull();
         expect(fieldCard?.getAttribute('data-object-id')).toBe(object.id);
         expect(screen.getAllByTestId('mock-card-preview').some((node) => node.textContent === '野性山猫')).toBe(true);
+    });
+
+    it('keeps same-zone ownership lanes anchored to fixed seats instead of viewer perspective', () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const leftSeatObject = creatureObject('mwobj-left-cat', '0', 2906, '左席位山猫', ARENA_ZONE_IDS.A2);
+        const rightSeatObject = creatureObject('mwobj-right-knight', '1', 2909, '右席位骑士', ARENA_ZONE_IDS.A2);
+        const core: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [leftSeatObject.id]: leftSeatObject,
+                [rightSeatObject.id]: rightSeatObject,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [leftSeatObject.id, rightSeatObject.id] }
+                    : zone
+            )),
+        };
+
+        render(<MageWarsBoard {...boardProps(core, '1')} />);
+
+        const leftSeatCard = screen.getByText('左席位山猫').closest('[data-testid="mage-wars-zone-field-card"]');
+        const rightSeatCard = screen.getByText('右席位骑士').closest('[data-testid="mage-wars-zone-field-card"]');
+        expect(leftSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-left');
+        expect(rightSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-right');
+        expect(leftSeatCard?.getAttribute('data-owner-side')).toBe('seat-left');
+        expect(rightSeatCard?.getAttribute('data-owner-side')).toBe('seat-right');
+    });
+
+    it('buffers arena object damage until attack impact', () => {
+        vi.useFakeTimers();
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const attacker = creatureObject('mwobj-left-attacker', '0', 2906, '缓冲来源', ARENA_ZONE_IDS.A2);
+        const targetBefore = creatureObject('mwobj-right-target', '1', 2909, '缓冲目标', ARENA_ZONE_IDS.B2);
+        const targetAfter: MageWarsArenaObjectState = {
+            ...targetBefore,
+            damage: 3,
+        };
+        const beforeCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [attacker.id]: attacker,
+                [targetBefore.id]: targetBefore,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [attacker.id] }
+                    : zone.id === ARENA_ZONE_IDS.B2
+                        ? { ...zone, objectIds: [targetBefore.id] }
+                        : zone
+            )),
+        };
+        const afterCore: MageWarsCore = {
+            ...beforeCore,
+            objects: {
+                [attacker.id]: attacker,
+                [targetAfter.id]: targetAfter,
+            },
+        };
+        const sysWithAttack = {
+            eventStream: {
+                entries: [
+                    {
+                        id: 1,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
+                            payload: {
+                                ownerId: '0',
+                                attackerObjectId: attacker.id,
+                                attackProfileId: 'bite',
+                                targetObjectId: targetAfter.id,
+                                targetZoneId: ARENA_ZONE_IDS.B2,
+                                diceResults: [3],
+                                baseDamage: 3,
+                            },
+                            timestamp: 1,
+                        },
+                    },
+                    {
+                        id: 2,
+                        event: {
+                            type: 'DAMAGE_DEALT',
+                            payload: {
+                                targetId: targetAfter.id,
+                                amount: 3,
+                                actualDamage: 3,
+                                sourceAbilityId: 'test.attack',
+                            },
+                            timestamp: 2,
+                        },
+                    },
+                ],
+                maxEntries: 200,
+                nextId: 3,
+            },
+        };
+
+        try {
+            const { rerender } = render(<MageWarsBoard {...boardProps(beforeCore)} />);
+
+            act(() => {
+                rerender(<MageWarsBoard {...boardProps(afterCore, '0', sysWithAttack)} />);
+            });
+
+            const targetCard = screen.getByText('缓冲目标').closest('[data-testid="mage-wars-zone-field-card"]');
+            expect(targetCard?.textContent).not.toContain('3');
+            expect(screen.queryByTestId('mage-wars-fx-attack-travel')).not.toBeNull();
+
+            act(() => {
+                vi.advanceTimersByTime(1060);
+            });
+
+            expect(targetCard?.textContent).toContain('3');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('renders spell casts as source wake, travel, impact, and delayed resolve callback', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-spell',
+            cue: 'mage-wars.spell.cast',
+            ctx: { cell: { row: 1, col: 2 }, intensity: 'strong' },
+            params: { source: { row: 0, col: 0 } },
+        };
+
+        try {
+            renderFxRenderer(
+                <SpellCastRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const travel = screen.getByTestId('mage-wars-fx-spell-travel');
+            expect(screen.queryByTestId('mage-wars-fx-spell-source-wake')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-cast')).not.toBeNull();
+            expect(travel.getAttribute('data-source-row')).toBe('0');
+            expect(travel.getAttribute('data-target-col')).toBe('2');
+            expect(onImpact).not.toHaveBeenCalled();
+
+            act(() => {
+                vi.advanceTimersByTime(1059);
+            });
+            expect(onImpact).not.toHaveBeenCalled();
+
+            act(() => {
+                vi.advanceTimersByTime(1);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+
+            act(() => {
+                vi.advanceTimersByTime(740);
+            });
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps source wake visible for same-cell spell effects without fabricating travel', () => {
+        const event: FxEvent = {
+            id: 'fx-spell-same-cell',
+            cue: 'mage-wars.spell.cast',
+            ctx: { cell: { row: 2, col: 0 }, intensity: 'normal' },
+            params: { source: { row: 2, col: 0 } },
+        };
+
+        renderFxRenderer(
+            <SpellCastRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+            />,
+        );
+
+        expect(screen.queryByTestId('mage-wars-fx-spell-source-wake')).not.toBeNull();
+        expect(screen.queryByTestId('mage-wars-fx-spell-cast')).not.toBeNull();
+        expect(screen.queryByTestId('mage-wars-fx-spell-travel')).toBeNull();
+    });
+
+    it('renders attacks with a source-to-target travel cue before impact', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-attack',
+            cue: 'mage-wars.attack.impact',
+            ctx: { cell: { row: 2, col: 3 }, intensity: 'strong' },
+            params: {
+                source: { row: 1, col: 0 },
+                damageAmount: 6,
+                diceResults: [1, 2, 3],
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <AttackImpactRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const travel = screen.getByTestId('mage-wars-fx-attack-travel');
+            expect(screen.queryByTestId('mage-wars-fx-attack-source-wake')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-attack-impact')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-attack-dice')).not.toBeNull();
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-show-number')).toBe('true');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-intensity')).toBe('strong');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-start-delay-ms')).toBe('1060');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-delay-ms')).toBe('0');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-testid')).toBe('mage-wars-fx-attack-damage-float');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('1.45');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-color-class')).toBe('text-amber-50');
+            expect(screen.queryByTestId('mage-wars-fx-attack-damage-host')).not.toBeNull();
+            expect(travel.getAttribute('data-source-col')).toBe('0');
+            expect(travel.getAttribute('data-target-row')).toBe('2');
+
+            act(() => {
+                vi.advanceTimersByTime(1060);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

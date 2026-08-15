@@ -21,8 +21,8 @@ import { evaluateCondition } from './condition';
 /**
  * 通用能力定义
  *
- * @typeParam TEffect  效果定义类型（游戏层定义，如 DiceThrone 的 AbilityEffect）
- * @typeParam TTrigger 触发时机类型（游戏层定义，如 SummonerWars 的 AbilityTrigger 字符串联合）
+ * @typeParam TEffect  效果定义类型（游戏层定义）
+ * @typeParam TTrigger 触发时机类型（游戏层定义的字符串联合或枚举）
  */
 export interface AbilityDef<TEffect = unknown, TTrigger = string> {
   /** 唯一标识 */
@@ -118,7 +118,7 @@ export interface AbilityResult<TEvent = unknown> {
 /**
  * 能力执行器函数签名（命令式模式）
  *
- * 适用于每个能力是独立函数的游戏（如 SmashUp）。
+ * 适用于每个能力是独立函数的游戏。
  */
 export type AbilityExecutor<
   TCtx extends AbilityContext = AbilityContext,
@@ -137,14 +137,12 @@ export type AbilityExecutor<
  *
  * 使用示例：
  * ```
- * // SummonerWars
- * const registry = new AbilityRegistry<SWAbilityDef>('sw-abilities');
- * registry.registerAll(necromancerAbilities);
+ * const registry = new AbilityRegistry<UnitAbilityDef>('unit-abilities');
+ * registry.registerAll(unitAbilities);
  * registry.getByTrigger('afterAttack');
  *
- * // DiceThrone
- * const registry = new AbilityRegistry<DTAbilityDef>('dt-abilities');
- * registry.register(monkSlashDef);
+ * const registry = new AbilityRegistry<CardAbilityDef>('card-abilities');
+ * registry.register(powerStrikeDef);
  * registry.getByTag('ultimate');
  * ```
  */
@@ -267,19 +265,17 @@ export interface InteractionChain {
  * 能力执行器注册表
  *
  * 将能力 ID（可选 + tag）映射到执行函数。
- * 支持简单 key（id）和复合 key（id + tag），替代 SmashUp 的 `(defId, tag) → executor` 模式。
+ * 支持简单 key（id）和复合 key（id + tag），适合把“同一能力在不同触发点的执行器”归到同一注册表。
  *
  * 使用示例：
  * ```
- * // SmashUp 风格（id + tag）
- * const executors = new AbilityExecutorRegistry<SmashUpCtx, SmashUpEvent>('su-executors');
- * executors.register('ninja-master', handleNinjaMasterOnPlay, 'onPlay');
- * executors.register('ninja-master', handleNinjaMasterTalent, 'talent');
- * executors.resolve('ninja-master', 'onPlay');
+ * const taggedExecutors = new AbilityExecutorRegistry<TaggedAbilityCtx, GameEvent>('tagged-executors');
+ * taggedExecutors.register('shadow-master', handleShadowMasterOnPlay, 'onPlay');
+ * taggedExecutors.register('shadow-master', handleShadowMasterTalent, 'talent');
+ * taggedExecutors.resolve('shadow-master', 'onPlay');
  *
- * // SummonerWars 风格（纯 id）
- * const executors = new AbilityExecutorRegistry<SWCtx, GameEvent>('sw-executors');
- * executors.register('soul_transfer', handleSoulTransfer);
+ * const executors = new AbilityExecutorRegistry<UnitAbilityCtx, GameEvent>('unit-executors');
+ * executors.register('move_unit', handleMoveUnit);
  * executors.resolve('soul_transfer');
  * ```
  */

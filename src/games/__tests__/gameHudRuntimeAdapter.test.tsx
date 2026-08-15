@@ -5,7 +5,6 @@ import { diceThroneGameRuntimeAdapter } from '../dicethrone/runtimeAdapter';
 import { smashUpGameRuntimeAdapter } from '../smashup/runtimeAdapter';
 import {
     GameHudRuntimeSettingsSection,
-    shouldSuppressGameHudFab,
     tryHandleGameHudForceDismiss,
 } from '../gameHudRuntimeAdapter';
 
@@ -20,55 +19,6 @@ vi.mock('../registry', () => ({
 }));
 
 describe('gameHudRuntimeAdapter', () => {
-    it('任何游戏都不应压制共享 HUD 的 FAB 菜单', () => {
-        expect(shouldSuppressGameHudFab({
-            gameId: 'splendor',
-            mode: 'online',
-            state: null,
-            playerId: '0',
-        })).toBe(false);
-        const state = {
-            core: {
-                turnOrder: ['0', '1'],
-                currentPlayerIndex: 0,
-            },
-            sys: {
-                responseWindow: {
-                    current: {
-                        sourceId: 'smashup_reaction_choose',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        passedPlayers: [],
-                    },
-                },
-                resolution: {
-                    frames: [
-                        {
-                            id: 'frame-1',
-                            step: 'await_response',
-                            metadata: {
-                                smashupReactionSession: {
-                                    responseWindowType: 'meFirst',
-                                    activePlayerId: '0',
-                                    currentPlayerId: '0',
-                                    phase: 'await_response',
-                                },
-                            },
-                        },
-                    ],
-                    activeFrameId: 'frame-1',
-                },
-            },
-        } as unknown as MatchState<unknown>;
-
-        expect(shouldSuppressGameHudFab({
-            gameId: 'smashup',
-            mode: 'online',
-            state,
-            playerId: '0',
-        })).toBe(false);
-    });
-
     it('只有 smashup 才渲染 HUD 运行时设置区块', () => {
         const t = (key: string) => key;
 

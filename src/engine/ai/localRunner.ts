@@ -92,9 +92,9 @@ export function shouldPlayerManuallyResolveSetupSelection(
     }
 
     const overriddenDecision = engineConfig.onlineAiRecovery?.shouldTreatActionAsManualSetupSelection?.({
-        state,
-        playerId,
         actionKind: action.kind,
+        actionId: action.actionId,
+        commandTypes: action.commands.map((command) => command.type),
     });
     if (overriddenDecision !== undefined) {
         return overriddenDecision;
@@ -145,6 +145,7 @@ function refineAiAction(args: {
 }
 
 function buildAttemptKey(args: {
+    runtime: ReturnType<typeof getGameAiRuntime>;
     state: MatchState<unknown>;
     playerId: string;
     controller: AiSeatController;
@@ -155,7 +156,7 @@ function buildAttemptKey(args: {
     const phase = typeof args.state.sys?.phase === 'string' ? args.state.sys.phase : '';
     const currentPlayerId = resolveCurrentDecisionPlayerId({
         state: args.state,
-        preferPendingAttackDefenderAsDecisionOwner: true,
+        resolveCurrentDecisionPlayerId: args.runtime?.resolveCurrentDecisionPlayerId,
     }) ?? '';
     const legalActionIds = args.legalActions.map((item) => item.actionId).join(',');
     const stateTurnNumber = typeof args.state.sys?.turnNumber === 'number'
@@ -203,7 +204,9 @@ function buildAttemptKey(args: {
         : '';
     const controllerKey = args.controller.type === 'remote-ai'
         ? `${args.controller.type}:${args.controller.providerId}:${args.controller.fallbackPolicyId ?? ''}`
-        : `${args.controller.type}:${args.controller.policyId ?? ''}:${args.controller.fallbackPolicyId ?? ''}`;
+        : args.controller.type === 'local-ai'
+            ? `${args.controller.type}:${args.controller.policyId ?? ''}:${args.controller.fallbackPolicyId ?? ''}`
+            : args.controller.type;
 
     return [
         args.playerId,
@@ -528,6 +531,7 @@ export async function resolveNextAiDispatch(
             const fallbackAction = resolveResponsePassFallback(context);
             if (fallbackAction) {
                 const attemptKey = buildAttemptKey({
+                    runtime,
                     state: args.state,
                     playerId,
                     controller: seatController,
@@ -554,6 +558,7 @@ export async function resolveNextAiDispatch(
             const singleAction = context.legalActions[0];
             if (FAST_PASS_ACTION_KINDS.has(singleAction.kind)) {
                 const attemptKey = buildAttemptKey({
+                    runtime,
                     state: args.state,
                     playerId,
                     controller: seatController,
@@ -574,6 +579,7 @@ export async function resolveNextAiDispatch(
         }
 
         const attemptKey = buildAttemptKey({
+            runtime,
             state: args.state,
             playerId,
             controller: seatController,

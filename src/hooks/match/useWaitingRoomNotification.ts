@@ -18,7 +18,7 @@ import { AudioManager } from '../../lib/audio/AudioManager';
 /**
  * 播放玩家加入提示音
  *
- * 使用 Fantasy Notification A（清脆短促的通知音），
+ * 使用清脆短促的通知音，
  * 语义贴合"有人加入房间"，与游戏内音效完全不重复。
  * 不依赖游戏层音频配置，在大厅/等待阶段也能播放。
  */

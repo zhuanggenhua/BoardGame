@@ -1,5 +1,7 @@
 # DiceThrone 奖励骰特写点击保护 E2E 证据
 
+> 2026-08-15 当前有效口径：本文是历史证据，只能说明旧中央奖励骰特写曾经需要点击保护；它不再代表当前 DiceThrone 奖励骰/临时骰展示合同。当前合同是奖励骰和临时骰统一停在右侧 2D 骰盘，中央不得出现奖励骰特写、卡牌特写内嵌骰子或奖励骰专用确认入口；当前验收见 `evidence/dicethrone/dicethrone-bonus-dice-no-central-spotlight-e2e-test.md`。
+
 ## 范围
 
 - 正常对局中，`watch-out` 打出后的奖励骰特写不应瞬间消失。

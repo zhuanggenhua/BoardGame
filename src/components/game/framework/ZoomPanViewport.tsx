@@ -40,6 +40,10 @@ export interface ZoomPanViewportZoomAnchorArgs {
     coordinateSize?: ElementSize;
 }
 
+type ZoomPanViewportContainerProps = React.HTMLAttributes<HTMLDivElement> & {
+    [key: `data-${string}`]: string | number | boolean | undefined;
+};
+
 const getTouchDistance = (touchA: TouchPoint, touchB: TouchPoint) => {
     const dx = touchA.clientX - touchB.clientX;
     const dy = touchA.clientY - touchB.clientY;
@@ -91,7 +95,7 @@ export interface ZoomPanViewportProps {
     getZoomAnchorPosition?: (args: ZoomPanViewportZoomAnchorArgs) => ZoomPanViewportPosition;
     wheelZoomFactor?: number;
     renderContentTransform?: boolean;
-    containerProps?: React.HTMLAttributes<HTMLDivElement>;
+    containerProps?: ZoomPanViewportContainerProps;
     containerTestId?: string;
     contentTestId?: string;
     scaleTestId?: string;

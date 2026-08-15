@@ -72,7 +72,7 @@ export function isPersistedLocalStateCompatible(args: {
     }
 
     const core = state.core as Record<string, unknown> | undefined;
-    const sys = state.sys as Record<string, unknown> | undefined;
+    const sys = state.sys as unknown as Record<string, unknown> | undefined;
     if (!core || !sys) {
         return false;
     }

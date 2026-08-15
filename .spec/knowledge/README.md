@@ -24,6 +24,7 @@ metadata:
 | [`critical-image-preload.md`](standards/critical-image-preload.md) | 关键图片预加载：critical/warm 分层、图集初始化和教程裁剪——改预加载链路时查 |
 | [`data-entry.md`](standards/data-entry.md) | 数据录入标准：规则、图片、OCR、配置字段和核对口径——录入规则或资源数据时查 |
 | [`description-to-implementation-audit.md`](standards/description-to-implementation-audit.md) | 描述到实现审计：从规则文字追到代码消费点——查玩法实现是否吃对规则时查 |
+| [`documentation-style.md`](standards/documentation-style.md) | 项目文档写作标准：职责落点、相对链接和历史记录边界——写或整理文档时查 |
 | [`e2e-verification.md`](standards/e2e-verification.md) | E2E 与截图证据：真实入口、状态注入、截图资格和证据组——跑端到端验收时查 |
 | [`engine-ability-framework.md`](standards/engine-ability-framework.md) | 能力框架标准：能力定义、消费点和跨游戏抽象边界——改能力系统时查 |
 | [`engine-action-log.md`](standards/engine-action-log.md) | 行动日志标准：事件、可见记录和反馈追踪——改 action log 或事件展示时查 |

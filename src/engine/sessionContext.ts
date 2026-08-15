@@ -6,13 +6,17 @@ type SessionActorCoreLike = {
     currentPlayer?: unknown;
     turnOrder?: unknown;
     currentPlayerIndex?: unknown;
-    pendingAttack?: unknown;
 };
 
 export interface SessionActorContext {
     currentTurnPlayerId: string | null;
     currentDecisionPlayerId: string | null;
 }
+
+export type CurrentDecisionPlayerIdResolver = (args: {
+    state: MatchState<unknown>;
+    fallbackPlayerId: string | null;
+}) => string | null | undefined;
 
 function normalizeActorId(value: unknown): string | null {
     if (value === undefined || value === null) return null;
@@ -55,22 +59,19 @@ export function resolveCurrentTurnPlayerIdFromState(state: MatchState<unknown> |
 export function resolveSessionActorContext(args: {
     state?: MatchState<unknown> | null | undefined;
     core?: unknown;
-    preferPendingAttackDefenderAsDecisionOwner?: boolean;
+    resolveCurrentDecisionPlayerId?: CurrentDecisionPlayerIdResolver | null | undefined;
 }): SessionActorContext {
     const core = (args.core ?? args.state?.core) as SessionActorCoreLike | undefined;
     const currentTurnPlayerId = readCurrentTurnPlayerId(core);
-
-    let currentDecisionPlayerId = currentTurnPlayerId;
-    if (
-        args.preferPendingAttackDefenderAsDecisionOwner
-        && args.state?.sys?.phase === 'defensiveRoll'
-    ) {
-        const pendingAttack = core?.pendingAttack as { defenderId?: unknown } | undefined;
-        const defenderId = normalizeActorId(pendingAttack?.defenderId);
-        if (defenderId) {
-            currentDecisionPlayerId = defenderId;
-        }
-    }
+    const resolvedDecisionPlayerId = args.state && args.resolveCurrentDecisionPlayerId
+        ? args.resolveCurrentDecisionPlayerId({
+            state: args.state,
+            fallbackPlayerId: currentTurnPlayerId,
+        })
+        : undefined;
+    const currentDecisionPlayerId = resolvedDecisionPlayerId === undefined
+        ? currentTurnPlayerId
+        : normalizeActorId(resolvedDecisionPlayerId);
 
     return {
         currentTurnPlayerId,
@@ -81,7 +82,7 @@ export function resolveSessionActorContext(args: {
 export function resolveCurrentDecisionPlayerId(args: {
     state?: MatchState<unknown> | null | undefined;
     core?: unknown;
-    preferPendingAttackDefenderAsDecisionOwner?: boolean;
+    resolveCurrentDecisionPlayerId?: CurrentDecisionPlayerIdResolver | null | undefined;
 }): string | null {
     return resolveSessionActorContext(args).currentDecisionPlayerId;
 }

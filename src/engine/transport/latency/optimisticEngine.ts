@@ -13,6 +13,7 @@
  */
 
 import type { MatchState, Command, RandomFn } from '../../types';
+import type { InteractionState } from '../../systems/InteractionSystem';
 import type {
     LatencyPipelineConfig,
     CommandDeterminismMap,
@@ -208,7 +209,7 @@ function clampRenderedInteractionToAuthoritativeSeatView<TCore>(
                 ...(renderedInteraction ?? {}),
                 ...(authoritativeInteraction ?? {}),
                 current: undefined,
-            },
+            } as InteractionState,
         },
     };
 }

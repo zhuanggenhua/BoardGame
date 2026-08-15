@@ -20,8 +20,8 @@ import type {
     CommandDispatchMeta,
     MatchUiEvent,
     ManualForceEndAiPhaseResult,
-    type OnlineAiClientPatchIssue,
-    type OnlineAiClientStateEventKind,
+    OnlineAiClientPatchIssue,
+    OnlineAiClientStateEventKind,
 } from './protocol';
 import { applyPatches } from './patch';
 
@@ -361,7 +361,7 @@ export class GameTransportClient {
             if (this._destroyed || this._terminalError) return;
             this._connectionState = 'connecting';
             this._syncRetries = 0;
-            this.sendSync();
+            this.sendSync('socket-reconnect');
         });
 
         // 启动健康检查

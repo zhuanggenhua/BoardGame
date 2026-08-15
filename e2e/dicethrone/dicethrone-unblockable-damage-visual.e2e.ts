@@ -133,7 +133,7 @@ const installDamageAuditProbe = async (page: Page) => {
         };
 
         const readDamageFloatTexts = () => Array.from(
-            document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'),
+            document.querySelectorAll('[data-floating-text-preset="impact-damage"]'),
         )
             .map((node) => node.textContent?.trim())
             .filter((value): value is string => Boolean(value));
@@ -168,8 +168,8 @@ const installDamageAuditProbe = async (page: Page) => {
             for (const record of records) {
                 for (const node of Array.from(record.addedNodes)) {
                     if (!(node instanceof Element)) continue;
-                    if (node.matches('[data-floating-text-preset="dicethrone-damage"]')
-                        || node.querySelector('[data-floating-text-preset="dicethrone-damage"]')) {
+                    if (node.matches('[data-floating-text-preset="impact-damage"]')
+                        || node.querySelector('[data-floating-text-preset="impact-damage"]')) {
                         snapshot.damageFloatMountCount += 1;
                         const text = node.textContent?.trim();
                         if (text) snapshot.damageFloatTexts.push(text);
@@ -293,7 +293,7 @@ test.describe('DiceThrone 不可防御伤害飞字', () => {
             lastRejectedCommand: null,
         });
 
-        await expect(page.locator('[data-floating-text-preset="dicethrone-damage"]').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-floating-text-preset="impact-damage"]').first()).toBeVisible({ timeout: 10000 });
         await game.screenshot('unblockable-after-resolve', testInfo);
 
         const audit = await readDamageAudit(page);
@@ -394,7 +394,7 @@ test.describe('DiceThrone 不可防御伤害飞字', () => {
             lastRejectedCommand: null,
         });
 
-        await expect(page.locator('[data-floating-text-preset="dicethrone-damage"]').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-floating-text-preset="impact-damage"]').first()).toBeVisible({ timeout: 10000 });
         await game.screenshot('paladin-unblockable-after-resolve', testInfo);
 
         const audit = await readDamageAudit(page);

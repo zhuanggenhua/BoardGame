@@ -17,6 +17,7 @@ import {
     createSkipOption,
     addTempPower,
     addPowerCounter,
+    addOngoingCardCounter,
     grantContextualExtraAction,
     grantExtraAction,
     buildValidatedDestroyEvents,
@@ -280,31 +281,26 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
         if (!action) return { events: [] };
         const cardUid = context?.cardUid ?? (interactionData?.cardUid as string | undefined);
 
-        const nextState = {
-            ...state,
-            core: {
-                ...state.core,
-                bases: state.core.bases.map(base => ({
-                    ...base,
-                    ongoingActions: base.ongoingActions.map(ongoing => {
-                        if (!cardUid || ongoing.uid !== cardUid) return ongoing;
-                        return {
-                            ...ongoing,
-                            metadata: {
-                                ...(ongoing.metadata ?? {}),
-                                superiorityProtect: action === 'protect',
-                            },
-                        };
-                    }),
-                })),
-            },
-        };
-
         const events: SmashUpEvent[] = [];
+        if (cardUid) {
+            const baseIndex = state.core.bases.findIndex(base =>
+                base.ongoingActions.some(ongoing => ongoing.uid === cardUid),
+            );
+            if (baseIndex !== -1) {
+                events.push(addOngoingCardCounter(
+                    cardUid,
+                    baseIndex,
+                    0,
+                    'bear_cavalry_superiority_pod_talent',
+                    args.timestamp,
+                    { metadataUpdate: { superiorityProtect: action === 'protect' } },
+                ));
+            }
+        }
         if (action === 'draw') {
             events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         }
-        return { events, matchState: nextState };
+        return { events };
     },
 });
 

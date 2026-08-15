@@ -1088,8 +1088,8 @@ function FeedbackRow({
                         </p>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[9px] leading-4 text-zinc-400">
                             <span className="truncate">{typeOpt?.label ?? item.type}</span>
-                            {hasImage && <ImageIcon size={10} title={t('feedback.content.screenshotAlt')} />}
-                            {hasActionLog && <ScrollText size={10} title={t('feedback.actionLog.title')} />}
+                            {hasImage && <span title={t('feedback.content.screenshotAlt')}><ImageIcon size={10} /></span>}
+                            {hasActionLog && <span title={t('feedback.actionLog.title')}><ScrollText size={10} /></span>}
                             {hasSnapshot && <span title={t('feedback.stateSnapshot.title')}>JSON</span>}
                         </div>
                         {active && item.clientContext?.route && (

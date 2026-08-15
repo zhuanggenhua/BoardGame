@@ -3,8 +3,10 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GameRuntimeAdapter } from '../../games/gameRuntimeAdapter';
 
 let mockSearchParams = new URLSearchParams();
+let mockRuntimeAdapter: GameRuntimeAdapter | null = null;
 const navigateSpy = vi.fn();
 const localGameProviderSpy = vi.fn();
 
@@ -40,6 +42,7 @@ vi.mock('../../games/registry', () => ({
             systems: [],
         },
         board: () => <div data-testid="board-stub">board</div>,
+        runtimeAdapter: mockRuntimeAdapter ?? undefined,
     })),
 }));
 
@@ -54,8 +57,16 @@ vi.mock('../../config/games.config', () => ({
                 type: 'select',
                 labelKey: 'games.fantasyrealms.setup.variant.label',
                 options: [
-                    { value: 'standard', labelKey: 'games.fantasyrealms.setup.variant.standard' },
-                    { value: 'duel', labelKey: 'games.fantasyrealms.setup.variant.duel' },
+                    {
+                        value: 'standard',
+                        labelKey: 'games.fantasyrealms.setup.variant.standard',
+                        playerOptions: [3, 4, 5, 6],
+                    },
+                    {
+                        value: 'duel',
+                        labelKey: 'games.fantasyrealms.setup.variant.duel',
+                        playerOptions: [2],
+                    },
                 ],
                 default: 'standard',
             },
@@ -67,6 +78,7 @@ vi.mock('../../config/games.config', () => ({
                     { value: 'cursed-hoard-suits', labelKey: 'games.fantasyrealms.setup.expansion.cursedHoardSuits' },
                 ],
                 default: 'base',
+                createRoomDefault: 'base',
             },
         },
         ai: {
@@ -131,8 +143,11 @@ vi.mock('../../engine/transport/errorI18n', () => ({
     resolveCommandError: () => 'denied',
 }));
 
-vi.mock('../../games/mobileSupport', () => ({
+vi.mock('../../shared/mobileSupport', () => ({
     getGamePageDataAttributes: () => ({}),
+    resolveGameMobileSupport: (config: { preferredOrientation?: unknown }) => ({
+        preferredOrientation: config.preferredOrientation,
+    }),
     syncGamePageDocumentAttributes: () => undefined,
 }));
 
@@ -144,7 +159,7 @@ vi.mock('../../hooks/useGameNamespaceReady', () => ({
     }),
 }));
 
-vi.mock('../../hooks/useGameImplementationReady', () => ({
+vi.mock('../../games/useGameImplementationReady', () => ({
     useGameImplementationReady: () => ({
         isGameImplementationReady: true,
         gameImplementationError: null,
@@ -156,13 +171,10 @@ vi.mock('../../games/pageRuntimeAdapter', () => ({
     GamePageRuntimeProvider: PassThrough,
 }));
 
-vi.mock('../../games/qidahen/QidahenPregameScenarioGate', () => ({
-    QidahenPregameScenarioGate: PassThrough,
-}));
-
 describe('LocalMatchRoom', () => {
     beforeEach(() => {
         mockSearchParams = new URLSearchParams();
+        mockRuntimeAdapter = null;
         navigateSpy.mockClear();
         localGameProviderSpy.mockClear();
     });
@@ -243,5 +255,33 @@ describe('LocalMatchRoom', () => {
                 expansion: 'base',
             },
         });
+    });
+
+    it('游戏运行时 adapter 可以覆盖本地开局人数和 setupData，页面层不需要写游戏名特例', async () => {
+        mockSearchParams = new URLSearchParams('players=6&seed=adapter-seed');
+        const resolveLocalSetup = vi.fn(() => ({
+            numPlayers: 4,
+            setupData: {
+                adapterSetup: true,
+                setupSelections: { scenario: 'adapter-owned' },
+            },
+        }));
+        mockRuntimeAdapter = { resolveLocalSetup };
+        const { LocalMatchRoom } = await import('../LocalMatchRoom');
+
+        render(<LocalMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        expect(resolveLocalSetup).toHaveBeenCalledWith({ searchParams: mockSearchParams });
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(4);
+        expect(latestCall.setupData).toEqual({
+            adapterSetup: true,
+            setupSelections: { scenario: 'adapter-owned' },
+        });
+        expect(Object.keys(latestCall.seatControllers as Record<string, unknown>)).toEqual(['0', '1', '2', '3']);
     });
 });

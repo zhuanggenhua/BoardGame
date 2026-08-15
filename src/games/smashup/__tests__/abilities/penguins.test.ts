@@ -1067,20 +1067,35 @@ describe('企鹅派系能力', () => {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: expect.objectContaining({ playerId: '0', cardUids: ['draw-1', 'draw-2'] }),
         }));
-        expect(resolved.state.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
-        expect(resolved.state.core.players['0'].deck.map(card => card.uid)).toEqual(['rest']);
 
-        const consumed = consumeScoringFrameDeferredPayload(resolved.state);
-        const deferredEvents = consumed.deferredEvents.map((event) => ({
-            type: event.type,
-            payload: event.payload,
-            timestamp: event.timestamp,
-        }) as SmashUpEvent);
-        const replacedCore = applyEvents(consumed.state.core, deferredEvents);
-        const playEvents = buildPendingPostScoringActionEvents({ core: replacedCore }, consumed.deferredActions, 123);
-        const finalCore = applyEvents(replacedCore, playEvents);
+        const cardRemovedIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.CARD_REMOVED_FROM_DECK
+            && (event as SmashUpEvent).payload.playerId === '0'
+            && (event as SmashUpEvent).payload.cardUid === 'top',
+        );
+        const iceSlideDrawIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as SmashUpEvent).payload.playerId === '0'
+            && JSON.stringify((event as SmashUpEvent).payload.cardUids) === JSON.stringify(['draw-1', 'draw-2']),
+        );
+        const replacementIndex = resolved.events.findIndex(event => event.type === SU_EVENTS.BASE_REPLACED);
+        const normalDrawIndex = resolved.events.findIndex(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as SmashUpEvent).payload.playerId === '0'
+            && ((event as SmashUpEvent).payload.cardUids as string[]).includes('rest'),
+        );
+        expect(cardRemovedIndex).toBeGreaterThanOrEqual(0);
+        expect(iceSlideDrawIndex).toBeGreaterThan(cardRemovedIndex);
+        expect(replacementIndex).toBeGreaterThan(iceSlideDrawIndex);
+        expect(normalDrawIndex).toBeGreaterThan(replacementIndex);
 
-        expect(playEvents).toContainEqual(expect.objectContaining({
+        const scoringWindowDraws = resolved.events
+            .slice(0, replacementIndex)
+            .filter(event => event.type === SU_EVENTS.CARDS_DRAWN)
+            .map(event => (event as SmashUpEvent).payload.cardUids);
+        expect(scoringWindowDraws).toEqual([['draw-1', 'draw-2']]);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.MINION_PLAYED,
             payload: expect.objectContaining({
                 playerId: '0',
@@ -1089,9 +1104,9 @@ describe('企鹅派系能力', () => {
                 allowImplicitSource: true,
             }),
         }));
-        expect(finalCore.bases[0].defId).toBe('base_the_colony');
-        expect(finalCore.bases[0].minions.map(minion => minion.uid)).toEqual(['top']);
-        expect(finalCore.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
-        expect(finalCore.players['0'].deck.map(card => card.uid)).toEqual(['rest']);
+        expect(resolved.state.core.bases[0].defId).toBe('base_the_colony');
+        expect(resolved.state.core.bases[0].minions.map(minion => minion.uid)).toEqual(['top']);
+        expect(resolved.state.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2', 'rest']);
+        expect(resolved.state.core.players['0'].deck.map(card => card.uid)).toEqual([]);
     });
 });

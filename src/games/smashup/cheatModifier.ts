@@ -11,6 +11,88 @@ import type { PlayerId } from '../../engine/types';
 import type { SmashUpCore } from './domain/types';
 import { getBaseDef } from './data/cards';
 
+export const SMASHUP_CHEAT_COMMANDS = {
+    REFRESH_BASE: 'su:cheat_refresh_base',
+    REFRESH_ALL_BASES: 'su:cheat_refresh_all_bases',
+    FORCE_SCORE_BASES_WITH_MINIONS: 'su:cheat_force_score_bases_with_minions',
+} as const;
+
+export type SmashUpCheatResult = {
+    core: SmashUpCore;
+    events: Array<{ type: string; payload: unknown; timestamp: number }>;
+};
+
+/**
+ * 刷新指定基地（从基地牌库抽取新基地替换）。
+ */
+export function refreshSmashUpBase(core: SmashUpCore, baseIndex: number): SmashUpCheatResult {
+    if (baseIndex < 0 || baseIndex >= core.bases.length) {
+        return { core, events: [] };
+    }
+
+    if (core.baseDeck.length === 0) {
+        return { core, events: [] };
+    }
+
+    const newBaseDefId = core.baseDeck[0];
+    const newBases = [...core.bases];
+    newBases[baseIndex] = {
+        defId: newBaseDefId,
+        minions: [],
+        ongoingActions: [],
+    };
+
+    return {
+        core: {
+            ...core,
+            bases: newBases,
+            baseDeck: core.baseDeck.slice(1),
+        },
+        events: [],
+    };
+}
+
+/**
+ * 刷新所有基地（从基地牌库抽取新基地替换所有场上基地）。
+ * 如果基地牌库不足，则只刷新可用数量。
+ */
+export function refreshAllSmashUpBases(core: SmashUpCore): SmashUpCheatResult {
+    const availableBasesCount = Math.min(core.bases.length, core.baseDeck.length);
+    const newBases = core.baseDeck.slice(0, availableBasesCount).map(defId => ({
+        defId,
+        minions: [],
+        ongoingActions: [],
+    }));
+
+    return {
+        core: {
+            ...core,
+            bases: newBases,
+            baseDeck: core.baseDeck.slice(availableBasesCount),
+        },
+        events: [],
+    };
+}
+
+/**
+ * 将所有有随从的基地分上限设为 0（触发立即结算）。
+ */
+export function forceScoreSmashUpBasesWithMinions(core: SmashUpCore): SmashUpCore {
+    const newModifiers: Record<string, number> = { ...core.tempBreakpointModifiers };
+
+    core.bases.forEach((base, index) => {
+        if (base.minions.length === 0) return;
+        const baseDef = getBaseDef(base.defId);
+        if (!baseDef) return;
+        newModifiers[String(index)] = -baseDef.breakpoint;
+    });
+
+    return {
+        ...core,
+        tempBreakpointModifiers: newModifiers,
+    };
+}
+
 export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
     getResource: (core: SmashUpCore, playerId: PlayerId, resourceId: string): number | undefined => {
         if (resourceId === 'vp') {
@@ -74,70 +156,6 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
     },
 
     /**
-     * 刷新指定基地（从基地牌库抽取新基地替换）
-     * @param core 游戏状态
-     * @param baseIndex 要刷新的基地索引
-     * @returns 更新后的状态（不生成事件，直接替换状态）
-     */
-    refreshBase: (core: SmashUpCore, baseIndex: number): { core: SmashUpCore; events: Array<{ type: string; payload: unknown; timestamp: number }> } => {
-        // 验证基地索引
-        if (baseIndex < 0 || baseIndex >= core.bases.length) {
-            return { core, events: [] };
-        }
-
-        // 验证基地牌库是否有牌
-        if (core.baseDeck.length === 0) {
-            return { core, events: [] };
-        }
-
-        const oldBase = core.bases[baseIndex];
-        const newBaseDefId = core.baseDeck[0];
-
-        // 直接替换基地（不使用事件，避免与 BASE_SCORED 的插入逻辑冲突）
-        const newBaseDeck = core.baseDeck.slice(1);
-        const newBase = {
-            defId: newBaseDefId,
-            minions: [],
-            ongoingActions: [],
-        };
-        const newBases = [...core.bases];
-        newBases[baseIndex] = newBase; // 直接替换
-
-        const newCore = {
-            ...core,
-            bases: newBases,
-            baseDeck: newBaseDeck,
-        };
-
-        return { core: newCore, events: [] };
-    },
-
-    /**
-     * 刷新所有基地（从基地牌库抽取新基地替换所有场上基地）
-     * 如果基地牌库不足，则只刷新部分基地，剩余基地清空
-     */
-    refreshAllBases: (core: SmashUpCore): { core: SmashUpCore; events: Array<{ type: string; payload: unknown; timestamp: number }> } => {
-        const basesCount = core.bases.length;
-        const availableBasesCount = Math.min(basesCount, core.baseDeck.length);
-        
-        // 从基地牌库抽取可用的基地
-        const newBases = core.baseDeck.slice(0, availableBasesCount).map(defId => ({
-            defId,
-            minions: [],
-            ongoingActions: [],
-        }));
-        const newBaseDeck = core.baseDeck.slice(availableBasesCount);
-
-        const newCore = {
-            ...core,
-            bases: newBases,
-            baseDeck: newBaseDeck,
-        };
-
-        return { core: newCore, events: [] };
-    },
-
-    /**
      * 删除手牌（按 uid 从手牌移入弃牌堆）
      */
     removeHandCard: (core: SmashUpCore, playerId: PlayerId, cardUid: string): SmashUpCore => {
@@ -164,29 +182,30 @@ export const smashUpCheatModifier: CheatResourceModifier<SmashUpCore> = {
         };
     },
 
-    /**
-     * 将所有有随从的基地分上限设为 0（触发立即结算）
-     * 通过 tempBreakpointModifiers 实现临时修改
-     */
-    forceScoreBasesWithMinions: (core: SmashUpCore): SmashUpCore => {
-        const newModifiers: Record<string, number> = { ...core.tempBreakpointModifiers };
-        
-        // 遍历所有基地，找出有随从的基地
-        core.bases.forEach((base, index) => {
-            if (base.minions.length > 0) {
-                // 获取基地原始分上限
-                const baseDef = getBaseDef(base.defId);
-                if (baseDef) {
-                    // 设置修正值，使得 breakpoint + modifier = 0
-                    // 即 modifier = -breakpoint
-                    newModifiers[String(index)] = -baseDef.breakpoint;
-                }
-            }
-        });
-
-        return {
-            ...core,
-            tempBreakpointModifiers: newModifiers,
-        };
+    customCommands: {
+        [SMASHUP_CHEAT_COMMANDS.REFRESH_BASE]: ({ state, command }) => {
+            const payload = command.payload as { baseIndex?: number } | undefined;
+            const result = refreshSmashUpBase(state.core, payload?.baseIndex ?? -1);
+            return {
+                halt: true,
+                state: { ...state, core: result.core },
+                events: result.events,
+            };
+        },
+        [SMASHUP_CHEAT_COMMANDS.REFRESH_ALL_BASES]: ({ state }) => {
+            const result = refreshAllSmashUpBases(state.core);
+            return {
+                halt: true,
+                state: { ...state, core: result.core },
+                events: result.events,
+            };
+        },
+        [SMASHUP_CHEAT_COMMANDS.FORCE_SCORE_BASES_WITH_MINIONS]: ({ state }) => ({
+            halt: true,
+            state: {
+                ...state,
+                core: forceScoreSmashUpBasesWithMinions(state.core),
+            },
+        }),
     },
 };

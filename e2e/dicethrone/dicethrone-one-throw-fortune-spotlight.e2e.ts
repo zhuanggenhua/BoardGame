@@ -93,7 +93,10 @@ test('一掷千金没有合法改骰响应时仍等待右侧骰盘普通确认',
     await clearEvidenceScreenshotsForTest(testInfo);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const setup = await setupDTOnlineMatch(browser, baseURL);
+    const setup = await setupDTOnlineMatch(browser, baseURL, {
+        skipImageGate: true,
+        characterSelectionTimeout: 90000,
+    });
     if (!setup) {
         test.skip(true, 'online setup unavailable in current environment');
         return;
@@ -227,7 +230,10 @@ test('一掷千金奖励骰结算前会给弹一手真实介入窗口', async ({
     await clearEvidenceScreenshotsForTest(testInfo);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const setup = await setupDTOnlineMatch(browser, baseURL);
+    const setup = await setupDTOnlineMatch(browser, baseURL, {
+        skipImageGate: true,
+        characterSelectionTimeout: 90000,
+    });
     if (!setup) {
         test.skip(true, 'online setup unavailable in current environment');
         return;
@@ -411,6 +417,7 @@ test('一掷千金奖励骰结算前会给弹一手真实介入窗口', async ({
                 pendingSettlement: state?.core?.pendingBonusDiceSettlement ? 'present' : 'none',
                 currentRollKind: state?.core?.currentRollContext?.kind ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
                 windowType: state?.sys?.responseWindow?.current?.windowType ?? null,
                 hostDiscardIds: (state?.core?.players?.['0']?.discard ?? []).map((card: any) => card.id),
                 guestCp: state?.core?.players?.['1']?.resources?.cp ?? null,
@@ -419,7 +426,8 @@ test('一掷千金奖励骰结算前会给弹一手真实介入窗口', async ({
         }, { timeout: 10000 }).toMatchObject({
             pendingSettlement: 'present',
             currentRollKind: 'bonus',
-            interactionKind: null,
+            interactionKind: 'dt:bonus-dice',
+            interactionPlayerId: '1',
             windowType: null,
             hostDiscardIds: ['card-flick'],
             guestCp: guestStartingCp,

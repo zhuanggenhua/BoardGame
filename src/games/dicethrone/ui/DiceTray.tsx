@@ -351,7 +351,7 @@ export const DiceActions = ({
     rollCount,
     rollLimit,
     rollConfirmed,
-    isCompareRoll: _isCompareRoll,
+    isCompareRoll = false,
     onRoll,
     onConfirm,
     currentPhase,
@@ -463,11 +463,15 @@ export const DiceActions = ({
         ? !canInteract
         : isInteractionMode
         ? !(multistepInteraction?.canConfirm ?? false)
+        : isCompareRoll
+        ? (!canInteract || isRolling)
         : (rollConfirmed || rollCount === 0 || !canInteract || isRolling);
     const rightVariant = isBonusDiceSettlement
         ? (canInteract ? 'primary' as const : 'secondary' as const)
         : isInteractionMode
         ? 'primary' as const
+        : isCompareRoll
+        ? (canInteract ? 'primary' as const : 'secondary' as const)
         : (rollConfirmed ? 'glass' as const : 'secondary' as const);
 
     return (
@@ -512,7 +516,7 @@ export const DiceActions = ({
                 data-testid={isInteractionMode ? 'dice-interaction-confirm-button' : undefined}
                 data-tutorial-id={isInteractionMode ? undefined : 'dice-confirm-button'}
             >
-                {isBonusDiceSettlement || isInteractionMode
+                {isBonusDiceSettlement || isInteractionMode || isCompareRoll
                     ? t('common.confirm')
                     : (rollConfirmed ? t('dice.confirmed') : t('dice.confirm'))}
             </GameButton>

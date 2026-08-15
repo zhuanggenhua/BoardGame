@@ -1,14 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import {
+    MOBILE_MAX_VIEWPORT_WIDTH,
     detectMobileLayoutEngineCapabilities,
     resolveRuntimeLayoutScaleMetrics,
     resolveStableViewportSize,
     type RuntimeViewportSize,
-} from '../../games/mobileSupport';
-import {
-    FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
-    FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
-} from '../../games/fantasyrealms/manifest';
+} from '../../shared/mobileSupport';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
 
 export interface RuntimeSafeAreaInsets {
@@ -28,25 +25,15 @@ const EMPTY_VIEWPORT: RuntimeViewportMetrics = { width: 0, height: 0, safeArea: 
 const MIN_KEYBOARD_INSET_PX = 72;
 const DEFAULT_ROOT_DESIGN_WIDTH = 1280;
 const DEFAULT_BOARD_SHELL_DESIGN_WIDTH = 1280;
-const BOARD_SHELL_DESIGN_WIDTH_BY_GAME: Record<string, number> = {
-    dicethrone: 940,
-    fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
-    smashup: 1160,
-    summonerwars: 900,
-};
-const BOARD_SHELL_DESIGN_HEIGHT_BY_GAME: Record<string, number> = {
-    fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_HEIGHT_PX,
-};
-const BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME: Record<string, number> = {
-    fantasyrealms: 800,
-};
-const BOARD_SHELL_MIN_READABLE_SCALE_BY_GAME: Record<string, number> = {
-    fantasyrealms: 0.52,
-};
 
 const parseCssPixels = (value: string) => {
     const parsed = Number.parseFloat(value);
     return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const parsePositiveDatasetNumber = (value: string | undefined) => {
+    const parsed = Number.parseFloat(value ?? '');
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 };
 
 const readStableLayoutViewportHeight = () => {
@@ -204,10 +191,15 @@ const clearBoardShellVars = (root: HTMLElement) => {
 
 const resolveBoardShellScaleMetrics = (
     viewport: RuntimeViewportSize,
-    designWidth: number,
-    gameId: string,
+    layout: {
+        designWidth?: number;
+        designHeight?: number;
+        minLogicalHeight?: number;
+        minReadableScale?: number;
+    },
 ) => {
-    const designHeight = BOARD_SHELL_DESIGN_HEIGHT_BY_GAME[gameId];
+    const designWidth = layout.designWidth ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
+    const designHeight = layout.designHeight;
     if (designHeight) {
         const safeDesignWidth = Math.max(1, designWidth);
         const safeDesignHeight = Math.max(1, designHeight);
@@ -233,13 +225,13 @@ const resolveBoardShellScaleMetrics = (
     }
 
     const widthMetrics = resolveRuntimeLayoutScaleMetrics(viewport, designWidth);
-    const minLogicalHeight = BOARD_SHELL_MIN_LOGICAL_HEIGHT_BY_GAME[gameId];
+    const minLogicalHeight = layout.minLogicalHeight;
     if (!minLogicalHeight) {
         return { ...widthMetrics, designHeight: undefined, offsetX: 0, offsetY: 0 };
     }
 
     const heightScale = Math.max(0.01, viewport.height / minLogicalHeight);
-    const minReadableScale = BOARD_SHELL_MIN_READABLE_SCALE_BY_GAME[gameId] ?? 0.01;
+    const minReadableScale = layout.minReadableScale ?? 0.01;
     const scale = Math.min(widthMetrics.scale, Math.max(minReadableScale, heightScale));
     const inverseScale = 1 / scale;
     const renderedWidth = widthMetrics.designWidth * scale;
@@ -288,7 +280,7 @@ export const applyRuntimeViewportCssVars = (
             ? document.documentElement
             : document.querySelector<HTMLElement>('[data-game-page="true"]');
     setLayoutEngineDataset(layoutEngineCapabilities.layoutMode, Boolean(gamePageTarget));
-    const isLandscapeMobileViewport = viewport.width <= 1023 && viewport.width > viewport.height;
+    const isLandscapeMobileViewport = viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH && viewport.width > viewport.height;
 
     if (gamePageTarget && isLandscapeMobileViewport) {
         const rootScaleMetrics = resolveRuntimeLayoutScaleMetrics(viewport, DEFAULT_ROOT_DESIGN_WIDTH);
@@ -304,10 +296,9 @@ export const applyRuntimeViewportCssVars = (
 
     const mobileLayoutPreset = gamePageTarget?.dataset.mobileLayoutPreset;
     const mobileProfile = gamePageTarget?.dataset.mobileProfile;
-    const gameId = gamePageTarget?.dataset.gameId?.trim().toLowerCase() ?? '';
     const shouldUseBoardShellScale = mobileLayoutPreset === 'board-shell'
         && mobileProfile === 'landscape-adapted'
-        && viewport.width <= 1023
+        && viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH
         && isLandscapeMobileViewport;
 
     if (!shouldUseBoardShellScale) {
@@ -315,8 +306,12 @@ export const applyRuntimeViewportCssVars = (
         return;
     }
 
-    const designWidth = BOARD_SHELL_DESIGN_WIDTH_BY_GAME[gameId] ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
-    const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, designWidth, gameId);
+    const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, {
+        designWidth: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignWidth),
+        designHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignHeight),
+        minLogicalHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellMinLogicalHeight),
+        minReadableScale: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellMinReadableScale),
+    });
     root.style.setProperty('--mobile-board-shell-design-width', `${shellScaleMetrics.designWidth}px`);
     if (shellScaleMetrics.designHeight) {
         root.style.setProperty('--mobile-board-shell-design-height', `${shellScaleMetrics.designHeight}px`);

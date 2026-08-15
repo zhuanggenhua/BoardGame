@@ -34,7 +34,11 @@ import {
     getMageWarsSpellCardPreviewRef,
 } from './ui/cardAtlas';
 import { mageWarsFxRegistry } from './ui/fxSetup';
-import { useMageWarsGameEvents } from './ui/useGameEvents';
+import {
+    mageWarsObjectDamageKey,
+    mageWarsPlayerDamageKey,
+    useMageWarsGameEvents,
+} from './ui/useGameEvents';
 import {
     canMageWarsObjectUsePostMoveQuickAction,
     getMageWarsObjectAttackProfiles,
@@ -42,6 +46,7 @@ import {
     isMageWarsArenaObjectRestrained,
     isMageWarsObjectAttackTargetInRange,
     isMageWarsTargetInSpellRange,
+    resolveMageWarsSpellRawCostTotal,
 } from './domain/spellRules';
 
 type Props = GameBoardProps<MageWarsCore>;
@@ -119,6 +124,7 @@ type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'equi
 
 type FieldCardRole = 'source' | 'target';
 type ZoneEntityDensity = 'solo' | 'duel' | 'dense' | 'packed';
+type SeatOwnerSide = 'seat-left' | 'seat-right' | 'neutral';
 function cx(...classes: Array<string | false | null | undefined>): string {
     return classes.filter(Boolean).join(' ');
 }
@@ -176,6 +182,37 @@ function isMageWarsSpellFieldCardTargetAllowed(
     return kind !== undefined && isMageWarsSpellObjectTargetAllowed(spell, { kind });
 }
 
+function isMageWarsAttachmentObject(object: MageWarsArenaObjectState): boolean {
+    if (object.kind === 'equipment') {
+        return object.anchoredToPlayerId !== undefined || object.anchoredToObjectId !== undefined;
+    }
+    if (object.kind !== 'enchantment') return false;
+    return object.anchoredToPlayerId !== undefined
+        || object.anchoredToObjectId !== undefined
+        || object.anchoredToZoneId !== undefined;
+}
+
+function isMageWarsMageAttachmentObject(
+    object: MageWarsArenaObjectState,
+    playerId: PlayerId,
+): boolean {
+    return isMageWarsAttachmentObject(object) && object.anchoredToPlayerId === playerId;
+}
+
+function isMageWarsObjectAttachmentObject(
+    object: MageWarsArenaObjectState,
+    hostObjectId: string,
+): boolean {
+    return isMageWarsAttachmentObject(object) && object.anchoredToObjectId === hostObjectId;
+}
+
+function isMageWarsZoneAttachmentObject(
+    object: MageWarsArenaObjectState,
+    zoneId: ArenaZoneId,
+): boolean {
+    return isMageWarsAttachmentObject(object) && object.anchoredToZoneId === zoneId;
+}
+
 function resolveViewingPlayerId(core: MageWarsCore, playerID: string | null): PlayerId {
     if (isPlayerId(playerID) && core.players[playerID]) return playerID;
     return core.currentPlayerId;
@@ -183,6 +220,14 @@ function resolveViewingPlayerId(core: MageWarsCore, playerID: string | null): Pl
 
 function resolveOpponentId(core: MageWarsCore, playerId: PlayerId): PlayerId | null {
     return core.playerOrder.find((candidate) => candidate !== playerId) ?? null;
+}
+
+function resolveSeatOwnerSide(core: MageWarsCore, playerId: PlayerId | undefined): SeatOwnerSide {
+    if (playerId == null) return 'neutral';
+    const seatIndex = core.playerOrder.indexOf(playerId);
+    if (seatIndex === 0) return 'seat-left';
+    if (seatIndex === 1) return 'seat-right';
+    return 'neutral';
 }
 
 function getSpellbookPreviewCardIds(player: MageWarsPlayerState, maxCount: number): number[] {
@@ -267,8 +312,8 @@ function canMageWarsObjectStartAction(
         .some((profile) => canMageWarsObjectUsePostMoveQuickAction(object, profile));
 }
 
-function MageStatusBars({ player }: { player: MageWarsPlayerState }) {
-    const lifeRemaining = Math.max(0, player.life - player.damage);
+function MageStatusBars({ player, visualDamage = player.damage }: { player: MageWarsPlayerState; visualDamage?: number }) {
+    const lifeRemaining = Math.max(0, player.life - visualDamage);
     const lifePercent = Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100));
     const manaPercent = Math.max(0, Math.min(100, (player.mana / 20) * 100));
 
@@ -296,15 +341,17 @@ function MageHud({
     self,
     role,
     compact = false,
+    visualDamage = player.damage,
 }: {
     player: MageWarsPlayerState;
     current: boolean;
     self: boolean;
     role?: 'source' | 'target';
     compact?: boolean;
+    visualDamage?: number;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const lifeRemaining = Math.max(0, player.life - player.damage);
+    const lifeRemaining = Math.max(0, player.life - visualDamage);
     const mageLabel = getMageDisplayLabel(player);
 
     if (!compact) {
@@ -481,13 +528,13 @@ function MageHud({
                     </div>
                 </div>
                 <div className="mt-2">
-                    <MageStatusBars player={player} />
+                    <MageStatusBars player={player} visualDamage={visualDamage} />
                 </div>
                 <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[0.68rem] text-stone-200">
                     <span>{t('stats.lifeShort', { value: lifeRemaining })}</span>
                     <span>{t('stats.manaShort', { value: player.mana })}</span>
                     <span>{t('stats.channelingShort', { value: player.channeling })}</span>
-                    <span>{t('stats.damageShort', { value: player.damage })}</span>
+                    <span>{t('stats.damageShort', { value: visualDamage })}</span>
                 </div>
             </div>
         </section>
@@ -613,13 +660,15 @@ function ZoneFieldCard({
     density = 'solo',
     ownerSide,
     onClick,
+    visualDamage = object?.damage,
 }: {
     cardId: number;
     object?: MageWarsArenaObjectState;
     role?: FieldCardRole;
     density?: ZoneEntityDensity;
-    ownerSide?: 'self' | 'opponent' | 'neutral';
+    ownerSide?: SeatOwnerSide;
     onClick?: () => void;
+    visualDamage?: number;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const previewRef = getMageWarsSpellCardPreviewRef(cardId);
@@ -632,6 +681,8 @@ function ZoneFieldCard({
             : density === 'duel'
                 ? 'h-[8rem]'
                 : 'h-[11.95rem]';
+    const cardAspectRatio = getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
+    const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
 
     if (!previewRef) return null;
 
@@ -640,8 +691,7 @@ function ZoneFieldCard({
             <CardPreview
                 previewRef={previewRef}
                 className={cx(
-                    'w-auto rounded-[0.18rem]',
-                    cardHeightClass,
+                    'h-full w-full rounded-[0.18rem]',
                 )}
                 title={title}
             />
@@ -662,10 +712,10 @@ function ZoneFieldCard({
                             </span>
                         ) : null;
                     })}
-                    {object.damage > 0 ? (
+                    {(visualDamage ?? 0) > 0 ? (
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-black/62 px-1 py-0.5 text-[0.62rem] font-bold text-rose-50 shadow-[0_4px_12px_rgba(0,0,0,0.38)]">
                             <TokenImage src={TOKEN_IMAGES.damage} alt={t('tokens.damage')} className="h-5 w-5" />
-                            {object.damage}
+                            {visualDamage}
                         </span>
                     ) : null}
                 </div>
@@ -694,17 +744,20 @@ function ZoneFieldCard({
         <button
             type="button"
             className={cx(
-                'relative z-20 shrink-0 rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
+                'relative z-20 block shrink-0 rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
+                cardHeightClass,
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
                 role === 'target' && 'shadow-[0_0_32px_rgba(251,113,133,0.46)]',
                 role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
                 !onClick && 'pointer-events-none',
             )}
+            style={cardSizeStyle}
             disabled={!onClick}
             onClick={(event) => {
                 event.stopPropagation();
                 onClick?.();
             }}
+            aria-label={title}
             data-testid="mage-wars-zone-field-card"
             data-object-id={object?.id}
             data-source-card-id={cardId}
@@ -713,6 +766,148 @@ function ZoneFieldCard({
         >
             {content}
         </button>
+    );
+}
+
+function ArenaAttachmentCard({
+    object,
+    role,
+    density = 'solo',
+    ownerSide,
+    onClick,
+}: {
+    object: MageWarsArenaObjectState;
+    role?: FieldCardRole;
+    density?: ZoneEntityDensity;
+    ownerSide?: SeatOwnerSide;
+    onClick?: () => void;
+}) {
+    const { t } = useTranslation('game-mage-wars');
+    const previewRef = getMageWarsSpellCardPreviewRef(object.sourceSpellCardId);
+    const title = object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell');
+    const heightClass = density === 'packed'
+        ? 'h-8'
+        : density === 'dense'
+            ? 'h-10'
+            : density === 'duel'
+                ? 'h-12'
+                : 'h-14';
+    const cardAspectRatio = getMageWarsSpellCardAspectRatio(object.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
+    const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
+
+    if (!previewRef) return null;
+
+    const content = (
+        <>
+            <CardPreview
+                previewRef={previewRef}
+                className={cx(
+                    'h-full w-full rounded-[0.12rem]',
+                    object.kind === 'equipment' ? 'ring-1 ring-sky-200/75' : 'ring-1 ring-violet-200/75',
+                )}
+                title={title}
+            />
+            {role === 'target' ? (
+                <span
+                    className="pointer-events-none absolute -inset-1 z-10 rounded-[0.18rem] border border-rose-200/90 shadow-[0_0_16px_rgba(251,113,133,0.56)]"
+                    data-testid="mage-wars-attachment-target-frame"
+                />
+            ) : null}
+            {role === 'source' ? (
+                <span
+                    className="pointer-events-none absolute -inset-1 z-10 rounded-[0.18rem] border border-cyan-100/90 shadow-[0_0_16px_rgba(34,211,238,0.58)]"
+                    data-testid="mage-wars-attachment-source-frame"
+                />
+            ) : null}
+        </>
+    );
+
+    const className = cx(
+        'relative block shrink-0 rounded-[0.16rem] text-left shadow-[0_7px_14px_rgba(0,0,0,0.48)]',
+        heightClass,
+        role === 'target' && 'shadow-[0_0_18px_rgba(251,113,133,0.45)]',
+        role === 'source' && 'shadow-[0_0_18px_rgba(34,211,238,0.52)]',
+        onClick && 'cursor-pointer',
+        !onClick && 'pointer-events-none',
+    );
+
+    const dataProps = {
+        'data-testid': 'mage-wars-attached-card',
+        'data-object-id': object.id,
+        'data-source-card-id': object.sourceSpellCardId,
+        'data-owner-side': ownerSide,
+        'data-attachment-kind': object.kind,
+        'data-attachment-role': role,
+    };
+
+    if (onClick) {
+        return (
+            <button
+                type="button"
+                className={className}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onClick();
+                }}
+                aria-label={title}
+                style={cardSizeStyle}
+                {...dataProps}
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <div
+            className={className}
+            aria-label={title}
+            style={cardSizeStyle}
+            {...dataProps}
+        >
+            {content}
+        </div>
+    );
+}
+
+function ArenaAttachmentStrip({
+    objects,
+    density = 'solo',
+    hostKind,
+    ownerSide,
+    getRole,
+    getOnClick,
+}: {
+    objects: MageWarsArenaObjectState[];
+    density?: ZoneEntityDensity;
+    hostKind: 'mage' | 'object' | 'zone';
+    ownerSide?: SeatOwnerSide;
+    getRole: (object: MageWarsArenaObjectState) => FieldCardRole | undefined;
+    getOnClick: (object: MageWarsArenaObjectState) => (() => void) | undefined;
+}) {
+    if (objects.length === 0) return null;
+
+    return (
+        <div
+            className={cx(
+                'pointer-events-auto absolute z-30 flex gap-1',
+                hostKind === 'mage' && '-right-3 top-1 flex-col items-end',
+                hostKind === 'object' && '-right-3 -top-2 flex-col items-end',
+                hostKind === 'zone' && 'right-1 top-1 flex-row items-start',
+            )}
+            data-testid={`mage-wars-${hostKind}-attachment-strip`}
+        >
+            {objects.map((object) => (
+                <ArenaAttachmentCard
+                    key={object.id}
+                    object={object}
+                    density={density}
+                    role={getRole(object)}
+                    ownerSide={ownerSide}
+                    onClick={getOnClick(object)}
+                />
+            ))}
+        </div>
     );
 }
 
@@ -900,9 +1095,13 @@ function SpellbookShelf({
 
     return (
         <section
-            className="pointer-events-auto flex items-end gap-[1.125rem] px-1.5 pb-2 pt-3"
+            className={cx(
+                'flex items-end gap-[1.125rem] px-1.5 pb-2 pt-3',
+                planning ? 'pointer-events-auto' : 'pointer-events-none',
+            )}
             data-testid="mage-wars-desktop-spellbook-shelf"
             aria-label={t('privateZones.spellbook')}
+            aria-disabled={!planning}
         >
             <span className="sr-only">{t('privateZones.spellbook')}</span>
             <div className="flex h-[9.875rem] w-[3.625rem] shrink-0 flex-col justify-end gap-1.5">
@@ -1060,12 +1259,14 @@ function ZoneOccupant({
     crowded,
     density = 'solo',
     onClick,
+    visualDamage = player.damage,
 }: {
     player: MageWarsPlayerState;
     role?: 'source' | 'target';
     crowded?: boolean;
     density?: ZoneEntityDensity;
     onClick?: () => void;
+    visualDamage?: number;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const mageLabel = getMageDisplayLabel(player);
@@ -1136,10 +1337,10 @@ function ZoneOccupant({
                         </span>
                     ) : null;
                 })}
-                {player.damage > 0 ? (
+                {visualDamage > 0 ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-black/62 px-1 py-0.5 text-[0.62rem] font-bold text-rose-50 shadow-[0_4px_12px_rgba(0,0,0,0.38)]">
                         <TokenImage src={TOKEN_IMAGES.damage} alt={t('tokens.damage')} className="h-5 w-5" />
-                        {player.damage}
+                        {visualDamage}
                     </span>
                 ) : null}
             </div>
@@ -1164,6 +1365,10 @@ function ArenaStage({
     onActorPlayerSelect,
     onGuard,
     fxBus,
+    onFxImpact,
+    onFxComplete,
+    getVisualObjectDamage,
+    getVisualPlayerDamage,
 }: {
     core: MageWarsCore;
     phase: string;
@@ -1181,6 +1386,10 @@ function ArenaStage({
     onActorPlayerSelect?: (playerId: PlayerId) => void;
     onGuard?: () => void;
     fxBus: FxBus;
+    onFxImpact?: (id: string, cue: string) => void;
+    onFxComplete?: (id: string, cue: string) => void;
+    getVisualObjectDamage: (object: MageWarsArenaObjectState) => number;
+    getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const creatureActionActive = isCreatureActionPhase(phase) && canAct;
@@ -1276,9 +1485,14 @@ function ArenaStage({
             {core.arena.map((zone) => {
                 const rect = ZONE_RECTS[zone.id];
                 const fieldCardIds = zone.fieldCardIds ?? [];
-                const fieldObjects = zone.objectIds
+                const zoneObjects = zone.objectIds
                     .map((objectId) => core.objects[objectId])
                     .filter((object): object is MageWarsArenaObjectState => object != null);
+                const attachedObjects = zoneObjects.filter(isMageWarsAttachmentObject);
+                const fieldObjects = zoneObjects.filter((object) => !isMageWarsAttachmentObject(object));
+                const zoneAttachmentObjects = attachedObjects.filter((object) => (
+                    isMageWarsZoneAttachmentObject(object, zone.id)
+                ));
                 const zoneOccupants = zone.occupantIds
                     .map((occupantId) => core.players[occupantId])
                     .filter((occupant): occupant is MageWarsPlayerState => occupant != null);
@@ -1296,13 +1510,15 @@ function ArenaStage({
                 ].filter(Boolean).join('，');
                 const entityCount = fieldObjects.length + zoneOccupants.length;
                 const usesOwnershipLanes = fieldCardIds.length === 0 && entityCount > 0;
-                const selfFieldObjects = fieldObjects.filter((object) => object.ownerId === viewingPlayerId);
-                const opponentFieldObjects = fieldObjects.filter((object) => object.ownerId !== viewingPlayerId);
-                const selfZoneOccupants = zoneOccupants.filter((occupant) => occupant.id === viewingPlayerId);
-                const opponentZoneOccupants = zoneOccupants.filter((occupant) => occupant.id !== viewingPlayerId);
+                const leftSeatPlayerId = core.playerOrder[0];
+                const rightSeatPlayerId = core.playerOrder[1];
+                const leftSeatFieldObjects = fieldObjects.filter((object) => object.ownerId === leftSeatPlayerId);
+                const rightSeatFieldObjects = fieldObjects.filter((object) => object.ownerId === rightSeatPlayerId);
+                const leftSeatZoneOccupants = zoneOccupants.filter((occupant) => occupant.id === leftSeatPlayerId);
+                const rightSeatZoneOccupants = zoneOccupants.filter((occupant) => occupant.id === rightSeatPlayerId);
                 const largestLaneCount = Math.max(
-                    selfFieldObjects.length + selfZoneOccupants.length,
-                    opponentFieldObjects.length + opponentZoneOccupants.length,
+                    leftSeatFieldObjects.length + leftSeatZoneOccupants.length,
+                    rightSeatFieldObjects.length + rightSeatZoneOccupants.length,
                 );
                 const entityDensity: ZoneEntityDensity = !usesOwnershipLanes
                     ? 'solo'
@@ -1311,7 +1527,27 @@ function ArenaStage({
                         : largestLaneCount <= 2
                             ? 'dense'
                             : 'packed';
+                const resolveAttachmentRole = (object: MageWarsArenaObjectState): FieldCardRole | undefined => {
+                    const isSpellObjectTarget = Boolean(
+                        selectedSpell
+                        && spellNeedsObjectTarget
+                        && isMageWarsSpellObjectTargetAllowed(selectedSpell, object),
+                    );
+                    if (isSpellObjectTarget) return 'target';
+                    return object.id === selectedObjectId ? 'source' : undefined;
+                };
+                const resolveAttachmentClick = (object: MageWarsArenaObjectState): (() => void) | undefined => {
+                    const isSpellObjectTarget = Boolean(
+                        selectedSpell
+                        && spellNeedsObjectTarget
+                        && isMageWarsSpellObjectTargetAllowed(selectedSpell, object),
+                    );
+                    return isSpellObjectTarget ? () => onObjectSelect?.(object.id) : undefined;
+                };
                 const renderFieldObject = (object: MageWarsArenaObjectState, density: ZoneEntityDensity = 'solo') => {
+                    const objectAttachments = attachedObjects.filter((attachment) => (
+                        isMageWarsObjectAttachmentObject(attachment, object.id)
+                    ));
                     const isObjectAttackTarget = Boolean(
                         selectedObject
                         && selectedObjectCanAttack
@@ -1335,28 +1571,41 @@ function ArenaStage({
                         && canMageWarsObjectStartAction(object, activePlayer?.id),
                     );
                     return (
-                        <ZoneFieldCard
-                            key={object.id}
-                            cardId={object.sourceSpellCardId}
-                            object={object}
-                            density={density}
-                            ownerSide={object.ownerId === viewingPlayerId ? 'self' : 'opponent'}
-                            role={isSpellObjectTarget || isObjectAttackTarget
-                                ? 'target'
-                                : object.id === selectedObjectId
-                                    ? 'source'
-                                    : undefined}
-                            onClick={isSpellObjectTarget
-                                ? () => onObjectSelect?.(object.id)
-                                : isObjectAttackTarget
-                                    ? () => onObjectSelect?.(object.id)
-                                    : canSelectObjectActor
-                                        ? () => onActorObjectSelect?.(object.id)
+                        <div key={object.id} className="relative z-20 flex shrink-0 items-center justify-center">
+                            <ZoneFieldCard
+                                cardId={object.sourceSpellCardId}
+                                object={object}
+                                density={density}
+                                ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
+                                visualDamage={getVisualObjectDamage(object)}
+                                role={isSpellObjectTarget || isObjectAttackTarget
+                                    ? 'target'
+                                    : object.id === selectedObjectId
+                                        ? 'source'
                                         : undefined}
-                        />
+                                onClick={isSpellObjectTarget
+                                    ? () => onObjectSelect?.(object.id)
+                                    : isObjectAttackTarget
+                                        ? () => onObjectSelect?.(object.id)
+                                        : canSelectObjectActor
+                                            ? () => onActorObjectSelect?.(object.id)
+                                            : undefined}
+                            />
+                            <ArenaAttachmentStrip
+                                objects={objectAttachments}
+                                density={density}
+                                hostKind="object"
+                                ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
+                                getRole={resolveAttachmentRole}
+                                getOnClick={resolveAttachmentClick}
+                            />
+                        </div>
                     );
                 };
                 const renderZoneOccupant = (occupant: MageWarsPlayerState, density: ZoneEntityDensity = 'solo') => {
+                    const mageAttachments = attachedObjects.filter((attachment) => (
+                        isMageWarsMageAttachmentObject(attachment, occupant.id)
+                    ));
                     const role = occupant.id === selectedMageId
                         ? 'source'
                         : occupant.id === legalAttackTargetId
@@ -1369,18 +1618,28 @@ function ArenaStage({
                         && canUseMageAction,
                     );
                     return (
-                        <ZoneOccupant
-                            key={occupant.id}
-                            player={occupant}
-                            role={role}
-                            crowded={hasFieldCards}
-                            density={density}
-                            onClick={occupant.id === legalAttackTargetId || (selectedSpell && spellNeedsObjectTarget)
-                                ? () => onPlayerSelect?.(occupant.id)
-                                : canSelectMageActor
-                                    ? () => onActorPlayerSelect?.(occupant.id)
-                                    : undefined}
-                        />
+                        <div key={occupant.id} className="relative z-20 flex shrink-0 items-center justify-center">
+                            <ZoneOccupant
+                                player={occupant}
+                                role={role}
+                                crowded={hasFieldCards || mageAttachments.length > 0}
+                                density={density}
+                                visualDamage={getVisualPlayerDamage(occupant)}
+                                onClick={occupant.id === legalAttackTargetId || (selectedSpell && spellNeedsObjectTarget)
+                                    ? () => onPlayerSelect?.(occupant.id)
+                                    : canSelectMageActor
+                                        ? () => onActorPlayerSelect?.(occupant.id)
+                                        : undefined}
+                            />
+                            <ArenaAttachmentStrip
+                                objects={mageAttachments}
+                                density={density}
+                                hostKind="mage"
+                                ownerSide={resolveSeatOwnerSide(core, occupant.id)}
+                                getRole={resolveAttachmentRole}
+                                getOnClick={resolveAttachmentClick}
+                            />
+                        </div>
                     );
                 };
                 return (
@@ -1427,16 +1686,16 @@ function ArenaStage({
                                 <div className={cx(
                                     'relative flex h-full flex-wrap content-center items-center justify-center gap-1.5 rounded-[0.22rem] bg-rose-900/10 px-1 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.16)]',
                                     entityDensity === 'packed' ? 'py-5' : entityDensity === 'dense' ? 'py-2' : 'py-3',
-                                )} data-lane-owner-side="self">
-                                    {selfZoneOccupants.map((occupant) => renderZoneOccupant(occupant, entityDensity))}
-                                    {selfFieldObjects.map((object) => renderFieldObject(object, entityDensity))}
+                                )} data-lane-owner-side="seat-left" data-lane-player-id={leftSeatPlayerId}>
+                                    {leftSeatZoneOccupants.map((occupant) => renderZoneOccupant(occupant, entityDensity))}
+                                    {leftSeatFieldObjects.map((object) => renderFieldObject(object, entityDensity))}
                                 </div>
                                 <div className={cx(
                                     'relative flex h-full flex-wrap content-center items-center justify-center gap-1.5 rounded-[0.22rem] bg-sky-900/10 px-1 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.16)]',
                                     entityDensity === 'packed' ? 'py-5' : entityDensity === 'dense' ? 'py-2' : 'py-3',
-                                )} data-lane-owner-side="opponent">
-                                    {opponentZoneOccupants.map((occupant) => renderZoneOccupant(occupant, entityDensity))}
-                                    {opponentFieldObjects.map((object) => renderFieldObject(object, entityDensity))}
+                                )} data-lane-owner-side="seat-right" data-lane-player-id={rightSeatPlayerId}>
+                                    {rightSeatZoneOccupants.map((occupant) => renderZoneOccupant(occupant, entityDensity))}
+                                    {rightSeatFieldObjects.map((object) => renderFieldObject(object, entityDensity))}
                                 </div>
                             </div>
                         ) : (
@@ -1462,6 +1721,14 @@ function ArenaStage({
                                 {zoneOccupants.map((occupant) => renderZoneOccupant(occupant))}
                             </div>
                         )}
+                        <ArenaAttachmentStrip
+                            objects={zoneAttachmentObjects}
+                            density={entityDensity}
+                            hostKind="zone"
+                            ownerSide="neutral"
+                            getRole={resolveAttachmentRole}
+                            getOnClick={resolveAttachmentClick}
+                        />
                     </div>
                 );
             })}
@@ -1501,6 +1768,8 @@ function ArenaStage({
                 })}
                 className="z-40"
                 data-testid="mage-wars-fx-layer"
+                onEffectImpact={onFxImpact}
+                onEffectComplete={onFxComplete}
             />
         </section>
     );
@@ -1585,15 +1854,20 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         ? undefined
         : getMageWarsSpellCardFromConfig(selectedSpellCardId);
     const spellNeedsZoneTarget = selectedSpell?.spellType === '生物' || selectedSpell?.targetRule === '区域';
+    const resolveSelectedSpellManaCost = () => {
+        if (!selectedSpell) return undefined;
+        return selectedSpell.manaCost ?? resolveMageWarsSpellRawCostTotal(selectedSpell);
+    };
     const castSelectedSpell = (target: {
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;
     }) => {
-        if (!canAct || selectedSpellCardId == null || selectedSpell?.manaCost == null) return;
+        const manaCost = resolveSelectedSpellManaCost();
+        if (!canAct || selectedSpellCardId == null || manaCost == null) return;
         dispatch(MAGE_WARS_COMMANDS.CAST_SPELL, {
             spellCardId: selectedSpellCardId,
-            manaCost: selectedSpell.manaCost,
+            manaCost,
             ...target,
         });
         setSelectedSpellCardId(null);
@@ -1728,7 +2002,13 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         setSelectedSpellCardId((current) => current === cardId ? null : cardId);
     };
     const fxBus = useFxBus(mageWarsFxRegistry);
-    useMageWarsGameEvents({ G, fxBus });
+    const mageWarsEvents = useMageWarsGameEvents({ G, fxBus });
+    const getVisualPlayerDamage = (player: MageWarsPlayerState) => (
+        mageWarsEvents.damageBuffer.get(mageWarsPlayerDamageKey(player.id), player.damage)
+    );
+    const getVisualObjectDamage = (object: MageWarsArenaObjectState) => (
+        mageWarsEvents.damageBuffer.get(mageWarsObjectDamageKey(object.id), object.damage)
+    );
     return (
         <div
             className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
@@ -1759,6 +2039,10 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                 onActorPlayerSelect={handleActorMageSelect}
                 onGuard={handleGuard}
                 fxBus={fxBus}
+                onFxImpact={mageWarsEvents.onEffectImpact}
+                onFxComplete={mageWarsEvents.onEffectComplete}
+                getVisualObjectDamage={getVisualObjectDamage}
+                getVisualPlayerDamage={getVisualPlayerDamage}
             />
             <div className={cx(
                 'absolute inset-y-0 left-0 bg-gradient-to-r from-black/24 via-black/7 to-transparent',
@@ -1795,6 +2079,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                                 current={opponent.id === phaseActorId}
                                 self={false}
                                 compact
+                                visualDamage={getVisualPlayerDamage(opponent)}
                             />
                         ) : null}
                     </div>
@@ -1805,6 +2090,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                                 current={viewingPlayer.id === phaseActorId}
                                 self
                                 compact
+                                visualDamage={getVisualPlayerDamage(viewingPlayer)}
                             />
                         ) : null}
                     </div>
@@ -1818,6 +2104,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                                     player={viewingPlayer}
                                     current={viewingPlayer.id === phaseActorId}
                                     self
+                                    visualDamage={getVisualPlayerDamage(viewingPlayer)}
                                 />
                             ) : null}
                         </div>
@@ -1829,6 +2116,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                                     player={opponent}
                                     current={opponent.id === phaseActorId}
                                     self={false}
+                                    visualDamage={getVisualPlayerDamage(opponent)}
                                 />
                             ) : null}
                         </div>

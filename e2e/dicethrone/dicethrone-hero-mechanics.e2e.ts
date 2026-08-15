@@ -721,6 +721,26 @@ test.describe('狂战士机制补充', () => {
             }
             await activePage.waitForTimeout(500);
 
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, activePage) as Record<string, any>;
+                const root = state?.G && typeof state.G === 'object' ? state.G : state;
+                return root?.core?.pendingAttack?.sourceAbilityId ?? null;
+            }, {
+                timeout: 10000,
+                message: '点击 Rage 后应创建待结算攻击',
+            }).toBe('rage');
+
+            await maybePassResponse(responsePage, 3000);
+            await maybePassResponse(activePage, 1000);
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, activePage) as Record<string, any>;
+                const root = state?.G && typeof state.G === 'object' ? state.G : state;
+                return root?.sys?.responseWindow?.current ?? null;
+            }, {
+                timeout: 10000,
+                message: 'Rage 选定后的响应窗口应关闭，之后才能结算攻击',
+            }).toBeNull();
+
             const resolveAttackButton = activePage.getByRole('button', { name: /结算攻击|Resolve Attack/i });
             await expect(resolveAttackButton).toBeEnabled({ timeout: 10000 });
 

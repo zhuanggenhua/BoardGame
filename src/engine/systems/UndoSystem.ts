@@ -37,7 +37,7 @@ export interface UndoSystemConfig {
      * 快照捕获的是事件 reduce 完成后的状态（即"新回合刚开始"的状态）。
      * 
      * 典型用途：回合切换时固定创建快照，确保玩家至少能回滚到回合开始。
-     * 示例：`snapshotEventTypes: ['sw:turn_changed']`
+     * 示例：`snapshotEventTypes: ['game:turn_changed']`
      */
     snapshotEventTypes?: string[];
 

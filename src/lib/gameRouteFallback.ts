@@ -1,4 +1,4 @@
-import { extractGameIdFromPlayPath } from '../games/mobileSupport';
+import { extractGameIdFromPlayPath } from '../shared/mobileSupport';
 
 export const PLAY_ROUTE_LOADING_TIMEOUT_MS = 8000;
 

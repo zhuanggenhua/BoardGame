@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
 import { UI_Z_INDEX } from '../../core';
 import { OverlayLayerProvider } from '../common/overlays/OverlayLayerContext';
-import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
+import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../shared/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { logger } from '../../lib/logger';
@@ -61,7 +61,7 @@ export type FabLayerZIndex = {
     floatingText: number;
 };
 
-export const resolveFabLayerZIndex = (baseZIndex = UI_Z_INDEX.hud): FabLayerZIndex => ({
+export const resolveFabLayerZIndex = (baseZIndex: number = UI_Z_INDEX.hud): FabLayerZIndex => ({
     panel: baseZIndex + 1,
     root: baseZIndex + 2,
     sheetBackdrop: baseZIndex + 1,

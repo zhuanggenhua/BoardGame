@@ -1952,8 +1952,9 @@ function elderThingTouchOfMadnessPod(ctx: AbilityContext): AbilityResult {
 function elderThingPriceOfPowerPodSpecial(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     const scoringBase = ctx.state.bases[ctx.baseIndex];
+    const reactionWindow = getSmashUpReactionWindowContext(ctx.matchState);
     const inBeforeScoringWindow = ctx.matchState.sys.phase === 'scoreBases'
-        || ctx.matchState.sys.responseWindow?.current?.windowType === 'meFirst';
+        || reactionWindow?.windowType === 'meFirst';
 
     const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId).filter(pid => {
         if (!inBeforeScoringWindow) return true;

@@ -8,10 +8,11 @@ import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { TutorialDispatchBridge } from './matchRoomBridges';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { QidahenPregameScenarioGate } from '../games/qidahen/QidahenPregameScenarioGate';
+import { useSearchParams } from 'react-router-dom';
 import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
+import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
+import { resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 import {
     buildTutorialProgressSeed,
     clearTutorialProgress,
@@ -30,6 +31,7 @@ export type MatchRoomTutorialBoardRuntimeModel = {
     numPlayers?: number;
     seatControllers?: Record<string, AiSeatController>;
     onCommandRejected: (type: string, error: string) => void;
+    resolveLocalSetup?: GameRuntimeAdapter['resolveLocalSetup'];
     title: string;
     preparingDescription: string;
     loadingProgressText?: string;
@@ -70,6 +72,15 @@ const TutorialLocalGameRuntime = ({
         ? `${restorableProgress.seed}:${restorableProgress.stepIndex}:${restorableProgress.stepId}`
         : null;
     const shouldAskResume = Boolean(restorableProgress && progressKey !== handledProgressKey);
+    const seatControllers = useMemo(
+        () => Object.fromEntries(
+            Array.from({ length: numPlayers }, (_, index) => {
+                const playerId = String(index);
+                return [playerId, runtime.seatControllers?.[playerId] ?? { type: 'human' as const }];
+            }),
+        ),
+        [numPlayers, runtime.seatControllers],
+    );
 
     useEffect(() => {
         if (!restorableProgress || !shouldAskResume) {
@@ -161,7 +172,7 @@ const TutorialLocalGameRuntime = ({
             playerId={playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
-            seatControllers={runtime.seatControllers}
+            seatControllers={seatControllers}
             followCurrentTurnPlayer={false}
             persistSession={Boolean(runtime.gameId)}
             persistGameId={runtime.gameId}
@@ -184,8 +195,17 @@ const TutorialLocalGameRuntime = ({
 };
 
 export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomTutorialBoardRuntimeModel }) {
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const runtimeLocalSetup = useMemo(
+        () => runtime.resolveLocalSetup?.({
+            searchParams,
+            tutorialId: runtime.tutorialId,
+            tutorialMode: true,
+        }) ?? null,
+        [runtime, searchParams],
+    );
+    const numPlayers = runtimeLocalSetup?.numPlayers ?? runtime.numPlayers ?? 2;
+    const setupData = resolveRuntimeLocalSetupData(runtimeLocalSetup);
     const renderBoard = (numPlayers: number, setupData?: Record<string, unknown>) => (
         <TutorialLocalGameRuntime
             runtime={runtime}
@@ -194,25 +214,5 @@ export function MatchRoomTutorialBoardRuntime({ runtime }: { runtime: MatchRoomT
         />
     );
 
-    if (runtime.gameId === 'qidahen') {
-        return (
-            <QidahenPregameScenarioGate
-                searchParams={searchParams}
-                tutorialId={runtime.tutorialId}
-                tutorialMode
-                onSearchParamsChange={(nextSearchParams) => {
-                    navigate(
-                        {
-                            search: `?${nextSearchParams.toString()}`,
-                        },
-                        { replace: true },
-                    );
-                }}
-            >
-                {({ numPlayers, setupData }) => renderBoard(numPlayers, setupData)}
-            </QidahenPregameScenarioGate>
-        );
-    }
-
-    return renderBoard(runtime.numPlayers ?? 2);
+    return renderBoard(numPlayers, setupData);
 }

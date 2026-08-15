@@ -20,7 +20,7 @@ import type { MatchStorage, StoredMatchState, MatchMetadata } from '../../../eng
 import { resolveMatchStatus } from '../../../engine/transport/storage';
 import { GameTransportServer } from '../../../engine/transport/server';
 import type { GameEngineConfig } from '../../../engine/transport/server';
-import { resolveAllowedPlayerCountsForGame } from '../../../games/roomSetupRegistry';
+import { resolveAllowedPlayerCountsForGame } from '../../../shared/roomSetup';
 import type { GameManifestEntry } from '../../../games/manifest.types';
 import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { createTestRoutes, getConfiguredTestApiToken, isTestRoutesEnabledEnv } from '../test';

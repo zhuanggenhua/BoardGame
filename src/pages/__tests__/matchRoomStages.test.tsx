@@ -188,4 +188,42 @@ describe('MatchRoomTutorialBoardStage', () => {
         expect(screen.getByTestId('tutorial-catalog-entry-basic-opening')).toHaveTextContent('✓ matchRoom.tutorialCatalog.completed');
         expect(screen.getByTestId('tutorial-catalog-entry-attack-and-battle')).not.toHaveTextContent('matchRoom.tutorialCatalog.completed');
     });
+
+    it('教程目录主题由 stage 模型传入，页面不按具体游戏名分支', () => {
+        render(
+            <MemoryRouter initialEntries={['/play/custom/tutorial']}>
+                <MatchRoomTutorialBoardStage
+                    stage={{
+                        noTutorialText: 'no tutorial',
+                        gameId: 'custom-game',
+                        tutorialId: undefined,
+                        tutorialCatalogTheme: {
+                            className: 'tutorial-catalog-stage--custom',
+                            chapterAccents: ['#123456'],
+                        },
+                        tutorialCatalog: {
+                            defaultTutorialId: 'intro',
+                            tutorials: {
+                                intro: {
+                                    title: '入门',
+                                    description: '自定义教程。',
+                                    manifest: { id: 'intro', steps: [] },
+                                },
+                                advanced: {
+                                    title: '进阶',
+                                    description: '第二章。',
+                                    manifest: { id: 'advanced', steps: [] },
+                                },
+                            },
+                        },
+                        runtime: null,
+                    }}
+                />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByTestId('tutorial-catalog-stage')).toHaveClass('tutorial-catalog-stage--custom');
+        expect(screen.getByTestId('tutorial-catalog-entry-intro'))
+            .toHaveStyle({ '--tutorial-chapter-accent': '#123456' });
+    });
 });

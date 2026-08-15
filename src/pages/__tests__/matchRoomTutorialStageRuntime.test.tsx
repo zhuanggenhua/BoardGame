@@ -14,6 +14,8 @@ let latestModalEntry: null | {
 } = null;
 let latestLocalProviderProps: null | {
     seed: string;
+    numPlayers: number;
+    setupData?: Record<string, unknown>;
     persistSession?: boolean;
     persistGameId?: string;
     seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
@@ -102,6 +104,8 @@ vi.mock('../../engine/transport/react', () => ({
     }),
     LocalGameProvider: (props: {
         seed: string;
+        numPlayers: number;
+        setupData?: Record<string, unknown>;
         persistSession?: boolean;
         persistGameId?: string;
         seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
@@ -117,6 +121,8 @@ vi.mock('../../engine/transport/react', () => ({
         }, [mountedSeed]);
         latestLocalProviderProps = {
             seed: props.seed,
+            numPlayers: props.numPlayers,
+            setupData: props.setupData,
             persistSession: props.persistSession,
             persistGameId: props.persistGameId,
             seatControllers: props.seatControllers,
@@ -293,5 +299,42 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
             `unmount:${initialSeed}`,
             `mount:${reclaimSeed}`,
         ]);
+    });
+
+    it('教程本地开局可由游戏 runtime adapter 覆盖人数和 setupData', async () => {
+        const resolveLocalSetup = vi.fn(() => ({
+            numPlayers: 3,
+            setupData: {
+                adapterSetup: true,
+                setupSelections: { scenario: 'tutorial-adapter' },
+            },
+        }));
+        const adapterRuntime: MatchRoomTutorialBoardRuntimeModel = {
+            ...runtime,
+            seatControllers: undefined,
+            resolveLocalSetup,
+        };
+
+        render(
+            <MemoryRouter initialEntries={['/?tutorialSetup=adapter']}>
+                <MatchRoomTutorialBoardRuntime runtime={adapterRuntime} />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(latestLocalProviderProps?.numPlayers).toBe(3));
+        expect(resolveLocalSetup).toHaveBeenCalledWith({
+            searchParams: expect.any(URLSearchParams),
+            tutorialId: 'basic-opening',
+            tutorialMode: true,
+        });
+        expect(latestLocalProviderProps?.setupData).toEqual({
+            adapterSetup: true,
+            setupSelections: { scenario: 'tutorial-adapter' },
+        });
+        expect(latestLocalProviderProps?.seatControllers).toEqual({
+            '0': { type: 'human' },
+            '1': { type: 'human' },
+            '2': { type: 'human' },
+        });
     });
 });

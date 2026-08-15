@@ -8,7 +8,7 @@ import {
     normalizeSetupSelections,
     type GameSetupSelections,
 } from '../../shared/gameSetupOptions';
-import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
+import { resolveAllowedPlayerCountsForGame } from '../../shared/roomSetup';
 
 const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;

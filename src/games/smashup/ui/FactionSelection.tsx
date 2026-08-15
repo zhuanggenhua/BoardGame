@@ -70,6 +70,14 @@ const SearchGlyph: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+const FACTION_GRID_OVERSCAN_ROWS = 2;
+const FACTION_GRID_MIN_WINDOW_ROWS = 4;
+
+type SelectionGridMetrics = {
+    scrollTop: number;
+    viewportHeight: number;
+};
+
 function shouldUseCompactPlayerRail(
     viewportSize: { width: number; height: number },
     playerCount: number,
@@ -98,6 +106,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const [detailPreviewTab, setDetailPreviewTab] = useState<'hand' | 'bases'>('hand');
     const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'titan' } | null>(null);
     const selectionGridRef = useRef<HTMLDivElement | null>(null);
+    const [selectionGridMetrics, setSelectionGridMetrics] = useState<SelectionGridMetrics>(() => ({
+        scrollTop: 0,
+        viewportHeight: typeof window === 'undefined' ? 900 : Math.max(1, window.innerHeight),
+    }));
     const [viewportSize, setViewportSize] = useState(() => ({
         width: typeof window === 'undefined' ? 1440 : window.innerWidth,
         height: typeof window === 'undefined' ? 900 : window.innerHeight,
@@ -127,17 +139,28 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     useEffect(() => {
         if (selectionPreviewReady || typeof window === 'undefined') return;
         if (document.readyState === 'complete') {
-            setSelectionPreviewReady(true);
-            return;
+            const frameId = window.requestAnimationFrame(() => {
+                setSelectionPreviewReady(true);
+            });
+            return () => {
+                window.cancelAnimationFrame(frameId);
+            };
         }
 
+        let loadFrameId = 0;
         const handleWindowLoad = () => {
-            setSelectionPreviewReady(true);
+            loadFrameId = window.requestAnimationFrame(() => {
+                loadFrameId = 0;
+                setSelectionPreviewReady(true);
+            });
         };
 
         window.addEventListener('load', handleWindowLoad, { once: true });
         return () => {
             window.removeEventListener('load', handleWindowLoad);
+            if (loadFrameId) {
+                window.cancelAnimationFrame(loadFrameId);
+            }
         };
     }, [selectionPreviewReady]);
 
@@ -261,12 +284,18 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     );
     useEffect(() => {
         const grid = selectionGridRef.current;
-        if (!grid) return;
+        if (!grid || typeof window === 'undefined') return;
         if (typeof grid.scrollTo === 'function') {
             grid.scrollTo({ top: 0 });
-            return;
+        } else {
+            grid.scrollTop = 0;
         }
-        grid.scrollTop = 0;
+        const frameId = window.requestAnimationFrame(() => {
+            setSelectionGridMetrics((current) => ({ ...current, scrollTop: 0 }));
+        });
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
     }, [normalizedFactionSearch]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
@@ -300,6 +329,42 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     - (factionGroupOrder.get(right.group.groupId) ?? Number.MAX_SAFE_INTEGER);
             });
     }, [factionGroupOrder, mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibleFactionGroups]);
+
+    useEffect(() => {
+        const grid = selectionGridRef.current;
+        if (!grid || typeof window === 'undefined') return;
+
+        let frameId = 0;
+        const readMetrics = () => {
+            frameId = 0;
+            setSelectionGridMetrics({
+                scrollTop: grid.scrollTop,
+                viewportHeight: Math.max(1, grid.clientHeight || window.innerHeight),
+            });
+        };
+        const scheduleRead = () => {
+            if (frameId) return;
+            frameId = window.requestAnimationFrame(readMetrics);
+        };
+
+        readMetrics();
+        grid.addEventListener('scroll', scheduleRead, { passive: true });
+        window.addEventListener('resize', scheduleRead);
+
+        const resizeObserver = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(scheduleRead)
+            : null;
+        resizeObserver?.observe(grid);
+
+        return () => {
+            grid.removeEventListener('scroll', scheduleRead);
+            window.removeEventListener('resize', scheduleRead);
+            resizeObserver?.disconnect();
+            if (frameId) {
+                window.cancelAnimationFrame(frameId);
+            }
+        };
+    }, [filteredFactionGroups.length]);
 
     if (!selectionState) return null;
 
@@ -369,8 +434,56 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         }
         : undefined;
     const selectionCardSurfaceClassName = useDesktopLikeLandscapeLayout
-        ? 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] transition-all bg-white p-[3px]'
-        : 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-all bg-white p-[3px] lg:p-[4px]';
+        ? 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] transition-transform duration-150 bg-white p-[3px] will-change-transform'
+        : 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-transform duration-150 bg-white p-[3px] lg:p-[4px] will-change-transform';
+    const selectionVirtualColumnCount = useDesktopLikeLandscapeLayout
+        ? 5
+        : useFocusedDesktopDraftLayout
+            ? (viewportSize.width >= 1536 ? 7 : 6)
+            : useCompactPlayerRail
+                ? (viewportSize.width >= 1536 ? 6 : viewportSize.width >= 1280 ? 5 : 4)
+                : (viewportSize.width >= 1536 ? 5 : 4);
+    const selectionVirtualRowHeight = useDesktopLikeLandscapeLayout
+        ? (isUltraCompactLandscape ? 242 : 292)
+        : useFocusedDesktopDraftLayout
+            ? (viewportSize.width >= 1536 ? 244 : 232)
+            : useCompactPlayerRail
+                ? (viewportSize.width >= 1536 ? 292 : viewportSize.width >= 1024 ? 266 : 244)
+                : (viewportSize.width >= 1536 ? 354 : 336);
+    const selectionVirtualRowCount = Math.ceil(filteredFactionGroups.length / selectionVirtualColumnCount);
+    const selectionFirstVisibleRow = Math.max(
+        0,
+        Math.floor(selectionGridMetrics.scrollTop / selectionVirtualRowHeight) - FACTION_GRID_OVERSCAN_ROWS,
+    );
+    const selectionLastVisibleRow = Math.min(
+        selectionVirtualRowCount,
+        Math.max(
+            selectionFirstVisibleRow + FACTION_GRID_MIN_WINDOW_ROWS,
+            Math.ceil((selectionGridMetrics.scrollTop + selectionGridMetrics.viewportHeight) / selectionVirtualRowHeight)
+                + FACTION_GRID_OVERSCAN_ROWS,
+        ),
+    );
+    const selectionVirtualStartIndex = Math.min(
+        filteredFactionGroups.length,
+        selectionFirstVisibleRow * selectionVirtualColumnCount,
+    );
+    const selectionVirtualEndIndex = Math.min(
+        filteredFactionGroups.length,
+        selectionLastVisibleRow * selectionVirtualColumnCount,
+    );
+    const visibleFactionOptionGroups = filteredFactionGroups.slice(
+        selectionVirtualStartIndex,
+        selectionVirtualEndIndex,
+    );
+    const selectionVirtualTopSpacer = selectionFirstVisibleRow * selectionVirtualRowHeight;
+    const selectionVirtualBottomSpacer = Math.max(
+        0,
+        (selectionVirtualRowCount - selectionLastVisibleRow) * selectionVirtualRowHeight,
+    );
+    const selectionVirtualSpacerStyle: React.CSSProperties = {
+        paddingTop: selectionVirtualTopSpacer,
+        paddingBottom: selectionVirtualBottomSpacer,
+    };
     const selectionIntro = (
         <motion.div
             initial={{ y: -50, opacity: 0 }}
@@ -449,7 +562,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             </div>
         </motion.div>
     );
-    const factionOptionNodes = filteredFactionGroups.map(({ group, selectedVariantId, isSelectedByMe, isTakenByOther }, idx) => {
+    const factionOptionNodes = visibleFactionOptionGroups.map(({ group, selectedVariantId, isSelectedByMe, isTakenByOther }, visibleIndex) => {
+        const idx = selectionVirtualStartIndex + visibleIndex;
         const ownerId = Object.entries(playerSelectionIdentities).find(([, identities]) => identities.has(group.groupId))?.[0];
         const previewFactionId = selectedVariantId ?? group.defaultVariant.id;
         const cards = getFactionCards(previewFactionId);
@@ -469,8 +583,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 key={group.groupId}
                 initial={{ opacity: 0, y: 20, rotate: (idx % 6) - 3 }}
                 animate={{ opacity: 1, y: 0, rotate: (idx % 4) - 2 }}
-                whileHover={{ rotate: 0, scale: 1.05, zIndex: 30 }}
-                transition={{ delay: idx * 0.03 }}
+                whileHover={{ rotate: 0, scale: 1.035, zIndex: 30 }}
+                transition={{ delay: Math.min(visibleIndex, 8) * 0.015, duration: 0.16 }}
                 onClick={() => {
                     if (isSelectedByMe && isMyTurn && selectedVariantId) {
                         handleCancelSelect(selectedVariantId);
@@ -492,7 +606,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             ? 'border-green-500 scale-105 -translate-y-2'
                             : isTakenByOther
                                 ? 'border-slate-300'
-                                : 'border-white group-hover:border-amber-400 group-hover:shadow-amber-500/30'
+                                : 'border-white'
                         }
                     `}>
                         <div className="w-full h-full bg-slate-100 overflow-hidden relative border border-slate-200">
@@ -535,6 +649,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             )}
 
                             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
+                            {!isSelectedByMe && !isTakenByOther && (
+                                <div className="pointer-events-none absolute inset-0 z-20 border-[4px] border-amber-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
+                            )}
 
                             <div className="absolute bottom-1.5 left-1.5 right-1.5 lg:bottom-2 lg:left-2 lg:right-2 text-left">
                                 <h3 className="text-white font-black text-[11px] lg:text-base leading-none mb-0.5 lg:mb-1 drop-shadow-md uppercase italic tracking-tight lg:tracking-tighter">
@@ -688,8 +805,17 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 ? 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-4 pt-2 pb-28 lg:px-6 lg:pt-3 lg:pb-32 relative z-10 custom-scrollbar'
             : 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-3 pt-3 pb-28 lg:px-6 lg:pt-4 lg:pb-36 relative z-10 custom-scrollbar'}>
             {shouldShowFactionFilterToolbar ? selectionFilterToolbar : null}
-            {factionOptionNodes.length > 0 ? (
-                <div className={selectionGridClassName}>{factionOptionNodes}</div>
+            {filteredFactionGroups.length > 0 ? (
+                <div
+                    data-testid="faction-virtual-window"
+                    data-total-factions={filteredFactionGroups.length}
+                    data-rendered-factions={visibleFactionOptionGroups.length}
+                    data-start-index={selectionVirtualStartIndex}
+                    data-end-index={selectionVirtualEndIndex}
+                    style={selectionVirtualSpacerStyle}
+                >
+                    <div className={selectionGridClassName}>{factionOptionNodes}</div>
+                </div>
             ) : (
                 selectionEmptyState
             )}

@@ -122,7 +122,7 @@ export interface AiCommandSpec {
 export interface AiActionStrategyMetadata {
     strategyTags?: string[];
     /**
-     * @deprecated 旧的 Smash Up 专用字段，读取仍兼容；新代码应优先写入 strategyTags。
+     * @deprecated 旧的卡牌策略标签字段，读取仍兼容；新代码应优先写入 strategyTags。
      */
     cardStrategyTags?: string[];
     visibleStepDelayPolicy?: 'hidden' | 'visible';
@@ -251,7 +251,13 @@ export interface GameAiRuntime {
         sharedState: MatchState<unknown>;
         privateOverlay: MatchState<unknown> | null;
     }): OnlineAiDecisionVisibility | null | undefined;
+    resolveCurrentDecisionPlayerId?(args: {
+        state: MatchState<unknown>;
+        fallbackPlayerId: PlayerId | null;
+    }): PlayerId | null | undefined;
     localVisibleStepDelayConfig?: LocalAiVisibleStepDelayConfig;
+    /** 游戏声明哪些本地 AI 命令应作为快速隐藏步骤处理；共享层只内置通用系统命令。 */
+    localHiddenCommandTypes?: string[];
     defaultMinimumActionDelayMs?: number;
     /**
      * @deprecated 旧命名；读取仍兼容，建议迁移到 localVisibleStepDelayConfig。

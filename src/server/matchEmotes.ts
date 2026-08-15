@@ -1,5 +1,3 @@
-import { isEmoteAllowedForGame } from '../shared/emotes';
-
 export const MATCH_EMOTE_COOLDOWN_MS = 2000;
 
 export type MatchEmoteRejectReason =
@@ -28,6 +26,8 @@ export type MatchEmoteSendDecision =
     | { ok: true; gameId: string; rateLimitKey: string }
     | { ok: false; reason: MatchEmoteRejectReason };
 
+export type MatchEmoteAllowance = (emoteId: string, gameId?: string | null) => boolean;
+
 export const resolveMatchEmoteJoinDecision = (
     metadata: MatchEmoteMetadata | null | undefined,
     playerId: string,
@@ -55,6 +55,7 @@ export interface ResolveMatchEmoteSendDecisionArgs {
     now: number;
     lastSentAt?: number;
     cooldownMs?: number;
+    isEmoteAllowed: MatchEmoteAllowance;
 }
 
 export const resolveMatchEmoteSendDecision = ({
@@ -65,6 +66,7 @@ export const resolveMatchEmoteSendDecision = ({
     now,
     lastSentAt = 0,
     cooldownMs = MATCH_EMOTE_COOLDOWN_MS,
+    isEmoteAllowed,
 }: ResolveMatchEmoteSendDecisionArgs): MatchEmoteSendDecision => {
     if (!matchId || !playerId) {
         return { ok: false, reason: 'not_joined' };
@@ -82,7 +84,7 @@ export const resolveMatchEmoteSendDecision = ({
         return joinDecision;
     }
 
-    if (!isEmoteAllowedForGame(emoteId, joinDecision.gameId)) {
+    if (!isEmoteAllowed(emoteId, joinDecision.gameId)) {
         return { ok: false, reason: 'invalid_emote' };
     }
 

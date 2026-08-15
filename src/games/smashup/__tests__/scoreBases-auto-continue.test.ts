@@ -392,9 +392,9 @@ describe('scoreBases 阶段自动推进', () => {
         expect(result?.autoContinue).toBe(true);
     });
     
-    it('有 eligible 基地且响应窗口仍打开时不应该自动推进', () => {
-        // 创建一个基地达到临界点且响应窗口仍打开的状态
-        // 这是真实场景：onPhaseEnter 打开了响应窗口，等待玩家响应
+    it('有 eligible 基地且 live ReactionSession 响应窗口仍打开时不应该自动推进', () => {
+        // 创建一个基地达到临界点且 live ReactionSession 仍打开的状态
+        // 这是真实场景：计分 frame 打开 Me First / After Scoring 响应轮，等待玩家响应
         const core = makeMinimalCore({
             bases: [makeBase('base_pirate_cove', [
                 makeMinion('0', 'robot_hoverbot', 5), // 力量 5
@@ -402,23 +402,31 @@ describe('scoreBases 阶段自动推进', () => {
             scoringEligibleBaseIndices: [0], // 锁定的 eligible 基地列表
         });
         
-        const state: MatchState<SmashUpCore> = {
+        const baseState: MatchState<SmashUpCore> = {
             core,
             sys: {
                 phase: 'scoreBases',
                 flowHalted: false,
                 interaction: { current: null, queue: [] },
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_scoreBases_1',
-                        responderQueue: ['0', '1'],
-                        windowType: 'meFirst',
-                        sourceId: 'scoreBases',
-                    },
-                    history: [],
-                },
             } as any,
         };
+        const state = startSmashUpReactionSession(
+            setScoringSession(baseState, {
+                ...createScoringSession(core, [0]),
+                currentBaseRef: createScoringBaseRef(core, 0),
+                currentStep: 'awaiting-response-window',
+            }),
+            {
+                frameId: 'score-before:0:auto-continue',
+                frameKind: 'score-before',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                consecutivePasses: 0,
+                sourceBaseIndex: 0,
+                responseWindowType: 'meFirst',
+            },
+        );
         
         // 调用 onAutoContinueCheck
         const result = smashUpFlowHooks.onAutoContinueCheck!({
@@ -427,7 +435,7 @@ describe('scoreBases 阶段自动推进', () => {
             random: { next: () => 0.5 },
         });
         
-        // 应该返回 undefined（不自动推进，因为响应窗口仍打开）
+        // 应该返回 undefined（不自动推进，因为 live ReactionSession 仍打开）
         expect(result).toBeUndefined();
     });
     

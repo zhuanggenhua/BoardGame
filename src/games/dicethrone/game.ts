@@ -1529,6 +1529,22 @@ const resolveDiceThroneOnlineAiCurrentPlayerId = (args: {
     fallbackPlayerId: string | null;
 }): string | null => resolveDiceThroneRuntimeActorId(args);
 
+const shouldProbeDiceThroneHumanTurnLegalActionOnlyCandidate = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    currentPlayerId: string;
+}): boolean | undefined => {
+    if (args.phase !== 'defensiveRoll') {
+        return undefined;
+    }
+    const decisionPlayerId = resolveDiceThroneRuntimeActorId({
+        state: args.state,
+        phase: args.phase,
+        fallbackPlayerId: args.currentPlayerId,
+    });
+    return decisionPlayerId !== args.currentPlayerId ? undefined : false;
+};
+
 const resolveDiceThroneLocalRuntimeControlledPlayerId = (args: {
     state: MatchState<unknown>;
     fallbackPlayerId: string | null;
@@ -1608,6 +1624,7 @@ export const engineConfig = {
         publicPregameLegalActionPhases: ['setup'],
         activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
         humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+        shouldProbeHumanTurnLegalActionOnlyCandidate: shouldProbeDiceThroneHumanTurnLegalActionOnlyCandidate,
         resolveCurrentPlayerId: resolveDiceThroneOnlineAiCurrentPlayerId,
         resolveManualSetupSelectionTakeoverPlayerId: resolveDiceThroneManualSetupSelectionTakeoverPlayerId,
         shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseDiceThroneManualSetupAttemptFromSharedState,

@@ -37,6 +37,7 @@ describe('mage-wars event FX mapper', () => {
             type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
             payload: {
                 playerId: '0',
+                caster: { kind: 'mage', playerId: '0' },
                 spellCardId: 1700,
                 manaCost: 4,
                 castMode: 'quickcast',
@@ -67,6 +68,7 @@ describe('mage-wars event FX mapper', () => {
             type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
             payload: {
                 playerId: '0',
+                caster: { kind: 'mage', playerId: '0' },
                 spellCardId: 1710,
                 manaCost: 6,
                 castMode: 'action',
@@ -84,6 +86,61 @@ describe('mage-wars event FX mapper', () => {
             params: {
                 source: getMageCell(core, '0'),
                 targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+        });
+    });
+
+    it('maps arena-object spell casts from the caster object zone instead of the mage zone', () => {
+        const casterId = 'mwobj-0-familiar';
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const core = {
+            ...baseCore,
+            objects: {
+                [casterId]: {
+                    id: casterId,
+                    kind: 'creature' as const,
+                    ownerId: '0',
+                    sourceSpellCardId: 2803,
+                    sourceObjectId: 'spell-2803',
+                    spellcastingSource: { abilityId: 'mw.creature.test.spellcasting' },
+                    name: '施法仆从',
+                    zoneId: ARENA_ZONE_IDS.B2,
+                    life: 6,
+                    damage: 0,
+                    armor: 0,
+                    actionReady: true,
+                    guarding: false,
+                    statusTokens: {},
+                },
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.B2
+                    ? { ...zone, objectIds: [casterId] }
+                    : zone
+            )),
+        };
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
+            payload: {
+                playerId: '0',
+                caster: { kind: 'arena-object', objectId: casterId, ownerId: '0' },
+                spellCardId: 1710,
+                manaCost: 6,
+                castMode: 'action',
+                targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+            timestamp: 2,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            cue: MW_FX.SPELL_CAST,
+            ctx: {
+                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
+            },
+            params: {
+                source: getArenaCell(core, ARENA_ZONE_IDS.B2),
+                caster: { kind: 'arena-object', objectId: casterId, ownerId: '0' },
             },
         });
     });
@@ -291,6 +348,39 @@ describe('mage-wars event FX mapper', () => {
             ctx: {
                 cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
                 intensity: 'strong',
+            },
+        });
+    });
+
+    it('uses spell attack target zone when the damaged object is no longer in final core state', () => {
+        const removedObjectId = 'mwobj-0-removed-target';
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+            payload: {
+                playerId: '0',
+                spellCardId: 1710,
+                sourceAbilityId: 'mw.spell.1710',
+                targetObjectId: removedObjectId,
+                targetZoneId: ARENA_ZONE_IDS.A2,
+                diceResults: [3, 3, 3],
+                baseDamage: 9,
+            },
+            timestamp: 7,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            cue: MW_FX.ATTACK_IMPACT,
+            ctx: {
+                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
+                intensity: 'strong',
+            },
+            params: {
+                source: getMageCell(core, '0'),
+                defenderId: removedObjectId,
+                spellCardId: 1710,
+                damageAmount: 9,
             },
         });
     });

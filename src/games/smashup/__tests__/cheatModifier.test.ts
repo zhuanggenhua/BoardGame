@@ -5,8 +5,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { smashUpCheatModifier } from '../cheatModifier';
-import type { SmashUpCore, CardInstance } from '../domain/types';
+import { SMASHUP_CHEAT_COMMANDS, smashUpCheatModifier } from '../cheatModifier';
+import type { MatchState } from '../../../engine/types';
+import type { SmashUpCore, BaseInPlay, CardInstance } from '../domain/types';
 
 /** 创建最小测试用游戏状态 */
 function makeCore(overrides?: Partial<{ p0Hand: CardInstance[]; p0Deck: CardInstance[]; p0Vp: number }>): SmashUpCore {
@@ -103,6 +104,36 @@ describe('SmashUp CheatResourceModifier', () => {
             const core = makeCore();
             const next = smashUpCheatModifier.dealCardByIndex(core, '0', 0);
             expect(next.players['1']).toEqual(core.players['1']);
+        });
+    });
+
+    describe('customCommands', () => {
+        it('注册刷新所有基地命令并通过游戏侧 handler 更新状态', () => {
+            const core = {
+                ...makeCore(),
+                bases: [
+                    { defId: 'base_old_1', minions: [], ongoingActions: [] },
+                    { defId: 'base_old_2', minions: [], ongoingActions: [] },
+                ] as BaseInPlay[],
+                baseDeck: ['base_new_1', 'base_new_2', 'base_new_3'],
+            };
+            const state = { core, sys: {} } as MatchState<SmashUpCore>;
+
+            const result = smashUpCheatModifier.customCommands?.[SMASHUP_CHEAT_COMMANDS.REFRESH_ALL_BASES]?.({
+                state,
+                command: {
+                    type: SMASHUP_CHEAT_COMMANDS.REFRESH_ALL_BASES,
+                    playerId: '0',
+                    payload: {},
+                },
+                events: [],
+                random: undefined as never,
+                playerIds: ['0', '1'],
+            });
+
+            expect(result?.halt).toBe(true);
+            expect(result?.state?.core.bases.map(base => base.defId)).toEqual(['base_new_1', 'base_new_2']);
+            expect(result?.state?.core.baseDeck).toEqual(['base_new_3']);
         });
     });
 });

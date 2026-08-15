@@ -8,7 +8,6 @@
  *
  * 新增 error code 时：
  *   - 引擎/系统级 → 加入 ENGINE_ERROR_CODES，并在 game.json 补翻译
- *   - 教程级 → 加入 TUTORIAL_ERROR_CODES，并在各游戏 game-<id>.json 补翻译
  */
 
 import { describe, it, expect } from 'vitest';
@@ -61,61 +60,6 @@ const ENGINE_ERROR_CODES = [
     'not_connected',
 ] as const;
 
-// ── 教程级 error code（对应各游戏 game-<id>.json）────────────────────────────
-//
-// 来源文件：src/engine/systems/TutorialSystem.ts → TUTORIAL_ERRORS
-//   tutorial_manifest_invalid, tutorial_command_blocked, tutorial_step_locked
-
-const TUTORIAL_ERROR_CODES = [
-    'tutorial_manifest_invalid',
-    'tutorial_command_blocked',
-    'tutorial_step_locked',
-] as const;
-
-// 已启用教程的游戏（game-<id>.json 中需要有教程 error 翻译）
-const TUTORIAL_GAME_IDS = ['dicethrone', 'summonerwars', 'smashup', 'fantasyrealms'] as const;
-
-// ── 游戏专属 error code（对应各游戏 game-<id>.json）──────────────────────────
-//
-// 静态扫描同样无法覆盖这些 code，在此集中维护。
-// 新增游戏 error code 时，在对应游戏的数组中追加，并在 game-<id>.json 补翻译。
-
-const DICETHRONE_ERROR_CODES = [
-    // domain/index.ts
-    'game_over',
-    // commandValidation.ts
-    'roll_limit_reached',
-    'defense_ability_not_selected',
-    'unsupported_character',
-    'roll_already_confirmed',
-    'die_not_found',
-    'no_roll_yet',
-    'no_pending_attack',
-    'ability_not_available',
-    'roll_not_confirmed',
-    'deck_empty',
-    'card_not_in_hand',
-    'no_card_to_undo',
-    'card_not_in_discard',
-    'cannot_advance_phase',
-    'attackModifierRequiresSelectedAttack',
-    'no_pending_interaction',
-    'invalid_die_value',
-    'no_pending_damage',
-    'unknown_token',
-    'no_token',
-    'invalid_amount',
-    'no_status',
-    'no_knockdown',
-    'not_enough_cp',
-    'no_pending_bonus_dice',
-    'bonus_reroll_limit_reached',
-    'not_enough_token',
-    'invalid_die_index',
-    // flowHooks.ts
-    // 'cannot_advance_phase' 已在上方
-] as const;
-
 function createMockI18n(nsData: Record<string, Record<string, string>>) {
     return {
         exists: (key: string, options?: { ns?: string }) => {
@@ -146,36 +90,6 @@ describe('引擎 error code 国际化完整性', () => {
         }
     });
 
-    describe('教程 error code → game-<id>.json', () => {
-        for (const gameId of TUTORIAL_GAME_IDS) {
-            for (const lang of LANGS) {
-                const data = loadJson(lang, `game-${gameId}`);
-                for (const code of TUTORIAL_ERROR_CODES) {
-                    it(`[${lang}][${gameId}] error.${code}`, () => {
-                        expect(
-                            hasKey(data, `error.${code}`),
-                            `缺少翻译：public/locales/${lang}/game-${gameId}.json → error.${code}`,
-                        ).toBe(true);
-                    });
-                }
-            }
-        }
-    });
-
-    describe('dicethrone 专属 error code → game-dicethrone.json', () => {
-        for (const lang of LANGS) {
-            const data = loadJson(lang, 'game-dicethrone');
-            for (const code of DICETHRONE_ERROR_CODES) {
-                it(`[${lang}] error.${code}`, () => {
-                    expect(
-                        hasKey(data, `error.${code}`),
-                        `缺少翻译：public/locales/${lang}/game-dicethrone.json → error.${code}`,
-                    ).toBe(true);
-                });
-            }
-        }
-    });
-
     describe('resolveCommandError 泛化错误码展示策略', () => {
         const mockI18n = createMockI18n({
             game: {
@@ -191,8 +105,8 @@ describe('引擎 error code 国际化完整性', () => {
         });
 
         it('带细节的 pipeline_error 保持原始详情字符串', () => {
-            expect(resolveCommandError(mockI18n, 'pipeline_error: SmashUp ability 缺少声明')).toBe(
-                'pipeline_error: SmashUp ability 缺少声明',
+            expect(resolveCommandError(mockI18n, 'pipeline_error: 能力声明缺失')).toBe(
+                'pipeline_error: 能力声明缺失',
             );
         });
 

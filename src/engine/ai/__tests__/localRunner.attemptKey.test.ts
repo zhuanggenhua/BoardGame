@@ -21,7 +21,7 @@ const buildState = (decisionEpoch: number): MatchState<unknown> => ({
                 kind: 'simple-choice',
                 playerId: '1',
                 data: {
-                    sourceId: 'smashup_reaction_choose',
+                    sourceId: 'test_reaction_choose',
                     options: [
                         { id: 'trigger-a', disabled: false },
                         { id: 'pass', disabled: false },
@@ -35,12 +35,25 @@ const buildState = (decisionEpoch: number): MatchState<unknown> => ({
             current: {
                 id: 'reaction-window-1',
                 windowType: 'afterScoring',
-                sourceId: 'smashup_reaction_choose',
+                sourceId: 'test_reaction_choose',
                 responderQueue: ['1'],
                 currentResponderIndex: 0,
                 passedPlayers: [],
             },
         },
+    },
+}) as MatchState<unknown>;
+
+const buildDecisionOwnerState = (decisionOwnerId: string): MatchState<unknown> => ({
+    ...buildState(12),
+    core: {
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        decisionOwnerId,
+    },
+    sys: {
+        ...buildState(12).sys,
+        phase: 'testDecisionPhase',
     },
 }) as MatchState<unknown>;
 
@@ -88,6 +101,61 @@ describe('resolveNextAiAction attemptKey', () => {
             engineConfig,
             state: buildState(8),
             matchId: 'match-attempt-key-2',
+            seatControllers,
+        });
+
+        expect(first?.attemptKey).toBeTruthy();
+        expect(second?.attemptKey).toBeTruthy();
+        expect(first?.attemptKey).not.toBe(second?.attemptKey);
+    });
+
+    it('runtime 声明的当前决策者变化时应生成新的 attemptKey', async () => {
+        const gameId = '__test_local_ai_attempt_key_runtime_decision_owner__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') {
+                    return [];
+                }
+                return [{
+                    actionId: 'response-pass',
+                    kind: 'response-pass',
+                    label: 'Pass',
+                    commands: [{ type: 'RESPONSE_PASS', payload: {} }],
+                }];
+            },
+            resolveCurrentDecisionPlayerId({ state }) {
+                const ownerId = (state.core as { decisionOwnerId?: unknown } | undefined)?.decisionOwnerId;
+                return typeof ownerId === 'string' ? ownerId : undefined;
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'response-pass' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const seatControllers = {
+            '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+        } as const;
+        const engineConfig = {
+            gameId,
+            domain: {},
+            systems: [],
+        } as never;
+
+        const first = await resolveNextAiAction({
+            engineConfig,
+            state: buildDecisionOwnerState('1'),
+            matchId: 'match-attempt-key-decision-owner-1',
+            seatControllers,
+        });
+        const second = await resolveNextAiAction({
+            engineConfig,
+            state: buildDecisionOwnerState('0'),
+            matchId: 'match-attempt-key-decision-owner-2',
             seatControllers,
         });
 

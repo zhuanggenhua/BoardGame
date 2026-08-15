@@ -21,6 +21,13 @@ description: 给用户看本地图入口：BoardGame 默认 PureRef，失败转�
 - 服务器相册不是默认交付。只有用户明确要求上传、发布链接、服务器相册或手机查看时，才允许发布到 `http://8.148.71.102:18080/#/boardgame/<task-id>`。
 - 获得上传授权后，只允许更新 `/home/admin/image-preview/data/projects/boardgame/tasks/<task-id>/`，禁止改预览站壳层、根路由或客户端代码。
 
+## 开图时机（强制）
+
+- 打开图片是本轮图片型交付的完成信号，不是排查过程动作。实现、测试、截图链、AI 核图或证据选择还没完成时，不得调用 PureRef、系统图片查看器或 Codex App 内联展示；最多报告候选路径、缺口和下一步。
+- 用户说 `图呢`、`我看看` 或类似表达时，先判断是否已经具备最终验收图或最终有序图组：具备则展示；不具备则先补实现、补 E2E、补截图链或补核图。禁止为了回应催图而先打开旧图、单张候选图、过程图或截图目录。
+- 同一轮同一张图或同一组图只展示一次。展示通道成功后，除非用户明确说没看到、打开错图、要重开或要改用另一通道，否则不得重复调用查看器。
+- 只有用户明确要求“现在就打开这张诊断图 / 失败图 / 历史图 / 候选图”时，才允许在未完成收口前打开非最终图；汇报必须同时标明它不是最终验收图，不能把这次开图当完成信号。
+
 ## 触发条件
 
 这些表达都表示用户要看见图片本身：`打开图片`、`打开图`、`图呢`、`给我看图`、`截图呢`、`我看看`、`重新打开`。
@@ -69,6 +76,7 @@ python ".spec/skills/show-image-to-user/scripts/label-image-sequence.py" `
 
 - `.spec/skills/show-image-to-user/scripts/label-image-sequence.py` 是项目内唯一标记脚本；它生成 `00-sequence-index.png` 和 `NN-labeled-*`，不覆盖原图。
 - PureRef 多图默认打开顺序：`00-sequence-index.png` 在前，后接 `01-labeled-*`、`02-labeled-*` 等，路径顺序必须和可见编号一致。
+- 标记图里所有用户可见标题、步骤标签、承接说明和补充说明必须使用中文；原始文件名、代码文件名或测试名可以保留作证据，但不能替代中文说明。
 - 标签必须写玩家能懂的步骤和对象类型，例如 `卡牌`、`技能`、`响应窗口`、`骰盘`，不能只写文件名、测试名或内部字段。
 - 每张图从第二张开始必须说明相对上一张发生了什么；第一张必须说明起点或前置状态。
 - 用户明确要求不加标记时，打开原图，但仍提供有序映射；必要时可另开独立序列索引。
@@ -78,16 +86,17 @@ python ".spec/skills/show-image-to-user/scripts/label-image-sequence.py" `
 单图：
 
 ```powershell
-npm run verify:open-image -- --viewer pureref --path "<单张最终原图绝对路径>"
+node scripts/verify/open-verified-image.mjs --viewer pureref --path "<单张最终原图绝对路径>"
 ```
 
 多图：
 
 ```powershell
-npm run verify:open-image -- --viewer pureref --paths "<00-sequence-index.png>" "<01-labeled-*.png>" "<02-labeled-*.png>"
+node scripts/verify/open-verified-image.mjs --viewer pureref --paths "<00-sequence-index.png>" "<01-labeled-*.png>" "<02-labeled-*.png>"
 ```
 
 - `scripts/verify/open-verified-image.mjs` 是查看器执行入口；它负责解析路径、调用 PureRef / 系统查看器并回报结果。
+- 多图、`--paths`、`--path` 重复参数一律直接调用上述 `node` 入口；不要通过 `npm run verify:open-image -- --paths ...` 转发参数，避免 npm 把 `--paths` 或图片路径解析成自己的参数并产生误导性 warning。
 - 脚本成功只证明打开动作已发起并有进程/命令结果；用户说没看到、打开错图、只有一张或图为空时，按展示失败处理并重选正确原图或完整图组。
 - Codex App 内联只能使用绝对本地路径：`![说明](D:/absolute/path/image.png)`；路径含空格时用 `![说明](<D:/path with spaces/image.png>)`。
 

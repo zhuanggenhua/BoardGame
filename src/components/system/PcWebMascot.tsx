@@ -5,6 +5,7 @@ import { OptimizedImage } from '../common/media/OptimizedImage';
 import { isAndroidShellBuildMode, isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { copyToClipboard } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
+import { isConfigReviewPath } from '../../config/gameConfigReviewRoutes';
 
 const MASCOT_SRC = 'common/images/mascot/easyboardgame-kanban-girl.png';
 const COMMUNITY_QQ_GROUP = '1081373485';
@@ -13,12 +14,7 @@ const MASCOT_TIP_INTERVAL_MS = 5000;
 const shouldHideOnRoute = (pathname: string) => (
     pathname === '/play'
     || pathname.startsWith('/play/')
-    || pathname === '/games/summonerwars/config'
-    || pathname.startsWith('/games/summonerwars/config/')
-    || pathname === '/games/dicethrone/config'
-    || pathname.startsWith('/games/dicethrone/config/')
-    || pathname === '/games/betrayal/config'
-    || pathname.startsWith('/games/betrayal/config/')
+    || isConfigReviewPath(pathname)
     || pathname.startsWith('/admin')
     || pathname.startsWith('/dev')
 );

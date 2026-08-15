@@ -107,6 +107,7 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
             timing: 'onDamageReceived',
             damageTriggerScope: 'opponentAttackDamage',
             removable: true,
+            consumeOnTrigger: true,
             actions: [
                 { type: 'modifyStat', target: 'self', value: 2 },
             ],

@@ -31,7 +31,7 @@ import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/st
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { evaluateEmptyRoomJoinGuard } from './src/server/joinGuard';
 import { areAllSeatsOccupied, hasOccupiedPlayers, isSeatOccupied, isSupportedPlayerCount } from './src/server/matchOccupancy';
-import { resolveAllowedPlayerCountsForGame } from './src/games/roomSetupRegistry';
+import { resolveAllowedPlayerCountsForGame } from './src/shared/roomSetup';
 import {
     createMatchWithOwnerConflictRetry,
     decideDuplicateOwnerRoomAction,
@@ -49,6 +49,7 @@ import { createLobbyCoordinator } from './src/server/lobbyCoordinator';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
 import { shouldRefreshPublicRoomSummaryAfterCommand } from './src/games/serverLobbySummary';
+import { isGameEmoteAllowed } from './src/games/emotes';
 import { getAiSeatIds } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
@@ -1623,6 +1624,7 @@ lobbySocketIO.on('connection', (socket) => {
                 now,
                 lastSentAt,
                 cooldownMs: matchEmoteRateLimiter.cooldownMs,
+                isEmoteAllowed: isGameEmoteAllowed,
             });
             if (!decision.ok) {
                 emitMatchEmoteError(socket, decision.reason, ack);

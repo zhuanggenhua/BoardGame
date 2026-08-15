@@ -1,6 +1,7 @@
 import { useMemo, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resolveMatchSeatSwapContext } from '../components/game/framework';
+import type { MatchSeatSwapConfig } from '../components/game/framework';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import type { AiSeatController } from '../engine/ai';
 import type { MatchState } from '../engine/types';
@@ -11,7 +12,7 @@ type MatchRoomHudSeatSwapModel = Pick<
 >;
 
 export function useMatchRoomHudSeatSwapModel(args: {
-    gameId?: string;
+    seatSwapConfig?: MatchSeatSwapConfig | null;
     state?: MatchState<unknown> | null;
     dispatch: (type: string, payload?: Record<string, unknown>) => void;
     myPlayerId?: string | null;
@@ -19,7 +20,7 @@ export function useMatchRoomHudSeatSwapModel(args: {
     seatControllers: Record<string, AiSeatController>;
 }): MatchRoomHudSeatSwapModel {
     const {
-        gameId,
+        seatSwapConfig,
         state,
         dispatch,
         myPlayerId,
@@ -44,11 +45,11 @@ export function useMatchRoomHudSeatSwapModel(args: {
     }, [players, tGame]);
 
     const seatSwapContext = useMemo(() => resolveMatchSeatSwapContext({
-        gameId,
+        seatSwapConfig,
         state,
         myPlayerId: normalizedMyPlayerId,
         seatControllers,
-    }), [gameId, normalizedMyPlayerId, seatControllers, state]);
+    }), [normalizedMyPlayerId, seatControllers, seatSwapConfig, state]);
 
     const seatSwapContent = useMemo(() => {
         if (!seatSwapContext || normalizedMyPlayerId == null) {

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../domain/abilityRuntime';
 import { getMinionPower } from '../domain/abilityHelpers';
 import { getRegisteredAbilityKeys } from '../domain/abilityRegistry';
 import { getSmashUpAtlasImageById } from '../domain/atlasCatalog';
@@ -33,6 +34,22 @@ const FIXED_RANDOM = {
     range: (min: number) => min,
     shuffle: <T>(items: T[]) => [...items],
 };
+
+function resumeFirstRuntimeContinuation(
+    core: ReturnType<typeof makeState>,
+    events: unknown[],
+) {
+    const domainEvents = events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+    const continuation = events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+    if (!continuation) throw new Error('Expected Smash Up ability runtime continuation event.');
+    const resumed = resumeAbilityRuntimeContinuationEvent(
+        makeMatchState(applyEvents(core, domainEvents as any)),
+        continuation as any,
+        FIXED_RANDOM,
+    );
+    if (!resumed) throw new Error('Expected Smash Up ability runtime continuation to resume.');
+    return resumed.state;
+}
 
 const SHARED_SURFACES: SmashUpVariantSurface[] = [
     'ability',
@@ -213,8 +230,9 @@ describe('阿南西传说与俄罗斯童话 POD 接入', () => {
             random: FIXED_RANDOM,
             now: 10,
         });
+        const anansiPromptState = resumeFirstRuntimeContinuation(anansiCore, anansiResult.events);
         const gifted = respondToPromptOption(
-            anansiResult.matchState!,
+            anansiPromptState,
             option => option.value?.targetPlayerId === '1',
             'POD 礼物目标玩家',
             '0',

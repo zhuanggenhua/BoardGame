@@ -23,6 +23,10 @@ const shouldReuseExistingServers = !forceStartServers && !process.env.CI;
 const headedByEnv = process.env.PW_HEADED === 'true' || process.env.PWDEBUG === '1';
 const headedByCli = process.argv.some(arg => arg === '--headed' || arg === '--debug' || arg === '--ui');
 const headedMode = headedByEnv || headedByCli;
+const browserChannel = process.env.PW_BROWSER_CHANNEL?.trim() || undefined;
+const desktopBrowserDevice = browserChannel?.startsWith('msedge')
+    ? devices['Desktop Edge']
+    : devices['Desktop Chrome'];
 const allowFullRun = process.env.PW_ALLOW_FULL_RUN === 'true';
 const shouldDisableChromiumGpu = process.platform === 'win32' && !headedMode;
 const shouldUseJpegScreenshotReporter = process.env.PW_DISABLE_JPEG_REPORTER !== 'true';
@@ -265,9 +269,10 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'chromium',
+            name: browserChannel ? `channel:${browserChannel}` : 'chromium',
             use: {
-                ...devices['Desktop Chrome'],
+                ...desktopBrowserDevice,
+                ...(browserChannel ? { channel: browserChannel } : {}),
                 viewport: { width: 1920, height: 1080 },
                 launchOptions: shouldDisableChromiumGpu
                     ? {

@@ -19,6 +19,7 @@ import { initAllAbilities } from '../abilities';
 import { smashUpSystemsForTest } from '../game';
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 const PLAYER_IDS = ['0', '1'];
 const systems = smashUpSystemsForTest;
@@ -166,7 +167,8 @@ describe('beforeScoring 响应窗口 - 卡住问题', () => {
         const afterState = result.finalState;
         expect(afterState.sys.phase).toBe('scoreBases');
 
-        const window = afterState.sys.responseWindow?.current;
+        expect(afterState.sys.responseWindow?.current).toBeUndefined();
+        const window = getSmashUpReactionWindowPresentation(afterState);
         if (!window) return;
 
         expect(window.windowType).toBe('meFirst');

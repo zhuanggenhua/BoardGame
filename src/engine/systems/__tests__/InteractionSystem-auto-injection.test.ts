@@ -183,7 +183,7 @@ describe('InteractionSystem - 通用刷新', () => {
 
         state = upsertActiveResolutionFrame(state, {
             id: 'parent-frame',
-            kind: 'smashup:score-bases',
+            kind: 'test:scoring-frame',
             ordering: 'explicit-order',
             status: 'running',
             phase: 'scoreBases',
@@ -192,7 +192,7 @@ describe('InteractionSystem - 通用刷新', () => {
 
         state = pushResolutionFrame(state, {
             id: 'child-frame',
-            kind: 'smashup:after-scoring',
+            kind: 'test:after-scoring',
             ordering: 'nested-body',
             status: 'running',
             phase: 'scoreBases',
@@ -236,7 +236,7 @@ describe('InteractionSystem - 通用刷新', () => {
 
         state = upsertActiveResolutionFrame(state, {
             id: 'parent-frame',
-            kind: 'smashup:score-bases',
+            kind: 'test:scoring-frame',
             ordering: 'explicit-order',
             status: 'running',
             phase: 'scoreBases',
@@ -248,7 +248,7 @@ describe('InteractionSystem - 通用刷新', () => {
         });
         state = pushResolutionFrame(state, {
             id: 'child-frame',
-            kind: 'smashup:reaction',
+            kind: 'test:reaction',
             ordering: 'nested-body',
             status: 'running',
             phase: 'scoreBases',
@@ -277,10 +277,10 @@ describe('InteractionSystem - 通用刷新', () => {
 
         state = upsertActiveResolutionFrame(state, {
             id: 'frame-owner-test',
-            kind: 'dicethrone:choice',
+            kind: 'test:choice',
             ordering: 'explicit-order',
             status: 'running',
-            ownerGame: 'dicethrone',
+            ownerGame: 'test-game',
             phase: 'main',
             phaseGate: 'block-advance-when-blocked',
         });
@@ -297,7 +297,7 @@ describe('InteractionSystem - 通用刷新', () => {
             system: 'interaction',
             id: 'interaction-owner-test',
             kind: 'simple-choice',
-            gameId: 'dicethrone',
+            gameId: 'test-game',
             resolutionFrameId: 'frame-owner-test',
             blocksProgress: true,
         });

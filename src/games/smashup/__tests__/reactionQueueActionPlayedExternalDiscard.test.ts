@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { postProcessSystemEvents, SmashUpDomain } from '../domain';
 import { initAllAbilities } from '../abilities';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../domain/abilityRuntime';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { SU_EVENTS } from '../domain/types';
 import { findInteractionOption, getInteractionsFromMS, makeCard, makeMatchState, makePlayer, makeState } from './helpers';
@@ -9,6 +10,30 @@ import { defaultTestRandom } from './testRunner';
 beforeAll(() => {
   initAllAbilities();
 });
+
+function resumeContinuationAfterCommittedEvents(
+  stateBeforeEvents: any,
+  result: { state?: any; events?: any[] } | undefined,
+) {
+  const events = result?.events ?? [];
+  const continuation = events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+  expect(continuation).toBeDefined();
+
+  const committedEvents = events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+  const committedCore = committedEvents.reduce(
+    (core, event) => SmashUpDomain.reduce(core, event),
+    stateBeforeEvents.core,
+  );
+
+  return resumeAbilityRuntimeContinuationEvent(
+    {
+      ...(result?.state ?? stateBeforeEvents),
+      core: committedCore,
+    },
+    continuation as any,
+    defaultTestRandom as any,
+  );
+}
 
 describe('Reaction queue: external discard ACTION_PLAYED routes', () => {
   it('Cream Puff Man 从弃牌堆额外打出需要基地目标的标准行动时，应保留目标上下文', () => {
@@ -127,7 +152,8 @@ describe('Reaction queue: external discard ACTION_PLAYED routes', () => {
       targetBaseIndex: 1,
       targetType: 'base',
     });
-    expect(resolved?.events).toContainEqual(expect.objectContaining({
+    const resumed = resumeContinuationAfterCommittedEvents(stateWithTargetPrompt, resolved);
+    expect(resumed?.events).toContainEqual(expect.objectContaining({
       type: SU_EVENTS.ONGOING_DETACHED,
       payload: expect.objectContaining({
         cardUid: 'enemy-ongoing',
@@ -271,7 +297,8 @@ describe('Reaction queue: external discard ACTION_PLAYED routes', () => {
       targetType: 'minion',
       targetMinionUid: 'enemy-target',
     });
-    expect(resolved?.events).toContainEqual(expect.objectContaining({
+    const resumed = resumeContinuationAfterCommittedEvents(stateWithTargetPrompt, resolved);
+    expect(resumed?.events).toContainEqual(expect.objectContaining({
       type: SU_EVENTS.MINION_RETURNED,
       payload: expect.objectContaining({
         minionUid: 'enemy-target',
@@ -282,7 +309,7 @@ describe('Reaction queue: external discard ACTION_PLAYED routes', () => {
     }));
     const postProcessed = postProcessSystemEvents(
       stateWithTargetPrompt.core,
-      resolved?.events ?? [],
+      [...(resolved?.events ?? []), ...(resumed?.events ?? [])],
       defaultTestRandom as any,
       {
         ...(resolved?.state ?? stateWithTargetPrompt),

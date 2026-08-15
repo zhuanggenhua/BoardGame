@@ -165,54 +165,6 @@ const ResponseWindowHint: React.FC<{
 }> = ({ onResponsePass, kind, passLabel }) => {
     const { t } = useTranslation('game-dicethrone');
     const pointerPassHandledRef = React.useRef(false);
-    const [responseBottom, setResponseBottom] = React.useState<number | null>(null);
-
-    React.useEffect(() => {
-        let anchorTrackingFrame: number | null = null;
-
-        const getCardVisualTop = (card: HTMLElement): number => {
-            const visual = card.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card;
-            return visual.getBoundingClientRect().top;
-        };
-
-        const getVisibleHandAnchorTop = (handArea: HTMLElement): number | null => {
-            const hoveredCard = handArea.querySelector<HTMLElement>('[data-card-id]:hover');
-            if (hoveredCard) {
-                return getCardVisualTop(hoveredCard);
-            }
-
-            const visibleCardTops = Array.from(handArea.querySelectorAll<HTMLElement>('[data-card-id]'))
-                .map((card) => card.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card)
-                .map((card) => card.getBoundingClientRect())
-                .filter((rect) => rect.width > 0 && rect.height > 0)
-                .map((rect) => rect.top);
-            return visibleCardTops.length > 0 ? Math.min(...visibleCardTops) : null;
-        };
-
-        const updateResponseBottom = () => {
-            const handArea = document.querySelector<HTMLElement>('[data-testid="hand-area"]');
-            if (!handArea) return;
-
-            // 只锚定实际可见的卡面；悬浮牌会临时抬高并成为新的锚点。
-            const anchorTop = getVisibleHandAnchorTop(handArea)
-                ?? handArea.getBoundingClientRect().bottom;
-            const gap = 16;
-            const nextBottom = Math.max(16, window.innerHeight - anchorTop + gap);
-            setResponseBottom((currentBottom) => currentBottom === nextBottom ? currentBottom : nextBottom);
-        };
-
-        const trackHandAnchor = () => {
-            updateResponseBottom();
-            anchorTrackingFrame = window.requestAnimationFrame(trackHandAnchor);
-        };
-
-        anchorTrackingFrame = window.requestAnimationFrame(trackHandAnchor);
-        return () => {
-            if (anchorTrackingFrame !== null) {
-                window.cancelAnimationFrame(anchorTrackingFrame);
-            }
-        };
-    }, []);
 
     const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
         if (event.button !== 0) return;
@@ -233,16 +185,15 @@ const ResponseWindowHint: React.FC<{
         <div
             data-testid="dicethrone-response-window-hint"
             data-response-kind={kind}
+            data-anchor="viewport"
+            data-placement="fixed-hand-lift-slot"
             className="fixed left-1/2 -translate-x-1/2"
             style={{
                 zIndex: UI_Z_INDEX.hint,
                 position: 'fixed',
-                // 手牌尚未挂载时暂不显示，避免以固定视口比例落到棋盘中部。
-                bottom: responseBottom === null ? '16px' : `${responseBottom}px`,
+                bottom: 'clamp(10rem, 42vh, 26rem)',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                transition: 'bottom 160ms ease-out',
-                visibility: responseBottom === null ? 'hidden' : 'visible',
             }}
         >
             <div

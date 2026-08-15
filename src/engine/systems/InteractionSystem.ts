@@ -3,7 +3,7 @@
  *
  * 替代 PromptSystem，提供统一的「阻塞式玩家交互」引擎原语。
  * 内置 kind='simple-choice' 覆盖旧 PromptSystem 全部能力；
- * 未来 kind='dt:card-interaction' / 'sw:soul-transfer' 等由各游戏扩展。
+ * 其它 kind 由各游戏扩展。
  *
  * 状态：sys.interaction.current / sys.interaction.queue
  * 命令：SYS_INTERACTION_RESPOND / TIMEOUT / STEP / CONFIRM / CANCEL
@@ -262,6 +262,7 @@ export interface SimpleChoiceData<T = unknown> {
     sourceId?: string;
     timeout?: number;
     multi?: PromptMultiConfig;
+    slider?: Record<string, unknown>;
     /**
      * 选择目标类型，用于 UI 层决定渲染方式：
      * - 'base': 高亮棋盘上的候选基地，点击基地完成选择
@@ -1175,7 +1176,7 @@ function mergeRenderableOptionMetadata<T>(
 
         const previousSource = (previous as { _source?: unknown })._source;
         if ((nextOption as { _source?: unknown })._source === undefined && previousSource !== undefined) {
-            nextOption = { ...(nextOption as Record<string, unknown>), _source: previousSource } as PromptOption<T>;
+            nextOption = { ...asPlainRecord(nextOption), _source: previousSource } as unknown as PromptOption<T>;
             optionChanged = true;
         }
 
@@ -1368,7 +1369,7 @@ export function createInteractionSystem<TCore>(
 
             // 如果交互有 optionsGenerator，先调用它生成选项，再序列化
             let processedCurrent = current;
-            if (isSamePlayerId(current?.playerId, playerId) && current.kind === 'simple-choice') {
+            if (current && isSamePlayerId(current.playerId, playerId) && current.kind === 'simple-choice') {
                 const data = current.data as SimpleChoiceData;
                 if (data.optionsGenerator) {
                     const freshOptions = normalizeFreshSimpleChoiceOptions(data.optionsGenerator(state, data), data);

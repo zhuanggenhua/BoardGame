@@ -4,7 +4,7 @@ import { useTutorial } from "../../contexts/TutorialContext";
 import { playSound } from "../../lib/audio/useGameAudio";
 import { AudioManager } from "../../lib/audio/AudioManager";
 import { UI_Z_INDEX } from "../../core";
-import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../games/mobileSupport";
+import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 
 const TUTORIAL_NEXT_SOUND_KEY =
@@ -570,7 +570,7 @@ export const TutorialOverlay: React.FC = () => {
         };
       };
 
-      const placementOrder: TooltipPlacement[] = [
+      const placementOrder = [
         pos,
         "right",
         "left",
@@ -579,7 +579,7 @@ export const TutorialOverlay: React.FC = () => {
       ].filter(
         (placement, index, placements) =>
           placements.indexOf(placement) === index,
-      );
+      ) as TooltipPlacement[];
       const selectedPlacement = placementOrder
         .map((placement, index) => ({
           candidate: buildPlacement(placement),

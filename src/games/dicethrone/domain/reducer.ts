@@ -892,6 +892,15 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         };
     }
 
+    if (
+        sourceAbilityId
+        && resultState.currentRollContext?.kind === 'compare'
+        && resultState.currentRollContext.sourceAbilityId === sourceAbilityId
+        && isSettledReplayOnlyRollContext(resultState.currentRollContext)
+    ) {
+        resultState = clearCurrentRollContext(resultState, resultState.currentRollContext.id);
+    }
+
     if (sourceAbilityId && resultState.currentChoiceSourceAbilityId === sourceAbilityId) {
         resultState = {
             ...resultState,
@@ -1501,7 +1510,30 @@ const handleCompareRollRequested: EventHandler<Extract<DiceThroneEvent, { type: 
 const handleCompareRollSettled: EventHandler<Extract<DiceThroneEvent, { type: 'COMPARE_ROLL_SETTLED' }>> = (
     state,
     event
-) => clearCurrentRollContext(state, event.payload.contextId);
+) => {
+    const context = state.currentRollContext;
+    if (!context || context.id !== event.payload.contextId) return state;
+    return {
+        ...state,
+        currentRollContext: {
+            ...context,
+            status: 'settled',
+            policy: {
+                ...context.policy,
+                modifiableBy: 'none',
+                rerollableBy: 'none',
+                allowPassiveReroll: false,
+                allowDiceCardTargeting: false,
+                blocksPhaseFlow: false,
+            },
+            display: {
+                ...context.display,
+                surface: 'diceTray',
+                replayOnly: true,
+            },
+        },
+    };
+};
 
 /**
  * 处理奖励骰重掷事件

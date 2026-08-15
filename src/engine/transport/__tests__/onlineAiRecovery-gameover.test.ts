@@ -15,10 +15,118 @@ import {
     resolveManualForceEndAiPhase,
     resolveUnsatisfiableReasonFromInteraction,
     shouldUseOnlineAiEmergencyOverlayFallback,
+    type OnlineAiRecoveryEngineConfig,
 } from '../onlineAiRecovery';
+import { shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn } from '../onlineAiWatchdogGameSemantics';
 import type { MatchState } from '../../types';
 import type { AiSeatController } from '../../ai';
-import diceThroneEngineConfig from '../../../games/dicethrone/game';
+
+const testRecoveryEngineConfig: OnlineAiRecoveryEngineConfig = {
+    gameId: 'test-recovery-game',
+    onlineAiRecovery: {
+        activeTurnLegalActionOnlyPhases: ['testActiveLegalOnlyPhase'],
+        humanTurnLegalActionProbePhases: ['testOffTurnProbePhase', 'testTargetingPhase'],
+        resolveForcedInteractionCommand: ({ interaction }) => {
+            const data = interaction.data as Record<string, unknown> | undefined;
+            if (interaction.kind === 'test:token-response') {
+                return { type: 'TEST_SKIP_TOKEN_PROMPT', payload: {} };
+            }
+            if (interaction.kind === 'test:bonus-dice') {
+                return false;
+            }
+            if (interaction.kind !== 'test:defender-choice') {
+                return null;
+            }
+
+            const options = Array.isArray(data?.options) ? data.options : [];
+            const enabledPlayerIds = options
+                .filter((option): option is Record<string, unknown> =>
+                    Boolean(option)
+                    && typeof option === 'object'
+                    && !Array.isArray(option)
+                    && option.disabled !== true
+                    && typeof option.playerId === 'string')
+                .map((option) => option.playerId as string);
+
+            return enabledPlayerIds.length === 1
+                ? { type: 'TEST_SELECT_TARGET', payload: { defenderId: enabledPlayerIds[0] } }
+                : null;
+        },
+        buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction, fallbackFingerprintHint }) => {
+            const data = interaction.data as Record<string, unknown> | undefined;
+            const kind = typeof interaction.kind === 'string' ? interaction.kind : '';
+            const interactionId = typeof interaction.id === 'string' ? interaction.id : '';
+            const sourceId = typeof data?.sourceId === 'string' ? data.sourceId : '';
+            const core = state.core as Record<string, unknown> | undefined;
+
+            if (kind === 'test:defender-choice') {
+                const attackerId = typeof data?.attackerId === 'string' ? data.attackerId : '';
+                const targetRollValue = typeof data?.targetRollValue === 'number'
+                    ? String(data.targetRollValue)
+                    : '';
+                const optionSignature = Array.isArray(data?.options)
+                    ? data.options.map((option) => {
+                        const raw = option && typeof option === 'object' && !Array.isArray(option)
+                            ? option as Record<string, unknown>
+                            : {};
+                        return `${raw.playerId ?? ''}:${raw.customId ?? ''}:${raw.disabled === true ? 1 : 0}`;
+                    }).join('|')
+                    : '';
+                return `interaction:${playerId}:${phase}:test:defender-choice:${sourceId}:${attackerId}:${targetRollValue}:${optionSignature}:${interactionId}`;
+            }
+            if (kind === 'test:token-response') {
+                return `interaction:${playerId}:${phase}:test:token-response:${sourceId}:${JSON.stringify(core?.pendingDamage ?? null)}:${interactionId}`;
+            }
+            if (kind === 'test:bonus-dice') {
+                return `interaction:${playerId}:${phase}:test:bonus-dice:${sourceId}:${JSON.stringify(core?.pendingBonusDiceSettlement ?? null)}:${interactionId}`;
+            }
+            return fallbackFingerprintHint;
+        },
+        offlineAdjudicationCommandByInteractionKind: {
+            'test:token-response': 'TEST_SKIP_TOKEN_PROMPT',
+            'test:bonus-dice': null,
+        },
+    },
+};
+
+describe('onlineAiWatchdogGameSemantics - human turn legal-action probe', () => {
+    const buildState = (phase: string): MatchState<unknown> => ({
+        core: { activePlayerId: '0', hostStarted: true },
+        sys: {
+            phase,
+            interaction: { current: null, isBlocked: false },
+        },
+    });
+
+    it('未声明 humanTurnLegalActionProbePhases 时，不应按默认阶段探测 AI legal-only', () => {
+        expect(shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn({
+            state: buildState('testOffTurnProbePhase'),
+            currentPlayerId: '0',
+        })).toBe(false);
+    });
+
+    it('游戏配置声明 off-turn 阶段后，才允许探测 AI legal-only', () => {
+        expect(shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn({
+            state: buildState('testOffTurnProbePhase'),
+            currentPlayerId: '0',
+            engineConfig: testRecoveryEngineConfig,
+        })).toBe(true);
+    });
+
+    it('游戏配置 hook 可拒绝某个已声明阶段的探测', () => {
+        expect(shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn({
+            state: buildState('testOffTurnProbePhase'),
+            currentPlayerId: '0',
+            engineConfig: {
+                gameId: 'test-recovery-game',
+                onlineAiRecovery: {
+                    humanTurnLegalActionProbePhases: ['testOffTurnProbePhase'],
+                    shouldProbeHumanTurnLegalActionOnlyCandidate: () => false,
+                },
+            },
+        })).toBe(false);
+    });
+});
 
 describe('onlineAiRecovery - 游戏结束检查', () => {
     it('legal-action-only reason 必须同步到 emergency overlay fallback 白名单', () => {
@@ -60,7 +168,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试强制推进
@@ -94,7 +202,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         // 验证：应该返回强制推进方案
@@ -129,7 +237,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'smashup',
+                gameId: 'test-reaction-game',
                 onlineAiRecovery: {
                     publicPregameLegalActionPhases: ['factionSelect'],
                 },
@@ -144,14 +252,14 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands).toEqual([]);
     });
 
-    it('DiceThrone targetingRoll 阶段当前玩家为 AI 时，应先维持 active-turn recovery surface', () => {
+    it('自定义目标选择阶段当前玩家为 AI 时，应先维持 active-turn recovery surface', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
             },
             sys: {
                 gameover: undefined,
-                phase: 'targetingRoll',
+                phase: 'testTargetingPhase',
                 interaction: {
                     current: null,
                     isBlocked: false,
@@ -169,9 +277,9 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'dicethrone',
+                gameId: 'test-offturn-roll-game',
                 onlineAiRecovery: {
-                    humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+                    humanTurnLegalActionProbePhases: ['testDefensePhase', 'testTargetingPhase'],
                 },
             },
         });
@@ -185,7 +293,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         ]);
     });
 
-    it('Splendor 即使残留了 AI seat metadata，也不得生成裸 ADVANCE_PHASE fallback', () => {
+    it('禁用 fallback advance 的游戏即使残留了 AI seat metadata，也不得生成裸 ADVANCE_PHASE fallback', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -213,7 +321,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'splendor',
+                gameId: 'test-no-fallback-game',
                 onlineAiRecovery: {
                     disableFallbackAdvancePhase: true,
                 },
@@ -228,7 +336,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands).toEqual([]);
     });
 
-    it('Splendor 未开局时不得触发 active-turn legal-action watchdog', () => {
+    it('禁用 fallback advance 的游戏未开局时不得触发 active-turn legal-action watchdog', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 currentPlayer: '1',
@@ -257,7 +365,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'splendor',
+                gameId: 'test-no-fallback-game',
                 onlineAiRecovery: {
                     disableFallbackAdvancePhase: true,
                     shouldSuppressActiveTurnCandidate: ({ state, phase, turnNumber }) => {
@@ -271,7 +379,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result).toBeNull();
     });
 
-    it('Splendor turn0 / unknown-phase 残态不得触发 active-turn legal-action watchdog', () => {
+    it('禁用 fallback advance 的游戏 turn0 / unknown-phase 残态不得触发 active-turn legal-action watchdog', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 currentPlayer: '1',
@@ -300,7 +408,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'splendor',
+                gameId: 'test-no-fallback-game',
                 onlineAiRecovery: {
                     disableFallbackAdvancePhase: true,
                     shouldSuppressActiveTurnCandidate: ({ state, phase, turnNumber }) => {
@@ -352,7 +460,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试处理交互
@@ -394,7 +502,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试处理响应窗口
@@ -415,7 +523,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 {
@@ -445,7 +553,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -470,7 +578,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 {
@@ -502,7 +610,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -539,7 +647,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 {
@@ -573,7 +681,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
-    it('trigger-only simple-choice 应按 engineConfig 自动选择首个 trigger，而不是依赖 shared 里的 smashup sourceId 硬编码', () => {
+    it('trigger-only simple-choice 应按 engineConfig 自动选择首个 trigger，而不是依赖 shared 里的具体 sourceId 硬编码', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -587,7 +695,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             multi: { min: 1, max: 1 },
                             options: [
@@ -614,9 +722,9 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatControllers,
             seatStates: {},
             engineConfig: {
-                gameId: 'smashup',
+                gameId: 'test-reaction-game',
                 onlineAiRecovery: {
-                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['test_reaction_choose'],
                 },
             },
         });
@@ -642,7 +750,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 {
@@ -672,7 +780,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 {
@@ -700,7 +808,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -709,7 +817,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
@@ -729,7 +837,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'giant_ants_transfer_counter_prompt',
+                            sourceId: 'test_slider_source',
                             title: '选择要转移的数量',
                             options: [
                                 {
@@ -770,7 +878,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'simple-choice',
                         data: {
-                            sourceId: 'giant_ants_transfer_counter_prompt',
+                            sourceId: 'test_slider_source',
                             title: '选择要转移的数量',
                             options: [
                                 {
@@ -964,7 +1072,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -1028,7 +1136,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
-    it('可见 dt:token-response 时，watchdog 应返回 SKIP_TOKEN_RESPONSE 而不是 cancel', () => {
+    it('可见 test:token-response 时，watchdog 应返回 TEST_SKIP_TOKEN_PROMPT 而不是 cancel', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1040,9 +1148,9 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                     current: {
                         id: 'token-response-1',
                         playerId: '1',
-                        kind: 'dt:token-response',
+                        kind: 'test:token-response',
                         data: {
-                            sourceId: 'barbarian_revenge',
+                            sourceId: 'test_token_response',
                             title: '是否消耗 token',
                         },
                     },
@@ -1060,18 +1168,18 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
         expect(result?.requiresConfirmedAdvancePhase).toBe(true);
         expect(result?.resolution.action.commands[0]).toEqual({
-            type: 'SKIP_TOKEN_RESPONSE',
+            type: 'TEST_SKIP_TOKEN_PROMPT',
             payload: {},
         });
     });
 
-    it('可见 dt:bonus-dice 时，watchdog 不能代替右侧骰盘普通确认', () => {
+    it('可见 test:bonus-dice 时，watchdog 不能代替右侧骰盘普通确认', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1083,7 +1191,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                     current: {
                         id: 'bonus-dice-1',
                         playerId: '1',
-                        kind: 'dt:bonus-dice',
+                        kind: 'test:bonus-dice',
                         data: {
                             sourceId: 'bonus-roll',
                             title: '是否重掷奖励骰',
@@ -1103,7 +1211,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result).toBeNull();
@@ -1275,7 +1383,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
-    it('可见 dt:token-response 的 pendingDamage 语义漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+    it('可见 test:token-response 的 pendingDamage 语义漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
         const buildState = (currentDamage: number): MatchState<unknown> => ({
             core: {
                 activePlayerId: '1',
@@ -1284,7 +1392,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                     responderId: '1',
                     responseType: 'token',
                     currentDamage,
-                    sourceAbilityId: 'barbarian_revenge',
+                    sourceAbilityId: 'test_token_response',
                     tokenUsageTotals: { rage: currentDamage },
                 },
             },
@@ -1295,9 +1403,9 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                     current: {
                         id: 'token-response-1',
                         playerId: '1',
-                        kind: 'dt:token-response',
+                        kind: 'test:token-response',
                         data: {
-                            sourceId: 'barbarian_revenge',
+                            sourceId: 'test_token_response',
                             title: '是否消耗 token',
                         },
                     },
@@ -1313,7 +1421,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState(4),
@@ -1322,13 +1430,13 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
     });
 
-    it('可见 dt:bonus-dice 的 settlement 语义漂移时，watchdog 仍不得生成强制确认候选', () => {
+    it('可见 test:bonus-dice 的 settlement 语义漂移时，watchdog 仍不得生成强制确认候选', () => {
         const buildState = (rerollCount: number): MatchState<unknown> => ({
             core: {
                 activePlayerId: '1',
@@ -1347,7 +1455,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                     current: {
                         id: 'bonus-dice-1',
                         playerId: '1',
-                        kind: 'dt:bonus-dice',
+                        kind: 'test:bonus-dice',
                         data: {
                             sourceId: 'bonus-roll',
                             title: '是否重掷奖励骰',
@@ -1365,7 +1473,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState(2),
@@ -1374,7 +1482,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(first).toBeNull();
@@ -1395,7 +1503,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'compare-roll-choice',
                         data: {
-                            sourceId: 'gunslinger_showdown',
+                            sourceId: 'test_compare_roll_source',
                             title: '选择一个反应动作',
                             options: [
                                 { id: 'confirm', label: '确认', value: { accepted: true } },
@@ -1417,7 +1525,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                         playerId: '1',
                         kind: 'compare-roll-choice',
                         data: {
-                            sourceId: 'gunslinger_showdown',
+                            sourceId: 'test_compare_roll_source',
                             title: '选择一个反应动作',
                             options: [
                                 { id: 'confirm', label: '确认', value: { accepted: false } },
@@ -1437,7 +1545,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -1446,13 +1554,13 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
     });
 
-    it('可见 dt:defender-choice 在同 interactionId 下若 sourceId 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {
+    it('可见 test:defender-choice 在同 interactionId 下若 sourceId 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {
         const baseState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1463,16 +1571,16 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             },
             sys: {
                 gameover: undefined,
-                phase: 'targetingRoll',
+                phase: 'testTargetingPhase',
                 interaction: {
                     current: {
-                        id: 'dt-defender-choice-0-6-1',
+                        id: 'test-defender-choice-0-6-1',
                         playerId: '1',
-                        kind: 'dt:defender-choice',
+                        kind: 'test:defender-choice',
                         data: {
                             attackerId: '0',
                             chooserPlayerId: '1',
-                            sourceId: 'barbarian_reckless',
+                            sourceId: 'test_targeting_source',
                             targetRollValue: 6,
                             options: [
                                 { playerId: '2', customId: 'defender-2' },
@@ -1490,13 +1598,13 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 ...baseState.sys,
                 interaction: {
                     current: {
-                        id: 'dt-defender-choice-0-6-1',
+                        id: 'test-defender-choice-0-6-1',
                         playerId: '1',
-                        kind: 'dt:defender-choice',
+                        kind: 'test:defender-choice',
                         data: {
                             attackerId: '0',
                             chooserPlayerId: '1',
-                            sourceId: 'barbarian_reckless_drifted',
+                            sourceId: 'test_targeting_source_drifted',
                             targetRollValue: 6,
                             options: [
                                 { playerId: '2', customId: 'defender-2' },
@@ -1516,7 +1624,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -1525,13 +1633,13 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
     });
 
-    it('可见 dt:defender-choice 只有一个 enabled 目标时，watchdog 应返回 SELECT_DEFENDER_TARGET 而不是 cancel', () => {
+    it('可见 test:defender-choice 只有一个 enabled 目标时，watchdog 应返回 TEST_SELECT_TARGET 而不是 cancel', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1542,16 +1650,16 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             },
             sys: {
                 gameover: undefined,
-                phase: 'targetingRoll',
+                phase: 'testTargetingPhase',
                 interaction: {
                     current: {
-                        id: 'dt-defender-choice-single',
+                        id: 'test-defender-choice-single',
                         playerId: '1',
-                        kind: 'dt:defender-choice',
+                        kind: 'test:defender-choice',
                         data: {
                             attackerId: '0',
                             chooserPlayerId: '1',
-                            sourceId: 'barbarian_reckless',
+                            sourceId: 'test_targeting_source',
                             targetRollValue: 6,
                             options: [
                                 { playerId: '2', customId: 'defender-2', disabled: true },
@@ -1573,18 +1681,18 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
         expect(result?.requiresConfirmedAdvancePhase).toBe(true);
         expect(result?.resolution.action.commands[0]).toEqual({
-            type: 'SELECT_DEFENDER_TARGET',
+            type: 'TEST_SELECT_TARGET',
             payload: { defenderId: '3' },
         });
     });
 
-    it('可见 dt:defender-choice 的唯一 enabled 目标漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+    it('可见 test:defender-choice 的唯一 enabled 目标漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
         const seatControllers: Record<string, AiSeatController> = {
             '0': { type: 'human' },
             '1': { type: 'local-ai', policyId: 'baseline' },
@@ -1599,16 +1707,16 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             },
             sys: {
                 gameover: undefined,
-                phase: 'targetingRoll',
+                phase: 'testTargetingPhase',
                 interaction: {
                     current: {
-                        id: 'dt-defender-choice-single-drift',
+                        id: 'test-defender-choice-single-drift',
                         playerId: '1',
-                        kind: 'dt:defender-choice',
+                        kind: 'test:defender-choice',
                         data: {
                             attackerId: '0',
                             chooserPlayerId: '1',
-                            sourceId: 'barbarian_reckless',
+                            sourceId: 'test_targeting_source',
                             targetRollValue: 6,
                             options: [
                                 { playerId: '2', customId: 'defender-2', disabled: enabledDefenderId !== '2' },
@@ -1625,21 +1733,21 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState: buildState('2'),
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState('3'),
             seatControllers,
             seatStates: {},
-            engineConfig: diceThroneEngineConfig,
+            engineConfig: testRecoveryEngineConfig,
         });
 
         expect(first?.resolution.action.commands[0]).toEqual({
-            type: 'SELECT_DEFENDER_TARGET',
+            type: 'TEST_SELECT_TARGET',
             payload: { defenderId: '2' },
         });
         expect(second?.resolution.action.commands[0]).toEqual({
-            type: 'SELECT_DEFENDER_TARGET',
+            type: 'TEST_SELECT_TARGET',
             payload: { defenderId: '3' },
         });
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
@@ -1780,7 +1888,7 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
         expect(result?.action.commands[0]?.type).toBe('ADVANCE_PHASE');
     });
 
-    it('Splendor 交互收口后不得再补发阶段推进命令', () => {
+    it('禁用 fallback advance 的游戏交互收口后不得再补发阶段推进命令', () => {
         const authoritativeState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1808,7 +1916,7 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
             seatControllers,
             playerId: '1',
             engineConfig: {
-                gameId: 'splendor',
+                gameId: 'test-no-fallback-game',
                 onlineAiRecovery: {
                     disableFallbackAdvancePhase: true,
                 },
@@ -1818,7 +1926,7 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
         expect(result).toBeNull();
     });
 
-    it('Summoner Wars 交互收口后应按 engineConfig 使用 sw:end_phase 推进阶段', () => {
+    it('自定义游戏交互收口后应按 engineConfig 使用 TEST_END_PHASE 推进阶段', () => {
         const authoritativeState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -1846,14 +1954,14 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
             seatControllers,
             playerId: '1',
             engineConfig: {
-                gameId: 'summonerwars',
+                gameId: 'test-custom-advance-game',
                 onlineAiRecovery: {
-                    advancePhaseCommandType: 'sw:end_phase',
+                    advancePhaseCommandType: 'TEST_END_PHASE',
                 },
             },
         });
 
-        expect(result?.action.commands[0]?.type).toBe('sw:end_phase');
+        expect(result?.action.commands[0]?.type).toBe('TEST_END_PHASE');
     });
 });
 
@@ -1872,7 +1980,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
                         kind: 'simple-choice',
                         playerId: '1',
                         data: {
-                            sourceId: 'smashup_reaction_choose',
+                            sourceId: 'test_reaction_choose',
                             title: '选择一个反应动作',
                             options: [
                                 { id: 'trigger-a', label: '触发 A', value: { kind: 'trigger' } },
@@ -1990,7 +2098,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         });
 
         const baseResult = resolveManualForceEndAiPhase({
-            sharedState: buildState('smashup_reaction_choose'),
+            sharedState: buildState('test_reaction_choose'),
             seatControllers: {
                 '0': { type: 'human' },
                 '1': { type: 'local-ai', policyId: 'baseline' },
@@ -1998,7 +2106,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
             seatStates: {},
         });
         const driftedResult = resolveManualForceEndAiPhase({
-            sharedState: buildState('smashup_reaction_choose_drifted'),
+            sharedState: buildState('test_reaction_choose_drifted'),
             seatControllers: {
                 '0': { type: 'human' },
                 '1': { type: 'local-ai', policyId: 'baseline' },
@@ -2009,8 +2117,8 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         expect(baseResult?.reason).toBe('visible-interaction');
         expect(driftedResult?.reason).toBe('visible-interaction');
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
-        expect(baseResult?.fingerprintHint).toContain('manual-visible-interaction:interaction:1:scoreBases:simple-choice:smashup_reaction_choose');
-        expect(driftedResult?.fingerprintHint).toContain('manual-visible-interaction:interaction:1:scoreBases:simple-choice:smashup_reaction_choose_drifted');
+        expect(baseResult?.fingerprintHint).toContain('manual-visible-interaction:interaction:1:scoreBases:simple-choice:test_reaction_choose');
+        expect(driftedResult?.fingerprintHint).toContain('manual-visible-interaction:interaction:1:scoreBases:simple-choice:test_reaction_choose_drifted');
     });
 
     it('手动 hidden-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 semantic fingerprint 变化', () => {

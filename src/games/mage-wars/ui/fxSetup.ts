@@ -6,7 +6,7 @@ function createRegistry(): FxRegistry {
     const registry = new FxRegistry();
 
     registry.register(MW_FX.SPELL_CAST, SpellCastRenderer, {
-        timeoutMs: 1200,
+        timeoutMs: 1500,
         maxConcurrent: 3,
         debounceMs: 40,
         budget: {
@@ -30,7 +30,7 @@ function createRegistry(): FxRegistry {
     });
 
     registry.register(MW_FX.SPELL_PUSH, SpellPushRenderer, {
-        timeoutMs: 950,
+        timeoutMs: 1250,
         maxConcurrent: 3,
         debounceMs: 40,
         budget: {
@@ -41,7 +41,7 @@ function createRegistry(): FxRegistry {
         },
     });
     registry.register(MW_FX.SPELL_TELEPORT, SpellCastRenderer, {
-        timeoutMs: 950,
+        timeoutMs: 1500,
         maxConcurrent: 3,
         debounceMs: 40,
         budget: {

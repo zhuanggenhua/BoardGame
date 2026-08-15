@@ -126,6 +126,7 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
             ),
         ),
         onCommandRejected: stage.onCommandRejected,
+        resolveLocalSetup: stage.resolveLocalSetup,
         title: tLobby('matchRoom.title.tutorial'),
         preparingDescription: tLobby('matchRoom.preparingMatch'),
         loadingProgressText: stage.loadingProgressText,

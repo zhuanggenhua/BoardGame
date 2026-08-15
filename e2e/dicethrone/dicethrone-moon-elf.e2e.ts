@@ -33,11 +33,11 @@ async function openTargetedDamageScene(
             rollLimit: 3,
             rollConfirmed: false,
             dice: [
-                { id: 0, value: 6, isKept: false },
-                { id: 1, value: 6, isKept: false },
+                { id: 0, value: 1, isKept: false },
+                { id: 1, value: 1, isKept: false },
                 { id: 2, value: 6, isKept: false },
                 { id: 3, value: 6, isKept: false },
-                { id: 4, value: 1, isKept: false },
+                { id: 4, value: 4, isKept: false },
             ],
         },
     });
@@ -76,13 +76,13 @@ async function openTargetedDamageScene(
         };
     }, { timeout: 10000 }).toMatchObject({
         activePlayerId: '0',
-        diceValues: [6, 6, 6, 6, 1],
+        diceValues: [1, 1, 6, 6, 4],
         targeted: 1,
     });
 }
 
 test.describe('DiceThrone Moon Elf E2E', () => {
-    test('framework 场景下 Targeted 应额外增加 2 点伤害并在结算后移除', async ({ page, game }) => {
+    test('framework 场景下 Targeted 应额外增加 2 点伤害并在结算后移除，不夹带 Daze 或防御', async ({ page, game }) => {
         await openTargetedDamageScene(page, game);
 
         const hpBefore = (await game.getPlayerState('1'))?.resources?.[RESOURCE_IDS.HP] ?? 0;
@@ -91,11 +91,15 @@ test.describe('DiceThrone Moon Elf E2E', () => {
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
         await confirmButton.click();
 
-        const highlightedSlots = page
-            .locator('[data-ability-slot]')
-            .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
-        await expect(highlightedSlots.first()).toBeVisible({ timeout: 8000 });
-        await highlightedSlots.first().click();
+        const attackSlot = page
+            .locator('[data-available-ability-id="all-out-strike"], [data-resolved-ability-id="all-out-strike"]')
+            .first();
+        await expect(attackSlot).toBeVisible({ timeout: 8000 });
+        await attackSlot.click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state?.core?.pendingAttack?.sourceAbilityId ?? null;
+        }, { timeout: 10000 }).toBe('all-out-strike');
 
         const resolveAttackButton = page.getByRole('button', { name: /Resolve Attack|结算攻击/i });
         await expect(resolveAttackButton).toBeVisible({ timeout: 10000 });
@@ -111,7 +115,7 @@ test.describe('DiceThrone Moon Elf E2E', () => {
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'main2',
-            defenderHp: hpBefore - 7,
+            defenderHp: hpBefore - 6,
             targeted: 0,
         });
     });

@@ -111,12 +111,35 @@ SmashUp SHALL let the pipeline formally reduce every domain event that changes t
 - **THEN** reveal reactions for the new base MUST be collected only after `BASE_REPLACED` has been formally reduced into the authoritative core
 - **AND** deferred post-scoring payloads MUST NOT pre-populate reveal trigger queue events from a projected future core
 
+#### Scenario: Current-base completion does not create a pipeline-round wait state
+- **GIVEN** the scoring session has emitted the current base's cleanup and replacement events
+- **WHEN** the current base is marked completed
+- **THEN** the scoring session step MUST return to `idle`
+- **AND** it MUST NOT create an `awaiting-post-reduce` or equivalent rule step whose only meaning is waiting for the next pipeline round
+- **AND** the next base MUST be selected only after the emitted events have been formally reduced and remaining base refs are refreshed from authoritative core
+
 #### Scenario: 计分规划不得把预演 core 写回比赛状态
 - **GIVEN** 当前计分步骤需要发出一个或多个领域事件
 - **WHEN** driver 需要等待这些事件改变基地、手牌、弃牌堆或力量后才能决定下一步
 - **THEN** driver MUST 发出事件并在正式归约后继续对应 frame step
 - **AND** MUST NOT 把临时 reduce 的结果保存进权威 `MatchState.core` 后再恢复快照
 - **AND** MUST NOT 手工合并 interaction handler 前后 core 的部分字段来避免双重结算
+
+### Requirement: Settlement projections SHALL remain read-only and non-authoritative
+SmashUp MAY use local projection/query views for UI hints, AI scoring, legality probes, animation previews, and ordered batch-event derivation. Such views MUST remain local to the current call stack and MUST NOT be written into authoritative match state, scoring session continuation targets, real interactions, real reactions, trigger consumption, response closure, or Flow continuation.
+
+#### Scenario: cleanup batch view does not choose the next scoring base
+- **GIVEN** a scoring finalizer emits deferred cleanup events for the current base
+- **AND** it builds a local batch view to materialize actions that depend on the cleanup result
+- **WHEN** the scoring session needs to find the next eligible base
+- **THEN** it MUST wait until cleanup events have been formally reduced
+- **AND** it MUST refresh remaining base refs from the authoritative core rather than from the local batch view
+
+#### Scenario: legality probe cannot create real settlement state
+- **GIVEN** UI, AI, or response option code probes whether a card can be played
+- **WHEN** that probe constructs a temporary state for validation
+- **THEN** the temporary state MUST NOT create or consume a real trigger, interaction, reaction frame, response pass, deferred event, or scoring continuation
+- **AND** any result that should affect the game MUST be emitted later through the normal command/event pipeline
 
 ### Requirement: Clearing reactions SHALL originate from actual base clearing
 SmashUp SHALL create discard and leave-play reactions only after `BASE_CLEARED` has formally moved the relevant object out of the scored base.

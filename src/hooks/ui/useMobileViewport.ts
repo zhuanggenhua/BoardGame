@@ -1,4 +1,4 @@
-import { isMobileViewport as isMobileViewportWidth } from '../../games/mobileSupport';
+import { isMobileViewport as isMobileViewportWidth } from '../../shared/mobileSupport';
 import { useRuntimeViewport } from './useRuntimeViewport';
 
 export function useMobileViewport() {

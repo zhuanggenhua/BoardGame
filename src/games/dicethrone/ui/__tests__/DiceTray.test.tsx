@@ -285,6 +285,30 @@ describe('DiceActions', () => {
         expect(container.querySelector('[data-tutorial-id="dice-roll-button"]')).toBeDisabled();
     });
 
+    it('Duel/对掷确认不应被上一轮普通投骰的已确认状态禁用', () => {
+        const onConfirm = vi.fn();
+        render(
+            <DiceActions
+                rollCount={1}
+                rollLimit={1}
+                rollConfirmed
+                isCompareRoll
+                onRoll={vi.fn()}
+                onConfirm={onConfirm}
+                currentPhase="defensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+            />,
+        );
+
+        const confirmButton = screen.getByText('common.confirm').closest('button');
+        expect(confirmButton).toBeEnabled();
+
+        fireEvent.click(confirmButton!);
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+
     it('改骰交互的确认仍在右侧骰盘，但与最终骰面确认使用不同稳定入口', () => {
         render(
             <DiceActions

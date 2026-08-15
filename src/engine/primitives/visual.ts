@@ -70,20 +70,20 @@ export interface VisualValidationError {
  * 游戏初始化时注册图集路径和 group → atlas 映射，
  * 运行时通过 resolve() 解析实体视觉信息。
  *
- * 使用示例（DiceThrone）：
+ * 使用示例：
  * ```
  * const resolver = new VisualResolver();
- * resolver.registerAtlas('dicethrone:monk-status', 'dicethrone/images/monk/status-icons-atlas.json');
- * resolver.registerGroupAtlas('monk', 'dicethrone:monk-status');
+ * resolver.registerAtlas('game:status-icons', 'game/images/status-icons-atlas.json');
+ * resolver.registerGroupAtlas('hero-a', 'game:status-icons');
  *
- * // 约定：tokenId 'taiji' 在 monk 的 atlas 中查找帧 'taiji'
- * // 但 taiji 的帧名实际是 'tai-chi'，所以需要 override
- * resolver.resolve('taiji', 'monk', { frameId: 'tai-chi' });
- * // → { frameId: 'tai-chi', atlasId: 'dicethrone:monk-status', atlasPath: '...', hasAtlas: true }
+ * // 约定：entityId 'shield' 在 hero-a 的 atlas 中查找帧 'shield'
+ * // 若实际帧名不同，可通过 override 指定
+ * resolver.resolve('shield', 'hero-a', { frameId: 'guard-shield' });
+ * // → { frameId: 'guard-shield', atlasId: 'game:status-icons', atlasPath: '...', hasAtlas: true }
  *
- * // 约定：tokenId 'purify' 在 monk 的 atlas 中查找帧 'purify'（帧名 = tokenId）
- * resolver.resolve('purify', 'monk');
- * // → { frameId: 'purify', atlasId: 'dicethrone:monk-status', atlasPath: '...', hasAtlas: true }
+ * // 约定：entityId 'haste' 在 hero-a 的 atlas 中查找帧 'haste'（帧名 = entityId）
+ * resolver.resolve('haste', 'hero-a');
+ * // → { frameId: 'haste', atlasId: 'game:status-icons', atlasPath: '...', hasAtlas: true }
  * ```
  */
 export class VisualResolver {

@@ -26,8 +26,8 @@ export function applyPlayerViewToState(
         viewSys = { ...(viewSys as Record<string, unknown>), ...sysPartial };
     }
 
-    const viewState = { sys: viewSys, core: viewCore };
+    const viewState = { sys: viewSys, core: viewCore } as MatchState<unknown>;
     return engineConfig.domain.normalizeRuntimeState
-        ? engineConfig.domain.normalizeRuntimeState(viewState as MatchState<unknown>)
+        ? engineConfig.domain.normalizeRuntimeState(viewState)
         : viewState;
 }

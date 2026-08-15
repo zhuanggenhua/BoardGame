@@ -1,4 +1,4 @@
-import type { GameSetupSelections } from '../setupOptions';
+import type { GameSetupSelections } from '../../shared/gameSetupOptions';
 import { applyQidahenPregameChoiceDefaults } from './roomSetup';
 import { qidahenAtlas05OrdinaryHandPreview } from './ui/cardAtlas';
 import {

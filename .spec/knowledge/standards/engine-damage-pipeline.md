@@ -54,10 +54,19 @@ interface DamageCalculationConfig {
   state: any;                     // 游戏状态（用于自动收集）
   timestamp?: number;             // 时间戳
 
+  // 攻击上下文（由游戏层把自己的攻击账本投影成通用合同）
+  attackDamageContext?: {
+    attackerId: PlayerId;
+    defenderId: PlayerId;
+    bonusDamage?: number;
+    isUltimate?: boolean;
+  };
+
   // 自动收集开关（默认 true）
   autoCollectTokens?: boolean;    // 自动收集 Token 修正
   autoCollectStatus?: boolean;    // 自动收集状态修正
   autoCollectShields?: boolean;   // 自动收集护盾减免
+  autoCollectBonusDamage?: boolean; // 自动收集 attackDamageContext.bonusDamage
 
   // 手动添加的修正
   additionalModifiers?: ModifierDef<DamageContext>[];
@@ -213,6 +222,9 @@ const damageCalc = createDamageCalculation({
 // 如果目标有 [{ value: 2 }, { value: 3 }]，自动添加 -5 伤害修正
 ```
 
+#### 攻击上下文修正
+攻击限定修正、终极攻击判定和攻击加伤必须通过 `attackDamageContext` 传入。引擎层不得读取某个游戏的攻击状态字段（例如 pending attack、combat session 或等价私有账本）；游戏层负责把它们投影为 `attackerId / defenderId / bonusDamage / isUltimate`。
+
 ### Breakdown 结构
 
 ```typescript
@@ -286,8 +298,9 @@ else if (modifiers && modifiers.length > 0) {
    - 基础伤害：priority = 0
    - Token/状态修正：priority = 10-20
    - 护盾减免：priority = 100（最后应用）
-4. **伤害不会为负数**：`resolve()` 会自动将负数伤害钳制为 0。
-5. **向后兼容**：旧的手动 `modifiers` 格式仍可正常工作，ActionLog 会降级渲染。
+4. **攻击上下文由游戏层投影**：`DamageCalculation` 只能消费 `attackDamageContext`，不能直接认识某个游戏的 `pendingAttack`、攻击阶段或卡牌专属加伤账本。
+5. **伤害不会为负数**：`resolve()` 会自动将负数伤害钳制为 0。
+6. **向后兼容**：旧的手动 `modifiers` 格式仍可正常工作，ActionLog 会降级渲染。
 
 ### 迁移指南
 

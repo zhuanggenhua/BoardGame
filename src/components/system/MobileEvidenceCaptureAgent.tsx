@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createScopedLogger } from '../../lib/logger';
+import type {
+    MobileEvidenceScenarioContext,
+    MobileEvidenceScenarioHandlers,
+} from '../../shared/mobileEvidenceCapture';
 
 const logger = createScopedLogger('mobile-evidence-capture');
 const CAPTURE_PARAM = 'bgCapture';
@@ -9,15 +13,10 @@ const CAPTURE_STATUS_URL_PARAM = 'bgCaptureStatusUrl';
 const CAPTURE_OUTPUT_PATH_PARAM = 'bgCaptureOutputPath';
 const DEFAULT_CAPTURE_SAVE_URL = '/__capture/save';
 const DEFAULT_CAPTURE_STATUS_URL = '/__capture/status';
+
 type Html2CanvasFn = typeof import('html2canvas').default;
-type SmashUpMobileEvidenceInjector = typeof import('../../games/smashup/mobileEvidence').injectSmashUpFourPlayerMobileEvidenceScene;
-type SummonerWarsMobileEvidenceInjector = typeof import('../../games/summonerwars/mobileEvidence').injectSummonerWarsMobileEvidenceScene;
-type SummonerWarsMobileEvidenceStateFactory = typeof import('../../games/summonerwars/mobileEvidence').withSummonerWarsMobileEvidenceActionLog;
 
 let html2CanvasLoader: Promise<Html2CanvasFn> | null = null;
-let smashUpMobileEvidenceInjectorLoader: Promise<SmashUpMobileEvidenceInjector> | null = null;
-let summonerWarsMobileEvidenceInjectorLoader: Promise<SummonerWarsMobileEvidenceInjector> | null = null;
-let summonerWarsMobileEvidenceStateFactoryLoader: Promise<SummonerWarsMobileEvidenceStateFactory> | null = null;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => {
     window.setTimeout(resolve, ms);
@@ -79,19 +78,6 @@ function clickElement(selector: string, visibleOnly = false) {
     return true;
 }
 
-function setInputValue(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
-    const prototype = element instanceof HTMLTextAreaElement
-        ? window.HTMLTextAreaElement.prototype
-        : window.HTMLInputElement.prototype;
-    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
-    descriptor?.set?.call(element, value);
-    if (!descriptor?.set) {
-        element.value = value;
-    }
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
 function dispatchPointerEvent(element: HTMLElement, type: 'pointerdown' | 'pointerup', pointerId: number) {
     const rect = element.getBoundingClientRect();
     const clientX = rect.left + rect.width / 2;
@@ -126,104 +112,10 @@ async function waitForMagnifyOverlayReady(overlaySelector: string, label: string
         `${label} 放大层内容完成渲染`,
         () => {
             const overlay = getVisibleElement(overlaySelector);
-            return Boolean(overlay) && overlay.querySelectorAll('.atlas-shimmer').length === 0;
+            return overlay !== null && overlay.querySelectorAll('.atlas-shimmer').length === 0;
         },
         8000,
     );
-}
-
-async function ensureDebugPanelOpen() {
-    if (getVisibleElement('[data-testid="debug-panel"]')) {
-        return;
-    }
-
-    if (!clickElement('[data-testid="debug-toggle"]', true)) {
-        throw new Error('未找到 debug toggle');
-    }
-
-    await waitForCondition(
-        'Debug 面板出现',
-        () => Boolean(getVisibleElement('[data-testid="debug-panel"]')),
-        5000,
-    );
-}
-
-async function ensureDebugStateTab() {
-    await ensureDebugPanelOpen();
-    clickElement('[data-testid="debug-tab-state"]', true);
-    await waitForCondition(
-        'Debug 状态 JSON 出现',
-        () => Boolean(getVisibleElement('[data-testid="debug-state-json"]')),
-        5000,
-    );
-}
-
-async function closeDebugPanelIfOpen() {
-    if (!getVisibleElement('[data-testid="debug-panel"]')) {
-        return;
-    }
-
-    clickElement('[data-testid="debug-toggle"]', true);
-    await waitForCondition(
-        'Debug 面板关闭',
-        () => !getVisibleElement('[data-testid="debug-panel"]'),
-        5000,
-    );
-}
-
-async function readDebugState() {
-    await ensureDebugStateTab();
-    const raw = document.querySelector<HTMLElement>('[data-testid="debug-state-json"]')?.innerText?.trim();
-    if (!raw) {
-        throw new Error('Debug 状态 JSON 为空');
-    }
-    return JSON.parse(raw);
-}
-
-async function applyDebugState(nextState: unknown) {
-    await ensureDebugStateTab();
-    clickElement('[data-testid="debug-state-toggle-input"]', true);
-
-    await waitForCondition(
-        'Debug 状态输入框出现',
-        () => Boolean(getVisibleElement('[data-testid="debug-state-input"]')),
-        5000,
-    );
-
-    const input = document.querySelector<HTMLTextAreaElement>('[data-testid="debug-state-input"]');
-    if (!input) {
-        throw new Error('未找到 Debug 状态输入框');
-    }
-
-    setInputValue(input, JSON.stringify(nextState));
-    clickElement('[data-testid="debug-state-apply"]', true);
-
-    await waitForCondition(
-        'Debug 状态输入框关闭',
-        () => !getVisibleElement('[data-testid="debug-state-input"]'),
-        5000,
-    );
-}
-
-async function seedSummonerWarsActionLog() {
-    await waitForCondition(
-        'Summoner Wars TestHarness 就绪',
-        () => Boolean(window.__BG_TEST_HARNESS__?.state?.isRegistered?.()),
-        15000,
-    );
-
-    const harness = window.__BG_TEST_HARNESS__;
-    if (!harness) {
-        throw new Error('TestHarness 未挂载');
-    }
-
-    const withActionLog = await loadSummonerWarsMobileEvidenceStateFactory();
-    const currentState = harness.state.get();
-    if (!currentState) {
-        throw new Error('Summoner Wars 当前状态未就绪');
-    }
-
-    harness.state.set(withActionLog(currentState, Date.now()));
 }
 
 async function openFabPanel(panelId: string, mainId = 'chat') {
@@ -266,45 +158,6 @@ async function loadHtml2Canvas() {
     }
 
     return html2CanvasLoader;
-}
-
-async function loadSmashUpMobileEvidenceInjector() {
-    if (!smashUpMobileEvidenceInjectorLoader) {
-        smashUpMobileEvidenceInjectorLoader = import('../../games/smashup/mobileEvidence')
-            .then((module) => module.injectSmashUpFourPlayerMobileEvidenceScene)
-            .catch((error) => {
-                smashUpMobileEvidenceInjectorLoader = null;
-                throw error;
-            });
-    }
-
-    return smashUpMobileEvidenceInjectorLoader;
-}
-
-async function loadSummonerWarsMobileEvidenceInjector() {
-    if (!summonerWarsMobileEvidenceInjectorLoader) {
-        summonerWarsMobileEvidenceInjectorLoader = import('../../games/summonerwars/mobileEvidence')
-            .then((module) => module.injectSummonerWarsMobileEvidenceScene)
-            .catch((error) => {
-                summonerWarsMobileEvidenceInjectorLoader = null;
-                throw error;
-            });
-    }
-
-    return summonerWarsMobileEvidenceInjectorLoader;
-}
-
-async function loadSummonerWarsMobileEvidenceStateFactory() {
-    if (!summonerWarsMobileEvidenceStateFactoryLoader) {
-        summonerWarsMobileEvidenceStateFactoryLoader = import('../../games/summonerwars/mobileEvidence')
-            .then((module) => module.withSummonerWarsMobileEvidenceActionLog)
-            .catch((error) => {
-                summonerWarsMobileEvidenceStateFactoryLoader = null;
-                throw error;
-            });
-    }
-
-    return summonerWarsMobileEvidenceStateFactoryLoader;
 }
 
 async function uploadViewportCapture(saveUrl: string, scenario: string, outputPath?: string | null) {
@@ -370,250 +223,26 @@ async function reportCaptureStatus(
     }
 }
 
-async function runSmashUpTutorialScenario() {
-    await waitForCondition(
-        'Smash Up 教学浮层出现',
-        () => Boolean(getVisibleElement('[data-testid="tutorial-overlay-card"]')),
-        40000,
-    );
+function createScenarioContext(): MobileEvidenceScenarioContext {
+    return {
+        sleep,
+        waitForCondition,
+        getVisibleElement,
+        getVisibleElements,
+        clickElement,
+        longPressElement,
+        waitForMagnifyOverlayReady,
+        openFabPanel,
+    };
 }
 
-async function runBetrayalTutorialPhoneLandscapeScenario() {
-    await waitForCondition(
-        '山屋惊魂教程棋盘出现',
-        () => Boolean(getVisibleElement('[data-testid="betrayal-board"]')),
-        40000,
-    );
-
-    if (getVisibleElement('[data-testid="mobile-orientation-game-gate"]')) {
-        throw new Error('山屋惊魂移动端仍停在旋转提示，未进入横屏游戏画面');
-    }
-
-    if (getVisibleElement('[data-tutorial-step="setup-runtime"]')) {
-        if (!clickElement('[data-testid="tutorial-next-button"]', true)) {
-            throw new Error('山屋惊魂教程初始步骤存在，但未找到继续按钮');
-        }
-    }
-
-    await waitForCondition(
-        '山屋惊魂教程进入书本使用步骤',
-        () => Boolean(getVisibleElement('[data-tutorial-step="use-book"]')),
-        10000,
-    );
-    await waitForCondition(
-        '山屋惊魂书本持有物可见',
-        () => Boolean(getVisibleElement('[data-testid="betrayal-inventory-omen-book"]')),
-        10000,
-    );
-    await waitForCondition(
-        '山屋惊魂房间棋盘可见',
-        () => Boolean(getVisibleElement('[data-testid="betrayal-room-grid"]')),
-        10000,
-    );
-    await sleep(500);
+export interface MobileEvidenceCaptureAgentProps {
+    scenarioHandlers: MobileEvidenceScenarioHandlers;
 }
 
-async function prepareSummonerWarsBoard() {
-    await waitForCondition(
-        'Summoner Wars TestHarness 就绪',
-        () => Boolean(window.__BG_TEST_HARNESS__?.state?.isRegistered?.()),
-        15000,
-    );
-
-    const harness = window.__BG_TEST_HARNESS__;
-    if (!harness) {
-        throw new Error('TestHarness 未挂载');
-    }
-
-    const injectSummonerWarsMobileEvidenceScene = await loadSummonerWarsMobileEvidenceInjector();
-    injectSummonerWarsMobileEvidenceScene(harness);
-
-    await waitForCondition(
-        '召唤师战争手牌区可见',
-        () => Boolean(getVisibleElement('[data-testid="sw-hand-area"]')),
-        20000,
-    );
-    await waitForCondition(
-        '召唤师战争阶段条可见',
-        () => Boolean(getVisibleElement('[data-testid="sw-phase-tracker"]')),
-        10000,
-    );
-    await waitForCondition(
-        '召唤师战争结束阶段按钮可见',
-        () => Boolean(getVisibleElement('[data-testid="sw-end-phase"]')),
-        10000,
-    );
-}
-
-async function runSummonerWarsPhoneBoardScenario() {
-    await prepareSummonerWarsBoard();
-}
-
-async function selectSummonerWarsHandCard() {
-    clickElement('[data-testid="sw-hand-area"] [data-card-id]', true);
-    await waitForCondition(
-        '召唤师战争选中态放大入口可见',
-        () => Boolean(getVisibleElement('[data-testid="sw-hand-area"] [data-selected="true"] [data-testid="sw-hand-card-magnify"]')),
-        5000,
-    );
-}
-
-async function runSummonerWarsHandMagnifyScenario() {
-    await prepareSummonerWarsBoard();
-    await selectSummonerWarsHandCard();
-    clickElement('[data-testid="sw-hand-area"] [data-selected="true"] [data-testid="sw-hand-card-magnify"]', true);
-    await waitForCondition(
-        '召唤师战争放大层出现',
-        () => {
-            const overlay = getVisibleElement('[data-testid="sw-magnify-overlay"]');
-            if (!overlay) {
-                return false;
-            }
-            const styles = window.getComputedStyle(overlay);
-            return styles.pointerEvents === 'auto' && styles.opacity === '1';
-        },
-        5000,
-    );
-}
-
-async function runSummonerWarsPhaseDetailScenario() {
-    await prepareSummonerWarsBoard();
-    clickElement('[data-testid="sw-phase-item-build"]', true);
-    await waitForCondition(
-        '召唤师战争阶段详情面板出现',
-        () => Boolean(getVisibleElement('[data-testid="sw-phase-detail-panel"]')),
-        5000,
-    );
-}
-
-async function runSummonerWarsActionLogScenario() {
-    await prepareSummonerWarsBoard();
-    await seedSummonerWarsActionLog();
-    await openFabPanel('action-log', 'settings');
-    await waitForCondition(
-        '召唤师战争操作日志行出现',
-        () => getVisibleElements('[data-testid="hud-action-log-row"]').length >= 2,
-        5000,
-    );
-}
-
-async function runSummonerWarsTabletBoardScenario() {
-    await prepareSummonerWarsBoard();
-}
-
-async function prepareSmashUpFourPlayerBoard(options: { expandMinion?: boolean } = {}) {
-    const { expandMinion = true } = options;
-    await waitForCondition(
-        'Smash Up TestHarness 就绪',
-        () => {
-            const harness = window.__BG_TEST_HARNESS__;
-            return Boolean(harness?.state?.isRegistered?.() && harness?.command?.isRegistered?.());
-        },
-        15000,
-    );
-
-    const harness = window.__BG_TEST_HARNESS__;
-    if (!harness) {
-        throw new Error('TestHarness 未挂载');
-    }
-
-    const injectSmashUpFourPlayerMobileEvidenceScene = await loadSmashUpMobileEvidenceInjector();
-    injectSmashUpFourPlayerMobileEvidenceScene(harness);
-
-    await waitForCondition(
-        'Smash Up 移动端场景注入完成',
-        () => {
-            const state = window.__BG_TEST_HARNESS__?.state?.get?.();
-            return state?.sys?.phase === 'playCards'
-                && (state?.core?.players?.['0']?.hand?.length ?? 0) === 2
-                && state?.core?.bases?.[0]?.minions?.some((minion: { uid: string }) => minion.uid === 'p0-b0-armor-stego');
-        },
-        10000,
-    );
-
-    await waitForCondition(
-        'Smash Up 目标随从可见',
-        () => Boolean(getVisibleElement('[data-minion-uid="p0-b0-armor-stego"]')),
-        15000,
-    );
-
-    if (!expandMinion) {
-        return;
-    }
-
-    clickElement('[data-minion-uid="p0-b0-armor-stego"]', true);
-
-    await waitForCondition(
-        'Smash Up 单击后展开附属行动',
-        () => {
-            const minion = document.querySelector<HTMLElement>('[data-minion-uid="p0-b0-armor-stego"]');
-            return minion?.dataset.expanded === 'true'
-                && minion?.dataset.attachedActionsVisible === 'true'
-                && minion?.dataset.activationArmed === 'true';
-        },
-        5000,
-    );
-}
-
-async function runSmashUpFourPlayerAttachedActionsScenario() {
-    await prepareSmashUpFourPlayerBoard();
-}
-
-async function runSmashUpMinionLongPressScenario() {
-    await prepareSmashUpFourPlayerBoard();
-    await longPressElement('[data-minion-uid="p0-b0-armor-stego"]', 'Smash Up 随从', 1);
-    await waitForMagnifyOverlayReady('[data-testid="su-card-magnify-overlay"]', 'Smash Up 随从');
-}
-
-async function runSmashUpBaseLongPressScenario() {
-    await prepareSmashUpFourPlayerBoard();
-    await longPressElement('[data-base-index="1"]', 'Smash Up 基地', 2);
-    await waitForMagnifyOverlayReady('[data-testid="su-card-magnify-overlay"]', 'Smash Up 基地');
-}
-
-async function runSmashUpBaseOngoingLongPressScenario() {
-    await prepareSmashUpFourPlayerBoard();
-    await longPressElement('[data-ongoing-uid="p0-b0-base-ongoing"]', 'Smash Up 基地持续行动', 3);
-    await waitForMagnifyOverlayReady('[data-testid="su-card-magnify-overlay"]', 'Smash Up 基地持续行动');
-}
-
-async function runSmashUpAttachedActionLongPressScenario() {
-    await prepareSmashUpFourPlayerBoard();
-    await longPressElement('[data-attached-action-uid="p0-b0-armor-stego-upgrade"]', 'Smash Up 附属行动', 4);
-    await waitForMagnifyOverlayReady('[data-testid="su-card-magnify-overlay"]', 'Smash Up 附属行动');
-}
-
-async function runSmashUpHandLongPressScenario() {
-    await prepareSmashUpFourPlayerBoard();
-    await longPressElement('[data-card-uid="p0-mobile-hand-terraform"]', 'Smash Up 手牌', 5);
-    await waitForMagnifyOverlayReady('[data-testid="su-card-magnify-overlay"]', 'Smash Up 手牌');
-}
-
-async function runSmashUpTabletBoardScenario() {
-    await prepareSmashUpFourPlayerBoard({ expandMinion: false });
-}
-
-const scenarioHandlers: Record<string, () => Promise<void>> = {
-    'betrayal-tutorial-phone-landscape': runBetrayalTutorialPhoneLandscapeScenario,
-    'betrayal-tutorial-mobile-landscape': runBetrayalTutorialPhoneLandscapeScenario,
-    'smashup-tutorial-mobile-landscape': runSmashUpTutorialScenario,
-    'summonerwars-tutorial-phone-landscape': runSummonerWarsPhoneBoardScenario,
-    'summonerwars-mobile-10-phone-landscape-board': runSummonerWarsPhoneBoardScenario,
-    'summonerwars-mobile-11-hand-magnify-open': runSummonerWarsHandMagnifyScenario,
-    'summonerwars-mobile-12-phase-detail-open': runSummonerWarsPhaseDetailScenario,
-    'summonerwars-mobile-13-action-log-open': runSummonerWarsActionLogScenario,
-    'summonerwars-mobile-20-tablet-landscape-board': runSummonerWarsTabletBoardScenario,
-    'smashup-4p-mobile-attached-actions': runSmashUpFourPlayerAttachedActionsScenario,
-    'smashup-4p-mobile-05-attached-actions': runSmashUpFourPlayerAttachedActionsScenario,
-    'smashup-4p-mobile-07-minion-long-press': runSmashUpMinionLongPressScenario,
-    'smashup-4p-mobile-08-base-long-press': runSmashUpBaseLongPressScenario,
-    'smashup-4p-mobile-09-base-ongoing-long-press': runSmashUpBaseOngoingLongPressScenario,
-    'smashup-4p-mobile-10-attached-action-long-press': runSmashUpAttachedActionLongPressScenario,
-    'smashup-4p-mobile-11-hand-long-press': runSmashUpHandLongPressScenario,
-    'smashup-4p-mobile-12-tablet-landscape': runSmashUpTabletBoardScenario,
-};
-
-export function MobileEvidenceCaptureAgent() {
+export function MobileEvidenceCaptureAgent({
+    scenarioHandlers,
+}: MobileEvidenceCaptureAgentProps) {
     const location = useLocation();
 
     useEffect(() => {
@@ -639,6 +268,7 @@ export function MobileEvidenceCaptureAgent() {
 
         let disposed = false;
         const originalTitle = document.title;
+        const scenarioContext = createScenarioContext();
         void (async () => {
             try {
                 document.title = `capture-start:${scenario}`;
@@ -649,7 +279,7 @@ export function MobileEvidenceCaptureAgent() {
                     message: `${location.pathname}${location.search}`,
                     outputPath,
                 });
-                await handler();
+                await handler(scenarioContext);
                 if (!disposed) {
                     document.documentElement.dataset.mobileEvidenceCaptureReady = scenario;
                     document.title = `capture-ready:${scenario}`;
@@ -707,7 +337,7 @@ export function MobileEvidenceCaptureAgent() {
             delete document.documentElement.dataset.mobileEvidenceCaptureError;
             document.title = originalTitle;
         };
-    }, [location.pathname, location.search]);
+    }, [location.pathname, location.search, scenarioHandlers]);
 
     return null;
 }

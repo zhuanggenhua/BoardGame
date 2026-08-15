@@ -29,6 +29,8 @@ import { resolveAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpTestSystems } from './testRunner';
+import { createScoringBaseRef, createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
+import { getSmashUpReactionSession } from '../domain/reactionSession';
 
 // ============================================================================
 // 随从工厂
@@ -200,6 +202,88 @@ export function makeMatchState(core: SmashUpCore): MatchState<SmashUpCore> {
     // 测试默认在出牌阶段
     sys.phase = 'playCards';
     return { core, sys };
+}
+
+export function scoreBaseViaFlow(
+    core: SmashUpCore,
+    baseIndex: number,
+    baseDeck: string[],
+    playerId: string,
+    now: number,
+    random: RandomFn = defaultTestRandom,
+    matchState?: MatchState<SmashUpCore>,
+): { events: SmashUpEvent[]; newBaseDeck: string[]; matchState?: MatchState<SmashUpCore> } {
+    const scoringCore: SmashUpCore = {
+        ...(matchState?.core ?? core),
+        baseDeck: [...baseDeck],
+    };
+    let state: MatchState<SmashUpCore> = matchState
+        ? { ...matchState, core: scoringCore }
+        : makeMatchState(scoringCore);
+    state = {
+        ...state,
+        sys: {
+            ...state.sys,
+            phase: 'scoreBases',
+            flowHalted: false,
+        } as typeof state.sys,
+    };
+
+    const baseRef = createScoringBaseRef(state.core, baseIndex);
+    if (baseRef) {
+        state = setScoringSession(state, {
+            ...createScoringSession(state.core, [baseIndex]),
+            lockedBaseRefs: [baseRef],
+            currentBaseRef: baseRef,
+            currentStep: 'resolving-base',
+        });
+    }
+
+    const allEvents: SmashUpEvent[] = [];
+    let currentState = state;
+
+    for (let step = 0; step < 20; step += 1) {
+        const result = runCommand(
+            currentState,
+            {
+                type: 'ADVANCE_PHASE',
+                playerId,
+                payload: undefined,
+                timestamp: now + step,
+            } as any,
+            random,
+        );
+        allEvents.push(...result.events as SmashUpEvent[]);
+        currentState = result.finalState;
+
+        if (!result.success) {
+            break;
+        }
+        if (currentState.sys.interaction?.current || getSmashUpReactionSession(currentState)) {
+            break;
+        }
+        const session = getScoringSession(currentState);
+        if (currentState.sys.phase !== 'scoreBases' || !session) {
+            break;
+        }
+        if (result.events.length === 0 && !currentState.sys.flowHalted) {
+            break;
+        }
+    }
+
+    const phaseChangedAfterScoreIndex = allEvents.findIndex((event) =>
+        event.type === 'SYS_PHASE_CHANGED'
+        && (event as GameEvent<{ from?: string }>).payload?.from === 'scoreBases',
+    );
+    const scoringEvents = phaseChangedAfterScoreIndex >= 0
+        ? allEvents.slice(0, phaseChangedAfterScoreIndex)
+        : allEvents;
+
+    return {
+        events: scoringEvents,
+        newBaseDeck: currentState.core.baseDeck,
+        matchState: currentState,
+    };
 }
 
 export interface DestroyedMinionInput {

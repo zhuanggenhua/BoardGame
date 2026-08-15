@@ -41,7 +41,7 @@ export interface ModifierDef<TCtx = unknown> {
    * 动态计算函数（type='compute' 时必填）
    *
    * 接收当前值和上下文，返回修改后的值。
-   * 用于复杂场景（如 SmashUp 的 PowerModifierFn）。
+   * 用于需要读取上下文的复杂场景（如根据当前位置、资源或状态动态计算）。
    */
   computeFn?: (currentValue: number, ctx: TCtx) => number;
   /** 优先级（数字越小越先执行，默认 0） */

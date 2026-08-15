@@ -13,7 +13,7 @@ import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import {
     createFlowSystem, createActionLogSystem, createUndoSystem,
-    createInteractionSystem, createRematchSystem, createResponseWindowSystem,
+    createInteractionSystem, createRematchSystem,
     createTutorialSystem, createEventStreamSystem, createSimpleChoiceSystem,
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
@@ -27,7 +27,6 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { SU_COMMANDS } from '../domain/types';
 import { ToastProvider } from '../../../contexts/ToastContext';
@@ -111,23 +110,6 @@ function buildSystems(): EngineSystem<SmashUpCore>[] {
         createInteractionSystem<SmashUpCore>(),
         createSimpleChoiceSystem<SmashUpCore>(),
         createRematchSystem<SmashUpCore>(),
-        createResponseWindowSystem<SmashUpCore>({
-            allowedCommands: ['su:play_action'],
-            commandWindowTypeConstraints: { 'su:play_action': ['meFirst'] },
-            responseAdvanceEvents: [{ eventType: 'su:action_played', windowTypes: ['meFirst'] }],
-            loopUntilAllPass: true,
-            hasRespondableContent: (state, playerId, windowType) => {
-                if (windowType !== 'meFirst') return true;
-                const core = state as SmashUpCore;
-                const player = core.players[playerId];
-                if (!player) return false;
-                return player.hand.some(c => {
-                    if (c.type !== 'action') return false;
-                    const def = getCardDef(c.defId);
-                    return !!(def && 'subtype' in def && (def.subtype === 'special' || (def as any).responseWindowTiming === 'beforeScoring'));
-                });
-            },
-        }),
         createTutorialSystem<SmashUpCore>(),
         createEventStreamSystem<SmashUpCore>(),
         createSmashUpEventSystem(),

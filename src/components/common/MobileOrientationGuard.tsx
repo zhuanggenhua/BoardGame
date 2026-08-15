@@ -1,8 +1,7 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
-import type { GameManifestEntry } from '../../games/manifest';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     extractGameIdFromPlayPath,
     getGameMobileBannerKind,
@@ -10,7 +9,7 @@ import {
     isPortraitViewport,
     resolveGameMobileSupport,
     type GameMobileBannerKind,
-} from '../../games/mobileSupport';
+} from '../../shared/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import {
     isBookHomeRoute,
@@ -23,10 +22,16 @@ import {
 } from '../../lib/webFullscreen';
 import { detectNativeMobileRuntime } from '../../lib/mobile/mobileRuntime';
 
-type GameMobileEntry = Pick<
+export type GameMobileEntry = Pick<
     GameManifestEntry,
     'mobileProfile' | 'preferredOrientation' | 'mobileLayoutPreset' | 'shellTargets' | 'mobileDelivery'
 >;
+
+interface MobileOrientationGuardProps {
+    children: React.ReactNode;
+    resolveGameMobileEntry: (gameId: string) => GameMobileEntry | undefined;
+    loadGameMobileEntry?: (gameId: string) => Promise<GameMobileEntry | undefined>;
+}
 
 const hasNativeMobileRuntime = () => detectNativeMobileRuntime();
 
@@ -121,7 +126,11 @@ const getBannerMessageKey = (bannerKind: GameMobileBannerKind) => {
     }
 };
 
-export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
+export function MobileOrientationGuard({
+    children,
+    resolveGameMobileEntry,
+    loadGameMobileEntry,
+}: MobileOrientationGuardProps) {
     const { t } = useTranslation('common');
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
@@ -138,8 +147,8 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     void homeEntryStyleRevision;
     const isBookHomeEntry = isBookHomeRoute(location.pathname, location.search);
     const isHomeV2Route = isBookHomeEntry;
-    const builtInGameConfig = gameId ? GAME_MANIFEST_BY_ID[gameId] : undefined;
-    const gameConfig = builtInGameConfig ?? dynamicGameConfig;
+    const resolvedGameConfig = gameId ? resolveGameMobileEntry(gameId) : undefined;
+    const gameConfig = resolvedGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
         ? resolveGameMobileSupport(gameConfig).preferredOrientation
         : undefined;
@@ -170,31 +179,20 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
         });
     }, []);
     useEffect(() => {
-        if (!gameId || builtInGameConfig) {
+        if (!gameId || resolvedGameConfig || !loadGameMobileEntry) {
             setDynamicGameConfig(undefined);
             return;
         }
 
         let disposed = false;
-        let unsubscribe: (() => void) | undefined;
 
-        const syncRegistryGameConfig = (getGameById: (id: string) => GameMobileEntry | undefined) => {
-            const nextGameConfig = getGameById(gameId);
-            startTransition(() => {
-                setDynamicGameConfig(nextGameConfig);
-            });
-        };
-
-        void import('../../config/games.config')
-            .then(({ getGameById, subscribeGameRegistry }) => {
-                if (disposed) {
-                    return;
+        void loadGameMobileEntry(gameId)
+            .then((nextGameConfig) => {
+                if (!disposed) {
+                    startTransition(() => {
+                        setDynamicGameConfig(nextGameConfig);
+                    });
                 }
-
-                syncRegistryGameConfig(getGameById);
-                unsubscribe = subscribeGameRegistry(() => {
-                    syncRegistryGameConfig(getGameById);
-                });
             })
             .catch(() => {
                 if (!disposed) {
@@ -204,9 +202,8 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
 
         return () => {
             disposed = true;
-            unsubscribe?.();
         };
-    }, [builtInGameConfig, gameId]);
+    }, [gameId, loadGameMobileEntry, resolvedGameConfig]);
 
     useEffect(() => {
         if (nativeAppShellRef.current) return;

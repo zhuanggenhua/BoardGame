@@ -54,25 +54,25 @@ describe('direct trigger caller contract', () => {
     expect(functionBody).not.toContain('reduce(');
   });
 
-  it('startTurn/endTurn 生产 phase hook 解 reaction queue 必须挂起领域事件落地', () => {
+  it('startTurn/endTurn 生产 phase hook 解 reaction queue 必须只走提交屏障入口', () => {
     const indexPath = join(SMASHUP_ROOT, 'domain', 'index.ts');
     const text = readFileSync(indexPath, 'utf8');
 
     expect(text).toContain('const startTurnCore = reduceTurnStartedEvent(core, turnStarted)');
     expect(text).not.toContain('const startTurnCore = reduce(core, turnStarted)');
-    expect(text).not.toContain('maybeResolveReactionQueue(currentMatchState, random, now);');
     expect(text).not.toContain('maybeResolveReactionQueue(currentMatchState, random, now, { suspendAfterDomainEvents: true })');
-    expect([...text.matchAll(/maybeResolveReactionQueueSuspendingDomainEvents\(currentMatchState, random, now\)/g)]).toHaveLength(2);
+    expect([...text.matchAll(/maybeResolveReactionQueue\(currentMatchState, random, now\)/g)]).toHaveLength(2);
 
     const reactionQueuePath = join(SMASHUP_ROOT, 'domain', 'reactionQueue.ts');
     const reactionSessionPath = join(SMASHUP_ROOT, 'domain', 'reactionSession.ts');
     const reactionQueueText = readFileSync(reactionQueuePath, 'utf8');
     const reactionSessionText = readFileSync(reactionSessionPath, 'utf8');
-    expect(reactionQueueText).toContain('export function maybeResolveReactionQueueSuspendingDomainEvents');
-    expect(reactionQueueText).toContain('SUSPEND_SMASHUP_REACTION_DOMAIN_EVENTS');
-    expect(reactionSessionText).toContain('export const SUSPEND_SMASHUP_REACTION_DOMAIN_EVENTS');
-    expect(reactionSessionText).toContain('export function resolveSmashUpReactionChoiceSuspendingDomainEvents');
-    expect(reactionSessionText).toContain('suspendAfterDomainEvents: true');
+    expect(reactionQueueText).toContain('export function maybeResolveReactionQueue');
+    expect(reactionQueueText).not.toContain('maybeResolveReactionQueueSuspendingDomainEvents');
+    expect(reactionQueueText).not.toContain('SUSPEND_SMASHUP_REACTION_DOMAIN_EVENTS');
+    expect(reactionSessionText).not.toContain('SUSPEND_SMASHUP_REACTION_DOMAIN_EVENTS');
+    expect(reactionSessionText).not.toContain('resolveSmashUpReactionChoiceSuspendingDomainEvents');
+    expect(reactionSessionText).not.toContain('suspendAfterDomainEvents');
 
     const endTurnCallIndex = text.indexOf('processDestroyMoveCycle(rq.events, rq.state, pid, random, now, {');
     expect(endTurnCallIndex).toBeGreaterThanOrEqual(0);
@@ -122,14 +122,18 @@ describe('direct trigger caller contract', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('计分 post-reduce 等待状态不得再用 sys flag 镜像 session step', () => {
+  it('计分 post-reduce 等待状态不得再用 sys flag 或 session step 表示', () => {
+    const forbidden = [
+      '_waitForPostScoringReduce',
+      'awaiting-post-reduce',
+    ];
     const offenders = collectProductionSourceFiles(SMASHUP_ROOT)
       .flatMap((file) => {
         const rel = relative(SMASHUP_ROOT, file).replace(/\\/g, '/');
         const text = readFileSync(file, 'utf8');
-        return text.includes('_waitForPostScoringReduce')
-          ? [{ rel }]
-          : [];
+        return forbidden
+          .filter((token) => text.includes(token))
+          .map((token) => ({ rel, token }));
       });
 
     expect(offenders).toEqual([]);
@@ -213,10 +217,9 @@ describe('direct trigger caller contract', () => {
   });
 
   it('Smash Up 响应内容判定必须复用 ReactionSession 真实选项生成入口', () => {
-    const files = [
-      join(SMASHUP_ROOT, 'game.ts'),
-      join(SMASHUP_ROOT, 'ui', 'MeFirstOverlay.tsx'),
-    ];
+    const gameText = readFileSync(join(SMASHUP_ROOT, 'game.ts'), 'utf8');
+    const overlayText = readFileSync(join(SMASHUP_ROOT, 'ui', 'MeFirstOverlay.tsx'), 'utf8');
+    const reactionSessionText = readFileSync(join(SMASHUP_ROOT, 'domain', 'reactionSession.ts'), 'utf8');
     const forbidden = [
       'canCardBePlayedInResponseWindow',
       'getResponseWindowPlayableBaseIndicesForCard',
@@ -229,13 +232,16 @@ describe('direct trigger caller contract', () => {
       'hasValidatedResponseOption',
     ];
 
-    for (const file of files) {
-      const text = readFileSync(file, 'utf8');
-      expect(text).toContain('hasSmashUpResponderDrivenReactionOptionsForResponseWindow');
+    for (const text of [gameText, overlayText]) {
       for (const token of forbidden) {
         expect(text).not.toContain(token);
       }
     }
+    expect(gameText).not.toContain('createResponseWindowSystem');
+    expect(overlayText).toContain('getSmashUpReactionWindowPresentation');
+    expect(overlayText).toContain('reactionWindow.showsPassWindow');
+    expect(reactionSessionText).toContain('function buildPlayableCardOptions');
+    expect(reactionSessionText).toContain('export function hasSmashUpResponderDrivenReactionOptions');
   });
 
   it('计分响应窗口不得再通过旧 helper 发通用 RESPONSE_WINDOW_OPENED', () => {
@@ -267,15 +273,13 @@ describe('direct trigger caller contract', () => {
 
     const liveWindowStart = aiText.indexOf('if (reactionWindow) {');
     expect(liveWindowStart).toBeGreaterThanOrEqual(0);
-    const legacyWindowStart = aiText.indexOf('const responseWindow = state.sys.responseWindow?.current', liveWindowStart);
-    expect(legacyWindowStart).toBeGreaterThan(liveWindowStart);
-    const liveWindowBody = aiText.slice(liveWindowStart, legacyWindowStart);
+    const liveWindowBody = aiText.slice(liveWindowStart, aiText.indexOf('return actions;', liveWindowStart));
 
     expect(liveWindowBody).toContain('type: SU_COMMANDS.REACTION_PASS');
     expect(liveWindowBody).not.toContain("type: 'RESPONSE_PASS'");
-
-    const legacyWindowBody = aiText.slice(legacyWindowStart, aiText.indexOf('return actions;', legacyWindowStart));
-    expect(legacyWindowBody).toContain("type: 'RESPONSE_PASS'");
+    expect(aiText).not.toContain('const responseWindow = state.sys.responseWindow?.current');
+    expect(aiText).not.toContain("type: 'RESPONSE_PASS'");
+    expect(aiText).not.toContain('hasBlockingLegacyResponseWindow');
   });
 
   it('live ReactionSession 不得再写入通用 ResponseWindow 镜像窗口', () => {
@@ -294,8 +298,7 @@ describe('direct trigger caller contract', () => {
     expect(setterBody).not.toContain('buildMirroredResponseWindow');
     expect(setterBody).not.toContain('responderQueue');
     expect(setterBody).not.toContain('passedPlayers');
-    expect(setterBody).toContain("previousCurrentWindow?.sourceId === 'smashup_reaction_choose'");
-    expect(setterBody).toContain('? undefined');
+    expect(setterBody).not.toContain('responseWindow');
   });
 
   it('ResponseWindow 事件不得再桥接 ReactionSession pass', () => {
@@ -382,9 +385,11 @@ describe('direct trigger caller contract', () => {
     const reactionSessionPath = join(SMASHUP_ROOT, 'domain', 'reactionSession.ts');
     const text = readFileSync(reactionSessionPath, 'utf8');
 
-    expect(text).toContain("import { applyTriggerQueueFactEvent } from './triggerQueueFacts'");
-    expect(text).toContain('applyTriggerQueueFactEvent(state.core, consumed)');
-    expect(text).toContain('applyTriggerQueueFactEvent(nextState.core, consumed)');
+    expect(text).not.toContain("import { applyTriggerQueueFactEvent } from './triggerQueueFacts'");
+    expect(text).not.toContain('applyTriggerQueueFactEvent(state.core, consumed)');
+    expect(text).not.toContain('applyTriggerQueueFactEvent(nextState.core, consumed)');
+    expect(text).not.toContain('applyPostProcessPrefixEvent(reducedCore, event)');
+    expect(text).not.toContain('reducedCore');
     expect(text).not.toContain('reduce(state.core, consumed as unknown as SmashUpEvent)');
     expect(text).not.toContain('reduce(nextState.core, consumed as unknown as SmashUpEvent)');
     expect(text).not.toContain('reduce(nextCore, consumed as unknown as SmashUpEvent)');
@@ -404,7 +409,7 @@ describe('direct trigger caller contract', () => {
     expect(reducerText).toContain('doesDestroyedMinionEnterOwnerDiscard(phase2Core, de)');
     expect(reducerText).not.toContain('const discardCore = reduce(phase2Core, de)');
   });
-  it('phase hooks 和非权威 scoreOneBase 入队 trigger 不得通过通用 reduce 预演', () => {
+  it('scoreBases 入队 trigger 不得通过通用 reduce 预演', () => {
     const indexPath = join(SMASHUP_ROOT, 'domain', 'index.ts');
     const text = readFileSync(indexPath, 'utf8');
 
@@ -419,7 +424,7 @@ describe('direct trigger caller contract', () => {
     expect(text).not.toContain('reduce(currentMatchState.core, queuedBase as unknown as SmashUpEvent)');
     expect(text).not.toContain('reduce(currentMatchState.core, queuedTurnStart as unknown as SmashUpEvent)');
   });
-  it('非权威 scoreOneBase 的计分 marker/lock 只能复用具体 reducer case', () => {
+  it('scoreBases 不得保留非权威 marker/lock inline reduce 路径', () => {
     const indexPath = join(SMASHUP_ROOT, 'domain', 'index.ts');
     const reducePath = join(SMASHUP_ROOT, 'domain', 'reduce.ts');
     const indexText = readFileSync(indexPath, 'utf8');
@@ -436,11 +441,17 @@ describe('direct trigger caller contract', () => {
     expect(reduceText).toContain('return reduceWhenScoringTriggeredEvent(state, event)');
     expect(reduceText).toContain('return reduceAfterScoringTriggeredEvent(state, event)');
 
-    expect(indexText).toContain('reduceSpecialAfterScoringConsumedEvent(updatedCore, consumedEvt)');
-    expect(indexText).toContain('reduceScoringEligibleBasesLockedEvent(core, currentBaseLockEvent)');
-    expect(indexText).toContain('reduceBeforeScoringTriggeredEvent(core, markEvent as unknown as SmashUpEvent)');
-    expect(indexText).toContain('reduceWhenScoringTriggeredEvent(updatedCore, whenScoringTriggeredEvent as unknown as SmashUpEvent)');
-    expect(indexText).toContain('reduceAfterScoringTriggeredEvent(updatedCore, markEvent as unknown as SmashUpEvent)');
+    expect(indexText).toContain('function scoreCurrentBaseInSession');
+    expect(indexText).toContain('function scoreCurrentSessionBase');
+    expect(indexText).toContain('SmashUp scoring executor requires an active scoring session');
+    expect(indexText).not.toContain('function scoreOneBase');
+    expect(indexText).not.toContain('export function scoreOneBase');
+    expect(indexText).not.toContain('hasAuthoritativeScoringSession');
+    expect(indexText).not.toContain('reduceSpecialAfterScoringConsumedEvent(updatedCore, consumedEvt)');
+    expect(indexText).not.toContain('reduceScoringEligibleBasesLockedEvent(core, currentBaseLockEvent)');
+    expect(indexText).not.toContain('reduceBeforeScoringTriggeredEvent(core, markEvent as unknown as SmashUpEvent)');
+    expect(indexText).not.toContain('reduceWhenScoringTriggeredEvent(updatedCore, whenScoringTriggeredEvent as unknown as SmashUpEvent)');
+    expect(indexText).not.toContain('reduceAfterScoringTriggeredEvent(updatedCore, markEvent as unknown as SmashUpEvent)');
 
     expect(indexText).not.toContain('reduce(updatedCore, consumedEvt)');
     expect(indexText).not.toContain('reduce(core, currentBaseLockEvent)');
@@ -481,12 +492,14 @@ describe('direct trigger caller contract', () => {
     expect(reduceText).toContain('return reduceBaseClearedEvent(state, event as BaseClearedEvent)');
     expect(reduceText).toContain('return reduceBaseReplacedEvent(state, event as BaseReplacedEvent)');
 
-    expect(indexText).toContain('reduceBaseClearedEvent(standaloneCore, postEvent as BaseClearedEvent)');
-    expect(indexText).toContain('reduceBaseReplacedEvent(standaloneCore, postEvent as BaseReplacedEvent)');
     expect(indexText).toContain('reduceBaseClearedEvent(preClearCore, clearEvt)');
     expect(indexText).toContain('reduceBaseReplacedEvent(preReplaceCore, replaceEvt)');
-    expect(indexText).toContain('standaloneCore = applyPostProcessPrefixEvent(standaloneCore, postEvent)');
 
+    expect(indexText).not.toContain('shouldInlineStandalonePostScoring');
+    expect(indexText).not.toContain('standaloneCore');
+    expect(indexText).not.toContain('reduceBaseClearedEvent(standaloneCore, postEvent as BaseClearedEvent)');
+    expect(indexText).not.toContain('reduceBaseReplacedEvent(standaloneCore, postEvent as BaseReplacedEvent)');
+    expect(indexText).not.toContain('standaloneCore = applyPostProcessPrefixEvent(standaloneCore, postEvent)');
     expect(indexText).not.toContain('reduce(preClearCore, event)');
     expect(indexText).not.toContain('reduce(preReplaceCore, event)');
     expect(indexText).not.toContain('standaloneCore = reduce(standaloneCore, postEvent)');
@@ -514,7 +527,7 @@ describe('direct trigger caller contract', () => {
     expect(indexText.slice(monsterPlayedStart, monsterDefeatedStart)).not.toContain('reduce(tempCore, event)');
     expect(indexText.slice(monsterDefeatedStart, monsterDefeatedEnd)).not.toContain('reduce(tempCore, event)');
   });
-  it('Munchkin 计分宝藏 reveal 只能复用具体 reducer case，不得通过通用 reduce 预演整局状态', () => {
+  it('Munchkin 计分宝藏 reveal 不得在计分执行器内预演归约', () => {
     const indexPath = join(SMASHUP_ROOT, 'domain', 'index.ts');
     const reducePath = join(SMASHUP_ROOT, 'domain', 'reduce.ts');
     const indexText = readFileSync(indexPath, 'utf8');
@@ -522,7 +535,9 @@ describe('direct trigger caller contract', () => {
 
     expect(reduceText).toContain('export function reduceMunchkinTreasureRewardRevealedEvent');
     expect(reduceText).toContain('return reduceMunchkinTreasureRewardRevealedEvent(state, event as MunchkinTreasureRewardRevealedEvent)');
-    expect(indexText).toContain('reduceMunchkinTreasureRewardRevealedEvent(updatedCore, revealEvent)');
+    expect(indexText).toContain('events.push(revealEvent)');
+    expect(indexText).toContain("currentStep: 'awaiting-score-award-reduce'");
+    expect(indexText).not.toContain('reduceMunchkinTreasureRewardRevealedEvent(updatedCore, revealEvent)');
     expect(indexText).not.toContain('reduce(updatedCore, revealEvent)');
   });
   it('MINION_PLAYED 后处理只能复用具体 reducer case，不得通过通用 reduce 预演整局状态', () => {
@@ -692,7 +707,8 @@ describe('direct trigger caller contract', () => {
 
     const reactionSessionPath = join(SMASHUP_ROOT, 'domain', 'reactionSession.ts');
     const reactionSessionText = readFileSync(reactionSessionPath, 'utf8');
-    expect(reactionSessionText).toContain("import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent'");
+    expect(reactionSessionText).not.toContain("import { applyPostProcessPrefixEvent } from './postProcessPrefixEvent'");
+    expect(reactionSessionText).not.toContain('applyPostProcessPrefixEvent(');
     expect(reactionSessionText).not.toContain("from './reduce'");
     expect(reactionSessionText).not.toContain('reducedCore = reduce(reducedCore, event)');
 

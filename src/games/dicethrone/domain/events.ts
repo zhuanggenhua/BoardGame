@@ -606,7 +606,7 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
         choiceContext?: Record<string, string | number | boolean>;
         /**
          * 对比掷骰特写元数据（可选）。
-         * 当存在时，UI 使用 compare-roll-choice 覆盖层展示双方骰面与结果。
+         * 当存在时，UI 使用右侧骰盘展示双方骰面，compare-roll-choice 覆盖层只承接结果与后续选择。
          */
         compareRoll?: {
             contestants: Array<{

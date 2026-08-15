@@ -33,26 +33,23 @@ export function getSmashUpReactionChoiceOptions(
     state: MatchState<SmashUpCore>,
     interaction: SmashUpReactionChoiceInteraction,
 ): ReactionOption[] {
+    const liveChoice = resolveLiveSmashUpReactionChoice(
+        state,
+        { kind: 'pass' },
+        state.core.turnNumber ?? 0,
+    );
+    if (liveChoice?.options.length) {
+        return liveChoice.options;
+    }
+
     const refreshedOptions = getFreshSimpleChoiceOptions(
         state,
         interaction as EngineInteractionDescriptor<unknown>,
     ) as ReactionOption[];
     const interactionOwnsLiveRefresh = typeof interaction.data.optionsGenerator === 'function'
         || interaction.data.autoRefresh !== undefined;
-    if (interactionOwnsLiveRefresh) {
+    if (interactionOwnsLiveRefresh || !liveChoice) {
         return refreshedOptions;
-    }
-
-    const liveChoice = resolveLiveSmashUpReactionChoice(
-        state,
-        { kind: 'pass' },
-        state.core.turnNumber ?? 0,
-    );
-    if (!liveChoice) {
-        return refreshedOptions;
-    }
-    if (liveChoice.options.length > 0) {
-        return liveChoice.options;
     }
 
     const refreshedPassOptions = refreshedOptions.filter(isReactionPassLikeOption);

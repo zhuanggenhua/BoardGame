@@ -67,23 +67,22 @@ export function useLocalAiRuntime(args: {
         setAiRetryVersion((version) => version + 1);
     }, []);
     const dispatch = useCallback((type: string, payload: unknown) => {
-        setState((prev) => {
-            const nextState = executeLocalDispatch({
-                commandType: type,
-                payload,
-                prevState: prev,
-                config,
-                seed,
-                random: randomRef.current,
-                setupPlayerIds,
-                localPregameControlledPlayerId,
-                commandEffectsByToken: aiCommandEffectByTokenRef.current,
-                onCommandRejected: onCommandRejectedRef.current,
-            });
-            // 立即同步 ref，避免 AI 无进展检测读取到渲染前的旧快照而误触发重复重试
-            stateRef.current = nextState;
-            return nextState;
+        const nextState = executeLocalDispatch({
+            commandType: type,
+            payload,
+            prevState: stateRef.current,
+            config,
+            seed,
+            random: randomRef.current,
+            setupPlayerIds,
+            localPregameControlledPlayerId,
+            commandEffectsByToken: aiCommandEffectByTokenRef.current,
+            onCommandRejected: onCommandRejectedRef.current,
         });
+        // 规则执行会消费随机数和写入诊断副作用，不能放进 React state updater。
+        // 开发/测试 StrictMode 可能重复调用 updater，导致预置随机数被丢弃的预执行吃掉。
+        stateRef.current = nextState;
+        setState(nextState);
     }, [
         config,
         localPregameControlledPlayerId,

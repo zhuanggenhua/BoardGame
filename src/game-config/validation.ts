@@ -177,7 +177,7 @@ function validateParamValue(
             }
             return;
         case 'integer':
-            if (!Number.isInteger(value)) {
+            if (typeof value !== 'number' || !Number.isInteger(value)) {
                 issue(issues, path, 'INVALID_ABILITY_PARAM_TYPE', 'must be an integer');
                 return;
             }
@@ -499,6 +499,6 @@ export function validateGameConfigPackage(
     return {
         ok,
         issues,
-        package: ok ? value as GameConfigPackage : undefined,
+        package: ok ? value as unknown as GameConfigPackage : undefined,
     };
 }

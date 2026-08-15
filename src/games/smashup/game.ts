@@ -3,7 +3,6 @@
  */
 
 import type { EngineSystem } from '../../engine/systems/types';
-import type { MatchState } from '../../engine/types';
 import {
     createFlowSystem,
     createCheatSystem,
@@ -13,17 +12,15 @@ import {
     createSimpleChoiceSystem,
     createMultistepChoiceSystem,
     createRematchSystem,
-    createResponseWindowSystem,
     createTutorialSystem,
     createUndoSystem,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
 import { SmashUpDomain, SU_COMMANDS, type SmashUpCommand, type SmashUpCore, type SmashUpEvent } from './domain';
 import { smashUpFlowHooks } from './domain/index';
-import { hasSmashUpResponderDrivenReactionOptionsForResponseWindow } from './domain/reactionSession';
 import { initAllAbilities } from './abilities';
 import { createSmashUpEventSystem } from './domain/systems';
-import { smashUpCheatModifier } from './cheatModifier';
+import { SMASHUP_CHEAT_COMMANDS, smashUpCheatModifier } from './cheatModifier';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatSmashUpActionEntry } from './actionLog';
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
 import { getSmashUpCardPreviewRef } from './ui/cardPreviewHelper';
@@ -32,6 +29,11 @@ import { smashUpCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { smashUpAiRuntime } from './ai';
 import { resolveSmashUpLocalPregameControlledPlayerId } from './localPregameControl';
+import { formatSmashUpEventTelemetry } from './eventTelemetry';
+import {
+    createSmashUpLocalTestInitialStateFactory,
+    createSmashUpLocalTestSetupCommandsFactory,
+} from './localTestBootstrap';
 import './ui/SmashUpCardRenderer'; // 注册卡牌渲染器
 
 // 注册所有派系能力
@@ -53,36 +55,6 @@ const systems: EngineSystem<SmashUpCore>[] = [
     createSimpleChoiceSystem(),
     createMultistepChoiceSystem(),
     createRematchSystem(),
-    createResponseWindowSystem({
-        allowedCommands: [SU_COMMANDS.PLAY_ACTION, SU_COMMANDS.PLAY_MINION, SU_COMMANDS.REACTION_PASS],
-        responderExemptCommands: [SU_COMMANDS.REACTION_PASS],
-        commandWindowTypeConstraints: {
-            [SU_COMMANDS.PLAY_ACTION]: ['meFirst', 'afterScoring'],
-            [SU_COMMANDS.PLAY_MINION]: ['meFirst'],
-            [SU_COMMANDS.REACTION_PASS]: ['meFirst', 'afterScoring'],
-        },
-        responseAdvanceEvents: [
-            { eventType: 'su:action_played', windowTypes: ['meFirst', 'afterScoring'] },
-            { eventType: 'su:minion_played', windowTypes: ['meFirst'] },
-        ],
-        loopUntilAllPass: true,
-        interactionLock: {
-            requestEvent: 'SYS_INTERACTION_REQUESTED',
-        },
-        hasRespondableContent: (state, playerId, windowType, _sourceId, context) => {
-            if (windowType !== 'meFirst' && windowType !== 'afterScoring') return true;
-            const core = state as SmashUpCore;
-            return hasSmashUpResponderDrivenReactionOptionsForResponseWindow(
-                core,
-                playerId,
-                windowType,
-                {
-                    matchState: context?.matchState as MatchState<SmashUpCore> | undefined,
-                    window: context?.window,
-                },
-            );
-        },
-    }),
     createTutorialSystem(),
     createEventStreamSystem(),
     createSmashUpEventSystem(),
@@ -95,16 +67,31 @@ const adapterConfig = {
     systems,
     minPlayers: 2,
     maxPlayers: 4,
-    commandTypes: [...Object.values(SU_COMMANDS)],
+    commandTypes: [...Object.values(SU_COMMANDS), ...Object.values(SMASHUP_CHEAT_COMMANDS)],
+    eventTelemetry: formatSmashUpEventTelemetry,
 };
+
+function hasSmashUpFactionPayload(payload: unknown): payload is { factionId: string } {
+    return Boolean(payload)
+        && typeof payload === 'object'
+        && !Array.isArray(payload)
+        && typeof (payload as { factionId?: unknown }).factionId === 'string';
+}
 
 // 引擎配置
 export const engineConfig = {
     ...createGameEngine<SmashUpCore, SmashUpCommand, SmashUpEvent>(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveSmashUpLocalPregameControlledPlayerId,
+    createLocalTestInitialState: createSmashUpLocalTestInitialStateFactory(systems),
+    createLocalTestSetupCommands: createSmashUpLocalTestSetupCommandsFactory(),
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['factionSelect'],
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+            type === SU_COMMANDS.SELECT_FACTION && hasSmashUpFactionPayload(payload)
+                ? 'select-faction'
+                : undefined
+        ),
         allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => phase === 'scoreBases'
             || phase === 'endTurn'
             || (

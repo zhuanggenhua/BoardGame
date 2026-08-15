@@ -26,13 +26,11 @@ import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import {
     createFlowSystem, createActionLogSystem, createUndoSystem,
-    createInteractionSystem, createRematchSystem, createResponseWindowSystem,
+    createInteractionSystem, createRematchSystem,
     createTutorialSystem, createEventStreamSystem, createSimpleChoiceSystem,
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import type { ActionCardDef } from '../domain/types';
-import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpCore, MinionOnBase, CardInstance, BaseInPlay } from '../domain/types';
@@ -100,23 +98,6 @@ function buildSystems(): EngineSystem<SmashUpCore>[] {
         createInteractionSystem<SmashUpCore>(),
         createSimpleChoiceSystem<SmashUpCore>(),
         createRematchSystem<SmashUpCore>(),
-        createResponseWindowSystem<SmashUpCore>({
-            allowedCommands: ['su:play_action'],
-            commandWindowTypeConstraints: { 'su:play_action': ['meFirst'] },
-            responseAdvanceEvents: [{ eventType: 'su:action_played', windowTypes: ['meFirst'] }],
-            loopUntilAllPass: true,
-            hasRespondableContent: (state, playerId, windowType) => {
-                if (windowType !== 'meFirst') return true;
-                const core = state as SmashUpCore;
-                const player = core.players[playerId];
-                if (!player) return false;
-                return player.hand.some(c => {
-                    if (c.type !== 'action') return false;
-                    const def = getCardDef(c.defId) as ActionCardDef | undefined;
-                    return def?.subtype === 'special' || def?.responseWindowTiming === 'beforeScoring';
-                });
-            },
-        }),
         createTutorialSystem<SmashUpCore>(),
         createEventStreamSystem<SmashUpCore>(),
         createSmashUpEventSystem(),

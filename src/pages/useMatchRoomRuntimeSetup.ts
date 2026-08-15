@@ -6,7 +6,7 @@ import { preloadWarmImages } from '../core';
 import { resolveCriticalImages } from '../core/CriticalImageResolverRegistry';
 import { appendMatchLoadTrace } from '../lib/matchLoadTrace';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
-import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
+import { useGameImplementationReady } from '../games/useGameImplementationReady';
 import { useMatchRoomBoardRuntime } from './matchRoomBoardRuntime';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
@@ -213,6 +213,7 @@ export function useMatchRoomRuntimeSetup(args: {
     });
     const engineConfig = gameImplementation?.engineConfig ?? null;
     const latencyConfig = gameImplementation?.latencyConfig;
+    const runtimeAdapter = gameImplementation?.runtimeAdapter ?? null;
 
     const onlineBoard = board && gameId ? board : null;
     const tutorialBoard = board && engineConfig && gameId ? board : null;
@@ -241,6 +242,7 @@ export function useMatchRoomRuntimeSetup(args: {
         tutorialLoadingProgressText,
         boardShell,
         engineConfig,
+        runtimeAdapter,
         latencyConfig,
         onlineBoard,
         tutorialBoard,

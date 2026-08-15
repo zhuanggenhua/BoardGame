@@ -28,6 +28,8 @@ import { getFactionCards, getCardDef, getBaseDef, getAllBaseDefIds } from '../..
 import { madnessVpPenalty } from '../../domain/abilityHelpers';
 import { buildDeck } from '../../domain/utils';
 import { getTotalEffectivePowerOnBase } from '../../domain/ongoingModifiers';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
 
 // ============================================================================
 // 初始化
@@ -83,6 +85,36 @@ function makeBase(
     defId: string, overrides?: Partial<BaseInPlay>,
 ): BaseInPlay {
     return { defId, minions: [], ongoingActions: [], ...overrides };
+}
+
+function makeMeFirstMatchState(
+    state: SmashUpCore,
+    currentPlayerId: string = '0',
+    sourceBaseIndex: number = state.scoringEligibleBaseIndices?.[0] ?? 0,
+): MatchState<SmashUpCore> {
+    const matchState: MatchState<SmashUpCore> = {
+        core: state,
+        sys: { phase: 'scoreBases' } as any,
+    };
+    const baseRef = createScoringBaseRef(state, sourceBaseIndex);
+    if (!baseRef) {
+        throw new Error(`无法构造 Me First 属性测试的基地引用: ${sourceBaseIndex}`);
+    }
+    const scoringState = setScoringSession(matchState, {
+        ...createScoringSession(state, state.scoringEligibleBaseIndices ?? [sourceBaseIndex]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    return startSmashUpReactionSession(scoringState, {
+        frameId: `score-before:${sourceBaseIndex}:property-${currentPlayerId}`,
+        frameKind: 'score-before',
+        phase: 'optional',
+        activePlayerId: currentPlayerId,
+        currentPlayerId,
+        consecutivePasses: 0,
+        sourceBaseIndex,
+        responseWindowType: 'meFirst',
+    });
 }
 
 /** 获取有卡牌定义的派系列表 */
@@ -875,21 +907,7 @@ describe('Property 18: Me First 窗口协议', () => {
             bases: [makeBase('b')],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state);
         // 尝试打出 standard 行动卡（应被拒绝）
         const r = validate(matchState, {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -911,21 +929,7 @@ describe('Property 18: Me First 窗口协议', () => {
             bases: [makeBase('b')],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0, // 当前是玩家0
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state);
         // 玩家1尝试打牌（不是当前响应者）
         const r = validate(matchState, {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -952,21 +956,7 @@ describe('Property 18: Me First 窗口协议', () => {
             ],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state, '0', 1);
 
         const missingTarget = validate(matchState, {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -1003,21 +993,7 @@ describe('Property 18: Me First 窗口协议', () => {
             })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state);
 
         const withTarget = validate(matchState, {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -1049,21 +1025,7 @@ describe('Property 18: Me First 窗口协议', () => {
             nextUid: 100,
             scoringEligibleBaseIndices: [1],
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state, '0', 1);
 
         const missingTarget = validate(matchState, {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -1414,24 +1376,10 @@ describe('Property 10: 特殊行动卡生命周期', () => {
             })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const matchState: MatchState<SmashUpCore> = {
-            core: state,
-            sys: {
-                phase: 'scoreBases',
-                responseWindow: {
-                    current: {
-                        windowId: 'meFirst_test',
-                        windowType: 'meFirst',
-                        responderQueue: ['0', '1'],
-                        currentResponderIndex: 0,
-                        consecutivePasses: 0,
-                    },
-                },
-            } as any,
-        };
+        const matchState = makeMeFirstMatchState(state);
         const events = execute(
             matchState,
-            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'sp-1', baseIndex: 0 } } as any,
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'sp-1', targetBaseIndex: 0 } } as any,
             dummyRandom,
         );
         // 应产生 ACTION_PLAYED 事件

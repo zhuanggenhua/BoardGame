@@ -42,6 +42,7 @@ import {
 } from './helpers';
 import { canActivateAbility } from './abilityHelpers';
 import { getBaseCardId, CARD_IDS, isPlagueZombieCard, isFortressUnit, isUndeadCard, isMoguSporePlagueBodyCard } from './ids';
+import { getPhaseEndAbilityResolved, withPhaseEndAbilityResolved } from './phaseEndResolution';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -1012,35 +1013,17 @@ function applyPhaseEndResolution(
   sourceUnitId: string,
 ): MatchState<SummonerWarsCore> {
   const key = buildPhaseEndResolutionKey(state.core, abilityId, sourceUnitId);
-  const resolved = state.sys?.summonerWars?.phaseEndAbilityResolved ?? {};
+  const resolved = getPhaseEndAbilityResolved(state) ?? {};
   if (resolved[key]) return state;
-  return {
-    ...state,
-    sys: {
-      ...state.sys,
-      summonerWars: {
-        ...(state.sys as { summonerWars?: Record<string, unknown> }).summonerWars,
-        phaseEndAbilityResolved: {
-          ...resolved,
-          [key]: true,
-        },
-      },
-    },
-  };
+  return withPhaseEndAbilityResolved(state, {
+    ...resolved,
+    [key]: true,
+  });
 }
 
 function clearPhaseEndResolution(state: MatchState<SummonerWarsCore>): MatchState<SummonerWarsCore> {
-  if (!state.sys?.summonerWars?.phaseEndAbilityResolved) return state;
-  return {
-    ...state,
-    sys: {
-      ...state.sys,
-      summonerWars: {
-        ...(state.sys as { summonerWars?: Record<string, unknown> }).summonerWars,
-        phaseEndAbilityResolved: {},
-      },
-    },
-  };
+  if (!getPhaseEndAbilityResolved(state)) return state;
+  return withPhaseEndAbilityResolved(state, {});
 }
 
 function executeSwCommand(

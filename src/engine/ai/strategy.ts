@@ -81,7 +81,7 @@ export function getAiActionStrategyTags<Tag extends string = string>(
         if (tags.length > 0) return tags;
     }
 
-    return normalizeTags(options.fallback?.(action));
+    return normalizeTags<Tag>(options.fallback?.(action));
 }
 
 export function withAiActionStrategyTags(
@@ -108,13 +108,13 @@ export function withAiActionStrategyTags(
 export function scoreActionAgainstStrategyProfile<Tag extends string = string>(
     args: ScoreActionAgainstStrategyProfileArgs<Tag>,
 ): AiProfileAwareActionFit<Tag> | null {
-    const actionTags = normalizeTags(args.actionTags);
+    const actionTags = normalizeTags<Tag>(args.actionTags);
     if (actionTags.length === 0) return null;
 
     const weights: Partial<Record<Tag, number>> = {
         ...(args.profile.tagWeights ?? {}),
     };
-    for (const tag of normalizeTags(args.profile.tags)) {
+    for (const tag of normalizeTags<Tag>(args.profile.tags)) {
         if (weights[tag] === undefined) {
             weights[tag] = 1;
         }
@@ -148,8 +148,8 @@ export function evaluateProfileAwareActionFit<Tag extends string = string>(
     if (!profile) return null;
 
     const actionTags = args.getActionTags
-        ? normalizeTags(args.getActionTags(args.context, args.action))
-        : getAiActionStrategyTags(args.action);
+        ? normalizeTags<Tag>(args.getActionTags(args.context, args.action))
+        : getAiActionStrategyTags<Tag>(args.action);
     if (actionTags.length === 0) return null;
 
     if (args.evaluate) {
@@ -167,7 +167,7 @@ export function evaluateProfileAwareActionFit<Tag extends string = string>(
             score: Number(evaluated.score.toFixed(3)),
             reason: evaluated.reason,
             tags: actionTags,
-            matchedTags: normalizeTags(evaluated.matchedTags?.length ? evaluated.matchedTags : actionTags),
+            matchedTags: normalizeTags<Tag>(evaluated.matchedTags?.length ? evaluated.matchedTags : actionTags),
             profileSummary: [...(profile.summary ?? [])],
         };
     }

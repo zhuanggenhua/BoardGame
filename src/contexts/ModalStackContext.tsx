@@ -59,8 +59,8 @@ const areOwnerRefsEquivalent = (
         return !left && !right;
     }
 
-    const leftRecord = left as Record<string, unknown>;
-    const rightRecord = right as Record<string, unknown>;
+    const leftRecord = left as unknown as Record<string, unknown>;
+    const rightRecord = right as unknown as Record<string, unknown>;
     const leftKeys = Object.keys(leftRecord);
     const rightKeys = Object.keys(rightRecord);
     if (leftKeys.length !== rightKeys.length) {

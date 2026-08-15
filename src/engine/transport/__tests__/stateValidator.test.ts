@@ -12,7 +12,7 @@ import type { MatchState } from '../../types';
 import type { MatchStorage } from '../storage';
 
 const testValidators = {
-    smashup: (core: unknown, errors: ValidationError[]) => {
+    'game-with-bases': (core: unknown, errors: ValidationError[]) => {
         const state = core as Record<string, unknown>;
         if (!state.phase || typeof state.phase !== 'string') {
             errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
@@ -24,7 +24,7 @@ const testValidators = {
             errors.push({ field: 'core.bases', message: 'Missing or invalid bases' });
         }
     },
-    dicethrone: (core: unknown, errors: ValidationError[]) => {
+    'game-with-players': (core: unknown, errors: ValidationError[]) => {
         const state = core as Record<string, unknown>;
         if (!state.phase || typeof state.phase !== 'string') {
             errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
@@ -33,7 +33,7 @@ const testValidators = {
             errors.push({ field: 'core.players', message: 'Missing or invalid players' });
         }
     },
-    summonerwars: (core: unknown, errors: ValidationError[]) => {
+    'game-with-board': (core: unknown, errors: ValidationError[]) => {
         const state = core as Record<string, unknown>;
         if (!state.phase || typeof state.phase !== 'string') {
             errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
@@ -63,7 +63,7 @@ describe('stateValidator', () => {
     describe('validateMatchState', () => {
         describe('Property 3: 无效状态被拒绝', () => {
             it('should reject state missing sys field', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     core: { phase: 'play', players: {}, bases: [] },
                 } as any;
@@ -78,7 +78,7 @@ describe('stateValidator', () => {
             });
 
             it('should reject state missing core field', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                 } as any;
@@ -93,7 +93,7 @@ describe('stateValidator', () => {
             });
 
             it('should reject state with mismatched matchId', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state: MatchState<unknown> = {
                     sys: { matchId: 'wrong-id', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: { phase: 'play', players: {}, bases: [] },
@@ -111,7 +111,7 @@ describe('stateValidator', () => {
             });
 
             it('should reject state missing turnOrder', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', currentPlayerIndex: 0 },
                     core: { phase: 'play', players: {}, bases: [] },
@@ -127,7 +127,7 @@ describe('stateValidator', () => {
             });
 
             it('should reject state missing currentPlayerIndex', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1] },
                     core: { phase: 'play', players: {}, bases: [] },
@@ -142,8 +142,8 @@ describe('stateValidator', () => {
                 });
             });
 
-            it('should reject SmashUp state missing phase', async () => {
-                const storage = createMockStorage('smashup');
+            it('should reject game-with-bases state missing phase', async () => {
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: { players: {}, bases: [] },
@@ -158,8 +158,8 @@ describe('stateValidator', () => {
                 });
             });
 
-            it('should reject SmashUp state missing bases', async () => {
-                const storage = createMockStorage('smashup');
+            it('should reject game-with-bases state missing bases', async () => {
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: { phase: 'play', players: {} },
@@ -174,8 +174,8 @@ describe('stateValidator', () => {
                 });
             });
 
-            it('should reject SummonerWars state missing board', async () => {
-                const storage = createMockStorage('summonerwars');
+            it('should reject game-with-board state missing board', async () => {
+                const storage = createMockStorage('game-with-board');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: { phase: 'play', players: {} },
@@ -191,7 +191,7 @@ describe('stateValidator', () => {
             });
 
             it('should accept valid state', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state: MatchState<unknown> = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: { phase: 'play', players: {}, bases: [] },
@@ -206,7 +206,7 @@ describe('stateValidator', () => {
 
         describe('Property 4: 验证器列出所有错误', () => {
             it('should list all validation errors, not just the first one', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     // Missing sys
                     core: {
@@ -229,7 +229,7 @@ describe('stateValidator', () => {
             });
 
             it('should list multiple sys field errors', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: {
                         matchId: 'wrong-id',
@@ -251,7 +251,7 @@ describe('stateValidator', () => {
             });
 
             it('should list all game-specific errors', async () => {
-                const storage = createMockStorage('smashup');
+                const storage = createMockStorage('game-with-bases');
                 const state = {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                     core: {
@@ -278,7 +278,7 @@ describe('stateValidator', () => {
                 await fc.assert(
                     fc.asyncProperty(
                         fc.string({ minLength: 1 }),
-                        fc.constantFrom('smashup', 'dicethrone', 'summonerwars'),
+                        fc.constantFrom('game-with-bases', 'game-with-players', 'game-with-board'),
                         async (matchId, gameName) => {
                             const storage = createMockStorage(gameName);
                             

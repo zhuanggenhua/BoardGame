@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execute, reduce } from '../domain/reducer';
-import { postProcessSystemEvents, scoreOneBase } from '../domain';
+import { postProcessSystemEvents } from '../domain';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type {
     SmashUpCore, SmashUpEvent, MinionOnBase,
@@ -30,6 +30,7 @@ import {
     getPromptSourceId,
     getSimpleChoicePrompt,
     respondCommand,
+    scoreBaseViaFlow,
 } from './helpers';
 
 // ============================================================================
@@ -658,7 +659,7 @@ describe('E2E: 海盗 POD 关键交互链路', () => {
         });
 
         const ms = makeMatchState(state);
-        const scored = scoreOneBase(state, 0, [...state.baseDeck], '0', 4000, defaultRandom, ms);
+        const scored = scoreBaseViaFlow(state, 0, [...state.baseDeck], '0', 4000, defaultRandom, ms);
         const interaction = (scored.matchState?.sys as any)?.interaction?.current;
         expect(interaction).toBeDefined();
         expect(getPromptSourceId(interaction)).toBe('pirate_first_mate_choose_base');

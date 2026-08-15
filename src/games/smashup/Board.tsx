@@ -83,7 +83,7 @@ import { UI_Z_INDEX } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { SmashUpEndgameContent, SmashUpEndgameActions } from './ui/SmashUpEndgame';
-import { resolveRuntimeLayoutScaleMetrics } from '../mobileSupport';
+import { resolveRuntimeLayoutScaleMetrics } from '../../shared/mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';

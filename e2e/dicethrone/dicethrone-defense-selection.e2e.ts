@@ -645,7 +645,7 @@ async function installDuelAuditProbe(page: Page): Promise<void> {
         };
 
         const readDamageFloatTexts = () => Array.from(
-            document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'),
+            document.querySelectorAll('[data-floating-text-preset="impact-damage"]'),
         )
             .map((node) => node.textContent?.trim())
             .filter((value): value is string => Boolean(value));
@@ -721,7 +721,7 @@ async function installDuelAuditProbe(page: Page): Promise<void> {
                         if (text) snapshot.compareRollOverlayTexts.push(text);
                     }
 
-                    const floats = collectMatches(node, '[data-floating-text-preset="dicethrone-damage"]');
+                    const floats = collectMatches(node, '[data-floating-text-preset="impact-damage"]');
                     for (const floatNode of floats) {
                         snapshot.damageFloatMountCount += 1;
                         const text = floatNode.textContent?.trim();

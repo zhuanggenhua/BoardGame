@@ -355,12 +355,13 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
         },
 
         afterEvents: ({ state, events, command }): HookResult<TCore> | void => {
-            if (!state.sys.tutorial.active) {
+            const tutorial = state.sys?.tutorial;
+            if (!tutorial?.active) {
                 return;
             }
 
             // 诊断日志：追踪事件匹配
-            const step = state.sys.tutorial.step;
+            const step = tutorial.step;
             if (step?.advanceOnEvents && step.advanceOnEvents.length > 0) {
                 console.warn('[TutorialSystem] afterEvents:', {
                     stepId: step.id,
@@ -370,14 +371,14 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 });
             }
 
-            const matched = shouldAdvance(events, state.sys.tutorial.step?.advanceOnEvents);
+            const matched = shouldAdvance(events, tutorial.step?.advanceOnEvents);
 
             if (!matched) {
                 // 事件未匹配：检查 stepValidator 是否判定当前步骤不可满足
-                if (activeStepValidator && state.sys.tutorial.step
-                    && !activeStepValidator(state, state.sys.tutorial.step)) {
+                if (activeStepValidator && tutorial.step
+                    && !activeStepValidator(state, tutorial.step)) {
                     const timestamp = resolveTimestamp(command, events);
-                    return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
+                    return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(tutorial));
                 }
                 return;
             }
@@ -385,18 +386,18 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             const timestamp = resolveTimestamp(command, events);
 
             // 如果当前步骤需要等待动画，不立即推进，设置等待标志
-            if (state.sys.tutorial.step?.waitForAnimation) {
+            if (tutorial.step?.waitForAnimation) {
                 const pendingState: TutorialState = {
-                    ...state.sys.tutorial,
+                    ...tutorial,
                     pendingAnimationAdvance: true,
                 };
                 return {
                     state: applyTutorialState(state, pendingState),
-                    events: [{ type: TUTORIAL_EVENTS.ANIMATION_PENDING, payload: { stepId: state.sys.tutorial.step?.id }, timestamp }],
+                    events: [{ type: TUTORIAL_EVENTS.ANIMATION_PENDING, payload: { stepId: tutorial.step?.id }, timestamp }],
                 };
             }
 
-            return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
+            return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(tutorial));
         },
     };
 }

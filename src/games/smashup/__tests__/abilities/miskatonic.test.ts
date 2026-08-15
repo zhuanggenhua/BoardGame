@@ -9,6 +9,7 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
+import { getSmashUpReactionWindowContext } from '../../domain/reactionWindowState';
 import { execute, reduce } from '../../domain/reducer';
 import { smashUpSystemsForTest } from '../../game';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE, SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -250,7 +251,7 @@ function playMandatoryReading(
         name: `mandatory_reading:${cardUid}:advance`,
         commands: [{ type: 'ADVANCE_PHASE', playerId: '0', payload: undefined }] as any[],
     });
-    expect(advanced.finalState.sys.responseWindow.current?.windowType).toBe('meFirst');
+    expect(getSmashUpReactionWindowContext(advanced.finalState)?.windowType).toBe('meFirst');
 
     const played = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
         domain: SmashUpDomain,

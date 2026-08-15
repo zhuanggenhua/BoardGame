@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import type { MatchState, EventStreamEntry } from '../../../engine/types';
+import type { MatchState } from '../../../engine/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, UnitCard, StructureCard } from '../domain/types';
 import { SW_EVENTS } from '../domain/types';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
@@ -24,6 +24,8 @@ import { useVisualStateBuffer } from '../../../components/game/framework/hooks/u
 import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { swAttackDebugLog } from './attackDebug';
 import { isTestEnvironment } from '../../../engine/testing/environment';
+
+export { computeEventStreamDelta } from '../../../engine/systems/EventStreamSystem';
 
 const isCellCoord = (value: unknown): value is CellCoord => {
   if (!value || typeof value !== 'object') return false;
@@ -132,50 +134,6 @@ export interface AfterAttackAbilityModeState {
 }
 
 
-
-// ============================================================================
-// 遗留工具函数（仅供测试引用，运行时已由 useEventStreamCursor 替代）
-// ============================================================================
-
-interface EventStreamDelta {
-  newEntries: EventStreamEntry[];
-  nextLastSeenId: number;
-  shouldReset: boolean;
-}
-
-export function computeEventStreamDelta(
-  entries: EventStreamEntry[],
-  lastSeenEventId: number
-): EventStreamDelta {
-  if (entries.length === 0) {
-    return {
-      newEntries: [],
-      nextLastSeenId: lastSeenEventId > -1 ? -1 : lastSeenEventId,
-      shouldReset: lastSeenEventId > -1,
-    };
-  }
-
-  const lastEntryId = entries[entries.length - 1].id;
-  if (lastSeenEventId > -1 && lastEntryId < lastSeenEventId) {
-    return {
-      newEntries: entries,
-      nextLastSeenId: lastEntryId,
-      shouldReset: true,
-    };
-  }
-
-  const newEntries = lastSeenEventId < 0
-    ? entries
-    : entries.filter(entry => entry.id > lastSeenEventId);
-
-  return {
-    newEntries,
-    nextLastSeenId: newEntries.length > 0
-      ? newEntries[newEntries.length - 1].id
-      : lastSeenEventId,
-    shouldReset: false,
-  };
-}
 
 export function shouldConsumeChargeEvent(consumedEventIds: Set<number>, eventId: number): boolean {
   if (consumedEventIds.has(eventId)) return false;

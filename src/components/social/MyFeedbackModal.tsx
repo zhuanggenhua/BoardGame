@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Clock3, Lightbulb, MessageSquareWarning, RefreshCw, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,12 @@ import { ADMIN_API_URL } from '../../config/server';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
+
+type ModalViewportCssVars = {
+    '--modal-active-viewport-height': string;
+    '--modal-active-bottom-inset': string;
+    '--modal-max-height': string;
+};
 
 interface MyFeedbackModalProps {
     isOpen: boolean;
@@ -221,7 +227,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
         <div
             className="modal-base-container fixed inset-0 z-50 flex items-center justify-center p-4"
             data-lock-layout-viewport="true"
-            style={{
+            style={({
                 '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
                 '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
                 '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100vh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset))))',
@@ -229,7 +235,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))',
                 paddingLeft: 'max(1rem, var(--safe-area-left))',
-            }}
+            } as CSSProperties & ModalViewportCssVars)}
         >
             <motion.div
                 initial={{ opacity: 0 }}

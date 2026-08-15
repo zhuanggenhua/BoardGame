@@ -98,7 +98,8 @@ function buildPlayerLabel(
         return `${Math.min(...game.playerOptions)}-${Math.max(...game.playerOptions)} ${t('common:game_details.people')}`;
     }
     if (game.playerOptions?.length === 1) {
-        return `${game.playerOptions[0]} ${t('common:game_details.people')}`;
+        const [playerOption] = game.playerOptions;
+        return `${playerOption} ${t('common:game_details.people')}`;
     }
     return t(game.playersKey);
 }
@@ -113,10 +114,12 @@ function buildHomepageSummary(
     }
 
     const sentenceMatches = fullDescription.match(/[^。！？!?；;]+[。！？!?；;]?/g) ?? [];
-    if (sentenceMatches.length > 0) {
-        let summary = sentenceMatches[0].trim();
-        if (summary.length < 18 && sentenceMatches.length > 1) {
-            const appended = `${summary}${sentenceMatches[1].trim()}`.trim();
+    const firstSentence = sentenceMatches[0];
+    if (firstSentence) {
+        let summary = firstSentence.trim();
+        const secondSentence = sentenceMatches[1];
+        if (summary.length < 18 && secondSentence) {
+            const appended = `${summary}${secondSentence.trim()}`.trim();
             if (appended.length <= 34) {
                 summary = appended;
             }
@@ -262,8 +265,8 @@ export interface OverviewSpreadProps {
     games: GameConfig[];
     popularityByGameId?: Record<string, number>;
     mostPopularGameId?: string | null;
-    activeCategory: LobbyCategory;
-    onCategoryChange: (category: LobbyCategory) => void;
+    activeCategory?: LobbyCategory;
+    onCategoryChange?: (category: LobbyCategory) => void;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -275,7 +278,7 @@ export const OverviewSpread = ({
     games,
     popularityByGameId = {},
     mostPopularGameId,
-    activeCategory,
+    activeCategory = 'all',
     onCategoryChange,
     onGameClick,
     onAccountClick,
@@ -316,10 +319,11 @@ export const OverviewSpread = ({
     const playerLabel = user?.username?.trim() || t('auth:menu.login');
     const canGoPrevious = catalogPageIndex > 0;
     const canGoNext = catalogPageIndex + 1 < totalPages;
-    const activeCategoryRect = CATEGORY_NAV_ITEMS.find((item) => item.id === activeCategory)?.rect ?? CATEGORY_NAV_ITEMS[0].rect;
+    const activeCategoryRect = CATEGORY_NAV_ITEMS.find((item) => item.id === activeCategory)?.rect ?? CATEGORY_NAV_ITEMS[0]!.rect;
     const activeCategoryCenter = centeredPercent(activeCategoryRect.left, activeCategoryRect.width);
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
-    const currentLanguageOption = LANGUAGE_OPTIONS.find((option) => option.code === currentLanguage) ?? LANGUAGE_OPTIONS[0];
+    const currentLanguageOption = LANGUAGE_OPTIONS.find((option) => option.code === currentLanguage) ?? LANGUAGE_OPTIONS[0]!;
+    const mostPopularGameIdKey = mostPopularGameId?.toLowerCase();
     const continueMatchCode = continueMatch?.matchID ? `#${continueMatch.matchID.slice(-4).toUpperCase()}` : '';
     const continueRect = continueMatch?.isHost ? CONTINUE_HOST_RECT : CONTINUE_RECT;
 
@@ -378,7 +382,7 @@ export const OverviewSpread = ({
                         }}
                         onClick={() => {
                             if (!isActive) {
-                                onCategoryChange(id);
+                                onCategoryChange?.(id);
                             }
                         }}
                     >
@@ -540,7 +544,7 @@ export const OverviewSpread = ({
                 const name = resolveGameDisplayName(game, t, game.id);
                 const summary = buildHomepageSummary(game, t);
                 const playerLabelText = buildPlayerLabel(game, t);
-                const isMostPopularGame = Boolean(mostPopularGameId) && mostPopularGameId.toLowerCase() === game.id.toLowerCase();
+                const isMostPopularGame = Boolean(mostPopularGameIdKey) && mostPopularGameIdKey === game.id.toLowerCase();
                 const statusLabel = game.statusTag ? t(`common:status_tags.${game.statusTag}`) : null;
                 const badgeKeys = [
                     ...resolveGameBadgeKeys(game),

@@ -106,7 +106,8 @@ export const toggleDocumentFullscreen = async (options?: {
 
         try {
             if (requestFullscreen === elem.webkitRequestFullscreen) {
-                await requestFullscreen.call(elem, LEGACY_KEYBOARD_INPUT_ALLOWED);
+                await (requestFullscreen as NonNullable<LegacyFullscreenElement['webkitRequestFullscreen']>)
+                    .call(elem, LEGACY_KEYBOARD_INPUT_ALLOWED);
             } else {
                 await requestFullscreen.call(elem);
             }

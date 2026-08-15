@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getGameById } from '../../config/games.config';
-import { extractGameIdFromPlayPath } from '../mobileSupport';
+import { extractGameIdFromPlayPath } from '../../shared/mobileSupport';
 import { GAME_MANIFEST_BY_ID } from '../manifest';
 import { hasGameImplementation, loadGameImplementation, resolveGameTutorialManifest } from '../registry';
 
@@ -17,6 +17,8 @@ describe('betrayal manifest integration', () => {
         expect(game?.mobileProfile).toBe('landscape-adapted');
         expect(game?.preferredOrientation).toBe('landscape');
         expect(game?.mobileLayoutPreset).toBe('map-shell');
+        expect(game?.pageShell?.keepBoardMountedOnPlayerViewChange).toBe(true);
+        expect(game?.pageShell?.tutorialCatalogTheme?.className).toBe('tutorial-catalog-stage--betrayal');
         expect(game?.shellTargets).toEqual(
             expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
         );
@@ -47,6 +49,7 @@ describe('betrayal manifest integration', () => {
         expect(implementation?.tutorialCatalog?.defaultTutorialId).toBe('basic-setup-and-turn');
         expect(Object.keys(implementation?.tutorialCatalog?.tutorials ?? {})).toEqual([
             'basic-setup-and-turn',
+            'omen-confirmation-and-haunt-risk',
             'trade-and-agreement',
             'move-explore-use',
             'crimson-jack-objective',
@@ -54,24 +57,28 @@ describe('betrayal manifest integration', () => {
             'hero-attack-path',
             'jack-spirit-path',
             'traitor-path',
+            'mummy-monster-actions',
         ]);
         expect(Object.entries(implementation?.tutorialCatalog?.tutorials ?? {})
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
             .map(([id]) => id)).toEqual([
             'basic-setup-and-turn',
+            'omen-confirmation-and-haunt-risk',
             'trade-and-agreement',
             'haunt-actions-and-finish',
-            'hero-attack-path',
-            'jack-spirit-path',
             'traitor-path',
+            'mummy-monster-actions',
         ]);
         expect(resolveGameTutorialManifest('betrayal')).toEqual(
             implementation?.tutorialCatalog?.tutorials['basic-setup-and-turn']?.manifest ?? null,
         );
+        expect(resolveGameTutorialManifest('betrayal', 'omen-confirmation-and-haunt-risk')?.id)
+            .toBe('omen-confirmation-and-haunt-risk');
         expect(resolveGameTutorialManifest('betrayal', 'trade-and-agreement')?.id).toBe('trade-and-agreement');
         expect(resolveGameTutorialManifest('betrayal', 'move-explore-use')?.id).toBe('basic-setup-and-turn');
         expect(resolveGameTutorialManifest('betrayal', 'crimson-jack-objective')?.id).toBe('haunt-actions-and-finish');
         expect(resolveGameTutorialManifest('betrayal', 'haunt-actions-and-finish')?.id).toBe('haunt-actions-and-finish');
         expect(resolveGameTutorialManifest('betrayal', 'jack-spirit-path')?.id).toBe('jack-spirit-path');
+        expect(resolveGameTutorialManifest('betrayal', 'mummy-monster-actions')?.id).toBe('mummy-monster-actions');
     });
 });

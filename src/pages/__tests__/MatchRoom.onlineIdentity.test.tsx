@@ -191,8 +191,11 @@ vi.mock('../../services/matchApi', () => ({
     })),
 }));
 
-vi.mock('../../games/mobileSupport', () => ({
+vi.mock('../../shared/mobileSupport', () => ({
     getGamePageDataAttributes: () => ({}),
+    resolveGameMobileSupport: (config: { preferredOrientation?: unknown }) => ({
+        preferredOrientation: config.preferredOrientation,
+    }),
     syncGamePageDocumentAttributes: vi.fn(),
 }));
 
@@ -297,7 +300,7 @@ vi.mock('../../hooks/useGameNamespaceReady', () => ({
     }),
 }));
 
-vi.mock('../../hooks/useGameImplementationReady', () => ({
+vi.mock('../../games/useGameImplementationReady', () => ({
     useGameImplementationReady: () => ({
         isGameImplementationReady: true,
         gameImplementationError: null,

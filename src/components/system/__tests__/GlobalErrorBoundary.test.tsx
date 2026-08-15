@@ -223,6 +223,7 @@ describe('Runtime viewport css vars', () => {
         document.documentElement.setAttribute('data-mobile-layout-preset', 'board-shell');
         document.documentElement.setAttribute('data-mobile-profile', 'landscape-adapted');
         document.documentElement.setAttribute('data-game-id', 'dicethrone');
+        document.documentElement.setAttribute('data-mobile-board-shell-design-width', '940');
 
         applyRuntimeViewportCssVars({
             width: 802,
@@ -252,13 +253,15 @@ describe('Runtime viewport css vars', () => {
         document.documentElement.removeAttribute('data-mobile-layout-preset');
         document.documentElement.removeAttribute('data-mobile-profile');
         document.documentElement.removeAttribute('data-game-id');
+        document.documentElement.removeAttribute('data-mobile-board-shell-design-width');
     });
 
-    it('summonerwars 未单独覆写时沿用默认 900 设计宽度', () => {
+    it('summonerwars 通过 manifest 数据属性提供 900 设计宽度', () => {
         document.documentElement.setAttribute('data-game-page', 'true');
         document.documentElement.setAttribute('data-mobile-layout-preset', 'board-shell');
         document.documentElement.setAttribute('data-mobile-profile', 'landscape-adapted');
         document.documentElement.setAttribute('data-game-id', 'summonerwars');
+        document.documentElement.setAttribute('data-mobile-board-shell-design-width', '900');
 
         applyRuntimeViewportCssVars({
             width: 936,
@@ -287,6 +290,7 @@ describe('Runtime viewport css vars', () => {
         document.documentElement.removeAttribute('data-mobile-layout-preset');
         document.documentElement.removeAttribute('data-mobile-profile');
         document.documentElement.removeAttribute('data-game-id');
+        document.documentElement.removeAttribute('data-mobile-board-shell-design-width');
     });
 
     it('键盘弹出后会保留上一次非键盘 layout viewport 高度', () => {

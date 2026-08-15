@@ -298,12 +298,34 @@ export interface WorkbenchJournal {
     activeRunId?: string;
 }
 
+type WorkbenchJournalV5 = Omit<
+    WorkbenchJournal,
+    'schemaVersion' | 'workflowDrafts' | 'activeWorkflowId' | 'conversationSessions' | 'conversationTurns'
+> & {
+    schemaVersion: 5;
+    workflowDrafts?: WorkflowDraft[];
+    activeWorkflowId?: string;
+    conversationSessions?: ConversationSession[];
+    conversationTurns?: ConversationTurn[];
+};
+
 const metaEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
 
 export const AI_REPO_WORKBENCH_STORAGE_KEY = 'ai-repo-workbench:mvp-journal';
+const DEFAULT_AI_REPO_WORKBENCH_REPO_PATH = '../BoardGame-wt-ai-repo-workbench';
+const joinWorkbenchPath = (root: string, ...segments: string[]) => [
+    root.replace(/[\\/]+$/, ''),
+    ...segments.map((segment) => segment.replace(/^[\\/]+|[\\/]+$/g, '')),
+].filter(Boolean).join('/');
 export const AI_REPO_WORKBENCH_REPO_PATH = (metaEnv.VITE_AI_REPO_WORKBENCH_DEFAULT_PROJECT_PATH as string | undefined)
-    || 'D:\\gongzuo\\webgame\\BoardGame-wt-ai-repo-workbench';
-const AI_REPO_WORKBENCH_E2E_ASSET_DIR = `${AI_REPO_WORKBENCH_REPO_PATH}\\evidence\\_shared\\assets\\ai-repo-workbench-e2e`;
+    || DEFAULT_AI_REPO_WORKBENCH_REPO_PATH;
+const AI_REPO_WORKBENCH_E2E_ASSET_DIR = joinWorkbenchPath(
+    AI_REPO_WORKBENCH_REPO_PATH,
+    'evidence',
+    '_shared',
+    'assets',
+    'ai-repo-workbench-e2e',
+);
 const AI_REPO_WORKBENCH_E2E_ASSET_ROUTE = '/devtools/ai-repo-workbench/assets/e2e';
 const AI_REPO_WORKBENCH_BRANCH = (metaEnv.VITE_AI_REPO_WORKBENCH_DEFAULT_BRANCH as string | undefined)
     || 'feat/ai-repo-workbench';
@@ -1054,7 +1076,7 @@ function buildArtifactScreenshots(): ArtifactScreenshot[] {
             title: '会话工作流等待决策态',
             kind: 'e2e',
             stage: 'waiting_decision',
-            absolutePath: `${AI_REPO_WORKBENCH_E2E_ASSET_DIR}\\node-graph-waiting-decision.png`,
+            absolutePath: joinWorkbenchPath(AI_REPO_WORKBENCH_E2E_ASSET_DIR, 'node-graph-waiting-decision.png'),
             assetPath: `${AI_REPO_WORKBENCH_E2E_ASSET_ROUTE}/node-graph-waiting-decision.png`,
             alt: 'AI 仓库工作台等待决策态工作流截图',
         },
@@ -1063,7 +1085,7 @@ function buildArtifactScreenshots(): ArtifactScreenshot[] {
             title: '会话工作流完成态',
             kind: 'e2e',
             stage: 'completed',
-            absolutePath: `${AI_REPO_WORKBENCH_E2E_ASSET_DIR}\\node-graph-complete.png`,
+            absolutePath: joinWorkbenchPath(AI_REPO_WORKBENCH_E2E_ASSET_DIR, 'node-graph-complete.png'),
             assetPath: `${AI_REPO_WORKBENCH_E2E_ASSET_ROUTE}/node-graph-complete.png`,
             alt: 'AI 仓库工作台完成态工作流截图',
         },
@@ -1737,6 +1759,7 @@ export function hydrateWorkbenchJournal(raw?: string | null): WorkbenchJournal {
     try {
         const parsed = JSON.parse(raw) as
             | WorkbenchJournal
+            | WorkbenchJournalV5
             | ({
                 schemaVersion: 1;
                 updatedAt: string;

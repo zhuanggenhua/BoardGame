@@ -79,8 +79,8 @@ export interface UIHintFilter {
  * 使用示例：
  * ```typescript
  * // 游戏层实现
- * export function getSummonerWarsUIHints(
- *   core: SummonerWarsCore,
+ * export function getBoardUIHints(
+ *   core: BoardGameCore,
  *   filter?: UIHintFilter
  * ): UIHint[] {
  *   const hints: UIHint[] = [];
@@ -101,7 +101,7 @@ export interface UIHintFilter {
  * }
  *
  * // UI 层使用
- * const hints = getSummonerWarsUIHints(core, {
+ * const hints = getBoardUIHints(core, {
  *   types: ['ability'],
  *   playerId: myPlayerId,
  *   phase: currentPhase,

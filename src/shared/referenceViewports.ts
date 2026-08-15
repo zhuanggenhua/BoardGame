@@ -9,7 +9,7 @@ export const MOBILE_LANDSCAPE_REFERENCE_VIEWPORT = {
     height: 432,
 } as const;
 
-// 手机横屏放大基线：会命中 Summoner Wars 阵营选择 900px 设计宽度上限。
+// 手机横屏放大基线：覆盖 900px 设计宽度上限的移动横屏布局。
 export const MOBILE_LANDSCAPE_CAPPED_REFERENCE_VIEWPORT = {
     width: 1000,
     height: 500,

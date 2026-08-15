@@ -1151,7 +1151,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         appendMatchLoadTrace({
                             stage: 'create-room-ai-seat-claim-settled',
                             gameId,
-                            matchID,
+                            matchId: matchID,
                             payload: {
                                 seatCount: aiSeatEntries.length,
                                 successCount: Object.keys(aiSeatCredentials).length,
@@ -2198,6 +2198,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {activeTab === 'lobby' && (
                             <RoomList
                                 roomItems={roomItems}
+                                gameManifest={gameManifest}
                                 gameTranslationNamespace={`game-${normalizedGameId}`}
                                 activeMatch={activeMatch}
                                 isActionLoading={isLoading || isPreparingCreateRoom}
@@ -2287,11 +2288,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 <GamePackageInstallConfirmModal
                     gameName={pendingPackageInstall.gameName}
                     state={packageInstallCardState}
-                    manifestSource={pendingPackageInstall.source}
                     modulePackId={pendingPackageInstall.modulePackId}
                     assetPackId={pendingPackageInstall.assetPackId}
-                    modulePackUrl={pendingPackageInstall.modulePackUrl}
-                    assetPackUrl={pendingPackageInstall.assetPackUrl}
                     modulePackBytes={pendingPackageInstall.modulePackBytes}
                     assetPackBytes={pendingPackageInstall.assetPackBytes}
                     isLoading={isConfirmingPackageInstall}

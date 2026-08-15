@@ -70,7 +70,7 @@ const forceManualResponseEnabled = async (page: Page) => {
 };
 
 const readVisibleDamageFloatCenters = async (page: Page) => page.evaluate(() => {
-    return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
+    return Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
         .map((element) => {
             const htmlElement = element as HTMLElement;
             const rect = htmlElement.getBoundingClientRect();
@@ -94,7 +94,6 @@ const injectSamuraiTokenResponseScene = async (
     options: {
         mode: 'samurai-retribution';
         incomingDamage?: number;
-        bonusDiceValues?: number[];
     },
 ) => {
     await page.evaluate(async ({ mode, incomingDamage }) => {
@@ -230,9 +229,6 @@ const injectSamuraiTokenResponseScene = async (
         (window as Window & { __BG_LAST_COMMAND_REJECTED__?: unknown }).__BG_LAST_COMMAND_REJECTED__ = null;
     }, options);
 
-    if (Array.isArray(options.bonusDiceValues) && options.bonusDiceValues.length > 0) {
-        await setDiceThroneBonusDiceValues(page, options.bonusDiceValues);
-    }
 };
 
 const waitForSamuraiTokenResponseScene = async (
@@ -356,7 +352,6 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         await injectSamuraiTokenResponseScene(page, {
             mode: 'samurai-retribution',
             incomingDamage: 5,
-            bonusDiceValues: [1],
         });
         await waitForSamuraiTokenResponseScene(page, { mode: 'samurai-retribution' });
         await ensureDebugPanelClosed(page);
@@ -370,6 +365,8 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         const attackerHeader = page.locator('[data-testid="dt-top-header-1"][data-player-id="1"]').first();
         await expect(retributionToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 5000 });
         await expect(retributionHitTarget).toBeVisible({ timeout: 5000 });
+        // TestHarness 随机队列是全局队列；在真正触发反击奖励骰前武装，避免场景准备期间被其它随机调用消费。
+        await setDiceThroneBonusDiceValues(page, [1]);
         await retributionHitTarget.click();
         await expect.poll(async () => {
             const state = await game.getState() as Record<string, any>;
@@ -388,21 +385,15 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         await expect(responsePassButton).toBeVisible({ timeout: 5000 });
         await responsePassButton.click();
 
-        await page.waitForFunction(() => {
-            const threshold = window.innerHeight * 0.55;
-            return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
-                .some((element) => {
-                    const htmlElement = element as HTMLElement;
-                    const rect = htmlElement.getBoundingClientRect();
-                    const style = window.getComputedStyle(htmlElement);
-                    return rect.width > 0
-                        && rect.height > 0
-                        && style.display !== 'none'
-                        && style.visibility !== 'hidden'
-                        && style.opacity !== '0'
-                        && (rect.top + rect.height / 2) > threshold;
-                });
-        }, undefined, { timeout: 4000, polling: 50 });
+        await expect.poll(async () => {
+            const viewportHeight = page.viewportSize()?.height ?? 720;
+            const entries = await readVisibleDamageFloatCenters(page);
+            return entries.some((entry) => entry.y > viewportHeight * 0.55);
+        }, {
+            message: '武士受到来伤后，己方生命条附近必须出现伤害浮字',
+            timeout: 7000,
+            intervals: [50, 100, 150, 250],
+        }).toBe(true);
         await page.waitForTimeout(80);
         const incomingFloats = await readVisibleDamageFloatCenters(page);
         const viewport = page.viewportSize();
@@ -419,7 +410,7 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
 
         await page.waitForFunction(() => {
             const threshold = window.innerHeight * 0.45;
-            return Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'))
+            return Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
                 .some((element) => {
                     const htmlElement = element as HTMLElement;
                     const rect = htmlElement.getBoundingClientRect();
@@ -481,7 +472,7 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         });
 
         await page.waitForFunction(() => {
-            const floats = Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'));
+            const floats = Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'));
             return floats.every((element) => {
                 const htmlElement = element as HTMLElement;
                 const rect = htmlElement.getBoundingClientRect();

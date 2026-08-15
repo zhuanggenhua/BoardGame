@@ -42,7 +42,7 @@ import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
-import { resolveRoomExpansionLabel, resolveRoomScenarioLabel } from '../lobby/roomActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -492,12 +492,14 @@ function RoomLedgerActionTag({ children, compact }: { children: React.ReactNode;
 function BookLineButton({
     children,
     className,
+    disabled,
     icon,
     onClick,
     testId,
 }: {
     children: React.ReactNode;
     className?: string;
+    disabled?: boolean;
     icon?: React.ReactNode;
     onClick?: () => void;
     testId?: string;
@@ -505,9 +507,10 @@ function BookLineButton({
     return (
         <button
             type="button"
+            disabled={disabled}
             onClick={onClick}
             data-testid={testId}
-            className={`inline-flex items-center justify-center gap-[7px] rounded-[2px] border border-[#a5743c]/74 bg-[#4b2c18] font-bold text-[#f1dab3] shadow-[0_1px_2px_rgba(63,38,20,0.10)] transition-colors hover:text-[#fff0ce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/22 ${className ?? ''}`}
+            className={`inline-flex items-center justify-center gap-[7px] rounded-[2px] border border-[#a5743c]/74 bg-[#4b2c18] font-bold text-[#f1dab3] shadow-[0_1px_2px_rgba(63,38,20,0.10)] transition-colors hover:text-[#fff0ce] disabled:pointer-events-none disabled:opacity-65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/22 ${className ?? ''}`}
         >
             <span className="inline-flex items-center justify-center gap-[7px]">
                 {icon}
@@ -596,9 +599,10 @@ function getRoomSearchHaystack(
     },
     fallbackTitle: string,
     t: HomeV2Translate,
+    gameManifest?: GameConfig | null,
 ) {
     const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
-        resolveRoomExpansionLabel(t, room.gameName, expansionId)
+        resolveRoomExpansionLabel(t, room.gameName, expansionId, gameManifest ?? undefined)
     )) ?? [];
 
     return [
@@ -1008,8 +1012,8 @@ export const Right = ({ game }: RightProps) => {
         }
 
         const fallbackTitle = getRoomTitle(room.matchID, t, room.roomName);
-        return getRoomSearchHaystack(room, fallbackTitle, t).includes(normalizedRoomSearch);
-    }), [normalizedRoomSearch, roomPreviewItems, t]);
+        return getRoomSearchHaystack(room, fallbackTitle, t, game).includes(normalizedRoomSearch);
+    }), [game, normalizedRoomSearch, roomPreviewItems, t]);
 
     const ownerActiveRoom = React.useMemo(() => {
         void matchStorageTick;
@@ -1939,17 +1943,14 @@ export const Right = ({ game }: RightProps) => {
                                             const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
                                             const roomState = getRoomStateSummary(room, t);
                                             const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
-                                                resolveRoomExpansionLabel(t, room.gameName, expansionId)
+                                                resolveRoomExpansionLabel(t, room.gameName, expansionId, game)
                                             )) ?? [];
                                             const roomExpansionSummary = enabledExpansionLabels.length > 0
                                                 ? `${t('lobby:rooms.enabledExpansions', { defaultValue: '扩展' })}：${enabledExpansionLabels.join(' / ')}`
                                                 : '';
-                                            const isBetrayalRoom = room.gameName?.trim().toLowerCase() === 'betrayal';
                                             const scenarioLabel = room.publicSetupSummary?.scenarioId
-                                                ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
-                                                : isBetrayalRoom
-                                                    ? t('lobby:rooms.scenarioPending', { defaultValue: '未定剧本' })
-                                                    : '';
+                                                ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId, game)
+                                                : resolveRoomScenarioPendingLabel(t, game);
                                             const roomScenarioSummary = scenarioLabel
                                                 ? `${t('lobby:rooms.scenario', { defaultValue: '剧本' })}：${scenarioLabel}`
                                                 : '';

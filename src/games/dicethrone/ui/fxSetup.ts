@@ -131,7 +131,7 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact
     startPos,
     endPos,
     intensity: damage,
-    floatingTextPreset: 'dicethrone-damage',
+    floatingTextPreset: 'impact-damage',
     onImpact,
   }, stableComplete);
 };

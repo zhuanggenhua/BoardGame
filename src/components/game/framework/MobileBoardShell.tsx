@@ -12,7 +12,7 @@ import React, {
     type TouchEvent as ReactTouchEvent,
     type ReactNode,
 } from 'react';
-import type { GameMobileBattlefieldZoom } from '../../../games/manifest.types';
+import type { GameMobileBattlefieldZoom } from '../../../shared/gameManifest.types';
 import { isNativeAndroidRuntime } from '../../../lib/mobile/androidRuntime';
 import { logMobileRuntimeCritical } from '../../../lib/mobile/mobileRuntimeDebug';
 import { shouldReserveSystemBackGesture } from '../../../lib/mobile/systemBackGesture';

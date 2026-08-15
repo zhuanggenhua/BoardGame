@@ -30,27 +30,35 @@ import type { FxCue, FxRenderer, FxRendererOptions, FxRegistryEntry, FeedbackPac
 // 默认选项
 // ============================================================================
 
+const DEFAULT_BUDGET: Required<FxPerformanceBudget> = {
+  quality: 'full',
+  maxDpr: 1.5,
+  reducedMaxDpr: 1,
+  areaPolicy: 'cell',
+  estimatedCost: 'medium',
+  allowAutoReduce: true,
+  reduceWhenHighCostActiveAt: 1,
+  dropWhenHighCostActiveAt: 0,
+};
+
 const DEFAULT_OPTIONS: Required<FxRendererOptions> = {
   layer: 0,
   maxConcurrent: 0,
   debounceMs: 0,
   timeoutMs: 5000,
-  budget: {
-    quality: 'full',
-    maxDpr: 1.5,
-    reducedMaxDpr: 1,
-    areaPolicy: 'cell',
-    estimatedCost: 'medium',
-    allowAutoReduce: true,
-    reduceWhenHighCostActiveAt: 1,
-    dropWhenHighCostActiveAt: 0,
-  },
+  budget: DEFAULT_BUDGET,
 };
 
 const mergeBudget = (budget?: FxPerformanceBudget): Required<FxPerformanceBudget> => {
   return {
-    ...DEFAULT_OPTIONS.budget,
-    ...budget,
+    quality: budget?.quality ?? DEFAULT_BUDGET.quality,
+    maxDpr: budget?.maxDpr ?? DEFAULT_BUDGET.maxDpr,
+    reducedMaxDpr: budget?.reducedMaxDpr ?? DEFAULT_BUDGET.reducedMaxDpr,
+    areaPolicy: budget?.areaPolicy ?? DEFAULT_BUDGET.areaPolicy,
+    estimatedCost: budget?.estimatedCost ?? DEFAULT_BUDGET.estimatedCost,
+    allowAutoReduce: budget?.allowAutoReduce ?? DEFAULT_BUDGET.allowAutoReduce,
+    reduceWhenHighCostActiveAt: budget?.reduceWhenHighCostActiveAt ?? DEFAULT_BUDGET.reduceWhenHighCostActiveAt,
+    dropWhenHighCostActiveAt: budget?.dropWhenHighCostActiveAt ?? DEFAULT_BUDGET.dropWhenHighCostActiveAt,
   };
 };
 

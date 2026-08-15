@@ -10,7 +10,7 @@ import {
 } from '../../../core/AssetLoader';
 
 type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
-    /** 原始资源路径（相对于游戏目录，如 dicethrone/images/...） */
+    /** 原始资源路径（相对于游戏目录，如 <gameId>/images/...） */
     src: string;
     fallbackSrc?: string;
     /** 语言代码，可选，不传则自动从 i18next 获取当前语言 */

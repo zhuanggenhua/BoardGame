@@ -75,6 +75,8 @@ export interface UndoState {
      * 撤回恢复时用于重建随机序列，确保撤回后重新操作得到相同的随机结果。
      */
     snapshotCursors?: number[];
+    /** AI 座位列表；多人撤回握手会跳过这些自动席位。 */
+    aiSeatIds?: PlayerId[];
     /**
      * 撤回恢复后需要重置的随机数游标。
      * 由 UndoSystem 在恢复快照时写入，服务端读取后重建 trackedRandom 并清除此字段。
@@ -361,7 +363,7 @@ export interface TutorialStepSnapshot {
      * 允许交互的目标 ID 列表（UI 层卡牌/单位级门控）
      *
      * 设置后，只有 ID 在此列表中的目标可交互，其余置灰。
-     * 各游戏自行定义 "目标" 含义（SmashUp = cardUid, TTT = cellId 等）。
+     * 各游戏自行定义 "目标" 含义（如 cardUid、cellId 等）。
      * 引擎不感知此字段，门控逻辑在 Board 组件中实现。
      */
     allowedTargets?: string[];
@@ -513,16 +515,6 @@ export interface SystemState {
     flowHalted?: boolean;
     /** 游戏结束结果（由管线在每次命令执行后自动检测并写入） */
     gameover?: GameOverResult;
-    /** SmashUp: postProcessSystemEvents 去重标记（防止 MINION_PLAYED/ACTION_PLAYED 被处理两次） */
-    _processedPlayedEvents?: Set<string>;
-    /** SmashUp: postProcessSystemEvents 去重标记（防止 MINION_DESTROYED 被处理两次） */
-    _processedDestroyEvents?: Set<string>;
-    /** SmashUp: postProcessSystemEvents 去重标记（防止 MINION_DESTROYED 被处理两次） */
-    _processedDestroyEvents?: Set<string>;
-    /** SummonerWars: 交互辅助缓存（阶段结束技能已处理标记） */
-    summonerWars?: {
-        phaseEndAbilityResolved?: Record<string, true>;
-    };
 }
 
 // ============================================================================

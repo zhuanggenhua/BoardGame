@@ -1,9 +1,65 @@
-import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const normalize = (value) => String(value || '').trim().replace(/\\/g, '/');
+
+const normalizeGameId = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_-]*$/.test(normalized)) return '';
+    return normalized;
+};
+
+const hashFile = (filePath) => createHash('sha256').update(readFileSync(filePath)).digest('hex');
+
+const isSafeChildPath = (root, child) => {
+    const resolvedRoot = path.resolve(root);
+    const resolvedChild = path.resolve(child);
+    return resolvedChild.startsWith(`${resolvedRoot}${path.sep}`);
+};
+
+export const hasCompleteLocalE2EAssetPackage = (
+    gameId,
+    { assetsRoot = path.join(process.cwd(), 'public', 'assets') } = {},
+) => {
+    const normalizedGameId = normalizeGameId(gameId);
+    if (!normalizedGameId) return false;
+
+    const gameRoot = path.join(assetsRoot, 'i18n', 'zh-CN', normalizedGameId);
+    const manifestPath = path.join(gameRoot, 'assets-manifest.json');
+    const atlasRoot = path.join(assetsRoot, 'atlas-configs', normalizedGameId);
+    if (!existsSync(manifestPath) || !existsSync(atlasRoot)) return false;
+
+    let manifest;
+    try {
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    } catch {
+        return false;
+    }
+
+    const files = manifest?.files;
+    if (!files || typeof files !== 'object') return false;
+
+    for (const [relativeKey, descriptor] of Object.entries(files)) {
+        const variants = descriptor?.variants;
+        if (!variants || typeof variants !== 'object') return false;
+
+        for (const [extension, variant] of Object.entries(variants)) {
+            const filePath = path.join(gameRoot, `${relativeKey}.${extension}`);
+            if (!isSafeChildPath(gameRoot, filePath) || !existsSync(filePath)) return false;
+
+            const expectedBytes = Number(variant?.bytes);
+            if (Number.isFinite(expectedBytes) && statSync(filePath).size !== expectedBytes) return false;
+
+            const expectedSha256 = typeof variant?.sha256 === 'string' ? variant.sha256 : '';
+            if (expectedSha256 && hashFile(filePath) !== expectedSha256) return false;
+        }
+    }
+
+    return true;
+};
 
 export const resolveE2EAssetGameIds = (targetPath, env = process.env) => {
     const explicit = String(env.PW_ASSET_GAME_IDS || '')
@@ -37,10 +93,14 @@ export const ensureE2EAssets = ({ targetPath, env = process.env, runner = proces
         if (result.status !== 0) throw new Error(errorMessage);
     };
 
-    const args = ['scripts/assets/download-from-server.js'];
-    for (const gameId of gameIds) args.push('--game', gameId);
-    console.log(`🧩 E2E 自动准备素材：${gameIds.join(', ')}`);
-    runAssetCommand(args, `E2E 素材准备失败: gameIds=${gameIds.join(',')}`);
+    if (gameIds.every((gameId) => hasCompleteLocalE2EAssetPackage(gameId))) {
+        console.log(`🧩 E2E 使用本地完整素材包：${gameIds.join(', ')}`);
+    } else {
+        const args = ['scripts/assets/download-from-server.js'];
+        for (const gameId of gameIds) args.push('--game', gameId);
+        console.log(`🧩 E2E 自动准备素材：${gameIds.join(', ')}`);
+        runAssetCommand(args, `E2E 素材准备失败: gameIds=${gameIds.join(',')}`);
+    }
 
     for (const gameId of gameIds) {
         const gameI18nRoot = path.join(process.cwd(), 'public', 'assets', 'i18n', 'zh-CN', gameId);

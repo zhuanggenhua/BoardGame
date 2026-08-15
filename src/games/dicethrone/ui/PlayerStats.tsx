@@ -3,11 +3,7 @@ import type { HeroState } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useMemo } from 'react';
 import { RESOURCE_IDS } from '../domain/resources';
-import {
-    PlayerPanelSkeleton,
-    createResourceBarRender,
-    defaultPlayerPanelClassName,
-} from '../../../components/game/framework';
+import { PlayerPanelSkeleton } from '../../../components/game/framework';
 import type { PlayerPanelData } from '../../../core/ui';
 import {
     HitStopContainer,
@@ -38,7 +34,8 @@ export const PlayerStats = ({
     cpRef,
     hitStopActive,
     hitStopConfig,
-    isShaking,
+    isHpShaking,
+    isCpShaking,
     damageFlashActive,
     damageFlashDamage,
     overrideHp,
@@ -48,8 +45,10 @@ export const PlayerStats = ({
     cpRef?: RefObject<HTMLDivElement | null>;
     hitStopActive?: boolean;
     hitStopConfig?: HitStopConfig;
-    /** 是否正在震动（自己受击） */
-    isShaking?: boolean;
+    /** HP 条是否正在震动（受击） */
+    isHpShaking?: boolean;
+    /** CP 条是否正在震动（获得/失去 CP） */
+    isCpShaking?: boolean;
     /** 受击 DamageFlash 是否激活 */
     damageFlashActive?: boolean;
     /** 受击伤害值 */
@@ -74,64 +73,96 @@ export const PlayerStats = ({
         },
     }), [player.id, health, cp]);
 
-    // 使用预设创建资源条渲染函数
-    const renderResource = useMemo(() => createResourceBarRender({
-        resources: {
-            health: { max: 50, gradient: 'from-red-900 to-red-600', labelColor: 'text-red-200/80', label: t('hud.health') },
-            cp: { max: 15, gradient: 'from-amber-800 to-amber-500', labelColor: 'text-amber-200/80', label: 'CP' },
+    const resourceConfig = useMemo(() => ({
+        health: {
+            max: 50,
+            label: t('hud.health'),
+            labelClassName: 'text-red-100/85',
+            borderClassName: 'border-red-500/90',
+            fillClassName: 'from-red-950 via-red-800 to-red-500',
+            glowClassName: 'shadow-[0_0_14px_rgba(239,68,68,0.28)]',
+        },
+        cp: {
+            max: 15,
+            label: 'CP',
+            labelClassName: 'text-amber-100/85',
+            borderClassName: 'border-amber-400/90',
+            fillClassName: 'from-yellow-900 via-amber-700 to-yellow-400',
+            glowClassName: 'shadow-[0_0_14px_rgba(245,158,11,0.24)]',
         },
     }), [t]);
 
-    return (
-        <ShakeContainer isShaking={!!isShaking}>
-            <HitStopContainer
-                isActive={!!hitStopActive}
-                {...(hitStopConfig ?? {})}
-                className="w-full"
+    const renderResourceBar = (key: string, value: number) => {
+        const config = resourceConfig[key as keyof typeof resourceConfig];
+        if (!config) return null;
+
+        const percentage = Math.min(100, Math.max(0, (value / config.max) * 100));
+
+        return (
+            <div
+                className={[
+                    'relative h-[1.85vw] w-full overflow-hidden box-border bg-black/60',
+                    'border-[0.18vw]',
+                    config.borderClassName,
+                    config.glowClassName,
+                ].join(' ')}
             >
-                <div className="relative overflow-visible">
-                    <PlayerPanelSkeleton
-                        player={panelData}
-                        className={`${defaultPlayerPanelClassName} z-20 hover:bg-slate-900/90 transition-all duration-300 overflow-visible bg-slate-950/95 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)] rounded-[1.2vw] p-[0.6vw]`}
-                        renderResource={(key, value) => {
-                            // 血量条特殊处理：添加护盾图标
-                            if (key === 'health') {
-                                const content = (
-                                    <div className="flex items-center gap-[0.5vw] group/resource">
-                                        <div className="flex-1 relative rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.4),0_1px_2px_rgba(255,255,255,0.1)]">
-                                            {renderResource(key, value)}
-                                            {/* 3D Highlights - Optimized for softness */}
-                                            <div className="absolute inset-0 pointer-events-none">
-                                                <div className="absolute top-0 left-0 right-0 h-[45%] bg-gradient-to-b from-white/10 to-transparent" />
-                                                <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-black/20 to-transparent" />
-                                            </div>
-                                        </div>
-                                        {shield > 0 && <ShieldIcon value={shield} />}
-                                    </div>
-                                );
-                                return hpRef ? <div ref={hpRef}>{content}</div> : content;
-                            }
-                            return (
-                                <div className="relative group/resource rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.4),0_1px_2px_rgba(255,255,255,0.1)]" ref={cpRef}>
-                                    {renderResource(key, value)}
-                                    {/* 3D Highlights - Optimized for softness */}
-                                    <div className="absolute inset-0 pointer-events-none">
-                                        <div className="absolute top-0 left-0 right-0 h-[45%] bg-gradient-to-b from-white/10 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-black/20 to-transparent" />
-                                    </div>
-                                </div>
-                            );
-                        }}
-                    />
-                    {/* 受击时空裂隙 + 红脉冲 overlay */}
-                    <DamageFlash
-                        active={!!damageFlashActive}
-                        damage={damageFlashDamage ?? 1}
-                        intensity={(damageFlashDamage ?? 0) >= 5 ? 'strong' : 'normal'}
-                        showNumber={false}
-                    />
+                <div
+                    className={`absolute inset-y-0 left-0 bg-gradient-to-r ${config.fillClassName} transition-[width] duration-500 ease-out`}
+                    style={{ width: `${percentage}%` }}
+                />
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-x-0 top-0 h-[38%] bg-white/12" />
+                    <div className="absolute inset-x-0 bottom-0 h-[42%] bg-black/24" />
                 </div>
-            </HitStopContainer>
-        </ShakeContainer>
+                <div className="absolute inset-0 flex items-center justify-between px-[0.72vw]">
+                    <span className={`text-[0.78vw] font-black uppercase tracking-[0.08em] ${config.labelClassName}`}>
+                        {config.label}
+                    </span>
+                    <span className="text-[1.08vw] font-black text-white drop-shadow-md">{value}</span>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <PlayerPanelSkeleton
+            player={panelData}
+            className="relative z-20 flex w-full flex-col gap-[0.5vw] overflow-visible bg-transparent p-0 shadow-none"
+            renderResource={(key, value) => {
+                if (key === 'health') {
+                    return (
+                        <div className="flex w-full items-center gap-[0.5vw]">
+                            <div ref={hpRef} className="min-w-0 flex-1">
+                                <ShakeContainer isShaking={!!isHpShaking} className="w-full">
+                                    <HitStopContainer
+                                        isActive={!!hitStopActive}
+                                        {...(hitStopConfig ?? {})}
+                                        className="w-full"
+                                    >
+                                        {renderResourceBar(key, value)}
+                                        <DamageFlash
+                                            active={!!damageFlashActive}
+                                            damage={damageFlashDamage ?? 1}
+                                            intensity={(damageFlashDamage ?? 0) >= 5 ? 'strong' : 'normal'}
+                                            showNumber={false}
+                                        />
+                                    </HitStopContainer>
+                                </ShakeContainer>
+                            </div>
+                            {shield > 0 && <ShieldIcon value={shield} />}
+                        </div>
+                    );
+                }
+
+                return (
+                    <div ref={cpRef} className="w-full">
+                        <ShakeContainer isShaking={!!isCpShaking} className="w-full">
+                            {renderResourceBar(key, value)}
+                        </ShakeContainer>
+                    </div>
+                );
+            }}
+        />
     );
 };

@@ -25,7 +25,7 @@ import {
 } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import clsx from 'clsx';
-import { buildRuntimeInlineUnitValue } from '../../mobileSupport';
+import { buildRuntimeInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 import { isSetupReadyToStart } from '../domain/rules';
 
 export interface DiceThroneHeroSelectionProps {

@@ -72,6 +72,7 @@ import {
   getYonghengDefenderAfterAttackEvents,
   getYonghengPostProcessEvents,
 } from './yonghengMechanics';
+import { getPhaseEndAbilityResolved } from './phaseEndResolution';
 
 // 辅助函数已迁移到 execute/helpers.ts
 // 保留 getPhaseDisplayName 的导出以保持向后兼容
@@ -82,9 +83,7 @@ function isPhaseEndAbilityResolved(
   abilityId: string,
   sourceUnitId: string,
 ): boolean {
-  const resolved = (state.sys as {
-    summonerWars?: { phaseEndAbilityResolved?: Record<string, true> };
-  } | undefined)?.summonerWars?.phaseEndAbilityResolved;
+  const resolved = getPhaseEndAbilityResolved(state);
   return resolved?.[`${state.core.turnNumber}:${state.core.phase}:${abilityId}:${sourceUnitId}`] === true;
 }
 

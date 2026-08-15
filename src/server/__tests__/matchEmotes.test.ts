@@ -15,6 +15,13 @@ const metadata = (gameName = 'dicethrone'): MatchEmoteMetadata => ({
     },
 });
 
+const allowedEmotes = new Set([
+    'dicethrone.moon-elf.speechless-facepalm',
+    'smashup.supreme-overlord.smug-v1',
+]);
+
+const isEmoteAllowed = (emoteId: string) => allowedEmotes.has(emoteId);
+
 describe('match emote decisions', () => {
     it('allows an occupied player to send a whitelisted emote', () => {
         const decision = resolveMatchEmoteSendDecision({
@@ -23,6 +30,7 @@ describe('match emote decisions', () => {
             emoteId: 'dicethrone.moon-elf.speechless-facepalm',
             metadata: metadata(),
             now: 10_000,
+            isEmoteAllowed,
         });
 
         expect(decision).toEqual({
@@ -54,6 +62,7 @@ describe('match emote decisions', () => {
             emoteId: 'unknown.emote',
             metadata: metadata(),
             now: 10_000,
+            isEmoteAllowed,
         })).toEqual({ ok: false, reason: 'invalid_emote' });
 
         expect(resolveMatchEmoteSendDecision({
@@ -62,6 +71,7 @@ describe('match emote decisions', () => {
             emoteId: 'dicethrone.moon-elf.speechless-facepalm',
             metadata: metadata('smashup'),
             now: 10_000,
+            isEmoteAllowed,
         })).toMatchObject({ ok: true, gameId: 'smashup' });
     });
 
@@ -70,6 +80,7 @@ describe('match emote decisions', () => {
             emoteId: 'dicethrone.moon-elf.speechless-facepalm',
             metadata: metadata(),
             now: 10_000,
+            isEmoteAllowed,
         })).toEqual({ ok: false, reason: 'not_joined' });
 
         expect(resolveMatchEmoteSendDecision({
@@ -77,6 +88,7 @@ describe('match emote decisions', () => {
             playerId: '0',
             metadata: metadata(),
             now: 10_000,
+            isEmoteAllowed,
         })).toEqual({ ok: false, reason: 'missing_payload' });
     });
 
@@ -92,6 +104,7 @@ describe('match emote decisions', () => {
             now: 11_000,
             lastSentAt: limiter.getLastSentAt('match-1', '0'),
             cooldownMs: limiter.cooldownMs,
+            isEmoteAllowed,
         })).toEqual({ ok: false, reason: 'rate_limited' });
 
         expect(resolveMatchEmoteSendDecision({
@@ -102,6 +115,7 @@ describe('match emote decisions', () => {
             now: 12_000,
             lastSentAt: limiter.getLastSentAt('match-1', '0'),
             cooldownMs: limiter.cooldownMs,
+            isEmoteAllowed,
         })).toMatchObject({ ok: true });
     });
 });

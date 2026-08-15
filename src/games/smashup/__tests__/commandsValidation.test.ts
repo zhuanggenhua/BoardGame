@@ -890,28 +890,31 @@ describe('SmashUp command validation', () => {
         });
     });
 
-    it('legacy responderQueue 被 ghost 污染时，validate 仍应按 live current player 放行 special', () => {
+    it('legacy responderQueue 被 ghost 污染时，validate 仍应按 live ReactionSession 放行 special', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
             },
-            titans: [
-                makeTitan({
-                    uid: 'titan-ghost-2',
-                    defId: 'ghosts_creampuff_man',
-                    faction: 'ghosts',
-                    ownerId: '0',
-                    controllerId: '0',
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [makeMinion('mole-1', 'super_spies_mole', '0', 2)],
                 }),
             ],
-            bases: [makeBase({ defId: 'test_base' })],
             scoringEligibleBaseIndices: [0],
             currentPlayerIndex: 0,
         });
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
-        const ms = makeMatchState(core);
-        ms.sys.phase = 'scoreBases';
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:test',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
         ms.sys.responseWindow = {
             ...(ms.sys.responseWindow ?? {}),
             current: {
@@ -927,7 +930,7 @@ describe('SmashUp command validation', () => {
         const result = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '0',
-            payload: { titanUid: 'titan-ghost-2', baseIndex: 0 },
+            payload: { minionUid: 'mole-1', baseIndex: 0 },
         } as any);
 
         expect(result.valid).toBe(true);

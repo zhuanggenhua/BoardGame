@@ -11,12 +11,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SmashUpDomain, postProcessSystemEvents } from '../domain';
 import type { SmashUpCore } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import type { RandomFn, MatchState } from '../../../engine/types';
+
+type SmashUpRuntimeSys = MatchState<SmashUpCore>['sys'] & {
+    _processedPlayedEvents?: Set<string>;
+};
 
 const fixedRandom: RandomFn = {
     random: () => 0.5,
@@ -63,7 +67,7 @@ describe('传送门交互 D45 问题', () => {
         const result1 = postProcessSystemEvents(core, [actionPlayedEvent as any], fixedRandom, matchState);
         
         // 验证：第一次调用标记了事件
-        const processedSet1 = result1.matchState?.sys._processedPlayedEvents;
+        const processedSet1 = (result1.matchState?.sys as SmashUpRuntimeSys | undefined)?._processedPlayedEvents;
         expect(processedSet1).toBeDefined();
         expect(processedSet1!.has(`ACTION:${portalUid}@p1`)).toBe(true);
 
@@ -76,7 +80,7 @@ describe('传送门交互 D45 问题', () => {
         expect(result2.events.length).toBe(result1.events.length);
         
         // 验证：processedSet 仍然只有一个条目
-        const processedSet2 = result2.matchState?.sys._processedPlayedEvents;
+        const processedSet2 = (result2.matchState?.sys as SmashUpRuntimeSys | undefined)?._processedPlayedEvents;
         expect(processedSet2!.size).toBe(1);
         expect(processedSet2!.has(`ACTION:${portalUid}@p1`)).toBe(true);
     });
@@ -110,7 +114,7 @@ describe('传送门交互 D45 问题', () => {
         const result1 = postProcessSystemEvents(core, [minionPlayedEvent as any], fixedRandom, matchState);
         
         // 验证：第一次调用标记了事件
-        const processedSet1 = result1.matchState?.sys._processedPlayedEvents;
+        const processedSet1 = (result1.matchState?.sys as SmashUpRuntimeSys | undefined)?._processedPlayedEvents;
         expect(processedSet1).toBeDefined();
         expect(processedSet1!.has(`MINION:${minionUid}@0`)).toBe(true);
         
@@ -127,7 +131,7 @@ describe('传送门交互 D45 问题', () => {
         expect(result2.events[0].type).toBe(SU_EVENTS.MINION_PLAYED);
         
         // 验证：processedSet 仍然只有一个条目
-        const processedSet2 = result2.matchState?.sys._processedPlayedEvents;
+        const processedSet2 = (result2.matchState?.sys as SmashUpRuntimeSys | undefined)?._processedPlayedEvents;
         expect(processedSet2!.size).toBe(1);
         expect(processedSet2!.has(`MINION:${minionUid}@0`)).toBe(true);
     });

@@ -28,6 +28,11 @@ export function useMobileGestures(options: UseMobileGesturesOptions = {}) {
     translateX: 0,
     translateY: 0,
   });
+  const gestureRef = useRef(gesture);
+
+  useEffect(() => {
+    gestureRef.current = gesture;
+  }, [gesture]);
 
   const touchStateRef = useRef({
     initialDistance: 0,

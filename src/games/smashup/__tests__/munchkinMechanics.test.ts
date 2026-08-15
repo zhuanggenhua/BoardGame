@@ -7,8 +7,9 @@ import {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { validate } from '../domain/commands';
-import { scoreOneBase } from '../domain';
 import { execute, reduce } from '../domain/reducer';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import {
     getControlledMonsterPowerOnBase,
     getEffectivePower,
@@ -30,6 +31,7 @@ import {
     makeState,
     respondToPromptOption,
     respondToPromptOptions,
+    scoreBaseViaFlow,
 } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -45,34 +47,73 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-function attachBeforeScoringWindow(core: SmashUpCore, sourceBaseIndex = 0) {
+function attachScoringReactionWindow(
+    core: SmashUpCore,
+    responseWindowType: 'meFirst' | 'afterScoring',
+    sourceBaseIndex = 0,
+) {
     const matchState = makeMatchState(core);
     matchState.sys.phase = 'scoreBases';
-    matchState.sys.responseWindow = {
-        current: {
-            windowType: 'meFirst',
-            responderQueue: ['0', '1'],
-            currentResponderIndex: 0,
-            sourceBaseIndex,
-            passedPlayers: [],
-        },
-    } as any;
-    return matchState;
+    const baseRef = createScoringBaseRef(core, sourceBaseIndex);
+    if (!baseRef) {
+        throw new Error(`无法构造 Munchkin 计分响应窗口测试的基地引用: ${sourceBaseIndex}`);
+    }
+    const scoringState = setScoringSession(matchState, {
+        ...createScoringSession(core, [sourceBaseIndex]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    return startSmashUpReactionSession(scoringState, {
+        frameId: `${responseWindowType === 'afterScoring' ? 'score-after' : 'score-before'}:${sourceBaseIndex}:munchkin-test`,
+        frameKind: responseWindowType === 'afterScoring' ? 'score-after' : 'score-before',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex,
+        responseWindowType,
+    });
+}
+
+function attachBeforeScoringWindow(core: SmashUpCore, sourceBaseIndex = 0) {
+    return attachScoringReactionWindow(core, 'meFirst', sourceBaseIndex);
 }
 
 function attachAfterScoringWindow(core: SmashUpCore, sourceBaseIndex = 0) {
-    const matchState = makeMatchState(core);
-    matchState.sys.phase = 'scoreBases';
-    matchState.sys.responseWindow = {
-        current: {
-            windowType: 'afterScoring',
-            responderQueue: ['0', '1'],
-            currentResponderIndex: 0,
-            sourceBaseIndex,
-            passedPlayers: [],
-        },
-    } as any;
-    return matchState;
+    return attachScoringReactionWindow(core, 'afterScoring', sourceBaseIndex);
+}
+
+function reduceDomainEventsUntil(
+    core: SmashUpCore,
+    events: readonly { type: string }[],
+    shouldStopBeforeEvent: (event: { type: string }) => boolean,
+) {
+    let next = core;
+    for (const event of events) {
+        if (shouldStopBeforeEvent(event)) break;
+        if (event.type.startsWith('SYS_')) continue;
+        next = reduce(next, event as any);
+    }
+    return next;
+}
+
+function reduceDomainEventsThrough(
+    core: SmashUpCore,
+    events: readonly { type: string }[],
+    eventType: string,
+) {
+    let next = core;
+    for (const event of events) {
+        if (!event.type.startsWith('SYS_')) {
+            next = reduce(next, event as any);
+        }
+        if (event.type === eventType) break;
+    }
+    return next;
+}
+
+function reduceDomainEventsBeforeAutoPhase(core: SmashUpCore, events: readonly { type: string }[]) {
+    return reduceDomainEventsUntil(core, events, event => event.type === 'SYS_PHASE_CHANGED');
 }
 
 describe('Smash Up Munchkin 怪物基础机制', () => {
@@ -441,9 +482,13 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             nextUid: 1300,
         });
 
-        const result = scoreOneBase(state, 0, [], '0', 10, fixedRandom);
+        const result = scoreBaseViaFlow(state, 0, [], '0', 10, fixedRandom);
         const revealEvent = result.events.find(event => event.type === SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED);
-        const afterReveal = result.events.reduce((core, event) => reduce(core, event as any), state);
+        const afterReveal = reduceDomainEventsThrough(
+            state,
+            result.events,
+            SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED,
+        );
 
         expect(revealEvent).toMatchObject({
             payload: expect.objectContaining({
@@ -1515,12 +1560,16 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             '0',
             fixedRandom,
         );
+        const afterTreasurePlay = reduceDomainEventsBeforeAutoPhase(
+            activated.finalState.core,
+            playedTreasure.events,
+        );
 
         expect(playedTreasure.success).toBe(true);
-        expect(playedTreasure.finalState.core.players['0'].vp).toBe(3);
-        expect(playedTreasure.finalState.core.players['0'].hand).toEqual([]);
-        expect(playedTreasure.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
-        expect(playedTreasure.finalState.core.treasureDeck).toEqual([
+        expect(afterTreasurePlay.players['0'].vp).toBe(3);
+        expect(afterTreasurePlay.players['0'].hand).toEqual([]);
+        expect(afterTreasurePlay.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
+        expect(afterTreasurePlay.treasureDeck).toEqual([
             'munchkin_treasure_dwarf_hireling',
             'munchkin_treasure_wishing_ring',
         ]);
@@ -1579,12 +1628,16 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             '0',
             fixedRandom,
         );
+        const afterTreasurePlay = reduceDomainEventsBeforeAutoPhase(
+            playedTreasureCard.finalState.core,
+            playedTreasure.events,
+        );
 
         expect(playedTreasure.success).toBe(true);
         expect(basePrompt.options.map((option: any) => option.value?.baseIndex)).toContain(0);
-        expect(playedTreasure.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('munchkin_treasure_1660');
-        expect(playedTreasure.finalState.core.players['0'].hand).toEqual([]);
-        expect(playedTreasure.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
+        expect(afterTreasurePlay.bases[0].minions.map(minion => minion.uid)).toContain('munchkin_treasure_1660');
+        expect(afterTreasurePlay.players['0'].hand).toEqual([]);
+        expect(afterTreasurePlay.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
         expect(getOptionalSimpleChoicePrompt(playedTreasure.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
     });
 
@@ -1616,16 +1669,20 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             '0',
             fixedRandom,
         );
+        const afterSkip = reduceDomainEventsBeforeAutoPhase(
+            activated.finalState.core,
+            skipped.events,
+        );
 
         expect(skipped.success).toBe(true);
-        expect(skipped.finalState.core.players['0'].hand).toEqual([
+        expect(afterSkip.players['0'].hand).toEqual([
             expect.objectContaining({
                 uid: 'munchkin_treasure_1670',
                 defId: 'munchkin_treasure_dwarf_hireling',
             }),
         ]);
-        expect(skipped.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
-        expect(skipped.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['scorer-1']);
+        expect(afterSkip.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
+        expect(afterSkip.bases[0].minions.map(minion => minion.uid)).toEqual(['scorer-1']);
         expect(getOptionalSimpleChoicePrompt(skipped.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
     });
 
@@ -1962,17 +2019,21 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             '0',
             fixedRandom,
         );
+        const afterAttach = reduceDomainEventsBeforeAutoPhase(
+            attachedCard.finalState.core,
+            attached.events,
+        );
 
         expect(attached.success).toBe(true);
         expect(hostPrompt.options.map((option: any) => option.value?.minionUid)).toContain('host-1');
-        expect(attached.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
+        expect(afterAttach.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
             uid: 'munchkin_treasure_1700',
             defId: 'munchkin_treasure_spiky_boots',
             ownerId: '0',
         }));
-        expect(attached.finalState.core.bases[0].minions[1].attachedActions).toEqual([]);
-        expect(attached.finalState.core.bases[1].minions[0].attachedActions).toEqual([]);
-        expect(attached.finalState.core.players['0'].hand).toEqual([]);
+        expect(afterAttach.bases[0].minions[1].attachedActions).toEqual([]);
+        expect(afterAttach.bases[1].minions[0].attachedActions).toEqual([]);
+        expect(afterAttach.players['0'].hand).toEqual([]);
         expect(getOptionalSimpleChoicePrompt(attached.finalState, 'smashup_immediate_extra_action')).toBeUndefined();
     });
 
@@ -3207,20 +3268,21 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
                 cardUids: ['base-action-1', 'hero-1', 'rocket-boots-1', 'ally-1'],
             }),
         }));
-        expect(played.finalState.core.suppressedCardUidsUntilTurnEnd).toEqual([
+        const afterParalysis = reduceDomainEventsBeforeAutoPhase(state, played.events);
+        expect(afterParalysis.suppressedCardUidsUntilTurnEnd).toEqual([
             'base-action-1',
             'hero-1',
             'rocket-boots-1',
             'ally-1',
         ]);
-        expect(isCardSuppressed(played.finalState.core, 'base-action-1')).toBe(true);
-        expect(isCardSuppressed(played.finalState.core, 'hero-1')).toBe(true);
-        expect(isCardSuppressed(played.finalState.core, 'rocket-boots-1')).toBe(true);
-        expect(isCardSuppressed(played.finalState.core, 'ally-1')).toBe(true);
-        expect(isCardSuppressed(played.finalState.core, 'away-action-1')).toBe(false);
-        expect(isCardSuppressed(played.finalState.core, 'away-1')).toBe(false);
+        expect(isCardSuppressed(afterParalysis, 'base-action-1')).toBe(true);
+        expect(isCardSuppressed(afterParalysis, 'hero-1')).toBe(true);
+        expect(isCardSuppressed(afterParalysis, 'rocket-boots-1')).toBe(true);
+        expect(isCardSuppressed(afterParalysis, 'ally-1')).toBe(true);
+        expect(isCardSuppressed(afterParalysis, 'away-action-1')).toBe(false);
+        expect(isCardSuppressed(afterParalysis, 'away-1')).toBe(false);
 
-        const nextTurn = reduce(played.finalState.core, {
+        const nextTurn = reduce(afterParalysis, {
             type: SU_EVENTS.TURN_STARTED,
             payload: { playerId: '1', turnNumber: 2 },
             timestamp: 200,
@@ -4147,14 +4209,19 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
                 reason: 'munchkin_halflings_last_call',
             }),
         }));
-        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('hireling-1');
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('last-call-1');
-        expect(resolved.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBeUndefined();
-        expect(isCardSuppressed(resolved.finalState.core, 'hireling-1')).toBe(true);
+        const afterLastCall = reduceDomainEventsBeforeAutoPhase(
+            played.finalState.core,
+            resolved.events,
+        );
+        expect(afterLastCall.bases[0].minions.map(minion => minion.uid)).toContain('hireling-1');
+        expect(afterLastCall.players['0'].discard.map(card => card.uid)).toContain('last-call-1');
+        expect(afterLastCall.players['0'].baseLimitedMinionQuota?.[0]).toBeUndefined();
+        expect(isCardSuppressed(afterLastCall, 'hireling-1')).toBe(true);
 
-        const afterScoringQueue = collectTriggers(resolved.finalState.core, 'afterScoring', {
-            state: resolved.finalState.core,
-            matchState: resolved.finalState,
+        const afterScoringState = { ...resolved.finalState, core: afterLastCall };
+        const afterScoringQueue = collectTriggers(afterLastCall, 'afterScoring', {
+            state: afterLastCall,
+            matchState: afterScoringState,
             playerId: '0',
             baseIndex: 0,
             rankings: [{ playerId: '0', power: 22, vp: 5 }],
@@ -5207,9 +5274,13 @@ describe('Smash Up Munchkin 盗贼剩余规则实现', () => {
             playNeedsBase: true,
             abilityTags: ['ongoing'],
         });
-        const result = scoreOneBase(state, 0, [], '0', 10, fixedRandom);
+        const result = scoreBaseViaFlow(state, 0, [], '0', 10, fixedRandom);
         const revealEvent = result.events.find(event => event.type === SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED);
-        const afterReveal = result.events.reduce((core, event) => reduce(core, event as any), state);
+        const afterReveal = reduceDomainEventsThrough(
+            state,
+            result.events,
+            SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED,
+        );
 
         expect(revealEvent).toMatchObject({
             payload: expect.objectContaining({ count: 2, eligiblePlayerIds: ['0'] }),

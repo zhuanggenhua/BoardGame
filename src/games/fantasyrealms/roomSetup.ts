@@ -23,6 +23,7 @@ export interface FantasyRealmsRuntimeSetupConfig {
 }
 
 const FANTASY_REALMS_STANDARD_PLAYER_OPTIONS = [3, 4, 5, 6] as const;
+const FANTASY_REALMS_DUEL_PLAYER_OPTIONS = [2] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -136,8 +137,16 @@ export function buildFantasyRealmsSetupOptions(): NonNullable<GameManifestEntry[
             type: 'select',
             labelKey: 'setup.variant.label',
             options: [
-                { value: FANTASY_REALMS_STANDARD_SETUP_VALUE, labelKey: 'setup.variant.standard' },
-                { value: FANTASY_REALMS_DUEL_SETUP_VALUE, labelKey: 'setup.variant.duel' },
+                {
+                    value: FANTASY_REALMS_STANDARD_SETUP_VALUE,
+                    labelKey: 'setup.variant.standard',
+                    playerOptions: [...FANTASY_REALMS_STANDARD_PLAYER_OPTIONS],
+                },
+                {
+                    value: FANTASY_REALMS_DUEL_SETUP_VALUE,
+                    labelKey: 'setup.variant.duel',
+                    playerOptions: [...FANTASY_REALMS_DUEL_PLAYER_OPTIONS],
+                },
             ],
             default: FANTASY_REALMS_STANDARD_SETUP_VALUE,
         },
@@ -150,6 +159,7 @@ export function buildFantasyRealmsSetupOptions(): NonNullable<GameManifestEntry[
                 { value: FANTASY_REALMS_CURSED_HOARD_SUITS_SETUP_VALUE, labelKey: 'setup.expansion.cursedHoardSuits' },
             ],
             default: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
+            createRoomDefault: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
         },
     };
 }

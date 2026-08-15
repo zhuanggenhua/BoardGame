@@ -10,8 +10,8 @@ import {
 
 describe('runtime entity identity primitives', () => {
     it('allocates deterministic ids from scope and ordinal', () => {
-        expect(createEntityId('smashup:base', 1)).toBe('smashup:base:1');
-        expect(createEntityId('smashup:base', 2)).toBe('smashup:base:2');
+        expect(createEntityId('board:slot', 1)).toBe('board:slot:1');
+        expect(createEntityId('board:slot', 2)).toBe('board:slot:2');
     });
 
     it('resolves by entity id and rejects replacement objects at the same coordinate', () => {
