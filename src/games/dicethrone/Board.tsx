@@ -214,7 +214,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // useDiceThroneState 的派生访问器在同引用状态更新下短暂保留旧防御阶段，
     // 进而让右侧骰盘从 legacy dice 回退出一颗旧防御骰。
     const currentPhase = rawG.sys.phase as TurnPhase;
-    const currentRollDice = React.useMemo(() => getCurrentRollDice(G, currentPhase), [G, currentPhase]);
+    const isCurrentPhaseMainRollPhase = currentPhase === 'offensiveRoll'
+        || currentPhase === 'targetingRoll'
+        || currentPhase === 'defensiveRoll';
+    const currentRollDice = React.useMemo(() => {
+        const hasExplicitCurrentDiceSource = Boolean(G.currentRollContext || G.pendingBonusDiceSettlement);
+        if (!isCurrentPhaseMainRollPhase && !hasExplicitCurrentDiceSource) {
+            return [];
+        }
+        return getCurrentRollDice(G, currentPhase);
+    }, [G, currentPhase, isCurrentPhaseMainRollPhase]);
     const replayOnlyRollDice = React.useMemo(() => (
         G.currentRollContext && isSettledReplayOnlyRollContext(G.currentRollContext)
             ? G.currentRollContext.dice

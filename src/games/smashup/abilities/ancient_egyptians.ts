@@ -5,6 +5,7 @@ import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAb
 import {
     addTempPower,
     buildBaseTargetOptions,
+    buildFieldSourceBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
@@ -932,15 +933,23 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
         `ancient_egyptians_mummy_after_scoring_${context.now}_${context.cardUid}`,
         context.playerId,
         '木乃伊：你可以将此随从埋葬到另一个基地，而不是进入弃牌堆',
-        [createSkipOption(), ...buildBaseTargetOptions(
-            context.state.bases
-                .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }))
-                .filter((entry) => entry.baseIndex !== context.sourceBaseIndex),
-            context.state,
-        )] as any[],
+        [
+            createSkipOption(),
+            ...buildFieldSourceBaseTargetOptions(
+                {
+                    uid: context.cardUid,
+                    defId: context.defId,
+                    fromBaseIndex: context.sourceBaseIndex,
+                },
+                context.state.bases
+                    .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }))
+                    .filter((entry) => entry.baseIndex !== context.sourceBaseIndex),
+                context.state,
+            ),
+        ] as any[],
         {
             sourceId: 'ancient_egyptians_mummy_after_scoring',
-            targetType: 'base',
+            targetType: 'minion',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
             titleKey: 'ui.ancient_egyptians_mummy_after_scoring_title',

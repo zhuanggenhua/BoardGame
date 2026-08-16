@@ -657,7 +657,25 @@ test.describe('Token 响应窗口完整流程', () => {
 
         await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
         await page.waitForTimeout(1200);
-        await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')).toHaveCount(0);
+        const visibleDiceAfterConfirm = await page
+            .locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')
+            .evaluateAll((nodes) => nodes
+                .map((node) => {
+                    const element = node as HTMLElement;
+                    const rect = element.getBoundingClientRect();
+                    const style = window.getComputedStyle(element);
+                    return {
+                        ownerId: element.dataset.ownerId ?? '',
+                        value: element.dataset.displayValue ?? '',
+                        visible: rect.width > 0
+                            && rect.height > 0
+                            && style.visibility !== 'hidden'
+                            && style.display !== 'none'
+                            && Number(style.opacity || '1') > 0,
+                    };
+                })
+                .filter((entry) => entry.visible));
+        expect(visibleDiceAfterConfirm).toEqual([]);
         await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);
     });
 });

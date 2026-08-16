@@ -13,6 +13,7 @@ import {
     addTempPower,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildFieldSourceBaseTargetOptions,
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildSemanticOngoingAttachEvents,
@@ -848,8 +849,19 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
             `world_champs_mummy_after_scoring_${context.now}_${context.cardUid}`,
             context.playerId,
             '木乃伊：你可以将本随从埋葬到另一个基地',
-            [createSkipOption('跳过（不埋葬）', 'ui.world_champs_mummy_after_scoring_skip_option'), ...buildBaseTargetOptions(baseOptions, context.matchState.core)],
-            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'base', titleKey: 'ui.world_champs_mummy_after_scoring_title' },
+            [
+                createSkipOption('跳过（不埋葬）', 'ui.world_champs_mummy_after_scoring_skip_option'),
+                ...buildFieldSourceBaseTargetOptions(
+                    {
+                        uid: context.cardUid,
+                        defId: context.defId,
+                        fromBaseIndex: context.sourceBaseIndex,
+                    },
+                    baseOptions,
+                    context.matchState.core,
+                ),
+            ],
+            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'minion', titleKey: 'ui.world_champs_mummy_after_scoring_title' },
         );
     },
     onResolve: ({ state, context, value, random, timestamp }) => {
