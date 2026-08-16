@@ -40,6 +40,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 - 总则：`AGENTS.md`
 - 引擎/系统/move/command：`.spec/knowledge/standards/engine-systems.md`
+- AI / 自动玩家接入：`.spec/skills/game-ai-adaptation/SKILL.md`（仅当本游戏支持本地 AI、在线 AI、自动响应或 watchdog 时启用；本 skill 只作路由，不复制 AI 规则正文）
 - UI 设计生成链路：`.spec/skills/ui-design-pipeline/SKILL.md`
 - UI/布局/组件：`.spec/knowledge/standards/ui-ux.md`
 - React 白屏/渲染错误/Hook 规则：`.spec/knowledge/standards/golden-rules.md`
@@ -582,6 +583,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 - 设计稿、架构审查、需求对齐、Board 实现顺序和截图链门禁均以 `references/ui-implementation-gates.md` 为准。
 - 新游戏主 UI、设计稿或布局收敛前必须先走上方登记的 UI 设计生成链路；若用户要位图设计稿，再继续走 `boardgame-ui-imagegen`。
 - Board 组件只做接入和组装，状态、教学、音频、事件、选择阶段按已有游戏模式复用。
+- 若本游戏已经接入或本轮新增 AI / 自动玩家，Board/UI 交互合同变化后必须同步执行 `game-ai-adaptation`；AI 合法动作来自规则动作合同，不能从按钮、DOM 或临时 UI 状态反推。
 - 对外声称基础流程已具备时，必须提供真实页面截图链；中局过程态和满元素截图要求回 `references/ui-implementation-gates.md`。
 ## 阶段 6：收尾与启用
 
