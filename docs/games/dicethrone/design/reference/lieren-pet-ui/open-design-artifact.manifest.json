@@ -1,0 +1,53 @@
+{
+  "kind": "html",
+  "renderer": "html",
+  "exports": ["html", "pdf"],
+  "title": "Dice Throne 女猎手妮拉宠物 UI 候选稿 v7",
+  "supportingFiles": [
+    "input-assets/nyra-avatar.webp",
+    "input-assets/nyras-bond.webp",
+    "input-assets/player-board.webp"
+  ],
+  "metadata": {
+    "gameId": "dicethrone",
+    "heroId": "lieren",
+    "artifactKind": "open-design-artifact-candidate",
+    "humanReview": "not-approved",
+    "currentExport": "exports/lieren-nyra-pet-ui-open-design-candidate-v7.png",
+    "currentArtifact": "lieren-nyra-pet-ui-v7.html",
+    "repoArtifactMirror": "lieren-nyra-pet-ui.html",
+    "openDesignProjectId": "dicethrone-lieren-pet-ui",
+    "implementationGate": "user-waived-for-current-runtime-implementation",
+    "latestFeedback": "v7 remains not approved after user feedback. The user explicitly waived manual design approval for this runtime implementation; it must use source rules and usability feedback rather than treating v7 as an accepted design.",
+    "supersededExports": [
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate.png",
+        "status": "revise-incomplete-export"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v2.png",
+        "status": "revise-blank-export-area"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v3.png",
+        "status": "superseded-by-v4"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v4.png",
+        "status": "revise-user-feedback-web-studio"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v5.png",
+        "status": "revise-nyra-avatar-was-still-token-like"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v6.png",
+        "status": "revise-remaining-rule-callouts"
+      },
+      {
+        "path": "exports/lieren-nyra-pet-ui-open-design-candidate-v7.png",
+        "status": "not-approved-user-feedback"
+      }
+    ]
+  }
+}

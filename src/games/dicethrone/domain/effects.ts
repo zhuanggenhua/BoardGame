@@ -1128,6 +1128,21 @@ function resolveConditionalEffect(
         events.push(event);
     }
 
+    if (typeof effect.companionHeal === 'number' && effect.companionHeal > 0) {
+        events.push({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: {
+                playerId: ctx.attackerId,
+                companionId: 'nyra',
+                delta: effect.companionHeal,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+            sfxKey,
+        } as DiceThroneEvent);
+    }
+
     if (typeof effect.cp === 'number' && effect.cp !== 0) {
         // CP 永远施加给自己，不受 rollDie.target 影响
         const currentCp = state.players[ctx.attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
@@ -1217,6 +1232,21 @@ function resolveDefaultEffect(
             timestamp,
             sfxKey,
         } as HealAppliedEvent);
+    }
+
+    if (typeof effect.companionHeal === 'number' && effect.companionHeal > 0) {
+        events.push({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: {
+                playerId: ctx.attackerId,
+                companionId: 'nyra',
+                delta: effect.companionHeal,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+            sfxKey,
+        } as DiceThroneEvent);
     }
 
     if (typeof effect.cp === 'number' && effect.cp !== 0) {
@@ -1395,6 +1425,7 @@ export function resolveEffectsToEvents(
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     let bonusApplied = false;
+    let nyraAttackBonusApplied = false;
     let passedFirstDamage = false;
     const shouldInlineBonusDamage =
         (timing === 'withDamage' || timing === 'postDamage')
@@ -1465,6 +1496,18 @@ export function resolveEffectsToEvents(
         }
         if (ctx.accumulatedBonusDamage) {
             totalBonus += ctx.accumulatedBonusDamage;
+        }
+        const attackerCompanion = ctx.state.players[ctx.attackerId]?.companion;
+        if (
+            !nyraAttackBonusApplied
+            && timing === 'withDamage'
+            && !ctx.isDefensiveContext
+            && effect.action.type === 'damage'
+            && attackerCompanion?.id === 'nyra'
+            && attackerCompanion.hp > 0
+        ) {
+            totalBonus += 2;
+            nyraAttackBonusApplied = true;
         }
 
         const rollDieBonusDamageMode = effect.action.type === 'rollDie'

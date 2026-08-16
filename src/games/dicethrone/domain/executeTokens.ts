@@ -248,6 +248,104 @@ export function executeTokenCommand(
             const pendingDamage = state.pendingDamage;
             const deferredDamageEvents: NonNullable<PendingDamage['deferredDamageEvents']> = [];
 
+            if (tokenId === TOKEN_IDS.NYRAS_BOND && !pendingDamage) {
+                const player = state.players[command.playerId];
+                if (
+                    player?.characterId !== 'lieren'
+                    || !player.companion
+                    || (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) < 1
+                    || player.companion.hp >= player.companion.maxHp
+                    || amount !== 1
+                ) break;
+                events.push({
+                    type: 'TOKEN_CONSUMED',
+                    payload: { playerId: command.playerId, tokenId: TOKEN_IDS.NYRAS_BOND, amount: 1, newTotal: 0, sourceAbilityId: TOKEN_IDS.NYRAS_BOND },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: command.playerId, companionId: 'nyra', delta: 2, sourceAbilityId: TOKEN_IDS.NYRAS_BOND },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.001,
+                } as DiceThroneEvent);
+                break;
+            }
+
+            if (tokenId === TOKEN_IDS.NYRA_REDIRECT && pendingDamage) {
+                const player = state.players[command.playerId];
+                if (
+                    command.playerId !== pendingDamage.responderId
+                    || state.pendingAttack?.isUltimate
+                    || player?.characterId !== 'lieren'
+                    || (player.companion?.hp ?? 0) <= 0
+                    || amount !== pendingDamage.currentDamage
+                ) break;
+                events.push({
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: command.playerId, companionId: 'nyra', delta: -pendingDamage.currentDamage, sourceAbilityId: pendingDamage.sourceAbilityId },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'TOKEN_RESPONSE_CLOSED',
+                    payload: { pendingDamageId: pendingDamage.id, finalDamage: 0, fullyEvaded: true },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.001,
+                } as DiceThroneEvent);
+                break;
+            }
+
+            if (tokenId === TOKEN_IDS.NYRAS_BOND && pendingDamage) {
+                const player = state.players[command.playerId];
+                const canAssignDamage = command.playerId === pendingDamage.responderId
+                    && !state.pendingAttack?.isUltimate
+                    && player?.characterId === 'lieren'
+                    && (player.companion?.hp ?? 0) > 0
+                    && (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) >= 1
+                    && Number.isInteger(amount)
+                    && amount >= 1
+                    && amount <= Math.min(pendingDamage.currentDamage, player.companion.hp);
+                if (!canAssignDamage) break;
+
+                const heroDamage = pendingDamage.currentDamage - amount;
+                const heroHp = player.resources[RESOURCE_IDS.HP] ?? 0;
+                events.push({
+                    type: 'TOKEN_CONSUMED',
+                    payload: { playerId: command.playerId, tokenId: TOKEN_IDS.NYRAS_BOND, amount: 1, newTotal: 0, sourceAbilityId: TOKEN_IDS.NYRAS_BOND },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: command.playerId, companionId: 'nyra', delta: -amount, sourceAbilityId: pendingDamage.sourceAbilityId },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.001,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'TOKEN_RESPONSE_CLOSED',
+                    payload: { pendingDamageId: pendingDamage.id, finalDamage: heroDamage, fullyEvaded: heroDamage === 0 },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.002,
+                } as DiceThroneEvent);
+                if (heroDamage > 0) {
+                    events.push({
+                        type: 'DAMAGE_DEALT',
+                        payload: {
+                            targetId: command.playerId,
+                            amount: heroDamage,
+                            actualDamage: Math.min(heroDamage, heroHp),
+                            sourceAbilityId: pendingDamage.sourceAbilityId,
+                            damageScope: pendingDamage.damageScope,
+                            unblockable: pendingDamage.unblockable,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + 0.003,
+                    } as DiceThroneEvent);
+                }
+                break;
+            }
+
             if (!pendingDamage) {
                 const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
                 const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
@@ -537,11 +635,13 @@ export function executeTokenCommand(
                 && state.pendingAttack?.isUltimate !== true
             ) {
                 // 攻击方结束增伤后，普通不可防御伤害仍允许符合条件的卡牌与状态 Token 响应。
+                const defender = state.players[pendingDamage.targetPlayerId];
+                const hasNyraRedirect = defender?.characterId === 'lieren' && (defender.companion?.hp ?? 0) > 0;
                 const hasDefenderResponse = hasDefensiveTokens(
                     state,
                     pendingDamage.targetPlayerId,
                     pendingDamage.damageScope,
-                ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId);
+                ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
                 if (hasDefenderResponse) {
                     // 切换到防御方响应
                     const newPendingDamage: PendingDamage = {

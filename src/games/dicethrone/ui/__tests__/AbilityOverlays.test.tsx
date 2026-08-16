@@ -650,7 +650,7 @@ describe('AbilityOverlays', () => {
                 }
             }
         }
-        expect(checkedUpgradeCount).toBe(118);
+        expect(checkedUpgradeCount).toBe(127);
     });
 
     it('技能槽 DOM 应区分主面板和放大预览，避免升级卡飞错目标', () => {

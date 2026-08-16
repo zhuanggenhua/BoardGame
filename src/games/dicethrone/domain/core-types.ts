@@ -74,7 +74,11 @@ export type DieFace =
     | 'blade'
     | 'wing'
     | 'cross'
-    | 'shield';
+    | 'shield'
+    | 'spear'
+    | 'claw'
+    | 'nyras_bond'
+    | 'sabertooth';
 
 // ============================================================================
 // 角色编目
@@ -95,6 +99,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'cursed_pirate',
     'artificer',
     'tianshi',
+    'lieren',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -105,6 +110,8 @@ export interface CharacterDefinition {
     id: SelectableCharacterId;
     nameKey: string;
     badges?: import('../../../core/ui').CharacterBadgeDef[];
+    /** 是否存在需要在选角与对局中展示的运行时提示卡。默认 true。 */
+    hasTipBoard?: boolean;
 }
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
@@ -122,6 +129,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
     { id: 'artificer', nameKey: 'characters.artificer' },
     { id: 'tianshi', nameKey: 'characters.tianshi' },
+    { id: 'lieren', nameKey: 'characters.lieren', hasTipBoard: false },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
@@ -135,6 +143,15 @@ export function getDiceThroneCharacterNameKey(
         return null;
     }
     return DICETHRONE_CHARACTER_NAME_KEY_MAP[characterId] ?? null;
+}
+
+export function hasDiceThroneTipBoard(
+    characterId: CharacterId | SelectableCharacterId | null | undefined,
+): boolean {
+    if (!characterId || characterId === 'unselected') {
+        return false;
+    }
+    return DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === characterId)?.hasTipBoard !== false;
 }
 
 /**
@@ -770,6 +787,12 @@ export interface HeroState {
     passiveAbilities?: PassiveAbilityDef[];
     /** 待处理的攻击修正卡伤害（在 pendingAttack 创建前累积，创建时转移到 pendingAttack.attackModifierBonusDamage） */
     pendingBonusDamage?: number;
+    /** 女猎手专属伙伴。伙伴生命独立于英雄生命，并在妮拉倒下时失去激活效果。 */
+    companion?: {
+        id: 'nyra';
+        hp: number;
+        maxHp: number;
+    };
 }
 
 export type SeatControllerKind = AiSeatController;

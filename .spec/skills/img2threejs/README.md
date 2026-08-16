@@ -16,8 +16,6 @@ Quality-gated, animation-ready, and deliberately token-efficient — reconstruct
 
 <a href="https://trendshift.io/repositories/83608?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-83608" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/83608/daily?language=Python" alt="hoainho%2Fimg2threejs | Trendshift" width="250" height="55"/></a>
 
-![img2threejs demo — a reference loot-chest image reconstructed as a procedural Three.js model](assets/demo.gif)
-
 </div>
 
 *A single reference image reconstructed in code — correct proportions, colours, bevels, gold trim, and an emissive emblem — running live in the browser.*

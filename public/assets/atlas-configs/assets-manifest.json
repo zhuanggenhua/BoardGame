@@ -138,6 +138,15 @@
           "mime": "application/json"
         }
       }
+    },
+    "dicethrone/ability-cards-lieren.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "8ee60afe8f3d8c4f3b721d1eef0abd70bd6a4cbeb43360bd588382ef41e60761",
+          "bytes": 2177,
+          "mime": "application/json"
+        }
+      }
     }
   }
 }

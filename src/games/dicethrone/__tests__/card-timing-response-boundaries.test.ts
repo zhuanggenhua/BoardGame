@@ -129,7 +129,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
         const state = prepareState();
         state.core.players['0'].tokens = {};
 
-        expect(unrestrictedInstantActions).toHaveLength(21);
+        expect(unrestrictedInstantActions).toHaveLength(22);
         for (const card of unrestrictedInstantActions) {
             expect(
                 checkPlayCard(state.core, '1', card, 'main1'),

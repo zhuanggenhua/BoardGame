@@ -9,7 +9,7 @@ import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
 import type { AbilityCard } from '../types';
-import type { HeroState } from '../domain/types';
+import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -62,6 +62,7 @@ export const CenterBoard = ({
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(characterId);
     const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
     const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
+    const hasTipBoard = hasDiceThroneTipBoard(characterId);
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
     const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
@@ -312,7 +313,7 @@ export const CenterBoard = ({
                         </span>
                     </button>
                 </div>
-                <div
+                {hasTipBoard && <div
                     className="flex items-center relative"
                     style={{ height: `${tipBoardHeightVw}vw` }}
                     data-tutorial-id="tip-board"
@@ -369,7 +370,7 @@ export const CenterBoard = ({
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>}
                 </div>
             </div>
         </>

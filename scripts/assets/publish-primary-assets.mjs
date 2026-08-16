@@ -532,6 +532,14 @@ export const publishStagedAssetsToServer = async (staged) => {
         });
         return;
     }
+    const allowSshFallback = process.env.ASSET_SERVER_ALLOW_SSH_FALLBACK === '1'
+        || process.env.BG_ASSET_ALLOW_SSH_FALLBACK === '1';
+    if (!allowSshFallback) {
+        throw new Error(
+            '缺少素材直连发布凭据：请配置 ASSET_SERVER_UPLOAD_TOKEN 或 BG_ASSET_PUBLISH_TOKEN。'
+            + ' 默认不再静默退回 SSH；只有管理员应急时才可设置 ASSET_SERVER_ALLOW_SSH_FALLBACK=1。',
+        );
+    }
     await publishStagedAssetsBySsh(staged);
 };
 

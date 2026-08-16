@@ -19,7 +19,7 @@ import type { CustomActionContext } from '../domain/effects';
 import type { DiceThroneEvent } from '../domain/types';
 import { ALL_TOKEN_DEFINITIONS, CHARACTER_DATA_MAP } from '../domain/characters';
 import { RESOURCE_IDS } from '../domain/resources';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { LIEREN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 
 // ============================================================================
 // 事件类型 → 必需 category 映射
@@ -61,8 +61,9 @@ function createMockState(actionId: string): any {
     const isSamuraiDefense = actionId === 'samurai-stand-tall' || actionId === 'samurai-stand-tall-2';
     const isNinjaDefense = actionId === 'ninja-blink' || actionId === 'ninja-blink-2';
     const isTianshi = actionId.startsWith('tianshi-');
+    const isLierenKindredBond = actionId === 'lieren-kindred-bond';
 
-    const p0CharId = isTianshi ? 'tianshi' : isSamuraiDefense ? 'samurai' : isNinjaDefense ? 'ninja' : 'pyromancer';
+    const p0CharId = isLierenKindredBond ? 'lieren' : isTianshi ? 'tianshi' : isSamuraiDefense ? 'samurai' : isNinjaDefense ? 'ninja' : 'pyromancer';
     const p1CharId = 'monk';
 
     const p0Data = CHARACTER_DATA_MAP[p0CharId];
@@ -86,6 +87,7 @@ function createMockState(actionId: string): any {
                 discard: [],
                 abilityLevels: {},
                 dice: p0Data.diceDefinition,
+                ...(isLierenKindredBond ? { companion: { id: 'nyra', hp: 5, maxHp: 5 } } : {}),
             },
             '1': {
                 characterId: p1CharId,
@@ -136,6 +138,18 @@ function createMockState(actionId: string): any {
                 { id: 'die-1', value: 4, locked: false, symbol: 'shuriken', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'ninja-die' },
                 { id: 'die-2', value: 6, locked: false, symbol: 'mask', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'ninja-die' },
             ],
+        };
+    }
+
+    if (isLierenKindredBond) {
+        return {
+            ...baseState,
+            dice: [
+                { id: 'die-0', value: 1, locked: false, symbol: LIEREN_DICE_FACE_IDS.SPEAR, definitionId: p0Data.diceDefinition?.[0]?.id ?? 'lieren-dice' },
+                { id: 'die-1', value: 2, locked: false, symbol: LIEREN_DICE_FACE_IDS.CLAW, definitionId: p0Data.diceDefinition?.[0]?.id ?? 'lieren-dice' },
+                { id: 'die-2', value: 3, locked: false, symbol: LIEREN_DICE_FACE_IDS.NYRAS_BOND, definitionId: p0Data.diceDefinition?.[0]?.id ?? 'lieren-dice' },
+            ],
+            rollDiceCount: 3,
         };
     }
 

@@ -58,6 +58,9 @@ export const STATUS_IDS = {
 
     /** 炽天使：眩光 */
     DAZZLE: 'dazzle',
+
+    /** 女猎手：流血 */
+    BLEED: 'bleed',
 } as const;
 
 export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
@@ -138,6 +141,11 @@ export const TOKEN_IDS = {
     /** 炽天使：飞行 / 神圣降临 */
     FLIGHT: 'flight',
     DIVINE_ARRIVAL: 'divine_arrival',
+
+    /** 女猎手：妮拉之系 */
+    NYRAS_BOND: 'nyras_bond',
+    /** 仅用于伤害响应命令，不是可展示或可堆叠的 Token。 */
+    NYRA_REDIRECT: 'nyra_redirect',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -285,6 +293,23 @@ export const TIANSHI_DICE_FACE_IDS = {
 export type TianshiDiceFaceId = (typeof TIANSHI_DICE_FACE_IDS)[keyof typeof TIANSHI_DICE_FACE_IDS];
 
 // ============================================================================
+// 骰面 ID（女猎手）
+// ============================================================================
+
+export const LIEREN_DICE_FACE_IDS = {
+    /** 长矛：骰子 1、2 */
+    SPEAR: 'spear',
+    /** 利爪：骰子 3、4 */
+    CLAW: 'claw',
+    /** 魂之羁绊：骰子 5 */
+    NYRAS_BOND: 'nyras_bond',
+    /** 剑齿虎：骰子 6 */
+    SABERTOOTH: 'sabertooth',
+} as const;
+
+export type LierenDiceFaceId = (typeof LIEREN_DICE_FACE_IDS)[keyof typeof LIEREN_DICE_FACE_IDS];
+
+// ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
 
@@ -355,6 +380,7 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     CURSED_PIRATE: 'dicethrone:cursed_pirate-cards',
     ARTIFICER: 'dicethrone:artificer-cards',
     TIANSHI: 'dicethrone:tianshi-cards',
+    LIEREN: 'dicethrone:lieren-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -377,4 +403,5 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     CURSED_PIRATE: 'dicethrone:cursed_pirate-status',
     ARTIFICER: 'dicethrone:artificer-status',
     TIANSHI: 'dicethrone:tianshi-status',
+    LIEREN: 'dicethrone:lieren-status',
 } as const;

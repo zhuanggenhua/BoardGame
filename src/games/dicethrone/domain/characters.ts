@@ -23,6 +23,7 @@ import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHA
 import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck, getCursedPirateAbilitiesForFace } from '../heroes/cursed_pirate';
 import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, ARTIFICER_PASSIVE_ABILITIES, getArtificerStartingDeck } from '../heroes/artificer';
 import { TIANSHI_ABILITIES, TIANSHI_TOKENS, TIANSHI_INITIAL_TOKENS, TIANSHI_INITIAL_STATUS_EFFECTS, getTianshiStartingDeck } from '../heroes/tianshi';
+import { LIEREN_ABILITIES, LIEREN_TOKENS, LIEREN_INITIAL_TOKENS, LIEREN_INITIAL_STATUS_EFFECTS, getLierenStartingDeck } from '../heroes/lieren';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -399,6 +400,28 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.TIANSHI,
         statusAtlasPath: 'dicethrone/images/tianshi/status-icons-atlas.json',
     },
+    lieren: {
+        id: 'lieren',
+        abilities: LIEREN_ABILITIES,
+        tokens: LIEREN_TOKENS,
+        initialTokens: LIEREN_INITIAL_TOKENS,
+        initialStatusEffects: LIEREN_INITIAL_STATUS_EFFECTS,
+        diceDefinitionId: 'lieren-dice',
+        getStartingDeck: getLierenStartingDeck,
+        initialAbilityLevels: {
+            'wild-force': 1,
+            'savage-force': 1,
+            'brutal-strike': 1,
+            'beast-force': 1,
+            'life-revival': 1,
+            'beast-instinct': 1,
+            'hunt-ambush': 1,
+            'kindred-bond': 1,
+            'jungle-fury': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.LIEREN,
+        statusAtlasPath: 'dicethrone/images/lieren/status-icons-atlas.json',
+    },
 };
 
 /**
@@ -501,6 +524,9 @@ export function initHeroState(
         ),
         upgradeCardByAbilityId: {},
         passiveAbilities: data.passiveAbilities ? JSON.parse(JSON.stringify(data.passiveAbilities)) : undefined,
+        ...(characterId === 'lieren'
+            ? { companion: { id: 'nyra' as const, hp: 7, maxHp: 7 } }
+            : {}),
     };
 }
 

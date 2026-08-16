@@ -1,7 +1,7 @@
 import type { MatchState } from '../../engine/types';
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { DiceThroneCore, SelectableCharacterId } from './domain/types';
-import { IMPLEMENTED_DICETHRONE_CHARACTER_IDS } from './domain/types';
+import { hasDiceThroneTipBoard, IMPLEMENTED_DICETHRONE_CHARACTER_IDS } from './domain/types';
 
 const CHARACTER_ASSET_TYPES = [
     { key: 'player-board', tags: ['selection', 'gameplay'] },
@@ -28,6 +28,7 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     cursed_pirate: 'cursed',
     artificer: 'artificial',
     tianshi: 'tianshi',
+    lieren: 'lieren',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;
@@ -63,6 +64,7 @@ function getExtraGameplayAssets(charId: SelectableCharacterId): string[] {
 
 function getCharAssetsByTag(charId: SelectableCharacterId, tag: AssetTag): string[] {
     const baseAssets = CHARACTER_ASSET_TYPES
+        .filter((asset) => asset.key !== 'tip' || hasDiceThroneTipBoard(charId))
         .filter((asset) => (asset.tags as readonly string[]).includes(tag))
         .map((asset) => getCharAssetPath(charId, asset.key));
     if (tag !== 'gameplay') return baseAssets;
@@ -71,7 +73,9 @@ function getCharAssetsByTag(charId: SelectableCharacterId, tag: AssetTag): strin
 
 function getAllCharAssets(charId: SelectableCharacterId): string[] {
     return [
-        ...CHARACTER_ASSET_TYPES.map((asset) => getCharAssetPath(charId, asset.key)),
+        ...CHARACTER_ASSET_TYPES
+            .filter((asset) => asset.key !== 'tip' || hasDiceThroneTipBoard(charId))
+            .map((asset) => getCharAssetPath(charId, asset.key)),
         ...getHandAtlasAssets(charId),
     ];
 }

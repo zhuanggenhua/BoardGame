@@ -26,6 +26,8 @@ import { ARTIFICER_CARDS, getArtificerStartingDeck } from './artificer/cards';
 import { ARTIFICER_ABILITIES } from './artificer/abilities';
 import { TIANSHI_CARDS, getTianshiStartingDeck } from './tianshi/cards';
 import { TIANSHI_ABILITIES } from './tianshi/abilities';
+import { LIEREN_CARDS, getLierenStartingDeck } from './lieren/cards';
+import { LIEREN_ABILITIES } from './lieren/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { HeroState } from '../domain/types';
@@ -109,6 +111,11 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: TIANSHI_CARDS,
         abilities: TIANSHI_ABILITIES,
         getStartingDeck: getTianshiStartingDeck,
+    },
+    lieren: {
+        cards: LIEREN_CARDS,
+        abilities: LIEREN_ABILITIES,
+        getStartingDeck: getLierenStartingDeck,
     },
 };
 
