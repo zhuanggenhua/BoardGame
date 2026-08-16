@@ -2022,7 +2022,7 @@ test.describe('Mage Wars formal online runtime', () => {
             const target = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${targetObjectId}"]`).first();
             await selectPreparedSpell(match.guestPage, selfPreparedCardByName(match.guestPage, '原力推斥'), '原力推斥');
             await clickFieldObject(match.guestPage, target, '原力推斥选择目标生物');
-            await expect(target).toHaveAttribute('data-zone-role', 'source', { timeout: 3_000 });
+            await expect(target).toHaveAttribute('data-field-card-role', 'source', { timeout: 3_000 });
             await expect(match.guestPage.getByTestId('mage-wars-arena-zone-c3')).toHaveAttribute('data-legal-target-zone', 'true', {
                 timeout: 3_000,
             });
@@ -2095,7 +2095,7 @@ test.describe('Mage Wars formal online runtime', () => {
             const target = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${targetObjectId}"]`).first();
             await selectPreparedSpell(match.hostPage, selfPreparedCardByName(match.hostPage, '传送'), '传送');
             await clickFieldObject(match.hostPage, target, '传送选择目标生物');
-            await expect(target).toHaveAttribute('data-zone-role', 'source', { timeout: 3_000 });
+            await expect(target).toHaveAttribute('data-field-card-role', 'source', { timeout: 3_000 });
             await expect(match.hostPage.getByTestId('mage-wars-arena-zone-b3')).toHaveAttribute('data-legal-target-zone', 'true', {
                 timeout: 3_000,
             });
