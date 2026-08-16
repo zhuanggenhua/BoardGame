@@ -167,6 +167,7 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
             },
         });
 
+        const credentialsStartAt = Date.now();
         const hostCredentials = await claimSeatViaApi({
             page,
             matchId,
@@ -175,6 +176,7 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
             playerName: 'SmashUp-Host',
         });
         await seedMatchCredentials(hostContext, 'smashup', matchId, '0', hostCredentials);
+        const credentialsElapsedMs = Date.now() - credentialsStartAt;
 
         await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
         await waitForFactionDraft(page);
