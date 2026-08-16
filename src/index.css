@@ -3,8 +3,8 @@
  * 导致首次 CSS 转换长期阻塞。运行时所有 utility 类都在 src 内，因此改为明确登记唯一源码根。
  */
 @import "tailwindcss" source(none);
-@source ".";
 @import "./fonts.css";
+@source ".";
 
 /*
  * Tailwind v4 当前没有稳定检测到 DiceThrone HUD 里一批通过常量复用的 arbitrary-value utilities，
