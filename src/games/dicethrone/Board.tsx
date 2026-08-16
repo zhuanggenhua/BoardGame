@@ -214,16 +214,21 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // useDiceThroneState 的派生访问器在同引用状态更新下短暂保留旧防御阶段，
     // 进而让右侧骰盘从 legacy dice 回退出一颗旧防御骰。
     const currentPhase = rawG.sys.phase as TurnPhase;
+    const rawSysInteraction = rawG.sys.interaction?.current;
+    const isBonusDiceInteractionActive = rawSysInteraction?.kind === 'dt:bonus-dice';
     const isCurrentPhaseMainRollPhase = currentPhase === 'offensiveRoll'
         || currentPhase === 'targetingRoll'
         || currentPhase === 'defensiveRoll';
     const currentRollDice = React.useMemo(() => {
-        const hasExplicitCurrentDiceSource = Boolean(G.currentRollContext || G.pendingBonusDiceSettlement);
+        const hasExplicitCurrentDiceSource = Boolean(
+            G.currentRollContext
+            || (isBonusDiceInteractionActive && G.pendingBonusDiceSettlement)
+        );
         if (!isCurrentPhaseMainRollPhase && !hasExplicitCurrentDiceSource) {
             return [];
         }
         return getCurrentRollDice(G, currentPhase);
-    }, [G, currentPhase, isCurrentPhaseMainRollPhase]);
+    }, [G, currentPhase, isBonusDiceInteractionActive, isCurrentPhaseMainRollPhase]);
     const replayOnlyRollDice = React.useMemo(() => (
         G.currentRollContext && isSettledReplayOnlyRollContext(G.currentRollContext)
             ? G.currentRollContext.dice
@@ -241,7 +246,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const currentResponderId = rawG.sys.responseWindow?.current
         ? rawG.sys.responseWindow.current.responderQueue[rawG.sys.responseWindow.current.currentResponderIndex]
         : undefined;
-    const currentPendingBonusDiceSettlement = isCurrentBonusRollSettlement(G)
+    const currentPendingBonusDiceSettlement = isBonusDiceInteractionActive && isCurrentBonusRollSettlement(G)
         ? G.pendingBonusDiceSettlement
         : undefined;
     // 奖励骰的唯一展示载体是右侧骰盘。普通确认结算后 pending 会被清掉，
@@ -496,7 +501,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const abilityOverlaysRef = React.useRef<AbilityOverlaysHandle>(null);
 
     // 使用 useInteractionState Hook 管理交互状态（从 sys.interaction 读取）
-    const sysInteraction = rawG.sys.interaction?.current;
+    const sysInteraction = rawSysInteraction;
     const activeResolutionFrameId = rawG.sys.resolution?.activeFrameId;
     const compareRollInteraction = asCompareRollChoice(sysInteraction);
     const pendingInteraction: InteractionDescriptor | undefined = sysInteraction?.kind === 'dt:card-interaction'
