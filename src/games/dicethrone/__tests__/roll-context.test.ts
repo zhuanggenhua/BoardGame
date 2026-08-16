@@ -1703,11 +1703,7 @@ describe('DiceThrone 单槽当前骰区', () => {
             timestamp: 6,
         } as DiceThroneEvent);
 
-        expect(state.currentRollContext).toMatchObject({
-            kind: 'bonus',
-            status: 'settled',
-            dice: [{ ownerId: '1', value: 6 }],
-        });
+        expect(state.currentRollContext).toBeUndefined();
 
         const resolved = reduce(state, {
             type: 'ATTACK_RESOLVED',

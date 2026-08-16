@@ -19,6 +19,7 @@ import { SU_EVENTS } from '../domain/types';
 import type { BaseAbilityUsedEvent, SmashUpCore, SmashUpEvent, BuriedCardOnBase } from '../domain/types';
 import { registerTrigger } from '../domain/ongoingEffects';
 import { getBaseDef, getCardDef } from '../data/cards';
+import { resolveLiveBaseIndex } from '../domain/utils';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -956,8 +957,9 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
         },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
-        const selectedBaseIndex = (value as any)?.baseIndex as number | undefined;
-        if (selectedBaseIndex === undefined) return { events: [] };
+        const selected = value as { baseIndex?: number; baseDefId?: string } | undefined;
+        const resolvedBaseIndex = resolveLiveBaseIndex(state.core, selected?.baseIndex, selected?.baseDefId);
+        if (resolvedBaseIndex === undefined) return { events: [] };
         return {
             events: buildBuryCardEvents({
                 core: state.core,
@@ -965,7 +967,7 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
                 playerId,
                 cardUid: context.cardUid,
                 defId: context.defId,
-                baseIndex: selectedBaseIndex,
+                baseIndex: resolvedBaseIndex,
                 trueOwnerId: playerId,
                 buriedFrom: 'play',
                 reason: 'ancient_egyptians_mummy',

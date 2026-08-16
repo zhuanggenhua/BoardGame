@@ -37,6 +37,7 @@ interface SimpleChoiceCallInfo {
     responseValidationMode?: string;
     revalidateOnRespond?: boolean;
     hasMulti?: boolean;
+    usesFieldSourceBaseTargetOptions?: boolean;
 }
 
 const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh?: string; responseValidationMode?: string }> = {
@@ -552,16 +553,23 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
             const config = extractSimpleChoiceConfig(node);
             const optionsArg = getChoiceOptionsArg(node);
             const line = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
+            const usesFieldSourceBaseTargetOptions = expressionContainsCall(
+                sourceFile,
+                optionsArg,
+                node,
+                ['buildFieldSourceBaseTargetOptions'],
+            );
             calls.push({
                 file: filePath,
                 line,
                 sourceId: config.sourceId,
                 targetType: config.targetType,
-                    autoRefresh: config.autoRefresh,
-                    responseValidationMode: config.responseValidationMode,
-                    revalidateOnRespond: config.revalidateOnRespond,
-                    hasMulti: config.hasMulti,
-                });
+                autoRefresh: config.autoRefresh,
+                responseValidationMode: config.responseValidationMode,
+                revalidateOnRespond: config.revalidateOnRespond,
+                hasMulti: config.hasMulti,
+                usesFieldSourceBaseTargetOptions,
+            });
 
             const fieldSourceBaseTargetIssue = findFieldSourceBaseTargetIssue(collectOptionObjectLiterals(sourceFile, optionsArg, node));
             if (fieldSourceBaseTargetIssue) {

@@ -374,6 +374,7 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
             : state.pendingAttack;
     const currentContext = state.currentRollContext;
     const restoredSettlement = settlement?.suspendedParentSettlement;
+    const shouldSuppressSettledReplay = state.pendingAttack?.tokenResponseFullyEvaded === true;
     const shouldRestoreSuspendedParent = Boolean(
         settlement
         && currentContext?.id === `bonus:${settlement.id}`
@@ -394,6 +395,9 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
                 ...nextState,
                 currentRollContext: currentContext.suspendedParent,
             };
+        }
+        if (shouldSuppressSettledReplay) {
+            return clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
         }
         const settledBonusContext = createBonusRollContextFromSettlement(nextState, settlement);
         return {

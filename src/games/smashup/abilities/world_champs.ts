@@ -52,6 +52,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { resolveLiveBaseIndex } from '../domain/utils';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 
@@ -867,7 +868,8 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
     },
     onResolve: ({ state, context, value, random, timestamp }) => {
         const selected = value as BaseChoice;
-        if (selected.skip || selected.baseIndex === undefined) return { events: [] };
+        const resolvedBaseIndex = resolveLiveBaseIndex(state.core, selected?.baseIndex, selected?.baseDefId);
+        if (selected?.skip || resolvedBaseIndex === undefined) return { events: [] };
         const source = state.core.bases
             .map((base, baseIndex) => ({
                 baseIndex,
@@ -882,7 +884,7 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
                 playerId: source.minion.controller,
                 cardUid: source.minion.uid,
                 defId: source.minion.defId,
-                baseIndex: selected.baseIndex,
+                baseIndex: resolvedBaseIndex,
                 trueOwnerId: source.minion.owner,
                 buriedFrom: 'play',
                 reason: 'world_champs_mummy',
