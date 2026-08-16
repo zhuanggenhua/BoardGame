@@ -2171,7 +2171,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                             <TurnStatusDock dispatch={dispatch} disabled={!canAdvance} compact />
                         </div>
                     </aside>
-                    <aside className="pointer-events-none absolute bottom-2 left-[13rem] right-[8.5rem] z-20 flex min-h-0 items-end">
+                    <aside className="pointer-events-none absolute bottom-2 left-[13rem] right-[10rem] z-20 flex min-h-0 items-end">
                         <div className="pointer-events-auto min-w-0 flex-1">
                             {viewingPlayer ? (
                                 <SpellRail
