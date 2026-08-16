@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
-import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
+import { getCurrentInteractionSummary, injectRawBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import { buildAiDecisionContext, registerRemoteAiProvider, resolveNextLocalAiAction, withAiActionStrategyTags } from '../../../engine/ai';
 import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import { DiceThroneDomain } from '../domain';
@@ -30,6 +30,7 @@ import {
     getCardById,
     advanceTo,
     getCurrentInteractionId,
+    getMultistepChoicePrompt,
 } from './test-utils';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -476,15 +477,11 @@ describe('AI legal actions', () => {
             rerollCount: 0,
             displayOnly: true,
         };
-        state.sys.interaction = {
-            ...state.sys.interaction,
-            current: {
-                id: 'dt-bonus-dice-right-tray-bonus-ai-confirm',
-                kind: 'dt:bonus-dice',
-                playerId: '0',
-                data: null,
-            },
-        };
+        injectRawBlockingInteraction(state, {
+            id: 'dt-bonus-dice-right-tray-bonus-ai-confirm',
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         const actions = buildDiceThroneAiLegalActions({
             playerId: '0',
@@ -499,7 +496,7 @@ describe('AI legal actions', () => {
 
         const result = execCmd(state, cmd('SKIP_BONUS_DICE_REROLL', '0'));
         expect(result.core.pendingBonusDiceSettlement).toBeUndefined();
-        expect(result.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionSummary(result).kind).toBeUndefined();
     });
 
     it('AI bonus dice modify-or-confirm: 右侧奖励骰允许改骰时应同时枚举合法改骰牌和确认动作', () => {
@@ -519,15 +516,11 @@ describe('AI legal actions', () => {
         };
         state.core.pendingBonusDiceSettlement = settlement;
         state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
-        state.sys.interaction = {
-            ...state.sys.interaction,
-            current: {
-                id: 'dt-bonus-dice-right-tray-bonus-ai-modify-or-confirm',
-                kind: 'dt:bonus-dice',
-                playerId: '0',
-                data: null,
-            },
-        };
+        injectRawBlockingInteraction(state, {
+            id: 'dt-bonus-dice-right-tray-bonus-ai-modify-or-confirm',
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         expect(DiceThroneDomain.validate(state, {
             type: 'PLAY_CARD',
@@ -567,15 +560,11 @@ describe('AI legal actions', () => {
         };
         state.core.pendingBonusDiceSettlement = settlement;
         state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
-        state.sys.interaction = {
-            ...state.sys.interaction,
-            current: {
-                id: 'dt-bonus-dice-right-tray-bonus-ai-no-modify',
-                kind: 'dt:bonus-dice',
-                playerId: '0',
-                data: null,
-            },
-        };
+        injectRawBlockingInteraction(state, {
+            id: 'dt-bonus-dice-right-tray-bonus-ai-no-modify',
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         const actions = buildDiceThroneAiLegalActions({
             playerId: '0',
@@ -1629,10 +1618,9 @@ describe('AI legal actions', () => {
 
         state = execCmd(state, cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }));
 
-        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
-        const data = state.sys.interaction.current?.data as { completedSteps?: number; minSteps?: number } | undefined;
-        expect(data?.completedSteps).toBe(1);
-        expect(data?.minSteps).toBe(2);
+        const prompt = getMultistepChoicePrompt(state, 'set-two-dice-test');
+        expect(prompt.completedSteps).toBe(1);
+        expect(prompt.minSteps).toBe(2);
 
         const earlyConfirm = tryCmd(state, cmd('SYS_INTERACTION_CONFIRM', '0'));
         expect(earlyConfirm.success).toBe(false);
@@ -2840,12 +2828,11 @@ describe('AI legal actions', () => {
         state.sys.responseWindow = {
             current: null,
         };
-        state.sys.interaction.current = {
+        injectRawBlockingInteraction(state, {
             id: 'dt-token-response-dmg-ai-honor-response',
             kind: 'dt:token-response',
             playerId: '1',
-            data: null,
-        } as any;
+        });
 
         const legalActions = buildDiceThroneAiLegalActions({
             playerId: '1',
