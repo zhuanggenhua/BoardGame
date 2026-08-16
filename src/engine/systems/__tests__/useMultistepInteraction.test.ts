@@ -234,5 +234,51 @@ describe('useMultistepInteraction', () => {
             const calls = dispatch.mock.calls.map(c => c[0]);
             expect(calls).toContain('SYS_INTERACTION_CONFIRM');
         });
+
+        it('手动确认也按语义步骤数判断，重复点击同一颗骰子不能点亮确认', () => {
+            const dispatch = vi.fn();
+            const interaction: InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> = {
+                id: 'test-manual-semantic-min-steps',
+                kind: 'multistep-choice',
+                playerId: '0',
+                data: {
+                    title: '测试手动确认完成度',
+                    minSteps: 2,
+                    initialResult: { modifications: {}, modCount: 0 },
+                    localReducer: (current, step) => {
+                        const isNewDie = !(step.dieId in current.modifications);
+                        return {
+                            modifications: { ...current.modifications, [step.dieId]: step.newValue },
+                            modCount: isNewDie ? current.modCount + 1 : current.modCount,
+                        };
+                    },
+                    toCommands: (result) =>
+                        Object.entries(result.modifications).map(([dieId, newValue]) => ({
+                            type: 'MODIFY_DIE',
+                            payload: { dieId: Number(dieId), newValue },
+                        })),
+                    getCompletedSteps: (result) => result.modCount,
+                },
+            };
+
+            const { result } = renderHook(() =>
+                useMultistepInteraction(interaction, dispatch),
+            );
+
+            act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 3 }); });
+            act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 5 }); });
+
+            expect(result.current.stepCount).toBe(2);
+            expect(result.current.result?.modCount).toBe(1);
+            expect(result.current.canConfirm).toBe(false);
+
+            act(() => { result.current.confirm(); });
+            expect(dispatch).not.toHaveBeenCalled();
+
+            act(() => { result.current.step({ action: 'setAny', dieId: 1, newValue: 6 }); });
+
+            expect(result.current.result?.modCount).toBe(2);
+            expect(result.current.canConfirm).toBe(true);
+        });
     });
 });

@@ -80,6 +80,7 @@ type CapacitorUpdaterModule = {
 export interface AndroidLiveUpdateConfig {
     enabled: boolean;
     manifestUrl: string;
+    manifestUrls: string[];
     channel: string;
     appReadyTimeoutMs: number;
 }
@@ -87,6 +88,7 @@ export interface AndroidLiveUpdateConfig {
 export interface AndroidLiveUpdateSnapshot {
     enabled: boolean;
     manifestUrl: string;
+    manifestUrls: string[];
     channel: string;
     nativeAndroid: boolean;
     updaterLoaded: boolean;
@@ -129,8 +131,8 @@ export interface AndroidOtaManifest {
 }
 
 type AndroidOtaManifestReadResult =
-    | { status: 'success'; manifest: AndroidOtaManifest }
-    | { status: 'missing' }
+    | { status: 'success'; manifest: AndroidOtaManifest; manifestUrl: string }
+    | { status: 'missing'; reason: string }
     | { status: 'error'; reason: string };
 
 export type AndroidLiveUpdateResult =
@@ -282,6 +284,29 @@ const isBundleReadyForActivation = (status: BundleStatus) => status === 'success
 
 const normalizeUrl = (value: string) => value.replace(/\/+$/, '');
 const isAbsoluteHttpUrl = (value: string) => /^https?:\/\//i.test(value);
+
+const splitUrlList = (value: string | boolean | undefined) => {
+    if (typeof value !== 'string') return [];
+    return value
+        .split(/[\n,]+/)
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+};
+
+const collectManifestUrls = (
+    primaryUrl: string,
+    ...fallbackValues: Array<string | boolean | undefined>
+) => {
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    for (const candidate of [primaryUrl, ...fallbackValues.flatMap(splitUrlList)]) {
+        const normalized = readTrimmedEnv(candidate).replace(/\/+$/, '');
+        if (!normalized || !isAbsoluteHttpUrl(normalized) || seen.has(normalized)) continue;
+        seen.add(normalized);
+        urls.push(normalized);
+    }
+    return urls;
+};
 
 const normalizeComparableVersion = (value: string) => {
     const [main] = value.split('+');
@@ -481,6 +506,12 @@ export const readAndroidLiveUpdateConfig = (
     const manifestUrl = readTrimmedEnv(env.VITE_ANDROID_OTA_MANIFEST_URL)
         || readTrimmedEnv(env.VITE_IOS_OTA_MANIFEST_URL)
         || readTrimmedEnv(env.VITE_MOBILE_OTA_MANIFEST_URL);
+    const manifestUrls = collectManifestUrls(
+        manifestUrl,
+        env.VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS,
+        env.VITE_IOS_OTA_MANIFEST_FALLBACK_URLS,
+        env.VITE_MOBILE_OTA_MANIFEST_FALLBACK_URLS,
+    );
     const channel = readTrimmedEnv(env.VITE_ANDROID_OTA_CHANNEL)
         || readTrimmedEnv(env.VITE_IOS_OTA_CHANNEL)
         || readTrimmedEnv(env.VITE_MOBILE_OTA_CHANNEL)
@@ -492,8 +523,9 @@ export const readAndroidLiveUpdateConfig = (
             : false;
 
     return {
-        enabled: enabled && isAbsoluteHttpUrl(manifestUrl),
-        manifestUrl,
+        enabled: enabled && manifestUrls.length > 0,
+        manifestUrl: manifestUrls[0] || manifestUrl,
+        manifestUrls,
         channel,
         appReadyTimeoutMs: parseTimeoutEnv(
             env.VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS
@@ -585,14 +617,21 @@ const readManifest = async (
     try {
         const response = await fetch(buildManifestRequestUrl(url), {
             method: 'GET',
+            cache: 'no-store',
+            redirect: 'manual',
             headers: {
                 Accept: 'application/json',
             },
             ...(abortController ? { signal: abortController.signal } : {}),
         });
+        const responseType = (response as Response & { type?: string }).type;
+        const redirected = (response as Response & { redirected?: boolean }).redirected === true;
+        if (redirected || responseType === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            throw new Error('manifest request redirected; latest.json 控制入口不允许重定向');
+        }
         if (response.status === 404) {
             logMobileRuntime('OTA', 'manifest-fetch-404', { url }, 'warn');
-            return { status: 'missing' };
+            return { status: 'missing', reason: `404 ${url}` };
         }
         if (!response.ok) {
             throw new Error(`manifest request failed: ${response.status}`);
@@ -638,7 +677,7 @@ const readManifest = async (
             minNativeVersion: manifest.minNativeVersion,
             maxNativeVersion: manifest.maxNativeVersion,
         });
-        return { status: 'success', manifest };
+        return { status: 'success', manifest, manifestUrl: url };
     } catch (error) {
         const reason = getErrorMessage(error);
         console.warn('[OTA] 读取 manifest 失败', error);
@@ -656,6 +695,36 @@ const readManifest = async (
     }
 };
 
+const readManifestFromCandidates = async (
+    urls: string[],
+    timeoutMs: number = DEFAULT_MANIFEST_TIMEOUT_MS,
+): Promise<AndroidOtaManifestReadResult> => {
+    const candidates = urls.filter(isAbsoluteHttpUrl);
+    if (candidates.length === 0) {
+        return { status: 'error', reason: '没有可用的 OTA 清单地址' };
+    }
+
+    const failures: string[] = [];
+    let sawMissing = false;
+    for (const candidateUrl of candidates) {
+        const result = await readManifest(candidateUrl, timeoutMs);
+        if (result.status === 'success') {
+            emitCriticalOtaLog('manifest-candidate-selected', {
+                manifestUrl: candidateUrl,
+                candidateCount: candidates.length,
+            });
+            return result;
+        }
+        sawMissing = sawMissing || result.status === 'missing';
+        failures.push(`${candidateUrl}: ${result.status === 'missing' ? result.reason : result.reason}`);
+    }
+
+    const reason = `已尝试 ${candidates.length} 个清单入口均失败：${failures.join('；')}`;
+    return sawMissing && failures.length === candidates.length
+        ? { status: 'missing', reason }
+        : { status: 'error', reason };
+};
+
 export const readAndroidLiveUpdateSnapshot = async (
     options: ReadAndroidLiveUpdateSnapshotOptions = {},
 ): Promise<AndroidLiveUpdateSnapshot> => {
@@ -664,6 +733,7 @@ export const readAndroidLiveUpdateSnapshot = async (
     const baseSnapshot: AndroidLiveUpdateSnapshot = {
         enabled: config.enabled,
         manifestUrl: config.manifestUrl,
+        manifestUrls: config.manifestUrls,
         channel: config.channel,
         nativeAndroid: false,
         updaterLoaded: false,
@@ -672,6 +742,7 @@ export const readAndroidLiveUpdateSnapshot = async (
     emitCriticalOtaLog('snapshot-read-start', {
         enabled: config.enabled,
         manifestUrl: config.manifestUrl,
+        manifestUrls: config.manifestUrls,
         channel: config.channel,
         includeManifest,
     });
@@ -710,8 +781,9 @@ export const readAndroidLiveUpdateSnapshot = async (
         return snapshot;
     }
 
-    const manifestResult = includeManifest ? await readManifest(config.manifestUrl) : null;
+    const manifestResult = includeManifest ? await readManifestFromCandidates(config.manifestUrls) : null;
     const manifest = manifestResult?.status === 'success' ? manifestResult.manifest : null;
+    const manifestUrl = manifestResult?.status === 'success' ? manifestResult.manifestUrl : config.manifestUrl;
     let current: CurrentBundleResult;
     try {
         current = await updaterModule.CapacitorUpdater.current();
@@ -735,6 +807,7 @@ export const readAndroidLiveUpdateSnapshot = async (
 
     const snapshot: AndroidLiveUpdateSnapshot = {
         ...baseSnapshot,
+        manifestUrl,
         nativeAndroid: nativeDiagnostics.nativeAndroid,
         updaterLoaded: true,
         nativeVersion: current.native,
@@ -1008,6 +1081,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 force: options.force === true,
                 enabled: config.enabled,
                 manifestUrl: config.manifestUrl,
+                manifestUrls: config.manifestUrls,
                 channel: config.channel,
             });
             updateOtaDebugState({
@@ -1070,21 +1144,23 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 return { status: 'error', reason: '未能加载 OTA 插件' } as const;
             }
 
-            const manifestResult = await readManifest(
-                config.manifestUrl,
+            const manifestResult = await readManifestFromCandidates(
+                config.manifestUrls,
                 Math.max(DEFAULT_MANIFEST_TIMEOUT_MS, config.appReadyTimeoutMs),
             );
             if (manifestResult.status === 'missing') {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }
-                const reason = `OTA 清单不存在：${config.manifestUrl}`;
+                const reason = `OTA 清单不存在：${manifestResult.reason}`;
                 logMobileRuntime('OTA', 'background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    manifestUrls: config.manifestUrls,
                     reason,
                 }, 'warn');
                 emitCriticalOtaLog('background-check-manifest-missing', {
                     manifestUrl: config.manifestUrl,
+                    manifestUrls: config.manifestUrls,
                     reason,
                 });
                 updateOtaDebugState({
@@ -1106,10 +1182,12 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 const reason = `OTA 清单读取失败：${manifestResult.reason}`;
                 logMobileRuntime('OTA', 'background-check-manifest-error', {
                     manifestUrl: config.manifestUrl,
+                    manifestUrls: config.manifestUrls,
                     reason,
                 }, 'error');
                 emitCriticalOtaLog('background-check-manifest-error', {
                     manifestUrl: config.manifestUrl,
+                    manifestUrls: config.manifestUrls,
                     reason,
                 });
                 updateOtaDebugState({
@@ -1126,6 +1204,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
             }
 
             const manifest = manifestResult.manifest;
+            const manifestUrl = manifestResult.manifestUrl;
             const manifestDisplayVersion = getManifestDisplayVersion(manifest);
 
             const isForceUpdate = manifest.forceUpdate === true;
@@ -1144,6 +1223,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     currentBundleId: current.bundle.id,
                     currentBundleStatus: current.bundle.status,
                     manifestVersion: manifest.version,
+                    manifestUrl,
                 });
                 updateOtaDebugState({
                     stage: 'current-bundle-read',
@@ -1152,6 +1232,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     currentBundleId: current.bundle.id,
                     currentBundleStatus: current.bundle.status,
                     manifestVersion: manifest.version,
+                    manifestUrl,
                 });
                 logMobileRuntime('OTA', 'current-bundle-read', {
                     current,

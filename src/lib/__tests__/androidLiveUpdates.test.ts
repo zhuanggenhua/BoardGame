@@ -25,12 +25,24 @@ import {
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 import packageJson from '../../../package.json';
+import { beforeEach } from 'vitest';
 
 const currentAppVersion = packageJson.version.replace(/^v/i, '').split('-')[0] || packageJson.version.replace(/^v/i, '');
-const currentVersionedApkUrl = `https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/${currentAppVersion}.apk?v=${currentAppVersion}`;
+const currentVersionedApkUrl = `http://8.148.71.102/official/native-app-updates/android/stable/packages/${currentAppVersion}.apk?v=${currentAppVersion}`;
+
+beforeEach(() => {
+    Object.defineProperty(window, 'Capacitor', {
+        configurable: true,
+        value: {
+            isNativePlatform: () => true,
+            getPlatform: () => 'android',
+        },
+    });
+});
 
 afterEach(() => {
     cleanup();
+    delete (window as typeof window & { Capacitor?: unknown }).Capacitor;
     vi.clearAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
@@ -50,6 +62,7 @@ describe('androidLiveUpdates', () => {
         })).toEqual({
             enabled: true,
             manifestUrl: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            manifestUrls: ['https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json'],
             channel: 'stable',
             appReadyTimeoutMs: 15000,
         });
@@ -241,7 +254,7 @@ describe('androidLiveUpdates', () => {
         } = await import('../mobile/androidNativeUpdates');
 
         await expect(checkAvailability()).rejects.toThrow(
-            '原生更新清单不存在：https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+            '原生更新清单读取失败，已尝试 2 个入口',
         );
     });
 
@@ -487,6 +500,85 @@ describe('androidLiveUpdates', () => {
         });
     });
 
+    it('读取 OTA 快照时主清单失败后会使用 IP 兜底清单', async () => {
+        vi.resetModules();
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: vi.fn().mockResolvedValue({
+                    native: '0.6.4',
+                    bundle: {
+                        id: 'bundle-current',
+                        version: '6.0.0-ota-2026-08-14T13-26-06-707Z',
+                        downloaded: '2026-08-14T13:30:00.000Z',
+                        checksum: 'old',
+                        status: 'success',
+                    },
+                }),
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(),
+            },
+        }));
+        const primaryManifestUrl = 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json';
+        const fallbackManifestUrl = 'http://8.148.71.102/official/app-updates/android/stable/latest.json';
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.startsWith(primaryManifestUrl)) {
+                return new Response('unavailable', { status: 503 });
+            }
+            if (url.startsWith(fallbackManifestUrl)) {
+                return new Response(JSON.stringify({
+                    version: '6.0.0-ota-2026-08-15T10-48-13-358Z',
+                    displayVersion: '665',
+                    productVersion: '0.6.4',
+                    url: 'http://8.148.71.102/official/app-updates/android/stable/bundles/6.0.0-ota-2026-08-15T10-48-13-358Z.zip',
+                    checksum: 'new',
+                    channel: 'stable',
+                    forceUpdate: true,
+                }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+            return new Response('unexpected', { status: 500 });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const { readAndroidLiveUpdateSnapshot } = await import('../mobile/androidLiveUpdates');
+        const snapshot = await readAndroidLiveUpdateSnapshot({
+            includeManifest: true,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: primaryManifestUrl,
+                VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: fallbackManifestUrl,
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+            },
+        });
+
+        expect(snapshot).toMatchObject({
+            manifestUrl: fallbackManifestUrl,
+            manifestVersion: '6.0.0-ota-2026-08-15T10-48-13-358Z',
+            manifestDisplayVersion: '665',
+        });
+        expect(fetchMock.mock.calls.map(([input]) => String(input).split('?')[0])).toEqual([
+            primaryManifestUrl,
+            fallbackManifestUrl,
+        ]);
+    });
+
     it('manifest 兼容性支持 targetNativeVersion 精确命中', () => {
         expect(isManifestCompatibleWithNativeVersion({
             version: '0.5.0-ota.1',
@@ -724,7 +816,7 @@ describe('androidLiveUpdates', () => {
 
         expect(result).toEqual({
             status: 'error',
-            reason: 'OTA 清单读取失败：Failed to fetch',
+            reason: 'OTA 清单读取失败：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: Failed to fetch',
         });
         expect(fetchMock).toHaveBeenCalledWith(
             expect.stringContaining('https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json?ota-check='),
@@ -737,7 +829,7 @@ describe('androidLiveUpdates', () => {
         expect(states).toContainEqual({
             phase: 'error',
             blocking: true,
-            reason: 'OTA 清单读取失败：Failed to fetch',
+            reason: 'OTA 清单读取失败：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: Failed to fetch',
         });
     });
 
@@ -797,13 +889,13 @@ describe('androidLiveUpdates', () => {
 
         expect(result).toEqual({
             status: 'error',
-            reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            reason: 'OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
         });
         expect(currentMock).not.toHaveBeenCalled();
         expect(states).toContainEqual({
             phase: 'error',
             blocking: true,
-            reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            reason: 'OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
         });
     });
 
@@ -1505,6 +1597,10 @@ describe('androidLiveUpdates', () => {
         })).toEqual({
             enabled: true,
             manifestUrl: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+            manifestUrls: [
+                'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+                'http://8.148.71.102/official/native-app-updates/android/stable/latest.json',
+            ],
             channel: 'stable',
         });
 
@@ -1540,6 +1636,78 @@ describe('androidLiveUpdates', () => {
             versionCode: 499,
             url: 'https://example.com/app.apk',
         }, appInfo)).toBe(false);
+    });
+
+    it('原生更新主清单重定向时会改用 IP 兜底清单', async () => {
+        vi.resetModules();
+        const primaryManifestUrl = 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json';
+        const fallbackManifestUrl = 'http://8.148.71.102/official/native-app-updates/android/stable/latest.json';
+
+        vi.stubEnv('VITE_ANDROID_NATIVE_UPDATE_ENABLED', 'true');
+        vi.stubEnv('VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL', primaryManifestUrl);
+        vi.stubEnv('VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS', fallbackManifestUrl);
+        vi.stubEnv('VITE_CAPACITOR_APP_ID', 'top.easyboardgame.app');
+        vi.doMock('@capacitor/core', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('@capacitor/core')>();
+            return {
+                ...actual,
+                registerPlugin: vi.fn(() => ({
+                    getAppInfo: vi.fn().mockResolvedValue({
+                        packageName: 'top.easyboardgame.app',
+                        versionName: '0.5.0',
+                        versionCode: 500,
+                        canRequestPackageInstalls: true,
+                    }),
+                })),
+            };
+        });
+        vi.doMock('../mobile/androidRuntime', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('../mobile/androidRuntime')>();
+            return {
+                ...actual,
+                isNativeAndroidRuntime: () => true,
+            };
+        });
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === primaryManifestUrl) {
+                return new Response(null, {
+                    status: 302,
+                    headers: { Location: fallbackManifestUrl },
+                });
+            }
+            if (url === fallbackManifestUrl) {
+                return new Response(JSON.stringify({
+                    version: '0.5.2',
+                    versionCode: 502,
+                    url: 'http://8.148.71.102/official/native-app-updates/android/stable/packages/0.5.2.apk',
+                    checksum: 'abc123',
+                    size: 123456,
+                }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+            return new Response('unexpected', { status: 500 });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const {
+            checkAndroidNativeUpdateAvailability: checkAvailability,
+        } = await import('../mobile/androidNativeUpdates');
+        const result = await checkAvailability();
+
+        expect(result).toMatchObject({
+            available: true,
+            manifest: {
+                version: '0.5.2',
+                url: 'http://8.148.71.102/official/native-app-updates/android/stable/packages/0.5.2.apk',
+            },
+        });
+        expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+            primaryManifestUrl,
+            fallbackManifestUrl,
+        ]);
     });
 
     it('Android 运行时边界必须看真实原生环境，而不是只看构建模式或孤立桥对象', () => {
@@ -1775,14 +1943,15 @@ describe('androidLiveUpdates', () => {
             .mockImplementationOnce(async (options?: {
                 onForceStateChange?: (state: { phase: string; blocking: boolean; reason?: string }) => void;
             }) => {
+                const reason = 'OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json';
                 options?.onForceStateChange?.({
                     phase: 'error',
                     blocking: true,
-                    reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                    reason,
                 });
                 return {
                     status: 'error',
-                    reason: 'OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                    reason,
                 } as const;
             });
 
@@ -1814,7 +1983,7 @@ describe('androidLiveUpdates', () => {
 
         await waitFor(() => {
             expect(view.getByTestId('force-update-phase').textContent).toBe(
-                'error:true:OTA 清单不存在：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                'error:true:OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
             );
         });
         expect(toastErrorMock).not.toHaveBeenCalled();

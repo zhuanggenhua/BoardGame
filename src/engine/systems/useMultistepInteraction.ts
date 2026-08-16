@@ -37,6 +37,13 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
     const [result, setResult] = useState<TResult | null>(data?.initialResult ?? null);
     const [stepCount, setStepCount] = useState(0);
 
+    const getCompletedStepCount = useCallback((currentResult: TResult | null, fallbackStepCount: number): number => {
+        if (currentResult === null) return 0;
+        return data?.getCompletedSteps
+            ? data.getCompletedSteps(currentResult)
+            : fallbackStepCount;
+    }, [data]);
+
     // 用 ref 追踪最新的 result/stepCount，避免 confirm 闭包捕获旧值
     const resultRef = useRef(result);
     const stepCountRef = useRef(stepCount);
@@ -118,7 +125,8 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         if (!data || resultRef.current === null) return;
         if (confirmedRef.current) return; // 已经 confirm 过（auto-confirm 或重复点击），跳过
         const minSteps = data.minSteps ?? 0;
-        if (stepCountRef.current < minSteps) return;
+        const completedSteps = getCompletedStepCount(resultRef.current, stepCountRef.current);
+        if (completedSteps < minSteps) return;
 
         confirmedRef.current = true;
         const commands = data.toCommands(resultRef.current);
@@ -129,7 +137,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         }
         // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互（携带 interactionId 防止误 resolve 下一个交互）
         dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
-    }, [data, dispatch, interactionId]);
+    }, [data, dispatch, getCompletedStepCount, interactionId]);
 
     const cancel = useCallback(() => {
         if (!interaction) return;
@@ -137,7 +145,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
     }, [interaction, dispatch]);
 
     const minSteps = data?.minSteps ?? 0;
-    const canConfirm = stepCount >= minSteps && result !== null;
+    const canConfirm = result !== null && getCompletedStepCount(result, stepCount) >= minSteps;
 
     return { result, stepCount, canConfirm, step, confirm, cancel };
 }

@@ -105,6 +105,65 @@ test('要求 CORS 预检但线上不支持 OPTIONS 时继续等待并最终失�
     );
 });
 
+test('禁止重定向的目标会使用 manual redirect 并拒绝 30x', async () => {
+    const redirects = [];
+
+    await assert.rejects(
+        waitForServerAssets(
+            [{
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                forbidRedirect: true,
+            }],
+            {
+                intervalMs: 0,
+                timeoutMs: 1,
+                fetchImpl: async (_url, init) => {
+                    redirects.push(init.redirect);
+                    return new Response(null, {
+                        status: 302,
+                        headers: {
+                            Location: 'http://8.148.71.102/official/app-updates/android/stable/latest.json',
+                        },
+                    });
+                },
+            },
+        ),
+        /redirectStatus=302/,
+    );
+
+    assert.deepEqual(redirects, ['manual']);
+});
+
+test('禁止重定向的 CORS 预检同样不跟随 30x', async () => {
+    const requests = [];
+
+    await assert.rejects(
+        waitForServerAssets(
+            [{
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                forbidRedirect: true,
+            }],
+            {
+                requireCorsPreflight: true,
+                intervalMs: 0,
+                timeoutMs: 1,
+                fetchImpl: async (_url, init) => {
+                    requests.push({ method: init.method, redirect: init.redirect });
+                    return new Response(null, {
+                        status: 307,
+                        headers: {
+                            Location: 'http://8.148.71.102/official/app-updates/android/stable/latest.json',
+                        },
+                    });
+                },
+            },
+        ),
+        /corsPreflightRedirect=307/,
+    );
+
+    assert.deepEqual(requests, [{ method: 'OPTIONS', redirect: 'manual' }]);
+});
+
 test('大型发布对象通过 HEAD 校验服务器来源和内容大小', async () => {
     let requestMethod = '';
 

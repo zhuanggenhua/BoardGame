@@ -4,8 +4,16 @@
   "main": "src/index.mjs",
   "compatibility_date": "2026-07-10",
   "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "assets.easyboardgame.top/official/*",
+      "zone_name": "easyboardgame.top"
+    }
+  ],
   "vars": {
     "ORIGIN_BASE_URL": "https://assets-origin.easyboardgame.top",
+    "ORIGIN_DIRECT_BASE_URL": "http://8.148.71.102",
+    "ORIGIN_DIRECT_HOSTNAMES": "assets.easyboardgame.top",
     "ORIGIN_TIMEOUT_MS": "10000"
   },
   "observability": {

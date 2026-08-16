@@ -1494,7 +1494,7 @@ const resolveDiceThroneSeatLegalOnlyRecovery = (args: {
         playerId: settlement.attackerId,
         fingerprintHint: `display-only-bonus:${settlement.attackerId}:${args.phase || 'unknown-phase'}:${settlementId}`,
         attemptSuffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
-        command: { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+        command: { type: 'CONFIRM_ROLL', payload: {} },
     };
 };
 

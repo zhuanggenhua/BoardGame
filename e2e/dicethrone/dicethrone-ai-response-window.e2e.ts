@@ -1061,8 +1061,8 @@ test.describe('DiceThrone AI 响应窗口', () => {
                 state: injectedState,
             });
             expect(legalActions).toContainEqual(expect.objectContaining({
-                kind: 'skip-bonus-dice-reroll',
-                commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+                kind: 'confirm-roll',
+                commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
             }));
             expect(legalActions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
             await expect(hostPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);

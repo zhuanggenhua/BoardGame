@@ -422,7 +422,7 @@ test.describe('DiceThrone 核心 E2E', () => {
         }));
 
         await expect(page.getByTestId('flying-effect-damage')).toHaveCount(0, { timeout: 15000 });
-        await expect(page.getByTestId('dt-top-header-1-hp')).toHaveText('43', { timeout: 15000 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('43', { timeout: 15000 });
         await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.EVASIVE}`)).toHaveAttribute('data-token-amount', '1', { timeout: 15000 });
         await game.screenshot('08-武僧连段冲拳二-选择闪避后-伤害已结算', testInfo);
     });

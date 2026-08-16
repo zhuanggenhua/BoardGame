@@ -108,7 +108,7 @@ test.describe('DiceThrone - 神圣祝福（精简）', () => {
             hp: 1,
             blessing: 0,
         });
-        await expect(page.getByTestId('dt-top-header-1-hp')).toHaveText('1', { timeout: 5000 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('1', { timeout: 5000 });
         await page.waitForTimeout(4500);
 
         await game.screenshot('blessing-of-divinity-triggered', testInfo);

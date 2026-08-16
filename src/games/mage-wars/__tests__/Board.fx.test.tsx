@@ -519,7 +519,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-spell-push-burst')).not.toBeNull();
             expect(travel.getAttribute('data-source-col')).toBe('1');
             expect(travel.getAttribute('data-target-col')).toBe('2');
-            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('normal');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#38bdf8');
 

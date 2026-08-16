@@ -13,6 +13,7 @@ test('Android OTA 客户端构建默认指向正式 stable 清单', () => {
     assert.deepEqual(resolveAndroidOtaClientBuildEnv(), {
         VITE_ANDROID_OTA_ENABLED: 'true',
         VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+        VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/app-updates/android/stable/latest.json',
         VITE_ANDROID_OTA_CHANNEL: 'stable',
     });
 });
@@ -24,7 +25,21 @@ test('Android OTA 客户端构建使用命令指定的 channel', () => {
     }), {
         VITE_ANDROID_OTA_ENABLED: 'true',
         VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.example.com/root/app-updates/android/gray/latest.json',
+        VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/app-updates/android/gray/latest.json',
         VITE_ANDROID_OTA_CHANNEL: 'gray',
+    });
+});
+
+test('Android OTA 客户端构建支持控制域名和下载 IP 分离', () => {
+    assert.deepEqual(resolveAndroidOtaClientBuildEnv({
+        channel: 'stable',
+        controlAssetsBaseUrl: 'https://assets.example.com/official/',
+        downloadAssetsBaseUrl: 'http://192.0.2.10/official/',
+    }), {
+        VITE_ANDROID_OTA_ENABLED: 'true',
+        VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.example.com/official/app-updates/android/stable/latest.json',
+        VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://192.0.2.10/official/app-updates/android/stable/latest.json',
+        VITE_ANDROID_OTA_CHANNEL: 'stable',
     });
 });
 

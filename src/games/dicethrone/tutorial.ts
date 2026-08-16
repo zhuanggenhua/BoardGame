@@ -292,7 +292,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'dice-confirm-button',
             position: 'left',
             requireAction: true,
-            allowedCommands: ['SKIP_BONUS_DICE_REROLL'],
+            allowedCommands: ['CONFIRM_ROLL'],
             advanceOnEvents: [
                 { type: 'BONUS_DICE_SETTLED' },
             ],

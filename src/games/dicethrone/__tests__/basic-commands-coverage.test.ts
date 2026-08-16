@@ -462,7 +462,7 @@ describe('AI legal actions', () => {
         });
 
         expect(actions.filter((action) => action.kind === 'bonus-die-reroll')).toHaveLength(0);
-        expect(actions.filter((action) => action.kind === 'skip-bonus-dice-reroll')).toHaveLength(1);
+        expect(actions.filter((action) => action.kind === 'confirm-roll')).toHaveLength(1);
     });
 
     it('本地 AI 面对右侧奖励骰确认交互时应确认结算，而不是取消交互', () => {
@@ -490,12 +490,12 @@ describe('AI legal actions', () => {
         });
 
         expect(actions).toContainEqual(expect.objectContaining({
-            kind: 'skip-bonus-dice-reroll',
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            kind: 'confirm-roll',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         }));
         expect(actions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
 
-        const result = execCmd(state, cmd('SKIP_BONUS_DICE_REROLL', '0'));
+        const result = execCmd(state, cmd('CONFIRM_ROLL', '0'));
         expect(result.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(getCurrentInteractionSummary(result).kind).toBeUndefined();
     });
@@ -540,8 +540,8 @@ describe('AI legal actions', () => {
             commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-surprise' } }],
         }));
         expect(actions).toContainEqual(expect.objectContaining({
-            kind: 'skip-bonus-dice-reroll',
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            kind: 'confirm-roll',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         }));
     });
 
@@ -631,8 +631,8 @@ describe('AI legal actions', () => {
         expect(actions.some((action) => action.kind === 'play-card')).toBe(false);
         expect(actions.some((action) => action.kind === 'bonus-die-reroll')).toBe(true);
         expect(actions).toContainEqual(expect.objectContaining({
-            kind: 'skip-bonus-dice-reroll',
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            kind: 'confirm-roll',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         }));
     });
 
@@ -659,10 +659,10 @@ describe('AI legal actions', () => {
         });
 
         expect(actions.some((action) =>
-            action.kind === 'bonus-die-reroll' || action.kind === 'skip-bonus-dice-reroll'
+            action.kind === 'bonus-die-reroll' || action.kind === 'confirm-roll'
         )).toBe(true);
         expect(actions.filter((action) => action.kind === 'bonus-die-reroll')).toHaveLength(0);
-        expect(actions.some((action) => action.kind === 'skip-bonus-dice-reroll')).toBe(true);
+        expect(actions.some((action) => action.kind === 'confirm-roll')).toBe(true);
     });
 
     it('本地 AI 在奖励骰未达阈值且重掷低骰有正期望时，应优先重掷该骰', async () => {
@@ -729,7 +729,7 @@ describe('AI legal actions', () => {
             },
         });
 
-        expect(resolution?.action.kind).toBe('skip-bonus-dice-reroll');
+        expect(resolution?.action.kind).toBe('confirm-roll');
     });
 
     it('dt:card-interaction 的 selectPlayer 交互应生成 RESOLVE_INTERACTION 动作', () => {
@@ -2652,7 +2652,7 @@ describe('AI legal actions', () => {
                 state,
             });
             expect(actions.some((action) =>
-                action.kind === 'bonus-die-reroll' || action.kind === 'skip-bonus-dice-reroll'
+                action.kind === 'bonus-die-reroll' || action.kind === 'confirm-roll'
             )).toBe(false);
         };
 

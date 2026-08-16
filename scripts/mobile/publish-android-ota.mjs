@@ -8,7 +8,10 @@ import {
     resolveAndroidOtaVersionBase,
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
-import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
+import {
+    resolveAndroidAssetsBaseUrl,
+    resolveAndroidControlAssetsBaseUrl,
+} from './android-assets-base-url.mjs';
 import { classifyOtaBundleFile } from './ota-bundle-files.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
 
@@ -201,9 +204,11 @@ const bundleVersionHumanTime = formatHumanTime(buildInstant);
 const bundleKey = `${manifestPrefix}/bundles/${bundleVersion}.zip`;
 const versionManifestKey = `${manifestPrefix}/manifests/${bundleVersion}.json`;
 const latestManifestKey = `${manifestPrefix}/latest.json`;
-const assetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
-const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
-const latestManifestUrl = `${assetsBaseUrl}/app-updates/android/${channel}/latest.json`;
+const downloadAssetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
+const controlAssetsBaseUrl = resolveAndroidControlAssetsBaseUrl(process.env);
+const bundleUrl = `${downloadAssetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
+const downloadLatestManifestUrl = `${downloadAssetsBaseUrl}/app-updates/android/${channel}/latest.json`;
+const controlLatestManifestUrl = `${controlAssetsBaseUrl}/app-updates/android/${channel}/latest.json`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
 const validOtaVersionBasePattern = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 const MIN_ANDROID_OTA_DISPLAY_VERSION = 600;
@@ -237,12 +242,16 @@ const parseDisplayVersion = (value) => {
     return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 };
 
-const readLatestDisplayVersion = async () => {
+const readLatestDisplayVersionFromUrl = async (url) => {
     try {
-        const response = await fetch(`${latestManifestUrl}?probe=${Date.now()}`, {
+        const response = await fetch(`${url}?probe=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-cache' },
+            redirect: 'manual',
             signal: AbortSignal.timeout(30_000),
         });
+        if (response.redirected || (response.status >= 300 && response.status < 400)) {
+            return null;
+        }
         if (!response.ok) {
             return null;
         }
@@ -251,6 +260,20 @@ const readLatestDisplayVersion = async () => {
     } catch {
         return null;
     }
+};
+
+const readLatestDisplayVersion = async () => {
+    const seen = new Set();
+    const versions = [];
+    for (const manifestUrl of [controlLatestManifestUrl, downloadLatestManifestUrl]) {
+        if (seen.has(manifestUrl)) continue;
+        seen.add(manifestUrl);
+        const displayVersion = await readLatestDisplayVersionFromUrl(manifestUrl);
+        if (displayVersion !== null) {
+            versions.push(displayVersion);
+        }
+    }
+    return versions.length > 0 ? Math.max(...versions) : null;
 };
 
 const explicitDisplayVersionNumber = parseDisplayVersion(explicitDisplayVersion);
@@ -406,9 +429,15 @@ if (!dryRun && !skipLatest) {
             expectedSize: zipBuffer.length,
         },
         {
-            url: latestManifestUrl,
+            url: downloadLatestManifestUrl,
             expectedSize: Buffer.byteLength(latestManifestBody),
             expectedSha256: createHash('sha256').update(latestManifestBody).digest('hex'),
+        },
+        {
+            url: controlLatestManifestUrl,
+            expectedSize: Buffer.byteLength(latestManifestBody),
+            expectedSha256: createHash('sha256').update(latestManifestBody).digest('hex'),
+            forbidRedirect: true,
         },
     ], { requireCorsPreflight: true });
 }
@@ -436,7 +465,11 @@ console.log(`androidBuildBackendUrl=${androidBuildMeta.backendUrl}`);
 console.log(`androidBuildBuiltAt=${androidBuildMeta.builtAt || '(unknown)'}`);
 console.log(`bundleKey=${bundleKey}`);
 console.log(`latestManifestKey=${latestManifestKey}`);
+console.log(`downloadAssetsBaseUrl=${downloadAssetsBaseUrl}`);
+console.log(`controlAssetsBaseUrl=${controlAssetsBaseUrl}`);
 console.log(`bundleUrl=${bundleUrl}`);
+console.log(`downloadLatestManifestUrl=${downloadLatestManifestUrl}`);
+console.log(`controlLatestManifestUrl=${controlLatestManifestUrl}`);
 console.log(`checksum=${checksum}`);
 console.log(`publishedAtHumanTime=${publishedAtHumanTime}`);
 console.log(`manifest=${JSON.stringify(manifest)}`);

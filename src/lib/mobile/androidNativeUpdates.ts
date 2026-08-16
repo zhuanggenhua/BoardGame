@@ -89,6 +89,7 @@ type NativeAppUpdatePlugin = {
 export interface AndroidNativeUpdateConfig {
     enabled: boolean;
     manifestUrl: string;
+    manifestUrls: string[];
     channel: string;
 }
 
@@ -122,6 +123,7 @@ export interface AndroidNativeUpdateAvailability {
 export interface AndroidWebAppDownloadConfig {
     directDownloadUrl: string;
     manifestUrl: string;
+    manifestUrls: string[];
 }
 
 export type AndroidWebAppDownloadResolution =
@@ -164,7 +166,9 @@ type NativeUpdateRequest = {
 };
 
 const DEFAULT_NATIVE_UPDATE_CHANNEL = 'stable';
-const DEFAULT_NATIVE_UPDATE_MANIFEST_BASE_URL = 'http://8.148.71.102/official/native-app-updates/android';
+const DEFAULT_NATIVE_UPDATE_CONTROL_MANIFEST_BASE_URL = 'https://assets.easyboardgame.top/official/native-app-updates/android';
+const DEFAULT_NATIVE_UPDATE_DOWNLOAD_MANIFEST_BASE_URL = 'http://8.148.71.102/official/native-app-updates/android';
+const DEFAULT_NATIVE_UPDATE_MANIFEST_BASE_URL = DEFAULT_NATIVE_UPDATE_CONTROL_MANIFEST_BASE_URL;
 const DEBUG_ANDROID_APP_ID_SEGMENTS = new Set(['debug', 'dev', 'test', 'qa']);
 const nativeUpdateRequestListeners = new Set<(request: NativeUpdateRequest) => void>();
 const nativePlugin = registerPlugin<NativeAppUpdatePlugin>('AppUpdate');
@@ -224,6 +228,29 @@ const readTrimmedEnv = (value: string | boolean | undefined) => (
 
 const isAbsoluteHttpUrl = (value: string) => /^https?:\/\//i.test(value);
 
+const splitUrlList = (value: string | boolean | undefined) => {
+    if (typeof value !== 'string') return [];
+    return value
+        .split(/[\n,]+/)
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+};
+
+const collectManifestUrls = (
+    primaryUrl: string,
+    ...fallbackValues: Array<string | boolean | undefined>
+) => {
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    for (const candidate of [primaryUrl, ...fallbackValues.flatMap(splitUrlList)]) {
+        const normalized = readTrimmedEnv(candidate).replace(/\/+$/, '');
+        if (!normalized || !isAbsoluteHttpUrl(normalized) || seen.has(normalized)) continue;
+        seen.add(normalized);
+        urls.push(normalized);
+    }
+    return urls;
+};
+
 const isNonReleaseAndroidAppId = (appId: string) => (
     appId
         .split('.')
@@ -246,6 +273,10 @@ const resolveAndroidNativeUpdateChannel = (env: Partial<ImportMetaEnv>) => (
 
 const buildDefaultAndroidNativeUpdateManifestUrl = (channel: string) => (
     `${DEFAULT_NATIVE_UPDATE_MANIFEST_BASE_URL}/${channel}/latest.json`
+);
+
+const buildDefaultAndroidNativeUpdateFallbackManifestUrl = (channel: string) => (
+    `${DEFAULT_NATIVE_UPDATE_DOWNLOAD_MANIFEST_BASE_URL}/${channel}/latest.json`
 );
 
 const buildVersionedAndroidApkUrl = (manifestUrl: string, version: string) => {
@@ -296,28 +327,49 @@ const getNativePlugin = (): NativeAppUpdatePlugin | null => {
 };
 
 export const readAndroidNativeUpdateConfig = (env: Partial<ImportMetaEnv> = import.meta.env): AndroidNativeUpdateConfig => {
-    const manifestUrl = typeof env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL === 'string'
+    const channel = resolveAndroidNativeUpdateChannel(env);
+    const configuredManifestUrl = typeof env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL === 'string'
         ? env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL.trim()
         : '';
-    const channel = resolveAndroidNativeUpdateChannel(env);
+    const hasInvalidConfiguredManifestUrl = configuredManifestUrl !== '' && !isAbsoluteHttpUrl(configuredManifestUrl);
+    const manifestUrls = hasInvalidConfiguredManifestUrl
+        ? []
+        : collectManifestUrls(
+            configuredManifestUrl || buildDefaultAndroidNativeUpdateManifestUrl(channel),
+            env.VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS,
+            buildDefaultAndroidNativeUpdateFallbackManifestUrl(channel),
+        );
+    const manifestUrl = manifestUrls[0] || configuredManifestUrl;
 
     return {
         enabled: parseBooleanEnv(env.VITE_ANDROID_NATIVE_UPDATE_ENABLED)
-            && isAbsoluteHttpUrl(manifestUrl)
+            && manifestUrls.length > 0
             && isAndroidNativeUpdateAllowedForAppId(env),
         manifestUrl,
+        manifestUrls,
         channel,
     };
 };
 
 export const readAndroidWebAppDownloadConfig = (
     env: Partial<ImportMetaEnv> = import.meta.env,
-): AndroidWebAppDownloadConfig => ({
-    directDownloadUrl: typeof env.VITE_ANDROID_APP_DOWNLOAD_URL === 'string'
-        ? env.VITE_ANDROID_APP_DOWNLOAD_URL.trim()
-        : '',
-    manifestUrl: readAndroidNativeUpdateConfig(env).manifestUrl || buildDefaultAndroidNativeUpdateManifestUrl(resolveAndroidNativeUpdateChannel(env)),
-});
+): AndroidWebAppDownloadConfig => {
+    const channel = resolveAndroidNativeUpdateChannel(env);
+    const config = readAndroidNativeUpdateConfig(env);
+    const manifestUrls = config.manifestUrls.length > 0
+        ? config.manifestUrls
+        : collectManifestUrls(
+            buildDefaultAndroidNativeUpdateManifestUrl(channel),
+            buildDefaultAndroidNativeUpdateFallbackManifestUrl(channel),
+        );
+    return {
+        directDownloadUrl: typeof env.VITE_ANDROID_APP_DOWNLOAD_URL === 'string'
+            ? env.VITE_ANDROID_APP_DOWNLOAD_URL.trim()
+            : '',
+        manifestUrl: manifestUrls[0] || '',
+        manifestUrls,
+    };
+};
 
 export const readAndroidAppInfo = async (): Promise<AndroidAppInfo | null> => {
     const plugin = getNativePlugin();
@@ -364,11 +416,17 @@ export const fetchAndroidNativeUpdateManifest = async (
         const response = await fetchImpl(manifestUrl, {
             method: 'GET',
             cache: 'no-store',
+            redirect: 'manual',
             headers: {
                 Accept: 'application/json',
             },
         });
 
+        const responseType = (response as Response & { type?: string }).type;
+        const redirected = (response as Response & { redirected?: boolean }).redirected === true;
+        if (redirected || responseType === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            throw new Error('原生更新清单发生重定向；latest.json 控制入口不允许重定向');
+        }
         if (response.status === 404) {
             logMobileRuntime('NativeUpdate', 'manifest-missing', { manifestUrl }, 'warn');
             throw new Error(`原生更新清单不存在：${manifestUrl}`);
@@ -417,15 +475,54 @@ export const fetchAndroidNativeUpdateManifest = async (
     }
 };
 
+const fetchAndroidNativeUpdateManifestFromCandidates = async (
+    manifestUrls: string[],
+    fetchImpl: typeof fetch = fetch,
+    options: { strict?: boolean } = {},
+): Promise<AndroidNativeUpdateManifest | null> => {
+    const candidates = manifestUrls.filter(isAbsoluteHttpUrl);
+    if (candidates.length === 0) {
+        if (options.strict === true) {
+            throw new Error('没有可用的原生更新清单地址');
+        }
+        return null;
+    }
+
+    const failures: string[] = [];
+    for (const manifestUrl of candidates) {
+        try {
+            const manifest = await fetchAndroidNativeUpdateManifest(manifestUrl, fetchImpl, { strict: true });
+            if (manifest) {
+                logMobileRuntime('NativeUpdate', 'manifest-candidate-selected', {
+                    manifestUrl,
+                    candidateCount: candidates.length,
+                });
+                return manifest;
+            }
+            failures.push(`${manifestUrl}: 清单格式无效`);
+        } catch (error) {
+            failures.push(`${manifestUrl}: ${getErrorMessage(error)}`);
+        }
+    }
+
+    if (options.strict === true) {
+        throw new Error(`原生更新清单读取失败，已尝试 ${candidates.length} 个入口：${failures.join('；')}`);
+    }
+    return null;
+};
+
 export const resolveAndroidWebAppDownload = async (
     env: Partial<ImportMetaEnv> = import.meta.env,
     fetchImpl: typeof fetch = fetch,
 ): Promise<AndroidWebAppDownloadResolution> => {
-    const { directDownloadUrl, manifestUrl } = readAndroidWebAppDownloadConfig(env);
-    const versionedFallbackUrl = buildVersionedAndroidApkUrl(manifestUrl, packageJson.version);
+    const { directDownloadUrl, manifestUrl, manifestUrls } = readAndroidWebAppDownloadConfig(env);
+    const versionedFallbackUrl = manifestUrls
+        .map((candidateUrl) => buildVersionedAndroidApkUrl(candidateUrl, packageJson.version))
+        .filter(Boolean)
+        .at(-1) || '';
 
     if (manifestUrl) {
-        const manifest = await fetchAndroidNativeUpdateManifest(manifestUrl, fetchImpl);
+        const manifest = await fetchAndroidNativeUpdateManifestFromCandidates(manifestUrls, fetchImpl);
         if (manifest?.url) {
             const cacheBustToken = manifest.checksum || manifest.publishedAt || manifest.version;
             return {
@@ -488,9 +585,9 @@ export const checkAndroidNativeUpdateAvailability = async (): Promise<AndroidNat
         return { available: false, reason: 'not-native' };
     }
 
-    const manifest = await fetchAndroidNativeUpdateManifest(config.manifestUrl, fetch, { strict: true });
+    const manifest = await fetchAndroidNativeUpdateManifestFromCandidates(config.manifestUrls, fetch, { strict: true });
     if (!manifest) {
-        throw new Error(`原生更新清单格式无效：${config.manifestUrl}`);
+        throw new Error(`原生更新清单格式无效：${config.manifestUrls.join(', ')}`);
     }
     if (!isAndroidNativeUpdateAvailable(manifest, appInfo)) {
         return { available: false, reason: 'up-to-date', manifest, appInfo };

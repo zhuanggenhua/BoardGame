@@ -107,10 +107,15 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
 ### 当前环境变量
 
 ```env
+VITE_ANDROID_CONTROL_ASSETS_BASE_URL=https://assets.easyboardgame.top/official
+VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=http://8.148.71.102/official
 VITE_ANDROID_NATIVE_UPDATE_ENABLED=true
 VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json
+VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS=http://8.148.71.102/official/native-app-updates/android/stable/latest.json
 VITE_ANDROID_NATIVE_UPDATE_CHANNEL=stable
 ```
+
+控制入口只负责读取 `latest.json`，必须固定域名直返 `200 JSON`，不允许 30x 跳转。清单里的 APK 下载地址可以是 IP 直链；IP `latest.json` 只作为新客户端兜底，不能替代旧客户端能访问的域名控制入口。非标准端口不作为正式绕备案方案。
 
 ### 发布原生更新包
 
@@ -187,11 +192,16 @@ npm run mobile:android:native-update:publish -- --channel stable
 
 ```env
 ANDROID_WEBVIEW_MODE=embedded
+VITE_ANDROID_CONTROL_ASSETS_BASE_URL=https://assets.easyboardgame.top/official
+VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=http://8.148.71.102/official
 VITE_ANDROID_OTA_ENABLED=true
 VITE_ANDROID_OTA_MANIFEST_URL=https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json
+VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS=http://8.148.71.102/official/app-updates/android/stable/latest.json
 VITE_ANDROID_OTA_CHANNEL=stable
 VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS=15000
 ```
+
+OTA 控制入口同样必须固定域名直返 `latest.json`，发布脚本会校验域名入口无重定向且正文哈希等于本次发布；bundle zip 下载 URL 可走 IP 主源。
 
 `doctor` 可直接检查当前 OTA 配置是否生效：
 
@@ -444,7 +454,7 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update-titl
 ```json
 {
   "version": "0.5.0-ota-2026-03-29T20-30-00-000Z",
-  "url": "https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/0.5.0-ota-2026-03-29T20-30-00-000Z.zip",
+  "url": "http://8.148.71.102/official/app-updates/android/stable/bundles/0.5.0-ota-2026-03-29T20-30-00-000Z.zip",
   "checksum": "sha256-hex",
   "channel": "stable",
   "publishedAt": "2026-03-29T20:30:00.000Z",
@@ -464,7 +474,7 @@ Manifest 字段说明：
 ```json
 {
   "version": "0.5.0-ota-2026-03-30T10-00-00-000Z",
-  "url": "https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/0.5.0-ota-2026-03-30T10-00-00-000Z.zip",
+  "url": "http://8.148.71.102/official/app-updates/android/stable/bundles/0.5.0-ota-2026-03-30T10-00-00-000Z.zip",
   "checksum": "sha256-hex",
   "channel": "stable",
   "forceUpdate": true,

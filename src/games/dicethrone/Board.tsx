@@ -919,7 +919,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: pendingInteraction?.id });
     }, [dispatch, pendingInteraction, setLastUndoCardId]);
     const settleRightTrayBonusDice = React.useCallback(() => {
-        engineMoves.skipBonusDiceReroll();
+        engineMoves.confirmBonusDice();
     }, [engineMoves]);
 
     // 骰子交互配置（需要在 waitingReason 之前定义）

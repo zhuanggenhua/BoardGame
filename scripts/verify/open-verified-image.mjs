@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
@@ -8,10 +8,10 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bm
 
 const usage = () => {
     console.log(`用法:
-  node scripts/verify/open-verified-image.mjs --path <图片路径>
-  node scripts/verify/open-verified-image.mjs --path <00-sequence-index.png> --path <01-labeled-*.png>
-  node scripts/verify/open-verified-image.mjs --paths <00-sequence-index.png> <01-labeled-*.png> <02-labeled-*.png> ...
-  node scripts/verify/open-verified-image.mjs --latest [目录]
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <图片路径>
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <00-sequence-index.png> --path <01-labeled-*.png>
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --paths <00-sequence-index.png> <01-labeled-*.png> <02-labeled-*.png> ...
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --latest [目录]
 
 选项:
   --path <路径>     打开指定图片；可重复传入多次，默认 PureRef 多图只接受带序号标记组
@@ -19,6 +19,8 @@ const usage = () => {
   --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
   --viewer <system|pureref>  指定查看器；默认 pureref，pureref 会一次性打开整批图片
   --pureref         等同于 --viewer pureref
+  --pass-manifest <路径>  本轮用户要求达标清单；没有清单禁止实际开图
+  --confirmed-pass  历史参数，已废弃；请使用 --pass-manifest
   --dry-run         只解析路径，不实际打开
   --help            显示帮助
 `);
@@ -48,6 +50,8 @@ const parseArgs = (argv) => {
         latest: null,
         viewer: process.env.BG_IMAGE_VIEWER ?? 'pureref',
         dryRun: false,
+        confirmedPass: false,
+        passManifest: null,
         help: false,
     };
 
@@ -59,6 +63,19 @@ const parseArgs = (argv) => {
         }
         if (current === '--dry-run') {
             parsed.dryRun = true;
+            continue;
+        }
+        if (current === '--confirmed-pass') {
+            parsed.confirmedPass = true;
+            continue;
+        }
+        if (current === '--pass-manifest') {
+            const manifestPath = argv[index + 1] ?? null;
+            if (!manifestPath) {
+                throw new Error('--pass-manifest 缺少取值');
+            }
+            parsed.passManifest = manifestPath;
+            index += 1;
             continue;
         }
         if (current === '--pureref') {
@@ -202,6 +219,61 @@ const validatePureRefSequence = (imagePaths) => {
     }
 };
 
+const normalizeForCompare = (targetPath) => path.resolve(targetPath).toLowerCase();
+
+const validatePassManifest = (manifestPath, imagePaths) => {
+    if (!manifestPath) {
+        throw new Error('拒绝打开：缺少 --pass-manifest。本脚本只接受“本轮用户要求逐项达标”的清单，不接受口头确认或泛化 UI PASS。');
+    }
+
+    const resolvedManifestPath = path.resolve(manifestPath);
+    if (!existsSync(resolvedManifestPath)) {
+        throw new Error(`PASS 清单不存在: ${resolvedManifestPath}`);
+    }
+
+    let manifest;
+    try {
+        manifest = JSON.parse(readFileSync(resolvedManifestPath, 'utf8'));
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`PASS 清单不是有效 JSON: ${resolvedManifestPath}; ${message}`);
+    }
+
+    if (manifest?.verdict !== 'PASS') {
+        throw new Error('拒绝打开：PASS 清单 verdict 必须是 "PASS"');
+    }
+    if (manifest?.scope !== 'current-user-request') {
+        throw new Error('拒绝打开：PASS 清单 scope 必须是 "current-user-request"，不能用整页 UI 或其它范围替代本轮要求');
+    }
+    if (!Array.isArray(manifest.requirements) || manifest.requirements.length === 0) {
+        throw new Error('拒绝打开：PASS 清单必须包含非空 requirements');
+    }
+
+    for (const [index, item] of manifest.requirements.entries()) {
+        if (!item || typeof item.requirement !== 'string' || item.requirement.trim().length === 0) {
+            throw new Error(`拒绝打开：第 ${index + 1} 条 requirement 为空`);
+        }
+        if (item.status !== 'PASS') {
+            throw new Error(`拒绝打开：第 ${index + 1} 条要求未 PASS: ${item.requirement}`);
+        }
+        if (!Array.isArray(item.evidence) || item.evidence.length === 0 || item.evidence.some((entry) => typeof entry !== 'string' || entry.trim().length === 0)) {
+            throw new Error(`拒绝打开：第 ${index + 1} 条要求缺少直接 evidence: ${item.requirement}`);
+        }
+    }
+
+    if (!Array.isArray(manifest.images) || manifest.images.length === 0) {
+        throw new Error('拒绝打开：PASS 清单必须包含 images，并且 images 必须覆盖本次打开的全部图片');
+    }
+
+    const manifestImageSet = new Set(manifest.images.map((imagePath) => normalizeForCompare(imagePath)));
+    const missingImages = imagePaths.filter((imagePath) => !manifestImageSet.has(normalizeForCompare(imagePath)));
+    if (missingImages.length > 0) {
+        throw new Error(`拒绝打开：本次打开图片不在 PASS 清单 images 中: ${missingImages.join(', ')}`);
+    }
+
+    console.log(`PASS_MANIFEST=${resolvedManifestPath}`);
+};
+
 const openImage = (imagePath) => {
     if (process.platform === 'win32') {
         const openResult = spawnSync(
@@ -285,6 +357,16 @@ const main = () => {
 
     if (normalizedViewer === 'pureref') {
         validatePureRefSequence(resolvedImages);
+    }
+
+    if (parsed.confirmedPass && !parsed.passManifest) {
+        throw new Error('拒绝打开：--confirmed-pass 已废弃，不能单独作为开图依据；请提供 --pass-manifest。');
+    }
+
+    if (parsed.passManifest) {
+        validatePassManifest(parsed.passManifest, resolvedImages);
+    } else if (!parsed.dryRun) {
+        validatePassManifest(parsed.passManifest, resolvedImages);
     }
 
     if (parsed.dryRun) {

@@ -90,6 +90,43 @@ test('线上无 token 时直接通过 SSH/Mongo 回写状态', async () => {
     assert.match(spawnCalls[0].input, /db\.feedbacks\.updateOne/);
 });
 
+test('生产 Mongo 输出带 mongosh 提示符时仍能解析最终回写 JSON', async () => {
+    const result = await updateFeedbackStatusViaBestAvailableWriter({
+        baseUrl: 'https://api.easyboardgame.top',
+        token: '',
+        id: FEEDBACK_ID,
+        status: 'resolved',
+        resolvedMethod: '奖励骰确认链路已修复。',
+    }, {
+        spawnSync() {
+            return {
+                status: 0,
+                stdout: [
+                    'boardgame> ',
+                    "boardgame> | | { closedReason: '' }",
+                    `boardgame> | | | ${JSON.stringify({
+                        acknowledged: true,
+                        matchedCount: 1,
+                        modifiedCount: 0,
+                        feedback: {
+                            _id: FEEDBACK_ID,
+                            status: 'resolved',
+                            resolvedMethod: '奖励骰确认链路已修复。',
+                            closedReason: null,
+                        },
+                    })}`,
+                    'boardgame>',
+                ].join('\n'),
+                stderr: '',
+            };
+        },
+    });
+
+    assert.equal(result.writer, 'mongo-ssh');
+    assert.equal(result.status, 'resolved');
+    assert.equal(result.matchedCount, 1);
+});
+
 test('线上 HTTP 返回 401 时切到 SSH/Mongo 回写', async () => {
     const result = await updateFeedbackStatusViaBestAvailableWriter({
         baseUrl: 'https://api.easyboardgame.top',
@@ -130,4 +167,3 @@ test('线上 HTTP 返回 401 时切到 SSH/Mongo 回写', async () => {
     assert.equal(result.reason, 'http-auth-failed-401-production-mongo');
     assert.equal(result.status, 'in_progress');
 });
-

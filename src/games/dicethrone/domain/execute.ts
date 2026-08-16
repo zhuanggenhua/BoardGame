@@ -47,7 +47,7 @@ import type { InteractionDescriptor as PendingInteraction } from './core-types';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
-import { executeTokenCommand } from './executeTokens';
+import { buildBonusDiceSettlementEvents, executeTokenCommand } from './executeTokens';
 import { getPassiveActionTokenCosts, getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
@@ -58,7 +58,7 @@ import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
 } from './responseWindowGuards';
-import { buildCompareRollChoiceEvent, findCurrentRollDie, resolveCurrentRollContext } from './rollContext';
+import { buildCompareRollChoiceEvent, findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { buildCurrentRollRerollEvents, shouldRequireAbilityReselectionForCurrentRoll } from './reroll';
 
 // ============================================================================
@@ -467,6 +467,18 @@ export function execute(
         }
 
         case 'CONFIRM_ROLL': {
+            const activeBonusSettlement = state.pendingBonusDiceSettlement;
+            if (activeBonusSettlement && isCurrentBonusRollSettlement(state, activeBonusSettlement)) {
+                events.push(...buildBonusDiceSettlementEvents({
+                    state,
+                    settlement: activeBonusSettlement,
+                    random,
+                    timestamp,
+                    sourceCommandType: command.type,
+                }));
+                break;
+            }
+
             const rollerId = getRollerId(state, phase);
             
             const event: RollConfirmedEvent = {

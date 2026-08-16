@@ -211,11 +211,21 @@ function parseMongoResult(stdout) {
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean);
-    const jsonLine = [...lines].reverse().find((line) => line.startsWith('{') && line.endsWith('}'));
-    if (!jsonLine) {
-        throw new Error(`生产 Mongo 回写没有返回 JSON 结果: ${String(stdout || '').trim()}`);
+
+    for (const line of [...lines].reverse()) {
+        const start = line.indexOf('{');
+        const end = line.lastIndexOf('}');
+        if (start < 0 || end <= start) continue;
+
+        const candidate = line.slice(start, end + 1);
+        try {
+            return JSON.parse(candidate);
+        } catch {
+            // mongosh may echo non-JSON shell fragments before the final print().
+        }
     }
-    return JSON.parse(jsonLine);
+
+    throw new Error(`生产 Mongo 回写没有返回 JSON 结果: ${String(stdout || '').trim()}`);
 }
 
 function updateViaMongoSsh({

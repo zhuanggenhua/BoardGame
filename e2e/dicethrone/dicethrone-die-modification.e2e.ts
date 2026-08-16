@@ -85,6 +85,18 @@ async function openActionLogPanel(page: any): Promise<any> {
     return panel;
 }
 
+async function expectDiceInteractionConfirmEnabled(page: any): Promise<any> {
+    const confirmButton = page.getByTestId('dice-interaction-confirm-button');
+    await expect(confirmButton).toBeVisible({ timeout: 5000 });
+    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+    return confirmButton;
+}
+
+async function confirmDiceInteraction(page: any): Promise<void> {
+    const confirmButton = await expectDiceInteractionConfirmEnabled(page);
+    await confirmButton.click();
+}
+
 test.describe('DiceThrone - 选择骰子修改', () => {
     test('AI 遇到全同骰面的复制交互应取消空操作并解除交互锁', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', { playerID: '0', seat0: 'local-ai', seat0Delay: 0, seat1: 'human' });
@@ -283,12 +295,14 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             diceValues: [6, 5, 4, 2, 3],
             modifiedCount: 0,
         });
+        await expect(page.getByTestId('dice-interaction-confirm-button')).toBeDisabled();
 
         await game.screenshot('me-too-copy-duplicate-source-still-waiting', testInfo);
 
         const targetDieButton = page.locator('[data-testid="die-button-3"]');
         await expect(targetDieButton).toBeVisible({ timeout: 5000 });
         await targetDieButton.click();
+        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -381,6 +395,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         const dieButton = page.locator('[data-testid="die-button-0"]');
         await expect(dieButton).toBeVisible({ timeout: 5000 });
         await dieButton.click();
+        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -633,6 +648,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await expect(dieButton).toBeVisible({ timeout: 5000 });
         await expect(dieButton).toHaveAttribute('data-clickable', 'true');
         await dieButton.click();
+        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -1313,7 +1329,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             defenderHp: 45,
             damageAmount: 5,
         });
-        await expect(page.getByTestId('dt-top-header-1-hp')).toHaveText('45', { timeout: 10000 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('45', { timeout: 10000 });
         await expect(page.locator('[data-floating-text-preset="impact-damage"]')).toHaveCount(0, { timeout: 10000 });
         await game.screenshot('05-战争贩子-防御完成五点伤害已扣血', testInfo);
     });

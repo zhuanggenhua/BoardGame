@@ -350,13 +350,13 @@ function BoardSourceWake({
             data-testid={`mage-wars-fx-${kind}-source-wake`}
             style={{ ...cellBox(getCellPosition, source), overflow: 'visible' }}
         >
-            <div className="relative h-24 w-24">
+            <div className={kind === 'push' ? 'relative h-32 w-32' : 'relative h-24 w-24'}>
                 <DelayedBurstParticles
                     testId={`mage-wars-fx-${kind}-source-burst`}
-                    preset={kind === 'attack' ? 'sparks' : 'magicDust'}
+                    preset={kind === 'attack' ? 'sparks' : kind === 'push' ? 'summonGlow' : 'magicDust'}
                     color={fxColors(kind, strong)}
                     quality={quality}
-                    overflow={2.8}
+                    overflow={kind === 'push' ? 3.4 : 2.8}
                 />
             </div>
         </div>
@@ -416,7 +416,7 @@ function BoardTravelEffect({
             >
                 <DelayedBurstParticles
                     delayMs={360}
-                    preset={kind === 'attack' ? 'sparks' : 'summonGlow'}
+                    preset={kind === 'attack' ? 'sparks' : strong ? 'summonGlowStrong' : 'summonGlow'}
                     color={fxColors(kind, strong)}
                     quality={quality}
                     overflow={3.2}
@@ -519,6 +519,7 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
     useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 80, hasTravel ? 3_300 : 780);
 
     if (!cell) return null;
+    const strong = true;
     const quality = resolveEventQuality(event);
 
     return (
@@ -528,6 +529,7 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
                 target={cell}
                 getCellPosition={getCellPosition}
                 kind="push"
+                strong
                 quality={quality}
             />
             <div
@@ -535,14 +537,14 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
                 data-testid="mage-wars-fx-spell-push"
                 style={{ ...cellBox(getCellPosition, cell), overflow: 'visible' }}
             >
-                <div className="relative h-32 w-32" data-testid="mage-wars-fx-spell-push-host">
+                <div className="relative h-40 w-40" data-testid="mage-wars-fx-spell-push-host">
                     <DelayedBurstParticles
                         testId="mage-wars-fx-spell-push-burst"
                         delayMs={hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0}
-                        preset="magicDust"
-                        color={fxColors('push')}
+                        preset="summonGlowStrong"
+                        color={fxColors('push', strong)}
                         quality={quality}
-                        overflow={2.6}
+                        overflow={3.2}
                     />
                 </div>
             </div>

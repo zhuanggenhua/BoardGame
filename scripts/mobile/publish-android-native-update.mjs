@@ -4,7 +4,10 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
-import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
+import {
+    resolveAndroidAssetsBaseUrl,
+    resolveAndroidControlAssetsBaseUrl,
+} from './android-assets-base-url.mjs';
 
 const rootDir = process.cwd();
 
@@ -85,8 +88,10 @@ const isNonReleaseAndroidAppId = (appId) => appId
 const versionManifestKey = `${releasePrefix}/manifests/${encodeURIComponent(version)}.json`;
 const latestManifestKey = `${releasePrefix}/latest.json`;
 const apkKey = `${releasePrefix}/packages/${encodeURIComponent(version)}.apk`;
-const assetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
-const apkUrl = `${assetsBaseUrl}/native-app-updates/android/${channel}/packages/${encodeURIComponent(version)}.apk`;
+const downloadAssetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
+const controlAssetsBaseUrl = resolveAndroidControlAssetsBaseUrl(process.env);
+const downloadLatestManifestUrl = `${downloadAssetsBaseUrl}/native-app-updates/android/${channel}/latest.json`;
+const controlLatestManifestUrl = `${controlAssetsBaseUrl}/native-app-updates/android/${channel}/latest.json`;
 
 if (!existsSync(apkPath)) {
     throw new Error(`未找到 APK：${path.relative(rootDir, apkPath)}。请先执行 npm run mobile:android:build:release，或用 --apk 指定。`);
@@ -107,7 +112,7 @@ const apkBuffer = readFileSync(apkPath);
 const checksum = createHash('sha256').update(apkBuffer).digest('hex');
 const apkFingerprint = checksum.slice(0, 12);
 const fingerprintedApkKey = `${releasePrefix}/packages/${encodeURIComponent(version)}-${apkFingerprint}.apk`;
-const fingerprintedApkUrl = `${assetsBaseUrl}/native-app-updates/android/${channel}/packages/${encodeURIComponent(version)}-${apkFingerprint}.apk`;
+const fingerprintedApkUrl = `${downloadAssetsBaseUrl}/native-app-updates/android/${channel}/packages/${encodeURIComponent(version)}-${apkFingerprint}.apk`;
 const manifest = {
     version,
     versionCode,
@@ -165,6 +170,19 @@ if (!dryRun && !skipLatest) {
         url: fingerprintedApkUrl,
         expectedSize: apkBuffer.length,
     }]);
+    await waitForServerAssets([
+        {
+            url: downloadLatestManifestUrl,
+            expectedSize: Buffer.byteLength(latestManifestBody),
+            expectedSha256: createHash('sha256').update(latestManifestBody).digest('hex'),
+        },
+        {
+            url: controlLatestManifestUrl,
+            expectedSize: Buffer.byteLength(latestManifestBody),
+            expectedSha256: createHash('sha256').update(latestManifestBody).digest('hex'),
+            forbidRedirect: true,
+        },
+    ], { requireCorsPreflight: true });
 }
 
 const apkStats = statSync(apkPath);
@@ -181,6 +199,10 @@ console.log(`apkPath=${apkPath}`);
 console.log(`apkKey=${apkKey}`);
 console.log(`fingerprintedApkKey=${fingerprintedApkKey}`);
 console.log(`latestManifestKey=${latestManifestKey}`);
+console.log(`downloadAssetsBaseUrl=${downloadAssetsBaseUrl}`);
+console.log(`controlAssetsBaseUrl=${controlAssetsBaseUrl}`);
 console.log(`apkUrl=${fingerprintedApkUrl}`);
+console.log(`downloadLatestManifestUrl=${downloadLatestManifestUrl}`);
+console.log(`controlLatestManifestUrl=${controlLatestManifestUrl}`);
 console.log(`checksum=${checksum}`);
 console.log(`manifest=${JSON.stringify(manifest)}`);

@@ -1262,11 +1262,15 @@ function resolveBonusDiceCardPlayResponseWindowType(
         return undefined;
     }
 
+    const diceEffectTarget = getDiceEffectTarget(card);
+    if (!isDiceRollPhase(phase) && card.timing === 'roll' && diceEffectTarget === 'self') {
+        return undefined;
+    }
+
     if (playerId === currentRollContext.ownerPlayerId) {
         return 'afterRollConfirmed';
     }
 
-    const diceEffectTarget = getDiceEffectTarget(card);
     return diceEffectTarget === 'opponent' || diceEffectTarget === 'any'
         ? 'afterRollConfirmed'
         : undefined;

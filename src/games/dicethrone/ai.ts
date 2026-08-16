@@ -2256,10 +2256,10 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
 
     if (settlement.displayOnly === true) {
         appendAction(actions, state, playerId, {
-            actionId: createAiLegalActionId('bonus-die', 'skip'),
-            kind: 'skip-bonus-dice-reroll',
-            label: '确认',
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            actionId: createAiLegalActionId('bonus-die', 'confirm'),
+            kind: 'confirm-roll',
+            label: '确认当前奖励骰',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
             metadata: withAiActionStrategyTags({}, ['dice-setup']),
         });
         return actions;
@@ -2279,10 +2279,10 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
     }
 
     appendAction(actions, state, playerId, {
-        actionId: createAiLegalActionId('bonus-die', 'skip'),
-        kind: 'skip-bonus-dice-reroll',
-        label: '确认',
-        commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+        actionId: createAiLegalActionId('bonus-die', 'confirm'),
+        kind: 'confirm-roll',
+        label: '确认当前奖励骰',
+        commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         metadata: withAiActionStrategyTags({}, ['dice-setup']),
     });
 
@@ -3415,7 +3415,7 @@ const bonusDieScorer: LocalAiActionScorer = {
             };
         }
 
-        if (action.kind === 'skip-bonus-dice-reroll') {
+        if (action.kind === 'confirm-roll' || action.kind === 'skip-bonus-dice-reroll') {
             return {
                 score: bestRerollDelta > 0
                     ? -140 + currentValue * 0.05
@@ -3752,7 +3752,6 @@ const strategyProfileScorer = createProfileAwareActionScorer<DiceThroneStrategyT
         'use-purify',
         'pay-remove-knockdown',
         'bonus-die-reroll',
-        'skip-bonus-dice-reroll',
         'use-passive-ability',
         'roll-dice',
         'toggle-die-lock',

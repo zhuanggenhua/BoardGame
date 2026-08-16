@@ -38,6 +38,7 @@ export type DiceThroneMoveMap = {
     payToRemoveKnockdown: () => void;
     // 奖励骰重掷
     rerollBonusDie: (dieIndex: number) => void;
+    confirmBonusDice: () => void;
     skipBonusDiceReroll: () => void;
     // 被动能力（如教皇税）
     usePassiveAbility: (passiveId: string, actionIndex: number, targetDieId?: number) => void;
@@ -88,6 +89,7 @@ export const resolveMoves = (
     payToRemoveKnockdown: () => dispatch(DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN, {}),
     // 奖励骰重掷
     rerollBonusDie: (dieIndex) => dispatch('REROLL_BONUS_DIE', { dieIndex }),
+    confirmBonusDice: () => dispatch('CONFIRM_ROLL', {}),
     skipBonusDiceReroll: () => dispatch('SKIP_BONUS_DICE_REROLL', {}),
     // 被动能力
     usePassiveAbility: (passiveId, actionIndex, targetDieId) =>

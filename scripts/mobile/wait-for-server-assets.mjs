@@ -53,10 +53,12 @@ const normalizeTarget = (value) => {
     const expectedSha256 = typeof value.expectedSha256 === 'string' && /^[a-f0-9]{64}$/i.test(value.expectedSha256)
         ? value.expectedSha256.toLowerCase()
         : undefined;
+    const forbidRedirect = value.forbidRedirect === true;
     return {
         url,
         expectedSize,
         expectedSha256,
+        forbidRedirect,
     };
 };
 
@@ -70,12 +72,19 @@ const normalizeTargets = (values) => {
             url: target.url,
             expectedSize: target.expectedSize ?? previous?.expectedSize,
             expectedSha256: target.expectedSha256 ?? previous?.expectedSha256,
+            forbidRedirect: target.forbidRedirect || previous?.forbidRedirect === true,
         });
     }
     return [...targets.values()];
 };
 
 const validateResponse = async ({ response, target }) => {
+    if (target.forbidRedirect && response.redirected) {
+        return 'redirected=true';
+    }
+    if (target.forbidRedirect && response.status >= 300 && response.status < 400) {
+        return `redirectStatus=${response.status} location=${response.headers.get('Location') || '(missing)'}`;
+    }
     const source = response.headers.get('X-Asset-Source') || '(missing)';
     if (!response.ok || source !== 'server') {
         return `status=${response.status} source=${source}`;
@@ -110,9 +119,12 @@ const validateCorsPreflight = async ({ fetchImpl, target }) => {
             'Access-Control-Request-Method': 'GET',
             'Access-Control-Request-Headers': 'cache-control',
         },
-        redirect: 'follow',
+        redirect: target.forbidRedirect ? 'manual' : 'follow',
         signal: AbortSignal.timeout(30_000),
     });
+    if (target.forbidRedirect && (response.redirected || (response.status >= 300 && response.status < 400))) {
+        return `corsPreflightRedirect=${response.status} location=${response.headers.get('Location') || '(missing)'}`;
+    }
     const allowOrigin = response.headers.get('Access-Control-Allow-Origin') || '';
     const allowMethods = response.headers.get('Access-Control-Allow-Methods') || '';
     const allowHeaders = response.headers.get('Access-Control-Allow-Headers') || '';
@@ -166,7 +178,7 @@ export const waitForServerAssets = async (values, options = {}) => {
                 const response = await fetchImpl(checkUrl, {
                     method: target.expectedSha256 ? 'GET' : 'HEAD',
                     cache: 'no-store',
-                    redirect: 'follow',
+                    redirect: target.forbidRedirect ? 'manual' : 'follow',
                     signal: AbortSignal.timeout(30_000),
                 });
                 const validationFailure = await validateResponse({ response, target });

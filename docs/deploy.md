@@ -378,9 +378,10 @@ SMTP_PASS=xxx
 
 默认约定：
 
-- `latest.json`：`https://assets.easyboardgame.top/official/app-updates/android/<channel>/latest.json`
-- bundle zip：`https://assets.easyboardgame.top/official/app-updates/android/<channel>/bundles/<bundleVersion>.zip`
-- version manifest：`https://assets.easyboardgame.top/official/app-updates/android/<channel>/manifests/<bundleVersion>.json`
+- 控制清单 `latest.json`：`https://assets.easyboardgame.top/official/app-updates/android/<channel>/latest.json`
+- 兜底清单 `latest.json`：`http://8.148.71.102/official/app-updates/android/<channel>/latest.json`
+- bundle zip：`http://8.148.71.102/official/app-updates/android/<channel>/bundles/<bundleVersion>.zip`
+- version manifest：`official/app-updates/android/<channel>/manifests/<bundleVersion>.json`
 
 发布命令：
 
@@ -392,6 +393,7 @@ node scripts/mobile/release-android.mjs ota --channel stable
 强制约束：
 
 - 所有 Android OTA manifest 必须写入 `forceUpdate: true`；`--no-force-update` 和 `force_update=false` 都必须失败。
+- `latest.json` 控制入口必须固定域名直返 `200 JSON`，不得 30x 跳转；发布后同时校验域名控制入口与 IP 主源正文哈希。清单中的 bundle 下载 URL 可使用 IP 直链。
 - Android OTA 发布不得把嵌套游戏资源打进 OTA zip；`assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除 `assets-manifest.json` 外的资源由打包器确定性排除，并继续走服务器资源主源或移动游戏包。
 - `scripts/mobile/publish-android-ota.mjs` 只接受显式命名参数；非中文语言包和嵌套运行时资源可以存在于 `dist/`，但不得进入最终 OTA zip。
 - 若最终 OTA zip 体积异常过大（当前门禁为 `20MB`），发布脚本必须直接失败，禁止继续覆盖 `latest.json`。
@@ -483,17 +485,16 @@ GitHub Actions 自动化：
 
 ### 生产素材域名：服务器主源
 
-- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...`，该域名背后唯一正式内容来源是服务器活动版本。
-- **所有正式素材与发布包**：`assets.easyboardgame.top/official/**` 必须由服务器 443 端口直接返回，不能再经由 Cloudflare Worker 或 R2 作为玩家下载链路。
-- **禁止对象存储回退**：服务器 443 入口连接失败、超时、缺少对象或返回 5xx 时，客户端应看到明确失败或服务器状态，不能读取对象存储兜底，也不能把旧对象伪装成本次发布成功。
-- **大型发布包同样服务器直连**：`official/app-updates/**`、`official/mobile-packages/**`、`official/native-app-updates/**` 与普通素材一样，统一由服务器 443 的 `/home/admin/storage/assets/current` 返回，不再配置 Worker / R2 路由。
+- **公开 URL 不变**：Web、Android 和协作者继续使用 `https://assets.easyboardgame.top/official/...` 作为稳定控制面；该域名背后的正式内容必须来自服务器活动版本。
+- **Android 更新控制面**：`official/app-updates/android/**/latest.json` 与 `official/native-app-updates/android/**/latest.json` 必须由域名直返当前 JSON，禁止 30x 跳转，禁止继续返回 R2 / 旧对象存储里的旧清单。域名可由代理回源服务器，但响应正文必须等于本次服务器发布产物。
+- **Android 大包下载面**：OTA zip、APK、mobile package zip 可在清单里使用 `http://8.148.71.102/official/...` 这类 IP 直链；IP 会变，所以只能作为下载加速和新客户端 fallback，不能作为唯一控制入口。
+- **禁止旧对象伪装成功**：服务器入口连接失败、超时、缺少对象或返回 5xx 时，发布校验必须失败；不能读取对象存储兜底，也不能把旧对象伪装成本次发布成功。
 - **服务器是在线下载主源**：`/home/admin/storage/assets/current` 保存所有 `official/**/assets-manifest.json` 展开的普通素材，以及当前公开清单递归引用的 OTA、游戏包和原生安装包。2026-07-10 本地 12 份分层素材清单约 2.55GiB，叠加当前移动发布集合预计约 3GiB；同步默认设置 4GiB 活动集合上限，并至少保留 5GiB 磁盘空闲，不复制历史发布全集。
 - **服务器 current 只保留运行时交付物**：普通素材清单递归展开时只能把 `compressed/*.webp`、`compressed/*.ogg`、运行时 `.svg/.json` 以及 OTA / 原生 / 移动包所需 `.zip/.apk` 纳入活动集合；源 `.png/.jpg/.jpeg/.mp3/.wav` 只能留在本地用于再压缩，不能进入线上 `current`。
 - **服务器也是正式发布主源**：上传、移动包和 OTA 命令不变，但脚本现在优先通过专用素材上传入口把本批对象交给宿主机 runner；runner 写入服务器 staging，校验后原子切换 `current`。受限 SSH 只保留为管理员应急 fallback，不再作为协作者默认发布前提；也不再等待或依赖对象存储才能上线。
 - **发布成功判据绑定本次产物**：大型 ZIP / APK 通过服务器来源头和本次 `Content-Length` 校验；file-index / latest manifest 通过服务器正文大小和 SHA-256 校验。不得用已经存在的旧 fallback ZIP 证明新的索引或 manifest 已经同步。
-- **玩家素材下载必须是服务器直连**：`https://assets.easyboardgame.top/official/**` 的完成态是 Cloudflare 灰云 `A -> 8.148.71.102`，由服务器本机 `boardgame-asset-origin.service` 在 443 端口直接返回素材。只把服务器放在 Cloudflare Worker 后面当源站，不算玩家直连。
-- **直连验收口径**：必须用真实域名 `https://assets.easyboardgame.top/official/**` 发起带 SNI 的 HTTPS 请求，同时满足 `remote_ip=8.148.71.102`、响应里没有 `CF-Ray` / `Server: cloudflare`、`X-Asset-Source: server`、目标 URL 返回真实素材大小而不是主站 HTML。`https://8.148.71.102/official/**`、服务器本机 curl 或 `http://8.148.71.102/official/**` 都不能替代域名直连验收。
-- **Cloudflare Worker 只作回滚/诊断**：Worker 可以保留为历史回滚路径，但不能作为当前完成态。汇报时必须区分“服务器作为源站”和“玩家直连服务器”，不得把二者混说。
+- **控制入口验收口径**：必须用真实域名请求 Android `latest.json`，并确认 `status=200`、无 `Location` / 无重定向、`X-Asset-Source=server` 或等价服务器来源标记、正文大小与 SHA-256 等于本次发布。`http://8.148.71.102/...` 只能证明 IP 主源可用，不能替代旧客户端域名入口验收。
+- **非标准端口**：非 80/443 端口可以作为临时诊断或受控内部入口，但不能作为正式绕备案方案写入 App 控制入口；正式客户端仍应只依赖可迁移的域名控制面和可替换的 fallback 列表。
 
 服务器静态源保护参数：
 
@@ -522,7 +523,7 @@ sudo systemctl status boardgame-asset-origin.service
 sudo systemctl restart boardgame-asset-origin.service
 ```
 
-Worker 回滚只作为历史诊断/应急路径；当前完成态必须保持 `assets.easyboardgame.top` 灰云 A 记录直连服务器。若需要临时回到 Worker 路径，必须明确标注为“回滚到非直连链路”，并在事后重新切回灰云直连。变更快照保存在 `temp/cloudflare-snapshots/`。
+Worker / 隧道 / DNS 直连都只能作为域名控制面的实现方式；Android 更新的完成态看 `latest.json` 是否在真实域名上直返当前服务器发布正文、无 30x、无旧 R2 对象。切换实现方式时必须保留同一个公开 URL，并回查域名控制入口与 IP 兜底入口。
 
 ## 非 /assets 静态资源缓存策略（当前主链路）
 

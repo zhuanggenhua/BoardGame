@@ -49,9 +49,10 @@ type LatestManifestReadResult = {
 };
 
 type LatestManifestReadFailure = {
-    reason: 'http-error' | 'invalid-json' | 'network-error';
+    reason: 'redirect' | 'http-error' | 'invalid-json' | 'network-error';
     status?: number;
     statusText?: string;
+    location?: string | null;
     message?: string;
 };
 
@@ -99,6 +100,7 @@ const OUTPUT_LIMIT = 200_000;
 const ANDROID_OTA_WORKFLOW_ID = 'android-ota-publish.yml';
 const ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。';
 const ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。';
+const DEFAULT_ANDROID_CONTROL_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
 
 @Injectable()
 export class AdminMobileReleaseService {
@@ -642,21 +644,23 @@ export class AdminMobileReleaseService {
     }
 
     private buildOtaManifestUrl(channel: string) {
-        const baseUrl = (
-            process.env.VITE_ANDROID_ASSETS_BASE_URL?.trim()
-            || process.env.ANDROID_VITE_ASSETS_BASE_URL?.trim()
-            || 'http://8.148.71.102/official'
-        ).replace(/\/+$/, '');
+        const baseUrl = this.resolveAndroidControlAssetsBaseUrl();
         return `${baseUrl}/app-updates/android/${channel}/latest.json`;
     }
 
     private buildNativeManifestUrl(channel: string) {
-        const baseUrl = (
-            process.env.VITE_ANDROID_ASSETS_BASE_URL?.trim()
-            || process.env.ANDROID_VITE_ASSETS_BASE_URL?.trim()
-            || 'http://8.148.71.102/official'
-        ).replace(/\/+$/, '');
+        const baseUrl = this.resolveAndroidControlAssetsBaseUrl();
         return `${baseUrl}/native-app-updates/android/${channel}/latest.json`;
+    }
+
+    private resolveAndroidControlAssetsBaseUrl() {
+        return (
+            process.env.VITE_ANDROID_CONTROL_ASSETS_BASE_URL?.trim()
+            || process.env.ANDROID_CONTROL_ASSETS_BASE_URL?.trim()
+            || process.env.VITE_ANDROID_OTA_CONTROL_ASSETS_BASE_URL?.trim()
+            || process.env.ANDROID_OTA_CONTROL_ASSETS_BASE_URL?.trim()
+            || DEFAULT_ANDROID_CONTROL_ASSETS_BASE_URL
+        ).replace(/\/+$/, '');
     }
 
     private buildDeployCommand(args: string[]) {
@@ -945,7 +949,19 @@ export class AdminMobileReleaseService {
         try {
             const response = await fetch(url, {
                 headers: { 'Cache-Control': 'no-cache' },
+                redirect: 'manual',
             });
+            if (response.redirected || (response.status >= 300 && response.status < 400)) {
+                return {
+                    latest: null,
+                    failure: {
+                        reason: 'redirect',
+                        status: response.status,
+                        statusText: response.statusText,
+                        location: response.headers.get('Location'),
+                    },
+                };
+            }
             if (!response.ok) {
                 return {
                     latest: null,

@@ -404,7 +404,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             purify: 1,
             dazzle: 1,
         });
-        await expect(page.getByTestId('dt-top-header-1-hp')).toHaveText('48', { timeout: 10000 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('48', { timeout: 10000 });
         await waitForDiceThroneVisualIdle(page);
         await game.screenshot('tianshi-divine-punishment-after-confirm', testInfo);
     });

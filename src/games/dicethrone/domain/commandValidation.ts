@@ -618,6 +618,14 @@ const validateConfirmRoll = (
     playerId: PlayerId,
     phase: TurnPhase
 ): ValidationResult => {
+    const activeBonusSettlement = state.pendingBonusDiceSettlement;
+    if (activeBonusSettlement && isCurrentBonusRollSettlement(state, activeBonusSettlement)) {
+        if (!isMoveAllowed(playerId, activeBonusSettlement.attackerId)) {
+            return fail('player_mismatch');
+        }
+        return ok();
+    }
+
     if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
         return fail('invalid_phase');
     }

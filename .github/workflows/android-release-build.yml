@@ -31,19 +31,23 @@ jobs:
 
       - name: Create Android env file
         env:
-          ANDROID_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
+          ANDROID_DOWNLOAD_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
+          ANDROID_CONTROL_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_CONTROL_ASSETS_BASE_URL || vars.ANDROID_CONTROL_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
         run: |
           cat <<'EOF' > .env.android
           VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
-          VITE_ASSETS_BASE_URL=${{ env.ANDROID_ASSETS_BASE_URL }}
+          VITE_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
+          VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
+          VITE_ANDROID_CONTROL_ASSETS_BASE_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}
           CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded
           VITE_ANDROID_OTA_ENABLED=true
-          VITE_ANDROID_OTA_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/app-updates/android/stable/latest.json
+          VITE_ANDROID_OTA_MANIFEST_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}/app-updates/android/stable/latest.json
+          VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}/app-updates/android/stable/latest.json
           VITE_ANDROID_OTA_CHANNEL=stable
           VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS=${{ vars.ANDROID_OTA_APP_READY_TIMEOUT_MS || '15000' }}
-          VITE_MOBILE_PACKAGE_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/mobile-packages/android
+          VITE_MOBILE_PACKAGE_MANIFEST_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}/mobile-packages/android
           ANDROID_ICON_SOURCE=${{ vars.ANDROID_ICON_SOURCE || 'public/logos/logo_1_grid.png' }}
           ANDROID_SPLASH_SOURCE=${{ vars.ANDROID_SPLASH_SOURCE || 'public/logos/logo_1_grid.png' }}
           ANDROID_ICON_BACKGROUND=${{ vars.ANDROID_ICON_BACKGROUND || '#FFFFFF' }}

@@ -179,14 +179,14 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             ),
         )).toBe(false);
         expect(actions).toContainEqual(expect.objectContaining({
-            kind: 'skip-bonus-dice-reroll',
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            kind: 'confirm-roll',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
         }));
 
         const result = createRunner(fixedRandom, false).run({
             name: '一掷千金展示型奖励骰 AI 确认收口',
             setup: () => state,
-            commands: [cmd('SKIP_BONUS_DICE_REROLL', '1')],
+            commands: [cmd('CONFIRM_ROLL', '1')],
         });
 
         expect(result.finalState.core.pendingBonusDiceSettlement).toBeUndefined();

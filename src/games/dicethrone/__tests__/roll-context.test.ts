@@ -1132,22 +1132,22 @@ describe('DiceThrone 单槽当前骰区', () => {
         });
     });
 
-    it('当前可改奖励骰允许主要阶段骰子工具牌以奖励骰为目标', () => {
+    it('当前可改奖励骰允许主要阶段任意目标改骰牌以奖励骰为目标', () => {
         const opened = reduce(createCore(), {
             type: 'BONUS_DICE_REROLL_REQUESTED',
             payload: { settlement: createBonusSettlement() },
             timestamp: 3,
         } as DiceThroneEvent);
-        const playSix = COMMON_CARDS.find((card) => card.id === 'card-play-six');
+        const surprise = COMMON_CARDS.find((card) => card.id === 'card-surprise');
 
-        expect(playSix).toBeDefined();
-        if (!playSix) return;
+        expect(surprise).toBeDefined();
+        if (!surprise) return;
 
         expect(opened.currentRollContext).toMatchObject({
             kind: 'bonus',
             policy: { allowDiceCardTargeting: true },
         });
-        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
+        expect(checkPlayCard(opened, '0', surprise, 'main1')).toEqual({ ok: true });
     });
 
     it('奖励骰仍尊重当前骰区改骰开关', () => {
@@ -1156,12 +1156,12 @@ describe('DiceThrone 单槽当前骰区', () => {
             payload: { settlement: createBonusSettlement() },
             timestamp: 3,
         } as DiceThroneEvent);
-        const playSix = COMMON_CARDS.find((card) => card.id === 'card-play-six');
+        const surprise = COMMON_CARDS.find((card) => card.id === 'card-surprise');
 
-        expect(playSix).toBeDefined();
-        if (!playSix) return;
+        expect(surprise).toBeDefined();
+        if (!surprise) return;
 
-        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
+        expect(checkPlayCard(opened, '0', surprise, 'main1')).toEqual({ ok: true });
 
         const lockedTarget = {
             ...opened,
@@ -1173,7 +1173,7 @@ describe('DiceThrone 单槽当前骰区', () => {
                 },
             },
         };
-        expect(checkPlayCard(lockedTarget, '0', playSix, 'main1')).toEqual({
+        expect(checkPlayCard(lockedTarget, '0', surprise, 'main1')).toEqual({
             ok: false,
             reason: 'rollContextLocked',
         });
@@ -1225,10 +1225,10 @@ describe('DiceThrone 单槽当前骰区', () => {
             'main1',
         )).toBe(true);
 
-        const playSix = COMMON_CARDS.find((card) => card.id === 'card-play-six');
-        expect(playSix).toBeDefined();
-        if (!playSix) return;
-        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
+        const flick = COMMON_CARDS.find((card) => card.id === 'card-flick');
+        expect(flick).toBeDefined();
+        if (!flick) return;
+        expect(checkPlayCard(opened, '0', flick, 'main1')).toEqual({ ok: true });
     });
 
     it('攻击已选定时重掷奖励骰不会要求重选技能或清空攻击', () => {
