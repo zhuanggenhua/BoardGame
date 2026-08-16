@@ -5,16 +5,21 @@
  * 并在交互完成后执行对应的领域命令。
  */
 
-import type { GameEvent, MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import {
   INTERACTION_EVENTS,
-  createSimpleChoice,
+  createSimpleChoice as createEngineSimpleChoice,
   queueInteraction,
 } from '../../../engine/systems/InteractionSystem';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
-import type { PromptOption, PromptMultiConfig } from '../../../engine/systems/InteractionSystem';
-import type { SummonerWarsCore, CellCoord, EventCard, UnitCard, StructureCard, BoardUnit } from './types';
+import type {
+  InteractionDescriptor,
+  PromptOption,
+  PromptMultiConfig,
+  SimpleChoiceConfig,
+} from '../../../engine/systems/InteractionSystem';
+import type { SummonerWarsCore, CellCoord, EventCard, UnitCard, StructureCard, BoardUnit, PlayerId } from './types';
 import { SW_COMMANDS, SW_EVENTS } from './types';
 import { executeCommand } from './execute';
 import { validateCommand } from './validate';
@@ -656,6 +661,32 @@ type SwInteractionValue =
   | { action: 'ice_ram_target'; targetPosition: CellCoord }
   | { action: 'ice_ram_push'; targetPosition: CellCoord; pushNewPosition?: CellCoord }
   | { skip: true };
+
+type SwSimpleChoiceData<T = unknown> = Record<string, unknown> & {
+  options?: PromptOption<T>[];
+  sw?: SwInteractionMeta;
+};
+type SwSimpleChoiceInteraction<T = unknown> = InteractionDescriptor<SwSimpleChoiceData<T>>;
+
+function createSimpleChoice<T>(
+  id: string,
+  playerId: PlayerId,
+  title: string,
+  options: PromptOption<T>[],
+  sourceIdOrConfig?: string | SimpleChoiceConfig,
+  timeout?: number,
+  multi?: PromptMultiConfig,
+): SwSimpleChoiceInteraction<T> {
+  return createEngineSimpleChoice(
+    id,
+    playerId,
+    title,
+    options,
+    sourceIdOrConfig,
+    timeout,
+    multi,
+  ) as SwSimpleChoiceInteraction<T>;
+}
 
 type InteractionResolutionPayload = {
   interactionId: string;
