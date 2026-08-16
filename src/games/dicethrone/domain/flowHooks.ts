@@ -864,6 +864,59 @@ function resolveNanobombUpkeepEvents(
     return events;
 }
 
+function resolveBleedUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): DiceThroneEvent[] {
+    const stacks = core.players[playerId]?.statusEffects[STATUS_IDS.BLEED] ?? 0;
+    if (stacks <= 0 || !random) return [];
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(core, playerId, value) ?? '';
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face,
+            playerId,
+            targetPlayerId: playerId,
+            effectKey: value <= 4 ? 'bonusDie.effect.lieren.bleed.damage' : 'bonusDie.effect.lieren.bleed.remove',
+            effectParams: { value },
+        },
+        sourceCommandType,
+        timestamp,
+    } as BonusDieRolledEvent];
+
+    if (value <= 4) {
+        const damageCalc = createDamageCalculation({
+            source: { playerId: 'system', abilityId: 'upkeep-bleed' },
+            target: { playerId },
+            baseDamage: 1,
+            damageScope: 'direct',
+            state: core,
+            timestamp: timestamp + 0.001,
+            autoCollectShields: false,
+        });
+        events.push(...damageCalc.toEvents());
+    } else {
+        events.push({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: playerId,
+                statusId: STATUS_IDS.BLEED,
+                stacks: 1,
+            },
+            sourceCommandType,
+            timestamp: timestamp + 0.001,
+        } as StatusRemovedEvent);
+    }
+
+    return events;
+}
+
 function appendPendingAttackResolvedEvent(
     pendingAttack: DiceThroneCore['pendingAttack'],
     events: GameEvent[],
@@ -2506,6 +2559,15 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     activeId,
                     command.type,
                     timestamp + 0.03,
+                    random,
+                ));
+
+                // 6. 流血 (bleed) — 维持阶段投 1 骰；1-4 受到 1 伤害，5-6 移除 1 层。
+                events.push(...resolveBleedUpkeepEvents(
+                    phaseEnterCore,
+                    activeId,
+                    command.type,
+                    timestamp + 0.04,
                     random,
                 ));
             }

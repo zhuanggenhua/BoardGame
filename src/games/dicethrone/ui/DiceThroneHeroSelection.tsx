@@ -17,6 +17,7 @@ import { getPlayerBoardAspectRatio } from './abilitySlotLayout';
 import {
     DICETHRONE_CHARACTER_CATALOG,
     getDiceThroneCharacterNameKey,
+    hasDiceThroneTipBoard,
     type CharacterDefinition,
     type SelectableCharacterId,
     type CharacterId,
@@ -115,6 +116,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
 
     const [magnifyPreview, setMagnifyPreview] = useState<MagnifyPreview>(null);
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(previewCharId);
+    const hasPreviewTipBoard = hasDiceThroneTipBoard(previewCharId);
 
     const effectiveSeatingOrder = useMemo(() => {
         const orderedPlayers = seatingOrder?.filter((pid) => playerIds.includes(pid)) ?? [];
@@ -492,10 +494,11 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                         locale={locale}
                                         className="block h-full w-auto object-contain"
                                         alt={t('imageAlt.playerBoard')}
+                                        data-testid="character-selection-player-board-image"
                                     />
                                 </div>
 
-                                <div
+                                {hasPreviewTipBoard && <div
                                     className="relative h-[85%] w-auto overflow-hidden shadow-2xl cursor-zoom-in hover:ring-2 hover:ring-amber-400/50 transition-all"
                                     style={{ borderRadius: inlineUnit(0.6) }}
                                     onClick={() => setMagnifyPreview({
@@ -509,8 +512,9 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                         locale={locale}
                                         className="h-full w-auto object-contain"
                                         alt={t('imageAlt.tipBoard')}
+                                        data-testid="tip-board-image"
                                     />
-                                </div>
+                                </div>}
                             </div>
                         </motion.div>
                     </AnimatePresence>

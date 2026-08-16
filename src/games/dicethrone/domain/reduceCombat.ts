@@ -362,6 +362,30 @@ export const handleHealApplied: EventHandler<Extract<DiceThroneEvent, { type: 'H
     };
 };
 
+export const handleCompanionHealthChanged: EventHandler<Extract<DiceThroneEvent, { type: 'COMPANION_HEALTH_CHANGED' }>> = (
+    state,
+    event,
+) => {
+    const player = state.players[event.payload.playerId];
+    const companion = player?.companion;
+    if (!player || !companion || companion.id !== event.payload.companionId) return state;
+
+    const hp = Math.max(0, Math.min(companion.maxHp, companion.hp + event.payload.delta));
+    return {
+        ...state,
+        players: {
+            ...state.players,
+            [event.payload.playerId]: {
+                ...player,
+                companion: { ...companion, hp },
+            },
+        },
+        lastEffectSourceByPlayerId: event.payload.sourceAbilityId
+            ? { ...(state.lastEffectSourceByPlayerId || {}), [event.payload.playerId]: event.payload.sourceAbilityId }
+            : state.lastEffectSourceByPlayerId,
+    };
+};
+
 /**
  * 处理攻击发起事件
  */

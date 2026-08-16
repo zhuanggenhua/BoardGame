@@ -10,6 +10,7 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { HitStopConfig } from '../../../components/common/animations';
 import { UI_Z_INDEX } from '../../../core';
 import { AutoResponseToggle } from './AutoResponseToggle';
+import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
 
 
 export const LeftSidebar = ({
@@ -39,6 +40,8 @@ export const LeftSidebar = ({
     onAutoResponseToggle,
     responseTokenIds,
     onResponseTokenClick,
+    onConsumeNyraBond,
+    nyraDamageResponse,
 }: {
     currentPhase: TurnPhase;
     viewPlayer: HeroState;
@@ -80,6 +83,10 @@ export const LeftSidebar = ({
     /** 当前响应中可直接点击使用的 Token。提示与跳过由手牌上方的共享响应框承接。 */
     responseTokenIds?: string[];
     onResponseTokenClick?: (tokenId: string) => void;
+    /** 消耗妮拉之系治疗妮拉 */
+    onConsumeNyraBond?: () => void;
+    /** 当前伤害响应中妮拉可承接的伤害操作 */
+    nyraDamageResponse?: NyraDamageResponse;
 }) => {
     return (
         <div
@@ -90,6 +97,14 @@ export const LeftSidebar = ({
             <div className="w-full pt-[0.2rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
             <div className="flex-grow" />
             <div className="w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto">
+                <div className="w-full px-[1.2vw]">
+                    <NyraCompanionPanel
+                        player={viewPlayer}
+                        locale={locale}
+                        onConsumeBond={onConsumeNyraBond}
+                        damageResponse={nyraDamageResponse}
+                    />
+                </div>
                 {/*
                  * selfBuffRef is used as the end position for buff/status flying effects.
                  * Use a small offset above the HP container so the effect doesn't land too low.

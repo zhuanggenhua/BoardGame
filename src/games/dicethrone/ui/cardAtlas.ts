@@ -12,6 +12,7 @@ import zhanshujiaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/
 import cursedPirateAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-cursed_pirate.atlas.json';
 import artificerAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-artificer.atlas.json';
 import tianshiAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-tianshi.atlas.json';
+import lierenAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-lieren.atlas.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -47,6 +48,7 @@ const ZHANSHUJIA_CARD_ATLAS_CONFIG = parseAtlasConfig(zhanshujiaAtlasConfigData,
 const CURSED_PIRATE_CARD_ATLAS_CONFIG = parseAtlasConfig(cursedPirateAtlasConfigData, 'ability-cards-cursed_pirate.atlas.json');
 const ARTIFICER_CARD_ATLAS_CONFIG = parseAtlasConfig(artificerAtlasConfigData, 'ability-cards-artificer.atlas.json');
 const TIANSHI_CARD_ATLAS_CONFIG = parseAtlasConfig(tianshiAtlasConfigData, 'ability-cards-tianshi.atlas.json');
+const LIEREN_CARD_ATLAS_CONFIG = parseAtlasConfig(lierenAtlasConfigData, 'ability-cards-lieren.atlas.json');
 
 const getHeroAtlasConfig = (charId: string) => {
     if (charId === 'gunslinger') return GUNSLINGER_CARD_ATLAS_CONFIG;
@@ -57,6 +59,7 @@ const getHeroAtlasConfig = (charId: string) => {
     if (charId === 'cursed_pirate') return CURSED_PIRATE_CARD_ATLAS_CONFIG;
     if (charId === 'artificer') return ARTIFICER_CARD_ATLAS_CONFIG;
     if (charId === 'tianshi') return TIANSHI_CARD_ATLAS_CONFIG;
+    if (charId === 'lieren') return LIEREN_CARD_ATLAS_CONFIG;
     return COMMON_CARD_ATLAS_CONFIG;
 };
 /**

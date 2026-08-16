@@ -359,6 +359,12 @@
       "description": [
         "At the end of the holder's next Offensive Roll Phase, remove this status and roll 1 die: 1 makes the attack deal no damage; 2-3 halves this attack's damage, rounded up; 4-6 resolves normally."
       ]
+    },
+    "bleed": {
+      "name": "Bleed",
+      "description": [
+        "Negative status effect, limit 2. During the holder's Upkeep, roll 1 die: 1-4 deals 1 direct damage; 5-6 removes 1 Bleed stack."
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -462,6 +468,12 @@
       "name": "Dazzle",
       "description": [
         "At the end of the holder's next Offensive Roll Phase, remove this status and roll 1 die: 1 makes the attack deal no damage; 2-3 halves this attack's damage, rounded up; 4-6 resolves normally."
+      ]
+    },
+    "nyras_bond": {
+      "name": "Nyra's Bond",
+      "description": [
+        "Positive status, limit 1. Spend it any time to heal Nyra 2, or during damage response to split the current damage between Nyra and the Huntress."
       ]
     },
     "loaded": {
@@ -727,7 +739,8 @@
     "paladin": "Paladin",
     "gunslinger": "Gunslinger",
     "samurai": "Samurai",
-    "tianshi": "Seraph"
+    "tianshi": "Seraph",
+    "lieren": "Huntress"
   },
   "characters": {
     "monk": "Monk",
@@ -743,7 +756,8 @@
     "zhanshujia": "Tactician",
     "cursed_pirate": "Cursed Pirate",
     "artificer": "Artificer",
-    "tianshi": "Seraph"
+    "tianshi": "Seraph",
+    "lieren": "Huntress"
   },
   "config": {
     "dice": {
@@ -767,7 +781,16 @@
       "ninja": { "name": "Ninja Dice" },
       "zhanshujia": { "name": "Tactician Dice" },
       "artificer": { "name": "Artificer Dice" },
-      "tianshi": { "name": "Seraph Dice" }
+      "tianshi": { "name": "Seraph Dice" },
+      "lieren": {
+        "name": "Huntress Dice",
+        "face": {
+          "spear": "Spear Face",
+          "claw": "Claw Face",
+          "nyras_bond": "Nyra's Bond Face",
+          "sabertooth": "Sabertooth Face"
+        }
+      }
     },
     "resources": {
       "cp": { "name": "CP" },
@@ -899,7 +922,11 @@
       "blade": "Blade",
       "wing": "Wing",
       "cross": "Cross",
-      "shield": "Holy Pendant"
+      "shield": "Holy Pendant",
+      "spear": "Spear",
+      "claw": "Claw",
+      "nyras_bond": "Nyra's Bond",
+      "sabertooth": "Sabertooth"
     }
   },
   "bonusDie": {
@@ -957,6 +984,24 @@
       "gunslingerEatMyLead.result": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack and inflict Knockdown",
       "tianshi.divinePunishment": "Divine Punishment: resolve damage, Flight, Purify, and Dazzle from the extra dice",
+      "lieren.savageForce.spear": "Spear: +1 attack damage",
+      "lieren.savageForce.claw": "Claw: +2 attack damage",
+      "lieren.savageForce.nyrasBond": "Nyra's Bond: gain Nyra's Bond",
+      "lieren.savageForce.sabertooth": "Sabertooth: inflict 1 Bleed",
+      "lieren.bleed.damage": "Bleed: take 1 direct damage",
+      "lieren.bleed.remove": "Bleed: remove 1 stack",
+      "lieren.primitiveRoar.sabertooth": "Sabertooth: heal Nyra 4",
+      "lieren.primitiveRoar.default": "No Sabertooth: draw 1 card",
+      "lieren.opportunisticStrike.spear": "Spear: +1 attack damage",
+      "lieren.opportunisticStrike.claw": "Claw: +2 attack damage",
+      "lieren.opportunisticStrike.nyrasBond": "Nyra's Bond: heal Nyra 1",
+      "lieren.opportunisticStrike.sabertooth": "Sabertooth: +3 attack damage",
+      "lieren.bloodline.nyrasBond": "Nyra's Bond: heal Nyra 1",
+      "lieren.bloodline.sabertooth": "Sabertooth: heal Nyra 2",
+      "lieren.pounce.spear": "Spear: +1 attack damage",
+      "lieren.pounce.claw": "Claw: inflict 1 Bleed",
+      "lieren.savageClaw.bigBleed": "Claw or Sabertooth: inflict 2 Bleed",
+      "lieren.savageClaw.bleed": "Other result: inflict 1 Bleed",
       "barbarianSuppress": "This die's {{value}} counts toward the final damage; reaching the threshold also inflicts Concussion",
       "energeticStrength": "Strength! Heal 2 and inflict Concussion",
       "energeticOther": "Draw 1 card",
@@ -1351,7 +1396,11 @@
       "blade": "Blade",
       "wing": "Wing",
       "cross": "Cross",
-      "shield": "Holy Pendant"
+      "shield": "Holy Pendant",
+      "spear": "Spear",
+      "claw": "Claw",
+      "nyras_bond": "Nyra's Bond",
+      "sabertooth": "Sabertooth"
     },
     "trigger": {
       "generic": "variant condition",
@@ -4375,7 +4424,44 @@
     "card-tianshi-angelic-tactics": { "effects": { "resolve": "Roll 1 bonus die: Blade adds +3 attack damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival." } },
      "card-tianshi-divine-arbitration": { "effects": { "resolve": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." } },
     "card-tianshi-supreme-holiness": { "effects": { "resolve": "Roll 1 bonus die: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card." } },
-    "card-tianshi-ascension": { "effects": { "resolve": "Choose a player to gain Flight." } }
+    "card-tianshi-ascension": { "effects": { "resolve": "Choose a player to gain Flight." } },
+    "wild-force": { "name": "Wild Force", "description": "3/4/5 Spears: deal 3/4/5 damage.", "effects": { "damage3": "Deal 3 damage", "damage4": "Deal 4 damage", "damage5": "Deal 5 damage" } },
+    "wild-force-2": { "name": "Wild Force II", "description": "3/4/5 Spears: deal 4/5/6 damage; if at least 4 dice show the same number, inflict Bleed.", "effects": { "damage4": "Deal 4 damage", "bleedIfFourKind": "If at least 4 dice show the same number, inflict 1 Bleed", "damage5": "Deal 5 damage", "damage6": "Deal 6 damage" } },
+    "savage-force": { "name": "Savage Force", "description": "3 Claws + 1 Sabertooth: deal 4 damage and roll 1 bonus die.", "effects": { "damage4": "Deal 4 damage", "bonusDie": "Roll 1 bonus die and resolve the Huntress die face" } },
+    "savage-force-2": { "name": "Savage Force II", "description": "3 Claws + 1 Sabertooth: deal 5 damage and roll 1 bonus die.", "effects": { "damage5": "Deal 5 damage", "bonusDie": "Roll 1 bonus die and resolve the Huntress die face" } },
+    "savage-force-2-hunting": { "name": "Hunting", "description": "2 Claws + 1 Sabertooth: inflict 1 Bleed and deal 3 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage3": "Deal 3 damage" } },
+    "brutal-strike": { "name": "Brutal Strike", "description": "Small Straight: inflict 1 Bleed and deal 4 damage; Large Straight: inflict 2 Bleed and deal 7 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage4": "Deal 4 damage", "bleed2": "Inflict 2 Bleed", "damage7": "Deal 7 damage" } },
+    "brutal-strike-2": { "name": "Brutal Strike II", "description": "Small Straight: inflict 1 Bleed and deal 5 damage; Large Straight: inflict 2 Bleed and deal 8 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage5": "Deal 5 damage", "bleed2": "Inflict 2 Bleed", "damage8": "Deal 8 damage" } },
+    "beast-force": { "name": "Beast Force", "description": "4 Sabertooths: heal Nyra 1, then deal 5 undefendable damage.", "effects": { "healNyra1": "Heal Nyra 1", "unblockable5": "Deal 5 undefendable damage" } },
+    "beast-force-2": { "name": "Beast Force II", "description": "4 Sabertooths: heal Nyra 1, then deal 6 undefendable damage.", "effects": { "healNyra1": "Heal Nyra 1", "unblockable6": "Deal 6 undefendable damage" } },
+    "beast-force-2-fierce-gaze": { "name": "Fierce Gaze", "description": "3 Sabertooths: heal Nyra 1 and inflict 2 Bleed.", "effects": { "healNyra1": "Heal Nyra 1", "bleed2": "Inflict 2 Bleed" } },
+    "life-revival": { "name": "Life Revival", "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 3.", "effects": { "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 3" } },
+    "life-revival-2": { "name": "Life Revival II", "description": "2 Nyra's Bond: gain Nyra's Bond and heal Nyra 2.", "effects": { "nyrasBondAndHeal": "Gain Nyra's Bond and heal Nyra 2" } },
+    "beast-instinct": { "name": "Beast Instinct", "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 2 undefendable damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "unblockable2": "Deal 2 undefendable damage" } },
+    "beast-instinct-2": { "name": "Beast Instinct II", "description": "3 Spears + 1 Nyra's Bond: gain Nyra's Bond and deal 3 undefendable damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "unblockable3": "Deal 3 undefendable damage" } },
+    "beast-instinct-2-swipe": { "name": "Swipe", "description": "3 Claws: inflict 1 Bleed.", "effects": { "bleed1": "Inflict 1 Bleed" } },
+    "hunt-ambush": { "name": "Hunt Ambush", "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 5 damage.", "effects": { "healNyra1": "Heal Nyra 1", "damage5": "Deal 5 damage" } },
+    "hunt-ambush-2": { "name": "Hunt Ambush II", "description": "2 Spears + 2 Claws + 1 Nyra's Bond: heal Nyra 1 and deal 6 damage.", "effects": { "healNyra1": "Heal Nyra 1", "damage6": "Deal 6 damage" } },
+    "hunt-ambush-2-cutthroat": { "name": "Cutthroat", "description": "1 Spear + 1 Claw + 1 Sabertooth: inflict 2 Bleed.", "effects": { "bleed2": "Inflict 2 Bleed" } },
+    "kindred-bond": { "name": "Kindred Bond", "description": "Defensive roll 3 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
+    "kindred-bond-2": { "name": "Kindred Bond II", "description": "Defensive roll 4 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
+    "kindred-bond-3": { "name": "Kindred Bond III", "description": "Defensive roll 4 dice: each Spear and Sabertooth deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
+    "jungle-fury": { "name": "Jungle Fury!", "description": "5 Sabertooths: gain Nyra's Bond, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } }
+  },
+  "companion": {
+    "nyra": {
+      "label": "Nyra companion status",
+      "name": "Nyra",
+      "active": "Active",
+      "inactive": "Inactive",
+      "takeDamage": "Nyra takes the hit",
+      "takeDamageHint": "Move all {{amount}} damage to Nyra",
+      "takeDamageAction": "Redirect damage",
+      "allocateDamage": "Spend Bond to split damage",
+      "allocateDamageHint": "Nyra takes {{amount}} damage; the Huntress takes the rest",
+      "allocateDamageAction": "Confirm split",
+      "healAction": "Spend Bond to heal Nyra"
+    }
   },
   "cards": {
     "card-enlightenment": {
@@ -5432,7 +5518,22 @@
      "card-tianshi-divine-arbitration": { "name": "Divine Arbitration!", "description": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." },
     "card-tianshi-supreme-holiness": { "name": "Supreme Holiness!", "description": "Roll 1 bonus die; Holy Pendant gains 2 Flight and 2 Purify, otherwise draw 1 card." },
     "card-tianshi-ascension": { "name": "Ascension!", "description": "Choose a player to gain Flight." },
-     "upgrade-tianshi-holy-blade-2-cherub": { "name": "Holy Blade II / Cherub", "description": "Top: Holy Blade II. Bottom: gain Flight and Divine Arrival." }
+     "upgrade-tianshi-holy-blade-2-cherub": { "name": "Holy Blade II / Cherub", "description": "Top: Holy Blade II. Bottom: gain Flight and Divine Arrival." },
+    "card-lieren-primitive-roar": { "name": "Primitive Roar!", "description": "Roll 1 die; on Sabertooth, heal Nyra 4. Otherwise draw 1 card." },
+    "card-lieren-regroup": { "name": "Regroup!", "description": "Gain Nyra's Bond." },
+    "card-lieren-opportunistic-strike": { "name": "Opportunistic Strike!", "description": "Attack modifier: roll 1 bonus die; Spear +1 damage, Claw +2 damage, Nyra's Bond heals Nyra 1, Sabertooth +3 damage." },
+    "card-lieren-pounce": { "name": "Pounce!", "description": "Attack modifier: roll 5 bonus dice; each Spear adds +1 attack damage; if any Claw is rolled, inflict 1 Bleed." },
+    "card-lieren-savage-claw": { "name": "Savage Claw!", "description": "Choose 1 player and roll 1 die; Claw or Sabertooth inflicts 2 Bleed, otherwise inflict 1 Bleed." },
+    "card-lieren-bloodline": { "name": "Bloodline!", "description": "Roll 3 dice; heal Nyra 1, then heal 1 for each Nyra's Bond and 2 for each Sabertooth." },
+    "upgrade-lieren-kindred-bond-3": { "name": "Kindred Bond III", "description": "Upgrade Kindred Bond to level III." },
+    "upgrade-lieren-kindred-bond-2": { "name": "Kindred Bond II", "description": "Upgrade Kindred Bond to level II." },
+    "upgrade-lieren-beast-force-2": { "name": "Beast Force II / Fierce Gaze", "description": "Upgrade Beast Force and add the Fierce Gaze branch." },
+    "upgrade-lieren-brutal-strike-2": { "name": "Brutal Strike II", "description": "Upgrade Brutal Strike to level II." },
+    "upgrade-lieren-hunt-ambush-2": { "name": "Hunt Ambush II / Cutthroat", "description": "Upgrade Hunt Ambush and add the Cutthroat branch." },
+    "upgrade-lieren-beast-instinct-2": { "name": "Beast Instinct II / Swipe", "description": "Upgrade Beast Instinct and add the Swipe branch." },
+    "upgrade-lieren-life-revival-2": { "name": "Life Revival II", "description": "Upgrade Life Revival to level II." },
+    "upgrade-lieren-savage-force-2": { "name": "Savage Force II / Hunting", "description": "Upgrade Savage Force and add the Hunting branch." },
+    "upgrade-lieren-wild-force-2": { "name": "Wild Force II", "description": "Upgrade Wild Force to level II." }
   },
   "passive": {
     "tithes": {

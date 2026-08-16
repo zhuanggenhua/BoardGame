@@ -381,8 +381,13 @@ export function maybeCreateDamageResponseEvent(params: {
     const isUnblockable = dmgPayload.unblockable === true;
     const bypassShields = dmgPayload.bypassShields === true;
     const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+    const target = state.players[dmgTargetId];
+    const hasNyraRedirect = target?.characterId === 'lieren'
+        && (target.companion?.hp ?? 0) > 0
+        && state.pendingAttack?.isUltimate !== true;
     const hasDefenderAvoidanceResponse = hasBeforeDamageReceivedCard(state, dmgTargetId)
-        || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount);
+        || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount)
+        || hasNyraRedirect;
 
     if (!allowAttackerBoost && !hasDefenderAvoidanceResponse) {
         return null;
@@ -405,7 +410,11 @@ export function maybeCreateDamageResponseEvent(params: {
             damageScope,
         )
         : (hasDefenderAvoidanceResponse && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null);
-    const tokenResponseType = resolveDamageResponseType(state, dmgTargetId, rawTokenResponseType);
+    const tokenResponseType = resolveDamageResponseType(
+        state,
+        dmgTargetId,
+        rawTokenResponseType ?? (hasNyraRedirect && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null),
+    );
 
     if (!tokenResponseType) return null;
 

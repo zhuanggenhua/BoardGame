@@ -161,6 +161,8 @@ export interface RollDieConditionalEffect {
     /** 直接造成一段不可防御伤害，不并入后续普通伤害动作 */
     unblockableDamage?: number;
     heal?: number;
+    /** 治疗施法者的伙伴（当前用于女猎手的妮拉）。 */
+    companionHeal?: number;
     cp?: number;
     /** 抽牌数量 */
     drawCard?: number;
@@ -204,6 +206,8 @@ export interface RollDieDefaultEffect {
     /** 抽牌数量 */
     drawCard?: number;
     heal?: number;
+    /** 治疗施法者的伙伴（当前用于女猎手的妮拉）。 */
+    companionHeal?: number;
     cp?: number;
     grantToken?: { tokenId: string; value: number; target?: 'self' | 'opponent' };
     grantStatus?: { statusId: string; value: number; target?: 'self' | 'opponent' };

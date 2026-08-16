@@ -1,0 +1,120 @@
+name: Asset Server Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset_prefix:
+        description: 'public/assets 相对路径前缀；多条用换行分隔，留空表示全量'
+        required: false
+        type: string
+      force_upload:
+        description: '强制重新发布匹配对象'
+        required: false
+        default: false
+        type: boolean
+      skip_android_package_publish:
+        description: '仅发布服务器素材对象，不刷新 Android 游戏素材包索引'
+        required: false
+        default: true
+        type: boolean
+      verify_urls:
+        description: '发布后 HEAD 回查的公开 URL；多条用换行分隔'
+        required: false
+        type: string
+
+concurrency:
+  group: asset-server-upload-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+      ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+      ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate upload secrets
+        shell: bash
+        run: |
+          missing=()
+          [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
+          [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing required asset server secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Prepare SSH material
+        shell: bash
+        run: |
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/asset-publisher" "${HOME}/.ssh/known_hosts"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.1.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate asset manifests
+        run: npm run assets:validate
+
+      - name: Publish selected assets
+        shell: bash
+        env:
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
+          ASSET_PREFIX_INPUT: ${{ inputs.asset_prefix }}
+          FORCE_UPLOAD_INPUT: ${{ inputs.force_upload }}
+          SKIP_ANDROID_PACKAGE_PUBLISH_INPUT: ${{ inputs.skip_android_package_publish }}
+        run: |
+          args=()
+          while IFS= read -r prefix; do
+            [[ -z "${prefix// }" ]] && continue
+            args+=(--asset-prefix "${prefix}")
+          done < <(printf '%s\n' "${ASSET_PREFIX_INPUT}" | tr ',' '\n')
+
+          if [[ "${FORCE_UPLOAD_INPUT}" == "true" ]]; then
+            args+=(--force-upload)
+          fi
+          if [[ "${SKIP_ANDROID_PACKAGE_PUBLISH_INPUT}" == "true" ]]; then
+            args+=(--skip-android-package-publish)
+          fi
+
+          node scripts/assets/upload-to-server.js "${args[@]}"
+
+      - name: Verify public URLs
+        if: ${{ inputs.verify_urls != '' }}
+        shell: bash
+        env:
+          VERIFY_URLS_INPUT: ${{ inputs.verify_urls }}
+        run: |
+          status=0
+          while IFS= read -r url; do
+            [[ -z "${url// }" ]] && continue
+            headers="$(mktemp)"
+            code="$(curl -sS -L -o /dev/null -D "${headers}" -w '%{http_code}' -I "${url}")" || code="curl-error"
+            asset_source="$(awk 'BEGIN{IGNORECASE=1} /^x-asset-source:/ {print $2}' "${headers}" | tr -d '\r' | tail -n1)"
+            server_header="$(awk 'BEGIN{IGNORECASE=1} /^server:/ {print $2}' "${headers}" | tr -d '\r' | tail -n1)"
+            cf_ray="$(awk 'BEGIN{IGNORECASE=1} /^cf-ray:/ {print $2}' "${headers}" | tr -d '\r' | tail -n1)"
+            echo "url=${url} code=${code} x-asset-source=${asset_source:-none} server=${server_header:-none} cf-ray=${cf_ray:-none}"
+            if [[ "${code}" != "200" || "${asset_source}" != "server" || -n "${cf_ray}" || "${server_header}" == "cloudflare" ]]; then
+              echo "::error::Asset URL verification failed: ${url}"
+              status=1
+            fi
+            rm -f "${headers}"
+          done <<< "${VERIFY_URLS_INPUT}"
+          exit "${status}"

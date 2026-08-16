@@ -50,8 +50,9 @@ description: "BoardGame PR 合并流程。用于合并 PR/分支、冲突处理�
   2. 实际 push 验证结果
 - 若 `permissions.push=false` 或实际 push 失败：
   - 不再把“修复并推回原 PR”当默认路线
-  - 直接切换到用户确认过的 fallback（例如把修复后的 PR 内容直接收口到主仓库可写分支）
-  - 最终汇报里必须明确写“阻塞点是 head repo 真实不可写”
+  - 默认切换到 fork 分支 + PR fallback：把修复后的内容推到当前身份可写的 fork 分支，并从该分支向主仓目标分支创建 PR
+  - 只有用户明确要求“只推 fork / 不开 PR / 暂停”时，才停在 fork 推送
+  - 最终汇报里必须明确写“阻塞点是 head repo 或主仓目标分支真实不可写”，以及 PR 的源/目标分支或 PR 创建失败原因
 3) **远端同步**
 - 默认执行 `git fetch --all --prune`（不切分支、不改历史）。
 

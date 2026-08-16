@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "image": "status-icons-atlas.png",
+    "size": {
+      "w": 802,
+      "h": 400
+    },
+    "comment": "女猎手状态图标图集；妮拉圆牌属于宠物 UI 设计输入，不进入本运行时 atlas。"
+  },
+  "frames": {
+    "nyras_bond": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "comment": "妮拉之系"
+    },
+    "bleed": {
+      "frame": {
+        "x": 402,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "comment": "流血"
+    }
+  }
+}

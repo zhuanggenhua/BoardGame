@@ -158,6 +158,17 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         meditate: ['angelic-cloak'],
         ultimate: ['heavenly-severing'],
     },
+    lieren: {
+        fist: ['wild-force'],
+        chi: ['savage-force'],
+        sky: ['brutal-strike'],
+        lotus: ['beast-force'],
+        combo: ['life-revival'],
+        lightning: ['beast-instinct'],
+        calm: ['hunt-ambush'],
+        meditate: ['kindred-bond'],
+        ultimate: ['jungle-fury'],
+    },
 };
 
 const CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES: Record<string, string[]> = {

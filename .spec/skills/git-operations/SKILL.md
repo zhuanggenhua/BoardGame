@@ -210,6 +210,8 @@ git rebase ...
 - GitHub `403`、`Write access to repository not granted` 或 `Permission denied` 在这个场景下只说明“不能直推上游主仓”；正确补救是推 fork 并开 PR，不是把普通代码贡献标成权限阻塞。
 - 不得为了普通代码 PR 索要主仓写权限、生产 SSH 私钥或服务器 known-hosts；这些只和维护者直推、自动合并、发布部署或远端回查有关。
 - 如果本轮目标同时包含代码 PR 与素材上传 / 部署 / 服务器 HEAD 回查，必须拆开汇报：代码贡献走 fork/PR；发布或回查缺少 token、SSH 或主机指纹时，只阻塞对应外部发布动作，不能阻塞 PR 提交本身。
+- **主仓无写权限时默认用 PR 合并（强制）**：当 `push origin <branch>` 返回 `403`、`Permission denied`、或其它证据证明当前身份对主仓目标分支不可写时，不能停在“已推 fork”或把 fork 推送包装成主仓完成；默认把同一提交推到可写 fork 分支，然后从 `fork:<branch>` 向 `origin:<target>` 创建 PR。只有用户明确说“只推 fork / 不开 PR / 暂停”时，才不创建 PR。
+- **PR 创建失败才算阻塞**：若 fork 推送成功但 `gh` 未登录、API token 缺失、网络失败或上游禁用跨仓库 PR，必须继续尝试可用认证通道；全部失败后汇报“本地已合并 + fork 已推送 + PR 未创建”的真实状态、失败原因和 PR 源/目标分支，不能只说 push 失败。
 
 ### 4.3 同步主分支 / 冲突友好策略
 
@@ -232,7 +234,7 @@ git rebase ...
 - 只有在以下同时成立时，才允许实际执行 merge 命令：① 用户当轮明确要求**现在执行合并**；② 已锁定具体双方（哪棵 worktree / 哪个分支并到哪边）；③ 已完成双边内容级比对，知道哪些吸收、哪些放弃、哪些双保留；④ 当前工作区没有未归属脏改会被误吞
 - 如果用户只是在问“怎么收口 / 哪边更适合当正式版 / 能不能都保留 / 冲突怎么处理”，默认交付物应是裁定结论、吸收顺序和风险说明，而不是直接动手 merge
 - 可写 PR：默认先本地修，再推回，再 review / merge
-- 不可写 PR：再走 fallback，不要假装能推回 head
+- 不可写 PR：默认走 fork 分支 + PR fallback，不要假装能推回 head；若本轮目标是“合并到主分支”，fallback 的完成标准是 PR 已创建并指向正确 base，或已证明 PR 创建本身被认证/网络/上游设置阻塞。
 - 当 `merge origin/main` 被 `Your local changes would be overwritten by merge` 拦住时，先区分：
   - 用户未授权并入当前未提交改动：停下汇报具体文件，不得擅自 `stash`
   - 用户已明确授权“当前这批没问题可一起提交/并入提交”：允许先审查这批未提交 diff，按当前目标补一次提交，再重新执行 `merge`
@@ -243,6 +245,14 @@ git rebase ...
 - 如果未提交改动明显跨出当前目标，或无法判断归属，仍然必须停下，不得借“可以一起提交”把整片脏工作区直接吞进来
 - merge 前若命中项目要求，先读：
   - `docs/git-merge-checklist.md`
+
+### 4.4 PR / GitHub API 文本编码
+
+- **编码由执行环境负责，不问用户确认（强制）**：创建或更新 PR、issue、release、comment、workflow dispatch 等 GitHub 文本对象时，若内容含中文或其它非 ASCII 字符，默认必须按 UTF-8 发送；不得把“要不要确认编码”交给用户判断。
+- **PR 文本默认中文（强制）**：面向本仓库的 PR 标题、正文、合并说明和关闭说明默认使用中文，除非用户明确要求英文、上游模板强制英文、或目标仓库维护者明确要求英文。技术名词、命令、路径、commit hash、错误原文和 checklist 标题可以保留英文，但解释、风险、验证和结论必须用中文写清。
+- **优先使用原生 UTF-8 工具链**：`gh pr create/edit`、GitHub API、脚本化 HTTP 请求都可以使用，但必须保证请求体是 UTF-8。Windows PowerShell 5.x 调 `Invoke-RestMethod` / `Invoke-WebRequest` 时，必须使用 `[System.Text.Encoding]::UTF8.GetBytes($json)` 作为 body，并设置 `Content-Type: application/json; charset=utf-8`；不要直接把含中文的字符串 body 交给默认编码。
+- **创建后必须回读验证**：PR 标题、正文或评论创建/更新后，必须通过 `gh pr view`、GitHub API、或等价读取回查标题/正文。若出现 `??`、`Ã`、`锟斤拷`、`æœ¬` 等 mojibake 迹象，必须立即用 UTF-8 body 修正后再汇报完成。
+- **不得为避免编码问题改成英文**：除非用户明确要求英文，否则中文标题/正文应保留中文语义；编码失败是执行问题，不是产品文案取舍。
 
 ## 5. 不该做的事
 

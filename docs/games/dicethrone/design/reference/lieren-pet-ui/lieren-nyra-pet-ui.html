@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dice Throne 女猎手妮拉宠物 UI 候选稿 v7</title>
+  <style>
+    :root {
+      --ink: #211711;
+      --muted: #735f48;
+      --paper: rgba(246, 235, 213, 0.91);
+      --paper-2: rgba(255, 250, 237, 0.72);
+      --hide: #173f33;
+      --hide-2: #2f7a5b;
+      --hide-3: #7bb58b;
+      --claw: #b53a32;
+      --gold: #d8ad45;
+      --cream: #fff7e6;
+      --line: rgba(42, 30, 22, 0.16);
+      --shadow: rgba(20, 14, 10, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      width: 1440px;
+      height: 1000px;
+      overflow: hidden;
+      background: #1d1712;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    .canvas {
+      position: relative;
+      width: 1440px;
+      height: 1000px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 49% 40%, rgba(255, 235, 168, 0.15), transparent 35%),
+        linear-gradient(90deg, rgba(18, 45, 36, 0.72), rgba(19, 47, 38, 0.18) 47%, rgba(21, 18, 15, 0.56)),
+        url("input-assets/player-board.webp") center / cover no-repeat;
+    }
+
+    .canvas::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(22, 19, 15, 0.08), rgba(22, 19, 15, 0.32)),
+        radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(12, 9, 7, 0.28) 74%);
+      pointer-events: none;
+    }
+
+    .nyra-focus {
+      position: absolute;
+      left: 520px;
+      top: 108px;
+      width: 438px;
+      height: 578px;
+      border-radius: 46%;
+      border: 2px solid rgba(244, 221, 156, 0.22);
+      box-shadow: 0 0 0 18px rgba(244, 221, 156, 0.05), 0 28px 88px rgba(22, 58, 43, 0.42);
+      transform: rotate(-4deg);
+      pointer-events: none;
+    }
+
+    .pet-rail {
+      position: absolute;
+      left: 60px;
+      top: 74px;
+      width: 410px;
+      padding: 22px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, var(--paper), rgba(235, 218, 187, 0.86));
+      border: 1px solid rgba(255, 247, 226, 0.56);
+      box-shadow: 0 22px 70px var(--shadow);
+      backdrop-filter: blur(5px);
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      color: var(--hide);
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .pet-title {
+      margin: 0 0 14px;
+      font-size: 52px;
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .identity {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .token {
+      width: 128px;
+      height: 128px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 48%, #fdf4dc, #e6c879);
+      border: 6px solid rgba(255, 244, 205, 0.94);
+      box-shadow: 0 0 0 7px rgba(216, 173, 69, 0.42), 0 12px 32px rgba(43, 31, 18, 0.22);
+    }
+
+    .token img,
+    .bond-icon img {
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 6px rgba(20, 14, 10, 0.18));
+    }
+
+    .token img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .state-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .state-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-radius: 14px;
+      background: var(--paper-2);
+      border: 1px solid rgba(42, 30, 22, 0.12);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .state-chip.strong {
+      color: #fff8e7;
+      background: linear-gradient(90deg, var(--hide), #27614b);
+      border-color: rgba(255,255,255,0.16);
+    }
+
+    .bond-count {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      color: var(--hide);
+      background: #f9e59b;
+      font-size: 16px;
+      font-weight: 950;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.54);
+    }
+
+    .health-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin: 4px 0 9px;
+      font-weight: 950;
+    }
+
+    .health-head span:first-child {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .health-value {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .hearts {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .heart {
+      height: 28px;
+      border-radius: 9px;
+      background: linear-gradient(180deg, var(--hide-3), var(--hide-2));
+      border: 1px solid rgba(31, 71, 51, 0.30);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+    }
+
+    .heart.empty {
+      background: rgba(47, 42, 34, 0.16);
+      border-color: rgba(47, 42, 34, 0.20);
+      box-shadow: none;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .action-chip {
+      min-height: 72px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 251, 241, 0.74);
+      border: 1px solid var(--line);
+    }
+
+    .action-chip.primary {
+      background: linear-gradient(90deg, rgba(216, 173, 69, 0.90), rgba(249, 225, 150, 0.84));
+    }
+
+    .action-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 17px;
+      line-height: 1.1;
+      font-weight: 950;
+    }
+
+    .bond-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 247, 226, 0.68);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.50);
+      flex: 0 0 auto;
+    }
+
+    .bond-icon img {
+      width: 22px;
+      height: 22px;
+    }
+
+    .action-caption {
+      color: #67513b;
+      font-size: 13px;
+      line-height: 1.15;
+      font-weight: 850;
+    }
+
+    .inline-damage {
+      padding: 14px;
+      border-radius: 20px;
+      color: #f9efd8;
+      background: linear-gradient(180deg, rgba(36, 26, 18, 0.88), rgba(23, 63, 51, 0.82));
+      border: 1px solid rgba(255, 248, 229, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+    }
+
+    .damage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+
+    .damage-head h2 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .damage-total {
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: #2a1a10;
+      background: #f4d47b;
+      font-size: 14px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .damage-split {
+      display: grid;
+      grid-template-columns: 1fr 46px 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .damage-side {
+      min-height: 88px;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 248, 229, 0.10);
+      border: 1px solid rgba(255, 248, 229, 0.14);
+    }
+
+    .damage-side h3 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 0 0 10px;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .points {
+      font-size: 30px;
+    }
+
+    .mini-track {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      height: 18px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+
+    .mini-track span {
+      border-radius: 999px;
+      background: rgba(255,255,255,0.20);
+    }
+
+    .damage-side.huntress .mini-track span:nth-child(-n+4) {
+      background: linear-gradient(180deg, #d86a45, var(--claw));
+    }
+
+    .damage-side.nyra .mini-track span:nth-child(-n+3) {
+      background: linear-gradient(180deg, var(--hide-3), var(--hide-2));
+    }
+
+    .swap {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .swap button {
+      border: 0;
+      border-radius: 14px;
+      color: var(--cream);
+      background: rgba(255,255,255,0.15);
+      font-size: 22px;
+      font-weight: 950;
+    }
+
+    .inline-confirm {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .hint {
+      color: rgba(255, 248, 230, 0.72);
+      font-size: 13px;
+      line-height: 1.15;
+      font-weight: 850;
+    }
+
+    .confirm {
+      min-width: 112px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: #241910;
+      background: #f4d47b;
+      font-size: 16px;
+      font-weight: 950;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.40);
+    }
+
+  </style>
+</head>
+<body>
+  <main class="canvas" aria-label="女猎手妮拉宠物 UI Open Design 候选稿 v7">
+    <div class="nyra-focus" aria-hidden="true"></div>
+
+    <section class="pet-rail" aria-label="妮拉宠物状态">
+      <p class="kicker">女猎手宠物伙伴</p>
+      <h1 class="pet-title">妮拉</h1>
+
+      <div class="identity">
+        <div class="token">
+          <img src="input-assets/nyra-avatar.webp" alt="妮拉头像" />
+        </div>
+        <div class="state-stack">
+          <div class="state-chip strong"><span>妮拉激活</span><span>进攻 +2</span></div>
+          <div class="state-chip"><span>妮拉之系</span><span class="bond-count">1</span></div>
+        </div>
+      </div>
+
+      <div class="health-head">
+        <span>妮拉生命</span>
+        <span class="health-value">5 / 7</span>
+      </div>
+      <div class="hearts" aria-hidden="true">
+        <span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart empty"></span><span class="heart empty"></span>
+      </div>
+
+      <div class="action-row">
+        <div class="action-chip primary">
+          <div class="action-top">
+            <span class="bond-icon"><img src="input-assets/nyras-bond.webp" alt="" /></span>
+            <span>消耗妮拉之系</span>
+          </div>
+          <div class="action-caption">治疗 2 或防御替代</div>
+        </div>
+        <div class="action-chip">
+          <div class="action-top">
+            <span class="bond-icon"><img src="input-assets/nyras-bond.webp" alt="" /></span>
+            <span>妮拉承伤</span>
+          </div>
+          <div class="action-caption">随本次伤害结算出现</div>
+        </div>
+      </div>
+
+      <div class="inline-damage" aria-label="内联伤害承接">
+        <div class="damage-head">
+          <h2>伤害承接</h2>
+          <span class="damage-total">本次 7</span>
+        </div>
+        <div class="damage-split">
+          <article class="damage-side huntress">
+            <h3><span>女猎手</span><span class="points">4</span></h3>
+            <div class="mini-track" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </article>
+          <div class="swap" aria-label="调整妮拉承伤">
+            <button type="button">−</button>
+            <button type="button">+</button>
+          </div>
+          <article class="damage-side nyra">
+            <h3><span>妮拉</span><span class="points">3</span></h3>
+            <div class="mini-track" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </article>
+        </div>
+        <div class="inline-confirm">
+          <span class="hint">非终极攻击可分配；终极自动禁用</span>
+          <div class="confirm">确认</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -35,6 +35,7 @@ import { zhanshujiaDiceDefinition } from '../heroes/zhanshujia/diceConfig';
 import { cursedPirateDiceDefinition } from '../heroes/cursed_pirate/diceConfig';
 import { artificerDiceDefinition } from '../heroes/artificer/diceConfig';
 import { tianshiDiceDefinition } from '../heroes/tianshi/diceConfig';
+import { lierenDiceDefinition } from '../heroes/lieren/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
 registerDiceThroneConditions();
@@ -54,6 +55,7 @@ registerDiceDefinition(zhanshujiaDiceDefinition);
 registerDiceDefinition(cursedPirateDiceDefinition);
 registerDiceDefinition(artificerDiceDefinition);
 registerDiceDefinition(tianshiDiceDefinition);
+registerDiceDefinition(lierenDiceDefinition);
 monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 barbarianResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 pyromancerResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
@@ -323,5 +325,5 @@ export type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from './types
 export * from './rules';
 
 // 导出常量
-export { STATUS_IDS, TOKEN_IDS, DICE_FACE_IDS, ARTIFICER_DICE_FACE_IDS, TIANSHI_DICE_FACE_IDS, DICETHRONE_COMMANDS } from './ids';
+export { STATUS_IDS, TOKEN_IDS, DICE_FACE_IDS, ARTIFICER_DICE_FACE_IDS, TIANSHI_DICE_FACE_IDS, LIEREN_DICE_FACE_IDS, DICETHRONE_COMMANDS } from './ids';
 export { RESOURCE_IDS } from './resources';

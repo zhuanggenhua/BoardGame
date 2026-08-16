@@ -29,7 +29,7 @@ import { removeCard, updatePendingAttackSettlementStage } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
-    handleHealApplied, handleAttackInitiated, handleBonusDamageAdded, handleAttackResolved,
+    handleHealApplied, handleCompanionHealthChanged, handleAttackInitiated, handleBonusDamageAdded, handleAttackResolved,
     handleAttackMadeUndefendable, handleExtraAttackTriggered,
     handleDamageShieldGranted, handleDamagePrevented,
     handleAbilityReselectionRequired, handleTokenResponseRequested,
@@ -1696,6 +1696,8 @@ export const reduce = (
             return handleDamageDealt(state, event);
         case 'HEAL_APPLIED':
             return handleHealApplied(state, event);
+        case 'COMPANION_HEALTH_CHANGED':
+            return handleCompanionHealthChanged(state, event);
         case 'STATUS_APPLIED':
             return handleStatusApplied(state, event);
         case 'STATUS_REMOVED':

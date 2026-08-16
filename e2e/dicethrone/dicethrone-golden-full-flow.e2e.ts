@@ -583,6 +583,14 @@ async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {
     await page.waitForTimeout(500);
 }
 
+async function confirmDiceInteraction(page: Page): Promise<void> {
+    const confirmModifyButton = page.getByTestId('dice-interaction-confirm-button').first();
+    await expect(confirmModifyButton).toBeVisible({ timeout: 10000 });
+    await expect(confirmModifyButton).toBeEnabled({ timeout: 10000 });
+    await confirmModifyButton.click();
+    await page.waitForTimeout(700);
+}
+
 async function clickAbilitySlot(page: Page, abilityId: string): Promise<void> {
     await closeBoardMagnifyIfVisible(page);
     const readMatchingSlotId = async () => page.evaluate((expectedAbilityId) => {
@@ -711,10 +719,7 @@ async function changeVisibleDieByOne(page: Page, dieIndex: number, direction: 'i
     }
     await expect(adjustButton).toBeVisible({ timeout: 10000 });
     await adjustButton.click();
-    const confirmModifyButton = page.getByTestId('dice-interaction-confirm-button').first();
-    await expect(confirmModifyButton).toBeEnabled({ timeout: 10000 });
-    await confirmModifyButton.click();
-    await page.waitForTimeout(700);
+    await confirmDiceInteraction(page);
 }
 
 async function sellHandCardToDiscardPile(page: Page, cardId: string, playerId: string): Promise<void> {
@@ -1106,6 +1111,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(hostPage, (state) => state.sys?.interaction?.current?.data?.meta?.dtType === 'modifyDie');
             await screenshotStep(hostPage, testInfo, '05-进攻方打出改骰牌-等待选择骰子');
             await clickVisibleDie(hostPage, 4);
+            await confirmDiceInteraction(hostPage);
             await waitForState(hostPage, (state) => state.core?.dice?.[4]?.value === 6 && !state.sys?.interaction?.current);
             await screenshotStep(hostPage, testInfo, '06-进攻方改骰完成-一颗骰子改为六');
 

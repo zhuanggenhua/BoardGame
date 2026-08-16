@@ -382,7 +382,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 ### 服务器主源（强制）
 
 1. **公开资源域名和协作者入口保持不变**：正式资源仍通过现有命令发布，运行时仍使用 `https://assets.easyboardgame.top/official/...`。不得要求协作者改成服务器 IP、隐藏源域名或另一套上传命令。
-2. **服务器是发布与在线下载主源**：发布脚本默认扫描完整 `public/assets`，先从专用素材上传入口读取服务器对象清单，再按 SHA-256 和大小只把新增或内容变化的对象交给 runner；未变化对象必须自动跳过，不要求协作者手工选择路径。`--asset-prefix` 只允许作为明确的定向检查/调试覆盖，`--force-upload` 才是强制重传全部可发布对象。runner 写入新 release，完成路径、大小和哈希校验后原子切换 `/home/admin/storage/assets/current`。受限 SSH 只保留为管理员应急 fallback，不再作为协作者默认发布前提。所有 `official/**` 公网读取首先使用该活动版本。
+2. **服务器是发布与在线下载主源**：发布脚本默认扫描完整 `public/assets`，先从专用素材上传入口读取服务器对象清单，再按 SHA-256 和大小只把新增或内容变化的对象交给 runner；未变化对象必须自动跳过，不要求协作者手工选择路径。`--asset-prefix` 只允许作为明确的定向检查/调试覆盖，`--force-upload` 才是强制重传全部可发布对象。runner 写入新 release，完成路径、大小和哈希校验后原子切换 `/home/admin/storage/assets/current`。协作者和 CI 默认必须走 `ASSET_SERVER_UPLOAD_TOKEN` / `BG_ASSET_PUBLISH_TOKEN` 对应的直连发布入口；缺少直连 token 时只能报告“素材未上传 / 凭据缺失”，不得静默退回 SSH。受限 SSH 只保留为管理员应急 fallback，且必须显式设置 `ASSET_SERVER_ALLOW_SSH_FALLBACK=1` 后才能使用。所有 `official/**` 公网读取首先使用该活动版本。
 3. **禁止对象存储回退和灾备队列**：服务器切换成功后不再生成对象存储灾备队列；对象存储不可用、凭据缺失或容量问题不得参与正式发布判断，也不得把服务器回滚到旧远端对象状态。
 4. **发布完成必须验证本次服务器对象**：大型 bundle / APK / 游戏包必须返回 `X-Asset-Source: server`，且 `Content-Length` 与本次产物一致；file-index / latest manifest 等小型 JSON 必须从服务器读取正文并校验本次 SHA-256。旧同路径对象、旧缓存或 `server-error` 都不能作为本次发布成功证据。
 5. **服务器活动集合只闭合“已发布到服务器的活动根”**：已经存在于服务器 `current` 的 `official/**/assets-manifest.json`、OTA/latest manifest、移动包 manifest 和 file-index 都必须按自身合同展开到真实运行时对象；但不能反向推断“本地每个 `assets-manifest.json` 都必须上传到服务器”。如果清单只随 Web / OTA / App 包交付，就按包内清单验收；服务器侧只验对应 `compressed/*.webp` / `compressed/*.ogg` / 远端运行时对象。
@@ -390,7 +390,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 ### 上传收口
 
-1. **录入或资源改动完成后，AI 必须主动上传运行时媒体对象**：只要本轮改动涉及 `compressed/*.webp`、`compressed/*.ogg`、远端运行时 `.svg/.json`、移动包或 OTA 包新增 / 替换 / 移动，就必须主动执行本地清单重建或校验、`assets:check` / `assets:upload` 或等价发布流程，不等待用户额外提醒。这里的“上传”默认指服务器需要的运行时对象；包内小清单是否上传取决于它的消费入口。
+1. **录入或资源改动完成后，AI 必须主动上传运行时媒体对象**：只要本轮改动涉及 `compressed/*.webp`、`compressed/*.ogg`、远端运行时 `.svg/.json`、移动包或 OTA 包新增 / 替换 / 移动，就必须主动执行本地清单重建或校验、`assets:check` / `assets:upload` 或等价发布流程，不等待用户额外提醒。这里的“上传”默认指服务器需要的运行时对象；包内小清单是否上传取决于它的消费入口。上传优先级固定为：直连发布入口 / 已登录或已注入 token 的 CI → 明确授权的管理员 SSH fallback；不得因为本机缺 token 就自动尝试 SSH。
 2. **没有远端回查不算完成**：上传后至少抽查 1 个主资源 URL 和 1-3 个代表性裁图 / 子资源 URL，确认远端返回 `200`。
 3. **本地存在不代表交付完成**：即使本地文件、包内 manifest、代码引用都已齐全，只要运行时媒体对象默认从官方资源域名读取，就必须把服务器主源对象状态作为最终完成判据。
 4. **改本地资源不是修复完成（强制）**：当 Web、Android、线上反馈或用户明确说明“资源用的是官方资源包 / CDN / 服务器资源主源”时，`public/assets/**` 文件替换、压缩 WebP、manifest 改哈希、合成验收图都只能算“本地准备 / 预验证”。最终修复对象必须是服务器资源主源对象或重新发布后的游戏资源包；没有对象上传和远端回查，禁止回复“资源已修好”“线上会生效”“手机会吃到新图”。
@@ -442,7 +442,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 2. **先核对运行时真实请求路径**：图片运行时会自动补 `i18n/<locale>/` 与 `compressed/`，排查 404 时必须以最终请求 URL 为准，而不是只看源码里的相对路径。
 3. **裁切图也必须满足 `compressed/` 约定**：凡是运行时通过 `OptimizedImage` / `CardPreview` / `getOptimizedImageUrls()` 加载的裁切图，实际可访问文件必须位于对应目录的 `compressed/` 子目录；仅有 `crops/foo.webp` 而没有 `crops/compressed/foo.webp`，视为资源不完整。
 4. **上传前先重建 / 校验本地清单以找运行时对象**：资源目录有新增/移动后，先执行默认增量 `npm run assets:manifest` 或等价校验，确认新增运行时对象和 `basePrefix`；随后发布服务器需要的运行时对象。只有完整资源维护任务才使用 full 模式。
-5. **上传脚本入口**：当前正式入口是 `npm run assets:upload` / `npm run assets:check`，底层调用 `scripts/assets/upload-to-server.js`。排查“为什么本机能传/不能传”时，必须先确认本机或 CI 是否配置 `ASSET_SERVER_UPLOAD_URL` / `ASSET_SERVER_UPLOAD_TOKEN`、服务器 runner 的 `/asset-publish` 是否可达、服务器发布脚本是否存在，以及目标服务器活动目录是否正常；普通游戏素材的 Android file-index / manifest 刷新由服务器发布脚本接管，不再要求上传端本机继续跑 `publish-android-game-packages`。受限 SSH 只作为管理员 fallback 排查项。
+5. **上传脚本入口**：当前正式入口是 `npm run assets:upload` / `npm run assets:check`，底层调用 `scripts/assets/upload-to-server.js`。排查“为什么本机能传/不能传”时，必须先确认本机或 CI 是否配置 `ASSET_SERVER_UPLOAD_URL` / `ASSET_SERVER_UPLOAD_TOKEN`、服务器 runner 的 `/asset-publish` 是否可达、服务器发布脚本是否存在，以及目标服务器活动目录是否正常；普通游戏素材的 Android file-index / manifest 刷新由服务器发布脚本接管，不再要求上传端本机继续跑 `publish-android-game-packages`。GitHub 登录态不等于素材服务器 token。受限 SSH 只作为管理员 fallback 排查项，默认不自动启用。
 6. **出现“多叠一层整图/四角异常”先查叠层来源（通用规则）**：优先用 DevTools 选中异常区域，检查上层元素是否存在整图覆盖；查看 **计算后** `opacity/visibility/filter/transform` 是否被脚本改写；必要时用 `elementsFromPoint()` 或逐层禁用 DOM 来定位真正的上层来源。该步骤必须在调整裁剪/圆角/纹理之前完成。
 
 ---

@@ -1465,10 +1465,10 @@
     },
     "images/lieren/tip": {
       "variants": {
-        "jpg": {
-          "sha256": "b9005884ea62ac6bbc1d1cbe3734a375d48874e5348333182028b12c94502b96",
-          "bytes": 1481068,
-          "mime": "image/jpeg"
+        "png": {
+          "sha256": "f6740ef7cc40315f744aef09b61d590f0e6a30082764a7f64478a2bb946d9146",
+          "bytes": 3990639,
+          "mime": "image/png"
         }
       }
     },
@@ -3063,6 +3063,56 @@
           "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
           "bytes": 9768,
           "mime": "image/webp"
+        }
+      }
+    },
+    "images/lieren/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "888c4441d144593c66242a20168dff2f285500ad280f95eb91d1fa6b038a30aa",
+          "bytes": 575,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "09994313703fa788cd31e42aac78dac7a9eb02871715c588771f6965ed481149",
+          "bytes": 121885,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/lieren/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "f87fb7b92796592edd5bd98516df360f12ee59b015c53eb5635261dac6a5b3df",
+          "bytes": 14842856,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/lieren/bleed": {
+      "variants": {
+        "png": {
+          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
+          "bytes": 34260,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/lieren/dice": {
+      "variants": {
+        "png": {
+          "sha256": "244758dae63c6f5a6c615e5d2835d28afff30b85551c206408103002f2ce6007",
+          "bytes": 52183,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/lieren/nyras-bond": {
+      "variants": {
+        "png": {
+          "sha256": "b3ca208e4a259dd898420fedbb3b424580d4204f6bfd77406a6707cb031f735a",
+          "bytes": 57105,
+          "mime": "image/png"
         }
       }
     }

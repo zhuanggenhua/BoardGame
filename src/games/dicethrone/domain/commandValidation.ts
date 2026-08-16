@@ -1339,6 +1339,35 @@ const validateUseToken = (
 ): ValidationResult => {
     const pendingDamage = state.pendingDamage;
 
+    if (cmd.payload.tokenId === TOKEN_IDS.NYRA_REDIRECT) {
+        const player = state.players[playerId];
+        if (!pendingDamage) return fail('no_pending_damage');
+        if (!isMoveAllowed(playerId, pendingDamage.responderId)) return fail('player_mismatch');
+        if (state.pendingAttack?.isUltimate) return fail('invalid_token_timing');
+        if (player?.characterId !== 'lieren' || (player.companion?.hp ?? 0) <= 0) return fail('no_token');
+        return cmd.payload.amount === pendingDamage.currentDamage ? ok() : fail('invalid_amount');
+    }
+
+    if (cmd.payload.tokenId === TOKEN_IDS.NYRAS_BOND && !pendingDamage) {
+        const player = state.players[playerId];
+        if (player?.characterId !== 'lieren' || !player.companion) return fail('no_token');
+        if ((player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) < 1) return fail('no_token');
+        if (player.companion.hp >= player.companion.maxHp) return fail('invalid_token_timing');
+        return cmd.payload.amount === 1 ? ok() : fail('invalid_amount');
+    }
+
+    if (cmd.payload.tokenId === TOKEN_IDS.NYRAS_BOND && pendingDamage) {
+        const player = state.players[playerId];
+        if (!isMoveAllowed(playerId, pendingDamage.responderId)) return fail('player_mismatch');
+        if (state.pendingAttack?.isUltimate) return fail('invalid_token_timing');
+        if (player?.characterId !== 'lieren' || (player.companion?.hp ?? 0) <= 0) return fail('no_token');
+        if ((player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) < 1) return fail('no_token');
+        const maxAssignableDamage = Math.min(pendingDamage.currentDamage, player.companion.hp);
+        return Number.isInteger(cmd.payload.amount) && cmd.payload.amount >= 1 && cmd.payload.amount <= maxAssignableDamage
+            ? ok()
+            : fail('invalid_amount');
+    }
+
     const tokenDef = state.tokenDefinitions.find(t => t.id === cmd.payload.tokenId);
     if (!tokenDef) {
         return fail('unknown_token');

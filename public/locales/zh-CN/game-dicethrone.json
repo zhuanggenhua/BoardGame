@@ -359,6 +359,12 @@
       "description": [
         "持有者下次进攻掷骰阶段结束时移除此状态并投 1 骰：1 点攻击无效；2-3 点本次攻击伤害减半并向上取整；4-6 点正常结算。"
       ]
+    },
+    "bleed": {
+      "name": "流血",
+      "description": [
+        "负面状态效果，上限 2。持有者维持阶段投 1 骰：1-4 受到 1 点直接伤害；5-6 移除 1 层流血。"
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -462,6 +468,12 @@
       "name": "眩光",
       "description": [
         "持有者下次进攻掷骰阶段结束时移除此状态并投 1 骰：1 点攻击无效；2-3 点本次攻击伤害减半并向上取整；4-6 点正常结算。"
+      ]
+    },
+    "nyras_bond": {
+      "name": "妮拉之系",
+      "description": [
+        "正面状态，上限 1。任意时机可消耗以治疗妮拉 2；受攻击时可消耗并在妮拉与女猎手之间分配本次伤害。"
       ]
     },
     "loaded": {
@@ -727,7 +739,8 @@
     "paladin": "圣骑士",
     "gunslinger": "枪手",
     "samurai": "武士",
-    "tianshi": "炽天使"
+    "tianshi": "炽天使",
+    "lieren": "女猎手"
   },
   "characters": {
     "monk": "僧侣",
@@ -743,7 +756,23 @@
     "zhanshujia": "战术家",
     "cursed_pirate": "咒缚海盗",
     "artificer": "工匠",
-    "tianshi": "炽天使"
+    "tianshi": "炽天使",
+    "lieren": "女猎手"
+  },
+  "companion": {
+    "nyra": {
+      "label": "妮拉伙伴状态",
+      "name": "妮拉",
+      "active": "激活",
+      "inactive": "休眠",
+      "takeDamage": "由妮拉承受",
+      "takeDamageHint": "将本次 {{amount}} 点伤害转移给妮拉",
+      "takeDamageAction": "转移伤害",
+      "allocateDamage": "消耗羁绊分配伤害",
+      "allocateDamageHint": "由妮拉承担 {{amount}} 点，其余伤害由女猎手承受",
+      "allocateDamageAction": "确认分配",
+      "healAction": "消耗羁绊治疗妮拉"
+    }
   },
   "config": {
     "dice": {
@@ -791,6 +820,15 @@
       },
       "tianshi": {
         "name": "炽天使骰子"
+      },
+      "lieren": {
+        "name": "女猎手骰子",
+        "face": {
+          "spear": "长矛面",
+          "claw": "利爪面",
+          "nyras_bond": "魂之羁绊面",
+          "sabertooth": "剑齿虎面"
+        }
       }
     },
     "resources": {
@@ -961,7 +999,11 @@
       "blade": "炽炎剑",
       "wing": "双翼",
       "cross": "十字",
-      "shield": "圣洁吊坠"
+      "shield": "圣洁吊坠",
+      "spear": "长矛",
+      "claw": "利爪",
+      "nyras_bond": "魂之羁绊",
+      "sabertooth": "剑齿虎"
     }
   },
   "bonusDie": {
@@ -1019,6 +1061,24 @@
       "gunslingerEatMyLead.result": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}，并施加击倒",
       "tianshi.divinePunishment": "神圣惩戒：按额外骰面结算伤害、飞行、净化和眩光",
+      "lieren.savageForce.spear": "长矛：本次攻击伤害 +1",
+      "lieren.savageForce.claw": "利爪：本次攻击伤害 +2",
+      "lieren.savageForce.nyrasBond": "魂之羁绊：获得妮拉之系",
+      "lieren.savageForce.sabertooth": "剑齿虎：施加 1 层流血",
+      "lieren.bleed.damage": "流血：受到 1 点直接伤害",
+      "lieren.bleed.remove": "流血：移除 1 层",
+      "lieren.primitiveRoar.sabertooth": "剑齿虎：治疗妮拉 4",
+      "lieren.primitiveRoar.default": "未投出剑齿虎：抽 1 张牌",
+      "lieren.opportunisticStrike.spear": "长矛：本次攻击伤害 +1",
+      "lieren.opportunisticStrike.claw": "利爪：本次攻击伤害 +2",
+      "lieren.opportunisticStrike.nyrasBond": "魂之羁绊：治疗妮拉 1",
+      "lieren.opportunisticStrike.sabertooth": "剑齿虎：本次攻击伤害 +3",
+      "lieren.bloodline.nyrasBond": "魂之羁绊：治疗妮拉 1",
+      "lieren.bloodline.sabertooth": "剑齿虎：治疗妮拉 2",
+      "lieren.pounce.spear": "长矛：本次攻击伤害 +1",
+      "lieren.pounce.claw": "利爪：施加 1 层流血",
+      "lieren.savageClaw.bigBleed": "利爪或剑齿虎：施加 2 层流血",
+      "lieren.savageClaw.bleed": "其他结果：施加 1 层流血",
       "barbarianSuppress": "本骰点数 {{value}} 计入最终伤害；总和达阈值会施加脑震荡",
       "energeticStrength": "星！治疗 2 并施加脑震荡",
       "energeticOther": "抽 1 张牌",
@@ -1398,7 +1458,11 @@
       "blade": "炽炎剑",
       "wing": "双翼",
       "cross": "十字",
-      "shield": "圣洁吊坠"
+      "shield": "圣洁吊坠",
+      "spear": "长矛",
+      "claw": "利爪",
+      "nyras_bond": "魂之羁绊",
+      "sabertooth": "剑齿虎"
     },
     "trigger": {
       "generic": "变体条件",
@@ -4450,7 +4514,29 @@
     "card-tianshi-angelic-tactics": { "effects": { "resolve": "投 1 个奖励骰：炽炎剑使本次攻击伤害 +3；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临。" } },
      "card-tianshi-divine-arbitration": { "effects": { "resolve": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" } },
     "card-tianshi-supreme-holiness": { "effects": { "resolve": "投 1 个奖励骰：圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" } },
-    "card-tianshi-ascension": { "effects": { "resolve": "选择一名玩家获得飞行。" } }
+    "card-tianshi-ascension": { "effects": { "resolve": "选择一名玩家获得飞行。" } },
+    "wild-force": { "name": "野性之力", "description": "3/4/5 个长矛：造成 3/4/5 点伤害。", "effects": { "damage3": "造成 3 点伤害", "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害" } },
+    "wild-force-2": { "name": "野性之力 II", "description": "3/4/5 个长矛：造成 4/5/6 点伤害；若至少有 4 个相同数字，施加流血。", "effects": { "damage4": "造成 4 点伤害", "bleedIfFourKind": "若至少有 4 个相同数字，施加 1 层流血", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
+    "savage-force": { "name": "蛮荒之力", "description": "3 个利爪 + 1 个剑齿虎：造成 4 点伤害并投 1 个奖励骰。", "effects": { "damage4": "造成 4 点伤害", "bonusDie": "投 1 个奖励骰并按女猎手骰面结算" } },
+    "savage-force-2": { "name": "蛮荒之力 II", "description": "3 个利爪 + 1 个剑齿虎：造成 5 点伤害并投 1 个奖励骰。", "effects": { "damage5": "造成 5 点伤害", "bonusDie": "投 1 个奖励骰并按女猎手骰面结算" } },
+    "savage-force-2-hunting": { "name": "狩猎", "description": "2 个利爪 + 1 个剑齿虎：施加 1 层流血并造成 3 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage3": "造成 3 点伤害" } },
+    "brutal-strike": { "name": "猛击之力", "description": "小顺子：施加 1 层流血并造成 4 点伤害；大顺子：施加 2 层流血并造成 7 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage4": "造成 4 点伤害", "bleed2": "施加 2 层流血", "damage7": "造成 7 点伤害" } },
+    "brutal-strike-2": { "name": "猛击之力 II", "description": "小顺子：施加 1 层流血并造成 5 点伤害；大顺子：施加 2 层流血并造成 8 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage5": "造成 5 点伤害", "bleed2": "施加 2 层流血", "damage8": "造成 8 点伤害" } },
+    "beast-force": { "name": "巨兽之力", "description": "4 个剑齿虎：治疗妮拉 1，造成 5 点不可防御伤害。", "effects": { "healNyra1": "治疗妮拉 1", "unblockable5": "造成 5 点不可防御伤害" } },
+    "beast-force-2": { "name": "巨兽之力 II", "description": "4 个剑齿虎：治疗妮拉 1，造成 6 点不可防御伤害。", "effects": { "healNyra1": "治疗妮拉 1", "unblockable6": "造成 6 点不可防御伤害" } },
+    "beast-force-2-fierce-gaze": { "name": "凶狠注视", "description": "3 个剑齿虎：治疗妮拉 1，并施加 2 层流血。", "effects": { "healNyra1": "治疗妮拉 1", "bleed2": "施加 2 层流血" } },
+    "life-revival": { "name": "生命复苏", "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 3。", "effects": { "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 3" } },
+    "life-revival-2": { "name": "生命复苏 II", "description": "2 个魂之羁绊：获得妮拉之系并治疗妮拉 2。", "effects": { "nyrasBondAndHeal": "获得妮拉之系并治疗妮拉 2" } },
+    "beast-instinct": { "name": "野兽本能", "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 2 点不可防御伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "unblockable2": "造成 2 点不可防御伤害" } },
+    "beast-instinct-2": { "name": "野兽本能 II", "description": "3 个长矛 + 1 个魂之羁绊：获得妮拉之系并造成 3 点不可防御伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "unblockable3": "造成 3 点不可防御伤害" } },
+    "beast-instinct-2-swipe": { "name": "挥爪", "description": "3 个利爪：施加 1 层流血。", "effects": { "bleed1": "施加 1 层流血" } },
+    "hunt-ambush": { "name": "追猎潜袭", "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 5 点伤害。", "effects": { "healNyra1": "治疗妮拉 1", "damage5": "造成 5 点伤害" } },
+    "hunt-ambush-2": { "name": "追猎潜袭 II", "description": "2 个长矛 + 2 个利爪 + 1 个魂之羁绊：治疗妮拉 1 并造成 6 点伤害。", "effects": { "healNyra1": "治疗妮拉 1", "damage6": "造成 6 点伤害" } },
+    "hunt-ambush-2-cutthroat": { "name": "割喉", "description": "1 个长矛 + 1 个利爪 + 1 个剑齿虎：施加 2 层流血。", "effects": { "bleed2": "施加 2 层流血" } },
+    "kindred-bond": { "name": "情同骨肉", "description": "防御投掷 3 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
+    "kindred-bond-2": { "name": "情同骨肉 II", "description": "防御投掷 4 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
+    "kindred-bond-3": { "name": "情同骨肉 III", "description": "防御投掷 4 骰；长矛和剑齿虎各造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
+    "jungle-fury": { "name": "丛林狂怒！", "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } }
   },
   "cards": {
     "card-energetic": {
@@ -5507,7 +5593,22 @@
     "card-tianshi-divine-arbitration": { "name": "神圣裁决！", "description": "获得神圣降临；选择一名玩家获得眩光，再选择一名玩家获得 2 个飞行，最后选择一名玩家获得净化。" },
     "card-tianshi-supreme-holiness": { "name": "至高圣洁！", "description": "投 1 个奖励骰；圣洁吊坠获得 2 个飞行和 2 个净化，否则抽 1 张牌。" },
     "card-tianshi-ascension": { "name": "飞升！", "description": "选择一名玩家获得飞行。" },
-    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 智天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" }
+    "upgrade-tianshi-holy-blade-2-cherub": { "name": "圣刃 II / 智天使", "description": "上区：圣刃 II；下区：获得飞行和神圣降临。" },
+    "card-lieren-primitive-roar": { "name": "原始咆哮！", "description": "投 1 骰；若投出剑齿虎，治疗妮拉 4。否则抽 1 张牌。" },
+    "card-lieren-regroup": { "name": "重整旗鼓！", "description": "获得妮拉之系。" },
+    "card-lieren-opportunistic-strike": { "name": "伺机待发！", "description": "攻击修正：投 1 个奖励骰；长矛 +1 伤害，利爪 +2 伤害，魂之羁绊治疗妮拉 1，剑齿虎 +3 伤害。" },
+    "card-lieren-pounce": { "name": "飞扑！", "description": "攻击修正：投 5 个奖励骰；每个长矛使本次攻击伤害 +1；若投出利爪，施加 1 层流血。" },
+    "card-lieren-savage-claw": { "name": "野蛮爪击！", "description": "指定 1 名玩家并投 1 骰；利爪或剑齿虎施加 2 层流血，否则施加 1 层流血。" },
+    "card-lieren-bloodline": { "name": "血脉相承！", "description": "投 3 骰；治疗妮拉 1，每个魂之羁绊额外治疗 1，每个剑齿虎额外治疗 2。" },
+    "upgrade-lieren-kindred-bond-3": { "name": "情同骨肉 III", "description": "升级情同骨肉至 III 级。" },
+    "upgrade-lieren-kindred-bond-2": { "name": "情同骨肉 II", "description": "升级情同骨肉至 II 级。" },
+    "upgrade-lieren-beast-force-2": { "name": "巨兽之力 II / 凶狠注视", "description": "升级巨兽之力，并加入凶狠注视分支。" },
+    "upgrade-lieren-brutal-strike-2": { "name": "猛击之力 II", "description": "升级猛击之力至 II 级。" },
+    "upgrade-lieren-hunt-ambush-2": { "name": "追猎潜袭 II / 割喉", "description": "升级追猎潜袭，并加入割喉分支。" },
+    "upgrade-lieren-beast-instinct-2": { "name": "野兽本能 II / 挥爪", "description": "升级野兽本能，并加入挥爪分支。" },
+    "upgrade-lieren-life-revival-2": { "name": "生命复苏 II", "description": "升级生命复苏至 II 级。" },
+    "upgrade-lieren-savage-force-2": { "name": "蛮荒之力 II / 狩猎", "description": "升级蛮荒之力，并加入狩猎分支。" },
+    "upgrade-lieren-wild-force-2": { "name": "野性之力 II", "description": "升级野性之力至 II 级。" }
   },
   "passive": {
     "tithes": {
