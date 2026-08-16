@@ -854,6 +854,11 @@ export interface DiceThroneCore {
     /** 当前唯一可操作骰区。新投掷会覆盖旧投掷，不存在并行当前骰子。 */
     currentRollContext?: DiceThroneRollContext;
     /**
+     * 完全闪避收口后，后续系统可能仍在同一攻击链尾部结算来源技能的奖励骰。
+     * 该字段只用于阻止下一次同源奖励骰写成右侧只读回看；新攻击开始时清除。
+     */
+    suppressNextBonusDiceReplaySourceAbilityId?: string;
+    /**
      * 骰面确认序号（自增）
      * 用于 afterRollConfirmed 响应窗口源头级去重，避免 CLOSED 后在同一确认源上立刻 reopen。
      */

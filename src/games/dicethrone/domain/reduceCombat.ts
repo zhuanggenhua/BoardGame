@@ -414,6 +414,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
     return {
         ...state,
         players,
+        suppressNextBonusDiceReplaySourceAbilityId: undefined,
         pendingAttack: {
             attackerId,
             defenderId,
@@ -540,6 +541,11 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
     }
 
     const nextAttackResolvedSequence = (state.attackResolvedSequence ?? 0) + 1;
+    const suppressFutureBonusReplaySourceAbilityId = state.pendingAttack?.tokenResponseFullyEvaded === true
+        && sourceAbilityId
+        && !(state.currentRollContext?.kind === 'bonus' && isSettledReplayOnlyRollContext(state.currentRollContext))
+        ? sourceAbilityId
+        : state.suppressNextBonusDiceReplaySourceAbilityId;
 
     const nextState: DiceThroneCore = {
         ...state,
@@ -551,6 +557,7 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
         pendingAttack: null,
         lastResolvedAttackDamage: state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage,
         attackResolvedSequence: nextAttackResolvedSequence,
+        suppressNextBonusDiceReplaySourceAbilityId: suppressFutureBonusReplaySourceAbilityId,
     };
     if (isSettledReplayOnlyRollContext(nextState.currentRollContext)) {
         return state.pendingAttack?.tokenResponseFullyEvaded === true

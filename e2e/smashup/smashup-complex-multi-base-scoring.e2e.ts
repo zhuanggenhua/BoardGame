@@ -691,7 +691,28 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
                 if (currentInteraction.sourceId === 'pirate_first_mate_choose_base') {
                     if (!capturedFirstMateChoice) {
-                        await game.screenshot('complex-hand-response-07-first-mate-after-scoring-base-choice', testInfo);
+                        const firstMateCard = page.locator('[data-minion-uid="mate-0"]').first();
+                        const firstMateFrame = page.getByTestId('su-minion-frame-mate-0');
+                        const firstMateSourceBase = page.getByTestId('base-zone-0');
+                        const firstMateJungleBase = page.getByTestId('base-zone-1');
+                        const firstMateSecretGardenBase = page.getByTestId('base-zone-2');
+
+                        await expect(firstMateCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(firstMateFrame).toHaveAttribute('data-highlighted', 'true');
+                        await expect(firstMateSourceBase).toHaveAttribute('data-selectable', 'false');
+                        await expect(firstMateJungleBase).toHaveAttribute('data-selectable', 'false');
+                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-selectable', 'false');
+                        await game.screenshot('complex-hand-response-07-first-mate-source-highlight', testInfo);
+
+                        await firstMateCard.click({ force: true });
+                        await expect(firstMateCard).toHaveAttribute('data-selected', 'true');
+                        await expect(firstMateFrame).toHaveAttribute('data-selected', 'true');
+                        await expect(firstMateSourceBase).toHaveAttribute('data-selectable', 'false');
+                        await expect(firstMateJungleBase).toHaveAttribute('data-selectable', 'true');
+                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-selectable', 'true');
+                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-deploy-mode', 'true');
+                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-dimmed', 'false');
+                        await game.screenshot('complex-hand-response-08-first-mate-target-base-highlight', testInfo);
                         capturedFirstMateChoice = true;
                     }
                     const moveToSecretGarden = currentInteraction.options.find((option) =>
@@ -699,13 +720,13 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                         || option.value?.baseIndex === 2,
                     );
                     expect(moveToSecretGarden, '大副应能选择移动到第三个基地，证明 afterScoring 不是被跳过').toBeTruthy();
-                    await respondInteractionOptionIfStillCurrent(page, currentInteraction, moveToSecretGarden!.id);
+                    await page.getByTestId('base-zone-2').click({ force: true });
                     continue;
                 }
 
                 if (currentInteraction.sourceId === 'base_tortuga') {
                     if (!capturedTortugaChoice) {
-                        await game.screenshot('complex-hand-response-08-tortuga-after-scoring-minion-choice', testInfo);
+                        await game.screenshot('complex-hand-response-09-tortuga-after-scoring-minion-choice', testInfo);
                         capturedTortugaChoice = true;
                     }
                     const moveRunnerUpReserve = currentInteraction.options.find((option) =>
@@ -749,7 +770,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             await expect(page.getByTestId('su-reaction-pass-button')).toBeHidden({ timeout: 10000 });
             await page.waitForTimeout(500);
             await waitForVisibleSmashUpCardArt(page, 3);
-            await game.screenshot('complex-hand-response-09-scoring-chain-complete', testInfo);
+            await game.screenshot('complex-hand-response-10-scoring-chain-complete', testInfo);
             assertNoReactNaNWarnings(diagnostics);
         } catch (error) {
             if (diagnostics.errors.length > 0) {

@@ -118,12 +118,32 @@ test.describe('SmashUp 世界冠军木乃伊埋葬流程', () => {
         const targetOptions = prompt?.data?.options ?? [];
         expect(targetOptions.some((option: any) => option.value?.baseIndex === 0)).toBe(false);
         expect(targetOptions.some((option: any) => option.value?.baseIndex === 1)).toBe(true);
-        await game.screenshot('world-champs-mummy-02-bury-prompt', testInfo);
+        const mummyCard = page.locator('[data-minion-uid="wc-mummy"]').first();
+        const mummyFrame = page.getByTestId('su-minion-frame-wc-mummy');
+        const sourceBase = page.getByTestId('base-zone-0');
+        const targetBase = page.getByTestId('base-zone-1');
+        const otherTargetBase = page.getByTestId('base-zone-2');
 
-        await game.selectInteractionOptionBy(
-            (option: any) => option.value?.baseIndex === 1,
-            '目标基地：秘密花园',
-        );
+        await expect(mummyCard).toHaveAttribute('data-highlighted', 'true');
+        await expect(mummyFrame).toHaveAttribute('data-highlighted', 'true');
+        await expect(sourceBase).toHaveAttribute('data-selectable', 'false');
+        await expect(targetBase).toHaveAttribute('data-selectable', 'false');
+        await expect(otherTargetBase).toHaveAttribute('data-selectable', 'false');
+        await expect(targetBase).toHaveAttribute('data-deploy-mode', 'false');
+        await game.screenshot('world-champs-mummy-02-source-highlight', testInfo);
+
+        await mummyCard.click({ force: true });
+        await expect(mummyCard).toHaveAttribute('data-selected', 'true');
+        await expect(mummyFrame).toHaveAttribute('data-selected', 'true');
+        await expect(sourceBase).toHaveAttribute('data-selectable', 'false');
+        await expect(targetBase).toHaveAttribute('data-selectable', 'true');
+        await expect(targetBase).toHaveAttribute('data-deploy-mode', 'true');
+        await expect(targetBase).toHaveAttribute('data-dimmed', 'false');
+        await expect(otherTargetBase).toHaveAttribute('data-selectable', 'true');
+        await expect(otherTargetBase).toHaveAttribute('data-deploy-mode', 'true');
+        await game.screenshot('world-champs-mummy-03-target-base-highlight', testInfo);
+
+        await targetBase.click({ force: true });
 
         for (let step = 0; step < 8; step += 1) {
             const state = await game.getState();
@@ -159,6 +179,6 @@ test.describe('SmashUp 世界冠军木乃伊埋葬流程', () => {
 
         expect(targetBaseBuried.some((card: any) => card.uid === 'wc-mummy' && card.defId === 'world_champs_mummy')).toBe(true);
         expect(player0Discard.some((card: any) => card.uid === 'wc-mummy')).toBe(false);
-        await game.screenshot('world-champs-mummy-03-final-state', testInfo);
+        await game.screenshot('world-champs-mummy-04-final-state', testInfo);
     });
 });
