@@ -879,8 +879,17 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
             'postDamagePending',
         )
         : state.pendingAttack;
+    const suppressNextBonusDiceReplaySourceAbilityId = event.payload.fullyEvaded === true
+        && event.payload.sourceAbilityId
+        ? event.payload.sourceAbilityId
+        : state.suppressNextBonusDiceReplaySourceAbilityId;
 
-    const nextState = { ...state, pendingDamage: undefined, pendingAttack };
+    const nextState = {
+        ...state,
+        pendingDamage: undefined,
+        pendingAttack,
+        suppressNextBonusDiceReplaySourceAbilityId,
+    };
     return nextState.currentRollContext?.kind === 'evasion'
         ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
         : nextState;

@@ -289,7 +289,12 @@ export function executeTokenCommand(
                 } as DiceThroneEvent);
                 events.push({
                     type: 'TOKEN_RESPONSE_CLOSED',
-                    payload: { pendingDamageId: pendingDamage.id, finalDamage: 0, fullyEvaded: true },
+                    payload: {
+                        pendingDamageId: pendingDamage.id,
+                        finalDamage: 0,
+                        fullyEvaded: true,
+                        sourceAbilityId: pendingDamage.sourceAbilityId,
+                    },
                     sourceCommandType: command.type,
                     timestamp: timestamp + 0.001,
                 } as DiceThroneEvent);
@@ -324,7 +329,12 @@ export function executeTokenCommand(
                 } as DiceThroneEvent);
                 events.push({
                     type: 'TOKEN_RESPONSE_CLOSED',
-                    payload: { pendingDamageId: pendingDamage.id, finalDamage: heroDamage, fullyEvaded: heroDamage === 0 },
+                    payload: {
+                        pendingDamageId: pendingDamage.id,
+                        finalDamage: heroDamage,
+                        fullyEvaded: heroDamage === 0,
+                        sourceAbilityId: pendingDamage.sourceAbilityId,
+                    },
                     sourceCommandType: command.type,
                     timestamp: timestamp + 0.002,
                 } as DiceThroneEvent);
