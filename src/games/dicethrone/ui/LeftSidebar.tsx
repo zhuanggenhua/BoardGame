@@ -37,7 +37,6 @@ export const LeftSidebar = ({
     selfDamageFlashDamage,
     overrideHp,
     onAutoResponseToggle,
-    onBonusDiceResponseToggle,
     responseTokenIds,
     onResponseTokenClick,
 }: {
@@ -78,8 +77,6 @@ export const LeftSidebar = ({
     overrideHp?: number;
     /** 自动响应开关回调 */
     onAutoResponseToggle?: (enabled: boolean) => void;
-    /** 奖励骰响应开关回调 */
-    onBonusDiceResponseToggle?: (enabled: boolean) => void;
     /** 当前响应中可直接点击使用的 Token。提示与跳过由手牌上方的共享响应框承接。 */
     responseTokenIds?: string[];
     onResponseTokenClick?: (tokenId: string) => void;
@@ -171,7 +168,6 @@ export const LeftSidebar = ({
                         <div className="flex justify-center">
                             <AutoResponseToggle
                                 onToggle={onAutoResponseToggle}
-                                onBonusDiceToggle={onBonusDiceResponseToggle}
                             />
                         </div>
                     </div>

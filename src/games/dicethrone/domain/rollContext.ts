@@ -69,6 +69,15 @@ const defaultPolicy = (
     blocksPhaseFlow: true,
 });
 
+const temporaryInterferencePolicy = (): DiceThroneRollContext['policy'] => ({
+    modifiableBy: 'any',
+    rerollableBy: 'any',
+    allowPassiveReroll: true,
+    allowDiceCardTargeting: true,
+    ultimateLocked: false,
+    blocksPhaseFlow: true,
+});
+
 export const createMainRollContext = (
     state: DiceThroneCore,
     options: {
@@ -143,7 +152,7 @@ export const createBonusRollContextFromSettlement = (
         sourceAbilityId: settlement.sourceAbilityId,
         dice: getBonusSettlementContextDice(state, settlement),
         status: 'open',
-        policy: defaultPolicy('owner'),
+        policy: temporaryInterferencePolicy(),
         settlement: {
             mode: settlement.resolutionMode === 'attackBonus'
                 ? 'attackBonus'
@@ -191,14 +200,7 @@ export const createEvasionRollContext = (
             ownerId: options.ownerPlayerId,
         }],
         status: 'open',
-        policy: {
-            modifiableBy: 'any',
-            rerollableBy: 'owner',
-            allowPassiveReroll: true,
-            allowDiceCardTargeting: true,
-            ultimateLocked: false,
-            blocksPhaseFlow: true,
-        },
+        policy: temporaryInterferencePolicy(),
         settlement: {
             mode: 'tokenNegate',
             metadata: {
@@ -232,14 +234,7 @@ export const createCompareRollContext = (
     sourceAbilityId: options.sourceAbilityId,
     dice: options.dice,
     status: 'open',
-    policy: {
-        modifiableBy: 'any',
-        rerollableBy: 'owner',
-        allowPassiveReroll: true,
-        allowDiceCardTargeting: true,
-        ultimateLocked: false,
-        blocksPhaseFlow: true,
-    },
+    policy: temporaryInterferencePolicy(),
     settlement: {
         mode: 'compare',
         metadata: options.metadata,

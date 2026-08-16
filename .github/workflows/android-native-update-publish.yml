@@ -45,6 +45,7 @@ jobs:
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-native-production' || 'android-native-nonprod' }}
     env:
       BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
+      ANDROID_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
 
     steps:
       - name: Resolve publish parameters
@@ -170,17 +171,18 @@ jobs:
         run: |
           cat <<'EOF' > .env.android
           VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
-          VITE_ASSETS_BASE_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
+          VITE_ASSETS_BASE_URL=${{ env.ANDROID_ASSETS_BASE_URL }}
           CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded
           VITE_ANDROID_NATIVE_UPDATE_ENABLED=true
-          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/native-app-updates/android/${{ steps.params.outputs.channel }}/latest.json
+          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/native-app-updates/android/${{ steps.params.outputs.channel }}/latest.json
           VITE_ANDROID_NATIVE_UPDATE_CHANNEL=${{ steps.params.outputs.channel }}
           VITE_ANDROID_OTA_ENABLED=true
-          VITE_ANDROID_OTA_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/app-updates/android/stable/latest.json
+          VITE_ANDROID_OTA_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/app-updates/android/stable/latest.json
           VITE_ANDROID_OTA_CHANNEL=stable
           VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS=${{ vars.ANDROID_OTA_APP_READY_TIMEOUT_MS || '15000' }}
+          VITE_MOBILE_PACKAGE_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/mobile-packages/android
           ANDROID_ICON_SOURCE=${{ vars.ANDROID_ICON_SOURCE || 'public/logos/logo_1_grid.png' }}
           ANDROID_SPLASH_SOURCE=${{ vars.ANDROID_SPLASH_SOURCE || 'public/logos/logo_1_grid.png' }}
           ANDROID_ICON_BACKGROUND=${{ vars.ANDROID_ICON_BACKGROUND || '#FFFFFF' }}

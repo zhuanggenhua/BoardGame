@@ -6,6 +6,7 @@ import path from 'node:path';
 import { Zip, ZipDeflate } from 'fflate';
 import { publishPrimaryAssetBatch } from '../assets/publish-primary-assets.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
+import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
 
 const rootDir = process.cwd();
 
@@ -96,7 +97,7 @@ const indexManifestOnly = hasFlag('index-manifest-only');
 const reuseSharedAudio = hasFlag('reuse-shared-audio');
 const buildTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
 const assetsRoot = path.join(rootDir, 'public', 'assets');
-const assetsBaseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
+const assetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
 const packagePrefix = `official/mobile-packages/android/${channel}`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
 

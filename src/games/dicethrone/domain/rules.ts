@@ -1003,6 +1003,7 @@ const checkStandardCardPlay = (
             || (card.timing === 'instant' && hasExistingDiceToolEffect(card))
         )
         && !isDiceRollPhase(phase)
+        && !hasCurrentDiceTargetForCard(state, card, phase)
     ) {
         return { ok: false, reason: 'wrongPhaseForRoll' };
     }
@@ -1179,7 +1180,6 @@ const checkResponseWindowCardPlay = (
             }
             const currentRollContext = resolveCurrentRollContext(state, phase);
             const isOwnOpenBonusRoll = playerId === getRollerId(state, phase)
-                && isDiceRollPhase(phase)
                 && currentRollContext?.kind === 'bonus'
                 && currentRollContext.policy.allowDiceCardTargeting === true
                 && currentRollContext.display.replayOnly !== true;
@@ -1206,7 +1206,7 @@ const checkResponseWindowCardPlay = (
             if (card.timing !== 'instant') {
                 return failResponseWindow();
             }
-            if (!hasAnyActionEffect(card)) {
+            if (!hasAfterCardPlayedResponseEffect(card)) {
                 return failResponseWindow();
             }
             return { ok: true };
@@ -1237,6 +1237,41 @@ const checkResponseWindowCardPlay = (
     }
 };
 
+function resolveBonusDiceCardPlayResponseWindowType(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    card: AbilityCard,
+    phase: TurnPhase,
+): DtResponseWindowType | undefined {
+    const currentRollContext = resolveCurrentRollContext(state, phase);
+    if (
+        currentRollContext?.kind !== 'bonus'
+        || currentRollContext.status === 'settled'
+        || currentRollContext.display.replayOnly === true
+        || currentRollContext.dice.length === 0
+        || !state.pendingBonusDiceSettlement
+        || !isCurrentBonusRollSettlement(state, state.pendingBonusDiceSettlement)
+    ) {
+        return undefined;
+    }
+
+    if (
+        (card.timing !== 'roll' && card.timing !== 'instant')
+        || !hasExistingDiceToolEffect(card)
+    ) {
+        return undefined;
+    }
+
+    if (playerId === currentRollContext.ownerPlayerId) {
+        return 'afterRollConfirmed';
+    }
+
+    const diceEffectTarget = getDiceEffectTarget(card);
+    return diceEffectTarget === 'opponent' || diceEffectTarget === 'any'
+        ? 'afterRollConfirmed'
+        : undefined;
+}
+
 /**
  * 检查是否可以打出卡牌（返回详细原因）
  */
@@ -1247,19 +1282,22 @@ export const checkPlayCard = (
     phase: TurnPhase,
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
+    const effectiveResponseWindowType = responseWindowType
+        ?? resolveBonusDiceCardPlayResponseWindowType(state, playerId, card, phase);
+
     if (card.type === 'upgrade' && !isResponseUpgradeCard(card)) {
-        if (responseWindowType) {
-            return checkResponseWindowCardPlay(state, playerId, card, responseWindowType, phase);
+        if (effectiveResponseWindowType) {
+            return checkResponseWindowCardPlay(state, playerId, card, effectiveResponseWindowType, phase);
         }
         return checkUpgradeCardPlay(state, playerId, card, phase);
     }
 
-    const baseCheck = checkStandardCardPlay(state, playerId, card, phase, responseWindowType);
-    if (!baseCheck.ok || !responseWindowType) {
+    const baseCheck = checkStandardCardPlay(state, playerId, card, phase, effectiveResponseWindowType);
+    if (!baseCheck.ok || !effectiveResponseWindowType) {
         return baseCheck;
     }
 
-    return checkResponseWindowCardPlay(state, playerId, card, responseWindowType, phase);
+    return checkResponseWindowCardPlay(state, playerId, card, effectiveResponseWindowType, phase);
 };
 
 /** 升级卡打出失败原因 */
@@ -1383,19 +1421,27 @@ export const hasOpponentTargetEffect = (card: AbilityCard): boolean => {
     
     return card.effects.some(effect => {
         if (!effect.action) return false;
-        if (effect.action.target === 'opponent') {
+        const action = effect.action;
+        if (
+            action.type === 'custom'
+            && action.customActionId
+            && isCustomActionCategory(action.customActionId, 'dice')
+        ) {
+            return false;
+        }
+        if (action.target === 'opponent') {
             return true;
         }
-        if (effect.action.target === 'select') {
+        if (action.target === 'select') {
             return true;
         }
-        if (effect.action.type === 'custom' && effect.action.customActionId === 'transfer-status') {
+        if (action.type === 'custom' && action.customActionId === 'transfer-status') {
             // transfer-status 虽然声明 target=self，但交互可跨玩家转移状态，属于可被响应的对局级影响。
             return true;
         }
-        if (effect.action.type === 'rollDie') {
-            return (effect.action.conditionalEffects?.some(rollBranchTargetsOpponent) ?? false)
-                || rollBranchTargetsOpponent(effect.action.defaultEffect);
+        if (action.type === 'rollDie') {
+            return (action.conditionalEffects?.some(rollBranchTargetsOpponent) ?? false)
+                || rollBranchTargetsOpponent(action.defaultEffect);
         }
         return false;
     });
@@ -1525,6 +1571,24 @@ const hasAnyActionEffect = (card: AbilityCard): boolean => {
     return card.effects.some(effect => !!effect.action);
 };
 
+const hasAfterCardPlayedResponseEffect = (card: AbilityCard): boolean => {
+    if (!card.effects || card.effects.length === 0) return false;
+
+    return card.effects.some(effect => {
+        const action = effect.action;
+        if (!action || action.type !== 'custom' || !action.customActionId) {
+            return false;
+        }
+        if (isCustomActionCategory(action.customActionId, 'dice')) {
+            return false;
+        }
+        if (isCustomActionCategory(action.customActionId, 'resource')) {
+            return action.target === 'self';
+        }
+        return false;
+    });
+};
+
 /**
  * 获取卡牌骰子效果的目标
  * 返回 'self' / 'opponent' / 'any' / 'unknown'
@@ -1588,8 +1652,8 @@ export const hasRespondableContent = (
         }
     }
 
-    // 奖励骰已投出后，只有实际能重投当前骰区的被动能力才算响应手段。
-    // 抽牌、建造等“任意时刻”动作不能凭 timing 字样插入奖励骰响应窗口；
+    // 奖励骰已投出后，只有实际能重投当前骰区的被动能力才算介入手段。
+    // 抽牌、建造等“任意时刻”动作不能凭 timing 字样插入奖励骰介入窗口；
     // 无响应时仍回到右侧骰盘普通确认，而不是自动结算。
     if (hasUsableDiceRerollPassiveAction(state, playerId, phase)) {
         return true;

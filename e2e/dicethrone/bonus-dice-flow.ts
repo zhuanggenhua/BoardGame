@@ -120,10 +120,10 @@ export const expectRightTrayBonusDiceConfirmation = async (
 };
 
 /**
- * 奖励骰尚在他方响应窗口时，骰盘仍可见，但投掷者的普通确认入口必须保持隐藏。
- * 这是响应窗口自身的公共 UI 合同；对象用例只保留其改骰和最终结算结果。
+ * 奖励骰处于可介入窗口时，对方视角也必须能看见右侧骰盘。
+ * 骰主确认按钮只出现在骰主视角；介入方通过手牌 / Token / 技能直接发起改骰。
  */
-export const expectRightTrayBonusDiceAwaitingResponse = async (
+export const expectRightTrayBonusDiceInterferenceView = async (
     page: Page,
     readState: ReadGameState,
     { sourceAbilityId }: RightTrayBonusDiceOptions = {},

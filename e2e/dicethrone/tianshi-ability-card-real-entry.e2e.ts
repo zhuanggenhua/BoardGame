@@ -1100,10 +1100,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             randomQueue: [1].map(randomValueForDieFace),
         });
 
-        const bonusDiceResponseToggle = page.getByTestId('bonus-dice-response-toggle');
-        await expect(bonusDiceResponseToggle).toHaveAttribute('aria-pressed', 'false', { timeout: 10000 });
-        await bonusDiceResponseToggle.click();
-        await expect(bonusDiceResponseToggle).toHaveAttribute('aria-pressed', 'true', { timeout: 10000 });
+        await expect(page.getByTestId('bonus-dice-response-toggle')).toHaveCount(0);
 
         await dragHandCardToPlay(page, cardId);
         await expect.poll(async () => {
@@ -1116,17 +1113,17 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         }, { timeout: 10000 }).toEqual({
             sourceAbilityId: cardId,
             diceValues: [1],
-            responseWindow: 'afterRollConfirmed',
+            responseWindow: null,
         });
 
+        await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: cardId });
         const diceTray = page.getByTestId('dicethrone-2d-dice-tray');
         await expect(diceTray).toBeVisible({ timeout: 10000 });
         await expect(diceTray.getByTestId('dice-2d')).toHaveCount(1);
         await expect(diceTray.getByTestId('dice-2d')).toHaveAttribute('data-face-value', '1');
         await expect(page.getByTestId('bonus-die-overlay')).toBeHidden();
         await expect(page.getByTestId('card-spotlight-overlay')).toBeHidden();
-        await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
-        await expect(page.getByTestId('dicethrone-response-window-hint')).toBeVisible();
+        await expect(page.getByTestId('dicethrone-response-window-hint')).toHaveCount(0);
         await game.screenshot('tianshi-supreme-holiness-right-tray-before-modification', testInfo);
 
         await dragHandCardToPlay(page, playSixCardId);

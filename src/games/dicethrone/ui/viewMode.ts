@@ -55,16 +55,11 @@ export interface ResponseViewSuggestionKeyParams {
 
 export interface ResponseWindowPreferenceParams {
     autoResponseEnabled: boolean;
-    bonusDiceResponseEnabled: boolean;
-    isBonusDiceResponseWindow: boolean;
 }
 
 export const resolveManualResponseEnabledForWindow = (
     params: ResponseWindowPreferenceParams,
-): boolean => (
-    params.autoResponseEnabled
-    && (!params.isBonusDiceResponseWindow || params.bonusDiceResponseEnabled)
-);
+): boolean => params.autoResponseEnabled;
 
 export const shouldAutoPassResponseWindow = (
     params: ResponseWindowPreferenceParams,

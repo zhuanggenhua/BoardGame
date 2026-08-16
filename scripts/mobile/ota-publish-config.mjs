@@ -2,7 +2,8 @@ export const DEFAULT_FORCE_UPDATE_TITLE = '正在更新';
 export const DEFAULT_FORCE_UPDATE_MESSAGE = '正在下载必要更新，请稍候';
 export const ANDROID_OTA_VERSION_FLOOR = '6.0.0';
 export const DEFAULT_ANDROID_OTA_CHANNEL = 'stable';
-export const DEFAULT_ANDROID_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
+export { DEFAULT_ANDROID_ASSETS_BASE_URL } from './android-assets-base-url.mjs';
+import { DEFAULT_ANDROID_ASSETS_BASE_URL } from './android-assets-base-url.mjs';
 
 export const resolveAndroidOtaClientBuildEnv = ({
     channel = DEFAULT_ANDROID_OTA_CHANNEL,

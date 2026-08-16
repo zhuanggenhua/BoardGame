@@ -10,7 +10,7 @@ import { MageWarsDomain, type MageWarsArenaObjectState, type MageWarsCore } from
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
 import { ARENA_ZONE_IDS } from '../domain/ids';
-import { AttackImpactRenderer, SummonRenderer } from '../ui/fxRenderers';
+import { AttackImpactRenderer, SpellPushRenderer, SpellTeleportRenderer, SummonRenderer } from '../ui/fxRenderers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -475,6 +475,101 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-attack-travel-mid-burst')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-attack-impact-burst')).not.toBeNull();
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.35');
+
+            act(() => {
+                vi.advanceTimersByTime(2600);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('renders force push with source-to-target travel before impact', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-push',
+            cue: 'mage-wars.spell.push',
+            ctx: { cell: { row: 1, col: 2 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 1 },
+                spellCardId: 3523,
+                targetObjectId: 'mwobj-push-target',
+                fromZoneId: ARENA_ZONE_IDS.B2,
+                toZoneId: ARENA_ZONE_IDS.C2,
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <SpellPushRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const travel = screen.getByTestId('mage-wars-fx-push-travel');
+            expect(screen.queryByTestId('mage-wars-fx-push-source-wake')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-push-travel-mid-burst')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-push')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-push-burst')).not.toBeNull();
+            expect(travel.getAttribute('data-source-col')).toBe('1');
+            expect(travel.getAttribute('data-target-col')).toBe('2');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('normal');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#38bdf8');
+
+            act(() => {
+                vi.advanceTimersByTime(2600);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('renders teleport with source-to-target travel before arrival burst', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-teleport',
+            cue: 'mage-wars.spell.teleport',
+            ctx: { cell: { row: 2, col: 1 }, intensity: 'strong' },
+            params: {
+                source: { row: 0, col: 0 },
+                spellCardId: 3410,
+                targetObjectId: 'mwobj-teleport-target',
+                fromZoneId: ARENA_ZONE_IDS.A1,
+                toZoneId: ARENA_ZONE_IDS.B3,
+                distance: 3,
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <SpellTeleportRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const travel = screen.getByTestId('mage-wars-fx-teleport-travel');
+            expect(screen.queryByTestId('mage-wars-fx-teleport-source-wake')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-teleport-travel-mid-burst')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-teleport')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-spell-teleport-burst')).not.toBeNull();
+            expect(travel.getAttribute('data-source-row')).toBe('0');
+            expect(travel.getAttribute('data-target-row')).toBe('2');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#f59e0b');
 
             act(() => {
                 vi.advanceTimersByTime(2600);

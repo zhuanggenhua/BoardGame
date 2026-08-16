@@ -1132,7 +1132,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         });
     });
 
-    it('当前可改奖励骰不会放宽掷骰牌的主要阶段限制', () => {
+    it('当前可改奖励骰允许主要阶段骰子工具牌以奖励骰为目标', () => {
         const opened = reduce(createCore(), {
             type: 'BONUS_DICE_REROLL_REQUESTED',
             payload: { settlement: createBonusSettlement() },
@@ -1147,13 +1147,10 @@ describe('DiceThrone 单槽当前骰区', () => {
             kind: 'bonus',
             policy: { allowDiceCardTargeting: true },
         });
-        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({
-            ok: false,
-            reason: 'wrongPhaseForRoll',
-        });
+        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
     });
 
-    it('奖励骰只在掷骰阶段允许骰子牌以它为目标', () => {
+    it('奖励骰仍尊重当前骰区改骰开关', () => {
         const opened = reduce(createCore(), {
             type: 'BONUS_DICE_REROLL_REQUESTED',
             payload: { settlement: createBonusSettlement() },
@@ -1164,7 +1161,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(playSix).toBeDefined();
         if (!playSix) return;
 
-        expect(checkPlayCard(opened, '0', playSix, 'offensiveRoll')).toEqual({ ok: true });
+        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
 
         const lockedTarget = {
             ...opened,
@@ -1176,7 +1173,7 @@ describe('DiceThrone 单槽当前骰区', () => {
                 },
             },
         };
-        expect(checkPlayCard(lockedTarget, '0', playSix, 'offensiveRoll')).toEqual({
+        expect(checkPlayCard(lockedTarget, '0', playSix, 'main1')).toEqual({
             ok: false,
             reason: 'rollContextLocked',
         });
@@ -1213,8 +1210,8 @@ describe('DiceThrone 单槽当前骰区', () => {
             kind: 'bonus',
             status: 'open',
             policy: {
-                modifiableBy: 'owner',
-                rerollableBy: 'owner',
+                modifiableBy: 'any',
+                rerollableBy: 'any',
                 allowPassiveReroll: true,
                 allowDiceCardTargeting: true,
                 ultimateLocked: false,
@@ -1231,7 +1228,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         const playSix = COMMON_CARDS.find((card) => card.id === 'card-play-six');
         expect(playSix).toBeDefined();
         if (!playSix) return;
-        expect(checkPlayCard(opened, '0', playSix, 'offensiveRoll')).toEqual({ ok: true });
+        expect(checkPlayCard(opened, '0', playSix, 'main1')).toEqual({ ok: true });
     });
 
     it('攻击已选定时重掷奖励骰不会要求重选技能或清空攻击', () => {
@@ -1493,6 +1490,71 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(afterReroll.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
         expect(afterReroll.currentRollContext?.dice[0]?.value).toBe(6);
         expect(afterReroll.dice[0].value).toBe(1);
+    });
+
+    it('非骰主也可在可改奖励骰期间用战术优势重掷当前临时骰', () => {
+        const state = createCore();
+        state.players['0'] = {
+            ...createHero('0', false),
+            characterId: 'monk',
+        };
+        state.players['1'] = {
+            ...createHero('1', true),
+            characterId: 'zhanshujia',
+            tokens: { [TOKEN_IDS.TACTICAL_ADVANTAGE]: 1 },
+            passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+        };
+        state.selectedCharacters = { '0': 'monk', '1': 'zhanshujia' };
+
+        const bonusOpened = reduce(state, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement: createBonusSettlement({ attackerId: '0', targetId: '1' }) },
+            timestamp: 3,
+        } as DiceThroneEvent);
+
+        expect(isPassiveActionUsable(
+            bonusOpened,
+            '1',
+            'zhanshujia-tactical-advantage',
+            1,
+            'main1',
+        )).toBe(true);
+
+        const events = execute(
+            { core: bonusOpened, sys: { phase: 'main1' } } as MatchState<DiceThroneCore>,
+            {
+                type: 'USE_PASSIVE_ABILITY',
+                playerId: '1',
+                payload: {
+                    passiveId: 'zhanshujia-tactical-advantage',
+                    actionIndex: 1,
+                    targetDieId: 0,
+                },
+            } as any,
+            queuedRandom([6]),
+        );
+        const afterReroll = events.reduce((current, event) => reduce(current, event), bonusOpened);
+
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'TOKEN_CONSUMED',
+            payload: expect.objectContaining({
+                playerId: '1',
+                tokenId: TOKEN_IDS.TACTICAL_ADVANTAGE,
+                amount: 1,
+            }),
+        }));
+        expect(events.find((event) => event.type === 'DIE_REROLLED')).toMatchObject({
+            payload: {
+                dieId: 0,
+                oldValue: 3,
+                newValue: 6,
+                playerId: '1',
+                ownerId: '0',
+                target: 'pendingBonusDie',
+            },
+        });
+        expect(afterReroll.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
+        expect(afterReroll.players['1'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
     });
 
     it('闪避骰进入当前骰区后，战术家重掷会重新决定免伤结果', () => {

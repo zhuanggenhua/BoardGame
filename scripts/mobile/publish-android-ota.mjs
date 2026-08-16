@@ -8,6 +8,7 @@ import {
     resolveAndroidOtaVersionBase,
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
+import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
 import { classifyOtaBundleFile } from './ota-bundle-files.mjs';
 import { waitForServerAssets } from './wait-for-server-assets.mjs';
 
@@ -200,7 +201,7 @@ const bundleVersionHumanTime = formatHumanTime(buildInstant);
 const bundleKey = `${manifestPrefix}/bundles/${bundleVersion}.zip`;
 const versionManifestKey = `${manifestPrefix}/manifests/${bundleVersion}.json`;
 const latestManifestKey = `${manifestPrefix}/latest.json`;
-const assetsBaseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
+const assetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
 const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
 const latestManifestUrl = `${assetsBaseUrl}/app-updates/android/${channel}/latest.json`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;

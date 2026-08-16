@@ -16,7 +16,6 @@ import type {
     TokenResponseRequestedEvent,
     BonusDiceRerollRequestedEvent,
     InteractionDescriptor as DtInteractionDescriptor,
-    ResponseWindowOpenedEvent,
     TurnPhase,
 } from './types';
 import { getPlayerPassiveAbilities } from './passiveAbility';
@@ -25,16 +24,9 @@ import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
 import { hasCurrentChoiceAnchor } from './choiceEffects';
 import {
     getActiveDice,
-    getResponderQueue,
-    shouldOpenAfterRollConfirmedForBonusSettlement,
 } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
 import { updatePendingAttackSettlementStage } from './utils';
-import {
-    buildAfterRollConfirmedSignature,
-    hasAfterRollConfirmedWindowBeenHandled,
-} from './responseWindowGuards';
-import { buildBonusDiceSettlementEvents } from './executeTokens';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -71,74 +63,6 @@ const buildChoiceInteractionId = (
         String(decisionEpoch),
         String(queueOrdinal),
     ].join('-');
-};
-
-const buildBonusDiceAfterRollConfirmedWindowEvent = (
-    state: MatchState<DiceThroneCore>,
-    settlement: DiceThroneCore['pendingBonusDiceSettlement'],
-    timestamp: number,
-    sourceCommandType?: string,
-): ResponseWindowOpenedEvent | null => {
-    if (
-        !settlement
-        || state.sys.responseWindow?.current
-        || !shouldOpenAfterRollConfirmedForBonusSettlement(settlement)
-    ) {
-        return null;
-    }
-
-    const rollerId = settlement.attackerId;
-    const phase = (state.sys.phase || 'main1') as TurnPhase;
-    const rollSignature = buildAfterRollConfirmedSignature(state.core, phase);
-    if (hasAfterRollConfirmedWindowBeenHandled(state.core, rollSignature)) {
-        return null;
-    }
-
-    const responderQueue = getResponderQueue(
-        state.core,
-        'afterRollConfirmed',
-        rollerId,
-        undefined,
-        undefined,
-        phase,
-    );
-    if (responderQueue.length === 0) {
-        return null;
-    }
-
-    return {
-        type: 'RESPONSE_WINDOW_OPENED',
-        payload: {
-            windowId: `afterRollConfirmed-${timestamp}`,
-            responderQueue,
-            windowType: 'afterRollConfirmed',
-            sourceId: rollSignature,
-        },
-        sourceCommandType,
-        timestamp,
-    };
-};
-
-/**
- * 奖励骰的 afterRollConfirmed 窗口一旦已打开，结算权就属于该窗口。
- * 原始 BONUS_DICE_REROLL_REQUESTED 事件会在后续系统批次再次被观察到，
- * 不能把“已处理过同一签名”误判为“没有响应者”，否则会在响应者操作前提前结算。
- */
-const isBonusDiceAwaitingAfterRollConfirmedResponse = (
-    state: MatchState<DiceThroneCore>,
-    settlement: DiceThroneCore['pendingBonusDiceSettlement'],
-): boolean => {
-    if (!settlement || !shouldOpenAfterRollConfirmedForBonusSettlement(settlement)) {
-        return false;
-    }
-
-    const phase = (state.sys.phase || 'main1') as TurnPhase;
-    const rollSignature = buildAfterRollConfirmedSignature(state.core, phase);
-    const currentWindow = state.sys.responseWindow?.current;
-    return (
-        currentWindow?.windowType === 'afterRollConfirmed'
-        && currentWindow.sourceId === rollSignature
-    ) || hasAfterRollConfirmedWindowBeenHandled(state.core, rollSignature);
 };
 
 function extractChoiceCustomIds(interactionData: unknown): string[] {
@@ -205,7 +129,6 @@ function shouldQueueBonusDiceAfterResponseWindow(
     if (event.type !== 'RESPONSE_WINDOW_CLOSED') return false;
     const settlement = state.core.pendingBonusDiceSettlement;
     return Boolean(settlement)
-        && shouldOpenAfterRollConfirmedForBonusSettlement(settlement)
         && state.core.afterRollResponseWindowSignature?.includes(`|settlement:${settlement.id}`) === true;
 }
 
@@ -677,7 +600,6 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 // 处理 CHOICE_REQUESTED 事件 -> 创建 Prompt
                 if (dtEvent.type === 'CHOICE_REQUESTED') {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
-                    const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
 
                     // compare-roll-choice：对掷结果 + 分支选择 / 自动确认；骰面本体仍由右侧骰盘承接。
                     if (payload.compareRoll?.contestants?.length === 2) {
@@ -811,10 +733,10 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             ? Array.from(new Set(pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
                             : [];
 
-                        // any/adjust 模式：用户需要反复 +/- 调整骰子值，禁用 auto-confirm，由用户手动确认
-                        // set/copy 模式：每次点击选中一颗骰子，选满后自动 confirm
+                        // DiceThrone 的改骰统一由确认按钮收口：选中/改完后仍保留骰盘，
+                        // 方便玩家继续看骰面、改骰或主动确认。
                         const isManualConfirmMode = mode === 'any' || mode === 'adjust';
-                        const maxSteps = isManualConfirmMode ? undefined : selectCount;
+                        const maxSteps = undefined;
                         const minSteps = pendingInteraction.minSelectCount
                             ?? (isManualConfirmMode ? 1 : selectCount);
 
@@ -870,7 +792,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         } = {
                             title: pendingInteraction.titleKey,
                             sourceId: pendingInteraction.sourceCardId,
-                            maxSteps: selectCount,
+                            maxSteps: undefined,
                             minSteps: pendingInteraction.minSelectCount ?? 1,
                             initialResult: { selectedDiceIds: [] },
                             localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
@@ -1049,31 +971,18 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     };
                 }
 
-                // ---- BONUS_DICE_REROLL_REQUESTED → response / right-tray confirmation ----
-                // 响应窗口只承接卡牌/Token 介入。窗口结束后，无论奖励骰是否还有可用内置重投，
-                // 都必须停在右侧 2D 骰盘，等待骰主点击普通确认后再结算。
+                // ---- BONUS_DICE_REROLL_REQUESTED → right-tray confirmation ----
+                // 奖励骰不再打开 afterRollConfirmed 响应窗口；双方仍可通过当前骰区
+                // 看到并介入骰面，骰主必须在右侧骰盘主动确认后才结算。
                 if (dtEvent.type === 'BONUS_DICE_REROLL_REQUESTED') {
                     const payload = (dtEvent as BonusDiceRerollRequestedEvent).payload;
-                    const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
-                    const responseWindowEvent = buildBonusDiceAfterRollConfirmedWindowEvent(
-                        newState,
-                        payload.settlement,
-                        eventTimestamp,
-                        dtEvent.sourceCommandType,
-                    );
-                    if (responseWindowEvent) {
-                        nextEvents.push(responseWindowEvent);
-                    } else if (isBonusDiceAwaitingAfterRollConfirmedResponse(newState, payload.settlement)) {
-                        // 已打开的窗口会在 RESPONSE_WINDOW_CLOSED 时统一续接；这里不能抢先结算。
-                    } else {
-                        const interaction: EngineInteractionDescriptor = {
-                            id: `dt-bonus-dice-${payload.settlement.id}`,
-                            kind: 'dt:bonus-dice',
-                            playerId: payload.settlement.attackerId,
-                            data: null,
-                        };
-                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
-                    }
+                    const interaction: EngineInteractionDescriptor = {
+                        id: `dt-bonus-dice-${payload.settlement.id}`,
+                        kind: 'dt:bonus-dice',
+                        playerId: payload.settlement.attackerId,
+                        data: null,
+                    };
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                 }
 
                 if (shouldQueueBonusDiceAfterResponseWindow(newState, dtEvent)) {

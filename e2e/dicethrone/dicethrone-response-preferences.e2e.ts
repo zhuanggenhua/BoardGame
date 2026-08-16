@@ -26,7 +26,7 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
 };
 
 test.describe('DiceThrone 响应偏好开关', () => {
-    test('开启响应旁的响应奖励骰开关应受总响应开关联动', async ({ browser, baseURL }, testInfo) => {
+    test('响应偏好只保留总响应开关，不再显示奖励骰专属响应开关', async ({ browser, baseURL }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
 
         const match = await setupOnlineMatch(browser, baseURL, {
@@ -54,24 +54,16 @@ test.describe('DiceThrone 响应偏好开关', () => {
             const bonusDiceResponseToggle = hostPage.getByTestId('bonus-dice-response-toggle');
 
             await expect(autoResponseToggle).toBeVisible({ timeout: 10000 });
-            await expect(bonusDiceResponseToggle).toBeVisible({ timeout: 10000 });
+            await expect(bonusDiceResponseToggle).toHaveCount(0);
             await expect(autoResponseToggle).toContainText('手动响应');
             await expect(autoResponseToggle).toHaveAttribute('aria-pressed', 'true');
-            await expect(bonusDiceResponseToggle).toContainText('响应奖励骰');
-            await expect(bonusDiceResponseToggle).toHaveAttribute('aria-pressed', 'false');
-            await expect(bonusDiceResponseToggle).toBeEnabled();
-            screenshots.push(await saveEvidenceScreenshot(hostPage, testInfo, '01-默认开启手动响应-奖励骰响应关闭'));
-
-            await bonusDiceResponseToggle.click();
-            await expect(bonusDiceResponseToggle).toHaveAttribute('aria-pressed', 'true');
-            screenshots.push(await saveEvidenceScreenshot(hostPage, testInfo, '02-开启奖励骰响应'));
+            screenshots.push(await saveEvidenceScreenshot(hostPage, testInfo, '01-默认开启手动响应-无奖励骰专属响应开关'));
 
             await autoResponseToggle.click();
             await expect(autoResponseToggle).toHaveAttribute('aria-pressed', 'false');
             await expect(autoResponseToggle).toContainText('自动跳过');
-            await expect(bonusDiceResponseToggle).toHaveAttribute('aria-pressed', 'false');
-            await expect(bonusDiceResponseToggle).toBeDisabled();
-            screenshots.push(await saveEvidenceScreenshot(hostPage, testInfo, '03-关闭手动响应后奖励骰响应禁用'));
+            await expect(bonusDiceResponseToggle).toHaveCount(0);
+            screenshots.push(await saveEvidenceScreenshot(hostPage, testInfo, '02-关闭手动响应后仍无奖励骰专属响应开关'));
 
             const storedPreferences = await hostPage.evaluate(() => ({
                 autoResponse: window.localStorage.getItem('dicethrone:autoResponse'),
@@ -79,7 +71,7 @@ test.describe('DiceThrone 响应偏好开关', () => {
             }));
             expect(storedPreferences).toEqual({
                 autoResponse: 'false',
-                bonusDiceResponse: 'false',
+                bonusDiceResponse: null,
             });
 
             testInfo.annotations.push({

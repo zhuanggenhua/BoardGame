@@ -6,6 +6,7 @@ import { createDiceThroneEventSystem } from '../domain/systems';
 import { reduce } from '../domain/reducer';
 import type { DiceThroneCore, DiceThroneEvent, PendingBonusDiceSettlement } from '../domain/types';
 import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
+import { COMMON_CARDS } from '../domain/commonCards';
 
 const bonusSettlement = (): PendingBonusDiceSettlement => ({
     id: 'ordinary-confirm-required',
@@ -54,6 +55,22 @@ const openBonusDiceState = (
 };
 
 describe('DiceThrone 奖励骰普通确认合同', () => {
+    it('即使对手有改骰牌，奖励骰也不再打开响应窗口，而是直接停在右侧骰盘等待普通确认', () => {
+        const settlement = bonusSettlement();
+        const nextState = openBonusDiceState(settlement, (core) => {
+            const giveHand = COMMON_CARDS.find((card) => card.id === 'card-give-hand');
+            if (!giveHand) throw new Error('测试缺少“弹一手”通用牌定义');
+            core.players['1'].hand = [giveHand];
+            core.players['1'].resources.CP = 3;
+        });
+
+        expect(nextState.sys.responseWindow?.current).toBeUndefined();
+        expect(nextState.sys.interaction.current).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
+    });
+
     it('无可用内置重投且没有响应时，奖励骰仍停在右侧骰盘等待普通确认', () => {
         const settlement = bonusSettlement();
         const nextState = openBonusDiceState(settlement, (core) => {

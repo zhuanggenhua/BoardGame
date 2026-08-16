@@ -18,7 +18,7 @@ import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
 import { MOON_ELF_CARDS } from '../../src/games/dicethrone/heroes/moon_elf/cards';
 import {
     expectNoCentralBonusDicePresentation,
-    expectRightTrayBonusDiceAwaitingResponse,
+    expectRightTrayBonusDiceInterferenceView,
     expectRightTrayBonusDiceConfirmation,
     settleCurrentBonusDice,
 } from './bonus-dice-flow';
@@ -243,7 +243,6 @@ async function setupTwoPageDicethrone(
 async function enableManualBonusDiceResponse(context: BrowserContext, page: Page) {
     const setPreferences = () => {
         localStorage.setItem('dicethrone:autoResponse', 'true');
-        localStorage.setItem('dicethrone:bonusDiceResponse', 'true');
     };
     await context.addInitScript(setPreferences);
     await page.evaluate(setPreferences);
@@ -540,10 +539,12 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: 'volley',
                 customResolutionId: 'moon-elf-volley',
                 allowDiceModification: true,
-                windowType: 'afterRollConfirmed',
-                currentResponderId: '1',
+                windowType: null,
             });
-            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+            await expectRightTrayBonusDiceConfirmation(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
+                sourceAbilityId: 'volley',
+            });
+            await expectRightTrayBonusDiceInterferenceView(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'volley',
             });
             await screenshotStep(guestPage, testInfo, '02-万箭齐发-无中央特写且右侧2D奖励骰盘可见');
@@ -555,15 +556,11 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             const volleyChoice = chooseVolleyBoundaryDie(volleyBeforeSnapshot);
             expect(volleyChoice.beforeBowCount).not.toBe(volleyChoice.afterBowCount);
             await closeCardSpotlightIfVisible(guestPage);
-            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+            await expectRightTrayBonusDiceInterferenceView(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'volley',
             });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
-            await expect(guestPage.getByRole('button', { name: /^(跳过|Pass)$/i }).first()).toBeVisible({ timeout: 5000 });
-            await assertResponseHintFixedHandLiftSlot(guestPage);
-            await screenshotStep(guestPage, testInfo, '03a-万箭齐发-奖励骰响应提示固定在手牌抬起区上方');
-            await assertResponseHintStableDuringHandHover(guestPage, 'card-flick');
-            await screenshotStep(guestPage, testInfo, '03b-万箭齐发-悬浮手牌时响应提示位置稳定');
+            await screenshotStep(guestPage, testInfo, '03-万箭齐发-防御方可直接用手牌介入奖励骰');
 
             await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
@@ -701,8 +698,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
                 sourceAbilityId: 'thunder-strike',
                 allowDiceModification: true,
-                windowType: 'afterRollConfirmed',
-                currentResponderId: '1',
+                windowType: null,
+            });
+            await expectRightTrayBonusDiceConfirmation(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
+                sourceAbilityId: 'thunder-strike',
             });
             await normalizePendingBonusDice(setup.matchId, hostPage, [4, 5, 6], monkFaceForValue);
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
@@ -710,14 +709,11 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             });
             const thunderBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
             const thunderChoice = chooseThunderDie(thunderBeforeSnapshot);
-            await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
+            await expectRightTrayBonusDiceInterferenceView(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'thunder-strike',
             });
             await waitForHandCardVisualReady(guestPage, 'card-flick');
-            await assertResponseHintFixedHandLiftSlot(guestPage);
-            await screenshotStep(guestPage, testInfo, '03a-雷霆万钧-奖励骰响应提示固定在手牌抬起区上方');
-            await assertResponseHintStableDuringHandHover(guestPage, 'card-flick');
-            await screenshotStep(guestPage, testInfo, '03b-雷霆万钧-悬浮手牌时响应提示位置稳定');
+            await screenshotStep(guestPage, testInfo, '03-雷霆万钧-防御方可直接用手牌介入奖励骰');
 
             await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({

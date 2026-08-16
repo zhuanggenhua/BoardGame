@@ -25,6 +25,10 @@ const entry: GameManifestEntry = {
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'board-shell',
+    mobileBoardShellLayout: {
+        designWidth: 1920,
+        designHeight: 1080,
+    },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {
         mode: 'package-managed',

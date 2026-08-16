@@ -17,7 +17,6 @@ import {
     getOpponents,
     areTeammates,
     getUpgradeTargetAbilityId,
-    shouldOpenAfterRollConfirmedForBonusSettlement,
 } from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -87,7 +86,7 @@ import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
 import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationConsumer';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getCurrentRollDice, isCurrentBonusRollSettlement, isSettledReplayOnlyRollContext } from './domain/rollContext';
-import { getAutoResponseEnabled, getBonusDiceResponseEnabled } from './ui/responsePreferences';
+import { getAutoResponseEnabled } from './ui/responsePreferences';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray } from './ui/diceStagePolicy';
 import {
@@ -177,9 +176,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
     const [autoResponseEnabled, setAutoResponseEnabled] = React.useState(() => getAutoResponseEnabled());
-    const [bonusDiceResponseEnabled, setBonusDiceResponseEnabled] = React.useState(() => (
-        getBonusDiceResponseEnabled(getAutoResponseEnabled())
-    ));
 
     const isGameOver = rawG.sys.gameover;
     const resolveMatchFallbackName = React.useCallback((playerId: string) => `P${Number(playerId) + 1}`, []);
@@ -240,14 +236,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isResponseActorOnMyTeam = Boolean(
         isResponseWindowOpen && currentResponderId && (currentResponderId === rootPid || isDirectDiceActor),
     );
-    const isBonusDiceResponseWindow = Boolean(
-        currentResponseWindow?.windowType === 'afterRollConfirmed'
-        && shouldOpenAfterRollConfirmedForBonusSettlement(currentPendingBonusDiceSettlement),
-    );
     const manualResponseEnabledForCurrentWindow = resolveManualResponseEnabledForWindow({
         autoResponseEnabled,
-        bonusDiceResponseEnabled,
-        isBonusDiceResponseWindow,
     });
     const isManualSelfResponseWindow = Boolean(
         isResponseWindowOpen && currentResponderId === rootPid && manualResponseEnabledForCurrentWindow,
@@ -575,12 +565,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 响应窗口状态
     // 自动跳过逻辑：
     // - 总响应关闭：所有响应窗口自动让过
-    // - 奖励骰响应关闭：仅奖励骰 afterRollConfirmed 响应窗口自动让过
+    // - 关闭响应：所有响应窗口自动让过
     React.useEffect(() => {
         const shouldAutoPass = shouldAutoPassResponseWindow({
             autoResponseEnabled,
-            bonusDiceResponseEnabled,
-            isBonusDiceResponseWindow,
         });
         if (!shouldAutoPass || !isResponseWindowOpen || !currentResponderId || currentResponderId !== rootPid) return;
         // 延迟一小段时间确保 UI 状态同步
@@ -590,8 +578,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         return () => clearTimeout(timer);
     }, [
         autoResponseEnabled,
-        bonusDiceResponseEnabled,
-        isBonusDiceResponseWindow,
         isResponseWindowOpen,
         currentResponderId,
         rootPid,
@@ -1222,11 +1208,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const rightTrayBonusDiceSettlement = pendingBonusDiceRoutedToRightTray
         ? currentPendingBonusDiceSettlement
         : undefined;
-    const isBonusDiceResponseWindowForOwner = Boolean(
-        G.pendingBonusDiceSettlement
-        && rawG.sys.responseWindow?.current?.windowType === 'afterRollConfirmed'
-        && String(G.pendingBonusDiceSettlement.attackerId) === String(rootPid)
-    );
     const canUseRightTrayBonusDiceActions = Boolean(
         rightTrayBonusDiceSettlement
         && !isSpectator
@@ -1969,7 +1950,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
                         onAutoResponseToggle={setAutoResponseEnabled}
-                        onBonusDiceResponseToggle={setBonusDiceResponseEnabled}
                     />
 
                     <CenterBoard
@@ -2053,7 +2033,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
                         showDiceTray={showRailDiceTray || Boolean(bonusDiceTrayDice)}
-                        showDiceActions={!isReplayOnlyRollContextActive && !isBonusDiceResponseWindowForOwner && (
+                        showDiceActions={!isReplayOnlyRollContextActive && (
                             !rightTrayBonusDiceSettlement
                             || Boolean(diceMultistepInteraction)
                             || isRightTrayBonusDiceSettlementActive

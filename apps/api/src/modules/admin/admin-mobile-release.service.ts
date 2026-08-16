@@ -642,12 +642,20 @@ export class AdminMobileReleaseService {
     }
 
     private buildOtaManifestUrl(channel: string) {
-        const baseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
+        const baseUrl = (
+            process.env.VITE_ANDROID_ASSETS_BASE_URL?.trim()
+            || process.env.ANDROID_VITE_ASSETS_BASE_URL?.trim()
+            || 'http://8.148.71.102/official'
+        ).replace(/\/+$/, '');
         return `${baseUrl}/app-updates/android/${channel}/latest.json`;
     }
 
     private buildNativeManifestUrl(channel: string) {
-        const baseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
+        const baseUrl = (
+            process.env.VITE_ANDROID_ASSETS_BASE_URL?.trim()
+            || process.env.ANDROID_VITE_ASSETS_BASE_URL?.trim()
+            || 'http://8.148.71.102/official'
+        ).replace(/\/+$/, '');
         return `${baseUrl}/native-app-updates/android/${channel}/latest.json`;
     }
 

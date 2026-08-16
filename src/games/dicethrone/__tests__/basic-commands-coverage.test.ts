@@ -15,6 +15,7 @@ import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibil
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions, diceThroneAiRuntime } from '../ai';
 import { engineConfig } from '../game';
+import { createDiceThroneEventSystem } from '../domain/systems';
 import {
     testSystems,
     createQueuedRandom,
@@ -32,7 +33,7 @@ import {
     getCurrentInteractionId,
     getMultistepChoicePrompt,
 } from './test-utils';
-import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
+import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
@@ -542,6 +543,62 @@ describe('AI legal actions', () => {
             kind: 'skip-bonus-dice-reroll',
             commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
         }));
+    });
+
+    it('AI bonus dice opponent-interference: 右侧奖励骰期间非骰主也应枚举合法改骰牌和战术优势', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'offensiveRoll';
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].hand = [getCardById('card-give-hand')];
+        state.core.players['1'].characterId = 'zhanshujia';
+        state.core.players['1'].passiveAbilities = ZHANSHUJIA_PASSIVE_ABILITIES;
+        state.core.players['1'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'right-tray-bonus-ai-opponent-interference',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'fist' }],
+            rerollCount: 0,
+            allowDiceModification: true,
+        };
+        state.core.pendingBonusDiceSettlement = settlement;
+        state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
+        injectRawBlockingInteraction(state, {
+            id: 'dt-bonus-dice-right-tray-bonus-ai-opponent-interference',
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
+
+        expect(DiceThroneDomain.validate(state, {
+            type: 'PLAY_CARD',
+            playerId: '1',
+            payload: { cardId: 'card-give-hand' },
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'play-card',
+            commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-give-hand' } }],
+        }));
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'use-passive-ability',
+            commands: [expect.objectContaining({
+                type: 'USE_PASSIVE_ABILITY',
+                payload: expect.objectContaining({
+                    passiveId: 'zhanshujia-tactical-advantage',
+                    actionIndex: 1,
+                    targetDieId: 0,
+                }),
+            })],
+        }));
+        expect(actions.some((action) => action.kind === 'skip-bonus-dice-reroll')).toBe(false);
     });
 
     it('AI bonus dice no-modify: 没有合法改骰牌时仍应只保留奖励骰动作和确认', () => {
@@ -1625,6 +1682,58 @@ describe('AI legal actions', () => {
         const earlyConfirm = tryCmd(state, cmd('SYS_INTERACTION_CONFIRM', '0'));
         expect(earlyConfirm.success).toBe(false);
         expect(earlyConfirm.error).toContain('多步交互尚未达到最少步骤数');
+    });
+
+    it('DiceThrone 改骰与重掷交互应由确认按钮收口，不应选满后自动确认', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        const system = createDiceThroneEventSystem();
+
+        const runInteractionRequest = (interaction: InteractionDescriptor) => {
+            const requested: DiceThroneEvent = {
+                type: 'INTERACTION_REQUESTED',
+                payload: { interaction },
+                timestamp: 200,
+            } as DiceThroneEvent;
+            const result = system.afterEvents?.({
+                state,
+                events: [requested],
+                random: fixedRandom,
+            } as any);
+            if (!result || Array.isArray(result) || !('state' in result)) {
+                throw new Error('未创建骰子交互');
+            }
+            const current = (result.state as MatchState<DiceThroneCore>).sys.interaction.current;
+            if (current?.kind !== 'multistep-choice') {
+                throw new Error('未创建 multistep-choice 骰子交互');
+            }
+            return current.data as any;
+        };
+
+        const setData = runInteractionRequest({
+            id: 'manual-set-die',
+            playerId: '0',
+            sourceCardId: 'set-die-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToModify',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'set', targetValue: 6 },
+        });
+        expect(setData.maxSteps).toBeUndefined();
+        expect(setData.minSteps).toBe(1);
+
+        const rerollData = runInteractionRequest({
+            id: 'manual-select-die',
+            playerId: '0',
+            sourceCardId: 'reroll-die-test',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selectCount: 1,
+            selected: [],
+        });
+        expect(rerollData.maxSteps).toBeUndefined();
+        expect(rerollData.minSteps).toBe(1);
     });
 
     it('copy 交互不能把同值骰当作源骰和目标骰，避免 AI 消耗牌但骰面不变', () => {

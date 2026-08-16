@@ -7,7 +7,7 @@
  * - 手动 ADVANCE_PHASE 序列 → advanceTo() helper
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { DiceThroneDomain } from '../domain';
 import { execute as executeDomainCommand } from '../domain/execute';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneCommand, type DiceThroneEvent, type TurnPhase } from '../domain/types';
@@ -19,7 +19,6 @@ import { executeCardCommand } from '../domain/executeCards';
 import { getLeftOpponentId, getResponderQueue, getRightOpponentId, getTeamIdByPlayerIdMap } from '../domain/rules';
 import { buildAfterRollConfirmedSignature } from '../domain/responseWindowGuards';
 import { playerView } from '../domain/view';
-import { MONK_CARDS } from '../heroes/monk/cards';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { SHADOW_FANG_2 } from '../heroes/ninja/abilities';
 import type { AbilityEffect } from '../domain/combat';
@@ -48,7 +47,6 @@ import {
     getCardById,
     assertState,
     advanceTo,
-    initialDeckSize,
     expectedHandSize,
     expectedDeckAfterDraw4,
     expectedIncomeCp,
@@ -1288,7 +1286,7 @@ describe('王权骰铸流程测试', () => {
 
         it('4 人模式主阶段打出 card-get-away 时，不应先误弹 defender 选择，而应直接进入选状态交互', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
-            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+            const state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
                 '0': 'monk',
                 '1': 'barbarian',
                 '2': 'samurai',
@@ -1403,7 +1401,7 @@ describe('王权骰铸流程测试', () => {
                 domain: DiceThroneDomain,
                 systems: testSystems,
             };
-            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+            const state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
                 '0': 'barbarian',
                 '1': 'monk',
                 '2': 'samurai',
@@ -1496,7 +1494,7 @@ describe('王权骰铸流程测试', () => {
                 domain: DiceThroneDomain,
                 systems: testSystems,
             };
-            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+            const state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
                 '0': 'gunslinger',
                 '1': 'monk',
                 '2': 'samurai',
@@ -1612,7 +1610,7 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
             };
             const random = createQueuedRandom([3, 2]);
-            let state = createInitializedStateWithCharacters(playerIds, random, {
+            const state = createInitializedStateWithCharacters(playerIds, random, {
                 '0': 'gunslinger',
                 '1': 'monk',
                 '2': 'samurai',
@@ -1888,7 +1886,7 @@ describe('王权骰铸流程测试', () => {
             state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
             state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
 
-            let result = executePipeline(
+            const result = executePipeline(
                 pipelineConfig,
                 state,
                 {
@@ -2725,7 +2723,7 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
             };
             const random = createQueuedRandom([6]);
-            let state = createHeroMatchup('ninja', 'treant')(['0', '1'], random);
+            const state = createHeroMatchup('ninja', 'treant')(['0', '1'], random);
 
             state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
             state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
@@ -2984,19 +2982,19 @@ describe('王权骰铸流程测试', () => {
         it.each([
             { attackerId: '0' as PlayerId, responderId: '1' as PlayerId },
             { attackerId: '1' as PlayerId, responderId: '0' as PlayerId },
-        ])('一掷千金奖励骰结算前，统一打开 afterRollConfirmed 供响应者修改当前临时骰', ({ attackerId, responderId }) => {
-            const runner = createRunner(createQueuedRandom([3]));
+        ])('一掷千金奖励骰结算前不打开响应窗口，对手可直接改骰并由骰主确认', ({ attackerId, responderId }) => {
+            const runner = createRunner(createQueuedRandom([6]));
             const attackerStartingCp = 5;
             const responderStartingCp = 10;
             const rolled = runner.run({
-                name: '一掷千金奖励骰不触发响应窗口',
+                name: '一掷千金奖励骰右侧骰盘直接介入',
                 setup: createSetupWithHand(['card-one-throw-fortune'], {
                     playerId: attackerId,
                     cp: attackerStartingCp,
                     mutate: (core) => {
                         core.activePlayerId = attackerId;
                         core.players[attackerId].deck = [];
-                        core.players[responderId].hand = [getCardById('card-flick')];
+                        core.players[responderId].hand = [getCardById('card-surprise')];
                         core.players[responderId].deck = [];
                         core.players[responderId].discard = [];
                         core.players[responderId].resources[RESOURCE_IDS.CP] = responderStartingCp;
@@ -3017,30 +3015,48 @@ describe('王权骰铸流程测试', () => {
                 displayOnly: true,
                 allowDiceModification: true,
             });
-            expect(rolled.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
-            expect(rolled.finalState.sys.responseWindow?.current).toMatchObject({
-                windowType: 'afterRollConfirmed',
-                responderQueue: [responderId],
-            });
-
-            runner.setState(rolled.finalState);
-            const passed = runner.dispatch('RESPONSE_PASS', { playerId: responderId });
-            expect(passed.success).toBe(true);
-
-            expect(passed.finalState.core.pendingBonusDiceSettlement).toMatchObject({
-                sourceAbilityId: 'card-one-throw-fortune',
-                attackerId,
-                displayOnly: true,
-            });
-            expect(passed.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
-            expect(passed.finalState.sys.responseWindow?.current).toBeUndefined();
-            expect(getCurrentInteractionSummary(passed.finalState)).toMatchObject({
+            expect(rolled.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
+            expect(rolled.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(rolled.finalState)).toMatchObject({
                 kind: 'dt:bonus-dice',
                 playerId: attackerId,
             });
-            expect(passed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp);
 
-            runner.setState(passed.finalState);
+            runner.setState(rolled.finalState);
+            const playedModifier = runner.dispatch('PLAY_CARD', { playerId: responderId, cardId: 'card-surprise' });
+            expect(playedModifier.success).toBe(true);
+            expect(playedModifier.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(playedModifier.finalState)).toMatchObject({
+                kind: 'multistep-choice',
+                playerId: responderId,
+            });
+            expect(playedModifier.finalState.sys.interaction.queue?.[0]).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: attackerId,
+            });
+
+            runner.setState(playedModifier.finalState);
+            const modified = runner.dispatch('MODIFY_DIE', { playerId: responderId, dieId: 0, newValue: 4 });
+            expect(modified.success).toBe(true);
+            expect(modified.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(4);
+            expect(getCurrentInteractionSummary(modified.finalState)).toMatchObject({
+                kind: 'multistep-choice',
+                playerId: responderId,
+            });
+
+            runner.setState(modified.finalState);
+            const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: responderId });
+            expect(confirmedCard.success).toBe(true);
+            expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(confirmedCard.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(4);
+            expect(getCurrentInteractionSummary(confirmedCard.finalState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: attackerId,
+            });
+            expect(confirmedCard.finalState.core.players[responderId].discard.some(card => card.id === 'card-surprise')).toBe(true);
+            expect(confirmedCard.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp);
+
+            runner.setState(confirmedCard.finalState);
             const confirmed = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: attackerId });
             expect(confirmed.success).toBe(true);
             expect(confirmed.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
@@ -3048,7 +3064,7 @@ describe('王权骰铸流程测试', () => {
             expect(confirmed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp + 2);
         });
 
-        it('奖励骰有可重投能力时先开放响应，能力重投并让过后必须等待骰主普通确认', () => {
+        it('奖励骰有可重投能力时不开放响应，能力重投后必须等待骰主普通确认', () => {
             const runner = createRunner(createQueuedRandom([3, 6]));
             const rolled = runner.run({
                 name: '教皇税可重投奖励骰',
@@ -3071,7 +3087,11 @@ describe('王权骰铸流程测试', () => {
 
             expect(rolled.assertionErrors).toEqual([]);
             expect(rolled.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
-            expect(rolled.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
+            expect(rolled.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(rolled.finalState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+            });
 
             runner.setState(rolled.finalState);
             const rerolled = runner.dispatch('USE_PASSIVE_ABILITY', {
@@ -3082,19 +3102,14 @@ describe('王权骰铸流程测试', () => {
             });
             expect(rerolled.success).toBe(true);
             expect(rerolled.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
-
-            runner.setState(rerolled.finalState);
-            const passed = runner.dispatch('RESPONSE_PASS', { playerId: '0' });
-            expect(passed.success).toBe(true);
-            expect(passed.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
-            expect(passed.finalState.sys.responseWindow?.current).toBeUndefined();
-            expect(getCurrentInteractionSummary(passed.finalState)).toMatchObject({
+            expect(rerolled.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(rerolled.finalState)).toMatchObject({
                 kind: 'dt:bonus-dice',
                 playerId: '0',
             });
-            const cpBeforeConfirm = passed.finalState.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
+            const cpBeforeConfirm = rerolled.finalState.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
 
-            runner.setState(passed.finalState);
+            runner.setState(rerolled.finalState);
             const confirmed = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '0' });
             expect(confirmed.success).toBe(true);
             expect(confirmed.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
@@ -3836,7 +3851,7 @@ describe('王权骰铸流程测试', () => {
 
         it('4 人模式主阶段打出掌击时会先要求在两名对手中选目标', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
-            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+            const state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
                 '0': 'monk',
                 '1': 'barbarian',
                 '2': 'monk',
@@ -3874,7 +3889,7 @@ describe('王权骰铸流程测试', () => {
 
         it('4 人模式主阶段打出月影突袭时会先要求在两名对手中选目标', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
-            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+            const state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
                 '0': 'moon_elf',
                 '1': 'barbarian',
                 '2': 'monk',
@@ -5094,7 +5109,6 @@ describe('王权骰铸流程测试', () => {
         it('玩得六啊：set 模式修改 1 颗骰子至 6', () => {
             const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
             // ADVANCE_PHASE=1, ROLL_DICE=2, PLAY_CARD=3
-            const interactionId = `card-play-six-3`;
             const result = runner.run({
                 name: '玩得六啊 set',
                 setup: createSetupWithHand(['card-play-six'], { cp: 10 }),
@@ -5103,6 +5117,7 @@ describe('王权骰铸流程测试', () => {
                     cmd('ROLL_DICE', '0'),
                     cmd('PLAY_CARD', '0', { cardId: 'card-play-six' }),
                     cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     turnPhase: 'offensiveRoll',
@@ -5119,7 +5134,6 @@ describe('王权骰铸流程测试', () => {
             // copy 模式：选 die0(值=2) 为源，选 die1(值=5) 为目标 → die1 变为 2
             // diceModifyToCommands 会生成 2 条命令：源骰子保持原值 + 目标骰子复制源值
             const runner = createRunner(createQueuedRandom([2, 5, 1, 3, 4]));
-            const interactionId = `card-me-too-3`;
             const result = runner.run({
                 name: '俺也一样 copy',
                 setup: createSetupWithHand(['card-me-too'], { cp: 10 }),
@@ -5130,6 +5144,7 @@ describe('王权骰铸流程测试', () => {
                     // copy 模式需要 2 条 MODIFY_DIE：源骰子(保持原值) + 目标骰子(复制源值)
                     cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 2 }),
                     cmd('MODIFY_DIE', '0', { dieId: 1, newValue: 2 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     turnPhase: 'offensiveRoll',
@@ -5143,7 +5158,6 @@ describe('王权骰铸流程测试', () => {
 
         it('惊不惊喜：any 模式修改任意 1 颗骰子', () => {
             const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
-            const interactionId = `card-surprise-3`;
             const result = runner.run({
                 name: '惊不惊喜 any-1',
                 setup: createSetupWithHand(['card-surprise'], { cp: 10 }),
@@ -5165,7 +5179,6 @@ describe('王权骰铸流程测试', () => {
 
         it('意不意外：any 模式修改任意 2 颗骰子', () => {
             const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5]));
-            const interactionId = `card-unexpected-3`;
             const result = runner.run({
                 name: '意不意外 any-2',
                 setup: createSetupWithHand(['card-unexpected'], { cp: 10 }),
@@ -5188,7 +5201,6 @@ describe('王权骰铸流程测试', () => {
 
         it('弹一手：adjust 模式增减 1 点', () => {
             const runner = createRunner(createQueuedRandom([2, 2, 2, 2, 2]));
-            const interactionId = `card-flick-3`;
             const result = runner.run({
                 name: '弹一手 adjust',
                 setup: createSetupWithHand(['card-flick'], { cp: 10 }),
@@ -5210,7 +5222,6 @@ describe('王权骰铸流程测试', () => {
 
         it('不愧是我：重掷至多 2 颗骰子', () => {
             const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5, 6, 6]));
-            const interactionId = `card-worthy-of-me-3`;
             const result = runner.run({
                 name: '不愧是我 reroll-2',
                 setup: createSetupWithHand(['card-worthy-of-me'], { cp: 10 }),
@@ -5220,6 +5231,7 @@ describe('王权骰铸流程测试', () => {
                     cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
                     cmd('REROLL_DIE', '0', { dieId: 0 }),
                     cmd('REROLL_DIE', '0', { dieId: 1 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     diceValues: [6, 6, 3, 4, 5],
@@ -5232,7 +5244,6 @@ describe('王权骰铸流程测试', () => {
 
         it('我又行了：重掷至多 5 颗骰子', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 2, 3, 4, 5, 6]));
-            const interactionId = `card-i-can-again-3`;
             const result = runner.run({
                 name: '我又行了 reroll-5',
                 setup: createSetupWithHand(['card-i-can-again'], { cp: 10 }),
@@ -5245,6 +5256,7 @@ describe('王权骰铸流程测试', () => {
                     cmd('REROLL_DIE', '0', { dieId: 2 }),
                     cmd('REROLL_DIE', '0', { dieId: 3 }),
                     cmd('REROLL_DIE', '0', { dieId: 4 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     diceValues: [2, 3, 4, 5, 6],
@@ -5280,7 +5292,6 @@ describe('王权骰铸流程测试', () => {
         it('抬一手：强制对手重掷 1 颗骰子（防御阶段，进攻方响应）', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 2, 2, 2, 2, 6]));
             // PLAY_CARD is step 10: ADVANCE+ROLL+CONFIRM+PASS*2+SELECT+ADVANCE+ROLL+CONFIRM+PLAY_CARD
-            const interactionId = `card-give-hand-10`;
             const result = runner.run({
                 name: '抬一手 reroll-opponent (防御阶段)',
                 setup: createSetupWithHand(['card-give-hand'], {
@@ -5302,6 +5313,7 @@ describe('王权骰铸流程测试', () => {
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('PLAY_CARD', '0', { cardId: 'card-give-hand' }),
                     cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     turnPhase: 'defensiveRoll',
@@ -5316,7 +5328,6 @@ describe('王权骰铸流程测试', () => {
         it('抬一手：强制对手重掷 1 颗骰子（进攻阶段，防御方响应）', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 6]));
             // PLAY_CARD is step 4: ADVANCE+ROLL+CONFIRM+PLAY_CARD
-            const interactionId = `card-give-hand-4`;
             const result = runner.run({
                 name: '抬一手 reroll-opponent (进攻阶段)',
                 setup: createSetupWithHand([], {
@@ -5335,6 +5346,7 @@ describe('王权骰铸流程测试', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                     cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
                     cmd('REROLL_DIE', '1', { dieId: 0 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '1'),
                 ],
                 expect: {
                     turnPhase: 'offensiveRoll',
@@ -5349,7 +5361,6 @@ describe('王权骰铸流程测试', () => {
         it('惊不惊喜：在响应窗口中使用（进攻阶段，防御方响应）', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
             // PLAY_CARD is step 4: ADVANCE+ROLL+CONFIRM+PLAY_CARD
-            const interactionId = `card-surprise-4`;
             const result = runner.run({
                 name: '惊不惊喜 response-window',
                 setup: createSetupWithHand([], {
@@ -5465,6 +5476,7 @@ describe('王权骰铸流程测试', () => {
                 commands: [
                     cmd('PLAY_CARD', '0', { cardId: 'card-get-away' }),
                     cmd('REMOVE_STATUS', '0', { targetPlayerId: '1', statusId: TOKEN_IDS.TAIJI }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
                 ],
                 expect: {
                     players: {

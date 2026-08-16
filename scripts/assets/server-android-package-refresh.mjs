@@ -9,6 +9,7 @@ import {
     writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
+import { DEFAULT_ANDROID_ASSETS_BASE_URL } from '../mobile/android-assets-base-url.mjs';
 
 const SHARED_AUDIO_PREFIX = 'common/audio/';
 const COMPRESSED_DIR_NAME = 'compressed';
@@ -50,7 +51,7 @@ const SMASHUP_ZH_CN_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/zh-CN\/smashup\/(?:bas
 const SMASHUP_ZH_CN_ANDROID_PACKAGE_ATLAS_PATHS = new Set([
     'i18n/zh-CN/smashup/cards/compressed/longzu.webp',
 ]);
-const DEFAULT_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
+const DEFAULT_ASSETS_BASE_URL = DEFAULT_ANDROID_ASSETS_BASE_URL;
 
 const normalizeSlashes = (value) => String(value || '').replace(/\\/g, '/');
 

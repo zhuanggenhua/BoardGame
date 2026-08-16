@@ -70,6 +70,7 @@ jobs:
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-ota-production' || 'android-ota-nonprod' }}
     env:
       BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
+      ANDROID_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
 
     steps:
       - name: Resolve publish parameters
@@ -173,7 +174,7 @@ jobs:
           current_ref="$(git rev-parse HEAD)"
           package_version="$(node -p "require('./package.json').version")"
           built_at="$(date -u +%Y-%m-%dT%H-%M-%S-%3NZ)"
-          manifest_url="${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/app-updates/android/${{ steps.params.outputs.channel }}/latest.json"
+          manifest_url="${ANDROID_ASSETS_BASE_URL}/app-updates/android/${{ steps.params.outputs.channel }}/latest.json"
           ota_version_base="${{ steps.params.outputs.ota_version_base }}"
           explicit_version="${{ steps.params.outputs.explicit_version }}"
 
@@ -233,7 +234,8 @@ jobs:
         run: |
           cat <<EOF > .env.android
           VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
-          VITE_ASSETS_BASE_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
+          VITE_ASSETS_BASE_URL=${{ env.ANDROID_ASSETS_BASE_URL }}
+          VITE_MOBILE_PACKAGE_MANIFEST_URL=${{ env.ANDROID_ASSETS_BASE_URL }}/mobile-packages/android
           CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded

@@ -7,6 +7,7 @@ import {
     readJsonFile,
     updateProjectVersion,
 } from './version-utils.mjs';
+import { resolveAndroidAssetsBaseUrl } from './android-assets-base-url.mjs';
 import { resolveAndroidOtaClientBuildEnv } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
@@ -227,11 +228,15 @@ const ensureNoForbiddenOtaCompatibilityArgs = (sourceArgs = args) => {
 
 const applyOtaClientBuildDefaults = () => {
     const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable');
+    const assetsBaseUrl = resolveAndroidAssetsBaseUrl(process.env);
     const otaEnv = resolveAndroidOtaClientBuildEnv({
         channel,
-        assetsBaseUrl: process.env.VITE_ASSETS_BASE_URL,
+        assetsBaseUrl,
     });
-    Object.assign(process.env, otaEnv);
+    Object.assign(process.env, otaEnv, {
+        VITE_ASSETS_BASE_URL: assetsBaseUrl,
+        VITE_MOBILE_PACKAGE_MANIFEST_URL: `${assetsBaseUrl}/mobile-packages/android`,
+    });
     logStep(`OTA 客户端配置: channel=${channel}, manifest=${otaEnv.VITE_ANDROID_OTA_MANIFEST_URL}`);
 };
 

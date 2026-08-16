@@ -58,6 +58,10 @@ describe('mage-wars foundation', () => {
         expect(manifest.mobileProfile).toBe('landscape-adapted');
         expect(manifest.preferredOrientation).toBe('landscape');
         expect(manifest.mobileLayoutPreset).toBe('board-shell');
+        expect(manifest.mobileBoardShellLayout).toEqual({
+            designWidth: 1920,
+            designHeight: 1080,
+        });
         expect(manifest.ai).toMatchObject({
             capture: true,
             localAi: false,

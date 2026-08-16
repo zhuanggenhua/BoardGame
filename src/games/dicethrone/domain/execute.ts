@@ -38,7 +38,6 @@ import {
     isTeamMode,
     getAttackSnapshotDieIndex,
     isAttackSnapshotDieId,
-    shouldOpenAfterRollConfirmedForBonusSettlement,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
 import { applyEvents } from './utils';
@@ -59,7 +58,7 @@ import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
 } from './responseWindowGuards';
-import { buildCompareRollChoiceEvent, findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
+import { buildCompareRollChoiceEvent, findCurrentRollDie, resolveCurrentRollContext } from './rollContext';
 import { buildCurrentRollRerollEvents, shouldRequireAbilityReselectionForCurrentRoll } from './reroll';
 
 // ============================================================================
@@ -116,48 +115,6 @@ const buildAfterRollConfirmedWindowEvent = (
         sourceCommandType: commandType,
         timestamp,
     };
-};
-
-const shouldOpenAfterRollConfirmedForCardEvents = (
-    matchState: { sys?: { responseWindow?: { current?: { windowType: string } } } },
-    cardEvents: DiceThroneEvent[],
-): boolean => {
-    if (matchState.sys?.responseWindow?.current) {
-        return false;
-    }
-
-    return cardEvents.some((event) => (
-        event.type === 'BONUS_DICE_REROLL_REQUESTED'
-        && shouldOpenAfterRollConfirmedForBonusSettlement(event.payload.settlement)
-    ));
-};
-
-const appendAfterRollConfirmedWindowForCardEvents = (
-    matchState: { core: DiceThroneCore; sys?: { phase?: string; responseWindow?: { current?: { windowType: string } } } },
-    cardEvents: DiceThroneEvent[],
-    phase: TurnPhase,
-    timestamp: number,
-    commandType: string,
-): DiceThroneEvent[] => {
-    if (!shouldOpenAfterRollConfirmedForCardEvents(matchState, cardEvents)) {
-        return cardEvents;
-    }
-
-    const stateAfterCardEvents = applyEvents(matchState.core, cardEvents, reduce);
-    const settlement = stateAfterCardEvents.pendingBonusDiceSettlement;
-    if (!shouldOpenAfterRollConfirmedForBonusSettlement(settlement)) {
-        return cardEvents;
-    }
-
-    const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
-        stateAfterCardEvents,
-        settlement.attackerId,
-        phase,
-        timestamp,
-        commandType,
-    );
-
-    return responseWindowEvent ? [...cardEvents, responseWindowEvent] : cardEvents;
 };
 
 const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
@@ -641,14 +598,7 @@ export function execute(
         case 'REORDER_CARD_TO_END':
         case 'PLAY_CARD':
         case 'PLAY_UPGRADE_CARD': {
-            const cardEvents = executeCardCommand(matchState, command, random, phase, timestamp);
-            return appendAfterRollConfirmedWindowForCardEvents(
-                matchState,
-                cardEvents,
-                phase,
-                timestamp,
-                command.type,
-            );
+            return executeCardCommand(matchState, command, random, phase, timestamp);
         }
 
         case 'RESOLVE_CHOICE': {

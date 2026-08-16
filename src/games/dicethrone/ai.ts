@@ -1545,7 +1545,6 @@ const buildInteractionActions = (
         }
         return buildResponseActions(state, playerId, phase);
     }
-    if (current.playerId !== playerId) return [];
 
     if (current.kind === 'dt:bonus-dice') {
         if (state.sys.responseWindow?.current || hasPendingTokenResponseForPlayer(state, playerId)) {
@@ -1553,12 +1552,16 @@ const buildInteractionActions = (
         }
         const actions = [
             ...buildBonusDicePlayableCardActions(state, playerId, phase),
+            ...buildPassiveActions(state, playerId, phase, { rerollOnly: true }),
             ...buildBonusDiceActions(state, playerId),
         ];
-        return actions.length > 0
-            ? actions
-            : [buildEmergencyInteractionCancelAction(current.id, 'no-legal-actions')];
+        if (actions.length > 0) return actions;
+        return current.playerId === playerId
+            ? [buildEmergencyInteractionCancelAction(current.id, 'no-legal-actions')]
+            : [];
     }
+
+    if (current.playerId !== playerId) return [];
 
     const selectPlayerActions = buildSelectPlayerInteractionActions(state, playerId, current);
     if (selectPlayerActions) {
@@ -2294,7 +2297,7 @@ const buildBonusDicePlayableCardActions = (
     const actions: AiLegalAction[] = [];
     const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
     const player = state.core.players[playerId];
-    if (!player || !settlement || settlement.attackerId !== playerId || !isCurrentBonusRollSettlement(state.core, settlement)) {
+    if (!player || !settlement || !isCurrentBonusRollSettlement(state.core, settlement)) {
         return actions;
     }
 
@@ -2346,7 +2349,12 @@ const buildPurifyActions = (state: DiceThroneState, playerId: PlayerId): AiLegal
     return actions;
 };
 
-const buildPassiveActions = (state: DiceThroneState, playerId: PlayerId, phase: TurnPhase): AiLegalAction[] => {
+const buildPassiveActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    options: { rerollOnly?: boolean } = {},
+): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
     const passiveAbilities = getPlayerPassiveAbilities(state.core, playerId);
     const currentRollContext = resolveCurrentRollContext(state.core, phase);
@@ -2354,6 +2362,9 @@ const buildPassiveActions = (state: DiceThroneState, playerId: PlayerId, phase: 
 
     for (const passive of passiveAbilities) {
         passive.actions.forEach((passiveAction, actionIndex) => {
+            if (options.rerollOnly && passiveAction.type !== 'rerollDie') {
+                return;
+            }
             if (!isPassiveActionUsable(state.core, playerId, passive.id, actionIndex, phase)) {
                 return;
             }
@@ -2727,12 +2738,20 @@ export function buildDiceThroneAiLegalActions(args: {
         return buildResponseActions(state, args.playerId, phase);
     }
 
-    const bonusDiceActions = [
-        ...buildBonusDicePlayableCardActions(state, args.playerId, phase),
-        ...buildBonusDiceActions(state, args.playerId),
-    ];
-    if (bonusDiceActions.length > 0) {
-        return bonusDiceActions;
+    const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+    const hasActiveBonusDiceSettlement = Boolean(
+        settlement && isCurrentBonusRollSettlement(state.core, settlement),
+    );
+    if (hasActiveBonusDiceSettlement) {
+        const bonusDiceActions = [
+            ...buildBonusDicePlayableCardActions(state, args.playerId, phase),
+            ...buildPassiveActions(state, args.playerId, phase, { rerollOnly: true }),
+            ...buildBonusDiceActions(state, args.playerId),
+        ];
+        if (bonusDiceActions.length > 0) {
+            return bonusDiceActions;
+        }
+        return [];
     }
 
     return [

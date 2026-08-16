@@ -13,7 +13,7 @@ import {
 } from '../helpers/dicethrone';
 import { MONK_CARDS } from '../../src/games/dicethrone/heroes/monk/cards';
 import {
-    expectRightTrayBonusDiceAwaitingResponse,
+    expectRightTrayBonusDiceInterferenceView,
     expectRightTrayBonusDiceConfirmation,
     getRightTrayDie,
     settleCurrentBonusDice,
@@ -22,12 +22,10 @@ import {
 const DICETHRONE_ONLINE_TEST_TIMEOUT_MS = 240000;
 
 async function enableManualBonusDiceResponse(page: Page): Promise<void> {
-    const toggle = page.getByTestId('bonus-dice-response-toggle');
-    await expect(toggle).toBeVisible({ timeout: 5000 });
-    if (await toggle.getAttribute('aria-pressed') !== 'true') {
-        await toggle.click();
-    }
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await page.evaluate(() => {
+        localStorage.setItem('dicethrone:autoResponse', 'true');
+    });
+    await expect(page.getByTestId('bonus-dice-response-toggle')).toHaveCount(0);
 }
 
 async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<void> {
@@ -314,15 +312,16 @@ test('一掷千金奖励骰结算前会给弹一手真实介入窗口', async ({
         };
 
         await expect.poll(readBonusResponseSnapshot, { timeout: 15000 }).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['0'],
-            currentResponderId: '0',
+            settlementSource: 'card-one-throw-fortune',
+            allowDiceModification: true,
+            windowType: null,
+            responderQueue: null,
+            currentResponderId: null,
+            currentRollContext: 'bonus',
         });
         const openedBonusSnapshot = await readBonusResponseSnapshot();
-        expect(openedBonusSnapshot.settlementSource).toBe('card-one-throw-fortune');
         expect(openedBonusSnapshot.bonusValue).toEqual(expect.any(Number));
         expect(openedBonusSnapshot.bonusCp).toEqual(expect.any(Number));
-        expect(openedBonusSnapshot.allowDiceModification).toBe(true);
         const initialBonusValue = openedBonusSnapshot.bonusValue;
         expect(Number.isInteger(initialBonusValue)).toBe(true);
         expect(initialBonusValue).toBeGreaterThanOrEqual(1);
@@ -334,23 +333,25 @@ test('一掷千金奖励骰结算前会给弹一手真实介入窗口', async ({
 
         await ensureDebugPanelClosed(hostPage);
         await ensureDebugPanelClosed(guestPage);
-        await expectRightTrayBonusDiceAwaitingResponse(guestPage, () => readMatchState(guestPage) as Promise<Record<string, any>>, {
+        await expectRightTrayBonusDiceConfirmation(guestPage, () => readMatchState(guestPage) as Promise<Record<string, any>>, {
+            sourceAbilityId: 'card-one-throw-fortune',
+        });
+        await expectRightTrayBonusDiceInterferenceView(hostPage, () => readMatchState(hostPage) as Promise<Record<string, any>>, {
             sourceAbilityId: 'card-one-throw-fortune',
         });
         const guestBonusDieDuringResponse = getRightTrayDie(guestPage, 0);
         await expect(guestBonusDieDuringResponse).toBeVisible({ timeout: 5000 });
         await expect(guestBonusDieDuringResponse).toHaveAttribute('data-display-value', String(initialBonusValue), { timeout: 5000 });
         await guestPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '04a-一掷千金奖励骰-响应窗口期间无确认入口', { requireChineseName: true }),
+            path: getEvidenceScreenshotPath(testInfo, '04a-一掷千金奖励骰-骰主右侧确认可见', { requireChineseName: true }),
             fullPage: false,
         });
 
         await dismissBlockingBonusPresentation(hostPage);
         const flickCard = hostPage.locator('[data-testid="hand-area"] [data-card-id="card-flick"]').first();
         await expect(flickCard).toBeVisible({ timeout: 10000 });
-        await expect(hostPage.getByRole('button', { name: /跳过|Pass/i }).first()).toBeVisible({ timeout: 5000 });
         await hostPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '04-一掷千金奖励骰-弹一手响应窗口可见', { requireChineseName: true }),
+            path: getEvidenceScreenshotPath(testInfo, '04-一掷千金奖励骰-对手可直接用弹一手介入', { requireChineseName: true }),
             fullPage: false,
         });
 

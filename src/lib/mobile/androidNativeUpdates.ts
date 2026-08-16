@@ -164,7 +164,7 @@ type NativeUpdateRequest = {
 };
 
 const DEFAULT_NATIVE_UPDATE_CHANNEL = 'stable';
-const DEFAULT_NATIVE_UPDATE_MANIFEST_BASE_URL = 'https://assets.easyboardgame.top/official/native-app-updates/android';
+const DEFAULT_NATIVE_UPDATE_MANIFEST_BASE_URL = 'http://8.148.71.102/official/native-app-updates/android';
 const DEBUG_ANDROID_APP_ID_SEGMENTS = new Set(['debug', 'dev', 'test', 'qa']);
 const nativeUpdateRequestListeners = new Set<(request: NativeUpdateRequest) => void>();
 const nativePlugin = registerPlugin<NativeAppUpdatePlugin>('AppUpdate');

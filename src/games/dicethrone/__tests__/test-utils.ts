@@ -764,8 +764,7 @@ export function injectPendingInteraction(
         const config = interaction.dieModifyConfig;
         const mode = config?.mode ?? 'set';
         const selectCount = interaction.selectCount ?? 1;
-        const maxSteps = (mode === 'adjust' || mode === 'any') ? undefined
-            : selectCount;
+        const maxSteps = undefined;
         const minSteps = interaction.minSelectCount
             ?? ((mode === 'adjust' || mode === 'any') ? 1 : selectCount);
 
@@ -804,7 +803,7 @@ export function injectPendingInteraction(
     const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> = {
         title: interaction.titleKey,
         sourceId: interaction.sourceCardId,
-        maxSteps: selectCount,
+        maxSteps: undefined,
         minSteps: interaction.minSelectCount ?? 1,
         initialResult: { selectedDiceIds: [] },
         localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
