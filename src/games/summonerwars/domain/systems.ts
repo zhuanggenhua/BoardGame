@@ -1172,10 +1172,10 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               && manhattanDistance(attacker, unit.position) <= 2);
           if (candidates.length === 0) return;
           const options: PromptOption<SwInteractionValue>[] = [
-              ...candidates.map((unit) => ({
-                id: `unit:${unit.instanceId}`,
-                label: unit.card.name,
-                value: {
+            ...candidates.map((unit) => ({
+              id: `unit:${unit.instanceId}`,
+              label: unit.card.name,
+              value: {
                 action: 'before_attack_life_drain' as const,
                 targetUnitId: unit.instanceId,
                 targetPosition: unit.position,
@@ -2681,7 +2681,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 label: `(${destination.position.row},${destination.position.col})`,
                 labelKey: 'actions.position',
                 labelParams: { row: destination.position.row, col: destination.position.col },
-                value: { action: 'after_summon_shouren_bloody_rush', newPosition: destination.position },
+                value: { action: 'after_summon_shouren_bloody_rush' as const, newPosition: destination.position },
               })),
               {
                 id: 'skip',
@@ -2720,7 +2720,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 label: `(${destination.position.row},${destination.position.col})`,
                 labelKey: 'actions.position',
                 labelParams: { row: destination.position.row, col: destination.position.col },
-                value: { action: 'after_attack_shouren_berserk', newPosition: destination.position },
+                value: { action: 'after_attack_shouren_berserk' as const, newPosition: destination.position },
               })),
               { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
             ];
@@ -3728,13 +3728,13 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             }
 
             if (abilityId === 'mogu_fanatical_fungus') {
-              const destinations = [
+              const destinations: PromptOption<SwInteractionValue>[] = [
                 {
                   id: 'stay',
                   label: '不推拉',
                   labelKey: 'actions.moguFanaticalFungusStay',
                   value: {
-                    action: 'after_move_mogu_fanatical_fungus_target',
+                    action: 'after_move_mogu_fanatical_fungus_target' as const,
                     targetPosition: sourcePosition,
                   },
                 },
@@ -4017,14 +4017,15 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const gate = picked?.gatePosition ? getStructureAt(newState.core, picked.gatePosition) : undefined;
             if (!picked?.gatePosition || !sourceUnit || !gate
               || !gate.card.isGate || gate.owner === sourceUnit.owner || gate.damage <= 0) continue;
-            const positions = getAdjacentCells(picked.gatePosition).filter((pos) => isCellEmpty(newState.core, pos));
+            const gatePosition = picked.gatePosition;
+            const positions = getAdjacentCells(gatePosition).filter((pos) => isCellEmpty(newState.core, pos));
             const options: PromptOption<SwInteractionValue>[] = positions.map((newPosition) => ({
               id: `pos:${newPosition.row},${newPosition.col}`,
               label: formatCellCoord(newPosition),
               value: {
                 action: 'shadow_tear_the_veil',
                 targetUnitId: sw.targetUnitId,
-                gatePosition: picked.gatePosition,
+                gatePosition,
                 newPosition,
               },
             }));
@@ -4044,7 +4045,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 sourceUnitId: sw.sourceUnitId,
                 sourcePosition: sw.sourcePosition,
                 targetUnitId: sw.targetUnitId,
-                gatePosition: picked.gatePosition,
+                gatePosition,
               } satisfies SwInteractionMeta,
             };
             newState = queueInteraction(newState, interaction);
@@ -4062,13 +4063,14 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               && !(targetUnit.card.abilities ?? []).includes('shadow_shadow_summon'))
               || (targetStructure && targetStructure.owner === payload.playerId);
             if (!picked?.targetPosition || !sourceUnit || !targetIsValid) continue;
-            const positions = getAdjacentCells(picked.targetPosition).filter((pos) => isCellEmpty(newState.core, pos));
+            const targetPosition = picked.targetPosition;
+            const positions = getAdjacentCells(targetPosition).filter((pos) => isCellEmpty(newState.core, pos));
             const options: PromptOption<SwInteractionValue>[] = positions.map((newPosition) => ({
               id: `pos:${newPosition.row},${newPosition.col}`,
               label: formatCellCoord(newPosition),
               value: {
                 action: 'shadow_shadow_summon',
-                targetPosition: picked.targetPosition,
+                targetPosition,
                 newPosition,
               },
             }));
@@ -4087,7 +4089,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 type: 'shadow_shadow_summon_select_position',
                 sourceUnitId: sw.sourceUnitId,
                 sourcePosition: sw.sourcePosition,
-                targetPosition: picked.targetPosition,
+                targetPosition,
               } satisfies SwInteractionMeta,
             };
             newState = queueInteraction(newState, interaction);
@@ -4123,6 +4125,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               newPosition?: CellCoord;
             } | undefined;
             if (!picked) continue;
+            if (!('sourceUnitId' in sw)) continue;
             const abilityPayload: Record<string, unknown> = {
               abilityId: shadowAbilityId,
               sourceUnitId: sw.sourceUnitId,
@@ -4668,7 +4671,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                   id: 'finish',
                   label: '确认选择',
                   labelKey: 'actions.confirmSelection',
-                  value: { action: 'sneak_finish' },
+                  value: { action: 'sneak_finish' as const },
                 }] : []),
               ];
               if (options.length > 0) {
@@ -4796,7 +4799,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                     id: 'finish',
                     label: '确认选择',
                     labelKey: 'actions.confirmSelection',
-                    value: { action: 'glacial_shift_finish' },
+                    value: { action: 'glacial_shift_finish' as const },
                   }] : []),
                 ];
                 if (options.length > 0) {
@@ -5102,7 +5105,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 labelKey: 'actions.position',
                 labelParams: { row: dest.position.row, col: dest.position.col },
                 value: {
-                  action: 'after_attack_telekinesis_direction',
+                  action: 'after_attack_telekinesis_direction' as const,
                   targetPosition: picked.targetPosition,
                   moveRow: dest.moveRow,
                   moveCol: dest.moveCol,
@@ -6059,7 +6062,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                   labelKey: 'actions.position',
                   labelParams: { row: dest.position.row, col: dest.position.col },
                   value: {
-                    action: 'after_attack_telekinesis_direction',
+                    action: 'after_attack_telekinesis_direction' as const,
                     targetPosition: picked.targetPosition,
                     moveRow: dest.moveRow,
                     moveCol: dest.moveCol,

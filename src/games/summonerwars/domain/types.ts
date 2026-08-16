@@ -564,7 +564,7 @@ export interface SerializedCardEntry {
 /** 序列化的自定义牌组（存储/传输用） */
 export interface SerializedCustomDeck {
   /** 牌组 ID（MongoDB _id） */
-  id: string;
+  id?: string;
   /** 牌组名称 */
   name: string;
   /** 召唤师卡牌 ID */

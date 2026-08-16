@@ -20,7 +20,7 @@ export function withPhaseEndAbilityResolved(
   state: MatchState<SummonerWarsCore>,
   phaseEndAbilityResolved: PhaseEndAbilityResolvedMap,
 ): MatchState<SummonerWarsCore> {
-  const nextSys = { ...(state.sys as Record<string, unknown>) };
+  const nextSys = { ...(state.sys as unknown as Record<string, unknown>) };
   delete nextSys.summonerWars;
 
   return {
@@ -29,6 +29,6 @@ export function withPhaseEndAbilityResolved(
       ...state.core,
       phaseEndAbilityResolved,
     },
-    sys: nextSys as typeof state.sys,
+    sys: nextSys as unknown as typeof state.sys,
   };
 }

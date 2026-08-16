@@ -904,8 +904,8 @@ const evaluateSummonerWarsAssignments = (args: {
                 mode: assignmentMode,
                 pressureRatio,
                 sourceUnit,
-                ownSummoner,
-                enemySummoner,
+                ownSummoner: ownSummoner ?? null,
+                enemySummoner: enemySummoner ?? null,
             });
             if (!intent) return null;
 

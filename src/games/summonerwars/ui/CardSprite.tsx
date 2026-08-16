@@ -39,8 +39,8 @@ const SHIMMER_BG: CSSProperties = {
   animation: 'img-shimmer 1.5s linear infinite',
 };
 
-const hasUsableImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
-  Boolean(img) && img.naturalWidth > 0 && img.naturalHeight > 0;
+const hasUsableImage = (img: HTMLImageElement | null | undefined): boolean =>
+  img != null && img.naturalWidth > 0 && img.naturalHeight > 0;
 
 const CAPACITOR_FILE_URL_RE = /^https?:\/\/[^/]+\/_capacitor_file_\//i;
 const INSTALLED_ASSET_PATH_MARKER = '/current/assets/';

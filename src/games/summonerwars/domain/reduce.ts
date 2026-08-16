@@ -270,7 +270,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     case SW_EVENTS.ATTACK_ROLL_PENDING: {
       return {
         ...core,
-        pendingAttackRoll: payload as SummonerWarsCore['pendingAttackRoll'],
+        pendingAttackRoll: payload as unknown as SummonerWarsCore['pendingAttackRoll'],
       };
     }
 

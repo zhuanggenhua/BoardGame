@@ -13,6 +13,8 @@ import type { SummonerWarsCore, PlayerId, BoardUnit, CellCoord } from '../types'
 export interface SWAbilityContext extends AbilityContext {
   /** 当前游戏状态 */
   core: SummonerWarsCore;
+  /** 技能拥有者的玩家 ID */
+  ownerId: PlayerId;
   /** 技能来源单位 */
   sourceUnit: BoardUnit;
   /** 来源单位位置 */

@@ -8,6 +8,7 @@ import type { GameEvent } from '../../../engine/types';
 import type { 
   SummonerWarsCore, 
   PlayerId, 
+  GamePhase,
   CellCoord, 
   UnitInstance,
   BoardStructure,
@@ -107,6 +108,10 @@ export interface AbilityContext {
   };
   /** 本次攻击的骰子结果（afterAttack 时可用） */
   diceResults?: import('../config/dice').DiceFaceResult[];
+  /** 触发来源携带的额外业务载荷 */
+  payload?: Record<string, unknown>;
+  /** 当前结算阶段（阶段开始/结束类触发可用） */
+  phase?: GamePhase;
   /** 时间戳 */
   timestamp: number;
 }

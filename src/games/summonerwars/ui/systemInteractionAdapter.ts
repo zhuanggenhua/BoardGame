@@ -126,7 +126,7 @@ export function getSystemCardSelectorTitleKey(
 export function isSwSimpleChoiceType(
   swInteraction: SwSimpleChoiceInteraction | null | undefined,
   type: string,
-): boolean {
+): swInteraction is SwSimpleChoiceInteraction {
   return swInteraction?.type === type;
 }
 

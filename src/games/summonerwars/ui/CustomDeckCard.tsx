@@ -11,6 +11,7 @@ import clsx from 'clsx';
 import type { TFunction } from 'i18next';
 import type { SavedDeckSummary } from '../../../api/custom-deck';
 import type { FactionId } from '../domain/types';
+import { resolveFactionId } from '../config/factions';
 import { CardSprite } from './CardSprite';
 import { getSummonerAtlasIdByFaction } from './helpers/customDeckHelpers';
 
@@ -70,7 +71,8 @@ export const CustomDeckCard: React.FC<CustomDeckCardProps> = ({
   isPlaceholder = false,
 }) => {
   // 获取召唤师精灵图 atlasId
-  const atlasId = getSummonerAtlasIdByFaction(deck.summonerFaction);
+  const summonerFaction = resolveFactionId(deck.summonerFaction);
+  const atlasId = getSummonerAtlasIdByFaction(summonerFaction);
   
   // 占位模式下显示"自定义牌组"文本
   const displayName = isPlaceholder 
@@ -123,7 +125,7 @@ export const CustomDeckCard: React.FC<CustomDeckCardProps> = ({
           className="text-white/50 hover:text-white/90 transition-colors duration-150 p-[0.2vw] cursor-pointer shrink-0"
           onClick={(e) => {
             e.stopPropagation();
-            onMagnify(deck.summonerFaction);
+            onMagnify(summonerFaction);
           }}
           title={t('actions.magnify')}
         >

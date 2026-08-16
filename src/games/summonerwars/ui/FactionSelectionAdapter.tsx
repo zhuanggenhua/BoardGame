@@ -19,7 +19,7 @@ import { ImplementationStatusRibbon } from '../../../components/game/framework/I
 import clsx from 'clsx';
 import type { PlayerId } from '../../../engine/types';
 import type { FactionId } from '../domain/types';
-import { FACTION_CATALOG, type FactionCatalogEntry } from '../config/factions';
+import { FACTION_CATALOG, resolveFactionId, type FactionCatalogEntry } from '../config/factions';
 import { CardSprite } from './CardSprite';
 import { initSpriteAtlases, getSpriteAtlasSource, getFactionAtlasId } from './cardAtlas';
 import { DeckBuilderDrawer } from './DeckBuilderDrawer';
@@ -193,7 +193,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
     const preloadImages = async () => {
       const loadPromises = savedDecks.map(deck => {
         return new Promise<void>((resolve) => {
-          const atlasId = getSummonerAtlasIdByFaction(deck.summonerFaction);
+          const atlasId = getSummonerAtlasIdByFaction(resolveFactionId(deck.summonerFaction));
           const source = getSpriteAtlasSource(atlasId);
           const imageUrl = source?.image;
           
@@ -528,7 +528,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   // 点击卡牌放大查看召唤师
   const handleMagnifyCard = useCallback((factionId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation(); // 不触发选择
-    const atlasId = getSummonerAtlasIdByFaction(factionId);
+    const atlasId = getSummonerAtlasIdByFaction(resolveFactionId(factionId));
     if (atlasId) setMagnifySprite({ atlasId, frameIndex: 0 });
   }, []);
   

@@ -2080,11 +2080,11 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                 getVisualPlayerDamage={getVisualPlayerDamage}
             />
             <div className={cx(
-                'absolute inset-y-0 left-0 bg-gradient-to-r from-black/24 via-black/7 to-transparent',
+                'pointer-events-none absolute inset-y-0 left-0 bg-gradient-to-r from-black/24 via-black/7 to-transparent',
                 isLandscapeMobileViewport ? 'w-[13rem]' : 'w-[16rem]',
             )} />
             <div className={cx(
-                'absolute inset-y-0 right-0 bg-gradient-to-l from-black/24 via-black/8 to-transparent',
+                'pointer-events-none absolute inset-y-0 right-0 bg-gradient-to-l from-black/24 via-black/8 to-transparent',
                 isLandscapeMobileViewport ? 'w-[19rem]' : 'w-[17rem]',
             )} />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/16 to-transparent" />
@@ -2166,7 +2166,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                             <OpponentPlanMirror player={opponent} compact />
                         </aside>
                     ) : null}
-                    <aside className="pointer-events-none absolute bottom-[8.5rem] right-3 z-30">
+                    <aside className="pointer-events-none absolute bottom-[10.5rem] right-3 z-30">
                         <div className="pointer-events-auto">
                             <TurnStatusDock dispatch={dispatch} disabled={!canAdvance} compact />
                         </div>

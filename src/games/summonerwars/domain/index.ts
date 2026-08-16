@@ -66,10 +66,11 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
    */
   setup: (_playerIds, _random, setupData?) => {
     const board = createEmptyBoard();
+    const setup = setupData as { firstPlayerId?: unknown } | undefined;
 
     // 重赛先手轮换：优先使用 setupData 中的 firstPlayerId
-    const firstPlayer = (typeof setupData?.firstPlayerId === 'string' && ['0', '1'].includes(setupData.firstPlayerId))
-        ? setupData.firstPlayerId as PlayerId
+    const firstPlayer = (typeof setup?.firstPlayerId === 'string' && ['0', '1'].includes(setup.firstPlayerId))
+        ? setup.firstPlayerId as PlayerId
         : '0' as PlayerId;
 
     const players: Record<PlayerId, PlayerState> = {
