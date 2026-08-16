@@ -76,6 +76,14 @@
   - 服务端 watchdog：`server.test.ts`。
   - 浏览器代表链：`dicethrone-ai-response-window.e2e.ts`。
 
+## 2026-08-16 补充：右侧奖励骰可选改骰动作
+
+- 追加症状：右侧奖励骰已经不是中间特写，而是同一骰盘状态下允许玩家选择“改骰 / 重掷 / 确认”等规则动作；AI 只会确认时，会漏掉真人可执行的合法改骰动作。
+- 机制结论：这不是 UI 框架要把按钮暴露给 AI，而是 AI legal actions 必须消费同一套规则动作合同。按钮、骰盘或手牌 UI 只是消费者；合法性仍以领域 `checkPlayCard` / `validate` 为准。
+- 本轮代码补充：`dt:bonus-dice` 当前交互和无当前交互的 pending 奖励骰路径，都会合并当前骰区可合法打出的手牌动作与奖励骰自身动作；没有合法改骰牌时不会凭空生成 `PLAY_CARD`。
+- 回归测试：`basic-commands-coverage.test.ts` 增加成对用例：`AI bonus dice modify-or-confirm` 覆盖有合法改骰牌时同时枚举 `PLAY_CARD` 与 `SKIP_BONUS_DICE_REROLL`；`AI bonus dice no-modify` 覆盖无合法改骰牌时只保留奖励骰动作和确认。
+- 验证命令：`npx vitest run src/games/dicethrone/__tests__/basic-commands-coverage.test.ts -t "AI bonus dice"`，结果：`2 passed`。
+
 ## 对外口径
 
 - 允许说：AI 右侧奖励骰确认卡死点已修复；本地 AI、在线共享态、服务端 watchdog 和代表性浏览器 E2E 均已通过。

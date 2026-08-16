@@ -551,6 +551,45 @@ describe('AI legal actions', () => {
         }));
     });
 
+    it('AI bonus dice no-modify: 没有合法改骰牌时仍应只保留奖励骰动作和确认', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'offensiveRoll';
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        state.core.players['0'].hand = [getCardById('card-surprise')];
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'right-tray-bonus-ai-no-modify',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'fist' }],
+            rerollCount: 0,
+        };
+        state.core.pendingBonusDiceSettlement = settlement;
+        state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'dt-bonus-dice-right-tray-bonus-ai-no-modify',
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+                data: null,
+            },
+        };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.some((action) => action.kind === 'play-card')).toBe(false);
+        expect(actions.some((action) => action.kind === 'bonus-die-reroll')).toBe(true);
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-bonus-dice-reroll',
+            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+        }));
+    });
+
     it('旧 pendingBonusDiceSettlement 脏 dice shape 不应让 AI 构建奖励骰动作时崩溃', () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.activePlayerId = '0';
