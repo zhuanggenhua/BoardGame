@@ -350,6 +350,7 @@ type SwInteractionMeta =
     }
   | {
       type: 'after_attack_mind_transmission';
+      abilityId: 'mind_transmission';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
@@ -660,24 +661,30 @@ type SwInteractionValue =
   | { action: 'fire_sacrifice_summon'; sacrificeUnitId: string }
   | { action: 'ice_ram_target'; targetPosition: CellCoord }
   | { action: 'ice_ram_push'; targetPosition: CellCoord; pushNewPosition?: CellCoord }
-  | { skip: true };
+  | { skip: true; action?: undefined };
+
+type SwActionValue = Exclude<SwInteractionValue, { skip: true }>;
 
 type SwSimpleChoiceData<T = unknown> = Record<string, unknown> & {
   options?: PromptOption<T>[];
+  optionsGenerator?: (state: MatchState<SummonerWarsCore>, data: SwSimpleChoiceData<T>) => PromptOption<T>[];
   sw?: SwInteractionMeta;
 };
 type SwSimpleChoiceInteraction<T = unknown> = InteractionDescriptor<SwSimpleChoiceData<T>>;
+type SwSimpleChoiceConfig<T = unknown> = SimpleChoiceConfig & {
+  optionsGenerator?: (state: MatchState<SummonerWarsCore>, data: SwSimpleChoiceData<T>) => PromptOption<T>[];
+};
 
 function createSimpleChoice<T>(
   id: string,
   playerId: PlayerId,
   title: string,
   options: PromptOption<T>[],
-  sourceIdOrConfig?: string | SimpleChoiceConfig,
+  sourceIdOrConfig?: string | SwSimpleChoiceConfig<T>,
   timeout?: number,
   multi?: PromptMultiConfig,
 ): SwSimpleChoiceInteraction<T> {
-  return createEngineSimpleChoice(
+  const interaction = createEngineSimpleChoice(
     id,
     playerId,
     title,
@@ -685,7 +692,14 @@ function createSimpleChoice<T>(
     sourceIdOrConfig,
     timeout,
     multi,
-  ) as SwSimpleChoiceInteraction<T>;
+  ) as unknown as SwSimpleChoiceInteraction<T>;
+  if (typeof sourceIdOrConfig === 'object' && sourceIdOrConfig?.optionsGenerator) {
+    interaction.data = {
+      ...interaction.data,
+      optionsGenerator: sourceIdOrConfig.optionsGenerator,
+    };
+  }
+  return interaction;
 }
 
 type InteractionResolutionPayload = {
@@ -873,7 +887,7 @@ function createYonghengDrawInteraction(
   abilityId: YonghengDrawAbilityId,
   sourceUnitId: string,
   sourcePosition: CellCoord,
-): ReturnType<typeof createSimpleChoice> {
+): SwSimpleChoiceInteraction<SwInteractionValue> {
   const interaction = createSimpleChoice(
     `sw-yongheng-draw-${abilityId}-${timestamp ?? 0}-${sourceUnitId}`,
     owner,
@@ -901,7 +915,7 @@ function createYonghengForcedDiscardInteraction(
   abilityId: 'yongheng_arouse_fear' | 'yongheng_punish',
   sourceUnitId: string,
   sourcePosition: CellCoord,
-): ReturnType<typeof createSimpleChoice> | null {
+): SwSimpleChoiceInteraction<SwInteractionValue> | null {
   const options = buildYonghengHandOptions(core, targetOwner, (card) => ({
     action: 'yongheng_forced_discard_card',
     targetOwner,
@@ -936,7 +950,7 @@ function createYonghengContinuanceInteraction(
   targetCardId: string,
   sourceUnitId: string,
   sourcePosition: CellCoord,
-): ReturnType<typeof createSimpleChoice> {
+): SwSimpleChoiceInteraction<SwInteractionValue> {
   const interaction = createSimpleChoice(
     `sw-yongheng-continuance-${timestamp ?? 0}-${sourceUnitId}-${targetCardId}`,
     owner,
@@ -967,7 +981,7 @@ function buildMoguTransmissionModeInteraction(
   sourceUnit: NonNullable<ReturnType<typeof getUnitAt>>,
   sourceUnitId: string,
   sourcePosition: CellCoord,
-): ReturnType<typeof createSimpleChoice> {
+): SwSimpleChoiceInteraction<SwInteractionValue> {
   const options: PromptOption<SwInteractionValue>[] = [
     {
       id: 'self_to_target',
@@ -1016,7 +1030,7 @@ function createMoguTransmissionInteraction(
   step: 'selectMode' | 'selectSource' | 'selectTarget' | 'selectAmount',
   options: PromptOption<SwInteractionValue>[],
   meta: Pick<Extract<SwInteractionMeta, { type: 'after_move_mogu_transmission' }>, 'mode' | 'fromPosition' | 'toPosition'> = {},
-): ReturnType<typeof createSimpleChoice> {
+): SwSimpleChoiceInteraction<SwInteractionValue> {
   const interaction = createSimpleChoice(
     `sw-mogu-transmission-${step}-${timestamp ?? 0}-${sourceUnitId}`,
     owner,
@@ -1060,13 +1074,12 @@ function clearPhaseEndResolution(state: MatchState<SummonerWarsCore>): MatchStat
 function executeSwCommand(
   state: MatchState<SummonerWarsCore>,
   random: RandomFn,
-  command: { type: string; payload: Record<string, unknown>; playerId?: PlayerId },
+  command: { type: string; payload: Record<string, unknown>; playerId?: PlayerId; timestamp?: number },
 ): GameEvent[] {
   const validation = validateCommand(state, {
     type: command.type,
     payload: command.payload,
     playerId: command.playerId ?? state.core.currentPlayer,
-    timestamp: 0,
   });
   if (!validation.valid) {
     console.warn('[SW-InteractionSystem] Command rejected:', validation.error, command);
@@ -1080,7 +1093,7 @@ function executeSwCommand(
   }, random);
 }
 
-function buildPositionOptions<T extends { action: string }>(
+function buildPositionOptions<T extends SwActionValue>(
   positions: CellCoord[],
   buildValue: (pos: CellCoord) => T,
 ): PromptOption<T>[] {
@@ -1159,11 +1172,11 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               && manhattanDistance(attacker, unit.position) <= 2);
           if (candidates.length === 0) return;
           const options: PromptOption<SwInteractionValue>[] = [
-            ...candidates.map((unit) => ({
-              id: `unit:${unit.instanceId}`,
-              label: unit.card.name,
-              value: {
-                action: 'before_attack_life_drain',
+              ...candidates.map((unit) => ({
+                id: `unit:${unit.instanceId}`,
+                label: unit.card.name,
+                value: {
+                action: 'before_attack_life_drain' as const,
                 targetUnitId: unit.instanceId,
                 targetPosition: unit.position,
               },
@@ -1172,7 +1185,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               id: 'skip',
               label: '跳过',
               labelKey: 'actions.skip',
-              value: { action: 'before_attack_skip', skip: true },
+              value: { action: 'before_attack_skip' as const, skip: true },
             },
           ];
           const interaction = createSimpleChoice(
@@ -2030,7 +2043,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 'interaction.sw.moguReleaseSpores',
                 options,
                 { type: 'mogu_release_spores_select_positions', cardId: payload.cardId },
-                { sourceId: baseId, targetType: 'cell', multi: { min: 0, max: 2 } },
+                { sourceId: baseId, targetType: 'generic', multi: { min: 0, max: 2 } },
               );
               break;
             }
@@ -2103,11 +2116,13 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const options: PromptOption<SwInteractionValue>[] = [
             {
               id: 'play',
+              label: '打出',
               labelKey: 'actions.playEvent',
               value: { action: 'magic_event_play' },
             },
             {
               id: 'discard',
+              label: '弃为魔力',
               labelKey: 'actions.discardForMagic',
               value: { action: 'magic_event_discard' },
             },
@@ -2144,6 +2159,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             })),
             {
               id: 'skip',
+              label: '跳过',
               labelKey: 'actions.skip',
               value: { action: 'funeral_pyre_skip', skip: true },
             },
@@ -2189,12 +2205,12 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               id: card.id,
               label: card.name,
               value: {
-                action: 'infection',
+                action: 'infection' as const,
                 cardId: card.id,
                 sourceUnitId: payload.sourceUnitId!,
                 targetPosition: payload.position,
               },
-              displayMode: 'card',
+              displayMode: 'card' as const,
             })),
             {
               id: 'skip',
@@ -2322,6 +2338,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
         if (event.type === SW_EVENTS.MIND_CAPTURE_REQUESTED) {
           const payload = event.payload as {
             sourceUnitId: string;
+            sourcePosition?: CellCoord;
             targetPosition: CellCoord;
             targetUnitId: string;
             ownerId: PlayerId;
@@ -2742,7 +2759,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 label: `(${destination.position.row},${destination.position.col})`,
                 labelKey: 'actions.position',
                 labelParams: { row: destination.position.row, col: destination.position.col },
-                value: { action: 'after_attack_shouren_primal_fury', newPosition: destination.position },
+                value: { action: 'after_attack_shouren_primal_fury' as const, newPosition: destination.position },
               })),
               { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
             ];
@@ -2751,7 +2768,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               summoner.owner,
               'interaction.sw.shourenPrimalFuryPosition',
               options,
-              { sourceId: 'shouren_primal_fury', targetType: 'summoner', autoResolveIfSingle: false },
+              { sourceId: 'shouren_primal_fury', targetType: 'minion', autoResolveIfSingle: false },
             );
             const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
             interaction.data = {
@@ -3077,7 +3094,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               sourceUnit.owner,
               'interaction.sw.huijinCallGuardsTarget',
               options,
-              { sourceId: 'huijin_call_guards', targetType: 'unit', autoResolveIfSingle: false },
+              { sourceId: 'huijin_call_guards', targetType: 'minion', autoResolveIfSingle: false },
             );
             const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
             interaction.data = {
