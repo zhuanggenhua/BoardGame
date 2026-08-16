@@ -40,6 +40,15 @@
         }
       }
     },
+    "dicethrone/ability-cards-lieren.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "8ee60afe8f3d8c4f3b721d1eef0abd70bd6a4cbeb43360bd588382ef41e60761",
+          "bytes": 2177,
+          "mime": "application/json"
+        }
+      }
+    },
     "dicethrone/ability-cards-ninja.atlas": {
       "variants": {
         "json": {
@@ -135,15 +144,6 @@
         "json": {
           "sha256": "00162dd07b4a09b7a5a14cae0230129340860b99d99fd4e7908079fc444a07a5",
           "bytes": 4137,
-          "mime": "application/json"
-        }
-      }
-    },
-    "dicethrone/ability-cards-lieren.atlas": {
-      "variants": {
-        "json": {
-          "sha256": "8ee60afe8f3d8c4f3b721d1eef0abd70bd6a4cbeb43360bd588382ef41e60761",
-          "bytes": 2177,
           "mime": "application/json"
         }
       }
