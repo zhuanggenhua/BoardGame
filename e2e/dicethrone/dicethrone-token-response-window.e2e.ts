@@ -606,6 +606,7 @@ test.describe('Token 响应窗口完整流程', () => {
                 interaction: state?.sys?.interaction?.current ?? null,
                 defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
                 evasive: state?.core?.players?.['0']?.tokens?.evasive ?? null,
+                currentRollContextKind: state?.core?.currentRollContext?.kind ?? null,
                 evasionRoll: evasiveUseEvent?.event?.payload?.evasionRoll?.value ?? null,
                 evasionSuccess: evasiveUseEvent?.event?.payload?.evasionRoll?.success ?? null,
                 lastEventTypes: entries.slice(-8).map((entry: any) => entry.event?.type),
@@ -621,16 +622,20 @@ test.describe('Token 响应窗口完整流程', () => {
             },
             defenderHp: 50,
             evasive: 0,
+            currentRollContextKind: 'evasion',
             evasionRoll: 1,
             evasionSuccess: true,
         });
 
         const confirmButton = page.getByTestId('dicethrone-response-pass-button');
         await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);
+        await expect(confirmButton).toBeEnabled();
         await expectNoLegacyTokenResponseSurfaces(page);
         await expectSharedResponsePromptInFixedHandLiftSlot(page);
         await expect(page.getByTestId('dicethrone-2d-dice-tray')).toBeVisible({ timeout: 5000 });
-        await game.screenshot('闪避响应-成功后闪避骰在右侧骰盘等待确认', testInfo);
+        await expect(page.locator('[data-tutorial-id="dice-confirm-button"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')).toHaveCount(1);
+        await game.screenshot('闪避响应-成功后右侧只显示闪避骰且共享提示可确认', testInfo);
         await confirmButton.click();
 
         await expect.poll(async () => {
@@ -639,17 +644,20 @@ test.describe('Token 响应窗口完整流程', () => {
                 phase: state?.sys?.phase ?? null,
                 pendingDamage: state?.core?.pendingDamage ?? null,
                 interaction: state?.sys?.interaction?.current ?? null,
+                currentRollContextKind: state?.core?.currentRollContext?.kind ?? null,
                 defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'main2',
             pendingDamage: null,
             interaction: null,
+            currentRollContextKind: null,
             defenderHp: 50,
         });
 
         await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
         await page.waitForTimeout(1200);
+        await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')).toHaveCount(0);
         await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);
     });
 });

@@ -1617,6 +1617,50 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(afterReroll.pendingDamage?.currentDamage).toBe(5);
     });
 
+    it('闪避响应确认收口后，应清理右侧闪避临时骰', () => {
+        let state = createCore();
+        state.pendingDamage = {
+            id: 'damage-evasion-close',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 5,
+            currentDamage: 5,
+            responseType: 'beforeDamageReceived',
+            responderId: '1',
+            isFullyEvaded: false,
+        };
+
+        state = reduce(state, {
+            type: 'TOKEN_USED',
+            payload: {
+                playerId: '1',
+                tokenId: TOKEN_IDS.EVASIVE,
+                amount: 1,
+                effectType: 'evasionAttempt',
+                evasionRoll: { value: 1, success: true },
+            },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(state.currentRollContext?.kind).toBe('evasion');
+        expect(state.pendingDamage?.isFullyEvaded).toBe(true);
+
+        const closeEvents = execute(
+            { core: state, sys: { phase: 'defensiveRoll' } } as MatchState<DiceThroneCore>,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: {},
+            } as any,
+            queuedRandom([]),
+        );
+        const closed = applyEvents(state, closeEvents);
+
+        expect(closeEvents.map((event) => event.type)).toContain('TOKEN_RESPONSE_CLOSED');
+        expect(closed.pendingDamage).toBeUndefined();
+        expect(closed.currentRollContext).toBeUndefined();
+    });
+
     it('目标骰与技能 rollDie 都覆盖为唯一当前骰区', () => {
         const targetingState: DiceThroneCore = {
             ...createCore(),

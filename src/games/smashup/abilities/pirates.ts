@@ -6,7 +6,7 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
+import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, buildFieldSourceBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import type { SmashUpEvent, MinionCardDef, SmashUpCore } from '../domain/types';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
@@ -1491,23 +1491,19 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
             context.current.controller,
             `海盗王可发动：点击海盗王移动到即将计分的「${baseName}」`,
             [
-                {
-                    id: 'yes',
-                    label: '发动并移动',
-                    labelKey: 'ui.pirate_king_move_option',
-                    value: {
-                        move: true,
-                        minionUid: context.current.uid,
+                ...buildFieldSourceBaseTargetOptions(
+                    {
                         uid: context.current.uid,
-                        minionDefId: context.current.defId,
                         defId: context.current.defId,
                         fromBaseIndex: context.current.fromBaseIndex,
-                        baseIndex: context.scoringBaseIndex,
-                        baseDefId: context.matchState.core.bases[context.scoringBaseIndex]?.defId,
-                        fieldSourceTargetType: 'base',
                     },
-                    displayMode: 'card' as const,
-                },
+                    [{ baseIndex: context.scoringBaseIndex, label: baseName }],
+                    context.matchState.core,
+                    {
+                        move: true,
+                        uid: context.current.uid,
+                    },
+                ),
                 { id: 'no', label: '不发动', labelKey: 'ui.pirate_king_stay_option', value: { move: false }, displayMode: 'button' as const },
             ],
             {
@@ -1566,19 +1562,17 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
         const def = getCardDef(context.mateDefId) as MinionCardDef | undefined;
         const mateName = def?.name ?? '大副';
         const otherBases = context.matchState.core.bases
-            .map((b, i) => ({ index: i, defId: b.defId }))
-            .filter((b) => b.index !== context.mateBaseIndex);
-        const baseOptions = otherBases.map((b) => {
-            const baseDef = getBaseDef(b.defId);
-            const baseName = baseDef?.name ?? `基地 ${b.index + 1}`;
-            return {
-                id: `base-${b.index}`,
-                label: baseName,
-                value: { baseIndex: b.index, baseDefId: b.defId },
-                _source: 'base' as const,
-                displayMode: 'card' as const,
-            };
-        });
+            .map((b, i) => ({ baseIndex: i, label: getBaseDef(b.defId)?.name ?? `基地 ${i + 1}` }))
+            .filter((b) => b.baseIndex !== context.mateBaseIndex);
+        const baseOptions = buildFieldSourceBaseTargetOptions(
+            {
+                uid: context.mateUid,
+                defId: context.mateDefId,
+                fromBaseIndex: context.mateBaseIndex ?? context.scoringBaseIndex,
+            },
+            otherBases,
+            context.matchState.core,
+        );
         return createAbilityRuntimeSimpleChoice(
             `pirate_first_mate_choose_base_${context.mateUid}_${context.now}`,
             context.playerId,
@@ -1589,7 +1583,7 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
             ] as any[],
             {
                 sourceId: 'pirate_first_mate_choose_base',
-                targetType: 'base',
+                targetType: 'minion',
                 titleKey: 'ui.pirate_first_mate_choose_base_title',
                 titleParams: { mateName },
             },

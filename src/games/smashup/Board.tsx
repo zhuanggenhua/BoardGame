@@ -2756,7 +2756,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             dispatch(SU_COMMANDS.USE_BASE_ABILITY, { baseIndex: index });
         }
-    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceBaseTargetPrompt, selectedFieldPromptSourceMinionUid]);
+    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceBaseTargetPrompt, selectedFieldPromptSourceMinionUid, fieldSourceBaseTargetOptionIdsByBaseIndex]);
 
     const handleBuriedCardSelect = useCallback((cardUid: string) => {
         if (!isBuriedSelectPrompt || !currentPrompt) return;
@@ -4355,7 +4355,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx))
                                         || (!!activeSelectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.has(idx))
-                                        || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetPrompt.targetBaseIndex === idx)
+                                        || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx))
                                         || (!!handDragPreview && draggedCardMode !== 'action' && dragDeployableBaseIndices.has(idx))
                                     }
                                     isMinionSelectMode={!(isOngoingSelectPrompt && !isBoardSelectPrompt) && (
@@ -4379,15 +4379,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     : undefined
                                     }
                                     multiSelectedMinionUids={isMultiMinionSelect || isMultiBoardSelect ? multiSelectedMinionUids : undefined}
-                                    selectedMinionUids={isFieldSourceBaseTargetReady ? new Set([fieldSourceBaseTargetPrompt.sourceMinionUid]) : undefined}
+                                    selectedMinionUids={isFieldSourceBaseTargetReady && selectedFieldPromptSourceMinionUid ? new Set([selectedFieldPromptSourceMinionUid]) : undefined}
                                     duelParticipantMinionUids={activeDuelParticipantUids.size > 0 ? activeDuelParticipantUids : undefined}
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetPrompt.targetBaseIndex === idx) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
-                                        || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetPrompt.targetBaseIndex !== idx)
+                                        || (isFieldSourceBaseTargetReady && !fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx))
                                         || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
                                         || (!!selectedCardUid && selectedCardMode !== 'ongoing-minion' && selectedCardMode !== 'action-minion' && selectedCardMode !== 'action' && !deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && !meFirstEligibleBaseIndices.has(idx))

@@ -2,7 +2,7 @@ import React from 'react';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { UI_Z_INDEX } from '../../core';
 
-import { HAND_LIMIT, type DtResponseWindowType, type InteractionDescriptor, type PendingBonusDiceSettlement } from './domain/types';
+import { HAND_LIMIT, type DtResponseWindowType, type InteractionDescriptor, type PendingBonusDiceSettlement, type TurnPhase } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore, Die } from './domain';
@@ -210,7 +210,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const playerView = useMatchPlayerViewModel(playerViewOptions);
     const rootPid = playerView.selfPlayerId ?? '0';
     const player = G.players[rootPid] || G.players['0'];
-    const currentPhase = access.turnPhase;
+    // 阶段的唯一权威是 sys.phase。这里直接读原始状态，避免响应收口后
+    // useDiceThroneState 的派生访问器在同引用状态更新下短暂保留旧防御阶段，
+    // 进而让右侧骰盘从 legacy dice 回退出一颗旧防御骰。
+    const currentPhase = rawG.sys.phase as TurnPhase;
     const currentRollDice = React.useMemo(() => getCurrentRollDice(G, currentPhase), [G, currentPhase]);
     const replayOnlyRollDice = React.useMemo(() => (
         G.currentRollContext && isSettledReplayOnlyRollContext(G.currentRollContext)
@@ -562,6 +565,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // Token 响应状态
     const pendingDamage = G.pendingDamage;
     const isTokenResponseInteraction = sysInteraction?.kind === 'dt:token-response';
+    const isTokenEvasionRollContextActive = Boolean(
+        isTokenResponseInteraction
+        && pendingDamage
+        && G.currentRollContext?.kind === 'evasion'
+    );
     // 进攻特写只是进入防御的阅读层。一旦已恢复到 Token 响应，响应本体优先，
     // 否则本地重新挂载的特写遮罩会把可用 Token 留在画面里却无法点击。
     const hasBlockingAttackShowcase = isAttackShowcaseVisible && !isTokenResponseInteraction;
@@ -2096,7 +2104,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
                         showDiceTray={showRailDiceTray || Boolean(bonusDiceTrayDice)}
-                        showDiceActions={!isReplayOnlyRollContextActive && (
+                        showDiceActions={!isTokenEvasionRollContextActive && !isReplayOnlyRollContextActive && (
                             !rightTrayBonusDiceSettlement
                             || Boolean(diceMultistepInteraction)
                             || isRightTrayBonusDiceSettlementActive
