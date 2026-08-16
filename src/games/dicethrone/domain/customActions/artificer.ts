@@ -808,11 +808,19 @@ function handleBuildFromScratchChoice({ attackerId, sourceAbilityId, state, time
 
 function handleMechanicalArmy({ attackerId, targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const robotTypes = countOwnedRobotTypes(state, attackerId);
+    const pending = state.pendingAttack;
+    const attackDamageContext = pending
+        && pending.attackerId === attackerId
+        && pending.defenderId === targetId
+        && pending.sourceAbilityId === sourceAbilityId
+        ? { attackerId, defenderId: targetId, isUltimate: pending.isUltimate }
+        : undefined;
     const calc = createDamageCalculation({
         source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: 5 + robotTypes,
         damageScope: 'attack',
+        attackDamageContext,
         state,
         timestamp,
     });

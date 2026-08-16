@@ -169,11 +169,19 @@ function attackDamageEvents(
     unblockable = false,
 ): DiceThroneEvent[] {
     if (amount <= 0 || !ctx.state.players[targetId]) return [];
+    const pending = ctx.state.pendingAttack;
+    const attackDamageContext = pending
+        && pending.attackerId === ctx.attackerId
+        && pending.defenderId === targetId
+        && pending.sourceAbilityId === ctx.sourceAbilityId
+        ? { attackerId: ctx.attackerId, defenderId: targetId, isUltimate: pending.isUltimate }
+        : undefined;
     const events = createDamageCalculation({
         source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: amount,
         damageScope: 'attack',
+        attackDamageContext,
         state: ctx.state,
         timestamp,
     }).toEvents();

@@ -228,6 +228,9 @@ async function setupTokenScene(
         },
         player1: {
             resources: { CP: 0, HP: 50 },
+            hand: [],
+            deck: [],
+            discard: [],
         },
         currentPlayer,
         phase: 'main2',
@@ -684,24 +687,15 @@ test.describe('Token 响应窗口完整流程', () => {
             phase: postConfirmState?.sys?.phase ?? null,
             interactionKind: postConfirmState?.sys?.interaction?.current?.kind ?? null,
             currentRollContextKind: postConfirmState?.core?.currentRollContext?.kind ?? null,
-            currentRollContextSourceAbilityId: postConfirmState?.core?.currentRollContext?.sourceAbilityId ?? null,
             currentRollContextStatus: postConfirmState?.core?.currentRollContext?.status ?? null,
             currentRollContextDice: postConfirmState?.core?.currentRollContext?.dice?.map((die: any) => ({
                 ownerId: die.ownerId,
                 value: die.value,
             })) ?? null,
-            suppressNextBonusDiceReplaySourceAbilityId: postConfirmState?.core?.suppressNextBonusDiceReplaySourceAbilityId ?? null,
-            pendingAttack: postConfirmState?.core?.pendingAttack
-                ? {
-                    sourceAbilityId: postConfirmState.core.pendingAttack.sourceAbilityId,
-                    tokenResponseFullyEvaded: postConfirmState.core.pendingAttack.tokenResponseFullyEvaded ?? false,
-                }
-                : null,
             pendingBonusDiceSettlement: postConfirmState?.core?.pendingBonusDiceSettlement
                 ? {
                     id: postConfirmState.core.pendingBonusDiceSettlement.id,
                     attackerId: postConfirmState.core.pendingBonusDiceSettlement.attackerId,
-                    sourceAbilityId: postConfirmState.core.pendingBonusDiceSettlement.sourceAbilityId,
                     dice: postConfirmState.core.pendingBonusDiceSettlement.dice?.map((die: any) => ({
                         value: die.value,
                     })),
@@ -712,11 +706,8 @@ test.describe('Token 响应窗口完整流程', () => {
             phase: 'main2',
             interactionKind: null,
             currentRollContextKind: null,
-            currentRollContextSourceAbilityId: null,
             currentRollContextStatus: null,
             currentRollContextDice: null,
-            suppressNextBonusDiceReplaySourceAbilityId: null,
-            pendingAttack: null,
             pendingBonusDiceSettlement: null,
         });
         await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);

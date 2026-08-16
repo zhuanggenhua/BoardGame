@@ -278,6 +278,7 @@ function resolveWarMongerAttackDamage({
         baseDamage,
         state,
         damageScope: 'attack',
+        attackDamageContext: { attackerId, defenderId, isUltimate: pending.isUltimate },
         autoCollectShields: false,
         passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
         timestamp,

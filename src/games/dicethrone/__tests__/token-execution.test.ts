@@ -2246,6 +2246,7 @@ describe('武士耻辱 (Shame) Token', () => {
             target: { playerId: '1' },
             state: state.core,
             damageScope: 'attack',
+            attackDamageContext: { attackerId: '0', defenderId: '1', isUltimate: true },
             timestamp: 102,
         }).resolve();
 
