@@ -72,7 +72,7 @@ interface Shard {
 }
 
 const hasUsableImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
-  Boolean(img) && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
+  img != null && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
 
 
 /**
