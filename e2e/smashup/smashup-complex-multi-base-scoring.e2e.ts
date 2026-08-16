@@ -758,12 +758,18 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect(finalState.core.currentPlayerIndex).toBe(1);
             expect(resolvedSources).toContain('pirate_king_move');
             expect(resolvedSources).toContain('smashup_reaction_choose');
-            expect(resolvedSources).toContain('base_tortuga');
             expect(resolvedSources).toContain('pirate_first_mate_choose_base');
             expect(finalState.sys.interaction?.current ?? null).toBeNull();
             expect(finalState.sys.responseWindow?.current ?? null).toBeNull();
             expect(finalState.core.players['0'].vp).toBeGreaterThan(0);
             expect(finalState.core.players['1'].vp).toBeGreaterThan(0);
+            const replacementBase = finalState.core.bases.find((base: any) => base.defId === 'base_central_brain');
+            expect(
+                replacementBase?.minions.some((minion: any) => minion.uid === 'reserve-p1'),
+                '托尔图加可以由 AI 自动选择；最终必须看到亚军随从已移动到替换基地',
+            ).toBe(true);
+            expect(finalState.core.bases[2].minions.map((minion: any) => minion.uid)).toContain('mate-0');
+            expect(finalState.core.bases[2].minions.map((minion: any) => minion.uid)).not.toContain('reserve-p1');
 
             await expect(page.getByTestId('su-interaction-select-banner')).toBeHidden({ timeout: 10000 });
             await expect(page.getByTestId('su-reaction-hand-status')).toBeHidden({ timeout: 10000 });
