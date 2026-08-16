@@ -54,6 +54,7 @@ type AssetEnvLike = {
     VITE_ASSETS_BASE_URL?: string;
     VITE_ASSET_SOURCE?: string;
     VITE_DEV_REMOTE_ASSETS?: string;
+    VITE_E2E_LOCAL_ASSETS_ONLY?: string;
 };
 
 export function resolveAssetsBaseUrlFromEnv(env?: AssetEnvLike): string {
@@ -92,6 +93,11 @@ const shouldUseRemoteAssetsInLiteDev = () => (
     import.meta.env.DEV
     && import.meta.env.VITE_DEV_REMOTE_ASSETS === 'true'
     && /^https?:\/\//i.test(assetsBaseUrl)
+);
+
+const shouldUseOnlyLocalAssetsInE2E = () => (
+    import.meta.env.DEV
+    && import.meta.env.VITE_E2E_LOCAL_ASSETS_ONLY === 'true'
 );
 
 export function setCommonAudioAssetBaseOverride(value?: string): void {
@@ -1663,6 +1669,7 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
 
     const effectiveLocale = locale || 'zh-CN';
     const remoteBaseUrl = getAssetsBaseUrl();
+    const localAssetsOnly = shouldUseOnlyLocalAssetsInE2E();
     const candidateLocales = resolveLocalizedImageLocales(src, effectiveLocale);
     const candidates: string[] = [];
     const pushCandidate = (url: string) => {
@@ -1694,9 +1701,11 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
         if (preferPublicAssetBeforeRemote) {
             pushCandidate(publicUrl);
         }
-        remoteBaseUrls.forEach((baseUrl) => {
-            pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));
-        });
+        if (!localAssetsOnly) {
+            remoteBaseUrls.forEach((baseUrl) => {
+                pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));
+            });
+        }
         if (!preferPublicAssetBeforeRemote) {
             pushCandidate(publicUrl);
         }

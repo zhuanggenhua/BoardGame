@@ -8,6 +8,12 @@ import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts }
 import { ensureSharedTestApiToken } from './src/server/testApiToken';
 
 dotenv.config({ quiet: true });
+// E2E 浏览器只使用本地 public/assets；缺素材时由 wrapper 先从服务器同步到本地。
+// 不能继承 .env 里的生产 / 移动端远端素材基址。
+process.env.VITE_ASSETS_BASE_URL = '/assets';
+process.env.VITE_ASSET_SOURCE = 'local';
+process.env.VITE_DEV_REMOTE_ASSETS = 'false';
+process.env.VITE_E2E_LOCAL_ASSETS_ONLY = 'true';
 assertSafeE2EServerMode(process.env);
 
 const configuredWorkers = Number.parseInt(process.env.PW_WORKERS || '1', 10);

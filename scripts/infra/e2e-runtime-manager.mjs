@@ -22,6 +22,7 @@ import {
     upsertRuntime,
 } from './e2e-runtime-registry.js';
 import { startSingleWorkerRuntime } from './single-worker-runtime.js';
+import { withE2ELocalAssetEnv } from './e2e-local-assets-env.mjs';
 
 const TMP_DIR = path.join(process.cwd(), '.tmp');
 const RUNTIME_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
@@ -350,7 +351,7 @@ export async function ensureSingleWorkerRuntime(options = {}) {
 
     try {
         controller = await startSingleWorkerRuntime({
-            env: {
+            env: withE2ELocalAssetEnv({
                 ...process.env,
                 PW_RUNTIME_SCOPE: plan.scope,
                 PW_TEST_TARGET: target,
@@ -364,7 +365,7 @@ export async function ensureSingleWorkerRuntime(options = {}) {
                 PW_API_SERVER_PORT: String(ports.apiServer),
                 API_SERVER_PORT: String(ports.apiServer),
                 PW_E2E_TARGET: process.env.PW_E2E_TARGET?.trim() || target,
-            },
+            }),
             logger,
             logFile,
             childStdio: ['ignore', 'pipe', 'pipe'],

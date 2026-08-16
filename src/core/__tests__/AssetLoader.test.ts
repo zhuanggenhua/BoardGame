@@ -131,6 +131,20 @@ afterEach(() => {
         ]);
     });
 
+    it('E2E 本地素材模式不追加远端图片候选', () => {
+        vi.stubEnv('VITE_E2E_LOCAL_ASSETS_ONLY', 'true');
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/splendor/compressed/picture': 1,
+            'i18n/en/splendor/compressed/picture': 1,
+        });
+
+        const candidates = getLocalizedImageCandidateUrls('splendor/picture', 'zh-CN');
+
+        expect(candidates).toEqual([
+            '/assets/i18n/zh-CN/splendor/compressed/picture.webp',
+        ]);
+    });
+
     it('同源直连素材时，应收敛 /official 与 /assets 等价候选，避免同图重复下载', () => {
         const origin = window.location.origin;
         setAssetsBaseUrl(`${origin}/official`);

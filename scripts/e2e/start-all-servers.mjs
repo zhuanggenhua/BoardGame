@@ -9,6 +9,7 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { E2E_SINGLE_WORKER_PORTS } from '../infra/e2e-port-config.js';
+import { withE2ELocalAssetEnv } from '../infra/e2e-local-assets-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,7 +30,7 @@ const frontend = spawn('npx', ['vite', '--port', FRONTEND_PORT, '--strictPort'],
     cwd: rootDir,
     stdio: 'inherit',
     shell: true,
-    env: { ...process.env, PORT: FRONTEND_PORT },
+    env: withE2ELocalAssetEnv({ ...process.env, PORT: FRONTEND_PORT }),
 });
 processes.push({ name: '前端', process: frontend });
 

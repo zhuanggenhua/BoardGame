@@ -18,6 +18,7 @@ import {
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 import { ensureE2EAssets } from './ensure-e2e-assets.mjs';
+import { withE2ELocalAssetEnv } from './e2e-local-assets-env.mjs';
 
 function resolvePlaywrightCli(startDir) {
     let currentDir = path.resolve(startDir);
@@ -362,7 +363,7 @@ function stopManagedRuntime(runtimeId, env) {
 }
 
 function createEnv(overrides = {}) {
-    return {
+    return withE2ELocalAssetEnv({
         ...process.env,
         PW_HEADED: 'false',
         PWDEBUG: '0',
@@ -371,7 +372,7 @@ function createEnv(overrides = {}) {
         PW_START_SERVERS: 'false',
         PW_SERVER_WATCH: process.env.PW_SERVER_WATCH ?? 'false',
         ...overrides,
-    };
+    });
 }
 
 function mergeNodeOptions(preferredOption, existingValue = process.env.NODE_OPTIONS) {

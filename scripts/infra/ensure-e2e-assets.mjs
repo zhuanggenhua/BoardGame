@@ -98,7 +98,7 @@ export const ensureE2EAssets = ({ targetPath, env = process.env, runner = proces
     } else {
         const args = ['scripts/assets/download-from-server.js'];
         for (const gameId of gameIds) args.push('--game', gameId);
-        console.log(`🧩 E2E 自动准备素材：${gameIds.join(', ')}`);
+        console.log(`🧩 E2E 本地素材缺失，先从服务器同步到本地：${gameIds.join(', ')}`);
         runAssetCommand(args, `E2E 素材准备失败: gameIds=${gameIds.join(',')}`);
     }
 
