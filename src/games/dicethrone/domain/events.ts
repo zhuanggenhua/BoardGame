@@ -880,6 +880,8 @@ export interface TokenResponseClosedEvent extends GameEvent<'TOKEN_RESPONSE_CLOS
         finalDamage: number;
         /** 是否完全闪避 */
         fullyEvaded: boolean;
+        /** 本次待响应伤害的来源技能；用于响应收口后继续同一攻击尾部时识别同源后续骰。 */
+        sourceAbilityId?: string;
     };
 }
 

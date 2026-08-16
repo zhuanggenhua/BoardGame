@@ -817,6 +817,7 @@ export function finalizeTokenResponse(
             pendingDamageId: pendingDamage.id,
             finalDamage: pendingDamage.currentDamage,
             fullyEvaded: pendingDamage.isFullyEvaded ?? false,
+            sourceAbilityId: pendingDamage.sourceAbilityId,
         },
         sourceCommandType: 'SKIP_TOKEN_RESPONSE',
         timestamp,
