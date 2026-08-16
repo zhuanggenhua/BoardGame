@@ -215,20 +215,22 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 进而让右侧骰盘从 legacy dice 回退出一颗旧防御骰。
     const currentPhase = rawG.sys.phase as TurnPhase;
     const rawSysInteraction = rawG.sys.interaction?.current;
-    const isBonusDiceInteractionActive = rawSysInteraction?.kind === 'dt:bonus-dice';
     const isCurrentPhaseMainRollPhase = currentPhase === 'offensiveRoll'
         || currentPhase === 'targetingRoll'
         || currentPhase === 'defensiveRoll';
+    const currentPendingBonusDiceSettlement = isCurrentBonusRollSettlement(G)
+        ? G.pendingBonusDiceSettlement
+        : undefined;
     const currentRollDice = React.useMemo(() => {
         const hasExplicitCurrentDiceSource = Boolean(
             G.currentRollContext
-            || (isBonusDiceInteractionActive && G.pendingBonusDiceSettlement)
+            || currentPendingBonusDiceSettlement
         );
         if (!isCurrentPhaseMainRollPhase && !hasExplicitCurrentDiceSource) {
             return [];
         }
         return getCurrentRollDice(G, currentPhase);
-    }, [G, currentPhase, isBonusDiceInteractionActive, isCurrentPhaseMainRollPhase]);
+    }, [G, currentPhase, currentPendingBonusDiceSettlement, isCurrentPhaseMainRollPhase]);
     const replayOnlyRollDice = React.useMemo(() => (
         G.currentRollContext && isSettledReplayOnlyRollContext(G.currentRollContext)
             ? G.currentRollContext.dice
@@ -245,9 +247,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const currentResponderIndex = rawG.sys.responseWindow?.current?.currentResponderIndex;
     const currentResponderId = rawG.sys.responseWindow?.current
         ? rawG.sys.responseWindow.current.responderQueue[rawG.sys.responseWindow.current.currentResponderIndex]
-        : undefined;
-    const currentPendingBonusDiceSettlement = isBonusDiceInteractionActive && isCurrentBonusRollSettlement(G)
-        ? G.pendingBonusDiceSettlement
         : undefined;
     // 奖励骰的唯一展示载体是右侧骰盘。普通确认结算后 pending 会被清掉，
     // 但 currentRollContext 仍保留最终骰面供回看，因此不能再以 pending

@@ -552,9 +552,13 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
         lastResolvedAttackDamage: state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage,
         attackResolvedSequence: nextAttackResolvedSequence,
     };
-    return isSettledReplayOnlyRollContext(nextState.currentRollContext)
-        ? nextState
-        : clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
+    if (isSettledReplayOnlyRollContext(nextState.currentRollContext)) {
+        return state.pendingAttack?.tokenResponseFullyEvaded === true
+            && nextState.currentRollContext.kind === 'bonus'
+            ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
+            : nextState;
+    }
+    return clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
 };
 
 /**
@@ -855,11 +859,16 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
  * 处理 Token 响应窗口关闭事件
  */
 export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>> = (
-    state
+    state,
+    event
 ) => {
     const pendingAttack = state.pendingAttack
         ? updatePendingAttackSettlementStage(
-            { ...state.pendingAttack, damageResolved: true },
+            {
+                ...state.pendingAttack,
+                damageResolved: true,
+                tokenResponseFullyEvaded: event.payload.fullyEvaded === true,
+            },
             'postDamagePending',
         )
         : state.pendingAttack;

@@ -12,6 +12,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { resolve, join } from 'path';
 import {
     collectOptionObjectLiterals,
+    expressionContainsCall,
     extractSimpleChoiceConfig,
     getChoiceOptionsArg,
     inferDirectTargetTypeFromOptions,
@@ -856,6 +857,40 @@ describe('SmashUp Interaction targetType 审计', () => {
         }
 
         expect(violations, `以下高风险通用交互缺少显式配置：\n${violations.join('\n')}`).toEqual([]);
+    });
+
+    it('场上来源随从到目标基地的交互必须统一使用 source-target 构造器', () => {
+        const violations: string[] = [];
+
+        for (const filePath of getFilesToScan()) {
+            const content = readFileSync(filePath, 'utf-8');
+            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+
+            const visit = (node: ts.Node) => {
+                if (!isCreateSimpleChoiceCall(node)) {
+                    ts.forEachChild(node, visit);
+                    return;
+                }
+
+                const config = extractSimpleChoiceConfig(node);
+                if (!FIELD_SOURCE_BASE_TARGET_SOURCE_IDS.includes(config.sourceId as typeof FIELD_SOURCE_BASE_TARGET_SOURCE_IDS[number])) {
+                    ts.forEachChild(node, visit);
+                    return;
+                }
+
+                const optionsArg = getChoiceOptionsArg(node);
+                if (!expressionContainsCall(sourceFile, optionsArg, node, ['buildFieldSourceBaseTargetOptions'])) {
+                    const line = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
+                    violations.push(`${filePath}:${line} [${config.sourceId}] 未使用 buildFieldSourceBaseTargetOptions`);
+                }
+
+                ts.forEachChild(node, visit);
+            };
+
+            visit(sourceFile);
+        }
+
+        expect(violations, `以下来源到基地交互没有走共享 source-target 构造器：\n${violations.join('\n')}`).toEqual([]);
     });
 
     it('同一 sourceId 不允许混用多种 targetType 语义', () => {

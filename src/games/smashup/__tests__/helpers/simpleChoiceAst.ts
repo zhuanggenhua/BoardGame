@@ -297,3 +297,60 @@ export function inferDirectTargetTypeFromOptions(
 
     return undefined;
 }
+
+export function expressionContainsCall(
+    sourceFile: ts.SourceFile,
+    optionsNode: ts.Node | undefined,
+    callNode: ts.Node,
+    callNames: readonly string[],
+    seen: Set<number> = new Set(),
+): boolean {
+    const expr = unwrapExpression(optionsNode as ts.Expression | undefined);
+    if (!expr) return false;
+
+    if (ts.isArrayLiteralExpression(expr)) {
+        return expr.elements.some((element) => {
+            if (ts.isSpreadElement(element)) {
+                return expressionContainsCall(sourceFile, element.expression, callNode, callNames, seen);
+            }
+            return expressionContainsCall(sourceFile, element, callNode, callNames, seen);
+        });
+    }
+
+    if (ts.isIdentifier(expr)) {
+        const variableDecl = findNearestVariableDeclaration(sourceFile, callNode, expr.text);
+        if (!variableDecl) return false;
+        const declStart = variableDecl.getStart(sourceFile);
+        if (seen.has(declStart)) return false;
+        seen.add(declStart);
+        return expressionContainsCall(sourceFile, variableDecl.initializer, callNode, callNames, seen);
+    }
+
+    if (ts.isCallExpression(expr)) {
+        const calleeName = getExpressionName(expr.expression);
+        if (calleeName && callNames.includes(calleeName)) return true;
+        return expr.arguments.some((arg) => expressionContainsCall(sourceFile, arg, callNode, callNames, seen));
+    }
+
+    if (ts.isConditionalExpression(expr)) {
+        return expressionContainsCall(sourceFile, expr.whenTrue, callNode, callNames, seen)
+            || expressionContainsCall(sourceFile, expr.whenFalse, callNode, callNames, seen);
+    }
+
+    if (ts.isBinaryExpression(expr)) {
+        return expressionContainsCall(sourceFile, expr.left, callNode, callNames, seen)
+            || expressionContainsCall(sourceFile, expr.right, callNode, callNames, seen);
+    }
+
+    if (ts.isObjectLiteralExpression(expr)) {
+        return expr.properties.some((prop) => {
+            if (ts.isSpreadAssignment(prop)) {
+                return expressionContainsCall(sourceFile, prop.expression, callNode, callNames, seen);
+            }
+            if (!ts.isPropertyAssignment(prop)) return false;
+            return expressionContainsCall(sourceFile, prop.initializer, callNode, callNames, seen);
+        });
+    }
+
+    return false;
+}

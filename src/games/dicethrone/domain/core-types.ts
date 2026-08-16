@@ -287,6 +287,8 @@ export interface PendingAttack {
     };
     /** 伤害是否已通过 Token 响应结算（避免重复结算） */
     damageResolved?: boolean;
+    /** 最近一次 Token 伤害响应是否完全免除了本次攻击伤害。 */
+    tokenResponseFullyEvaded?: boolean;
     /** 本次攻击对防御方造成的净掉血累计值（用于 postDamage/onHit 与 lastResolvedAttackDamage） */
     resolvedDamage?: number;
     /** 本次攻击期间实际新增到防御方身上的状态层数（供二级防御移除本次投掷已施加的状态） */

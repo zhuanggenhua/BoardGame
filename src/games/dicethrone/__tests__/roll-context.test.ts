@@ -1661,6 +1661,70 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(closed.currentRollContext).toBeUndefined();
     });
 
+    it('完全闪避的攻击收口后，不应保留攻击方奖励骰只读回看', () => {
+        const settlement = createBonusSettlement({
+            id: 'evaded-post-damage-bonus',
+            attackerId: '1',
+            targetId: '0',
+            sourceAbilityId: 'kidney-shot',
+            dice: [{
+                index: 0,
+                value: 6,
+                face: 'sabre',
+                effectParams: { value: 6 },
+            }],
+        });
+        let state: DiceThroneCore = {
+            ...createCore(),
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                isDefendable: true,
+                sourceAbilityId: 'kidney-shot',
+                defenseAbilityId: 'elusive-step',
+                damageResolved: true,
+                tokenResponseFullyEvaded: true,
+                resolvedDamage: 0,
+            },
+            pendingBonusDiceSettlement: settlement,
+        };
+
+        state = reduce(state, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: {
+                finalDice: settlement.dice,
+                totalDamage: 6,
+                thresholdTriggered: true,
+                attackerId: '1',
+                targetId: '0',
+                sourceAbilityId: 'kidney-shot',
+                allowDiceModification: true,
+            },
+            timestamp: 6,
+        } as DiceThroneEvent);
+
+        expect(state.currentRollContext).toMatchObject({
+            kind: 'bonus',
+            status: 'settled',
+            dice: [{ ownerId: '1', value: 6 }],
+        });
+
+        const resolved = reduce(state, {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'kidney-shot',
+                defenseAbilityId: 'elusive-step',
+                totalDamage: 0,
+            },
+            timestamp: 7,
+        } as DiceThroneEvent);
+
+        expect(resolved.pendingAttack).toBeNull();
+        expect(resolved.currentRollContext).toBeUndefined();
+    });
+
     it('目标骰与技能 rollDie 都覆盖为唯一当前骰区', () => {
         const targetingState: DiceThroneCore = {
             ...createCore(),
