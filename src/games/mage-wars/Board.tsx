@@ -939,6 +939,7 @@ function SpellRail({
                 'pointer-events-auto flex min-h-0 rounded-[0.35rem] bg-black/28',
                 compact ? 'flex-row items-end gap-2 p-1.5' : 'flex-col gap-2 p-2',
             )}
+            data-testid={compact ? (self ? 'mage-wars-mobile-self-spell-rail' : 'mage-wars-mobile-opponent-spell-rail') : undefined}
         >
             <div
                 className={cx(
@@ -985,8 +986,33 @@ function SpellRail({
     );
 }
 
-function OpponentPlanMirror({ player }: { player: MageWarsPlayerState }) {
+function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlayerState; compact?: boolean }) {
     const { t } = useTranslation('game-mage-wars');
+
+    if (compact) {
+        return (
+            <section
+                className="pointer-events-auto flex items-center gap-1.5 rounded-[0.35rem] bg-black/34 p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.32)]"
+                data-testid="mage-wars-opponent-prepared-mirror"
+                data-mage-wars-compact="true"
+            >
+                <div className="flex items-end gap-1">
+                    {[0, 1].map((slot) => (
+                        <OptimizedImage
+                            key={`${player.id}-opponent-plan-compact-${slot}`}
+                            src={SPELL_CARD_BACK}
+                            alt={t('privateZones.hiddenPrepared')}
+                            className="h-12 w-[2.15rem] rounded-[0.12rem] object-cover shadow-[0_6px_14px_rgba(0,0,0,0.45)]"
+                            placeholder={false}
+                        />
+                    ))}
+                </div>
+                <div className="max-w-[4.7rem] text-[0.58rem] font-semibold leading-tight text-amber-100">
+                    {t('privateZones.opponentPlansWithCount', { count: player.preparedSpellSlots })}
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="pointer-events-auto flex flex-col items-start gap-3" data-testid="mage-wars-opponent-prepared-mirror">
@@ -1232,7 +1258,15 @@ function PreparedSpellsDock({
     );
 }
 
-function TurnStatusDock({ dispatch, disabled }: { dispatch: Props['dispatch']; disabled?: boolean }) {
+function TurnStatusDock({
+    dispatch,
+    disabled,
+    compact = false,
+}: {
+    dispatch: Props['dispatch'];
+    disabled?: boolean;
+    compact?: boolean;
+}) {
     const { t } = useTranslation('game-mage-wars');
 
     return (
@@ -1240,7 +1274,8 @@ function TurnStatusDock({ dispatch, disabled }: { dispatch: Props['dispatch']; d
             <button
                 type="button"
                 className={cx(
-                    'grid h-[3.25rem] w-[10.5rem] place-items-center rounded-[0.32rem] border border-amber-200/24 px-5 text-xl font-black text-amber-50 shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition',
+                    'grid place-items-center rounded-[0.32rem] border border-amber-200/24 font-black text-amber-50 shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition',
+                    compact ? 'h-11 w-28 px-3 text-base' : 'h-[3.25rem] w-[10.5rem] px-5 text-xl',
                     disabled ? 'cursor-not-allowed bg-black/20 text-stone-500' : 'bg-amber-950/36 hover:bg-amber-900/42',
                 )}
                 disabled={disabled}
@@ -2126,12 +2161,17 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
 
             {isLandscapeMobileViewport ? (
                 <>
-                    <aside className="pointer-events-none absolute bottom-2 right-2 z-30">
+                    {opponent ? (
+                        <aside className="pointer-events-none absolute right-2 top-[3.6rem] z-20">
+                            <OpponentPlanMirror player={opponent} compact />
+                        </aside>
+                    ) : null}
+                    <aside className="pointer-events-none absolute bottom-[8.5rem] right-3 z-30">
                         <div className="pointer-events-auto">
-                            <TurnStatusDock dispatch={dispatch} disabled={!canAdvance} />
+                            <TurnStatusDock dispatch={dispatch} disabled={!canAdvance} compact />
                         </div>
                     </aside>
-                    <aside className="pointer-events-none absolute bottom-2 left-[13rem] right-[4.8rem] z-20 flex min-h-0 items-end gap-2">
+                    <aside className="pointer-events-none absolute bottom-2 left-[13rem] right-[8.5rem] z-20 flex min-h-0 items-end">
                         <div className="pointer-events-auto min-w-0 flex-1">
                             {viewingPlayer ? (
                                 <SpellRail
@@ -2141,19 +2181,6 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                                     self
                                     selectedCardId={selectedSpellCardId}
                                     onSelect={handlePreparedSpellSelect}
-                                    compact
-                                />
-                            ) : null}
-                        </div>
-                        <div className="pointer-events-auto min-w-0">
-                            {opponent ? (
-                                <SpellRail
-                                    player={opponent}
-                                    phase={phase}
-                                    canAct={false}
-                                    self={false}
-                                    selectedCardId={null}
-                                    onSelect={() => undefined}
                                     compact
                                 />
                             ) : null}

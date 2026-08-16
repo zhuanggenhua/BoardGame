@@ -402,6 +402,109 @@ async function readHitTest(locator: Locator) {
     });
 }
 
+type ElementRect = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    right: number;
+    bottom: number;
+};
+
+type MobileLandscapeHudAudit = {
+    viewport: { width: number; height: number };
+    selfRail: ElementRect | null;
+    opponentMirror: ElementRect | null;
+    turnEnd: ElementRect | null;
+    fabMenu: ElementRect | null;
+    compactOpponentMirror: boolean;
+    opponentMobileRailCount: number;
+    overlaps: {
+        selfRailTurnEnd: number;
+        selfRailFab: number;
+        turnEndFab: number;
+        opponentMirrorTurnEnd: number;
+    };
+};
+
+async function readMobileLandscapeHudAudit(page: Page): Promise<MobileLandscapeHudAudit> {
+    return page.evaluate(() => {
+        type Rect = {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            right: number;
+            bottom: number;
+        };
+        const toRect = (element: HTMLElement | null): Rect | null => {
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+                x: Math.round(rect.x),
+                y: Math.round(rect.y),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+                right: Math.round(rect.right),
+                bottom: Math.round(rect.bottom),
+            };
+        };
+        const overlapArea = (left: Rect | null, right: Rect | null) => {
+            if (!left || !right) return 0;
+            const width = Math.max(0, Math.min(left.right, right.right) - Math.max(left.x, right.x));
+            const height = Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.y, right.y));
+            return width * height;
+        };
+        const selfRail = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mobile-self-spell-rail"]'));
+        const opponentMirrorElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-opponent-prepared-mirror"]');
+        const opponentMirror = toRect(opponentMirrorElement);
+        const turnEnd = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-turn-end"]'));
+        const fabMenu = toRect(document.querySelector<HTMLElement>('[data-testid="fab-menu"]'));
+
+        return {
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight,
+            },
+            selfRail,
+            opponentMirror,
+            turnEnd,
+            fabMenu,
+            compactOpponentMirror: opponentMirrorElement?.dataset.mageWarsCompact === 'true',
+            opponentMobileRailCount: document.querySelectorAll('[data-testid="mage-wars-mobile-opponent-spell-rail"]').length,
+            overlaps: {
+                selfRailTurnEnd: overlapArea(selfRail, turnEnd),
+                selfRailFab: overlapArea(selfRail, fabMenu),
+                turnEndFab: overlapArea(turnEnd, fabMenu),
+                opponentMirrorTurnEnd: overlapArea(opponentMirror, turnEnd),
+            },
+        };
+    });
+}
+
+async function expectMobileLandscapeHudSlots(page: Page, label: string) {
+    await expect(page.getByTestId('mage-wars-mobile-self-spell-rail')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('mage-wars-opponent-prepared-mirror')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('mage-wars-turn-end')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('fab-menu')).toBeVisible({ timeout: 5_000 });
+    await page.waitForTimeout(150);
+
+    const audit = await readMobileLandscapeHudAudit(page);
+    expect(audit.viewport).toEqual({ width: 960, height: 540 });
+    expect(audit.selfRail, `${label} 当前玩家法术轨必须可见`).not.toBeNull();
+    expect(audit.opponentMirror, `${label} 对手隐藏计划必须有紧凑镜像入口`).not.toBeNull();
+    expect(audit.turnEnd, `${label} 回合结束按钮必须可见`).not.toBeNull();
+    expect(audit.fabMenu, `${label} 全局悬浮入口必须参与压力态`).not.toBeNull();
+    expect(audit.compactOpponentMirror, `${label} 对手隐藏计划不应继续占用移动底栏`).toBe(true);
+    expect(audit.opponentMobileRailCount, `${label} 移动底栏不应再渲染对手计划牌轨`).toBe(0);
+    expect(audit.selfRail!.right, `${label} 当前玩家法术轨必须给右下主控留槽位`).toBeLessThanOrEqual(audit.turnEnd!.x - 8);
+    expect(audit.turnEnd!.bottom, `${label} 回合结束按钮必须上移，不能压住底部法术轨`).toBeLessThanOrEqual(audit.selfRail!.y - 8);
+    expect(audit.overlaps.selfRailTurnEnd, `${label} 法术轨与回合结束按钮不能重叠`).toBe(0);
+    expect(audit.overlaps.selfRailFab, `${label} 法术轨与全局悬浮入口不能重叠`).toBe(0);
+    expect(audit.overlaps.turnEndFab, `${label} 回合结束按钮与全局悬浮入口不能重叠`).toBe(0);
+    expect(audit.overlaps.opponentMirrorTurnEnd, `${label} 对手隐藏计划镜像不能压住回合结束按钮`).toBe(0);
+}
+
 type MageWarsFxAudit = {
     sourceRow: string | null;
     sourceCol: string | null;
@@ -1494,6 +1597,7 @@ test.describe('Mage Wars formal online runtime', () => {
             });
             await match.hostPage.setViewportSize({ width: 960, height: 540 });
             await match.guestPage.setViewportSize({ width: 960, height: 540 });
+            await expectMobileLandscapeHudSlots(match.hostPage, '移动后房主视角');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '06-横屏移动后-丛林灰狼进入目标区域');
 
             await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000 });
@@ -1530,6 +1634,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 timeout: 5_000,
             }).toBe(true);
             await expect(targetCleric.locator('img[alt*="伤害"]')).toBeVisible({ timeout: 5_000 });
+            await expectMobileLandscapeHudSlots(match.guestPage, '攻击后访客视角');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态');
 
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000 });
@@ -1537,6 +1642,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
+            await expectMobileLandscapeHudSlots(match.guestPage, '终末快速施法窗口访客视角');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '08-攻击行动结束后-进入终末快速施法窗口');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
