@@ -3105,6 +3105,116 @@ describe('AI legal actions', () => {
         expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
     });
 
+    it('攻击方 pendingDamage 仍存在但 responseWindow 已空时，本地 AI 仍应生成加伤或跳过动作', () => {
+        const state = createHeroMatchup('treant', 'shadow_thief')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.pendingDamage = {
+            id: 'dmg-ai-boost-no-window',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 5,
+            currentDamage: 5,
+            sourceAbilityId: 'shattering-fist-2-3',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+            isFullyEvaded: false,
+        };
+        state.sys.phase = 'defensiveRoll';
+        state.sys.responseWindow = { current: undefined } as typeof state.sys.responseWindow;
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) => (
+            action.kind === 'token-response'
+            && action.commands.some(command => command.payload?.tokenId === TOKEN_IDS.TREANT_DIVINE)
+        ))).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
+    });
+
+    it('树精复仇枝蔓防御结算后 responseWindow 已空时，本地 AI 仍应响应神圣树灵', async () => {
+        const state = createHeroMatchup('shadow_thief', 'treant')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '1';
+        state.core.players['1'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            settlementStage: 'afterDefense',
+            isDefendable: true,
+            sourceAbilityId: 'vengeful-vines',
+            isUltimate: false,
+            damageResolved: false,
+            resolvedDamage: 0,
+            statusEffectsAppliedThisAttack: {},
+            attackDiceFaceCounts: {
+                fist: 0,
+                palm: 0,
+                taiji: 0,
+                lotus: 0,
+                sword: 0,
+                heart: 0,
+                strength: 0,
+                branch: 1,
+                leaf: 3,
+                spirit: 1,
+                ninja_katana: 0,
+                shuriken: 0,
+                mask: 0,
+            },
+            attackDiceValues: [3, 4, 4, 6, 5],
+            bonusDamage: 0,
+            attackModifierBonusDamage: 0,
+            preDefenseResolved: true,
+            defenseAbilityId: 'shadow-defense',
+            defenseResolved: true,
+        };
+        state.core.pendingDamage = {
+            id: 'dmg-ai-treant-vengeful-vines-no-window',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 7,
+            currentDamage: 7,
+            sourceAbilityId: 'vengeful-vines',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '1',
+            isFullyEvaded: false,
+        };
+        state.sys.responseWindow = { current: undefined } as typeof state.sys.responseWindow;
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(legalActions.some((action) => (
+            action.kind === 'token-response'
+            && action.commands.some(command => command.payload?.tokenId === TOKEN_IDS.TREANT_DIVINE)
+        ))).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('token-response');
+        expect(resolution?.action.metadata).toMatchObject({
+            tokenId: TOKEN_IDS.TREANT_DIVINE,
+        });
+    });
+
     it('pendingDamage 仍存在但 responseWindow 已空时，本地 AI 仍应优先走 skip-token-response 而不是普通阶段动作', async () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 0;

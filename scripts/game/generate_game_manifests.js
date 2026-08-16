@@ -149,11 +149,18 @@ const collectManifestEntriesFromRoot = async ({ rootPath, rootLabel }) => {
         let criticalImageResolverExportName = null;
         let runtimeAdapterExportName = null;
         let hasAudioConfigExport = false;
+        let hasBoardRendererExport = false;
         if (hasGame) {
             const content = await fs.readFile(gamePath, 'utf8');
             hasAudioConfigExport = /\bexport\s+(?:const|let|var)\s+audioConfig\b/.test(content)
                 || /\bexport\s*\{[\s\S]*?\bas\s+audioConfig\b[\s\S]*?\}/.test(content)
                 || /\bexport\s*\{[\s\S]*?\baudioConfig\b[\s\S]*?\}/.test(content);
+        }
+        if (hasBoard) {
+            const content = await fs.readFile(boardPath, 'utf8');
+            hasBoardRendererExport = /\bexport\s+(?:const|let|var)\s+boardRenderer\b/.test(content)
+                || /\bexport\s*\{[\s\S]*?\bas\s+boardRenderer\b[\s\S]*?\}/.test(content)
+                || /\bexport\s*\{[\s\S]*?\bboardRenderer\b[\s\S]*?\}/.test(content);
         }
         if (hasLatencyConfig) {
             const content = await fs.readFile(latencyConfigPath, 'utf8');
@@ -184,6 +191,7 @@ const collectManifestEntriesFromRoot = async ({ rootPath, rootLabel }) => {
             manifestImport: toImportPath(path.relative(gamesRoot, manifestPath)),
             gameImport: hasGame ? toImportPath(path.relative(gamesRoot, gamePath)) : null,
             boardImport: hasBoard ? toImportPath(path.relative(gamesRoot, boardPath)) : null,
+            hasBoardRendererExport,
             tutorialImport: hasTutorial ? toImportPath(path.relative(gamesRoot, tutorialPath)) : null,
             criticalImageResolverImport: hasCriticalImageResolver
                 ? toImportPath(path.relative(gamesRoot, criticalImageResolverPath))
@@ -277,6 +285,9 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
             lines.push(`    return {`);
             lines.push(`        engineConfig: gameModule.engineConfig,`);
             lines.push(`        board: requireLazyModuleExport(boardModule, 'default', '${entry.boardImport}'),`);
+            if (entry.hasBoardRendererExport) {
+                lines.push(`        boardRenderer: boardModule.boardRenderer,`);
+            }
             if (entry.hasAudioConfigExport) {
                 lines.push(`        audioConfig: gameModule.audioConfig,`);
             }

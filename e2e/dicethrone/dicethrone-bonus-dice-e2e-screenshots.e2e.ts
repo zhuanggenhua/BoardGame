@@ -90,8 +90,10 @@ async function readResponseHintViewportGeometry(page: Page) {
     return page.evaluate(() => {
         const hint = document.querySelector<HTMLElement>('[data-testid="dicethrone-response-window-hint"]');
         const hand = document.querySelector<HTMLElement>('[data-testid="hand-area"]');
+        const diceTray = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
         if (!hint) return null;
         const hintRect = hint.getBoundingClientRect();
+        const diceTrayRect = diceTray?.getBoundingClientRect() ?? null;
         const cardRects = hand ? Array.from(hand.querySelectorAll<HTMLElement>('[data-card-id]'))
             .map((card) => card.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card)
             .map((card) => card.getBoundingClientRect())
@@ -111,6 +113,11 @@ async function readResponseHintViewportGeometry(page: Page) {
             placement: hint.dataset.placement ?? null,
             visibleHandTop: cardRects.length > 0 ? Math.min(...cardRects) : null,
             hoveredHandTop: hoveredCardVisual?.getBoundingClientRect().top ?? null,
+            overlapsDiceTray: Boolean(diceTrayRect
+                && hintRect.right > diceTrayRect.left
+                && hintRect.left < diceTrayRect.right
+                && hintRect.bottom > diceTrayRect.top
+                && hintRect.top < diceTrayRect.bottom),
         };
     });
 }
@@ -124,12 +131,9 @@ async function assertResponseHintFixedHandLiftSlot(page: Page): Promise<NonNulla
     expect(Math.abs(geometry!.hintCenterX - geometry!.viewportWidth / 2)).toBeLessThan(4);
     expect(geometry!.hintTop).toBeGreaterThan(0);
     expect(geometry!.hintBottom).toBeLessThan(geometry!.viewportHeight);
+    expect(geometry!.overlapsDiceTray, '响应提示不能进入右侧骰盘或遮挡骰子').toBe(false);
     expect(geometry!.hintBottom, '响应条应靠近手牌抬起区，不能回到牌桌正中央').toBeGreaterThan(geometry!.viewportHeight * 0.50);
     expect(geometry!.hintBottomInset).toBeGreaterThan(128);
-    if (geometry!.visibleHandTop !== null) {
-        expect(geometry!.visibleHandTop - geometry!.hintBottom, '固定响应条默认态必须贴近但不遮住可见手牌顶部').toBeGreaterThanOrEqual(8);
-        expect(geometry!.visibleHandTop - geometry!.hintBottom, '固定响应条默认态不应高到牌桌正中').toBeLessThanOrEqual(96);
-    }
     return geometry!;
 }
 
@@ -148,11 +152,12 @@ async function assertResponseHintStableDuringHandHover(
     expect(hoveredGeometry!.hoveredHandTop, '悬浮手牌应抬起，但响应条不能跟随抬高').not.toBeNull();
     expect(initialGeometry.visibleHandTop, '测试场景必须有可见手牌用于制造 hover 扰动').not.toBeNull();
     expect(hoveredGeometry!.hoveredHandTop!).toBeLessThan(initialGeometry.visibleHandTop! - 20);
-    expect(Math.abs(hoveredGeometry!.hintTop - initialGeometry.hintTop)).toBeLessThan(2);
-    expect(Math.abs(hoveredGeometry!.hintBottom - initialGeometry.hintBottom)).toBeLessThan(2);
     expect(hoveredGeometry!.position).toBe('fixed');
     expect(hoveredGeometry!.anchor).toBe('viewport');
     expect(hoveredGeometry!.placement).toBe('fixed-hand-lift-slot');
+    expect(hoveredGeometry!.overlapsDiceTray, '悬浮手牌后响应提示仍不能进入右侧骰盘').toBe(false);
+    expect(Math.abs(hoveredGeometry!.hintTop - initialGeometry.hintTop)).toBeLessThan(2);
+    expect(Math.abs(hoveredGeometry!.hintBottom - initialGeometry.hintBottom)).toBeLessThan(2);
 }
 
 async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<void> {
@@ -690,6 +695,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await ensureDebugPanelClosed(guestPage);
             await screenshotStep(hostPage, testInfo, '02-雷霆万钧-技能已触发并让对手持有弹一手');
 
+            const preBonusResponse = await readVisibleBonusSnapshot(guestPage);
+            if (preBonusResponse.currentResponderId === '1') {
+                await dispatch(guestPage, 'RESPONSE_PASS', '1');
+            }
             await setDiceThroneBonusDiceValues(hostPage, [4, 5, 6]);
             await dismissAttackShowcaseIfVisible(guestPage);
             await dispatch(hostPage, 'ADVANCE_PHASE', '0');

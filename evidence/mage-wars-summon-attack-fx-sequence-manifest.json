@@ -1,0 +1,50 @@
+{
+  "title": "Mage Wars 召唤与攻击必要过程帧",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤来源和目标区域.jpg",
+      "label": "兽王召唤：来源卡与目标格",
+      "transition": "起点：兽王侧选择野性山猫，并指定标准地图上的目标格"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤光柱过程帧.jpg",
+      "label": "兽王召唤：目标格召唤光柱",
+      "transition": "从来源卡施放后，召唤光柱出现在目标格，不是空白或无特效"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤完成单位落场.jpg",
+      "label": "兽王召唤：野性山猫落场",
+      "transition": "召唤动画结束后，野性山猫作为单位出现在目标格"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+      "label": "女祭司召唤：来源卡与目标格",
+      "transition": "第二个派系同样从法术来源进入目标格召唤流程"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+      "label": "女祭司召唤：目标格召唤光柱",
+      "transition": "阿希拉牧师召唤过程中，目标格出现可见召唤光柱"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+      "label": "女祭司召唤：阿希拉牧师落场",
+      "transition": "召唤完成后，阿希拉牧师作为单位出现在目标格"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.jpg",
+      "label": "攻击法术：来源到目标路径",
+      "transition": "选中间歇喷泉并点目标后，画面出现来源格到目标格的投射路径"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-投射物飞行中.jpg",
+      "label": "攻击法术：投射物飞行中",
+      "transition": "投射物处于飞行过程帧，证明不是直接跳到最终伤害"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg",
+      "label": "攻击法术：命中与伤害飘字",
+      "transition": "投射物到达目标后，目标处出现命中反馈和伤害飘字"
+    }
+  ]
+}

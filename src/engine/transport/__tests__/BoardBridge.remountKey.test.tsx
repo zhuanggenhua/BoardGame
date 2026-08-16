@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameEngineConfig } from '../server';
 import type { GameBoardProps } from '../protocol';
+import type { ImperativeBoardRenderer } from '../../boardRenderer';
 import { BoardBridge, GameClientOverrideProvider, LocalGameProvider, useGameClient } from '../react';
 
 const testConfig = {
@@ -61,6 +62,60 @@ describe('BoardBridge remountKey', () => {
         expect(screen.getByTestId('board-player')).toHaveTextContent('2');
         expect(mountSpy).toHaveBeenCalledTimes(1);
         expect(unmountSpy).not.toHaveBeenCalled();
+    });
+
+    it('imperative renderer 后端在 playerID 切换时只 update，不重建实例', () => {
+        const mountSpy = vi.fn();
+        const updateSpy = vi.fn();
+        const destroySpy = vi.fn();
+
+        const writePlayer = (element: HTMLElement, playerID: string | null) => {
+            element.replaceChildren();
+            const node = document.createElement('div');
+            node.setAttribute('data-testid', 'imperative-board-player');
+            node.textContent = playerID ?? 'none';
+            element.appendChild(node);
+        };
+
+        const renderer: ImperativeBoardRenderer<unknown> = {
+            kind: 'imperative',
+            engine: 'custom',
+            mount: ({ element }, props) => {
+                mountSpy(props.playerID);
+                writePlayer(element, props.playerID);
+                return {
+                    update: (nextProps) => {
+                        updateSpy(nextProps);
+                        writePlayer(element, nextProps.playerID);
+                    },
+                    destroy: destroySpy,
+                };
+            },
+        };
+
+        const Fixture = ({ playerId }: { playerId: string }) => (
+            <LocalGameProvider config={testConfig} numPlayers={3} seed="board-bridge-imperative-renderer">
+                <GameClientOverrideProvider playerId={playerId}>
+                    <BoardBridge renderer={renderer} remountKey={false} />
+                </GameClientOverrideProvider>
+            </LocalGameProvider>
+        );
+
+        const { rerender, unmount } = render(<Fixture playerId="1" />);
+
+        expect(screen.getByTestId('imperative-board-player')).toHaveTextContent('1');
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+
+        rerender(<Fixture playerId="2" />);
+
+        expect(screen.getByTestId('imperative-board-player')).toHaveTextContent('2');
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+        expect(updateSpy).toHaveBeenLastCalledWith(expect.objectContaining({ playerID: '2' }));
+        expect(destroySpy).not.toHaveBeenCalled();
+
+        unmount();
+
+        expect(destroySpy).toHaveBeenCalledTimes(1);
     });
 
     it('LocalGameProvider 指定 persistGameId 时，应按教程进度保存键恢复旧步骤', () => {

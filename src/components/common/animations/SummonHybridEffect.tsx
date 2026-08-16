@@ -22,7 +22,7 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { SummonShaderEffect } from './SummonShaderEffect';
-import { setupCanvas2d, type FxQuality } from '../../../engine/fx';
+import { setupCanvas2d, subscribeFxFrame, type FxQuality } from '../../../engine/fx';
 import type { SummonIntensity, SummonColorTheme, SummonColorSet } from './SummonEffect';
 import {
   type Particle,
@@ -47,6 +47,10 @@ export interface SummonHybridEffectProps {
   /** 爆发瞬间回调（progress ≈ 0.12，光柱冲天时触发，用于落地震动/音效） */
   onImpact?: () => void;
   onComplete?: () => void;
+  /** 动画时长倍率。默认 1；用于真实 E2E 过程帧需要更长可见窗口的棋盘召唤。 */
+  durationScale?: number;
+  /** 全屏暗角强度。普通棋盘单位召唤应显式降低，避免小单位特效变成全场遮挡。 */
+  dimStrength?: number;
   className?: string;
 }
 
@@ -169,7 +173,6 @@ interface ParticleLayerProps {
  */
 function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, onImpact, onAllParticlesDone }: ParticleLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef(0);
   const onDoneRef = useRef(onAllParticlesDone);
   const onImpactRef = useRef(onImpact);
   useEffect(() => { 
@@ -216,6 +219,7 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
     let shaderDone = false;
     /** 爆发瞬间是否已触发 onImpact（只触发一次） */
     let impactFired = false;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!startTime) { startTime = now; lastTime = now; }
@@ -243,6 +247,34 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
       const breathePhase = smoothstep(0.35, 0.40, t) * (1 - smoothstep(0.60, 0.70, t));
       const breathe = 1 + 0.08 * Math.sin(elapsed * 12) * breathePhase;
       const pillarW = pillarBaseWidth * breathe;
+      const visibility = smoothstep(0.04, 0.16, t) * (1 - smoothstep(0.70, 1.0, t));
+
+      // 2D 可见主体层：WebGL 光柱负责细节，这里补稳定的核心光晕和轻量光柱，
+      // 让真实截图与自动像素审计都能捕捉到召唤过程帧。
+      if (visibility > 0.01) {
+        const [mainR, mainG, mainB] = colors.main;
+        const [brightR, brightG, brightB] = colors.bright;
+        const coreRadius = pillarBaseWidth * (isStrong ? 4.8 : 4.0) * (0.9 + 0.16 * Math.sin(elapsed * 11));
+        const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius);
+        coreGradient.addColorStop(0, `rgba(255,255,255,${0.88 * visibility})`);
+        coreGradient.addColorStop(0.2, `rgba(${brightR},${brightG},${brightB},${0.72 * visibility})`);
+        coreGradient.addColorStop(0.58, `rgba(${mainR},${mainG},${mainB},${0.34 * visibility})`);
+        coreGradient.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = coreGradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (pillarH > 6) {
+          const pillarGradient = ctx.createLinearGradient(cx, cy, cx, cy - pillarH);
+          pillarGradient.addColorStop(0, `rgba(255,255,255,${0.72 * visibility})`);
+          pillarGradient.addColorStop(0.24, `rgba(${brightR},${brightG},${brightB},${0.56 * visibility})`);
+          pillarGradient.addColorStop(0.76, `rgba(${mainR},${mainG},${mainB},${0.28 * visibility})`);
+          pillarGradient.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = pillarGradient;
+          ctx.fillRect(cx - pillarW * 1.8, cy - pillarH, pillarW * 3.6, pillarH);
+        }
+      }
 
       // 每帧最大生成数（控制粒子密度，作为 Shader 的点缀而非主体）
       const maxPerFrame = quality === 'reduced' ? 1 : (isStrong ? 2 : 1);
@@ -369,20 +401,20 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
       }
       const totalParticles = riseParticles.length + burstParticles.length + emberParticles.length;
       if (shaderDone && totalParticles === 0) {
+        unsubscribeFrame?.();
         onDoneRef.current();
         return;
       }
-
-      rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    return () => unsubscribeFrame?.();
   }, [colors, isStrong, originY, quality, totalDuration]);
 
   useEffect(() => {
     if (!active) return;
-    render();
-    return () => cancelAnimationFrame(rafRef.current);
+    const cleanupFrame = render();
+    return () => cleanupFrame?.();
   }, [active, render]);
 
   if (!active) return null;
@@ -416,7 +448,6 @@ interface DimmingOverlayProps {
 
 function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -426,6 +457,7 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
     }
 
     let startTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
     const loop = (now: number) => {
       if (!startTime) startTime = now;
       const elapsed = (now - startTime) / 1000;
@@ -436,12 +468,12 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
       const dimDown = 1 - smoothstep(0.65, 1.0, t);
       overlay.style.opacity = String(dimUp * dimDown * dimStrength);
 
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(loop);
+      if (t >= 1) {
+        unsubscribeFrame?.();
       }
     };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    return () => unsubscribeFrame?.();
   }, [active, dimStrength, totalDuration]);
 
   if (!active) return null;
@@ -453,7 +485,8 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
       ref={overlayRef}
       className="fixed inset-0 pointer-events-none"
       style={{
-        zIndex: 50,
+        // 暗角是背景聚焦层，必须低于 FxLayer(z-20)，否则会把光柱和粒子本体一起压暗。
+        zIndex: 15,
         opacity: 0,
         background: `radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.92) 100%)`,
       }}
@@ -477,6 +510,8 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
   quality = 'full',
   onImpact,
   onComplete,
+  durationScale = 1,
+  dimStrength,
   className = '',
 }) => {
   const onCompleteRef = useRef(onComplete);
@@ -487,7 +522,8 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
   }, [onComplete, onImpact]);
 
   const isStrong = intensity === 'strong';
-  const totalDuration = isStrong ? 1.4 : 1.1;
+  const resolvedDurationScale = Math.max(0.75, durationScale);
+  const totalDuration = (isStrong ? 1.4 : 1.1) * resolvedDurationScale;
   // 稳定颜色引用，避免每次渲染重建导致 ParticleLayer 的 RAF 被反复清理重启
   const colors = useMemo(() => resolveColors(color, customColors), [color, customColors]);
 
@@ -535,7 +571,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
       {/* 底层：CSS 暗角遮罩（零 GPU 开销，替代 shader 全屏 vignette） */}
       <DimmingOverlay
         active={active}
-        dimStrength={isStrong ? 0.6 : 0.45}
+        dimStrength={dimStrength ?? (isStrong ? 0.6 : 0.45)}
         totalDuration={totalDuration}
       />
       {/* 中层：WebGL Shader 光柱（窄条渲染，dimStrength=0 跳过 vignette） */}
@@ -556,6 +592,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
           originY={originY}
           dimStrength={0}
           quality={quality}
+          durationScale={resolvedDurationScale}
           onComplete={handleShaderComplete}
         />
       </div>

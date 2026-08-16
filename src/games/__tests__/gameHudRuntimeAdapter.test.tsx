@@ -19,13 +19,15 @@ vi.mock('../registry', () => ({
 }));
 
 describe('gameHudRuntimeAdapter', () => {
-    it('只有 smashup 才渲染 HUD 运行时设置区块', () => {
+    it('通用图形设置始终渲染，smashup 额外渲染专属设置', () => {
         const t = (key: string) => key;
 
         const { rerender } = render(<>{GameHudRuntimeSettingsSection({ gameId: 'splendor', t })}</>);
+        expect(screen.getByText('hud.graphics.title')).toBeInTheDocument();
         expect(screen.queryByText('hud.smashup.title')).toBeNull();
 
         rerender(<>{GameHudRuntimeSettingsSection({ gameId: 'smashup', t })}</>);
+        expect(screen.getByText('hud.graphics.title')).toBeInTheDocument();
         expect(screen.getByText('hud.smashup.title')).toBeInTheDocument();
         expect(screen.getByText('hud.smashup.overlay')).toBeInTheDocument();
     });

@@ -23,7 +23,13 @@
 
 import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import {
+    resolveFxDpr,
+    scheduleFxFrameCallback,
+    subscribeFxFrame,
+    type FxFrameSubscription,
+    type FxQuality,
+} from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -320,7 +326,6 @@ const SlashCanvas: React.FC<{
 }> = ({ lines, color, duration, width, glow, trail, quality, onComplete }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const rafRef = useRef(0);
     const startTimeRef = useRef(0);
     const sparksRef = useRef<Spark[]>([]);
     const rgb = React.useMemo(() => parseColor(color), [color]);
@@ -374,6 +379,7 @@ const SlashCanvas: React.FC<{
 
         // 快照 lines，避免闭包引用被外部修改
         const linesSnapshot = lines.map(l => ({ ...l }));
+        let unsubscribeFrame: (() => void) | undefined;
 
         const loop = (now: number) => {
             const elapsed = now - startTimeRef.current;
@@ -382,6 +388,7 @@ const SlashCanvas: React.FC<{
 
             if (elapsed > totalMs) {
                 ctx.clearRect(0, 0, cw, ch);
+                unsubscribeFrame?.();
                 onCompleteRef.current();
                 return;
             }
@@ -417,13 +424,12 @@ const SlashCanvas: React.FC<{
             }
 
             updateAndDrawSparks(ctx, sparksRef.current, dt, rgb);
-            rafRef.current = requestAnimationFrame(loop);
         };
 
-        rafRef.current = requestAnimationFrame(loop);
+        unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
         return () => {
-            cancelAnimationFrame(rafRef.current);
+            unsubscribeFrame?.();
             sparksRef.current = [];
         };
     // lines/onComplete 通过快照/ref 持有，不放入依赖
@@ -555,15 +561,28 @@ export const getSlashPresetByDamage = (damage: number): SlashConfig => {
 export const useSlashEffect = () => {
     const [isActive, setIsActive] = useState(false);
     const [config, setConfig] = useState<SlashConfig>({});
-    const timerRef = useRef<number>(0);
+    const cancelActivateRef = useRef<FxFrameSubscription | undefined>(undefined);
+    const cancelResetRef = useRef<FxFrameSubscription | undefined>(undefined);
+
+    useEffect(() => () => {
+        cancelActivateRef.current?.();
+        cancelResetRef.current?.();
+        cancelActivateRef.current = undefined;
+        cancelResetRef.current = undefined;
+    }, []);
 
     const triggerSlash = useCallback((overrideConfig?: SlashConfig) => {
         setIsActive(false);
-        window.clearTimeout(timerRef.current);
-        requestAnimationFrame(() => {
+        cancelActivateRef.current?.();
+        cancelResetRef.current?.();
+        cancelActivateRef.current = scheduleFxFrameCallback(0, () => {
             if (overrideConfig) setConfig(overrideConfig);
             setIsActive(true);
-            timerRef.current = window.setTimeout(() => setIsActive(false), 50);
+            cancelResetRef.current = scheduleFxFrameCallback(50, () => {
+                setIsActive(false);
+                cancelResetRef.current = undefined;
+            });
+            cancelActivateRef.current = undefined;
         });
     }, []);
 

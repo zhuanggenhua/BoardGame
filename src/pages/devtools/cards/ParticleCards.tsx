@@ -8,6 +8,7 @@ import { Sparkles, Skull, Trophy, Wand2, Zap, RotateCw } from 'lucide-react';
 import { BurstParticles, BURST_PRESETS } from '../../../components/common/animations/BurstParticles';
 import { VictoryParticles } from '../../../components/common/animations/VictoryParticles';
 import { SummonEffect } from '../../../components/common/animations/SummonEffect';
+import { BoardSummonEffectPreset } from '../../../components/common/animations/BoardFxPresets';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ShatterEffect } from '../../../components/common/animations/ShatterEffect';
 import { useScreenShake } from '../../../games/summonerwars/ui/BoardEffects';
@@ -27,6 +28,13 @@ import {
 // ============================================================================
 
 const getBurstLabel = (t: (key: string) => string, name: string) => t(`devtools.effectPreview.particle.shared.labels.${name}`);
+
+const BOARD_SUMMON_PRESET_CELL = {
+  left: 40,
+  top: 40,
+  width: 20,
+  height: 20,
+};
 
 // ============================================================================
 // 爆发粒子
@@ -270,6 +278,56 @@ export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 };
 
 // ============================================================================
+// 棋盘召唤 preset（通用组件入口）
+// ============================================================================
+
+export const BoardSummonPresetCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
+  const [isStrong, setIsStrong] = useState(false);
+  const [color, setColor] = useState<'blue' | 'gold'>('blue');
+  const { active, fire, reset, stats } = useEffectTrigger(2200);
+
+  const trigger = useCallback((strong: boolean, nextColor: 'blue' | 'gold') => {
+    setIsStrong(strong);
+    setColor(nextColor);
+    fire();
+  }, [fire]);
+
+  return (
+    <EffectCard
+      title={t('devtools.effectPreview.particle.board_summon_preset.title')}
+      icon={Wand2}
+      iconColor={iconColor}
+      desc={t('devtools.effectPreview.particle.board_summon_preset.description')}
+      stats={stats}
+      buttons={<>
+        <TriggerButton label={t('devtools.effectPreview.particle.board_summon_preset.buttons.blue')} onClick={() => trigger(false, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.board_summon_preset.buttons.blue_strong')} onClick={() => trigger(true, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.board_summon_preset.buttons.gold')} onClick={() => trigger(false, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
+        <TriggerButton label={t('devtools.effectPreview.particle.board_summon_preset.buttons.gold_strong')} onClick={() => trigger(true, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
+      </>}
+    >
+      <div className="absolute inset-0 overflow-hidden rounded-lg">
+        {useRealCards && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/3 w-44 h-32 rounded border border-slate-600/30">
+            <CardSprite className="absolute inset-0 rounded" />
+          </div>
+        )}
+        {active && (
+          <BoardSummonEffectPreset
+            cellBox={BOARD_SUMMON_PRESET_CELL}
+            intensity={isStrong ? 'strong' : 'normal'}
+            color={color}
+            hostTestId="fx-preview-board-summon-preset"
+            onComplete={reset}
+          />
+        )}
+      </div>
+    </EffectCard>
+  );
+};
+
+// ============================================================================
 // 充能旋涡（WebGL Shader）
 // ============================================================================
 
@@ -406,6 +464,7 @@ export const meta: EffectEntryMeta[] = [
   { id: 'victory', labelKey: 'devtools.effectPreview.entries.particle.victory.label', icon: Trophy, component: VictoryCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.victory.usage' },
   { id: 'summon', labelKey: 'devtools.effectPreview.entries.particle.summon.label', icon: Wand2, component: SummonCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.summon.usage' },
   { id: 'summonShader', labelKey: 'devtools.effectPreview.entries.particle.summonShader.label', icon: Zap, component: SummonShaderCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.summonShader.usage' },
+  { id: 'boardSummonPreset', labelKey: 'devtools.effectPreview.entries.particle.boardSummonPreset.label', icon: Wand2, component: BoardSummonPresetCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.boardSummonPreset.usage' },
   { id: 'vortex', labelKey: 'devtools.effectPreview.entries.particle.vortex.label', icon: RotateCw, component: VortexCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.vortex.usage' },
   { id: 'combatShockwave', labelKey: 'devtools.effectPreview.entries.particle.combatShockwave.label', icon: Zap, component: CombatShockwaveCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.combatShockwave.usage' },
 ];

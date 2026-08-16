@@ -1,0 +1,2066 @@
+{
+  "timestamp": "2026-08-16T06-52-34-397Z",
+  "target": "大杀四方游戏内触发/攻击相关特效性能",
+  "userSymptom": "大杀四方现在有点卡，怀疑最近新增攻击/触发特效导致",
+  "environment": {
+    "webdriver": true,
+    "e2eTestMode": true,
+    "imageGateSkipped": true,
+    "devicePixelRatio": 1,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "href": "http://127.0.0.1:6273/play/smashup?skipInitialization=true"
+  },
+  "notes": [
+    "本探针通过 TestHarness 打开 /play/smashup 并注入状态，验证页面渲染性能。",
+    "本次 E2E 入口跳过关键图片门禁，只代表页面/特效渲染性能，不代表图片预加载链路健康。",
+    "触发窗口通过正式 EventStream 追加 su:minion_destroyed / su:power_counter_added 事件，不直接调用 React 内部组件。",
+    "这是默认触发特效改成极简目标徽标后的同入口复测证据，用于验证本轮性能优化收益。"
+  ],
+  "windows": [
+    {
+      "label": "baseline-board-idle",
+      "pagePerf": {
+        "frameCount": 170,
+        "avgFrameMs": 16.677058823459287,
+        "p95FrameMs": 16.799999999999272,
+        "maxFrameMs": 33.399999999999636,
+        "framesOver16_7ms": 71,
+        "framesOver33ms": 1,
+        "framesOver50ms": 0,
+        "longTaskCount": 0,
+        "longTaskMaxMs": 0,
+        "longTaskTotalMs": 0,
+        "sampleDurationMs": 2847.899999976158,
+        "memory": {}
+      },
+      "domInventory": {
+        "counts": {
+          "totalElements": 308,
+          "canvas": 0,
+          "images": 7,
+          "smashupBases": 3,
+          "smashupMinions": 3,
+          "triggeredFxCanvases": 0,
+          "triggeredFxLines": 0,
+          "triggeredFxTargets": 0,
+          "transitionAll": 287,
+          "transitionColorOrBorder": 8,
+          "transitionBoxShadow": 7,
+          "boxShadow": 33,
+          "filter": 3,
+          "backdropFilter": 11,
+          "activeAnimation": 0,
+          "willChange": 1
+        },
+        "highCost": [
+          {
+            "tag": "html",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "head",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "body",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "relative w-full game-page-viewport overflow-hidden font-sans",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "w-full h-full",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          }
+        ]
+      },
+      "trace": {
+        "fileBytes": 2650559,
+        "eventCount": 11736,
+        "textHits": {
+          "border-color": 0,
+          "box-shadow": 0,
+          "filter": 783,
+          "backdrop-filter": 0,
+          "transition-all": 0,
+          "transition-colors": 0,
+          "UpdateLayoutTree": 0,
+          "FireAnimationFrame": 154,
+          "Layout": 308,
+          "Paint": 163,
+          "ImageDecodeTask": 5
+        },
+        "topDurations": [
+          {
+            "name": "RunTask",
+            "count": 2337,
+            "totalMs": 115.0320000000003,
+            "maxMs": 11.917
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "count": 5,
+            "totalMs": 49.525000000000006,
+            "maxMs": 22.896
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "count": 6,
+            "totalMs": 29.472,
+            "maxMs": 11.909
+          },
+          {
+            "name": "FireAnimationFrame",
+            "count": 154,
+            "totalMs": 9.980000000000008,
+            "maxMs": 1.305
+          },
+          {
+            "name": "FunctionCall",
+            "count": 183,
+            "totalMs": 8.439999999999996,
+            "maxMs": 0.852
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "count": 7,
+            "totalMs": 7.8420000000000005,
+            "maxMs": 1.283
+          },
+          {
+            "name": "RasterTask",
+            "count": 4,
+            "totalMs": 4.578,
+            "maxMs": 1.274
+          },
+          {
+            "name": "ImageDecodeTask",
+            "count": 5,
+            "totalMs": 2.4069999999999996,
+            "maxMs": 1.062
+          },
+          {
+            "name": "Paint",
+            "count": 5,
+            "totalMs": 1.892,
+            "maxMs": 0.565
+          },
+          {
+            "name": "IOHandler::OnIOCompleted",
+            "count": 1,
+            "totalMs": 1.248,
+            "maxMs": 1.248
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "count": 1,
+            "totalMs": 1.232,
+            "maxMs": 1.232
+          },
+          {
+            "name": "Receive mojo message",
+            "count": 1,
+            "totalMs": 1.215,
+            "maxMs": 1.215
+          }
+        ],
+        "longSlices": [
+          {
+            "name": "ThreadPool_RunTask",
+            "durMs": 22.896,
+            "ts": 456269050434,
+            "cat": "toplevel"
+          }
+        ]
+      },
+      "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-游戏内特效性能诊断\\2026-08-16T06-52-34-397Z\\chrome-trace-baseline-board-idle.json"
+    },
+    {
+      "label": "ability-triggered-destroy-fx",
+      "pagePerf": {
+        "frameCount": 281,
+        "avgFrameMs": 17.34092526694634,
+        "p95FrameMs": 16.799999999999272,
+        "maxFrameMs": 133.39999999999964,
+        "framesOver16_7ms": 117,
+        "framesOver33ms": 2,
+        "framesOver50ms": 2,
+        "longTaskCount": 2,
+        "longTaskMaxMs": 116,
+        "longTaskTotalMs": 230,
+        "sampleDurationMs": 4877.900000035763,
+        "memory": {}
+      },
+      "domInventory": {
+        "counts": {
+          "totalElements": 308,
+          "canvas": 0,
+          "images": 7,
+          "smashupBases": 3,
+          "smashupMinions": 3,
+          "triggeredFxCanvases": 0,
+          "triggeredFxLines": 0,
+          "triggeredFxTargets": 0,
+          "transitionAll": 287,
+          "transitionColorOrBorder": 8,
+          "transitionBoxShadow": 7,
+          "boxShadow": 33,
+          "filter": 3,
+          "backdropFilter": 11,
+          "activeAnimation": 0,
+          "willChange": 1
+        },
+        "highCost": [
+          {
+            "tag": "html",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "head",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "body",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "relative w-full game-page-viewport overflow-hidden font-sans",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "w-full h-full",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          }
+        ]
+      },
+      "trace": {
+        "fileBytes": 6788722,
+        "eventCount": 30682,
+        "textHits": {
+          "border-color": 0,
+          "box-shadow": 0,
+          "filter": 1341,
+          "backdrop-filter": 0,
+          "transition-all": 0,
+          "transition-colors": 0,
+          "UpdateLayoutTree": 79,
+          "FireAnimationFrame": 334,
+          "Layout": 732,
+          "Paint": 273,
+          "ImageDecodeTask": 2
+        },
+        "topDurations": [
+          {
+            "name": "RunTask",
+            "count": 5073,
+            "totalMs": 906.0809999999982,
+            "maxMs": 116.655
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "count": 154,
+            "totalMs": 695.6100000000004,
+            "maxMs": 116.595
+          },
+          {
+            "name": "FunctionCall",
+            "count": 488,
+            "totalMs": 260.7059999999991,
+            "maxMs": 114.013
+          },
+          {
+            "name": "v8.callFunction",
+            "count": 8,
+            "totalMs": 243.16299999999998,
+            "maxMs": 116.551
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "count": 1,
+            "totalMs": 114.578,
+            "maxMs": 114.578
+          },
+          {
+            "name": "FireAnimationFrame",
+            "count": 334,
+            "totalMs": 25.116999999999955,
+            "maxMs": 0.588
+          },
+          {
+            "name": "UpdateLayoutTree",
+            "count": 79,
+            "totalMs": 23.862000000000002,
+            "maxMs": 0.724
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "count": 7,
+            "totalMs": 22.163,
+            "maxMs": 10.061
+          },
+          {
+            "name": "Layout",
+            "count": 6,
+            "totalMs": 4.522,
+            "maxMs": 2.982
+          },
+          {
+            "name": "TimerFire",
+            "count": 3,
+            "totalMs": 4.513,
+            "maxMs": 2.096
+          },
+          {
+            "name": "MinorGC",
+            "count": 3,
+            "totalMs": 4.308999999999999,
+            "maxMs": 1.834
+          },
+          {
+            "name": "V8.GCScavenger",
+            "count": 3,
+            "totalMs": 3.909,
+            "maxMs": 1.513
+          },
+          {
+            "name": "V8.GC_SCAVENGER",
+            "count": 3,
+            "totalMs": 3.676,
+            "maxMs": 1.297
+          },
+          {
+            "name": "V8.GC_SCAVENGER_SCAVENGE",
+            "count": 3,
+            "totalMs": 3.2920000000000003,
+            "maxMs": 1.215
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "count": 2,
+            "totalMs": 2.935,
+            "maxMs": 1.572
+          },
+          {
+            "name": "RasterTask",
+            "count": 2,
+            "totalMs": 2.909,
+            "maxMs": 1.559
+          },
+          {
+            "name": "Receive mojo message",
+            "count": 2,
+            "totalMs": 2.327,
+            "maxMs": 1.308
+          },
+          {
+            "name": "XHRLoad",
+            "count": 1,
+            "totalMs": 2.032,
+            "maxMs": 2.032
+          },
+          {
+            "name": "Paint",
+            "count": 14,
+            "totalMs": 0.5620000000000002,
+            "maxMs": 0.155
+          },
+          {
+            "name": "ImageDecodeTask",
+            "count": 2,
+            "totalMs": 0.02,
+            "maxMs": 0.013
+          }
+        ],
+        "longSlices": [
+          {
+            "name": "RunTask",
+            "durMs": 116.655,
+            "ts": 456271682063,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 116.595,
+            "ts": 456271682064,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 116.551,
+            "ts": 456271682090,
+            "cat": "v8"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 114.621,
+            "ts": 456271564490,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 114.581,
+            "ts": 456271564490,
+            "cat": "toplevel"
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "durMs": 114.578,
+            "ts": 456271564492,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 114.545,
+            "ts": 456271564508,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 114.013,
+            "ts": 456271564508,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 112.055,
+            "ts": 456271682092,
+            "cat": "devtools.timeline"
+          }
+        ]
+      },
+      "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-游戏内特效性能诊断\\2026-08-16T06-52-34-397Z\\chrome-trace-ability-triggered-destroy-fx.json"
+    },
+    {
+      "label": "ability-triggered-buff-fx",
+      "pagePerf": {
+        "frameCount": 220,
+        "avgFrameMs": 17.527727272618904,
+        "p95FrameMs": 16.799999999999272,
+        "maxFrameMs": 100.10000000000218,
+        "framesOver16_7ms": 110,
+        "framesOver33ms": 4,
+        "framesOver50ms": 2,
+        "longTaskCount": 2,
+        "longTaskMaxMs": 104,
+        "longTaskTotalMs": 206,
+        "sampleDurationMs": 3864.199999988079,
+        "memory": {}
+      },
+      "domInventory": {
+        "counts": {
+          "totalElements": 308,
+          "canvas": 0,
+          "images": 7,
+          "smashupBases": 3,
+          "smashupMinions": 3,
+          "triggeredFxCanvases": 0,
+          "triggeredFxLines": 0,
+          "triggeredFxTargets": 0,
+          "transitionAll": 287,
+          "transitionColorOrBorder": 8,
+          "transitionBoxShadow": 7,
+          "boxShadow": 33,
+          "filter": 3,
+          "backdropFilter": 11,
+          "activeAnimation": 0,
+          "willChange": 1
+        },
+        "highCost": [
+          {
+            "tag": "html",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "head",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "body",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "relative w-full game-page-viewport overflow-hidden font-sans",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "div",
+            "testId": null,
+            "className": "w-full h-full",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          }
+        ]
+      },
+      "trace": {
+        "fileBytes": 5698397,
+        "eventCount": 25775,
+        "textHits": {
+          "border-color": 0,
+          "box-shadow": 0,
+          "filter": 1039,
+          "backdrop-filter": 0,
+          "transition-all": 0,
+          "transition-colors": 0,
+          "UpdateLayoutTree": 78,
+          "FireAnimationFrame": 271,
+          "Layout": 617,
+          "Paint": 211,
+          "ImageDecodeTask": 2
+        },
+        "topDurations": [
+          {
+            "name": "RunTask",
+            "count": 4032,
+            "totalMs": 768.2249999999945,
+            "maxMs": 103.979
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "count": 115,
+            "totalMs": 582.64,
+            "maxMs": 103.946
+          },
+          {
+            "name": "FunctionCall",
+            "count": 410,
+            "totalMs": 227.17099999999957,
+            "maxMs": 103.271
+          },
+          {
+            "name": "v8.callFunction",
+            "count": 4,
+            "totalMs": 208.999,
+            "maxMs": 103.904
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "count": 1,
+            "totalMs": 103.944,
+            "maxMs": 103.944
+          },
+          {
+            "name": "FireAnimationFrame",
+            "count": 271,
+            "totalMs": 20.812999999999963,
+            "maxMs": 0.528
+          },
+          {
+            "name": "UpdateLayoutTree",
+            "count": 78,
+            "totalMs": 18.79500000000001,
+            "maxMs": 0.403
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "count": 7,
+            "totalMs": 12.530999999999999,
+            "maxMs": 2.646
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "count": 3,
+            "totalMs": 3.3629999999999995,
+            "maxMs": 1.253
+          },
+          {
+            "name": "RasterTask",
+            "count": 3,
+            "totalMs": 3.3339999999999996,
+            "maxMs": 1.242
+          },
+          {
+            "name": "Layout",
+            "count": 6,
+            "totalMs": 1.7959999999999998,
+            "maxMs": 0.424
+          },
+          {
+            "name": "TimerFire",
+            "count": 1,
+            "totalMs": 1.219,
+            "maxMs": 1.219
+          },
+          {
+            "name": "MinorGC",
+            "count": 1,
+            "totalMs": 1,
+            "maxMs": 1
+          },
+          {
+            "name": "Paint",
+            "count": 14,
+            "totalMs": 0.5750000000000002,
+            "maxMs": 0.135
+          },
+          {
+            "name": "ImageDecodeTask",
+            "count": 2,
+            "totalMs": 0.011,
+            "maxMs": 0.007
+          }
+        ],
+        "longSlices": [
+          {
+            "name": "RunTask",
+            "durMs": 103.979,
+            "ts": 456277315506,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 103.946,
+            "ts": 456277315507,
+            "cat": "toplevel"
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "durMs": 103.944,
+            "ts": 456277315508,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 103.904,
+            "ts": 456277315534,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 103.271,
+            "ts": 456277315534,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 102.953,
+            "ts": 456277421080,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 102.909,
+            "ts": 456277421081,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 102.878,
+            "ts": 456277421097,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 101.528,
+            "ts": 456277421099,
+            "cat": "devtools.timeline"
+          }
+        ]
+      },
+      "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-游戏内特效性能诊断\\2026-08-16T06-52-34-397Z\\chrome-trace-ability-triggered-buff-fx.json"
+    }
+  ],
+  "finalDomInventory": {
+    "counts": {
+      "totalElements": 308,
+      "canvas": 0,
+      "images": 7,
+      "smashupBases": 3,
+      "smashupMinions": 3,
+      "triggeredFxCanvases": 0,
+      "triggeredFxLines": 0,
+      "triggeredFxTargets": 0,
+      "transitionAll": 287,
+      "transitionColorOrBorder": 8,
+      "transitionBoxShadow": 7,
+      "boxShadow": 33,
+      "filter": 3,
+      "backdropFilter": 11,
+      "activeAnimation": 0,
+      "willChange": 1
+    },
+    "highCost": [
+      {
+        "tag": "html",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "head",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "script",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "title",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "title",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "script",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "style",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "style",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "body",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "div",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "div",
+        "testId": null,
+        "className": "relative w-full game-page-viewport overflow-hidden font-sans",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "div",
+        "testId": null,
+        "className": "w-full h-full",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "style",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      }
+    ]
+  },
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-游戏内特效性能诊断\\2026-08-16T06-52-34-397Z\\smashup-triggered-fx-after-sampling.png"
+}

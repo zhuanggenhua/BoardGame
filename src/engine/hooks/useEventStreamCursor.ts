@@ -44,6 +44,13 @@ export interface UseEventStreamCursorConfig {
     /** eventStream 的 entries 数组 */
     entries: EventStreamEntry[];
     /**
+     * 首次调用时是否消费当前已有 entries。
+     *
+     * 默认 false：适用于临时提示、音效、toast、进房后不应重播旧历史的消费者。
+     * 设为 true：适用于首次可见渲染可能晚于权威状态到达的必播动画消费者。
+     */
+    consumeInitialEntries?: boolean;
+    /**
      * reconcile 确认时是否继续消费新事件
      *
      * 默认 false：保持原行为，reconcile 只静默同步游标，避免重复动画。
@@ -122,7 +129,12 @@ export interface UseEventStreamCursorReturn {
  * ```
  */
 export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEventStreamCursorReturn {
-    const { entries, consumeOnReconcile = false, reconnectToken } = config;
+    const {
+        entries,
+        consumeInitialEntries = false,
+        consumeOnReconcile = false,
+        reconnectToken,
+    } = config;
 
     // 从 Context 自动读取乐观回滚信号（GameProvider 注入）
     const rollback = useEventStreamRollback();
@@ -160,6 +172,10 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
         if (isFirstCallRef.current) {
             isFirstCallRef.current = false;
             suppressEmptyResetRef.current = false;
+            if (consumeInitialEntries && curLen > 0) {
+                lastSeenIdRef.current = entries[curLen - 1].id;
+                return { entries, didReset: false, didOptimisticRollback: false };
+            }
             syncCursorToLatest();
             return { entries: [], didReset: false, didOptimisticRollback: false };
         }
@@ -247,7 +263,7 @@ export function useEventStreamCursor(config: UseEventStreamCursorConfig): UseEve
             lastSeenIdRef.current = newEntries[newEntries.length - 1].id;
         }
         return { entries: newEntries, didReset: false, didOptimisticRollback: false };
-    }, [entries, consumeOnReconcile, reconnectToken, rollback.seq, rollback.watermark, rollback.reconcileSeq]);
+    }, [entries, consumeInitialEntries, consumeOnReconcile, reconnectToken, rollback.seq, rollback.watermark, rollback.reconcileSeq]);
 
     const getCursor = useCallback(() => lastSeenIdRef.current, []);
 

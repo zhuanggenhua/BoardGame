@@ -63,6 +63,111 @@ async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: stri
     await page.screenshot(withJpegEvidenceScreenshotOptions({ path, fullPage: false, timeout: 20000 }));
 }
 
+async function expectNoLegacyTokenResponseSurfaces(page: Page): Promise<void> {
+    await expect(page.getByTestId('token-response-modal')).toHaveCount(0);
+    await expect(page.getByTestId('dicethrone-token-response-inline')).toHaveCount(0);
+    await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
+}
+
+async function expectSharedResponsePromptInFixedHandLiftSlot(page: Page): Promise<void> {
+    const prompt = page.getByTestId('dicethrone-response-window-hint');
+    await expect(prompt).toBeVisible({ timeout: 5000 });
+    await expect(prompt).toHaveAttribute('data-anchor', 'viewport', { timeout: 5000 });
+    await expect(prompt).toHaveAttribute('data-placement', 'fixed-hand-lift-slot', { timeout: 5000 });
+    await expect(prompt.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
+
+    const layout = await page.evaluate(() => {
+        const toBox = (rect: DOMRect | null | undefined) => rect
+            ? {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            }
+            : null;
+        const overlaps = (
+            left: DOMRect | null | undefined,
+            right: DOMRect | null | undefined,
+        ) => Boolean(left && right
+            && left.right > right.left
+            && left.left < right.right
+            && left.bottom > right.top
+            && left.top < right.bottom);
+        const promptNode = document.querySelector<HTMLElement>('[data-testid="dicethrone-response-window-hint"]');
+        const diceTrayNode = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
+        const promptRect = promptNode?.getBoundingClientRect();
+        const diceTrayRect = diceTrayNode?.getBoundingClientRect();
+
+        return {
+            prompt: toBox(promptRect),
+            diceTray: toBox(diceTrayRect),
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            promptCenterX: promptRect ? promptRect.left + promptRect.width / 2 : null,
+            promptBottomInset: promptRect ? window.innerHeight - promptRect.bottom : null,
+            promptInSeat: Boolean(promptNode?.closest('[data-player-seat-anchor]')),
+            overlapsDiceTray: overlaps(promptRect, diceTrayRect),
+        };
+    });
+
+    expect(layout.prompt).not.toBeNull();
+    expect(layout.promptInSeat).toBe(false);
+    expect(layout.overlapsDiceTray).toBe(false);
+    if (layout.prompt && typeof layout.promptCenterX === 'number') {
+        expect(Math.abs(layout.promptCenterX - layout.viewportWidth / 2)).toBeLessThan(4);
+        expect(layout.prompt.top).toBeGreaterThanOrEqual(0);
+        expect(layout.prompt.bottom).toBeLessThanOrEqual(layout.viewportHeight);
+        expect(layout.prompt.bottom, '响应提示应恢复到历史手牌抬起槽位，不能回到牌桌正中央').toBeGreaterThan(layout.viewportHeight * 0.50);
+        expect(layout.promptBottomInset ?? 0).toBeGreaterThan(128);
+    }
+}
+
+async function expectClickableTokenHighlight(page: Page, tokenTestId: string): Promise<void> {
+    const token = page.getByTestId(tokenTestId);
+    const halo = page.getByTestId(`${tokenTestId}-available-halo`);
+    const body = page.getByTestId(`${tokenTestId}-available-body`);
+    await expect(token).toHaveAttribute('data-token-clickable', 'true');
+    await expect(halo).toBeVisible({ timeout: 5000 });
+    await expect(body).toBeVisible({ timeout: 5000 });
+
+    const metrics = await token.evaluate((node, haloTestId) => {
+        const tokenRect = node.getBoundingClientRect();
+        const haloNode = document.querySelector<HTMLElement>(`[data-testid="${haloTestId}"]`);
+        const bodyNode = document.querySelector<HTMLElement>(`[data-testid="${haloTestId.replace('-available-halo', '-available-body')}"]`);
+        const haloRect = haloNode?.getBoundingClientRect();
+        const haloStyle = haloNode ? window.getComputedStyle(haloNode) : null;
+        const bodyStyle = bodyNode ? window.getComputedStyle(bodyNode) : null;
+        return {
+            tokenWidth: tokenRect.width,
+            tokenHeight: tokenRect.height,
+            haloWidth: haloRect?.width ?? 0,
+            haloHeight: haloRect?.height ?? 0,
+            haloBoxShadow: haloStyle?.boxShadow ?? 'none',
+            haloBackgroundImage: haloStyle?.backgroundImage ?? 'none',
+            haloBorderWidth: haloStyle ? Number.parseFloat(haloStyle.borderTopWidth) : 0,
+            haloAnimationName: haloStyle?.animationName ?? 'none',
+            bodyFilter: bodyStyle?.filter ?? 'none',
+        };
+    }, `${tokenTestId}-available-halo`);
+
+    expect(metrics.haloWidth).toBeGreaterThan(metrics.tokenWidth);
+    expect(metrics.haloHeight).toBeGreaterThan(metrics.tokenHeight);
+    expect(metrics.haloWidth).toBeGreaterThan(metrics.tokenWidth * 1.10);
+    expect(metrics.haloHeight).toBeGreaterThan(metrics.tokenHeight * 1.10);
+    expect(metrics.haloWidth).toBeLessThan(metrics.tokenWidth * 1.35);
+    expect(metrics.haloHeight).toBeLessThan(metrics.tokenHeight * 1.35);
+    expect(metrics.haloBorderWidth).toBeGreaterThanOrEqual(1.5);
+    expect(metrics.haloBorderWidth).toBeLessThanOrEqual(2.2);
+    expect(metrics.haloBoxShadow).not.toBe('none');
+    expect(metrics.haloBackgroundImage).toContain('conic-gradient');
+    expect(metrics.haloAnimationName).toBe('dicethrone-token-available-breathe');
+    expect(metrics.bodyFilter).toContain('brightness');
+    expect(metrics.bodyFilter).toContain('drop-shadow');
+}
+
 const dismissAttackShowcaseIfVisible = async (page: Page) => {
     const showcase = page.getByTestId('attack-showcase-overlay');
     if (!(await showcase.isVisible({ timeout: 1500 }).catch(() => false))) return;
@@ -272,6 +377,95 @@ async function injectMoonElfEvasiveResponseScene(page: Page): Promise<void> {
     }, TOKEN_IDS.EVASIVE);
 }
 
+async function injectMonkTaijiResponseScene(page: Page): Promise<void> {
+    await page.evaluate((taijiTokenId: string) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const nextState = structuredClone(state);
+        nextState.sys = {
+            ...(nextState.sys ?? {}),
+            phase: 'defensiveRoll',
+            interaction: {
+                current: {
+                    id: 'dt-token-response-monk-taiji-reduce-damage',
+                    kind: 'dt:token-response',
+                    playerId: '0',
+                    data: {
+                        pendingDamageId: 'monk-taiji-reduce-damage',
+                    },
+                },
+                queue: [],
+            },
+        };
+        nextState.core = {
+            ...(nextState.core ?? {}),
+            hostStarted: true,
+            activePlayerId: '1',
+            selectedCharacters: {
+                ...(nextState.core?.selectedCharacters ?? {}),
+                '0': 'monk',
+                '1': 'barbarian',
+            },
+            rollCount: 1,
+            rollLimit: 1,
+            rollConfirmed: true,
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                isDefendable: true,
+                sourceAbilityId: 'heavy-strike',
+                defenseAbilityId: 'zen-defense',
+                damage: 5,
+                bonusDamage: 0,
+                attackModifierBonusDamage: 0,
+                damageResolved: false,
+                resolvedDamage: 0,
+                preDefenseResolved: true,
+                offensiveRollEndTokenResolved: true,
+            },
+            pendingDamage: {
+                id: 'monk-taiji-reduce-damage',
+                sourcePlayerId: '1',
+                targetPlayerId: '0',
+                originalDamage: 5,
+                currentDamage: 5,
+                sourceAbilityId: 'heavy-strike',
+                responseType: 'beforeDamageReceived',
+                responderId: '0',
+                isFullyEvaded: false,
+            },
+            players: {
+                ...(nextState.core?.players ?? {}),
+                '0': {
+                    ...(nextState.core?.players?.['0'] ?? {}),
+                    resources: {
+                        ...((nextState.core?.players?.['0']?.resources ?? {}) as Record<string, number>),
+                        hp: 50,
+                    },
+                    tokens: {
+                        ...((nextState.core?.players?.['0']?.tokens ?? {}) as Record<string, number>),
+                        [taijiTokenId]: 2,
+                    },
+                },
+                '1': {
+                    ...(nextState.core?.players?.['1'] ?? {}),
+                    resources: {
+                        ...((nextState.core?.players?.['1']?.resources ?? {}) as Record<string, number>),
+                        hp: 50,
+                    },
+                },
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, TOKEN_IDS.TAIJI);
+}
+
 test.describe('Token 响应窗口完整流程', () => {
     test('攻击方暴击 token 注入后可见', async ({ page, game }, testInfo: TestInfo) => {
         await setupTokenScene(game, { '0': 'paladin', '1': 'barbarian' });
@@ -309,6 +503,79 @@ test.describe('Token 响应窗口完整流程', () => {
         await expectTokenCount(game, '0', TOKEN_IDS.CRIT, 1);
     });
 
+    test('武僧太极减伤走共享响应框并在跳过后结算血量', async ({ page, game }, testInfo) => {
+        await setupTokenScene(game, { '0': 'monk', '1': 'barbarian' }, '0');
+        await injectMonkTaijiResponseScene(page);
+
+        const taijiToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.TAIJI}`);
+        const sharedResponsePrompt = page.getByTestId('dicethrone-response-window-hint');
+
+        await expect(sharedResponsePrompt).toBeVisible({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
+        await expect(taijiToken).toBeVisible({ timeout: 5000 });
+        await expectClickableTokenHighlight(page, `dt-player-0-token-${TOKEN_IDS.TAIJI}`);
+        await expectNoLegacyTokenResponseSurfaces(page);
+        await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        await game.screenshot('太极响应-使用前共享提示贴近手牌且Token可点', testInfo);
+
+        await taijiToken.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const taijiUseEvent = [...entries]
+                .reverse()
+                .find((entry: any) => entry.event?.type === 'TOKEN_USED' && entry.event?.payload?.tokenId === TOKEN_IDS.TAIJI);
+
+            return {
+                phase: state?.sys?.phase ?? null,
+                currentDamage: state?.core?.pendingDamage?.currentDamage ?? null,
+                tokenUsage: state?.core?.pendingDamage?.tokenUsageTotals?.[TOKEN_IDS.TAIJI] ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                taiji: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TAIJI] ?? null,
+                damageModifier: taijiUseEvent?.event?.payload?.damageModifier ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'defensiveRoll',
+            currentDamage: 4,
+            tokenUsage: 1,
+            interactionKind: 'dt:token-response',
+            defenderHp: 50,
+            taiji: 1,
+            damageModifier: -1,
+        });
+
+        await expectNoLegacyTokenResponseSurfaces(page);
+        await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        const passButton = page.getByTestId('dicethrone-response-pass-button');
+        await expect(passButton).toHaveText(/^(跳过|Skip)$/);
+        await game.screenshot('太极响应-减伤后仍由共享提示跳过收口', testInfo);
+
+        await passButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                pendingDamage: state?.core?.pendingDamage ?? null,
+                interaction: state?.sys?.interaction?.current ?? null,
+                defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                taiji: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TAIJI] ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'main2',
+            pendingDamage: null,
+            interaction: null,
+            defenderHp: 46,
+            taiji: 1,
+        });
+
+        await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
+        await page.waitForTimeout(1200);
+        await game.screenshot('太极响应-跳过后按四点伤害扣血收口', testInfo);
+    });
+
     test('月精灵闪避成功后由共享响应框确认收口到 main2，不再卡在 defensiveRoll', async ({ page, game }, testInfo) => {
         await setupTokenScene(game, { '0': 'moon_elf', '1': 'shadow_thief' }, '0');
         await injectMoonElfEvasiveResponseScene(page);
@@ -319,10 +586,10 @@ test.describe('Token 响应窗口完整流程', () => {
         await expect(sharedResponsePrompt).toBeVisible({ timeout: 5000 });
         await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
         await expect(evasiveToken).toBeVisible({ timeout: 5000 });
-        await expect(evasiveToken).toHaveAttribute('data-token-clickable', 'true');
-        await expect(page.getByTestId('token-response-modal')).toHaveCount(0);
-        await expect(page.getByTestId('dicethrone-token-response-inline')).toHaveCount(0);
-        await game.screenshot('moon-elf-evasive-before-use', testInfo);
+        await expectClickableTokenHighlight(page, `dt-player-0-token-${TOKEN_IDS.EVASIVE}`);
+        await expectNoLegacyTokenResponseSurfaces(page);
+        await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        await game.screenshot('闪避响应-使用前共享提示贴近手牌且Token可点', testInfo);
 
         await evasiveToken.click();
 
@@ -360,7 +627,10 @@ test.describe('Token 响应窗口完整流程', () => {
 
         const confirmButton = page.getByTestId('dicethrone-response-pass-button');
         await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);
-        await game.screenshot('moon-elf-evasive-after-use-awaiting-confirm', testInfo);
+        await expectNoLegacyTokenResponseSurfaces(page);
+        await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        await expect(page.getByTestId('dicethrone-2d-dice-tray')).toBeVisible({ timeout: 5000 });
+        await game.screenshot('闪避响应-成功后闪避骰在右侧骰盘等待确认', testInfo);
         await confirmButton.click();
 
         await expect.poll(async () => {
@@ -380,7 +650,7 @@ test.describe('Token 响应窗口完整流程', () => {
 
         await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
         await page.waitForTimeout(1200);
-        await game.screenshot('moon-elf-evasive-after-confirm', testInfo);
+        await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);
     });
 });
 
@@ -479,7 +749,7 @@ test.describe('Token 响应窗口真实入口', () => {
             await expect(sharedResponsePrompt).toBeVisible({ timeout: 8000 });
             await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
             await expect(honorToken).toBeVisible({ timeout: 5000 });
-            await expect(honorToken).toHaveAttribute('data-token-clickable', 'true');
+            await expectClickableTokenHighlight(hostPage, `dt-player-0-token-${TOKEN_IDS.HONOR}`);
             await expect(hostPage.getByTestId('token-response-modal')).toHaveCount(0);
             await hostPage.screenshot({ path: testInfo.outputPath('samurai-honor-real-flow-before-use.png'), fullPage: false });
 
@@ -649,7 +919,7 @@ test.describe('Token 响应窗口真实入口', () => {
             await expect(sharedResponsePrompt).toBeVisible({ timeout: 8000 });
             await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
             await expect(backStrikeToken).toBeVisible({ timeout: 5000 });
-            await expect(backStrikeToken).toHaveAttribute('data-token-clickable', 'true');
+            await expectClickableTokenHighlight(guestPage, `dt-player-1-token-${TOKEN_IDS.SAMURAI_RETRIBUTION}`);
             await expect(guestPage.getByTestId('token-response-modal')).toHaveCount(0);
             await guestPage.screenshot({ path: testInfo.outputPath('samurai-back-strike-real-flow-before-use.png'), fullPage: false });
 

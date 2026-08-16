@@ -106,7 +106,7 @@ EventStream 不是单一语义的“历史列表”。同一条事件被不同 U
 
 | 策略 | 现实含义 | 消费规则 | 典型场景 |
 |------|----------|----------|----------|
-| `requiredSequence` | 必须完整播放的动画序列 | 只能按 EventStream `id` / 游标 / 已消费事件 ID 控制；禁止用 `Date.now()` 或事件 `timestamp` 丢弃 | 攻击、受伤、摧毁、连锁结算动画 |
+| `requiredSequence` | 必须完整播放的动画序列 | 只能按 EventStream `id` / 游标 / 已消费事件 ID 控制；禁止用 `Date.now()` 或事件 `timestamp` 丢弃；若页面壳层、图片门禁或重挂载会导致首个可见 Board 晚于权威状态到达，必须显式启用首次已有事件消费 | 攻击、受伤、摧毁、连锁结算动画 |
 | `transientNotification` | 临时提示或展示浮层 | 首次挂载可跳过已有基线，只消费页面打开后进入 EventStream 的新事件；清理策略必须由消费者语义显式定义，不能把所有 rollback / resync 信号一概等同于关闭 | 行动卡特写、揭示浮层、toast |
 | `derivedCurrentState` | 当前 UI 状态重建 | 不走播放队列；从当前状态或必要历史事件重建当前显示 | 修正值、持续状态、高亮状态 |
 | `instantFeedback` | 轻量即时反馈 | 可按消费者规则合并、限流或弱化，但不能阻塞核心结算 | 音效、轻量闪烁、飘字 |
@@ -136,7 +136,7 @@ const { consumeNew } = useVisualEventStream({
 
 ### 首次挂载跳过历史事件（强制）
 
-> 适用于 `transientNotification` 等临时提示消费者。`requiredSequence` 仍然首次挂载跳过已有基线，但后续新事件必须按 EventStream ID 完整消费，不能再叠加时间戳过滤。
+> 适用于 `transientNotification` 等临时提示消费者。`requiredSequence` 默认仍然首次挂载跳过已有基线，但后续新事件必须按 EventStream ID 完整消费，不能再叠加时间戳过滤。若该必播动画消费者的首次可见渲染可能发生在服务端确认事件之后，例如关键图片门禁先阻塞 Board 挂载、在线状态先完成同步，必须通过 `consumeInitialEntries: true` 显式声明“首次已有 entries 也属于当前必播序列”。该选项不得用于 toast、卡牌短展示、音效或其它临时反馈。
 
 **模式 A：过滤式消费（推荐，处理多条新事件）**
 
@@ -166,6 +166,7 @@ useEffect(() => {
 const { consumeNew } = useVisualEventStream({
   entries,
   strategy: 'requiredSequence',
+  consumeInitialEntries: true, // 仅当首屏已有 entries 仍必须播放时启用
 });
 
 useLayoutEffect(() => {

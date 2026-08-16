@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AiSeatController } from '../engine/ai';
 import type { GameBoardProps } from '../engine/transport/protocol';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 import {
     BoardBridge,
     GameProvider,
@@ -105,6 +106,7 @@ export type MatchRoomOnlineSeatBridgeModel = {
 
 export type MatchRoomOnlineBoardRuntimeModel = {
     board: MatchRoomBoardComponent;
+    boardRenderer?: GameBoardRenderer;
     connection: MatchRoomOnlineConnectionModel;
     overlays: MatchRoomOnlineOverlayBridgesModel;
     seatBridge: MatchRoomOnlineSeatBridgeModel;
@@ -208,14 +210,17 @@ const OnlineRoomConnectionLoading = ({
 
 const MatchRoomOnlineBoardBridge = ({
     board,
+    boardRenderer,
     loading,
 }: {
     board: MatchRoomBoardComponent;
+    boardRenderer?: GameBoardRenderer;
     loading: MatchRoomOnlineLoadingModel;
 }) => {
     return (
         <BoardBridge
             board={board}
+            renderer={boardRenderer}
             remountKey={false}
             loading={(
                 <OnlineRoomConnectionLoading
@@ -397,7 +402,13 @@ const OnlineAiServerRecoveryBridge = ({
 };
 
 export function MatchRoomOnlineBoardRuntime({ runtime }: { runtime: MatchRoomOnlineBoardRuntimeModel }) {
-    const boardBridge = <MatchRoomOnlineBoardBridge board={runtime.board} loading={runtime.connection.loading} />;
+    const boardBridge = (
+        <MatchRoomOnlineBoardBridge
+            board={runtime.board}
+            boardRenderer={runtime.boardRenderer}
+            loading={runtime.connection.loading}
+        />
+    );
 
     return (
         <MatchRoomOnlineConnectionBridge connection={runtime.connection}>

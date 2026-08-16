@@ -246,10 +246,10 @@ describe('SmashUp 卡牌 i18n 完整性', () => {
 
     expect(resolveI18nParams({
       name: 'cards.base_tortuga.name',
-      baseNumber: 2,
+      baseName: 'cards.base_the_factory.name',
     }, zhTranslator)).toEqual({
       name: '托尔图加',
-      baseNumber: 2,
+      baseName: '436-1337工厂',
     });
   });
 

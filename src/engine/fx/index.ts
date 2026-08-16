@@ -63,6 +63,26 @@ export {
   type FxScreenPoint,
 } from './layout';
 
+export {
+  subscribeFxFrame,
+  scheduleFxFrameCallback,
+  getFxFrameSubscriberCount,
+  resetFxFrameClockForTests,
+  type FxFrame,
+  type FxFrameCallback,
+  type FxFrameScheduledCallback,
+  type FxFrameSubscription,
+} from './frameClock';
+
+export type {
+  FxBackendHost,
+  FxBackendRuntime,
+  FxCellBox,
+  FxCellPositionResolver,
+  FxRenderBackend,
+  FxRenderBackendInstance,
+} from './backend';
+
 // 注册表
 export { FxRegistry } from './FxRegistry';
 

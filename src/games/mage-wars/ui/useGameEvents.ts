@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { useVisualStateBuffer, type UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import type { FxBus } from '../../../engine/fx';
@@ -17,6 +17,13 @@ interface UseMageWarsGameEventsResult {
     damageBuffer: UseVisualStateBufferReturn;
     onEffectImpact: (id: string) => void;
     onEffectComplete: (id: string) => void;
+    debug: {
+        eventCount: number;
+        latestEntryId: number;
+        cursor: number;
+        lastConsumedTypes: string[];
+        lastFxCues: string[];
+    };
 }
 
 export function mageWarsPlayerDamageKey(playerId: string): string {
@@ -118,26 +125,56 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
     const fxBusRef = useRef(fxBus);
     const fxImpactMapRef = useRef(new Map<string, string[]>());
     const damageBuffer = useVisualStateBuffer();
+    const [debug, setDebug] = useState<UseMageWarsGameEventsResult['debug']>(() => ({
+        eventCount: 0,
+        latestEntryId: 0,
+        cursor: -1,
+        lastConsumedTypes: [],
+        lastFxCues: [],
+    }));
     useLayoutEffect(() => {
         fxBusRef.current = fxBus;
     }, [fxBus]);
 
     const entries = getEventStreamEntries(G);
-    const { consumeNew } = useVisualEventStream({
+    const { consumeNew, getCursor } = useVisualEventStream({
         entries,
         strategy: 'requiredSequence',
+        consumeInitialEntries: true,
+        consumeOnReconcile: true,
     });
     const latestEntryId = entries.at(-1)?.id ?? 0;
 
     useLayoutEffect(() => {
         const { entries: newEntries, didReset } = consumeNew();
+        const consumedTypes: string[] = [];
+        const fxCues: string[] = [];
         if (didReset) {
             fxImpactMapRef.current.clear();
             damageBuffer.clear();
         }
-        if (newEntries.length === 0) return;
+        if (newEntries.length === 0) {
+            setDebug((current) => {
+                const nextDebug = {
+                    eventCount: entries.length,
+                    latestEntryId,
+                    cursor: getCursor(),
+                    lastConsumedTypes: didReset ? consumedTypes : current.lastConsumedTypes,
+                    lastFxCues: didReset ? fxCues : current.lastFxCues,
+                };
+                return current.eventCount === nextDebug.eventCount
+                    && current.latestEntryId === nextDebug.latestEntryId
+                    && current.cursor === nextDebug.cursor
+                    && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
+                    && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
+                    ? current
+                    : nextDebug;
+            });
+            return;
+        }
 
         const events = newEntries.map((entry) => entry.event as MageWarsEvent);
+        consumedTypes.push(...events.map((event) => event.type));
         const drivenDamageTargetIds = collectDrivenDamageTargetIds(events);
         const damageTargets = collectDamageFreezeEntries(events, G.core);
         damageBuffer.freezeBatch(damageTargets.entries);
@@ -149,6 +186,7 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
             }
             const instruction = mapMageWarsEventToFx(entry, G.core);
             if (!instruction) continue;
+            fxCues.push(instruction.cue);
             const fxId = fxBusRef.current.push(instruction.cue, instruction.ctx, instruction.params);
             if (!fxId) continue;
             const releaseKeys = getDamageReleaseKeysForEvent(event, damageTargets.targetKeys, drivenDamageTargetIds);
@@ -156,8 +194,24 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
                 fxImpactMapRef.current.set(fxId, releaseKeys);
             }
         }
+        const nextDebug = {
+            eventCount: entries.length,
+            latestEntryId,
+            cursor: getCursor(),
+            lastConsumedTypes: consumedTypes,
+            lastFxCues: fxCues,
+        };
+        setDebug((current) => (
+            current.eventCount === nextDebug.eventCount
+            && current.latestEntryId === nextDebug.latestEntryId
+            && current.cursor === nextDebug.cursor
+            && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
+            && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
+                ? current
+                : nextDebug
+        ));
 
-    }, [G.core, damageBuffer, entries.length, latestEntryId, consumeNew]);
+    }, [G.core, damageBuffer, entries.length, latestEntryId, consumeNew, getCursor, entries]);
 
     const onEffectImpact = useCallback((id: string) => {
         const releaseKeys = fxImpactMapRef.current.get(id);
@@ -170,5 +224,5 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
         fxImpactMapRef.current.delete(id);
     }, []);
 
-    return { damageBuffer, onEffectImpact, onEffectComplete };
+    return { damageBuffer, onEffectImpact, onEffectComplete, debug };
 }

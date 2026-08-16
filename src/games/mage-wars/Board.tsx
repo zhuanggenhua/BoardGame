@@ -4,6 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { FxLayer, useFxBus, type FxBus } from '../../engine/fx';
+import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import {
     INTERACTION_COMMANDS,
@@ -755,6 +756,7 @@ function ZoneFieldCard({
             data-source-card-id={cardId}
             data-owner-side={ownerSide}
             data-field-card-role={role}
+            data-visual-damage={visualDamage ?? 0}
         >
             {content}
         </button>
@@ -2010,7 +2012,14 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         setPendingSpellTargetObjectId(null);
         setSelectedSpellCardId((current) => current === cardId ? null : cardId);
     };
-    const fxBus = useFxBus(mageWarsFxRegistry);
+    const renderPipelineSettings = useRenderPipelineSettings();
+    const fxBus = useFxBus(mageWarsFxRegistry, {
+        quality: renderPipelineSettings.fxQuality,
+        reduceWhenHighCostActiveAt: renderPipelineSettings.reduceWhenHighCostActiveAt,
+        dropWhenHighCostActiveAt: renderPipelineSettings.dropWhenHighCostActiveAt,
+        maxDpr: renderPipelineSettings.maxDpr,
+        reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
+    });
     const mageWarsEvents = useMageWarsGameEvents({ G, fxBus });
     const getVisualPlayerDamage = (player: MageWarsPlayerState) => (
         mageWarsEvents.damageBuffer.get(mageWarsPlayerDamageKey(player.id), player.damage)
@@ -2027,6 +2036,11 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
             data-mage-wars-phase-actor-id={phaseActorId}
             data-mage-wars-turn-number={core.turnNumber}
             data-mage-wars-ready-player-ids={readyPlayerIds.join(',')}
+            data-mage-wars-event-count={mageWarsEvents.debug.eventCount}
+            data-mage-wars-event-latest-id={mageWarsEvents.debug.latestEntryId}
+            data-mage-wars-event-cursor={mageWarsEvents.debug.cursor}
+            data-mage-wars-last-consumed-events={mageWarsEvents.debug.lastConsumedTypes.join(',')}
+            data-mage-wars-last-fx-cues={mageWarsEvents.debug.lastFxCues.join(',')}
             style={{
                 background: 'radial-gradient(circle at 50% 40%, rgba(185,79,28,0.28), transparent 50%), radial-gradient(circle at 12% 92%, rgba(201,92,31,0.22), transparent 28%), linear-gradient(135deg, #170503 0%, #371207 56%, #120302 100%)',
             }}

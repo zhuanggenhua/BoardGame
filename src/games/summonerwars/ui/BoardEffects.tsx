@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { subscribeFxFrame } from '../../../engine/fx';
 
 // ============================================================================
 // 全屏震动 Hook（rAF 驱动，指数衰减）
@@ -13,13 +14,18 @@ import { useCallback, useEffect, useRef } from 'react';
 
 export const useScreenShake = () => {
   const shakeTargetRef = useRef<HTMLDivElement | null>(null);
-  const rafRef = useRef<number>(0);
+  const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
+
+  const stopShake = useCallback(() => {
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = undefined;
+  }, []);
 
   const triggerShake = useCallback((
     intensity: 'normal' | 'strong',
     type: 'impact' | 'hit' = 'impact',
   ) => {
-    cancelAnimationFrame(rafRef.current);
+    stopShake();
     const target = shakeTargetRef.current;
     if (!target) return;
 
@@ -30,11 +36,12 @@ export const useScreenShake = () => {
     const totalMs = intensity === 'strong' ? 400 : 250;
     const start = performance.now();
 
-    const step = () => {
-      const elapsed = performance.now() - start;
+    const step = (now: number) => {
+      const elapsed = now - start;
       if (elapsed >= totalMs) {
         target.style.transform = 'translate3d(0,0,0)';
         target.style.willChange = '';
+        stopShake();
         return;
       }
       const decay = Math.pow(1 - elapsed / totalMs, 2.5);
@@ -43,19 +50,18 @@ export const useScreenShake = () => {
       const x = Math.sin(phase * 1.3) * ampX * decay;
       const y = Math.cos(phase) * ampY * decay;
       target.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      rafRef.current = requestAnimationFrame(step);
     };
-    rafRef.current = requestAnimationFrame(step);
-  }, []);
+    unsubscribeRef.current = subscribeFxFrame(({ now }) => step(now));
+  }, [stopShake]);
 
   useEffect(() => () => {
-    cancelAnimationFrame(rafRef.current);
+    stopShake();
     const target = shakeTargetRef.current;
     if (target) {
       target.style.transform = 'translate3d(0,0,0)';
       target.style.willChange = '';
     }
-  }, []);
+  }, [stopShake]);
 
   return { shakeTargetRef, triggerShake };
 };

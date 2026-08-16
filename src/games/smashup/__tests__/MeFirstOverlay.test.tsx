@@ -223,6 +223,58 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.queryByTestId('me-first-progress')).not.toBeInTheDocument();
     });
 
+    it('non-owner 等待提示应放在顶部横幅槽位，不能再居中遮住主操作按钮', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                responseWindow: {
+                    current: {
+                        ...base.sys.responseWindow!.current!,
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                        passedPlayers: [],
+                    },
+                },
+                resolution: {
+                    activeFrameId: 'frame-1',
+                    frames: [{
+                        ...(base.sys.resolution!.frames![0] as any),
+                        metadata: {
+                            smashupReactionSession: {
+                                frameId: 'frame-1',
+                                frameKind: 'score-after',
+                                phase: 'optional',
+                                activePlayerId: '1',
+                                currentPlayerId: '1',
+                                consecutivePasses: 0,
+                                responseWindowType: 'afterScoring',
+                            },
+                        },
+                    }],
+                },
+            },
+        });
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={vi.fn()}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        const overlay = screen.getByTestId('me-first-overlay');
+        expect(overlay.className).toContain('inset-x-0');
+        expect(overlay.className).toContain('top-20');
+        expect(overlay.className).not.toContain('inset-0');
+        expect(overlay.className).not.toContain('items-center');
+        expect(screen.getByTestId('me-first-waiting-shell')).toHaveClass('max-w-[min(92vw,28rem)]');
+    });
+
     it('当前响应者确实有可打响应牌时，应显示让过按钮', () => {
         const base = createState();
         const state = createState({

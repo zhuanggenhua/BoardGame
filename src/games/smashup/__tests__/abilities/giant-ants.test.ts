@@ -661,7 +661,7 @@ describe('巨蚁派系能力', () => {
             },
             bases: [
                 {
-                    defId: 'base_a',
+                    defId: 'base_the_factory',
                     minions: [
                         makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 }),
@@ -681,6 +681,9 @@ describe('巨蚁派系能力', () => {
         expect(triggerResult.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
 
         const droneOption = getPromptOption(prompt, o => o?.value?.droneUid === 'd1', 'drone option');
+        expect(droneOption.label).toContain('436-1337工厂');
+        expect(droneOption.label).not.toContain('基地 1');
+        expect(droneOption.labelParams).toEqual({ baseName: 'cards.base_the_factory.name' });
         const preventResult = respondToPrompt(
             triggerResult.finalState,
             droneOption.id,

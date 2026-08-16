@@ -11,7 +11,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import { resolveFxDpr, subscribeFxFrame, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -120,7 +120,6 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
   useLayoutEffect(() => {
     onCompleteRef.current = onComplete;
@@ -215,6 +214,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
     let startTime = 0;
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!startTime) { startTime = now; lastTime = now; }
@@ -326,8 +326,6 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         if (t >= 1) {
           hitPhase = true;
           hitTime = now;
-        } else {
-          rafRef.current = requestAnimationFrame(loop);
           return;
         }
       }
@@ -382,24 +380,20 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
         const allDead = trailParticles.length === 0 && impactParticles.length === 0;
         if (hitT >= 1 && allDead) {
+          unsubscribeFrame?.();
           onCompleteRef.current?.();
           return;
         }
-        // 即使 hitT >= 1 也继续渲染直到粒子消散
-        if (hitT >= 1 && !allDead) {
-          rafRef.current = requestAnimationFrame(loop);
-          return;
-        }
-        rafRef.current = requestAnimationFrame(loop);
       }
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    return () => unsubscribeFrame?.();
   }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality, durationScale, durationMs, trailColors, impactColors, trailColorEnd, glowPrimary, glowSecondary]);
 
   useEffect(() => {
-    render();
-    return () => cancelAnimationFrame(rafRef.current);
+    const cleanupFrame = render();
+    return () => cleanupFrame?.();
   }, [render]);
 
   return (

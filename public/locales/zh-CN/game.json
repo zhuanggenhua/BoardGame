@@ -71,6 +71,16 @@
       "book": "书本",
       "classic": "经典"
     },
+    "graphics": {
+      "title": "图形质量",
+      "description": "控制特效强度、像素精度和高成本特效并发。",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "lowHint": "优先流畅",
+      "mediumHint": "均衡",
+      "highHint": "完整效果"
+    },
     "copyRoomId": "复制房间 ID",
     "roomId": "ID：{{id}}",
     "status": {

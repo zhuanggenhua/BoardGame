@@ -1931,6 +1931,16 @@
             "gold_strong": "Gold+"
           }
         },
+        "board_summon_preset": {
+          "title": "Board Summon Preset",
+          "description": "Shared board summon recipe for parameterized game renderers",
+          "buttons": {
+            "blue": "Blue",
+            "blue_strong": "Blue+",
+            "gold": "Gold",
+            "gold_strong": "Gold+"
+          }
+        },
         "vortex": {
           "title": "Charge Vortex",
           "description": "WebGL shader",
@@ -1978,6 +1988,18 @@
           "preview": {
             "source": "Src",
             "target": "Dst"
+          }
+        },
+        "board_attack_preset": {
+          "title": "Board Projectile Attack Preset",
+          "description": "Shared source-to-target projectile, impact feedback, and damage number",
+          "buttons": {
+            "normal": "Normal Attack",
+            "strong": "Strong Attack"
+          },
+          "preview": {
+            "source": "Source",
+            "target": "Target"
           }
         }
       },
@@ -2198,6 +2220,10 @@
             "label": "Summon Hybrid",
             "usage": "Summoner Wars summon entry with shader + particles"
           },
+          "boardSummonPreset": {
+            "label": "Board Summon Preset",
+            "usage": "Shared summon entry for Summoner Wars and Mage Wars"
+          },
           "vortex": {
             "label": "Charge Vortex",
             "usage": "Summoner Wars unit charge-up"
@@ -2215,6 +2241,10 @@
           "coneblast": {
             "label": "Cone Blast",
             "usage": "Summoner Wars ranged attack projectile"
+          },
+          "boardProjectileAttackPreset": {
+            "label": "Board Projectile Attack Preset",
+            "usage": "Shared board source-to-target attack, impact, and damage number"
           }
         },
         "ui": {

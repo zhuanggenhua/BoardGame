@@ -210,6 +210,129 @@ describe('炽天使领域行为', () => {
         expect(eventTypes).not.toContain('BONUS_DIE_ROLLED');
     });
 
+    it('圣洁光辉选定后应自动进入防御阶段，并在防御结算后造成伤害', () => {
+        let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const flightBefore = state.core.players['0'].tokens[TOKEN_IDS.FLIGHT] ?? 0;
+
+        const toOffensiveRoll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(toOffensiveRoll.success).toBe(true);
+        if (!toOffensiveRoll.success) return;
+        state = toOffensiveRoll.state;
+
+        const roll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ROLL_DICE', '0'),
+            createQueuedRandom([3, 5, 3, 3, 4]),
+            playerIds,
+        );
+        expect(roll.success).toBe(true);
+        if (!roll.success) return;
+        state = roll.state;
+
+        const confirm = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('CONFIRM_ROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(confirm.success).toBe(true);
+        if (!confirm.success) return;
+        state = confirm.state;
+
+        const selectRadiance = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'holy-radiance' }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(selectRadiance.success).toBe(true);
+        if (!selectRadiance.success) return;
+        state = selectRadiance.state;
+
+        expect(state.sys.phase).toBe('defensiveRoll');
+        expect(state.sys.interaction?.current).toBeUndefined();
+        expect(state.sys.responseWindow?.current).toBeUndefined();
+        expect(state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-radiance',
+            isDefendable: true,
+            defenseAbilityId: 'elusive-step',
+        });
+        expect(state.core.players['0'].tokens[TOKEN_IDS.FLIGHT] ?? 0).toBe(flightBefore + 1);
+
+        const defenseRoll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([1, 1, 1, 1, 1]),
+            playerIds,
+        );
+        expect(defenseRoll.success).toBe(true);
+        if (!defenseRoll.success) return;
+        state = defenseRoll.state;
+
+        const defenseConfirm = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('CONFIRM_ROLL', '1'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(defenseConfirm.success).toBe(true);
+        if (!defenseConfirm.success) return;
+        state = defenseConfirm.state;
+
+        const tokenResponse = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '1'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(tokenResponse.success).toBe(true);
+        if (!tokenResponse.success) return;
+        state = tokenResponse.state;
+        expect(state.core.pendingDamage).toMatchObject({
+            sourceAbilityId: 'holy-radiance',
+            targetPlayerId: '1',
+            currentDamage: 6,
+            responderId: '0',
+        });
+
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SKIP_TOKEN_RESPONSE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(resolved.success).toBe(true);
+        if (!resolved.success) return;
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                sourceAbilityId: 'holy-radiance',
+                targetId: '1',
+                amount: 6,
+            }),
+        }));
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 6);
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.sys.phase).toBe('main2');
+    });
+
     it.each([
         { name: '任一骰为 6 时激活', values: [6, 1], defendable: false },
         { name: '两骰都不是 6 时不激活', values: [5, 1], defendable: true },

@@ -10,7 +10,15 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue, useAnimate } from 'framer-motion';
 import { UI_Z_INDEX } from '../../../core';
-import { createFxScreenPathBox, resolveFxDpr, type FxQuality, type FxScreenPathBox } from '../../../engine/fx';
+import {
+    createFxScreenPathBox,
+    resolveFxDpr,
+    scheduleFxFrameCallback,
+    subscribeFxFrame,
+    type FxFrameSubscription,
+    type FxQuality,
+    type FxScreenPathBox,
+} from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -166,7 +174,6 @@ const FlameTrailCanvas: React.FC<{
 }> = ({ headXRef, headYRef, dirX, dirY, flameColors, emitting, intensity, zIndex, quality, trailBox }) => {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const particlesRef = React.useRef<Particle[]>([]);
-    const rafRef = React.useRef(0);
     const lastTimeRef = React.useRef(0);
     const emittingRef = React.useRef(emitting);
 
@@ -200,6 +207,8 @@ const FlameTrailCanvas: React.FC<{
         const spawnRate = Math.min(quality === 'reduced' ? 10 : 25, quality === 'reduced' ? 3 + intensity : 6 + intensity * 3);
         const left = Number.parseFloat(trailBox.style.left);
         const top = Number.parseFloat(trailBox.style.top);
+
+        let unsubscribeFrame: (() => void) | undefined;
 
         const loop = (time: number) => {
             if (!lastTimeRef.current) lastTimeRef.current = time;
@@ -303,14 +312,14 @@ const FlameTrailCanvas: React.FC<{
             }
 
             ctx.globalAlpha = 1;
-
-            rafRef.current = requestAnimationFrame(loop);
         };
 
-        rafRef.current = requestAnimationFrame(loop);
+        unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
         return () => {
-            cancelAnimationFrame(rafRef.current);
+            unsubscribeFrame?.();
+            particlesRef.current = [];
+            lastTimeRef.current = 0;
         };
     }, [dirX, dirY, intensity, quality, rgbColors, headXRef, headYRef, trailBox]);
 
@@ -559,6 +568,12 @@ const FlyingEffectItem: React.FC<{
     const impactFiredRef = React.useRef(false);
     // 防止 handleArrive 被多次调用（零距离 timer + onAnimationComplete）
     const arrivedRef = React.useRef(false);
+    const cancelPendingCompleteRef = React.useRef<FxFrameSubscription | undefined>(undefined);
+
+    React.useEffect(() => () => {
+        cancelPendingCompleteRef.current?.();
+        cancelPendingCompleteRef.current = undefined;
+    }, []);
 
     const handleArrive = React.useCallback(() => {
         if (arrivedRef.current) return;
@@ -575,7 +590,11 @@ const FlyingEffectItem: React.FC<{
         const hasDamageOrHeal = effect.type === 'damage' || effect.type === 'heal';
         pendingRef.current = hasDamageOrHeal ? 1 : 0;
         if (pendingRef.current === 0) {
-            setTimeout(() => onComplete(effect.id), 300);
+            cancelPendingCompleteRef.current?.();
+            cancelPendingCompleteRef.current = scheduleFxFrameCallback(300, () => {
+                onComplete(effect.id);
+                cancelPendingCompleteRef.current = undefined;
+            });
         }
     }, [effect, onComplete]);
 
@@ -589,23 +608,23 @@ const FlyingEffectItem: React.FC<{
     // 零距离时 framer-motion 不触发 onAnimationComplete，手动立即触发
     React.useEffect(() => {
         if (isZeroDistance) {
-            const timer = window.setTimeout(() => handleArrive(), 50);
-            return () => window.clearTimeout(timer);
+            const cancel = scheduleFxFrameCallback(50, () => handleArrive());
+            return cancel;
         }
     }, [isZeroDistance, handleArrive]);
 
     // 兜底清理
     React.useEffect(() => {
         const maxMs = (flightDuration + 3) * 1000;
-        const timer = window.setTimeout(() => {
+        const cancel = scheduleFxFrameCallback(maxMs, () => {
             // 兜底也触发 onImpact（防止 onAnimationComplete 未触发时音效/震屏丢失）
             if (!impactFiredRef.current) {
                 impactFiredRef.current = true;
                 effect.onImpact?.();
             }
             onComplete(effect.id);
-        }, maxMs);
-        return () => window.clearTimeout(timer);
+        });
+        return cancel;
     }, [effect, flightDuration, onComplete]);
 
     return (

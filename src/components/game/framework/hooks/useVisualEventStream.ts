@@ -21,6 +21,7 @@ export type VisualEventConsumptionStrategy =
 export interface UseVisualEventStreamConfig {
     entries: EventStreamEntry[];
     strategy: VisualEventConsumptionStrategy;
+    consumeInitialEntries?: boolean;
     consumeOnReconcile?: boolean;
     reconnectToken?: number;
 }
@@ -38,12 +39,14 @@ export function useVisualEventStream(config: UseVisualEventStreamConfig): UseVis
     const {
         entries,
         strategy,
+        consumeInitialEntries,
         consumeOnReconcile,
         reconnectToken,
     } = config;
 
     const cursor = useEventStreamCursor({
         entries,
+        consumeInitialEntries,
         consumeOnReconcile,
         reconnectToken,
     });
@@ -56,6 +59,6 @@ export function useVisualEventStream(config: UseVisualEventStreamConfig): UseVis
         ...cursor,
         strategy,
         isReplayQueue: strategy === 'requiredSequence',
-        skipsMountBaseline: strategy === 'transientNotification' || strategy === 'instantFeedback',
-    }), [cursor, strategy]);
+        skipsMountBaseline: !consumeInitialEntries,
+    }), [consumeInitialEntries, cursor, strategy]);
 }

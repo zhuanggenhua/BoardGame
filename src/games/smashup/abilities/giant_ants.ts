@@ -21,7 +21,7 @@ import {
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionChecker, TriggerContext } from '../domain/ongoingEffects';
 import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
-import { getCardDef } from '../data/cards';
+import { getBaseDef, getCardDef } from '../data/cards';
 import { drawCards, resolveLiveBaseIndex } from '../domain/utils';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, DeckReshuffledEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
@@ -496,20 +496,25 @@ function buildDronePreventDestroyOptions(
     }
     return [
         createSkipOption('不防止消灭', 'ui.giant_ant_drone_prevent_destroy_skip_option') as PromptOption<DronePreventChoiceValue>,
-        ...drones.map((drone, index) => ({
-            id: `drone-${index}`,
-            label: `移除雄蜂的1个指示物（基地 ${drone.baseIndex + 1}）来防止消灭`,
-            labelKey: 'ui.giant_ant_drone_prevent_destroy_option',
-            labelParams: { baseNumber: drone.baseIndex + 1 },
-            value: {
-                droneUid: drone.uid,
-                droneBaseIndex: drone.baseIndex,
-                minionUid: drone.uid,
-                minionDefId: drone.defId,
-            },
-            _source: 'field' as const,
-            displayMode: 'card' as const,
-        })),
+        ...drones.map((drone, index) => {
+            const baseDefId = core.bases[drone.baseIndex]?.defId;
+            const baseDef = baseDefId ? getBaseDef(baseDefId) : undefined;
+            const baseName = baseDef?.name ?? baseDefId ?? `基地 ${drone.baseIndex + 1}`;
+            return {
+                id: `drone-${index}`,
+                label: `移除雄蜂的1个指示物（${baseName}）来防止消灭`,
+                labelKey: 'ui.giant_ant_drone_prevent_destroy_option',
+                labelParams: { baseName: baseDef && baseDefId ? `cards.${baseDefId}.name` : baseName },
+                value: {
+                    droneUid: drone.uid,
+                    droneBaseIndex: drone.baseIndex,
+                    minionUid: drone.uid,
+                    minionDefId: drone.defId,
+                },
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            };
+        }),
     ];
 }
 

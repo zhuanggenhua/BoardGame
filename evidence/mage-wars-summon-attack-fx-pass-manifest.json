@@ -1,0 +1,60 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "requirements": [
+    {
+      "requirement": "两个派系代表召唤流程必须跑通，并覆盖来源、召唤过程、落场三类过程帧",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤来源和目标区域.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤光柱过程帧.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤完成单位落场.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤完成单位落场.jpg"
+      ]
+    },
+    {
+      "requirement": "攻击法术必须覆盖来源到目标、投射物飞行、命中动画和伤害飘字",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-投射物飞行中.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg"
+      ]
+    },
+    {
+      "requirement": "关键牌面和截图必须不是空白壳层；截图证据必须来自真实页面 E2E",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-summon-attack-fx-e2e-test.md"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\01-labeled-01-兽王野性山猫-召唤来源和目标区域.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\02-labeled-01-兽王野性山猫-召唤光柱过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\03-labeled-01-兽王野性山猫-召唤完成单位落场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\04-labeled-02-女祭司阿希拉牧师-召唤来源和目标区域.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\05-labeled-02-女祭司阿希拉牧师-召唤光柱过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\06-labeled-02-女祭司阿希拉牧师-召唤完成单位落场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\07-labeled-03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\08-labeled-03-间歇喷泉攻击阿希拉牧师-投射物飞行中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-for-pureref\\09-labeled-03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.png"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤来源和目标区域.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤光柱过程帧.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\01-兽王野性山猫-召唤完成单位落场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\02-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-投射物飞行中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg"
+  ],
+  "notes": [
+    "本清单只覆盖本轮召唤与攻击必要过程帧，不声明全量法术、装备、结界、buff 或完整 UI 审计完成。"
+  ]
+}

@@ -271,6 +271,20 @@ describe('阿南西传说与俄罗斯童话 POD 接入', () => {
         expect(transformed.players['1'].deck).toHaveLength(2);
     });
 
+    it('俄罗斯童话和奶奶的派系图标可区分', () => {
+        const metadata = new Map(FACTION_METADATA.map(item => [item.id, item]));
+        const granniesIcon = metadata.get(SMASHUP_FACTION_IDS.GRANNIES)?.icon;
+        const russianIcon = metadata.get(SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES)?.icon;
+        const russianPodIcon = metadata.get(SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES_POD)?.icon;
+
+        expect(granniesIcon).toBeDefined();
+        expect(russianIcon).toBeDefined();
+        expect(russianPodIcon).toBeDefined();
+        expect(russianPodIcon).toBe(russianIcon);
+        expect(russianIcon).not.toBe(granniesIcon);
+        expect(russianPodIcon).not.toBe(granniesIcon);
+    });
+
     it('双语 locale、可选 metadata、atlas catalog 与关键图片预加载完整', () => {
         const metadata = new Map(FACTION_METADATA.map(item => [item.id, item]));
         expect(metadata.get(SMASHUP_FACTION_IDS.ANANSI_TALES_POD)?.implementationStatus).toBeUndefined();

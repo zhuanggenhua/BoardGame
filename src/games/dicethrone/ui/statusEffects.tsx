@@ -794,6 +794,22 @@ const getContainerStyle = (maxPerRow: number, size: 'normal' | 'small' | 'tiny')
     return { maxWidth: `${maxWidth}vw` };
 };
 
+const clickableTokenHaloStyle: CSSProperties = {
+    border: '2px solid rgba(253, 230, 138, 0.84)',
+    background: 'conic-gradient(from 180deg, rgba(251, 191, 36, 0.18), rgba(253, 224, 71, 0.96), rgba(96, 165, 250, 0.30), rgba(253, 224, 71, 0.96), rgba(251, 191, 36, 0.18))',
+    boxShadow: '0 0 14px rgba(251, 191, 36, 0.55), 0 0 24px rgba(96, 165, 250, 0.22)',
+    padding: '2px',
+    transform: 'translate(-50%, -50%)',
+    WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+    WebkitMaskComposite: 'xor',
+    maskComposite: 'exclude',
+    animation: 'dicethrone-token-available-breathe 1.9s ease-in-out infinite',
+};
+
+const clickableTokenBodyStyle: CSSProperties = {
+    filter: 'brightness(1.10) saturate(1.22) drop-shadow(0 0 7px rgba(253, 224, 71, 0.72)) drop-shadow(0 0 3px rgba(96, 165, 250, 0.40))',
+};
+
 export const StatusEffectsContainer = ({
     effects,
     maxPerRow = 3,
@@ -912,6 +928,15 @@ export const TokenBadge = ({
             data-token-clickable={isClickable ? 'true' : 'false'}
         >
             {isClickable && (
+                <div
+                    aria-hidden="true"
+                    data-dicethrone-token-halo="available"
+                    data-testid={dataTestId ? `${dataTestId}-available-halo` : undefined}
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[calc(100%+0.52vw)] w-[calc(100%+0.52vw)] rounded-full"
+                    style={clickableTokenHaloStyle}
+                />
+            )}
+            {isClickable && (
                 <button
                     type="button"
                     aria-label={info.name}
@@ -924,6 +949,9 @@ export const TokenBadge = ({
                 />
             )}
             <div
+                data-dicethrone-token-body={isClickable ? 'available' : undefined}
+                data-testid={dataTestId && isClickable ? `${dataTestId}-available-body` : undefined}
+                style={isClickable ? clickableTokenBodyStyle : undefined}
                 className={`
                     ${sizeClass} rounded-full flex items-center justify-center overflow-hidden
                     ${shouldShowShimmer ? 'atlas-shimmer' : ''}
@@ -931,7 +959,7 @@ export const TokenBadge = ({
                         ? 'bg-transparent border-0 shadow-none'
                         : `bg-gradient-to-br ${info.color ?? 'from-gray-500 to-gray-600'} shadow-lg border border-white/30`}
                     transition-transform duration-200 hover:scale-110 ${isClickable ? 'cursor-pointer pointer-events-none' : 'cursor-help'}
-                    ${isClickable ? 'ring-2 ring-amber-400/50 hover:ring-amber-400 animate-pulse' : ''}
+                    ${isClickable ? 'relative z-10 saturate-110' : ''}
                 `}
             >
                 {getStatusEffectIconNode(info, locale, size, atlas)}

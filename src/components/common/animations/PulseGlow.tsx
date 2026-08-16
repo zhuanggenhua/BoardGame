@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 import { pulseGlowVariants } from './variants';
 
 interface PulseGlowProps {
@@ -105,10 +106,20 @@ export const PulseGlow = ({
 // Hook：管理发光状态
 export const usePulseGlow = (duration = 800) => {
     const [isGlowing, setIsGlowing] = React.useState(false);
+    const cancelResetRef = React.useRef<FxFrameSubscription | undefined>(undefined);
+
+    React.useEffect(() => () => {
+        cancelResetRef.current?.();
+        cancelResetRef.current = undefined;
+    }, []);
 
     const triggerGlow = React.useCallback(() => {
+        cancelResetRef.current?.();
         setIsGlowing(true);
-        setTimeout(() => setIsGlowing(false), duration);
+        cancelResetRef.current = scheduleFxFrameCallback(duration, () => {
+            setIsGlowing(false);
+            cancelResetRef.current = undefined;
+        });
     }, [duration]);
 
     return { isGlowing, triggerGlow };

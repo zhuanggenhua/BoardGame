@@ -658,8 +658,13 @@ describe('formatDiceThroneActionEntry', () => {
         };
         const bonusRolled: BonusDieRolledEvent = {
             type: 'BONUS_DIE_ROLLED',
-            payload: { value: 3, face: 'banner', playerId: '0', targetPlayerId: '1' },
+            payload: { value: 3, face: 'banner', playerId: '0', targetPlayerId: '1', effectKey: 'bonusDie.effect.tianshi.angelicCloak' },
             timestamp: 49,
+        };
+        const secondBonusRolled: BonusDieRolledEvent = {
+            type: 'BONUS_DIE_ROLLED',
+            payload: { value: 5, face: 'medal', playerId: '0', targetPlayerId: '1', effectKey: 'bonusDie.effect.tianshi.angelicCloak' },
+            timestamp: 49.5,
         };
         const rerolled = {
             type: 'DIE_REROLLED',
@@ -687,7 +692,7 @@ describe('formatDiceThroneActionEntry', () => {
         const bonusEntries = normalizeEntries(formatDiceThroneActionEntry({
             command,
             state,
-            events: [bonusRolled] as GameEvent[],
+            events: [bonusRolled, secondBonusRolled] as GameEvent[],
         }));
         const rerollEntries = normalizeEntries(formatDiceThroneActionEntry({
             command,
@@ -700,9 +705,14 @@ describe('formatDiceThroneActionEntry', () => {
             events: [modified],
         }));
 
-        const bonusEntry = bonusEntries.find(entry => entry.kind === 'BONUS_DIE_ROLLED');
+        const allBonusEntries = bonusEntries.filter(entry => entry.kind === 'BONUS_DIE_ROLLED');
+        expect(allBonusEntries).toHaveLength(1);
+        const bonusEntry = allBonusEntries[0];
         expect(bonusEntry).toBeTruthy();
-        expect(getI18nKeys(bonusEntry!.segments)).toContain('actionLog.bonusDieRolled');
+        expect(getI18nKeys(bonusEntry!.segments)).toContain('actionLog.bonusDiceRolled');
+        expect(getI18nKeys(bonusEntry!.segments)).toContain('bonusDie.effect.tianshi.angelicCloak');
+        const bonusDiceSegment = bonusEntry!.segments.find(segment => segment.type === 'diceResult') as Extract<ActionLogSegment, { type: 'diceResult' }> | undefined;
+        expect(bonusDiceSegment?.dice.map(die => die.value)).toEqual([3, 5]);
         const modifiedEntry = modifiedEntries.find(entry => entry.kind === 'DIE_MODIFIED');
         expect(modifiedEntry).toBeTruthy();
         const modifiedSegment = findI18nSegment(modifiedEntry!.segments, 'actionLog.bonusDieModified');

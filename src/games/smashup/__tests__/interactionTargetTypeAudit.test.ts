@@ -507,6 +507,22 @@ function isBoardLikeGenericOption(options: ts.ObjectLiteralExpression[]): boolea
     });
 }
 
+function findFieldSourceBaseTargetIssue(options: ts.ObjectLiteralExpression[]): string | undefined {
+    for (const opt of options) {
+        const props = extractValueProps(opt);
+        if (!props.has('fieldSourceTargetType')) continue;
+
+        const displayMode = extractTopLevelStringProp(opt, 'displayMode');
+        if (displayMode === 'button') {
+            return '场上来源到基地目标的效果不能用按钮作为主路径，必须先点来源对象本体再点目标基地。';
+        }
+        if (!props.has('minionUid') || !props.has('baseIndex')) {
+            return '场上来源到基地目标的效果必须同时携带来源随从和目标基地，不能让 UI 反推。';
+        }
+    }
+    return undefined;
+}
+
 function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: SimpleChoiceCallInfo[] } {
     const content = readFileSync(filePath, 'utf-8');
     const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -528,6 +544,17 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                     revalidateOnRespond: config.revalidateOnRespond,
                     hasMulti: config.hasMulti,
                 });
+
+            const fieldSourceBaseTargetIssue = findFieldSourceBaseTargetIssue(collectOptionObjectLiterals(sourceFile, optionsArg, node));
+            if (fieldSourceBaseTargetIssue) {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源效果交互载体错误',
+                    detail: fieldSourceBaseTargetIssue,
+                });
+            }
 
             if (!config.hasTargetType) {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);

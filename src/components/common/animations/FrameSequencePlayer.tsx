@@ -1,5 +1,6 @@
 import React from 'react';
 import { getOptimizedImageUrls } from '../../../core/AssetLoader';
+import { subscribeFxFrame } from '../../../engine/fx';
 import type { FrameSequenceDefinition } from './frameSequence';
 
 const DEFAULT_FPS = 12;
@@ -51,7 +52,14 @@ export const FrameSequencePlayer = ({
     const lastFrameIndex = Math.max(frameCount - 1, 0);
     const reducedMotionFrameIndex = sequence.reducedMotionBehavior === 'first-frame' ? 0 : lastFrameIndex;
     const [frameIndex, setFrameIndex] = React.useState(() => (prefersReducedMotion ? reducedMotionFrameIndex : 0));
+    const frameIndexRef = React.useRef(frameIndex);
     const completedPlaybackKeyRef = React.useRef<string | number | undefined>(undefined);
+
+    const updateFrameIndex = React.useCallback((nextFrameIndex: number) => {
+        if (frameIndexRef.current === nextFrameIndex) return;
+        frameIndexRef.current = nextFrameIndex;
+        setFrameIndex(nextFrameIndex);
+    }, []);
 
     React.useEffect(() => {
         onCompleteRef.current = onComplete;
@@ -67,13 +75,13 @@ export const FrameSequencePlayer = ({
     React.useEffect(() => {
         if (!playing || frameCount === 0) {
             if (!sequence.holdLastFrame) {
-                setFrameIndex(0);
+                updateFrameIndex(0);
             }
             return;
         }
 
         if (prefersReducedMotion) {
-            setFrameIndex(reducedMotionFrameIndex);
+            updateFrameIndex(reducedMotionFrameIndex);
             if (completedPlaybackKeyRef.current !== playbackKey) {
                 completedPlaybackKeyRef.current = playbackKey;
                 onCompleteRef.current?.();
@@ -84,9 +92,10 @@ export const FrameSequencePlayer = ({
         const fps = sequence.fps ?? DEFAULT_FPS;
         const frameDurationMs = 1000 / Math.max(fps, 1);
         const startedAt = performance.now();
-        let rafId = 0;
+        let unsubscribeFrame: (() => void) | undefined;
         let done = false;
 
+        frameIndexRef.current = 0;
         setFrameIndex(0);
         completedPlaybackKeyRef.current = undefined;
 
@@ -99,14 +108,14 @@ export const FrameSequencePlayer = ({
             const nextFrame = Math.floor(elapsed / frameDurationMs);
 
             if (sequence.loop) {
-                setFrameIndex(nextFrame % frameCount);
-                rafId = window.requestAnimationFrame(tick);
+                updateFrameIndex(nextFrame % frameCount);
                 return;
             }
 
             if (nextFrame >= frameCount) {
-                setFrameIndex(sequence.holdLastFrame === false ? 0 : lastFrameIndex);
+                updateFrameIndex(sequence.holdLastFrame === false ? 0 : lastFrameIndex);
                 done = true;
+                unsubscribeFrame?.();
                 if (completedPlaybackKeyRef.current !== playbackKey) {
                     completedPlaybackKeyRef.current = playbackKey;
                     onCompleteRef.current?.();
@@ -114,15 +123,14 @@ export const FrameSequencePlayer = ({
                 return;
             }
 
-            setFrameIndex(nextFrame);
-            rafId = window.requestAnimationFrame(tick);
+            updateFrameIndex(nextFrame);
         };
 
-        rafId = window.requestAnimationFrame(tick);
+        unsubscribeFrame = subscribeFxFrame(({ now }) => tick(now));
 
         return () => {
             done = true;
-            window.cancelAnimationFrame(rafId);
+            unsubscribeFrame?.();
         };
     }, [
         frameCount,
@@ -134,6 +142,7 @@ export const FrameSequencePlayer = ({
         sequence.fps,
         sequence.holdLastFrame,
         sequence.loop,
+        updateFrameIndex,
     ]);
 
     if (frameCount === 0) {

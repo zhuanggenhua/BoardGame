@@ -29,6 +29,7 @@ import { createProgram, setUniforms } from './ShaderMaterial';
 import { COMMON_VERT } from './shaders/common.vert';
 import type { ShaderCanvasProps, UniformValue } from './types';
 import { resolveFxDpr } from '../performance';
+import { subscribeFxFrame } from '../frameClock';
 
 // ============================================================================
 // Fullscreen Quad 顶点数据
@@ -57,7 +58,6 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
   useLayoutEffect(() => {
     onCompleteRef.current = onComplete;
@@ -123,6 +123,17 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
     let startTime = 0;
     let warmupFrames = 2;
 
+    let unsubscribeFrame: (() => void) | undefined;
+    let disposed = false;
+
+    const cleanup = () => {
+      if (disposed) return;
+      disposed = true;
+      unsubscribeFrame?.();
+      if (positionBuffer) gl.deleteBuffer(positionBuffer);
+      if (program) gl.deleteProgram(program);
+    };
+
     const loop = (now: number) => {
       // 预热阶段：执行绘制但不推进动画进度，等 GPU 编译完成
       if (warmupFrames > 0) {
@@ -139,8 +150,6 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
         setUniforms(gl, program, warmupUniforms);
         setUniforms(gl, program, uniformsRef.current);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-        rafRef.current = requestAnimationFrame(loop);
         return;
       }
 
@@ -169,32 +178,19 @@ export const ShaderCanvas: React.FC<ShaderCanvasProps> = ({
 
       // 动画结束判断
       if (progress >= 1) {
-        // 清理资源
-        gl.deleteBuffer(positionBuffer);
-        gl.deleteProgram(program);
+        cleanup();
         onCompleteRef.current?.();
-        return;
       }
-
-      rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
-    // 返回清理函数
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      if (positionBuffer) gl.deleteBuffer(positionBuffer);
-      if (program) gl.deleteProgram(program);
-    };
+    return cleanup;
   }, [fragmentShader, duration, quality, maxDpr, reducedMaxDpr]);
 
   useEffect(() => {
     const cleanup = render();
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      cleanup?.();
-    };
+    return () => cleanup?.();
   }, [render]);
 
   return (

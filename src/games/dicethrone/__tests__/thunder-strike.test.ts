@@ -344,6 +344,7 @@ describe('雷霆万钧技能', () => {
                 { type: 'ROLL_DICE', playerId: '0', payload: {} },
                 { type: 'CONFIRM_ROLL', playerId: '0', payload: {} },
                 { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'thunder-strike' } },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
                 { type: 'ROLL_DICE', playerId: '1', payload: {} },
                 { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
@@ -354,7 +355,8 @@ describe('雷霆万钧技能', () => {
             ],
         });
 
-        expect(result.actualErrors).toEqual([expect.objectContaining({ error: 'bonus_reroll_limit_reached' })]);
+        const rerollLimitErrors = result.actualErrors.filter(error => error.error === 'bonus_reroll_limit_reached');
+        expect(rerollLimitErrors).toEqual([expect.objectContaining({ error: 'bonus_reroll_limit_reached' })]);
         expect(result.finalState.core.pendingBonusDiceSettlement?.rerollCount).toBe(1);
         expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(1);
     });

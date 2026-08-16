@@ -16,7 +16,13 @@
 
 import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import {
+    resolveFxDpr,
+    scheduleFxFrameCallback,
+    subscribeFxFrame,
+    type FxFrameSubscription,
+    type FxQuality,
+} from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -267,7 +273,6 @@ const RiftCanvas: React.FC<{
 }> = ({ lines, color, duration, width, glow, trail, quality, onComplete }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const rafRef = useRef(0);
     const startTimeRef = useRef(0);
     const prevTimeRef = useRef(0);
     const sparksRef = useRef<Spark[]>([]);
@@ -316,6 +321,7 @@ const RiftCanvas: React.FC<{
 
         startTimeRef.current = performance.now();
         prevTimeRef.current = startTimeRef.current;
+        let unsubscribeFrame: (() => void) | undefined;
 
         const loop = (now: number) => {
             const elapsed = now - startTimeRef.current;
@@ -324,6 +330,7 @@ const RiftCanvas: React.FC<{
 
             if (elapsed > totalMs) {
                 ctx.clearRect(0, 0, cw, ch);
+                unsubscribeFrame?.();
                 onCompleteRef.current();
                 return;
             }
@@ -375,13 +382,12 @@ const RiftCanvas: React.FC<{
             }
 
             updateAndDrawSparks(ctx, sparksRef.current, dt, rgb);
-            rafRef.current = requestAnimationFrame(loop);
         };
 
-        rafRef.current = requestAnimationFrame(loop);
+        unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
         return () => {
-            cancelAnimationFrame(rafRef.current);
+            unsubscribeFrame?.();
             sparksRef.current = [];
         };
     }, [color, duration, width, glow, trail, quality, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -516,15 +522,28 @@ export const getRiftPresetByDamage = (damage: number): RiftSlashConfig => {
 export const useRiftSlash = () => {
     const [isActive, setIsActive] = useState(false);
     const [config, setConfig] = useState<RiftSlashConfig>({});
-    const timerRef = useRef<number>(0);
+    const cancelActivateRef = useRef<FxFrameSubscription | undefined>(undefined);
+    const cancelResetRef = useRef<FxFrameSubscription | undefined>(undefined);
+
+    useEffect(() => () => {
+        cancelActivateRef.current?.();
+        cancelResetRef.current?.();
+        cancelActivateRef.current = undefined;
+        cancelResetRef.current = undefined;
+    }, []);
 
     const triggerRift = useCallback((overrideConfig?: RiftSlashConfig) => {
         setIsActive(false);
-        window.clearTimeout(timerRef.current);
-        requestAnimationFrame(() => {
+        cancelActivateRef.current?.();
+        cancelResetRef.current?.();
+        cancelActivateRef.current = scheduleFxFrameCallback(0, () => {
             if (overrideConfig) setConfig(overrideConfig);
             setIsActive(true);
-            timerRef.current = window.setTimeout(() => setIsActive(false), 50);
+            cancelResetRef.current = scheduleFxFrameCallback(50, () => {
+                setIsActive(false);
+                cancelResetRef.current = undefined;
+            });
+            cancelActivateRef.current = undefined;
         });
     }, []);
 

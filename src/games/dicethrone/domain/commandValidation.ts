@@ -1585,9 +1585,23 @@ const validateUsePassiveAbility = (
     cmd: UsePassiveAbilityCommand,
     playerId: PlayerId,
     phase: TurnPhase,
+    responseWindowType?: DtResponseWindowType,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
     const player = state.players[playerId];
     if (!player) return fail('player_not_found');
+
+    if (responseWindowType) {
+        const responseWindowActorCheck = validateCurrentResponseWindowActor(
+            state,
+            currentResponseWindow,
+            playerId,
+            true,
+        );
+        if (!responseWindowActorCheck.valid) {
+            return responseWindowActorCheck;
+        }
+    }
 
     const passives = player.passiveAbilities ?? [];
     const passive = passives.find(p => p.id === cmd.payload.passiveId);
@@ -1607,7 +1621,14 @@ const validateUsePassiveAbility = (
             return fail('not_enough_token');
         }
     }
-    if (!isPassiveActionUsable(state, playerId, cmd.payload.passiveId, cmd.payload.actionIndex, phase)) {
+    if (!isPassiveActionUsable(
+        state,
+        playerId,
+        cmd.payload.passiveId,
+        cmd.payload.actionIndex,
+        phase,
+        { responseWindowType },
+    )) {
         return fail('passive_action_unusable');
     }
 
@@ -1724,7 +1745,9 @@ export const validateCommand = (
     }
     if (isCommandType(command, 'REROLL_BONUS_DIE')) return validateRerollBonusDie(state, command, playerId);
     if (isCommandType(command, 'SKIP_BONUS_DICE_REROLL')) return validateSkipBonusDiceReroll(state, command, playerId);
-    if (isCommandType(command, 'USE_PASSIVE_ABILITY')) return validateUsePassiveAbility(state, command, playerId, phase);
+    if (isCommandType(command, 'USE_PASSIVE_ABILITY')) {
+        return validateUsePassiveAbility(state, command, playerId, phase, responseWindowType, currentResponseWindow);
+    }
     if (isCommandType(command, 'GRANT_TOKENS')) return validateGrantTokens(state, command, playerId, pendingInteraction);
 
     const _exhaustive: never = command;

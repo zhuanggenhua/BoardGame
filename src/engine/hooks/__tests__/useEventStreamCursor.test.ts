@@ -17,6 +17,103 @@ function createEntry(id: number, type: string): EventStreamEntry {
 }
 
 describe('useEventStreamCursor', () => {
+    it('默认首次调用跳过已有事件并从后续新事件开始消费', () => {
+        const rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: rollbackValue },
+                children,
+            );
+
+        const initialEntries = [
+            createEntry(1, 'OLD_A'),
+            createEntry(2, 'OLD_B'),
+        ];
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) =>
+                useEventStreamCursor({ entries }),
+            {
+                initialProps: { entries: initialEntries },
+                wrapper,
+            },
+        );
+
+        act(() => {
+            expect(result.current.consumeNew().entries).toEqual([]);
+        });
+        expect(result.current.getCursor()).toBe(2);
+
+        rerender({
+            entries: [
+                ...initialEntries,
+                createEntry(3, 'NEW_C'),
+            ],
+        });
+
+        let consumedTypes: string[] = [];
+        act(() => {
+            consumedTypes = result.current.consumeNew().entries.map((entry) => entry.event.type);
+        });
+
+        expect(consumedTypes).toEqual(['NEW_C']);
+    });
+
+    it('consumeInitialEntries=true 时首次调用消费已有事件并推进游标', () => {
+        const rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: rollbackValue },
+                children,
+            );
+
+        const initialEntries = [
+            createEntry(1, 'SUMMON_A'),
+            createEntry(2, 'ATTACK_B'),
+        ];
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) =>
+                useEventStreamCursor({ entries, consumeInitialEntries: true }),
+            {
+                initialProps: { entries: initialEntries },
+                wrapper,
+            },
+        );
+
+        let firstConsumedTypes: string[] = [];
+        act(() => {
+            firstConsumedTypes = result.current.consumeNew().entries.map((entry) => entry.event.type);
+        });
+
+        expect(firstConsumedTypes).toEqual(['SUMMON_A', 'ATTACK_B']);
+        expect(result.current.getCursor()).toBe(2);
+
+        rerender({
+            entries: [
+                ...initialEntries,
+                createEntry(3, 'NEW_C'),
+            ],
+        });
+
+        let nextConsumedTypes: string[] = [];
+        act(() => {
+            nextConsumedTypes = result.current.consumeNew().entries.map((entry) => entry.event.type);
+        });
+
+        expect(nextConsumedTypes).toEqual(['NEW_C']);
+    });
+
     it('consumeOnReconcile=true 时会在 reconcile 后继续消费确认事件', () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,

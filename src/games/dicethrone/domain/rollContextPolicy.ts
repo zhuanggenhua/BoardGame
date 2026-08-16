@@ -1,5 +1,5 @@
 import type { PlayerId } from '../../../engine/types';
-import type { DiceThroneCore, DiceThroneRollContext, TeamId } from './types';
+import type { DiceThroneCore, DiceThroneRollContext, DtResponseWindowType, TeamId } from './types';
 
 const TEAM_MODE_PLAYER_COUNT = 4;
 
@@ -75,4 +75,44 @@ export const isPlayerAllowedByRollContextPolicy = (
     if (scope === 'opponents') return !isAlly;
 
     return isOwner || context.targetPlayerId === playerId;
+};
+
+const isConfirmedRollInterferenceWindow = (
+    context: DiceThroneRollContext,
+    responseWindowType?: DtResponseWindowType,
+): boolean => (
+    responseWindowType === 'afterRollConfirmed'
+    && context.status === 'settling'
+    && context.display.replayOnly !== true
+    && context.policy.allowDiceCardTargeting === true
+);
+
+export const isPlayerAllowedToPassiveRerollCurrentRoll = (
+    state: DiceThroneCore,
+    context: DiceThroneRollContext,
+    playerId: PlayerId,
+    options: { responseWindowType?: DtResponseWindowType } = {},
+): boolean => {
+    if (context.policy.allowPassiveReroll !== true) return false;
+    if (context.policy.rerollableBy === 'none') return false;
+    if (isPlayerAllowedByRollContextPolicy(state, context, playerId, 'reroll')) {
+        return true;
+    }
+
+    if (!isConfirmedRollInterferenceWindow(context, options.responseWindowType)) {
+        return false;
+    }
+
+    return isPlayerAllowedByRollContextPolicy(
+        state,
+        {
+            ...context,
+            policy: {
+                ...context.policy,
+                rerollableBy: 'opponents',
+            },
+        },
+        playerId,
+        'reroll',
+    );
 };

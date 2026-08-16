@@ -16,6 +16,7 @@ import type { FxCue, FxContext, FxParams, FxEvent, FxEventInput, FxQuality } fro
 import { flushRegisteredShaders } from './shader/ShaderPrecompile';
 import { resolveDevFlag } from '../env';
 import { resolveFxQuality } from './performance';
+import { scheduleFxFrameCallback, subscribeFxFrame, type FxFrameSubscription } from './frameClock';
 
 // ============================================================================
 // ID 生成
@@ -56,6 +57,10 @@ export interface FxBusOptions {
   reduceWhenHighCostActiveAt?: number;
   /** 同时活跃的高成本特效数达到该值后，拒绝新的高成本特效；0 表示不拒绝 */
   dropWhenHighCostActiveAt?: number;
+  /** 当前渲染预设允许的 full 档 DPR 上限，供后端或渲染器读取 */
+  maxDpr?: number;
+  /** 当前渲染预设允许的 reduced 档 DPR 上限，供后端或渲染器读取 */
+  reducedMaxDpr?: number;
 }
 
 /** 序列步骤定义 */
@@ -101,6 +106,7 @@ export interface FxBus {
 export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   const effectsRef = useRef<FxEvent[]>([]);
   const listenersRef = useRef(new Set<() => void>());
+  const notifyFrameUnsubscribeRef = useRef<(() => void) | undefined>(undefined);
 
   const subscribe = useCallback((listener: () => void) => {
     listenersRef.current.add(listener);
@@ -111,11 +117,30 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
 
   const getSnapshot = useCallback(() => effectsRef.current, []);
 
-  const commitEffects = useCallback((nextEffects: FxEvent[]) => {
-    effectsRef.current = nextEffects;
+  const notifyListeners = useCallback(() => {
     for (const listener of [...listenersRef.current]) {
       listener();
     }
+  }, []);
+
+  const scheduleNotifyListeners = useCallback(() => {
+    if (notifyFrameUnsubscribeRef.current || listenersRef.current.size === 0) return;
+    notifyFrameUnsubscribeRef.current = subscribeFxFrame(() => {
+      const unsubscribe = notifyFrameUnsubscribeRef.current;
+      notifyFrameUnsubscribeRef.current = undefined;
+      unsubscribe?.();
+      notifyListeners();
+    });
+  }, [notifyListeners]);
+
+  const commitEffects = useCallback((nextEffects: FxEvent[]) => {
+    effectsRef.current = nextEffects;
+    scheduleNotifyListeners();
+  }, [scheduleNotifyListeners]);
+
+  useEffect(() => () => {
+    notifyFrameUnsubscribeRef.current?.();
+    notifyFrameUnsubscribeRef.current = undefined;
   }, []);
 
   // 挂载时自动预编译所有自注册的 shader
@@ -140,10 +165,22 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
 
   // 防抖时间戳记录：cue → lastPushTime
   const debounceMapRef = useRef(new Map<FxCue, number>());
-  // 安全超时定时器：id → timeoutId
-  const timeoutsRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // 安全超时回调：id → cancel
+  const timeoutsRef = useRef(new Map<string, FxFrameSubscription>());
   // 事件 → 注册条目映射（用于 fireImpact 查找反馈包）
   const eventEntryMapRef = useRef(new Map<string, { cue: FxCue; impactFired: boolean }>());
+
+  useEffect(() => {
+    const timeoutMap = timeoutsRef.current;
+    const eventEntryMap = eventEntryMapRef.current;
+    return () => {
+      for (const cancelTimeout of timeoutMap.values()) {
+        cancelTimeout();
+      }
+      timeoutMap.clear();
+      eventEntryMap.clear();
+    };
+  }, []);
 
   const countActiveHighCostEffects = useCallback((activeEffects: FxEvent[]): number => {
     let count = 0;
@@ -182,7 +219,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   interface ActiveSequence {
     steps: FxSequenceStep[];
     cancelled: boolean;
-    delayTimer?: ReturnType<typeof setTimeout>;
+    delayTimer?: FxFrameSubscription;
   }
   const sequencesRef = useRef(new Map<string, ActiveSequence>());
   /** effect ID → 所属序列 ID + 当前步骤的 delayAfter */
@@ -192,10 +229,10 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   const advanceSequenceRef = useRef<(seqId: string, seq: ActiveSequence) => void>(() => {});
 
   const removeEffect = useCallback((id: string) => {
-    // 清理超时定时器
-    const timer = timeoutsRef.current.get(id);
-    if (timer) {
-      clearTimeout(timer);
+    // 清理超时回调
+    const cancelTimeout = timeoutsRef.current.get(id);
+    if (cancelTimeout) {
+      cancelTimeout();
       timeoutsRef.current.delete(id);
     }
     // 开发环境检测：注册了 on-impact 反馈但渲染器从未调用 onImpact
@@ -221,12 +258,12 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       if (seq && !seq.cancelled) {
         const delayMs = seqMeta.delayAfter;
         if (delayMs > 0) {
-          seq.delayTimer = setTimeout(() => {
+          seq.delayTimer = scheduleFxFrameCallback(delayMs, () => {
             seq.delayTimer = undefined;
             if (!seq.cancelled) {
               advanceSequenceRef.current(seqMeta.seqId, seq);
             }
-          }, delayMs);
+          });
         } else {
           advanceSequenceRef.current(seqMeta.seqId, seq);
         }
@@ -297,6 +334,12 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     }
 
     const resolvedQuality = resolveEventQuality(input, activeHighCostCount);
+    const resolvedMaxDpr = typeof input.params?.maxDpr === 'number'
+      ? input.params.maxDpr
+      : optionsRef.current?.maxDpr ?? budget.maxDpr;
+    const resolvedReducedMaxDpr = typeof input.params?.reducedMaxDpr === 'number'
+      ? input.params.reducedMaxDpr
+      : optionsRef.current?.reducedMaxDpr ?? budget.reducedMaxDpr;
     const id = generateFxId();
     const event: FxEvent = {
       ...input,
@@ -308,6 +351,8 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       params: {
         ...input.params,
         quality: resolvedQuality,
+        maxDpr: resolvedMaxDpr,
+        reducedMaxDpr: resolvedReducedMaxDpr,
       },
     };
 
@@ -321,9 +366,9 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       if (cueCurrent.length >= maxConcurrent) {
         // 移除最早的同 cue 特效
         const oldest = cueCurrent[0];
-        const timer = timeoutsRef.current.get(oldest.id);
-        if (timer) {
-          clearTimeout(timer);
+        const cancelTimeout = timeoutsRef.current.get(oldest.id);
+        if (cancelTimeout) {
+          cancelTimeout();
           timeoutsRef.current.delete(oldest.id);
         }
         eventEntryMapRef.current.delete(oldest.id);
@@ -334,7 +379,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
 
     // 安全超时
     if (timeoutMs > 0) {
-      const timer = setTimeout(() => {
+      const cancelTimeout = scheduleFxFrameCallback(timeoutMs, () => {
         timeoutsRef.current.delete(id);
         // 超时也检测 on-impact 遗漏
         if (resolveDevFlag()) {
@@ -360,8 +405,8 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
             advanceSequenceRef.current(seqMeta.seqId, seq);
           }
         }
-      }, timeoutMs);
-      timeoutsRef.current.set(id, timer);
+      });
+      timeoutsRef.current.set(id, cancelTimeout);
     }
 
     // 自动触发 immediate 反馈
@@ -395,7 +440,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   // ========================================================================
 
   /** 推进序列到下一步（通过 ref 自引用，避免 TDZ 和闭包过期） */
-  const advanceSequence = useCallback((seqId: string, seq: { steps: FxSequenceStep[]; cancelled: boolean; delayTimer?: ReturnType<typeof setTimeout> }) => {
+  const advanceSequence = useCallback((seqId: string, seq: ActiveSequence) => {
     if (seq.cancelled || seq.steps.length === 0) {
       sequencesRef.current.delete(seqId);
       return;
@@ -427,7 +472,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     return () => {
       for (const seq of seqMap.values()) {
         seq.cancelled = true;
-        if (seq.delayTimer) clearTimeout(seq.delayTimer);
+        seq.delayTimer?.();
       }
       seqMap.clear();
     };
@@ -460,7 +505,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     const seq = sequencesRef.current.get(sequenceId);
     if (seq) {
       seq.cancelled = true;
-      if (seq.delayTimer) clearTimeout(seq.delayTimer);
+      seq.delayTimer?.();
       sequencesRef.current.delete(sequenceId);
     }
   }, []);

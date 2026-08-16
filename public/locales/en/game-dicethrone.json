@@ -687,6 +687,7 @@
     "dieRerolled": "Rerolled die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieRerolledSource": "({{source}})",
     "bonusDieRolled": "Bonus die result: {{value}}",
+    "bonusDiceRolled": "Bonus dice result:",
     "bonusDieRerolled": "Rerolled bonus die #{{dieId}}: {{oldValue}} → {{newValue}}"
   },
   "purify": {

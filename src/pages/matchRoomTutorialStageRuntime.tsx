@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../engine/transport/protocol';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 import { BoardBridge, LocalGameProvider } from '../engine/transport/react';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { AiSeatController } from '../engine/ai/types';
@@ -27,6 +28,7 @@ export type MatchRoomTutorialBoardRuntimeModel = {
     tutorialId?: string;
     tutorialManifest: TutorialManifest | null;
     board: MatchRoomBoardComponent;
+    boardRenderer?: GameBoardRenderer;
     engineConfig: GameEngineConfig;
     numPlayers?: number;
     seatControllers?: Record<string, AiSeatController>;
@@ -180,6 +182,7 @@ const TutorialLocalGameRuntime = ({
             <TutorialDispatchBridge>
                 <BoardBridge
                     board={runtime.board}
+                    renderer={runtime.boardRenderer}
                     loading={(
                         <LoadingScreen
                             anchor="container"

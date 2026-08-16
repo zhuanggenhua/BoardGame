@@ -12,7 +12,12 @@
 
 import React, { useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../engine/fx';
+import {
+  FxRegistry,
+  scheduleFxFrameCallback,
+  type FeedbackPack,
+  type FxRendererProps,
+} from '../../../engine/fx';
 import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { UI_Z_INDEX } from '../../../core';
@@ -75,8 +80,8 @@ const PowerChangeRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onI
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, 900);
-    return () => clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(900, stableComplete);
+    return cancel;
   }, [shouldRender, stableComplete]);
 
   useEffect(() => {
@@ -123,8 +128,8 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, 800);
-    return () => clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(800, stableComplete);
+    return cancel;
   }, [shouldRender, stableComplete]);
 
   useEffect(() => {
@@ -151,7 +156,7 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     // 半透明背景
     React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
     // 卡牌
-    React.createElement(motion.div, {
+    React.createElement(motion.div as React.ElementType, {
       'data-testid': 'smashup-action-fx-card',
       'data-card-def-id': defId,
       className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
@@ -214,8 +219,8 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, BASE_SCORED_TOTAL_DURATION_MS);
-    return () => clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(BASE_SCORED_TOTAL_DURATION_MS, stableComplete);
+    return cancel;
   }, [shouldRender, stableComplete]);
 
   useEffect(() => {
@@ -243,7 +248,7 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
       const playerLabel = r.playerName || t('ui.player_short', { id: playerNumber });
       const conf = PLAYER_CONFIG[(Number.isFinite(playerIndex) ? playerIndex : 0) % PLAYER_CONFIG.length];
       const offsetY = (i - (validRankings.length - 1) / 2) * 68;
-      return React.createElement(motion.div, {
+      return React.createElement(motion.div as React.ElementType, {
         key: `${event.id}-${r.playerId}`,
         'data-testid': `su-vp-gain-feedback-${r.playerId}`,
         className: 'absolute pointer-events-none select-none',
@@ -351,6 +356,13 @@ function createRegistry(): FxRegistry {
   registry.register(SU_FX.ABILITY_TRIGGERED, AbilityTriggeredRenderer, {
     timeoutMs: 5000,
     maxConcurrent: 1,
+    budget: {
+      quality: 'reduced',
+      areaPolicy: 'screen',
+      estimatedCost: 'high',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   }, ABILITY_TRIGGERED_FEEDBACK);
 
   return registry;

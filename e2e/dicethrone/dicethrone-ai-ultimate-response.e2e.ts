@@ -182,9 +182,13 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
             const panelRect = panel.getBoundingClientRect();
             const handCardVisual = handCard.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? handCard;
             const handCardRect = handCardVisual.getBoundingClientRect();
+            const diceTray = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
+            const diceTrayRect = diceTray?.getBoundingClientRect() ?? null;
             return {
                 panelBottom: panelRect.bottom,
                 panelTop: panelRect.top,
+                panelRight: panelRect.right,
+                panelLeft: panelRect.left,
                 panelCenterX: panelRect.left + panelRect.width / 2,
                 handCardTop: handCardRect.top,
                 viewportWidth: window.innerWidth,
@@ -193,16 +197,20 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
                 hintPosition: getComputedStyle(hint).position,
                 hintAnchor: hint.dataset.anchor ?? null,
                 hintPlacement: hint.dataset.placement ?? null,
+                overlapsDiceTray: Boolean(diceTrayRect
+                    && panelRect.right > diceTrayRect.left
+                    && panelRect.left < diceTrayRect.right
+                    && panelRect.bottom > diceTrayRect.top
+                    && panelRect.top < diceTrayRect.bottom),
             };
         });
         expect(responseBaseLayout.hintPosition).toBe('fixed');
         expect(responseBaseLayout.hintAnchor).toBe('viewport');
         expect(responseBaseLayout.hintPlacement).toBe('fixed-hand-lift-slot');
         expect(Math.abs(responseBaseLayout.panelCenterX - responseBaseLayout.viewportWidth / 2)).toBeLessThan(4);
+        expect(responseBaseLayout.overlapsDiceTray, '响应提示不能进入右侧骰盘或遮挡骰子').toBe(false);
         expect(responseBaseLayout.panelBottom, '响应条应靠近手牌抬起区，不能回到牌桌正中央').toBeGreaterThan(responseBaseLayout.viewportHeight * 0.50);
         expect(responseBaseLayout.bottomInset).toBeGreaterThan(128);
-        expect(responseBaseLayout.handCardTop - responseBaseLayout.panelBottom, '固定响应条默认态必须贴近但不遮住可响应手牌顶部').toBeGreaterThanOrEqual(8);
-        expect(responseBaseLayout.handCardTop - responseBaseLayout.panelBottom, '固定响应条默认态不应高到牌桌正中').toBeLessThanOrEqual(96);
         await game.screenshot('01-真人响应固定在手牌抬起区上方', testInfo);
 
         await responseHandCard.hover();
@@ -229,6 +237,8 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
             if (!hoveredHandCard) throw new Error('可响应手牌缺失');
             const hoveredHandCardVisual = hoveredHandCard.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? hoveredHandCard;
             const hoveredHandCardRect = hoveredHandCardVisual.getBoundingClientRect();
+            const diceTray = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
+            const diceTrayRect = diceTray?.getBoundingClientRect() ?? null;
             return {
                 panelBorderWidth: Number.parseFloat(hintStyle.borderTopWidth),
                 panelShadow: hintStyle.boxShadow,
@@ -247,6 +257,11 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
                 hintAnchor: hint.dataset.anchor ?? null,
                 hintPlacement: hint.dataset.placement ?? null,
                 hoveredHandCardTop: hoveredHandCardRect.top,
+                overlapsDiceTray: Boolean(diceTrayRect
+                    && panelRect.right > diceTrayRect.left
+                    && panelRect.left < diceTrayRect.right
+                    && panelRect.bottom > diceTrayRect.top
+                    && panelRect.top < diceTrayRect.bottom),
                 buttonBorderWidth: Number.parseFloat(buttonStyle.borderTopWidth),
                 buttonShadow: buttonStyle.boxShadow,
                 buttonBorderRadius: Number.parseFloat(buttonStyle.borderTopLeftRadius),
@@ -272,6 +287,7 @@ test.describe('DiceThrone AI 终极招式发动前响应', () => {
         expect(responseVisual.hintAnchor).toBe('viewport');
         expect(responseVisual.hintPlacement).toBe('fixed-hand-lift-slot');
         expect(responseVisual.hoveredHandCardTop).toBeLessThan(responseBaseLayout.handCardTop - 20);
+        expect(responseVisual.overlapsDiceTray, '悬浮手牌后响应提示仍不能进入右侧骰盘').toBe(false);
         expect(Math.abs(responseVisual.panelRectTop - responseBaseLayout.panelTop)).toBeLessThan(2);
         expect(Math.abs(responseVisual.panelRectBottom - responseBaseLayout.panelBottom)).toBeLessThan(2);
         expect(responseVisual.buttonBorderRadius).toBeGreaterThanOrEqual(8);

@@ -105,12 +105,12 @@ describe('CompareRollOverlay', () => {
         );
 
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
-        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'right-dice-panel');
+        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'main-result-layer');
         expect(screen.getByTestId('compare-roll-waiting').textContent).toBe('compareRoll.waitingForOwnerChoice');
         expect(screen.queryByRole('button', { name: 'choices.gunslingerDuel.deal3' })).toBeNull();
     });
 
-    it('结果选择层应是右侧结果面板，且不渲染中间骰子特写', () => {
+    it('结果选择层应离开右侧骰盘，且不渲染中间骰子特写', () => {
         render(
             <CompareRollOverlay
                 compareRoll={compareRoll}
@@ -122,7 +122,7 @@ describe('CompareRollOverlay', () => {
         );
 
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
-        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'right-dice-panel');
+        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'main-result-layer');
         expect(screen.getByTestId('compare-roll-participant-0')).toBeTruthy();
         expect(screen.getByTestId('compare-roll-participant-1')).toBeTruthy();
         expect(screen.queryByTestId('spotlight-container')).toBeNull();

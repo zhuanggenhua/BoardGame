@@ -87,7 +87,7 @@ export const MeFirstOverlay: React.FC<{
     if (!isMyResponse) {
         return (
             <motion.div
-                className="fixed inset-0 flex items-center justify-center pointer-events-none"
+                className="fixed inset-x-0 top-20 md:top-24 flex justify-center px-3 pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -95,8 +95,8 @@ export const MeFirstOverlay: React.FC<{
                 data-testid="me-first-overlay"
             >
                 <motion.div
-                    className="pointer-events-none rounded-2xl border border-amber-500/35 bg-[#fef3c7]/95 px-5 py-3 shadow-xl"
-                    initial={{ scale: 0.9, y: 18 }}
+                    className="pointer-events-none max-w-[min(92vw,28rem)] rounded-2xl border border-amber-500/35 bg-[#fef3c7]/95 px-5 py-3 shadow-xl"
+                    initial={{ scale: 0.96, y: -12 }}
                     animate={{ scale: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 380, damping: 26 }}
                     data-testid="me-first-waiting-shell"

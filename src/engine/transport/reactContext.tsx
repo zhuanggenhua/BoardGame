@@ -87,7 +87,10 @@ export function useGameClient<
  * 过渡期使用，方便现有 Board 组件逐步迁移。
  * 新代码应直接使用 useGameClient。
  */
-export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
+export function useBoardProps<
+    TCore = unknown,
+    TCommandMap extends Record<string, unknown> = Record<string, unknown>,
+>(): GameBoardProps<TCore, TCommandMap> | null {
     const ctx = useContext(GameClientContext);
 
     if (!ctx || !ctx.state) return null;
@@ -107,7 +110,7 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
 
     return {
         G: state as MatchState<TCore>,
-        dispatch: dispatch as GameBoardProps<TCore>['dispatch'],
+        dispatch: dispatch as GameBoardProps<TCore, TCommandMap>['dispatch'],
         playerID: playerId,
         matchData: matchPlayers,
         seatControllers,

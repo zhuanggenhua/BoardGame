@@ -128,7 +128,7 @@ export function registerPirateAbilities(): void {
     registerAbilityProgram('pirate_sea_dogs', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(pirateSeaDogs) });
 
     // === ongoing 效果注册 ===
-    // 海盗王：基地计分前移动到该基地
+    // 海盗王：基地计分前可发动，移动到即将计分的基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
         playerContext: 'sourceController',
         canTrigger: canTriggerPirateKingBeforeScoring,
@@ -576,7 +576,13 @@ function pirateShanghai(ctx: AbilityContext): AbilityResult {
             effectType: 'affect',
         }
     );
-    if (options.length === 0) return { events: [] };
+    if (options.length === 0) {
+        return {
+            events: [
+                buildAbilityFeedback(ctx.playerId, 'feedback.target_protected', ctx.now, undefined, 'warning'),
+            ],
+        };
+    }
     const result = executeAbilityProgram(
         pirateShanghaiChooseMinionPromptProgram,
         createPiratePromptContext(ctx.matchState, ctx.playerId, ctx.now),
@@ -1483,10 +1489,26 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
         return createAbilityRuntimeSimpleChoice(
             `pirate_king_move_${context.current.uid}_${context.now}`,
             context.current.controller,
-            `海盗王：是否移动到即将计分的「${baseName}」？`,
+            `海盗王可发动：点击海盗王移动到即将计分的「${baseName}」`,
             [
-                { id: 'yes', label: '移动到该基地', labelKey: 'ui.pirate_king_move_option', value: { move: true }, displayMode: 'button' as const },
-                { id: 'no', label: '留在原地', labelKey: 'ui.pirate_king_stay_option', value: { move: false }, displayMode: 'button' as const },
+                {
+                    id: 'yes',
+                    label: '发动并移动',
+                    labelKey: 'ui.pirate_king_move_option',
+                    value: {
+                        move: true,
+                        minionUid: context.current.uid,
+                        uid: context.current.uid,
+                        minionDefId: context.current.defId,
+                        defId: context.current.defId,
+                        fromBaseIndex: context.current.fromBaseIndex,
+                        baseIndex: context.scoringBaseIndex,
+                        baseDefId: context.matchState.core.bases[context.scoringBaseIndex]?.defId,
+                        fieldSourceTargetType: 'base',
+                    },
+                    displayMode: 'card' as const,
+                },
+                { id: 'no', label: '不发动', labelKey: 'ui.pirate_king_stay_option', value: { move: false }, displayMode: 'button' as const },
             ],
             {
                 sourceId: 'pirate_king_move',
@@ -1497,13 +1519,13 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
-        const selected = value as { move?: boolean; uid?: string; defId?: string; fromBaseIndex?: number } | undefined;
+        const selected = value as { move?: boolean; uid?: string; minionUid?: string; defId?: string; minionDefId?: string; fromBaseIndex?: number } | undefined;
         const events: SmashUpEvent[] = [];
         const current = context?.current ?? (
-            selected?.uid && selected?.defId && selected?.fromBaseIndex !== undefined
+            (selected?.uid ?? selected?.minionUid) && (selected?.defId ?? selected?.minionDefId) && selected?.fromBaseIndex !== undefined
                 ? {
-                    uid: selected.uid,
-                    defId: selected.defId,
+                    uid: selected.uid ?? selected.minionUid!,
+                    defId: selected.defId ?? selected.minionDefId!,
                     fromBaseIndex: selected.fromBaseIndex,
                     controller: context?.playerId ?? '',
                 }

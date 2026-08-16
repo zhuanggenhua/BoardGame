@@ -6,6 +6,7 @@
  */
 
 import type { FxQuality } from './types';
+import { readRenderPipelineSettings } from '../renderPipeline/preferences';
 
 export interface FxDprOptions {
   quality?: FxQuality;
@@ -31,7 +32,10 @@ export function resolveFxDpr({
   if (typeof window === 'undefined') return 1;
 
   const deviceDpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
-  const cap = quality === 'reduced' ? reducedMaxDpr : maxDpr;
+  const pipelineSettings = readRenderPipelineSettings();
+  const cap = quality === 'reduced'
+    ? Math.min(reducedMaxDpr, pipelineSettings.reducedMaxDpr)
+    : Math.min(maxDpr, pipelineSettings.maxDpr);
   return Math.max(1, Math.min(deviceDpr || 1, cap));
 }
 

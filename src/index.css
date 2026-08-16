@@ -219,17 +219,18 @@
     z-index: 2;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.45rem;
     width: max-content;
-    max-width: min(18.5rem, calc(100vw - 2rem));
+    max-width: min(17rem, calc(100vw - 2rem));
     padding: 0.72rem 0.95rem;
     border: 1px solid rgba(86, 61, 36, 0.18);
     border-radius: 0.95rem;
     background: rgba(255, 252, 244, 0.96);
     box-shadow: 0 0.85rem 2rem rgba(50, 34, 18, 0.14);
     color: #5b4226;
-    font-size: 0.875rem;
-    line-height: 1.35;
+    font-size: clamp(0.75rem, 0.68rem + 0.2vw, 0.875rem);
+    line-height: 1.38;
     min-height: 3.1rem;
     pointer-events: auto;
 }
@@ -261,10 +262,16 @@
 }
 
 .pc-web-mascot__bubble-text {
-    white-space: nowrap;
+    display: block;
+    flex: 1 1 10rem;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .pc-web-mascot__group-button {
+    flex: 0 0 auto;
     border: 0;
     padding: 0;
     background: transparent;
@@ -274,6 +281,7 @@
     line-height: 1.2;
     text-decoration: underline;
     text-underline-offset: 0.16rem;
+    white-space: nowrap;
     pointer-events: auto;
     cursor: pointer;
     transition: color 160ms ease, text-decoration-thickness 160ms ease;
@@ -354,7 +362,8 @@
     }
 
     .pc-web-mascot__bubble-text {
-        white-space: normal;
+        flex-basis: 100%;
+        text-align: center;
     }
 }
 
@@ -1702,5 +1711,24 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     .betrayal-cinematic-narration__line {
         animation-duration: 1ms !important;
         animation-delay: 0ms !important;
+    }
+}
+
+@keyframes dicethrone-token-available-breathe {
+    0%,
+    100% {
+        opacity: 0.66;
+        transform: translate(-50%, -50%) scale(0.995) rotate(0deg);
+    }
+
+    50% {
+        opacity: 0.96;
+        transform: translate(-50%, -50%) scale(1.065) rotate(180deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-dicethrone-token-halo="available"] {
+        animation: none !important;
     }
 }

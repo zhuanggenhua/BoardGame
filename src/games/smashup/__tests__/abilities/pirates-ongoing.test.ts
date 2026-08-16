@@ -734,6 +734,49 @@ describe('pirate action play flows', () => {
         getSimpleChoicePrompt(matchState, 'pirate_shanghai_choose_minion');
     });
 
+    it('pirate_shanghai: 对手随从全被保护时给出保护提示', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_shanghai', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_grandmas_house',
+                    minions: [
+                        makeMinion('m1', 'grannies_granny', '1', 4),
+                        makeMinion('m2', 'russian_fairy_tales_tsar_eagle', '1', 2),
+                    ],
+                    ongoingActions: [
+                        {
+                            uid: 'dont-mess',
+                            defId: 'grannies_dont_mess_with_my_babies',
+                            ownerId: '1',
+                            talentUsed: false,
+                        },
+                    ],
+                }),
+                makeBase({ defId: 'base_pirate_cove', minions: [] }),
+            ],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1');
+
+        expectNoPrompt(matchState);
+        expect(events).toContainEqual(
+            expect.objectContaining({
+                type: SU_EVENTS.ABILITY_FEEDBACK,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    messageKey: 'feedback.target_protected',
+                    tone: 'warning',
+                }),
+            }),
+        );
+    });
+
     it('pirate_sea_dogs: 多目标时创建 Prompt 选择派系', () => {
         const state = makeState({
             players: {

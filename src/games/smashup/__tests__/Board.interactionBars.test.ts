@@ -14,11 +14,18 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("fixed inset-x-0 flex justify-center pointer-events-auto");
     });
 
-    it('普通 hand prompt 仍由手牌直选承接，普通 reaction_choose button prompt 不应被整体排除出 PromptOverlay', () => {
+    it('普通 hand prompt 仍由手牌直选承接，reaction_choose 的手牌响应不得落回 PromptOverlay 按钮主路径', () => {
         const source = readBoardSource();
         expect(source).toContain('isDirectHandSelectPrompt && (isMultiDirectHandSelect || handSelectExtraOptions.length > 0)');
         expect(source).toContain('const shouldRender = !isDirectHandSelectPrompt');
-        expect(source).not.toContain('const shouldRender = !isReactionChoicePrompt');
+        expect(source).toContain('&& !isReactionChoicePrompt');
+        expect(source).toContain('const reactionChoicePlayableCardUids = useMemo<Set<string>>');
+        expect(source).toContain('const reactionChoiceTargetStateByCardUid = useMemo<Map<string');
+        expect(source).toContain('const selectedReactionChoiceTargetState = useMemo');
+        expect(source).toContain('const reactionChoiceDisabledCardUids = useMemo<Set<string> | undefined>');
+        expect(source).toContain('const reactionChoiceExtraOptions = useMemo');
+        expect(source).toContain('data-testid="su-reaction-hand-status"');
+        expect(source).toContain("data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : undefined}");
         expect(source).toContain('&& !isDiscardCardPrompt');
         expect(source).toContain('isDiscardMode={needDiscard}');
         expect(source).not.toContain('isHandDrivenPrompt');
@@ -45,7 +52,27 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex, targetMinionUid: minionUid })");
         expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid: card.uid })");
         expect(source).toContain("respondReactionPlayOption({ kind: 'play_action', cardUid: meFirstPendingCard.cardUid, baseIndex: index })");
+        expect(source).toContain('if (isReactionChoicePrompt && isCurrentPromptForPlayer)');
+        expect(source).toContain('const reactionTargetState = reactionChoiceTargetStateByCardUid.get(card.uid)');
+        expect(source).toContain('deployableBaseIndices: new Set(reactionTargetState.baseIndices)');
+        expect(source).toContain('!reactionChoicePlayableCardUids.has(card.uid)');
         expect(source).not.toContain('respondCurrentPrompt({ optionId: reactionOption.id })');
+    });
+
+    it('场上可发动效果必须先点来源本体，再点目标基地，不能退化成响应按钮', () => {
+        const source = readBoardSource();
+        expect(source).toContain('function isFieldSourceBaseTargetValue');
+        expect(source).toContain("candidate?.fieldSourceTargetType === 'base'");
+        expect(source).toContain('const fieldSourceBaseTargetPrompt = useMemo');
+        expect(source).toContain('const isFieldSourceBaseTargetReady');
+        expect(source).toContain('setSelectedFieldPromptSourceMinionUid((current) => current === minionUid ? null : minionUid)');
+        expect(source).toContain('selectedFieldPromptSourceMinionUid !== fieldSourceBaseTargetPrompt.sourceMinionUid');
+        expect(source).toContain('index !== fieldSourceBaseTargetPrompt.targetBaseIndex');
+        expect(source).toContain('respondCurrentPrompt({ optionId: fieldSourceBaseTargetPrompt.optionId })');
+        expect(source).toContain('!isReactionHandPlayValue(opt.value) && !isFieldSourceBaseTargetValue(opt.value)');
+        expect(source).toContain('selectedMinionUids={isFieldSourceBaseTargetReady ? new Set([fieldSourceBaseTargetPrompt.sourceMinionUid]) : undefined}');
+        expect(source).toContain('isFieldSourceBaseTargetReady && fieldSourceBaseTargetPrompt.targetBaseIndex === idx');
+        expect(source).toContain('isFieldSourceBaseTargetReady && fieldSourceBaseTargetPrompt.targetBaseIndex !== idx');
     });
 
     it('弃牌横条应把 discardActionPlayProvider 结果映射成点随从模式', () => {

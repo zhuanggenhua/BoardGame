@@ -20,7 +20,7 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import { resolveFxDpr, subscribeFxFrame, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   createParticle,
@@ -216,7 +216,6 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
   useLayoutEffect(() => {
     onCompleteRef.current = onComplete;
@@ -276,6 +275,7 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
 
     let startTime = 0;
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!startTime) { startTime = now; lastTime = now; }
@@ -440,20 +440,20 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
 
       // 结束判定
       if (t >= 1 && burstParticles.length === 0) {
+        unsubscribeFrame?.();
         onCompleteRef.current?.();
         return;
       }
-
-      rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    return () => unsubscribeFrame?.();
   }, [color, customColors, isStrong, quality]);
 
   useEffect(() => {
     if (!active) return;
-    render();
-    return () => cancelAnimationFrame(rafRef.current);
+    const cleanupFrame = render();
+    return () => cleanupFrame?.();
   }, [active, render]);
 
   if (!active) return null;

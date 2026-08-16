@@ -14,7 +14,13 @@ import {
   UI_Z_INDEX,
   type CardPreviewRef,
 } from '../../../core';
-import type { FxRendererProps } from '../../../engine/fx';
+import {
+  resolveFxDpr,
+  resolveFxQuality,
+  scheduleFxFrameCallback,
+  subscribeFxFrame,
+  type FxRendererProps,
+} from '../../../engine/fx';
 import { computeSpriteStyle, type SpriteAtlasConfig, type SpriteAtlasFrame } from '../../../engine/primitives/spriteAtlas';
 import { getCardDef, resolveCardName } from '../data/cards';
 
@@ -70,7 +76,7 @@ function resolveActionKind(
   effectLabel: string | undefined,
 ): AbilityActionKind {
   if (ABILITY_ACTION_KINDS.includes(explicit as AbilityActionKind)) {
-    return explicit;
+    return explicit as AbilityActionKind;
   }
   const label = effectLabel ?? '';
   if (tone === 'danger' || /消灭|摧毁|陷阱|暗杀|discard|destroy/i.test(label)) return 'destroy';
@@ -261,10 +267,12 @@ function AbilityArcCanvas({
   sourcePos,
   targetPos,
   totalDurationS,
+  quality,
 }: {
   sourcePos: ScreenPoint;
   targetPos: ScreenPoint;
   totalDurationS: number;
+  quality: 'full' | 'reduced';
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sourceLeft = sourcePos.left;
@@ -287,10 +295,10 @@ function AbilityArcCanvas({
       left: sourcePoint.left + (vectorX / vectorLength) * 84,
       top: sourcePoint.top + (vectorY / vectorLength) * 84,
     };
-    let rafId = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     const durationMs = totalDurationS * 1000;
     const startTime = performance.now();
+    let unsubscribeFrame: (() => void) | undefined;
 
     const resize = () => {
       canvas.width = Math.ceil(window.innerWidth * dpr);
@@ -323,18 +331,20 @@ function AbilityArcCanvas({
 
       ctx.globalCompositeOperation = 'source-over';
       if (progress < 1) {
-        rafId = window.requestAnimationFrame(draw);
+        return;
       }
+
+      unsubscribeFrame?.();
     };
 
     resize();
     window.addEventListener('resize', resize);
-    rafId = window.requestAnimationFrame(draw);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => draw(now));
     return () => {
-      window.cancelAnimationFrame(rafId);
+      unsubscribeFrame?.();
       window.removeEventListener('resize', resize);
     };
-  }, [sourceLeft, sourceTop, targetLeft, targetTop, totalDurationS]);
+  }, [quality, sourceLeft, sourceTop, targetLeft, targetTop, totalDurationS]);
 
   return (
     <canvas
@@ -623,8 +633,8 @@ function CardSplitEffect({
   }, [onShatterStart, shatterImageSource]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSplitActive(true), TWO_PIECE_SPLIT_DELAY_MS);
-    return () => window.clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(TWO_PIECE_SPLIT_DELAY_MS, () => setSplitActive(true));
+    return cancel;
   }, [shatterKey]);
 
   useEffect(() => {
@@ -635,7 +645,7 @@ function CardSplitEffect({
     if (!canvas || !parent) return undefined;
 
     let cancelled = false;
-    let rafId = 0;
+    let unsubscribeFrame: (() => void) | undefined;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const parentW = Math.max(1, parent.offsetWidth);
     const parentH = Math.max(1, parent.offsetHeight);
@@ -699,16 +709,18 @@ function CardSplitEffect({
         drawFrame(progress);
 
         if (progress < 1) {
-          rafId = window.requestAnimationFrame(draw);
+          return;
         }
+
+        unsubscribeFrame?.();
       };
 
-      rafId = window.requestAnimationFrame(draw);
+      unsubscribeFrame = subscribeFxFrame(({ now }) => draw(now));
     });
 
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(rafId);
+      unsubscribeFrame?.();
     };
   }, [fallbackLabel, splitActive, shatterKey]);
 
@@ -801,7 +813,22 @@ function ResultMarker({
   targetCardPreview: CardPreviewRef | undefined;
   resolvedTargetName: string | undefined;
 }) {
-  if (actionKind === 'destroy' || actionKind === 'info') return null;
+  if (actionKind === 'info') return null;
+
+  if (actionKind === 'destroy') {
+    return (
+      <motion.div
+        className="absolute left-1/2 top-1/2 flex h-16 w-16 items-center justify-center rounded-full border-2 border-rose-100 bg-rose-500/92 text-4xl font-black leading-none text-white shadow-[0_0_34px_rgba(244,63,94,0.72)]"
+        style={{ marginLeft: -32, marginTop: -32 }}
+        initial={{ opacity: 0, scale: 0.34, rotate: -16 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.34, 1.24, 1, 1.42], rotate: [-16, 8, 0, 18] }}
+        transition={{ duration: 1.18, delay: 0.9, times: [0, 0.18, 0.62, 1], ease: 'easeOut' }}
+        data-testid="smashup-triggered-fx-destroy-marker"
+      >
+        ×
+      </motion.div>
+    );
+  }
 
   if (actionKind === 'protect') {
     return (
@@ -934,16 +961,14 @@ function TargetImpact({
       scale: renderCardBody ? [0.92, 1.08, 1, 1.02, 0.98] : [0.82, 1.02, 1, 1.04, 0.96],
       rotate: renderCardBody ? [0, 0, -2, 1, 0] : [0, 0, -4, 5, 4],
       y: renderCardBody ? [8, 0, 0, 0, 6] : [12, 0, 0, 6, 12],
-      filter: renderCardBody
-        ? ['brightness(1)', 'brightness(1.18)', 'brightness(1.08)', 'brightness(1)', 'brightness(0.82)']
-        : ['grayscale(0) brightness(1)', 'grayscale(0) brightness(1.1)', 'grayscale(0.75) brightness(0.72)', 'grayscale(1) brightness(0.48)', 'grayscale(1) brightness(0.36)'],
+      ...(renderCardBody ? { filter: ['brightness(1)', 'brightness(1.18)', 'brightness(1.08)', 'brightness(1)', 'brightness(0.82)'] } : {}),
     }
     : {
       opacity: renderCardBody ? [0, 1, 1, 0.92, 0] : [0, 1, 1, 0],
       scale: [0.84, 1.08, 1, 1.04, 0.96],
       rotate: [0, -2, 1, 0, 0],
       y: [14, 0, -6, -4, -18],
-      filter: ['brightness(1)', 'brightness(1.15)', 'brightness(1.06)', 'brightness(1.1)', 'brightness(1)'],
+      ...(renderCardBody ? { filter: ['brightness(1)', 'brightness(1.15)', 'brightness(1.06)', 'brightness(1.1)', 'brightness(1)'] } : {}),
     };
 
   return (
@@ -1031,11 +1056,83 @@ function TargetImpact({
   );
 }
 
+function ReducedTargetResult({
+  actionKind,
+  tone,
+  targetPos,
+  totalDurationS,
+}: {
+  actionKind: AbilityActionKind;
+  tone: ReturnType<typeof resolveAbilityTone>;
+  targetPos: ScreenPoint;
+  totalDurationS: number;
+}) {
+  const visual: {
+    className: string;
+    markerTestId?: string;
+    content: React.ReactNode;
+  } = actionKind === 'destroy'
+    ? {
+      className: 'border-rose-100 bg-rose-500/92 text-white',
+      markerTestId: 'smashup-triggered-fx-destroy-marker',
+      content: '×',
+    }
+    : actionKind === 'buff'
+      ? {
+        className: 'border-white bg-emerald-400 text-slate-950',
+        markerTestId: 'smashup-triggered-fx-buff-marker',
+        content: '+1',
+      }
+      : actionKind === 'score'
+        ? {
+          className: 'border-yellow-100 bg-yellow-300 text-slate-950',
+          markerTestId: 'smashup-triggered-fx-score-token',
+          content: 'VP',
+        }
+        : actionKind === 'protect'
+          ? {
+            className: 'border-blue-100 bg-blue-400 text-white',
+            markerTestId: 'smashup-triggered-fx-protect-shield',
+            content: <ShieldCheck size={30} strokeWidth={2.4} />,
+          }
+          : {
+            className: 'border-amber-100 bg-amber-300 text-slate-950',
+            content: <Sparkles size={28} />,
+          };
+
+  return (
+    <div
+      className="fixed pointer-events-none select-none"
+      style={{
+        left: targetPos.left,
+        top: targetPos.top,
+        transform: 'translate(-50%, -50%)',
+        zIndex: UI_Z_INDEX.overlayRaised,
+        fontFamily: "'Caveat', 'Comic Sans MS', cursive",
+      }}
+      data-testid="smashup-triggered-fx-target"
+    >
+      <motion.div
+        className={`flex h-14 w-14 items-center justify-center rounded-full border-2 text-2xl font-black leading-none ${visual.className}`}
+        style={{ boxShadow: `0 0 18px ${tone.glow}` }}
+        initial={{ opacity: 0, scale: 0.42, rotate: -10 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.42, 1.18, 1, 1.1], rotate: [-10, 5, 0, 6] }}
+        transition={{ duration: Math.min(totalDurationS * 0.58, 1.22), times: [0, 0.2, 0.72, 1], ease: 'easeOut' }}
+        data-testid="smashup-triggered-fx-target-card"
+      >
+        <span className="flex items-center justify-center" data-testid={visual.markerTestId}>
+          {visual.content}
+        </span>
+      </motion.div>
+    </div>
+  );
+}
+
 /**
  * 大杀四方能力触发动效。
  *
- * 视觉语法：来源卡牌缩放表示能力生效，直线表示本次选择的目标，
- * 目标卡牌两块分裂表示销毁。文字只保留对象名，不承担解释效果的职责。
+ * 视觉语法：完整档保留来源与目标关系；简化档只保留目标上的结果提示。
+ * 触发提示不承担规则解释，默认优先降低图片解码、全屏绘制和额外动画节点。
  */
 export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
@@ -1051,6 +1148,8 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const effectLabel = event.params?.effectLabel as string | undefined;
   const highlightTone = event.params?.highlightTone as AbilityHighlightTone | undefined;
   const actionKind = resolveActionKind(event.params?.actionKind, highlightTone, effectLabel);
+  const quality = resolveFxQuality(event.params?.quality ?? event.ctx.quality, 'full');
+  const isReducedQuality = quality === 'reduced';
   const durationMsParam = event.params?.durationMs;
   const totalDurationS = Math.min(
     6,
@@ -1064,19 +1163,19 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
     const impactDelayMs = actionKind === 'destroy'
       ? Math.min(980, totalDurationMs * 0.36)
       : Math.min(1350, totalDurationMs * 0.42);
-    const timer = window.setTimeout(() => {
+    const cancel = scheduleFxFrameCallback(impactDelayMs, () => {
       if (!impactFired.current) {
         impactFired.current = true;
         onImpact();
       }
-    }, impactDelayMs);
-    return () => window.clearTimeout(timer);
+    });
+    return cancel;
   }, [actionKind, onImpact, totalDurationMs]);
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = window.setTimeout(stableComplete, totalDurationMs);
-    return () => window.clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(totalDurationMs, stableComplete);
+    return cancel;
   }, [shouldRender, stableComplete, totalDurationMs]);
 
   useEffect(() => {
@@ -1087,98 +1186,117 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
 
   if (!shouldRender) return null;
 
+  const viewport = getViewportSize();
+  const targetPos = explicitTargetPosition ?? { left: viewport.width / 2, top: viewport.height * 0.36 };
+  const tone = resolveAbilityTone(highlightTone, actionKind);
+
+  if (isReducedQuality) {
+    return (
+      <ReducedTargetResult
+        actionKind={actionKind}
+        tone={tone}
+        targetPos={targetPos}
+        totalDurationS={totalDurationS}
+      />
+    );
+  }
+
   const t = i18next.getFixedT(null, 'game-smashup');
   const def = getCardDef(sourceDefId);
   const resolvedName = sourceLabel || resolveCardName(def, t) || sourceDefId;
   const targetDef = targetDefId ? getCardDef(targetDefId) : undefined;
   const resolvedTargetName = targetLabel || (targetDefId ? (resolveCardName(targetDef, t) || targetDefId) : undefined);
-  const sourceCardPreview = sourcePreviewRef ?? def?.previewRef;
-  const targetCardPreview = targetPreviewRef ?? targetDef?.previewRef;
+  const sourceCardPreview = isReducedQuality ? undefined : sourcePreviewRef ?? def?.previewRef;
+  const targetCardPreview = isReducedQuality ? undefined : targetPreviewRef ?? targetDef?.previewRef;
   const targetAtlasPreview = targetCardPreview?.type === 'atlas'
     ? targetCardPreview
     : targetDef?.previewRef?.type === 'atlas'
       ? targetDef.previewRef
       : undefined;
-  const targetShatterSource = resolveShatterImageSource(targetAtlasPreview, i18next.language || 'zh-CN');
 
-  const viewport = getViewportSize();
-  const targetPos = explicitTargetPosition ?? { left: viewport.width / 2, top: viewport.height * 0.36 };
   const sourcePos = sourcePosition ?? { left: Math.max(120, targetPos.left - 240), top: Math.max(120, targetPos.top + 120) };
-  const tone = resolveAbilityTone(highlightTone, actionKind);
-  const renderSourceCardBody = !sourcePosition;
-  const renderTargetCardBody = !explicitTargetPosition || actionKind === 'destroy';
+  const renderSourceCardBody = !sourcePosition && !isReducedQuality;
+  const renderTargetCardBody = !isReducedQuality && (!explicitTargetPosition || actionKind === 'destroy');
   const renderTargetLabel = !explicitTargetPosition;
   const compactTargetCardBody = !!explicitTargetPosition;
+  const sourceAnchorClassName = renderSourceCardBody
+    ? 'relative h-[min(17vw,142px)] w-[min(12vw,100px)] overflow-hidden rounded-xl border-[3px] border-amber-200 bg-white shadow-[0_18px_44px_rgba(0,0,0,0.6)]'
+    : 'relative h-[218px] w-[158px] rounded-2xl bg-transparent';
+  const targetShatterSource = renderTargetCardBody && actionKind === 'destroy'
+    ? resolveShatterImageSource(targetAtlasPreview, i18next.language || 'zh-CN')
+    : undefined;
 
   return (
     <>
-      <AbilityArcCanvas
-        sourcePos={sourcePos}
-        targetPos={targetPos}
-        totalDurationS={totalDurationS}
-      />
+      {!isReducedQuality && (
+        <AbilityArcCanvas
+          sourcePos={sourcePos}
+          targetPos={targetPos}
+          totalDurationS={totalDurationS}
+          quality={quality}
+        />
+      )}
 
-      <div
-        className="fixed pointer-events-none select-none"
-        style={{
-          left: sourcePos.left,
-          top: sourcePos.top,
-          transform: 'translate(-50%, -50%)',
-          zIndex: UI_Z_INDEX.overlayRaised,
-          fontFamily: "'Caveat', 'Comic Sans MS', cursive",
-        }}
-        data-testid="smashup-triggered-fx-source"
-      >
-        <motion.div
-          className="relative flex flex-col items-center gap-1.5"
-          initial={{ opacity: 0, scale: 0.58, rotate: -9, y: 18 }}
-          animate={{ opacity: [0, 1, 1, 0], scale: [0.58, 1.16, 1.04, 0.92], rotate: [-9, 4, 1, -3], y: [18, -8, -8, -34] }}
-          transition={{ duration: totalDurationS, times: [0, 0.18, 0.72, 1], ease: 'easeOut' }}
+      {!isReducedQuality && (
+        <div
+          className="fixed pointer-events-none select-none"
+          style={{
+            left: sourcePos.left,
+            top: sourcePos.top,
+            transform: 'translate(-50%, -50%)',
+            zIndex: UI_Z_INDEX.overlayRaised,
+            fontFamily: "'Caveat', 'Comic Sans MS', cursive",
+          }}
+          data-testid="smashup-triggered-fx-source"
         >
           <motion.div
-            className={renderSourceCardBody ? 'absolute inset-[-16px] rounded-2xl' : 'absolute inset-[-22px] rounded-[28px]'}
-            style={{ background: `radial-gradient(circle, ${tone.glow} 0%, rgba(0,0,0,0) 70%)` }}
-            animate={{
-              opacity: renderSourceCardBody ? [0, 0.55, 0.45, 0] : [0, 0.2, 0.12, 0],
-              scale: renderSourceCardBody ? [0.7, 1.18, 1.05, 1.42] : [0.75, 1.02, 1, 1.12],
-            }}
-            transition={{ duration: totalDurationS * 0.76, times: [0, 0.18, 0.66, 1], ease: 'easeOut' }}
-          />
-          <div className={renderSourceCardBody
-            ? 'relative h-[min(17vw,142px)] w-[min(12vw,100px)] overflow-hidden rounded-xl border-[3px] border-amber-200 bg-white shadow-[0_18px_44px_rgba(0,0,0,0.6)]'
-            : 'relative h-[218px] w-[158px] rounded-2xl bg-transparent'
-          }>
-            {renderSourceCardBody && (
-              sourceCardPreview ? (
-                <CardPreview
-                  previewRef={sourceCardPreview}
-                  className="h-full w-full object-cover"
-                  title={resolvedName}
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-amber-100 p-2 text-center text-xs font-black text-slate-900">
-                  {resolvedName}
-                </div>
-              )
-            )}
-            {renderSourceCardBody && (
-              <motion.div
-                className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-slate-950 shadow-[0_0_22px_rgba(251,191,36,0.82)]"
-                initial={{ scale: 0, rotate: -24 }}
-                animate={{ scale: [0, 1.26, 1], rotate: [-24, 14, 6] }}
-                transition={{ delay: 0.08, duration: 0.42, ease: [0.34, 1.56, 0.64, 1] }}
-              >
-                <Zap size={18} fill="currentColor" strokeWidth={1.5} />
-              </motion.div>
-            )}
-          </div>
-          {renderSourceCardBody && (
-            <div className="max-w-[150px] truncate rounded-md border border-amber-300/55 bg-slate-950/82 px-2.5 py-1 text-center text-[15px] font-black leading-none text-amber-100 shadow-xl">
-              {resolvedName}
+            className="relative flex flex-col items-center gap-1.5"
+            initial={{ opacity: 0, scale: 0.58, rotate: -9, y: 18 }}
+            animate={{ opacity: [0, 1, 1, 0], scale: [0.58, 1.16, 1.04, 0.92], rotate: [-9, 4, 1, -3], y: [18, -8, -8, -34] }}
+            transition={{ duration: totalDurationS, times: [0, 0.18, 0.72, 1], ease: 'easeOut' }}
+          >
+            <motion.div
+              className={renderSourceCardBody ? 'absolute inset-[-16px] rounded-2xl' : 'absolute inset-[-22px] rounded-[28px]'}
+              style={{ background: `radial-gradient(circle, ${tone.glow} 0%, rgba(0,0,0,0) 70%)` }}
+              animate={{
+                opacity: renderSourceCardBody ? [0, 0.55, 0.45, 0] : [0, 0.2, 0.12, 0],
+                scale: renderSourceCardBody ? [0.7, 1.18, 1.05, 1.42] : [0.75, 1.02, 1, 1.12],
+              }}
+              transition={{ duration: totalDurationS * 0.76, times: [0, 0.18, 0.66, 1], ease: 'easeOut' }}
+            />
+            <div className={sourceAnchorClassName}>
+              {renderSourceCardBody && (
+                sourceCardPreview ? (
+                  <CardPreview
+                    previewRef={sourceCardPreview}
+                    className="h-full w-full object-cover"
+                    title={resolvedName}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-amber-100 p-2 text-center text-xs font-black text-slate-900">
+                    {resolvedName}
+                  </div>
+                )
+              )}
+              {renderSourceCardBody && (
+                <motion.div
+                  className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-slate-950 shadow-[0_0_22px_rgba(251,191,36,0.82)]"
+                  initial={{ scale: 0, rotate: -24 }}
+                  animate={{ scale: [0, 1.26, 1], rotate: [-24, 14, 6] }}
+                  transition={{ delay: 0.08, duration: 0.42, ease: [0.34, 1.56, 0.64, 1] }}
+                >
+                  <Zap size={18} fill="currentColor" strokeWidth={1.5} />
+                </motion.div>
+              )}
             </div>
-          )}
-        </motion.div>
-      </div>
+            {renderSourceCardBody && (
+              <div className="max-w-[150px] truncate rounded-md border border-amber-300/55 bg-slate-950/82 px-2.5 py-1 text-center text-[15px] font-black leading-none text-amber-100 shadow-xl">
+                {resolvedName}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       <div
         className="fixed pointer-events-none select-none"

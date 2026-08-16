@@ -1659,7 +1659,7 @@ export const hasRespondableContent = (
     // 奖励骰已投出后，只有实际能重投当前骰区的被动能力才算介入手段。
     // 抽牌、建造等“任意时刻”动作不能凭 timing 字样插入奖励骰介入窗口；
     // 无响应时仍回到右侧骰盘普通确认，而不是自动结算。
-    if (hasUsableDiceRerollPassiveAction(state, playerId, phase)) {
+    if (hasUsableDiceRerollPassiveAction(state, playerId, phase, { responseWindowType: windowType })) {
         return true;
     }
 

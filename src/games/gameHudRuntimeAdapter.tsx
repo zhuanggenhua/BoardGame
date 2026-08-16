@@ -6,6 +6,7 @@ import {
     type GameHudRuntimeMode,
     type GameRuntimeSettingsSectionProps,
 } from './gameRuntimeAdapter';
+import { RenderQualitySettingsSection } from '../components/game/framework/widgets/RenderQualitySettingsSection';
 
 type GameHudRuntimeSettingsSectionPublicProps = GameRuntimeSettingsSectionProps & {
     gameId?: string;
@@ -24,9 +25,11 @@ export function GameHudRuntimeSettingsSection({
     t,
 }: GameHudRuntimeSettingsSectionPublicProps): ReactNode {
     const SettingsSection = getGameImplementation(gameId ?? '')?.runtimeAdapter?.HudSettingsSection;
-    if (!SettingsSection) {
-        return null;
-    }
 
-    return <SettingsSection t={t} />;
+    return (
+        <>
+            <RenderQualitySettingsSection t={t} />
+            {SettingsSection ? <SettingsSection t={t} /> : null}
+        </>
+    );
 }

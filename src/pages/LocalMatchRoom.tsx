@@ -13,6 +13,7 @@ import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadEr
 import { usePerformanceMonitor } from '../hooks/ui/usePerformanceMonitor';
 import { LocalGameProvider, BoardBridge } from '../engine/transport/localReact';
 import type { GameBoardProps } from '../engine/transport/protocol';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 import type { ComponentType } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
@@ -142,6 +143,34 @@ export const LocalMatchRoom = () => {
         return WrappedLocalBoard;
     }, [gameId, i18n.language, t, isGameImplementationReady]);
 
+    const WrappedBoardRenderer = useMemo<GameBoardRenderer | undefined>(() => {
+        if (!gameId || !isGameImplementationReady) return undefined;
+        const impl = getGameImplementation(gameId);
+        const renderer = impl?.boardRenderer;
+        if (!renderer) return undefined;
+
+        if (renderer.kind === 'react') {
+            const RendererBoard = renderer.component as unknown as ComponentType<GameBoardProps>;
+            const WrappedLocalRendererBoard: ComponentType<GameBoardProps> = (props) => (
+                <CriticalImageGate
+                    gameId={gameId}
+                    gameState={props?.G}
+                    locale={i18n.language}
+                    playerID={props?.playerID}
+                    loadingDescription={t('matchRoom.loadingResources')}
+                >
+                    <RendererBoard {...props} />
+                </CriticalImageGate>
+            );
+            return {
+                kind: 'react',
+                component: WrappedLocalRendererBoard,
+            };
+        }
+
+        return renderer;
+    }, [gameId, i18n.language, t, isGameImplementationReady]);
+
     // 命令被拒绝时的统一反馈（拒绝音效 + toast 提示）
     // tutorial_command_blocked / tutorial_step_locked 是教程系统的正常拦截，不弹 toast
     const handleCommandRejected = useCallback((_type: string, error: string) => {
@@ -220,6 +249,7 @@ export const LocalMatchRoom = () => {
                                         >
                                             <BoardBridge
                                                 board={WrappedBoard}
+                                                renderer={WrappedBoardRenderer}
                                                 remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                                 loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
                                             />

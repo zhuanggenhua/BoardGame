@@ -11,7 +11,13 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import {
+  resolveFxDpr,
+  scheduleFxFrameCallback,
+  subscribeFxFrame,
+  type FxFrameSubscription,
+  type FxQuality,
+} from '../../../engine/fx';
 import { isTestEnvironment } from '../../../engine/testing/environment';
 import { getPreloadedImageElement } from '../../../core';
 
@@ -221,8 +227,9 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
-  const safetyTimerRef = useRef(0);
+  const cancelSafetyRef = useRef<FxFrameSubscription | undefined>(undefined);
+  const cleanupFrameRef = useRef<(() => void) | undefined>(undefined);
+  const renderRunRef = useRef(0);
   const animStartedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onStartRef = useRef(onStart);
@@ -244,6 +251,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
+    const runId = ++renderRunRef.current;
 
     const parent = container.parentElement;
     if (!parent) return;
@@ -264,6 +272,8 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
       if (!contentEl || contentEl === container) return;
       snapshot = await captureElementAsync(contentEl, quality);
     }
+
+    if (runId !== renderRunRef.current) return;
 
     if (!snapshot) {
       // 截取失败，直接完成（防止 onComplete 永不调用）
@@ -355,6 +365,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
 
     const drag = 0.96; // 俯视角摩擦力（比横版更强，碎片快速停下）
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!lastTime) lastTime = now;
@@ -396,13 +407,15 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
       }
 
       if (alive === 0) {
+        unsubscribeFrame?.();
+        cleanupFrameRef.current = undefined;
         onCompleteRef.current?.();
         return;
       }
-      rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    cleanupFrameRef.current = () => unsubscribeFrame?.();
   // imageSource 通过 imageSourceRef 访问，不放入依赖（对象引用不稳定）
   }, [durationScale, fadePower, isStrong, cols, minScale, rows, quality, spreadScale]);
 
@@ -412,23 +425,30 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
     if (useSafeTestFallback) {
       // Headless Chromium 在 destroy/shatter 的 Canvas drawImage 链路上会偶发整页断开；
       // E2E / webdriver 下退化为短暂保留卡面后直接收口，避免把交互链测试变成浏览器稳定性测试。
-      safetyTimerRef.current = window.setTimeout(() => {
+      cancelSafetyRef.current = scheduleFxFrameCallback(isStrong ? 240 : 180, () => {
         onCompleteRef.current?.();
-      }, isStrong ? 240 : 180);
+        cancelSafetyRef.current = undefined;
+      });
       return () => {
-        clearTimeout(safetyTimerRef.current);
+        renderRunRef.current += 1;
+        cancelSafetyRef.current?.();
+        cancelSafetyRef.current = undefined;
       };
     }
     // 安全超时：如果异步截取卡住，强制完成
-    safetyTimerRef.current = window.setTimeout(() => {
+    cancelSafetyRef.current = scheduleFxFrameCallback(SAFETY_TIMEOUT_MS, () => {
       if (!animStartedRef.current) {
         onCompleteRef.current?.();
       }
-    }, SAFETY_TIMEOUT_MS);
+      cancelSafetyRef.current = undefined;
+    });
     render();
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      clearTimeout(safetyTimerRef.current);
+      renderRunRef.current += 1;
+      cleanupFrameRef.current?.();
+      cleanupFrameRef.current = undefined;
+      cancelSafetyRef.current?.();
+      cancelSafetyRef.current = undefined;
     };
   }, [active, isStrong, render, useSafeTestFallback]);
 

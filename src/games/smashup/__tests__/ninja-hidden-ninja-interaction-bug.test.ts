@@ -20,6 +20,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
 } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -37,6 +38,10 @@ function makeMeFirstState() {
                     makeCard('c23', 'ninja_tiger_assassin', 'minion', '0'),
                     makeCard('c28', 'ninja_acolyte', 'minion', '0'),
                     makeCard('c35', 'ninja_hidden_ninja', 'action', '0'),
+                ],
+                deck: [
+                    makeCard('deck-buffer-a', 'pirate_first_mate', 'minion', '0'),
+                    makeCard('deck-buffer-b', 'pirate_buccaneer', 'minion', '0'),
                 ],
                 minionsPlayed: 1,
                 minionsPlayedPerBase: { '0': 1 },
@@ -98,5 +103,28 @@ describe('便衣忍者交互创建 Bug', () => {
         expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(
             expect.arrayContaining(['c23', 'c28']),
         );
+    });
+
+    it('二段随从选择跳过后，不应把已经打出的便衣忍者回滚到手牌', () => {
+        const result = runCommand(makeMeFirstState(), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'c35',
+                targetBaseIndex: 0,
+            },
+        } as any);
+
+        expect(result.success, result.error).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(result.finalState, 'ninja_hidden_ninja');
+        const skip = getPromptOptions(prompt).find(option => option.value?.skip);
+        expect(skip).toBeDefined();
+
+        const skipped = respondToPrompt(result.finalState, skip!.id, '0');
+
+        expect(skipped.success, skipped.error).toBe(true);
+        expect(skipped.finalState.core.players['0'].hand.map(card => card.defId)).not.toContain('ninja_hidden_ninja');
+        expect(skipped.finalState.core.players['0'].discard.map(card => card.defId)).toContain('ninja_hidden_ninja');
     });
 });

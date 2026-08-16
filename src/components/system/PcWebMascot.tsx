@@ -10,8 +10,8 @@ import { UI_Z_INDEX } from '../../core';
 
 const MASCOT_SRC = 'common/images/mascot/easyboardgame-kanban-girl.png';
 const COMMUNITY_QQ_GROUP = '1081373485';
-const MASCOT_TIP_INTERVAL_MS = 5000;
-export const PC_WEB_MASCOT_Z_INDEX = UI_Z_INDEX.hud - 1;
+const MASCOT_BUBBLE_AUTO_HIDE_MS = 5000;
+export const PC_WEB_MASCOT_Z_INDEX = UI_Z_INDEX.tooltip - 1;
 
 const shouldHideOnRoute = (pathname: string) => (
     pathname === '/play'
@@ -63,12 +63,12 @@ export const PcWebMascot = () => {
             return undefined;
         }
 
-        const intervalId = window.setInterval(() => {
-            setTipIndex((value) => (value + 1) % mascotTips.length);
-        }, MASCOT_TIP_INTERVAL_MS);
+        const timeoutId = window.setTimeout(() => {
+            setBubbleVisible(false);
+        }, MASCOT_BUBBLE_AUTO_HIDE_MS);
 
-        return () => window.clearInterval(intervalId);
-    }, [bubbleVisible, mascotTips.length, shouldHide]);
+        return () => window.clearTimeout(timeoutId);
+    }, [bubbleVisible, shouldHide, tipIndex]);
 
     const activeTip = mascotTips[tipIndex] ?? mascotTips[0];
 

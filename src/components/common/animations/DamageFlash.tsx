@@ -25,7 +25,7 @@
  */
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import type { FxQuality } from '../../../engine/fx';
+import { scheduleFxFrameCallback, type FxFrameSubscription, type FxQuality } from '../../../engine/fx';
 import { RiftSlash, getRiftPresetByDamage } from './RiftSlash';
 import { RedPulse } from './RedPulse';
 import { DamageNumber } from './DamageNumber';
@@ -115,17 +115,17 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   useEffect(() => {
     if (!active) return;
 
-    const timers: number[] = [];
+    const cancelScheduledCallbacks: FxFrameSubscription[] = [];
 
     const triggerEffects = () => {
       if (showSlash) {
         setSlashActive(true);
-        timers.push(window.setTimeout(() => setSlashActive(false), slashActiveMs));
+        cancelScheduledCallbacks.push(scheduleFxFrameCallback(slashActiveMs, () => setSlashActive(false)));
       }
 
       if (showRedPulse) {
         setPulseActive(true);
-        timers.push(window.setTimeout(() => setPulseActive(false), pulseActiveMs ?? (isStrong ? 500 : 350)));
+        cancelScheduledCallbacks.push(scheduleFxFrameCallback(pulseActiveMs ?? (isStrong ? 500 : 350), () => setPulseActive(false)));
       }
 
       if (showNumber) {
@@ -134,15 +134,15 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
     };
 
     if (startDelayMs > 0) {
-      timers.push(window.setTimeout(triggerEffects, startDelayMs));
+      cancelScheduledCallbacks.push(scheduleFxFrameCallback(startDelayMs, triggerEffects));
     } else {
       triggerEffects();
     }
 
     // 完成回调：等最长的效果结束
-    timers.push(window.setTimeout(() => onCompleteRef.current?.(), startDelayMs + completeMs));
+    cancelScheduledCallbacks.push(scheduleFxFrameCallback(startDelayMs + completeMs, () => onCompleteRef.current?.()));
 
-    return () => timers.forEach(t => window.clearTimeout(t));
+    return () => cancelScheduledCallbacks.forEach(cancel => cancel());
   }, [active, showSlash, showRedPulse, showNumber, isStrong, slashActiveMs, pulseActiveMs, startDelayMs, completeMs]);
 
   if (!active) return null;

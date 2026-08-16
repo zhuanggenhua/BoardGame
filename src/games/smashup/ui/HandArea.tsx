@@ -271,6 +271,9 @@ const HandCard: React.FC<HandCardProps> = ({
     return (
         <motion.div
             data-card-uid={card.uid}
+            data-selected={isSelected ? 'true' : 'false'}
+            data-highlighted={isHighlighted ? 'true' : 'false'}
+            data-disabled={isDisabled ? 'true' : 'false'}
             className={`
                 relative flex-shrink-0 origin-bottom pointer-events-auto
                 hover:!z-50

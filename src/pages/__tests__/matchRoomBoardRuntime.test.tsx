@@ -1,7 +1,8 @@
 /* @vitest-environment happy-dom */
 import { render, renderHook, screen } from '@testing-library/react';
 import { useEffect, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { GameBoardRenderer } from '../../engine/boardRenderer';
 import { useMatchRoomBoardRuntime } from '../matchRoomBoardRuntime';
 
 const boardLifecycle = {
@@ -9,6 +10,7 @@ const boardLifecycle = {
     unmounts: 0,
     renders: 0,
 };
+let mockBoardRenderer: GameBoardRenderer | undefined;
 
 function MockBoardComponent() {
     boardLifecycle.renders += 1;
@@ -44,6 +46,7 @@ vi.mock('../../components/game/framework', () => ({
 vi.mock('../../games/registry', () => ({
     getGameImplementation: () => ({
         board: MockBoardComponent,
+        boardRenderer: mockBoardRenderer,
         audioConfig: {
             blockingSounds: [],
         },
@@ -51,6 +54,10 @@ vi.mock('../../games/registry', () => ({
 }));
 
 describe('useMatchRoomBoardRuntime', () => {
+    afterEach(() => {
+        mockBoardRenderer = undefined;
+    });
+
     it('在线预加载门禁切换时，不应把普通 runtime 更新误记成真实卸载重挂', () => {
         boardLifecycle.mounts = 0;
         boardLifecycle.unmounts = 0;
@@ -259,5 +266,62 @@ describe('useMatchRoomBoardRuntime', () => {
         );
 
         expect(screen.getByTestId('critical-image-gate')).toHaveAttribute('data-block-rendering', 'false');
+    });
+
+    it('manifest 声明 imperative boardRenderer 时，应返回房间可消费的后端并释放在线预加载门禁', () => {
+        const mountSpy = vi.fn();
+        const updateSpy = vi.fn();
+        const destroySpy = vi.fn();
+        mockBoardRenderer = {
+            kind: 'imperative',
+            engine: 'pixi',
+            mount: (host, props) => {
+                mountSpy(host.element, props.playerID);
+                return {
+                    update: updateSpy,
+                    destroy: destroySpy,
+                };
+            },
+        };
+        const args = {
+            gameId: 'fantasyrealms',
+            gameImplReady: true,
+            locale: 'zh-CN',
+            loadingDescription: 'loading',
+            shouldBlockBoardOnImagePreload: true,
+            onInitialOnlinePreloadReady: vi.fn(),
+            onBoardPreloadBlockingChange: vi.fn(),
+        };
+
+        const { result } = renderHook((props: typeof args) => useMatchRoomBoardRuntime(props), {
+            initialProps: args,
+        });
+
+        const renderer = result.current.boardRenderer;
+        if (!renderer || renderer.kind !== 'imperative') {
+            throw new Error('expected imperative board renderer');
+        }
+
+        const element = document.createElement('div');
+        const instance = renderer.mount({ element }, {
+            G: {} as any,
+            dispatch: vi.fn(),
+            playerID: '0',
+        });
+
+        expect(renderer.engine).toBe('pixi');
+        expect(args.onBoardPreloadBlockingChange).toHaveBeenCalledWith(false);
+        expect(args.onInitialOnlinePreloadReady).toHaveBeenCalledTimes(1);
+        expect(mountSpy).toHaveBeenCalledWith(element, '0');
+
+        instance.update({
+            G: {} as any,
+            dispatch: vi.fn(),
+            playerID: '1',
+        });
+        expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ playerID: '1' }));
+
+        instance.destroy();
+        expect(destroySpy).toHaveBeenCalledTimes(1);
     });
 });

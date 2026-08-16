@@ -52,12 +52,19 @@ interface UseGameEventsParams {
   playerNames?: Record<string, string>;
 }
 
+type ScreenPoint = { left: number; top: number };
+
+type TriggeredFxPayload = {
+  fromBaseIndex?: number;
+  baseIndex?: number;
+}
+
 function resolveTriggeredFxPosition(
   event: { payload?: unknown },
   baseRefs: React.RefObject<Map<number, HTMLElement>>,
-): { left: number; top: number } | undefined {
-  const baseIndex = (event.payload as { fromBaseIndex?: number; baseIndex?: number })?.fromBaseIndex
-    ?? (event.payload as { baseIndex?: number })?.baseIndex;
+): ScreenPoint | undefined {
+  const payload = (event.payload ?? {}) as TriggeredFxPayload;
+  const baseIndex = payload.fromBaseIndex ?? payload.baseIndex;
   if (baseIndex === undefined) return undefined;
 
   const baseEl = baseRefs.current?.get(baseIndex);
@@ -103,7 +110,7 @@ function resolveTriggeredFxTargetDefId(
   if (event.type === SU_EVENTS.POWER_COUNTER_ADDED || event.type === SU_EVENTS.TEMP_POWER_ADDED) {
     const payload = event.payload as { baseIndex?: number; minionUid?: string };
     if (payload.baseIndex === undefined || !payload.minionUid) return undefined;
-    return G.core.bases[payload.baseIndex]?.minions.find(minion => minion.uid === payload.minionUid)?.defId;
+    return G.core.bases?.[payload.baseIndex]?.minions.find(minion => minion.uid === payload.minionUid)?.defId;
   }
 
   return undefined;
@@ -116,7 +123,8 @@ function isImmediateExtraPromptFamilyActive(
 ): boolean {
   const current = G.sys.interaction?.current;
   if (current?.playerId !== playerId) return false;
-  const sourceId = current?.data?.sourceId;
+  const data = current?.data as { sourceId?: unknown } | undefined;
+  const sourceId = data?.sourceId;
   if (typeof sourceId !== 'string') return false;
 
   const familyPrefix = limitType === 'minion'
@@ -139,7 +147,7 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
   }, []);
 
   // 携带 reason 字段的事件类型集合（这些事件可能由触发器产生）
-  const TRIGGER_CARRIER_EVENTS = useMemo(() => new Set([
+  const TRIGGER_CARRIER_EVENTS = useMemo<ReadonlySet<string>>(() => new Set<string>([
     SU_EVENTS.MINION_DESTROYED,
     SU_EVENTS.CARDS_DISCARDED,
     SU_EVENTS.CARDS_MILLED,

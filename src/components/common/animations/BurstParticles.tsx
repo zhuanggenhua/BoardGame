@@ -18,7 +18,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useLayoutEffect } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import { resolveFxDpr, subscribeFxFrame, type FxQuality } from '../../../engine/fx';
 import {
   type ParticlePreset,
   type Particle,
@@ -219,7 +219,6 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
   // 用 ref 持有回调，避免 onComplete 引用变化导致 useEffect 重跑（粒子重生）
   const onCompleteRef = useRef(onComplete);
@@ -263,6 +262,8 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
     particlesRef.current = spawnParticles(mergedPreset, rgbColors, cw / 2, ch / 2);
 
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
+    let completed = false;
 
     const loop = (now: number) => {
       if (!lastTime) lastTime = now;
@@ -275,16 +276,20 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
       drawParticles(ctx, particlesRef.current, mergedPreset, cw, ch);
 
       if (alive > 0) {
-        rafRef.current = requestAnimationFrame(loop);
-      } else {
+        return;
+      }
+
+      if (!completed) {
+        completed = true;
+        unsubscribeFrame?.();
         onCompleteRef.current?.();
       }
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      unsubscribeFrame?.();
       particlesRef.current = [];
     };
   }, [active, mergedPreset, rgbColors, overflow, quality]);

@@ -827,70 +827,61 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
-    it('火药桶维持投骰结果可被弹一手改成 3 并避免爆炸', () => {
+    it('火药桶维持奖励骰可被战术优势重掷后用普通确认收口', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.sys.phase = 'discard';
         state.core.activePlayerId = '0';
-        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
-        state.core.players['0'].hand = [getCardById('card-flick')];
-        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
-        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
+        const hpBefore = state.core.players['0'].resources[RESOURCE_IDS.HP] ?? 0;
 
-        const rolled = executePipeline(
-            { domain: DiceThroneDomain, systems: testSystems },
+        const phaseEnterEvents = diceThroneFlowHooks.onPhaseEnter?.({
             state,
-            command('ADVANCE_PHASE', '0'),
-            createQueuedRandom([2]),
-            ['0', '1'],
-        );
-        expect(rolled.success).toBe(true);
-        expect(rolled.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(2);
-        expect(rolled.state.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
-        expect(rolled.state.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
+            from: 'discard',
+            to: 'upkeep',
+            command: command('ADVANCE_PHASE', '0'),
+            random: createQueuedRandom([1]),
+            exitEvents: [],
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseEnter>>[0]);
+        const events = (Array.isArray(phaseEnterEvents) ? phaseEnterEvents : []) as DiceThroneEvent[];
+        const afterRollState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'upkeep',
+            },
+            core: applyEvents(state.core, events),
+        } as MatchState<DiceThroneCore>;
+        expect(afterRollState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(1);
+        expect(afterRollState.sys.responseWindow?.current).toBeUndefined();
 
-        const play = executePipeline(
+        const rerolled = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            rolled.state,
-            command('PLAY_CARD', '0', { cardId: 'card-flick' }),
-            fixedRandom,
+            afterRollState,
+            command('USE_PASSIVE_ABILITY', '0', {
+                passiveId: 'zhanshujia-tactical-advantage',
+                actionIndex: 1,
+                targetDieId: 0,
+            }),
+            createQueuedRandom([3]),
             ['0', '1'],
         );
-        expect(play.success).toBe(true);
-
-        const modified = executePipeline(
-            { domain: DiceThroneDomain, systems: testSystems },
-            play.state,
-            command('MODIFY_DIE', '0', { dieId: 0, newValue: 3 }),
-            fixedRandom,
-            ['0', '1'],
-        );
-        expect(modified.success).toBe(true);
-        expect(modified.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
-
-        const interactionId = getCurrentInteractionId(modified.state);
-        const confirmed = interactionId
-            ? executePipeline(
-                { domain: DiceThroneDomain, systems: testSystems },
-                modified.state,
-                command('SYS_INTERACTION_CONFIRM', '0', { interactionId }),
-                fixedRandom,
-                ['0', '1'],
-            )
-            : modified;
-        expect(confirmed.success).toBe(true);
-        expect(confirmed.state.sys.responseWindow?.current).toBeUndefined();
+        expect(rerolled.success).toBe(true);
+        expect(rerolled.state.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
+        expect(rerolled.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
 
         const settled = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            confirmed.state,
-            command('SKIP_BONUS_DICE_REROLL', '1'),
+            rerolled.state,
+            command('CONFIRM_ROLL', '0'),
             fixedRandom,
             ['0', '1'],
         );
         expect(settled.success).toBe(true);
+        expect(settled.state.core.pendingBonusDiceSettlement).toBeFalsy();
         expect(eventsOfType(settled.events as DiceThroneEvent[], 'DAMAGE_DEALT')).toHaveLength(0);
-        expect(settled.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
-        expect(settled.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(settled.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(settled.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
     it('火药桶维持投骰 6 时可选择任意玩家并能转交给其他玩家', () => {
@@ -998,6 +989,69 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(getSimpleChoicePrompt(promptState, 'upkeep-powder-keg')).toBeDefined();
         expect(autoContinue).toBeUndefined();
+    });
+
+    it('火药桶爆炸结算完成后应自动离开维持阶段', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        state.sys.phase = 'upkeep';
+        state.core.activePlayerId = '0';
+        state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        const hpBefore = state.core.players['0'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        const phaseEnterEvents = diceThroneFlowHooks.onPhaseEnter?.({
+            state,
+            from: 'discard',
+            to: 'upkeep',
+            command: command('ADVANCE_PHASE', '0'),
+            random: createQueuedRandom([1]),
+            exitEvents: [],
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseEnter>>[0]) as DiceThroneEvent[] | void;
+        const afterRollState = {
+            ...state,
+            core: applyEvents(state.core, phaseEnterEvents ?? []),
+        } as MatchState<DiceThroneCore>;
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            afterRollState,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(settled.success).toBe(true);
+        expect(settled.state.core.pendingBonusDiceSettlement).toBeFalsy();
+        expect(settled.state.sys.interaction?.current).toBeUndefined();
+        expect(settled.state.sys.responseWindow?.current).toBeUndefined();
+        expect(settled.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 3);
+        expect(settled.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(settled.state.sys.phase).toBe('main1');
+    });
+
+    it('火药桶转交选择完成后应自动离开维持阶段', () => {
+        const { state: promptState } = requestPowderKegTransferChoice();
+        const upkeepPromptState = {
+            ...promptState,
+            sys: {
+                ...promptState.sys,
+                phase: 'upkeep',
+            },
+        } as MatchState<DiceThroneCore>;
+        const prompt = getSimpleChoicePrompt(upkeepPromptState, 'upkeep-powder-keg');
+        const target = prompt.options.find(option => (
+            option.value as { value?: number; labelParams?: { target?: string } }
+        ).labelParams?.target === 'P2');
+        expect(target).toBeDefined();
+
+        const result = respondToPrompt(upkeepPromptState, target!.id, '0', fixedRandom, ['0', '1']);
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.pendingBonusDiceSettlement).toBeFalsy();
+        expect(result.state.sys.interaction?.current).toBeUndefined();
+        expect(result.state.sys.responseWindow?.current).toBeUndefined();
+        expect(result.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(result.state.sys.phase).toBe('main1');
     });
 
     it('新收到火药桶时若已拥有火药桶，原火药桶立即爆炸并保留新火药桶', () => {

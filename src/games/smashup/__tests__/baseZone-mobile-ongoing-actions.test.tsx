@@ -392,7 +392,7 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(badge?.title).toContain('= 4');
     });
 
-    it('随从选择模式下只高亮合法目标，非法目标保持普通显示但不可选', () => {
+    it('随从选择模式下少量候选只半展开，不启用滚动列表', () => {
         const onMinionSelect = vi.fn();
         renderBaseZone({
             isMinionSelectMode: true,
@@ -440,10 +440,17 @@ describe('BaseZone 移动端 ongoing 交互', () => {
 
         const secondMinion = document.querySelector('[data-minion-uid="m2"]') as HTMLElement | null;
         const thirdMinion = document.querySelector('[data-minion-uid="m3"]') as HTMLElement | null;
+        const minionStack = document.querySelector('[data-testid="su-base-stack-0-0"]') as HTMLElement | null;
         expect(secondMinion).not.toBeNull();
         expect(thirdMinion).not.toBeNull();
-        expect(secondMinion?.style.marginTop).toBe('-1.5406vw');
-        expect(thirdMinion?.style.marginTop).toBe('-1.5406vw');
+        expect(minionStack).not.toBeNull();
+        expect(minionStack?.getAttribute('data-minion-select-mode')).toBe('true');
+        expect(minionStack?.getAttribute('data-minion-select-list')).toBe('false');
+        expect(minionStack?.className).not.toContain('overflow-y-auto');
+        expect(minionStack?.className).not.toContain('no-scrollbar');
+        expect(minionStack?.style.maxHeight).toBe('');
+        expect(secondMinion?.style.marginTop).toBe('-3.5203vw');
+        expect(thirdMinion?.style.marginTop).toBe('-3.5203vw');
         expect(secondMinion?.className).not.toContain('cursor-not-allowed');
         expect(thirdMinion?.className).not.toContain('cursor-not-allowed');
 
@@ -458,6 +465,39 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(secondFrame?.className).not.toContain('border-green-400');
         fireEvent.click(firstMinion as Element);
         expect(onMinionSelect).toHaveBeenCalledWith('m1', 0);
+    });
+
+    it('随从选择模式下内容超过半展开高度时才启用无滚动条滚动列表', () => {
+        renderBaseZone({
+            isMinionSelectMode: true,
+            selectableMinionUids: new Set(['m1', 'm2', 'm3', 'm4', 'm5', 'm6']),
+            minions: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6'].map((uid) => ({
+                uid,
+                defId: 'pirate_first_mate',
+                controller: '0',
+                owner: '0',
+                basePower: 2,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                attachedActions: [],
+            })),
+        });
+
+        const minionStack = document.querySelector('[data-testid="su-base-stack-0-0"]') as HTMLElement | null;
+        const secondMinion = document.querySelector('[data-minion-uid="m2"]') as HTMLElement | null;
+        const sixthMinion = document.querySelector('[data-minion-uid="m6"]') as HTMLElement | null;
+        expect(minionStack).not.toBeNull();
+        expect(secondMinion).not.toBeNull();
+        expect(sixthMinion).not.toBeNull();
+        expect(minionStack?.getAttribute('data-minion-select-mode')).toBe('true');
+        expect(minionStack?.getAttribute('data-minion-select-list')).toBe('true');
+        expect(minionStack?.className).toContain('overflow-y-auto');
+        expect(minionStack?.className).toContain('no-scrollbar');
+        expect(minionStack?.style.maxHeight).toBe('20.4132vw');
+        expect(secondMinion?.style.marginTop).toBe('-3.5203vw');
+        expect(sixthMinion?.style.marginTop).toBe('-3.5203vw');
     });
 
     it('随从选择模式下收起附着行动浮层，避免源卡遮挡目标随从', () => {

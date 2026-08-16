@@ -498,7 +498,54 @@ const EXPECTED_FINAL_VP = {
     '2': 8,
     '3': 10,
 } as const;
+const EXPECTED_AFTER_FIRST_BASE_VP = {
+    '0': 6,
+    '1': 2,
+    '2': 6,
+    '3': 6,
+} as const;
+const INITIAL_VP = {
+    '0': 1,
+    '1': 2,
+    '2': 3,
+    '3': 4,
+} as const;
+const EXPECTED_SCORING_ORDER = [
+    'base_tsars_palace',
+    'base_the_jungle',
+    'base_dread_lookout',
+] as const;
+const EXPECTED_REPLACEMENT_PAIRS = [
+    { oldBaseDefId: 'base_tsars_palace', newBaseDefId: 'base_central_brain' },
+    { oldBaseDefId: 'base_the_jungle', newBaseDefId: 'base_cave_of_shinies' },
+    { oldBaseDefId: 'base_dread_lookout', newBaseDefId: 'base_rhodes_plaza' },
+] as const;
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 800, height: 450 } as const;
+
+function getRuntimeEventsByType(state: any, type: string) {
+    return ((state?.sys?.eventStream?.entries ?? []) as Array<{ event?: { type?: string; payload?: any } }>)
+        .map((entry) => entry.event)
+        .filter((event): event is { type: string; payload: any } => event?.type === type);
+}
+
+function sumScoringVpByPlayer(scoreEvents: Array<{ payload: { rankings?: Array<{ playerId: string; vp: number }> } }>) {
+    const totals: Record<string, number> = {};
+    for (const event of scoreEvents) {
+        for (const ranking of event.payload.rankings ?? []) {
+            totals[ranking.playerId] = (totals[ranking.playerId] ?? 0) + ranking.vp;
+        }
+    }
+    return totals;
+}
+
+function getPlayerVpSnapshot(state: any) {
+    return {
+        '0': state?.core?.players?.['0']?.vp,
+        '1': state?.core?.players?.['1']?.vp,
+        '2': state?.core?.players?.['2']?.vp,
+        '3': state?.core?.players?.['3']?.vp,
+    };
+}
 
 function createPlayerState(
     playerId: string,
@@ -1062,13 +1109,21 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
 
         await selectBoardBaseByDefId(page, game, 'base_tsars_palace');
 
-        const vpGainFeedbacks = page.locator('[data-testid^="su-vp-gain-feedback-"]');
-        await expect(vpGainFeedbacks.first()).toBeVisible({ timeout: 5000 });
-        await expect.poll(async () => (await vpGainFeedbacks.allTextContents()).join(' '), {
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const scoreEvents = getRuntimeEventsByType(state, 'su:base_scored');
+            return {
+                vp: getPlayerVpSnapshot(state),
+                scoredBases: scoreEvents.map((event) => event.payload.baseDefId),
+            };
+        }, {
             timeout: 5000,
-            message: 'VP 获得动画应明确显示获得者与 VP 数量',
-        }).toMatch(/P[1-4].*(获得|gains).*\+\d+ VP/);
-        await game.screenshot('02a-vp-gain-feedback', testInfo);
+            message: '第一座基地计分后，VP 应已正式落地，且事件流只记录这一次基地计分',
+        }).toEqual({
+            vp: EXPECTED_AFTER_FIRST_BASE_VP,
+            scoredBases: ['base_tsars_palace'],
+        });
+        await game.screenshot('02a-after-first-base-vp-landed', testInfo);
 
         await expect.poll(async () => {
             return (await getBaseOptions(game)).map((option: any) => option.baseDefId).sort();
@@ -1084,12 +1139,29 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await game.waitForPhase('playCards', 15000);
 
         const finalState = await game.getState();
+        const scoreEvents = getRuntimeEventsByType(finalState, 'su:base_scored');
+        const clearEvents = getRuntimeEventsByType(finalState, 'su:base_cleared');
+        const replaceEvents = getRuntimeEventsByType(finalState, 'su:base_replaced');
+        const scoringVpTotals = sumScoringVpByPlayer(scoreEvents);
 
         expect(finalState.core.turnOrder).toEqual(['0', '1', '2', '3']);
         expect(finalState.core.players['0'].vp).toBe(EXPECTED_FINAL_VP['0']);
         expect(finalState.core.players['1'].vp).toBe(EXPECTED_FINAL_VP['1']);
         expect(finalState.core.players['2'].vp).toBe(EXPECTED_FINAL_VP['2']);
         expect(finalState.core.players['3'].vp).toBe(EXPECTED_FINAL_VP['3']);
+        expect(scoreEvents.map((event) => event.payload.baseDefId)).toEqual([...EXPECTED_SCORING_ORDER]);
+        expect(clearEvents.map((event) => event.payload.baseDefId)).toEqual([...EXPECTED_SCORING_ORDER]);
+        expect(replaceEvents.map((event) => ({
+            oldBaseDefId: event.payload.oldBaseDefId,
+            newBaseDefId: event.payload.newBaseDefId,
+        }))).toEqual([...EXPECTED_REPLACEMENT_PAIRS]);
+        for (const playerId of Object.keys(EXPECTED_FINAL_VP) as Array<keyof typeof EXPECTED_FINAL_VP>) {
+            expect(
+                scoringVpTotals[playerId],
+                `玩家 ${playerId} 的最终 VP 增量必须完全来自三次基地计分，不能只发一次或重复发`,
+            ).toBe(EXPECTED_FINAL_VP[playerId] - INITIAL_VP[playerId]);
+        }
+        expect(scoreEvents.every((event) => (event.payload.rankings ?? []).some((ranking: any) => ranking.vp > 0))).toBe(true);
         expect(finalState.core.bases).toHaveLength(EXPECTED_ACTIVE_BASE_COUNT);
         expect(finalState.core.bases.map((base: any) => base.defId)).toEqual([...EXPECTED_FINAL_BASE_IDS]);
         expect(finalState.core.baseDeck).toEqual(['base_the_factory']);
@@ -1206,6 +1278,65 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(deckStack).toContainText('0');
 
         await game.screenshot('03c-mobile-opponent-view-return-self', testInfo);
+    });
+
+    test('移动端横屏四人局五个基地边缘应保持可见', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize(MOBILE_LANDSCAPE_VIEWPORT);
+        await page.addInitScript(() => {
+            const query = '(pointer: coarse)';
+            const originalMatchMedia = window.matchMedia.bind(window);
+            window.matchMedia = ((media: string) => {
+                if (media !== query) {
+                    return originalMatchMedia(media);
+                }
+
+                return {
+                    matches: true,
+                    media,
+                    onchange: null,
+                    addListener: () => {},
+                    removeListener: () => {},
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                    dispatchEvent: () => true,
+                } as MediaQueryList;
+            }) as typeof window.matchMedia;
+        });
+
+        await game.openTestGame('smashup', {
+            numPlayers: 4,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildFourPlayerMobileSceneWithTitan());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 800
+                && window.innerHeight === 450
+                && window.matchMedia('(pointer: coarse)').matches
+                && state?.sys?.phase === 'playCards'
+                && (state?.core?.bases?.length ?? 0) === 5;
+        }, { timeout: 10000, polling: 200 });
+
+        await waitForSmashUpMainUiReady(page);
+
+        const viewport = page.viewportSize();
+        expect(viewport).not.toBeNull();
+
+        const baseSlots = page.locator('[data-base-index]');
+        await expect(baseSlots).toHaveCount(EXPECTED_ACTIVE_BASE_COUNT);
+        for (let index = 0; index < EXPECTED_ACTIVE_BASE_COUNT; index += 1) {
+            await expectLocatorInsideViewport(
+                baseSlots.nth(index),
+                `移动端横屏第 ${index + 1} 个基地`,
+                viewport!.width,
+                viewport!.height,
+            );
+        }
+
+        await game.screenshot('04-mobile-landscape-four-player-five-bases-visible', testInfo);
     });
 
     test('移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大', async ({ page, game }, testInfo) => {

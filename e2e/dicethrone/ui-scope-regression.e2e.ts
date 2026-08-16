@@ -178,8 +178,10 @@ async function readTokenResponseMetrics(page: import('@playwright/test').Page) {
     return page.evaluate(() => {
         const prompt = document.querySelector<HTMLElement>('[data-testid="dicethrone-response-window-hint"]');
         const token = document.querySelector('[data-token-clickable="true"]');
+        const diceTray = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
         const promptRect = prompt?.getBoundingClientRect();
         const tokenRect = token?.getBoundingClientRect();
+        const diceTrayRect = diceTray?.getBoundingClientRect() ?? null;
         return {
             viewport: { width: window.innerWidth, height: window.innerHeight },
             prompt: promptRect ? {
@@ -194,6 +196,11 @@ async function readTokenResponseMetrics(page: import('@playwright/test').Page) {
                 centeredOnViewport: Math.abs((promptRect.x + promptRect.width / 2) - (window.innerWidth / 2)) < 2,
                 nearHandLiftBand: promptRect.bottom > window.innerHeight * 0.50,
                 bottomInset: Math.round(window.innerHeight - promptRect.bottom),
+                overlapsDiceTray: Boolean(diceTrayRect
+                    && promptRect.right > diceTrayRect.left
+                    && promptRect.left < diceTrayRect.right
+                    && promptRect.bottom > diceTrayRect.top
+                    && promptRect.top < diceTrayRect.bottom),
             } : null,
             token: tokenRect ? {
                 x: Math.round(tokenRect.x),
@@ -245,6 +252,7 @@ test('DiceThrone UI 收窄修复取证：防御选中态与 Token 面板完整�
 
     await page.setViewportSize(DESKTOP_REFERENCE_VIEWPORT);
     await setupTokenResponseWindow(game);
+    await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.HEAL_BOT}-available-halo`)).toBeVisible({ timeout: 5000 });
     await game.screenshot('PC-Token响应窗口-按钮原尺寸', testInfo);
     const desktopMetrics = await readTokenResponseMetrics(page);
 
@@ -262,6 +270,7 @@ test('DiceThrone UI 收窄修复取证：防御选中态与 Token 面板完整�
     expect(mobileMetrics.prompt?.centeredOnViewport).toBe(true);
     expect(mobileMetrics.prompt?.nearHandLiftBand).toBe(true);
     expect(mobileMetrics.prompt?.bottomInset ?? 0).toBeGreaterThan(128);
+    expect(mobileMetrics.prompt?.overlapsDiceTray).toBe(false);
     expect(mobileMetrics.token?.clickable).toBe('true');
 
     console.log('[DT_UI_SCOPE_REGRESSION]', JSON.stringify({

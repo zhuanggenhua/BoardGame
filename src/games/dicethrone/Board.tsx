@@ -1,7 +1,8 @@
 import React from 'react';
 import type { GameBoardProps } from '../../engine/transport/protocol';
+import { UI_Z_INDEX } from '../../core';
 
-import { HAND_LIMIT, type InteractionDescriptor, type PendingBonusDiceSettlement } from './domain/types';
+import { HAND_LIMIT, type DtResponseWindowType, type InteractionDescriptor, type PendingBonusDiceSettlement } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore, Die } from './domain';
@@ -27,6 +28,7 @@ import { getElementCenter } from '../../components/common/animations/FlyingEffec
 import { usePulseGlow } from '../../components/common/animations/PulseGlow';
 import { useImpactFeedback, useShake } from '../../components/common/animations';
 import { useFxBus, FxLayer } from '../../engine/fx';
+import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { diceThroneFxRegistry } from './ui/fxSetup';
 import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
@@ -51,6 +53,7 @@ import { LeftSidebar } from './ui/LeftSidebar';
 import { CenterBoard } from './ui/CenterBoard';
 import { playSound as playSoundFn } from '../../lib/audio/useGameAudio';
 import { RightSidebar } from './ui/RightSidebar';
+import { CompareRollOverlay } from './ui/CompareRollOverlay';
 import { BoardOverlays } from './ui/BoardOverlays';
 import { GameHints } from './ui/GameHints';
 import { useGameMode } from '../../contexts/GameModeContext';
@@ -441,6 +444,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         state: G,
     });
 
+    const renderPipelineSettings = useRenderPipelineSettings();
+
     // 使用 FX 引擎
     const fxBus = useFxBus(diceThroneFxRegistry, {
         playSound: (key) => {
@@ -451,6 +456,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             // 受击反馈现在由 onEffectImpact 根据目标 playerId 精确触发，
             // 不再在全局 triggerShake 中触发（无法区分目标）
         },
+        quality: renderPipelineSettings.fxQuality,
+        reduceWhenHighCostActiveAt: renderPipelineSettings.reduceWhenHighCostActiveAt,
+        dropWhenHighCostActiveAt: renderPipelineSettings.dropWhenHighCostActiveAt,
+        maxDpr: renderPipelineSettings.maxDpr,
+        reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
     });
     const opponentImpact = useImpactFeedback();
     const selfImpact = useImpactFeedback();
@@ -692,6 +702,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const canOperateView = isSelfView && !isSpectator;
     const hasRolled = G.rollCount > 0;
     const [rerollSelectingAction, setRerollSelectingAction] = React.useState<{ passiveId: string; actionIndex: number } | null>(null);
+    const passiveResponseWindowType = React.useMemo((): DtResponseWindowType | undefined => {
+        if (!currentResponseWindow) return undefined;
+        const canActInCurrentWindow = currentResponderId === rootPid || isDirectDiceActor;
+        return canActInCurrentWindow
+            ? currentResponseWindow.windowType as DtResponseWindowType
+            : undefined;
+    }, [currentResponseWindow, currentResponderId, isDirectDiceActor, rootPid]);
 
     // 焦点玩家判断（统一的操作权判断）
     const isFocusPlayer = !isSpectator && access.focusPlayerId === rootPid;
@@ -1087,12 +1104,19 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         const map = new Map<string, boolean[]>();
         for (const passive of playerPassives) {
             const usability = passive.actions.map((_, idx) =>
-                !isSpectator && isPassiveActionUsable(G, rootPid, passive.id, idx, currentPhase)
+                !isSpectator && isPassiveActionUsable(
+                    G,
+                    rootPid,
+                    passive.id,
+                    idx,
+                    currentPhase,
+                    { responseWindowType: passiveResponseWindowType },
+                )
             );
             map.set(passive.id, usability);
         }
         return map;
-    }, [playerPassives, G, rootPid, currentPhase, isSpectator]);
+    }, [playerPassives, G, rootPid, currentPhase, isSpectator, passiveResponseWindowType]);
 
     const handlePassiveActionClick = React.useCallback((passiveId: string, actionIndex: number) => {
         const passive = playerPassives.find(p => p.id === passiveId);
@@ -2048,20 +2072,31 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage
                         }
                         passiveAbilityProps={passiveAbilityProps}
-                        compareRoll={compareRollInteraction}
-                        canResolveCompareRoll={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
-                        onResolveCompareRollOption={(optionId) => {
-                            if (!compareRollInteraction) return;
-                            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: compareRollInteraction.id });
-                        }}
-                        onConfirmCompareRoll={() => {
-                            if (!compareRollInteraction) return;
-                            dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
-                        }}
                         rootPlayerId={rootPid}
                         teamIdByPlayerId={G.teamIdByPlayerId}
                     />
                 </div>
+
+                {compareRollInteraction && (
+                    <div
+                        className="absolute left-1/2 top-[10.5vw] -translate-x-1/2 pointer-events-auto"
+                        style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+                        data-testid="compare-roll-main-result-layer"
+                    >
+                        <CompareRollOverlay
+                            compareRoll={compareRollInteraction}
+                            isVisible={true}
+                            canResolve={Boolean(compareRollInteraction.playerId === rootPid && !isSpectator)}
+                            locale={locale}
+                            onResolveOption={(optionId) => {
+                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: compareRollInteraction.id });
+                            }}
+                            onConfirm={() => {
+                                dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
+                            }}
+                        />
+                    </div>
+                )}
 
                 {/* HandArea：图集已同步注册，始终可渲染 */}
                 {(() => {

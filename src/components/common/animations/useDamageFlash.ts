@@ -14,7 +14,8 @@
  * ```
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 
 export interface DamageFlashState {
     /** 是否激活 */
@@ -31,14 +32,20 @@ export interface DamageFlashState {
  */
 export function useDamageFlash(resetDelay = 900): DamageFlashState {
     const [state, setState] = useState({ isActive: false, damage: 0 });
-    const timerRef = useRef<number>(0);
+    const cancelResetRef = useRef<FxFrameSubscription | undefined>(undefined);
+
+    useEffect(() => () => {
+        cancelResetRef.current?.();
+        cancelResetRef.current = undefined;
+    }, []);
 
     const trigger = useCallback((damage: number) => {
-        window.clearTimeout(timerRef.current);
+        cancelResetRef.current?.();
         setState({ isActive: true, damage });
-        timerRef.current = window.setTimeout(() => {
+        cancelResetRef.current = scheduleFxFrameCallback(resetDelay, () => {
             setState({ isActive: false, damage: 0 });
-        }, resetDelay);
+            cancelResetRef.current = undefined;
+        });
     }, [resetDelay]);
 
     return { isActive: state.isActive, damage: state.damage, trigger };

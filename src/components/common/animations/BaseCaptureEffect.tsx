@@ -11,7 +11,13 @@
  */
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import {
+  resolveFxDpr,
+  scheduleFxFrameCallback,
+  subscribeFxFrame,
+  type FxFrameSubscription,
+  type FxQuality,
+} from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -100,8 +106,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
-  const safetyTimerRef = useRef(0);
+  const cancelSafetyRef = useRef<FxFrameSubscription | undefined>(undefined);
   const onCompleteRef = useRef(onComplete);
   const onTransitionRef = useRef(onTransition);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
@@ -160,6 +165,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
 
     let elapsed = 0;
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!lastTime) lastTime = now;
@@ -242,25 +248,27 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
         && glowAlpha < 0.01;
 
       if (allDone || elapsed > 3) {
+        unsubscribeFrame?.();
         onCompleteRef.current?.();
         return;
       }
-
-      rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
+    return () => unsubscribeFrame?.();
   }, [shatterColors, gatherColors, showParticles, showGlow, quality]);
 
   useEffect(() => {
     if (!active) return;
-    safetyTimerRef.current = window.setTimeout(() => {
+    cancelSafetyRef.current = scheduleFxFrameCallback(SAFETY_TIMEOUT_MS, () => {
       onCompleteRef.current?.();
-    }, SAFETY_TIMEOUT_MS);
-    render();
+      cancelSafetyRef.current = undefined;
+    });
+    const cleanupFrame = render();
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      clearTimeout(safetyTimerRef.current);
+      cleanupFrame?.();
+      cancelSafetyRef.current?.();
+      cancelSafetyRef.current = undefined;
     };
   }, [active, render]);
 

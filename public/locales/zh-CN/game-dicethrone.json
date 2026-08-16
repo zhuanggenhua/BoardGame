@@ -687,6 +687,7 @@
     "dieRerolled": "重投骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieRerolledSource": "（{{source}}）",
     "bonusDieRolled": "奖励骰结果：{{value}}",
+    "bonusDiceRolled": "奖励骰结果：",
     "bonusDieRerolled": "重投奖励骰 #{{dieId}}：{{oldValue}} → {{newValue}}"
   },
   "purify": {

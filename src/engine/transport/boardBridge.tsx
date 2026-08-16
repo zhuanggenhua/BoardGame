@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { GameBoardProps } from './protocol';
 import { useBoardProps } from './reactContext';
 import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
+import type { GameBoardRenderer, ImperativeBoardRenderer, ReactBoardRenderer } from '../boardRenderer';
 
 /**
  * 将 Provider 上下文转换为 props 注入到 Board 组件
@@ -18,20 +19,39 @@ import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoRepor
  * </GameProvider>
  * ```
  */
-export function BoardBridge<TCore = unknown>({
-    board: Board,
-    loading: Loading,
-    remountKey,
-}: {
-    board: React.ComponentType<GameBoardProps<TCore>>;
+type BoardBridgeBaseProps = {
     loading?: React.ReactNode;
     /**
      * 默认按 playerID 重挂载 Board，保留旧行为。
      * 传入 false 时保持同一个 Board 实例，只通过 props 更新视角。
      */
     remountKey?: React.Key | false;
-}) {
-    const props = useBoardProps<TCore>();
+};
+
+export type BoardBridgeProps<
+    TCore = unknown,
+    TCommandMap extends Record<string, unknown> = Record<string, unknown>,
+> = BoardBridgeBaseProps & (
+    {
+        board: React.ComponentType<GameBoardProps<TCore, TCommandMap>>;
+        renderer?: GameBoardRenderer<TCore, TCommandMap>;
+    }
+    | {
+        board?: React.ComponentType<GameBoardProps<TCore, TCommandMap>>;
+        renderer: GameBoardRenderer<TCore, TCommandMap>;
+    }
+);
+
+export function BoardBridge<
+    TCore = unknown,
+    TCommandMap extends Record<string, unknown> = Record<string, unknown>,
+>({
+    board: Board,
+    renderer,
+    loading: Loading,
+    remountKey,
+}: BoardBridgeProps<TCore, TCommandMap>) {
+    const props = useBoardProps<TCore, TCommandMap>();
 
     // 确保 props 完全就绪后才渲染 Board
     // 这避免了 React 18 并发渲染可能导致的 Provider 时序问题
@@ -44,11 +64,87 @@ export function BoardBridge<TCore = unknown>({
         ? 'board'
         : remountKey ?? props.playerID ?? 'board';
 
+    const activeRenderer = renderer ?? (Board ? { kind: 'react', component: Board } satisfies ReactBoardRenderer<TCore, TCommandMap> : null);
+
+    if (!activeRenderer) {
+        throw new Error('BoardBridge 需要 board 或 renderer');
+    }
+
+    if (activeRenderer.kind === 'react') {
+        const RendererBoard = activeRenderer.component;
+        return (
+            <BoardErrorBoundary fallback={Loading}>
+                <RendererBoard key={stableKey} {...props} />
+            </BoardErrorBoundary>
+        );
+    }
+
     return (
         <BoardErrorBoundary fallback={Loading}>
-            <Board key={stableKey} {...props} />
+            <ImperativeBoardRendererHost
+                key={stableKey}
+                renderer={activeRenderer}
+                props={props}
+            />
         </BoardErrorBoundary>
     );
+}
+
+function ImperativeBoardRendererHost<
+    TCore = unknown,
+    TCommandMap extends Record<string, unknown> = Record<string, unknown>,
+>({
+    renderer,
+    props,
+}: {
+    renderer: ImperativeBoardRenderer<TCore, TCommandMap>;
+    props: GameBoardProps<TCore, TCommandMap>;
+}) {
+    const hostRef = React.useRef<HTMLDivElement | null>(null);
+    const instanceRef = React.useRef<ReturnType<typeof renderer.mount> | null>(null);
+    const propsRef = React.useRef(props);
+    const [renderError, setRenderError] = React.useState<Error | null>(null);
+    propsRef.current = props;
+
+    React.useLayoutEffect(() => {
+        const element = hostRef.current;
+        if (!element) return undefined;
+
+        try {
+            const instance = renderer.mount({ element }, propsRef.current);
+            instanceRef.current = instance;
+        } catch (error) {
+            const nextError = error instanceof Error ? error : new Error(String(error));
+            setRenderError(nextError);
+        }
+
+        return () => {
+            const instance = instanceRef.current;
+            instanceRef.current = null;
+            if (!instance) return;
+            try {
+                instance.destroy();
+            } catch (error) {
+                console.error('[BoardBridge] imperative renderer destroy failed:', error);
+            }
+        };
+    }, [renderer]);
+
+    React.useLayoutEffect(() => {
+        if (!instanceRef.current) return;
+        try {
+            instanceRef.current.update(props);
+        } catch (error) {
+            const nextError = error instanceof Error ? error : new Error(String(error));
+            setRenderError(nextError);
+        }
+    }, [props]);
+
+    if (renderError) {
+        throw renderError;
+    }
+
+    return <div ref={hostRef} className="w-full h-full" data-board-renderer={renderer.engine ?? renderer.kind} />;
 }
 
 export const BOARD_ERROR_BOUNDARY_MAX_RETRIES = 5;

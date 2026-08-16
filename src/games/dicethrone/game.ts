@@ -243,6 +243,25 @@ function formatDiceThroneActionEntry({
         };
     };
 
+    const buildDiceResultSegment = (
+        playerId: PlayerId,
+        values: number[],
+    ): ActionLogSegment | null => {
+        const characterId = core.players[playerId]?.characterId;
+        if (!characterId || characterId === 'unselected' || values.length === 0) return null;
+        return {
+            type: 'diceResult',
+            spriteAsset: ASSETS.DICE_SPRITE(characterId),
+            spriteCols: DICE_ATLAS.cols,
+            spriteRows: DICE_ATLAS.rows,
+            dice: values.map((rawValue) => {
+                const value = Math.max(1, Math.min(6, rawValue));
+                const mapping = DICE_ATLAS.faceMap[value] ?? DICE_ATLAS.faceMap[1];
+                return { value, col: mapping.col, row: mapping.row };
+            }),
+        };
+    };
+
     if (shouldRecordCommandEntry && (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD')) {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
@@ -1054,15 +1073,39 @@ function formatDiceThroneActionEntry({
 
         if (event.type === 'BONUS_DIE_ROLLED') {
             const bonusDieEvent = event as BonusDieRolledEvent;
-            const { value, playerId } = bonusDieEvent.payload;
+            const { playerId } = bonusDieEvent.payload;
+            const bonusDieEvents = events.filter(
+                (candidate): candidate is BonusDieRolledEvent => candidate.type === 'BONUS_DIE_ROLLED'
+                    && (candidate as BonusDieRolledEvent).payload.playerId === playerId,
+            );
+            const firstBonusDieIndex = events.findIndex(candidate => candidate === bonusDieEvents[0]);
+            if (index !== firstBonusDieIndex) return;
+            const diceResult = buildDiceResultSegment(
+                playerId,
+                bonusDieEvents.map(candidate => candidate.payload.value),
+            );
+            const segments: ActionLogSegment[] = [
+                i18nSeg('actionLog.bonusDiceRolled'),
+            ];
+            if (diceResult) {
+                segments.push(diceResult);
+            } else {
+                segments.push({
+                    type: 'text',
+                    text: bonusDieEvents.map(candidate => candidate.payload.value).join(', '),
+                });
+            }
+            const firstEffect = bonusDieEvents.find(candidate => candidate.payload.effectKey);
+            if (firstEffect?.payload.effectKey) {
+                segments.push({ type: 'text', text: ' ' });
+                segments.push(i18nSeg(firstEffect.payload.effectKey, firstEffect.payload.effectParams));
+            }
             entries.push({
                 id: `BONUS_DIE_ROLLED-${playerId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,
                 actorId: playerId,
                 kind: 'BONUS_DIE_ROLLED',
-                segments: [
-                    i18nSeg('actionLog.bonusDieRolled', { value }),
-                ],
+                segments,
             });
             return;
         }

@@ -28,6 +28,12 @@ export * from './systems';
 // Hooks
 export * from './hooks';
 
+// Board 渲染后端
+export * from './boardRenderer';
+
+// 渲染管线 / 玩家画质设置
+export * from './renderPipeline';
+
 // 测试工具
 export { 
     isTestEnvironment, 

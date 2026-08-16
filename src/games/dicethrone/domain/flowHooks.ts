@@ -2239,11 +2239,17 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             return undefined;
         }
 
-        // ====== 2. 纯自动阶段（upkeep/income）：进入后立即推进 ======
-        // 通过 SYS_PHASE_CHANGED 事件检测刚进入该阶段，确保只在阶段切换时触发一次
+        // ====== 2. 纯自动阶段（upkeep/income）：进入后立即推进；阶段内阻塞收口后继续推进 ======
+        // 通过 SYS_PHASE_CHANGED 事件检测刚进入该阶段；如果维持阶段效果打开了奖励骰或选择，
+        // 等对应结算事件落地后再重新尝试推进，避免玩家卡在无交互的自动阶段。
         if (phase === 'upkeep' || phase === 'income') {
             const justEnteredPhase = events.some(
                 e => e.type === 'SYS_PHASE_CHANGED' && (e as any).payload?.to === phase
+            );
+            const autoPhaseBlockResolved = events.some(
+                e => e.type === 'BONUS_DICE_SETTLED'
+                    || e.type === 'CHOICE_RESOLVED'
+                    || e.type === 'TOKEN_RESPONSE_CLOSED'
             );
             const hasActiveInteraction = state.sys.interaction?.current !== undefined;
             const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
@@ -2253,7 +2259,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && hasUsableOwnUpkeepPassiveAction(core, core.activePlayerId);
 
             if (
-                justEnteredPhase
+                (justEnteredPhase || autoPhaseBlockResolved)
                 && canAdvancePhase(core, phase)
                 && !hasActiveInteraction
                 && !hasActiveResponseWindow
@@ -2301,6 +2307,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             // 但此时 pendingAttack 为 null（已结算），不会误阻塞。
             const hasSysInteractionResolved = events.some(e => e.type === 'SYS_INTERACTION_RESOLVED');
             const resolvedDefenderSelectionThisRound = events.some(e => e.type === 'DEFENDER_SELECTION_RESOLVED');
+            const attackInitiatedThisRound = events.some(e => e.type === 'ATTACK_INITIATED');
             const resolvedOffensiveRollEndChoice = resolvedOffensiveRollEndTokenChoiceThisRound(events);
             const resolvedTreantDivinePreventDebuffChoice = resolvedTreantDivinePreventDebuffChoiceThisRound(events);
             // 时序保护：当 SYS_INTERACTION_RESOLVED 在 events 里，且 offensiveRoll 阶段有
@@ -2340,6 +2347,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && core.pendingAttack !== undefined;
 
             const shouldAttemptAutoContinue = state.sys.flowHalted
+                || attackInitiatedThisRound
                 || pendingOffensiveTokenChoice
                 || pendingTargetingChoice
                 || pendingAttackFollowUpChoice

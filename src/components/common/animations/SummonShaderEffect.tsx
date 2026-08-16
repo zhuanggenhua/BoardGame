@@ -41,6 +41,7 @@ export interface SummonShaderEffectProps {
   dimStrength?: number;
   quality?: FxQuality;
   onComplete?: () => void;
+  durationScale?: number;
   className?: string;
 }
 
@@ -103,13 +104,14 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
   dimStrength = 0.55,
   quality = 'full',
   onComplete,
+  durationScale = 1,
   className = '',
 }) => {
   if (!active) return null;
 
   const isStrong = intensity === 'strong';
   const c = resolveColors(color, customColors);
-  const dur = isStrong ? 1.4 : 1.1;
+  const dur = (isStrong ? 1.4 : 1.1) * Math.max(0.75, durationScale);
 
   // originY：SummonEffect 使用 "从顶部算起" 约定（0.78 = 靠近底部）
   // shader vUv：y=0 底部，y=1 顶部 → 需要翻转

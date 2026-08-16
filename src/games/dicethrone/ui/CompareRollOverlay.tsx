@@ -64,19 +64,19 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="pointer-events-auto w-[13.4vw] rounded-[0.7vw] border border-amber-400/35 bg-slate-950/92 px-[0.7vw] py-[0.65vw] text-center shadow-lg shadow-black/35 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pointer-events-auto w-[24vw] max-w-[30rem] rounded-[0.8vw] border border-amber-400/35 bg-slate-950/94 px-[1.1vw] py-[0.95vw] text-center shadow-2xl shadow-black/45 backdrop-blur-sm"
             data-testid="compare-roll-overlay"
-            data-placement="right-dice-panel"
+            data-placement="main-result-layer"
         >
-            <div className="text-[0.82vw] font-black leading-tight tracking-wide text-amber-100">
+            <div className="text-[1vw] font-black leading-tight tracking-wide text-amber-100">
                 {hasTranslation(compareRoll.title)
                     ? t(compareRoll.title)
                     : compareRoll.title}
             </div>
 
-            <div className="mt-[0.45vw] grid grid-cols-2 gap-[0.35vw]">
+            <div className="mt-[0.6vw] grid grid-cols-2 gap-[0.55vw]">
                 {contestants.map((contestant, index) => {
                     const label = hasTranslation(contestant.labelKey)
                         ? t(contestant.labelKey, contestant.labelParams)
@@ -85,10 +85,10 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                     return (
                         <div
                             key={`${compareRoll.id}-${contestant.playerId ?? index}`}
-                            className="min-w-0 rounded-[0.45vw] border border-white/10 bg-white/10 px-[0.35vw] py-[0.3vw]"
+                            className="min-w-0 rounded-[0.55vw] border border-white/10 bg-white/10 px-[0.55vw] py-[0.45vw]"
                             data-testid={`compare-roll-participant-${index}`}
                         >
-                            <div className="truncate text-[0.58vw] font-bold uppercase leading-tight tracking-wide text-white/75">
+                            <div className="truncate text-[0.7vw] font-bold uppercase leading-tight tracking-wide text-white/75">
                                 {label}
                             </div>
                         </div>
@@ -98,7 +98,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
 
             {resultText ? (
                 <div
-                    className={`mt-[0.5vw] rounded-[0.5vw] border bg-black/35 px-[0.45vw] py-[0.45vw] text-[0.72vw] font-bold leading-snug ${RESULT_TONE_CLASS[resultTone]}`}
+                    className={`mt-[0.65vw] rounded-[0.55vw] border bg-black/35 px-[0.7vw] py-[0.55vw] text-[0.85vw] font-bold leading-snug ${RESULT_TONE_CLASS[resultTone]}`}
                     data-testid="compare-roll-result"
                 >
                     {resultText}
@@ -106,7 +106,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
             ) : null}
 
             {hasOptions && canResolve ? (
-                <div className="mt-[0.55vw] flex flex-col gap-[0.35vw]">
+                <div className="mt-[0.7vw] grid grid-cols-2 gap-[0.45vw]">
                     {options.map((option) => {
                         const label = hasTranslation(option.labelKey)
                             ? t(option.labelKey, option.labelParams)
@@ -118,7 +118,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                                 disabled={option.disabled}
                                 variant="primary"
                                 size="sm"
-                                className="!h-[1.9vw] !min-h-0 !rounded-[0.45vw] !px-[0.45vw] !py-0 !text-[0.62vw]"
+                                className="!h-[2.25vw] !min-h-0 !rounded-[0.5vw] !px-[0.55vw] !py-0 !text-[0.72vw]"
                             >
                                 {label}
                             </GameButton>
@@ -127,7 +127,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                 </div>
             ) : (
                 <div
-                    className="mt-[0.45vw] text-[0.66vw] font-semibold leading-tight text-white/65"
+                    className="mt-[0.55vw] text-[0.75vw] font-semibold leading-tight text-white/65"
                     data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
                 >
                     {hasOptions && !canResolve

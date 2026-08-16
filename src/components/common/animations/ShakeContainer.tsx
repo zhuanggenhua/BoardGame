@@ -1,7 +1,7 @@
 /**
- * ShakeContainer — 震动容器（rAF 驱动）
+ * ShakeContainer — 震动容器（共享 FX 帧时钟驱动）
  *
- * 通过 requestAnimationFrame 手动驱动 transform 实现震动，
+ * 通过统一 FX 帧时钟驱动 transform 实现震动，
  * 支持 paused prop 冻结在当前偏移位置（用于钝帧卡肉）。
  *
  * framer-motion variant 方案无法实现"冻在当前位置"——
@@ -9,6 +9,7 @@
  */
 
 import React, { useRef, useEffect, useCallback } from 'react';
+import { scheduleFxFrameCallback, subscribeFxFrame, type FxFrameSubscription } from '../../../engine/fx';
 
 interface ShakeContainerProps {
     children: React.ReactNode;
@@ -55,13 +56,18 @@ export const ShakeContainer = ({
     onClick,
 }: ShakeContainerProps) => {
     const elRef = useRef<HTMLDivElement>(null);
-    const rafRef = useRef(0);
+    const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
     // 震动进度（0~1），用于暂停/恢复
     const progressRef = useRef(0);
     const startTimeRef = useRef(0);
     const pausedRef = useRef(false);
 
     const DURATION = 500; // ms，与原 shakeVariants 一致
+
+    const stopTick = useCallback(() => {
+        unsubscribeRef.current?.();
+        unsubscribeRef.current = undefined;
+    }, []);
 
     const applyTransform = useCallback((progress: number) => {
         const el = elRef.current;
@@ -88,7 +94,7 @@ export const ShakeContainer = ({
         if (!el) return;
 
         if (!isShaking) {
-            cancelAnimationFrame(rafRef.current);
+            stopTick();
             el.style.transform = '';
             progressRef.current = 0;
             pausedRef.current = false;
@@ -100,32 +106,33 @@ export const ShakeContainer = ({
         pausedRef.current = false;
         startTimeRef.current = performance.now();
 
-        const tick = () => {
+        const tick = (now: number) => {
             if (pausedRef.current) return;
 
-            const elapsed = performance.now() - startTimeRef.current;
+            const elapsed = now - startTimeRef.current;
             const p = Math.min(elapsed / DURATION, 1);
             progressRef.current = p;
             applyTransform(p);
 
-            if (p < 1) {
-                rafRef.current = requestAnimationFrame(tick);
+            if (p >= 1) {
+                stopTick();
             }
         };
 
-        rafRef.current = requestAnimationFrame(tick);
+        stopTick();
+        unsubscribeRef.current = subscribeFxFrame(({ now }) => tick(now));
 
-        return () => cancelAnimationFrame(rafRef.current);
-    }, [isShaking, applyTransform]);
+        return stopTick;
+    }, [isShaking, applyTransform, stopTick]);
 
     // paused 变化时暂停/恢复
     useEffect(() => {
         if (!isShaking) return;
 
         if (paused && !pausedRef.current) {
-            // 暂停：停止 rAF，transform 保持当前值
+            // 暂停：停止帧订阅，transform 保持当前值
             pausedRef.current = true;
-            cancelAnimationFrame(rafRef.current);
+            stopTick();
         } else if (!paused && pausedRef.current) {
             // 恢复：从当前进度继续
             pausedRef.current = false;
@@ -134,22 +141,23 @@ export const ShakeContainer = ({
 
             startTimeRef.current = performance.now();
 
-            const tick = () => {
+            const tick = (now: number) => {
                 if (pausedRef.current) return;
 
-                const elapsed = performance.now() - startTimeRef.current;
+                const elapsed = now - startTimeRef.current;
                 const p = Math.min(fromP + elapsed / DURATION, 1);
                 progressRef.current = p;
                 applyTransform(p);
 
-                if (p < 1) {
-                    rafRef.current = requestAnimationFrame(tick);
+                if (p >= 1) {
+                    stopTick();
                 }
             };
 
-            rafRef.current = requestAnimationFrame(tick);
+            stopTick();
+            unsubscribeRef.current = subscribeFxFrame(({ now }) => tick(now));
         }
-    }, [paused, isShaking, applyTransform]);
+    }, [paused, isShaking, applyTransform, stopTick]);
 
     return (
         <div
@@ -166,10 +174,20 @@ export const ShakeContainer = ({
 // Hook：管理震动状态
 export const useShake = (duration = 500) => {
     const [isShaking, setIsShaking] = React.useState(false);
+    const cancelResetRef = React.useRef<FxFrameSubscription | undefined>(undefined);
+
+    React.useEffect(() => () => {
+        cancelResetRef.current?.();
+        cancelResetRef.current = undefined;
+    }, []);
 
     const triggerShake = React.useCallback(() => {
+        cancelResetRef.current?.();
         setIsShaking(true);
-        setTimeout(() => setIsShaking(false), duration);
+        cancelResetRef.current = scheduleFxFrameCallback(duration, () => {
+            setIsShaking(false);
+            cancelResetRef.current = undefined;
+        });
     }, [duration]);
 
     return { isShaking, triggerShake };

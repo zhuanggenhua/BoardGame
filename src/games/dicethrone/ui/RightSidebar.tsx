@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
-import type { CompareRollChoiceData, InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
+import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
 import type { DiceModifyResult, DiceSelectResult } from '../domain/systems';
 import { DiceActions, DiceTray } from './DiceTray';
@@ -13,7 +13,6 @@ import { UI_Z_INDEX } from '../../../core';
 import { ActiveModifierBadge } from './ActiveModifierBadge';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
 import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
-import { CompareRollOverlay } from './CompareRollOverlay';
 
 type SidebarDiceMeta = {
     dtType?: 'modifyDie' | 'selectDie';
@@ -70,10 +69,6 @@ export const RightSidebar = ({
     activeModifiers,
     attackModifierBonusDamage,
     passiveAbilityProps,
-    compareRoll,
-    canResolveCompareRoll = false,
-    onResolveCompareRollOption,
-    onConfirmCompareRoll,
     rootPlayerId,
     teamIdByPlayerId,
 }: {
@@ -113,10 +108,6 @@ export const RightSidebar = ({
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
-    compareRoll?: CompareRollChoiceData & { id: string; playerId: string };
-    canResolveCompareRoll?: boolean;
-    onResolveCompareRollOption?: (optionId: string) => void;
-    onConfirmCompareRoll?: () => void;
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
@@ -258,16 +249,6 @@ export const RightSidebar = ({
                         interaction={isDiceMultistep ? interaction : undefined}
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                         isBonusDiceSettlement={isBonusDiceSettlement}
-                    />
-                )}
-                {compareRoll && (
-                    <CompareRollOverlay
-                        compareRoll={compareRoll}
-                        isVisible={true}
-                        canResolve={canResolveCompareRoll}
-                        locale={locale}
-                        onResolveOption={(optionId) => onResolveCompareRollOption?.(optionId)}
-                        onConfirm={() => onConfirmCompareRoll?.()}
                     />
                 )}
                 <div className={`w-full flex justify-center ${showAdvancePhaseButton ? '' : 'invisible pointer-events-none'}`}>

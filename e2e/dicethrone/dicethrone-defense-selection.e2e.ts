@@ -775,11 +775,11 @@ async function readDuelAuditProbe(page: Page): Promise<DuelAuditSnapshot> {
     });
 }
 
-async function expectCompareRollRightPanel(page: Page, timeout = 5000): Promise<void> {
+async function expectCompareRollMainResultLayer(page: Page, timeout = 5000): Promise<void> {
     const panel = page.getByTestId('compare-roll-overlay');
     await expect(panel).toBeVisible({ timeout });
-    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
-    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel).toHaveAttribute('data-placement', 'main-result-layer');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
 }
@@ -1051,7 +1051,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         try {
             await openGunslingerDuelCompareRollChoice(page, game);
 
-            await expectCompareRollRightPanel(page);
+            await expectCompareRollMainResultLayer(page);
             await expect(page.getByTestId('compare-roll-result')).toContainText('你赢得了对决');
             await expect(page.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
             await game.screenshot('gunslinger-duel-harmony-compare-roll-first-open', testInfo);
@@ -1105,7 +1105,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         try {
             await openGunslingerDuelCompareRollChoice(page, game);
 
-            await expectCompareRollRightPanel(page);
+            await expectCompareRollMainResultLayer(page);
             await expect(page.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
             await game.screenshot('gunslinger-duel-harmony-before-prevent-half', testInfo);
 
@@ -1175,7 +1175,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
 
         const overlay = page.getByTestId('compare-roll-overlay');
-        await expectCompareRollRightPanel(page);
+        await expectCompareRollMainResultLayer(page);
         await expect(page.getByTestId('compare-roll-participant-0')).toBeVisible();
         await expect(page.getByTestId('compare-roll-participant-1')).toBeVisible();
         await expect(page.getByTestId('compare-roll-result')).toContainText('本次攻击伤害 +2');

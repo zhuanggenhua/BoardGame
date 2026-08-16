@@ -9,6 +9,7 @@ import {
     type TestInfo,
 } from '@playwright/test';
 import * as fs from 'node:fs';
+import sharp from 'sharp';
 import {
     clearEvidenceScreenshotsForTest,
     getEvidenceScreenshotPath,
@@ -41,6 +42,8 @@ type MageWarsOnlineMatch = {
 type PageDiagnostics = ReturnType<typeof attachPageDiagnostics>;
 type JsonRecord = Record<string, unknown>;
 type MageWarsFxKind = 'attack' | 'push' | 'teleport';
+type ScreenshotCssRect = { x: number; y: number; width: number; height: number };
+type ScreenshotViewport = { width: number; height: number };
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
@@ -51,7 +54,7 @@ async function saveEvidenceScreenshot(
     testInfo: TestInfo,
     name: string,
     options: { animations?: EvidenceScreenshotAnimationMode } = {},
-) {
+): Promise<string> {
     const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({
         path,
@@ -63,6 +66,143 @@ async function saveEvidenceScreenshot(
         type: 'evidence-screenshot',
         description: path,
     });
+    return path;
+}
+
+type ScreenshotRegionVisualAudit = {
+    crop: { x: number; y: number; width: number; height: number };
+    beforeCrop: { x: number; y: number; width: number; height: number };
+    imageSize: { width: number; height: number };
+    totalPixels: number;
+    processBrightPixels: number;
+    processWhiteishPixels: number;
+    changedPixels: number;
+    strongChangedPixels: number;
+    positiveLumDeltaPixels: number;
+    negativeLumDeltaPixels: number;
+    avgProcessLum: number;
+    avgLumDelta: number;
+    avgAbsLumDelta: number;
+};
+
+function clampNumber(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+}
+
+function readLuminance(buffer: Buffer, offset: number): number {
+    return 0.2126 * buffer[offset] + 0.7152 * buffer[offset + 1] + 0.0722 * buffer[offset + 2];
+}
+
+function resolveScreenshotCrop(
+    cssRect: ScreenshotCssRect,
+    viewport: ScreenshotViewport,
+    imageSize: { width: number; height: number },
+) {
+    const scaleX = imageSize.width / viewport.width;
+    const scaleY = imageSize.height / viewport.height;
+    const paddingX = cssRect.width * 0.10;
+    const paddingY = cssRect.height * 0.10;
+    const left = Math.floor(clampNumber((cssRect.x - paddingX) * scaleX, 0, imageSize.width - 1));
+    const top = Math.floor(clampNumber((cssRect.y - paddingY) * scaleY, 0, imageSize.height - 1));
+    const right = Math.ceil(clampNumber((cssRect.x + cssRect.width + paddingX) * scaleX, left + 1, imageSize.width));
+    const bottom = Math.ceil(clampNumber((cssRect.y + cssRect.height + paddingY) * scaleY, top + 1, imageSize.height));
+    return {
+        x: left,
+        y: top,
+        width: right - left,
+        height: bottom - top,
+    };
+}
+
+async function readScreenshotRegionVisualAudit(
+    beforePath: string,
+    processPath: string,
+    beforeCssRect: ScreenshotCssRect,
+    processCssRect: ScreenshotCssRect,
+    viewport: ScreenshotViewport,
+): Promise<ScreenshotRegionVisualAudit> {
+    const [beforeImage, processImage] = await Promise.all([
+        sharp(beforePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+        sharp(processPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+    ]);
+
+    if (beforeImage.info.width !== processImage.info.width || beforeImage.info.height !== processImage.info.height) {
+        throw new Error(`截图尺寸不一致，不能做目标格像素差异审计：before=${beforeImage.info.width}x${beforeImage.info.height}, process=${processImage.info.width}x${processImage.info.height}`);
+    }
+
+    const imageWidth = processImage.info.width;
+    const imageHeight = processImage.info.height;
+    const imageSize = { width: imageWidth, height: imageHeight };
+    const beforeCrop = resolveScreenshotCrop(beforeCssRect, viewport, imageSize);
+    const processCrop = resolveScreenshotCrop(processCssRect, viewport, imageSize);
+    const cropWidth = processCrop.width;
+    const cropHeight = processCrop.height;
+
+    let processBrightPixels = 0;
+    let processWhiteishPixels = 0;
+    let changedPixels = 0;
+    let strongChangedPixels = 0;
+    let positiveLumDeltaPixels = 0;
+    let negativeLumDeltaPixels = 0;
+    let processLumSum = 0;
+    let lumDeltaSum = 0;
+    let absLumDeltaSum = 0;
+
+    for (let y = 0; y < cropHeight; y += 1) {
+        for (let x = 0; x < cropWidth; x += 1) {
+            const processX = processCrop.x + x;
+            const processY = processCrop.y + y;
+            const beforeX = beforeCrop.x + Math.min(beforeCrop.width - 1, Math.floor((x / cropWidth) * beforeCrop.width));
+            const beforeY = beforeCrop.y + Math.min(beforeCrop.height - 1, Math.floor((y / cropHeight) * beforeCrop.height));
+            const offset = (processY * imageWidth + processX) * 4;
+            const beforeOffset = (beforeY * imageWidth + beforeX) * 4;
+            const beforeLum = readLuminance(beforeImage.data, beforeOffset);
+            const processLum = readLuminance(processImage.data, offset);
+            const lumDelta = processLum - beforeLum;
+            const r = processImage.data[offset];
+            const g = processImage.data[offset + 1];
+            const b = processImage.data[offset + 2];
+            const absRgbDelta = Math.abs(processImage.data[offset] - beforeImage.data[beforeOffset])
+                + Math.abs(processImage.data[offset + 1] - beforeImage.data[beforeOffset + 1])
+                + Math.abs(processImage.data[offset + 2] - beforeImage.data[beforeOffset + 2]);
+
+            processLumSum += processLum;
+            lumDeltaSum += lumDelta;
+            absLumDeltaSum += Math.abs(lumDelta);
+            if (processLum > 185) processBrightPixels += 1;
+            if (r > 205 && g > 195 && b > 170 && Math.max(r, g, b) - Math.min(r, g, b) < 70) {
+                processWhiteishPixels += 1;
+            }
+            if (absRgbDelta > 45) changedPixels += 1;
+            if (absRgbDelta > 120) strongChangedPixels += 1;
+            if (lumDelta > 35) positiveLumDeltaPixels += 1;
+            if (lumDelta < -35) negativeLumDeltaPixels += 1;
+        }
+    }
+
+    const totalPixels = cropWidth * cropHeight;
+    return {
+        crop: processCrop,
+        beforeCrop,
+        imageSize,
+        totalPixels,
+        processBrightPixels,
+        processWhiteishPixels,
+        changedPixels,
+        strongChangedPixels,
+        positiveLumDeltaPixels,
+        negativeLumDeltaPixels,
+        avgProcessLum: Number((processLumSum / totalPixels).toFixed(2)),
+        avgLumDelta: Number((lumDeltaSum / totalPixels).toFixed(2)),
+        avgAbsLumDelta: Number((absLumDeltaSum / totalPixels).toFixed(2)),
+    };
+}
+
+async function readViewport(page: Page): Promise<ScreenshotViewport> {
+    return page.viewportSize() ?? page.evaluate(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    }));
 }
 
 const ATTACHMENT_TYPE_LABEL_TEXTS = ['装备', '结界', 'Equipment', 'Enchantment', 'Enchantments', 'Ongoing', 'Attached'];
@@ -245,6 +385,25 @@ type VisibleImageLoadFailure = {
     nearestTestId: string | null;
 };
 
+type VisibleAtlasLoadFailure = {
+    reason: string;
+    atlasId: string | null;
+    atlasIndex: string | null;
+    title: string | null;
+    nearestTestId: string | null;
+    className: string;
+    imgSrc: string | null;
+    naturalWidth: number | null;
+    naturalHeight: number | null;
+    rect: { x: number; y: number; width: number; height: number };
+    pixelAudit?: {
+        status: 'pass' | 'fail' | 'unavailable';
+        reason?: string;
+        averageChannelRange?: number;
+        sampleCount?: number;
+    };
+};
+
 async function readVisibleImageLoadFailures(page: Page): Promise<VisibleImageLoadFailure[]> {
     return page.evaluate(() => Array.from(document.images)
         .map((image) => {
@@ -273,9 +432,213 @@ async function readVisibleImageLoadFailures(page: Page): Promise<VisibleImageLoa
         })));
 }
 
+async function readVisibleMageWarsAtlasLoadFailures(page: Page): Promise<VisibleAtlasLoadFailure[]> {
+    return page.evaluate(() => {
+        const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+        if (!board) {
+            return [{
+                reason: 'mage-wars-board-missing',
+                atlasId: null,
+                atlasIndex: null,
+                title: null,
+                nearestTestId: null,
+                className: '',
+                imgSrc: null,
+                naturalWidth: null,
+                naturalHeight: null,
+                rect: { x: 0, y: 0, width: 0, height: 0 },
+            }];
+        }
+
+        const isVisible = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return rect.width > 10
+                && rect.height > 10
+                && style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number.parseFloat(style.opacity || '1') > 0.05;
+        };
+
+        const readRect = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                x: Math.round(rect.x),
+                y: Math.round(rect.y),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+            };
+        };
+
+        const auditVisibleAtlasPixels = (
+            frame: HTMLElement,
+            image: HTMLImageElement,
+        ): VisibleAtlasLoadFailure['pixelAudit'] => {
+            try {
+                const frameRect = frame.getBoundingClientRect();
+                const imageRect = image.getBoundingClientRect();
+                if (frameRect.width <= 0 || frameRect.height <= 0 || imageRect.width <= 0 || imageRect.height <= 0) {
+                    return { status: 'fail', reason: 'zero-sized-frame-or-image' };
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                if (!ctx) return { status: 'unavailable', reason: 'canvas-context-unavailable' };
+
+                const points = [
+                    [0.28, 0.22],
+                    [0.5, 0.32],
+                    [0.72, 0.46],
+                    [0.35, 0.68],
+                    [0.62, 0.78],
+                ] as const;
+                const samples: number[][] = [];
+                for (const [px, py] of points) {
+                    const viewportX = frameRect.left + frameRect.width * px;
+                    const viewportY = frameRect.top + frameRect.height * py;
+                    const sourceX = ((viewportX - imageRect.left) / imageRect.width) * image.naturalWidth;
+                    const sourceY = ((viewportY - imageRect.top) / imageRect.height) * image.naturalHeight;
+                    if (
+                        !Number.isFinite(sourceX)
+                        || !Number.isFinite(sourceY)
+                        || sourceX < 0
+                        || sourceY < 0
+                        || sourceX >= image.naturalWidth
+                        || sourceY >= image.naturalHeight
+                    ) {
+                        continue;
+                    }
+                    ctx.clearRect(0, 0, 1, 1);
+                    ctx.drawImage(image, Math.floor(sourceX), Math.floor(sourceY), 1, 1, 0, 0, 1, 1);
+                    const [r, g, b, a] = Array.from(ctx.getImageData(0, 0, 1, 1).data);
+                    if (a > 4) samples.push([r, g, b]);
+                }
+
+                if (samples.length < 3) {
+                    return { status: 'fail', reason: 'too-few-visible-samples', sampleCount: samples.length };
+                }
+
+                const channelRanges = [0, 1, 2].map((channel) => {
+                    const values = samples.map((sample) => sample[channel]);
+                    return Math.max(...values) - Math.min(...values);
+                });
+                const averageChannelRange = channelRanges.reduce((sum, value) => sum + value, 0) / channelRanges.length;
+                if (averageChannelRange < 8) {
+                    return {
+                        status: 'fail',
+                        reason: 'visible-frame-low-pixel-variance',
+                        averageChannelRange: Math.round(averageChannelRange * 10) / 10,
+                        sampleCount: samples.length,
+                    };
+                }
+
+                return {
+                    status: 'pass',
+                    averageChannelRange: Math.round(averageChannelRange * 10) / 10,
+                    sampleCount: samples.length,
+                };
+            } catch (error) {
+                return {
+                    status: 'unavailable',
+                    reason: error instanceof Error ? error.message : String(error),
+                };
+            }
+        };
+
+        const frames = Array.from(
+            board.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"], .atlas-shimmer'),
+        ).filter(isVisible);
+
+        return frames.flatMap((frame) => {
+            const rect = readRect(frame);
+            const base = {
+                atlasId: frame.getAttribute('data-card-atlas-id'),
+                atlasIndex: frame.getAttribute('data-card-atlas-index'),
+                title: frame.getAttribute('title'),
+                nearestTestId: frame.closest('[data-testid]')?.getAttribute('data-testid') ?? null,
+                className: frame.className,
+                rect,
+            };
+
+            if (frame.classList.contains('atlas-shimmer')) {
+                return [{
+                    ...base,
+                    reason: frame.getAttribute('data-card-atlas-frame') === 'true'
+                        ? 'atlas-frame-still-shimmering'
+                        : 'lazy-atlas-unresolved-shimmer',
+                    imgSrc: null,
+                    naturalWidth: null,
+                    naturalHeight: null,
+                }];
+            }
+
+            const image = frame.querySelector<HTMLImageElement>('img[data-card-atlas-img="true"]');
+            if (!image) {
+                return [{
+                    ...base,
+                    reason: 'atlas-frame-missing-image',
+                    imgSrc: null,
+                    naturalWidth: null,
+                    naturalHeight: null,
+                }];
+            }
+
+            if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+                return [{
+                    ...base,
+                    reason: 'atlas-image-not-loaded',
+                    imgSrc: image.currentSrc || image.src,
+                    naturalWidth: image.naturalWidth,
+                    naturalHeight: image.naturalHeight,
+                }];
+            }
+
+            const imageRect = image.getBoundingClientRect();
+            if (imageRect.width <= 10 || imageRect.height <= 10) {
+                return [{
+                    ...base,
+                    reason: 'atlas-image-zero-sized',
+                    imgSrc: image.currentSrc || image.src,
+                    naturalWidth: image.naturalWidth,
+                    naturalHeight: image.naturalHeight,
+                }];
+            }
+
+            const pixelAudit = auditVisibleAtlasPixels(frame, image);
+            if (pixelAudit.status === 'fail') {
+                return [{
+                    ...base,
+                    reason: pixelAudit.reason ?? 'atlas-frame-pixel-audit-failed',
+                    imgSrc: image.currentSrc || image.src,
+                    naturalWidth: image.naturalWidth,
+                    naturalHeight: image.naturalHeight,
+                    pixelAudit,
+                }];
+            }
+
+            return [];
+        }).map((failure) => ({
+            ...failure,
+            imgSrc: failure.imgSrc && failure.imgSrc.length > 240
+                ? `${failure.imgSrc.slice(0, 237)}...`
+                : failure.imgSrc,
+        }));
+    });
+}
+
 async function waitForVisibleImagesLoaded(page: Page, label: string) {
     await expect.poll(async () => readVisibleImageLoadFailures(page), {
         message: `${label} Mage Wars 棋盘仍有可见图片没有真实尺寸`,
+        timeout: 30_000,
+        intervals: [250, 500, 1_000],
+    }).toEqual([]);
+}
+
+async function waitForVisibleMageWarsAtlasCardsLoaded(page: Page, label: string) {
+    await expect.poll(async () => readVisibleMageWarsAtlasLoadFailures(page), {
+        message: `${label} Mage Wars 棋盘仍有可见图集牌面空白、未完成加载或像素无差异`,
         timeout: 30_000,
         intervals: [250, 500, 1_000],
     }).toEqual([]);
@@ -288,6 +651,7 @@ async function openOnlineBoard(page: Page, label: string) {
     await expect(board).toBeVisible({ timeout: 90_000 });
     await expect(board).toContainText('正式竞技场');
     await waitForVisibleImagesLoaded(page, label);
+    await waitForVisibleMageWarsAtlasCardsLoaded(page, label);
 }
 
 async function readPhase(page: Page): Promise<string | null> {
@@ -341,6 +705,11 @@ async function readOnlineBoardSnapshot(page: Page) {
         phaseActorId: await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 1_000 }).catch(() => null),
         turnNumber: await board.getAttribute('data-mage-wars-turn-number', { timeout: 1_000 }).catch(() => null),
         readyPlayerIds: await board.getAttribute('data-mage-wars-ready-player-ids', { timeout: 1_000 }).catch(() => null),
+        eventCount: await board.getAttribute('data-mage-wars-event-count', { timeout: 1_000 }).catch(() => null),
+        eventLatestId: await board.getAttribute('data-mage-wars-event-latest-id', { timeout: 1_000 }).catch(() => null),
+        eventCursor: await board.getAttribute('data-mage-wars-event-cursor', { timeout: 1_000 }).catch(() => null),
+        lastConsumedEvents: await board.getAttribute('data-mage-wars-last-consumed-events', { timeout: 1_000 }).catch(() => null),
+        lastFxCues: await board.getAttribute('data-mage-wars-last-fx-cues', { timeout: 1_000 }).catch(() => null),
         turnEndEnabled: await turnEnd.isEnabled({ timeout: 500 }).catch(() => false),
         turnEndText: await turnEnd.innerText({ timeout: 1_000 }).catch(() => ''),
         preparedCards,
@@ -538,51 +907,334 @@ type MageWarsSummonFxAudit = {
     canvasHeight: number;
     alphaPixels: number;
     brightPixels: number;
+    sampledCanvasIndex: number;
+    canvasCount: number;
+    targetZoneId?: string | null;
+    fxCenterInsideTarget?: boolean;
+    targetCenterInsideFx?: boolean;
+    targetCenterDistancePx?: number | null;
+    targetOverlapRatio?: number | null;
+    fxMaxTargetRatio?: number | null;
+    screenshotPath?: string;
+    targetRegionAudit?: ScreenshotRegionVisualAudit;
 };
 
-async function waitForSummonFxVisualAudit(page: Page): Promise<MageWarsSummonFxAudit> {
-    const handle = await page.waitForFunction(() => {
-        const summon = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-summon"]');
-        if (!summon) return null;
-        const rect = summon.getBoundingClientRect();
-        const canvas = summon.querySelector('canvas');
-        if (!canvas || canvas.width <= 0 || canvas.height <= 0) return null;
+type SummonFxDebugContext = {
+    match: MageWarsOnlineMatch;
+    playerId: '0' | '1';
+    label: string;
+    sourceCardId: number;
+    zoneId: ArenaZoneId;
+    beforeScreenshotPath?: string;
+    targetRect?: ScreenshotCssRect;
+};
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return null;
-
-        const sampleWidth = Math.min(canvas.width, 640);
-        const sampleHeight = Math.min(canvas.height, 360);
-        const offsetX = Math.max(0, Math.floor((canvas.width - sampleWidth) / 2));
-        const offsetY = Math.max(0, Math.floor((canvas.height - sampleHeight) / 2));
-        const data = ctx.getImageData(offsetX, offsetY, sampleWidth, sampleHeight).data;
-        let alphaPixels = 0;
-        let brightPixels = 0;
-        for (let i = 0; i < data.length; i += 4) {
-            const alpha = data[i + 3];
-            if (alpha <= 10) continue;
-            alphaPixels += 1;
-            if (alpha > 28 && data[i] + data[i + 1] + data[i + 2] > 360) {
-                brightPixels += 1;
+async function readSummonFxVisualDebug(page: Page) {
+    return page.evaluate(() => {
+        const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
+        const summarizeCanvas = (canvas: HTMLCanvasElement, index: number) => {
+            const base = {
+                index,
+                width: canvas.width,
+                height: canvas.height,
+                cssWidth: Math.round(canvas.getBoundingClientRect().width),
+                cssHeight: Math.round(canvas.getBoundingClientRect().height),
+                context: 'unreadable',
+                alphaPixels: 0,
+                brightPixels: 0,
+            };
+            try {
+                const ctx = canvas.getContext('2d');
+                if (!ctx || canvas.width <= 0 || canvas.height <= 0) return base;
+                const sampleWidth = Math.min(canvas.width, 240);
+                const sampleHeight = Math.min(canvas.height, 180);
+                const offsetX = Math.max(0, Math.floor((canvas.width - sampleWidth) / 2));
+                const offsetY = Math.max(0, Math.floor((canvas.height - sampleHeight) / 2));
+                const data = ctx.getImageData(offsetX, offsetY, sampleWidth, sampleHeight).data;
+                let alphaPixels = 0;
+                let brightPixels = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const alpha = data[i + 3];
+                    if (alpha <= 10) continue;
+                    alphaPixels += 1;
+                    if (alpha > 28 && data[i] + data[i + 1] + data[i + 2] > 360) {
+                        brightPixels += 1;
+                    }
+                }
+                return { ...base, context: '2d', alphaPixels, brightPixels };
+            } catch (error) {
+                return {
+                    ...base,
+                    context: error instanceof Error ? error.message : String(error),
+                };
             }
+        };
+
+        const summons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-fx-summon"]'));
+        return {
+            probe: (window as typeof window & { __mageWarsSummonFxAuditProbe?: unknown }).__mageWarsSummonFxAuditProbe ?? null,
+            layer: layer ? {
+                activeCount: layer.dataset.fxActiveCount ?? null,
+                activeCues: layer.dataset.fxActiveCues ?? null,
+                childTestIds: Array.from(layer.querySelectorAll<HTMLElement>('[data-testid]'))
+                    .slice(0, 12)
+                    .map((element) => element.dataset.testid ?? element.getAttribute('data-testid')),
+            } : null,
+            summonCount: summons.length,
+            summons: summons.map((summon) => {
+                const rect = summon.getBoundingClientRect();
+                return {
+                    objectKind: summon.dataset.objectKind ?? null,
+                    objectId: summon.dataset.objectId ?? null,
+                    rect: {
+                        x: Math.round(rect.x),
+                        y: Math.round(rect.y),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                    },
+                    canvases: Array.from(summon.querySelectorAll('canvas')).map(summarizeCanvas),
+                };
+            }),
+        };
+    }).catch((error: unknown) => ({
+        error: error instanceof Error ? error.message : String(error),
+    }));
+}
+
+async function readSummonFxFailureDebug(page: Page, context?: SummonFxDebugContext) {
+    const [visual, board, server] = await Promise.all([
+        readSummonFxVisualDebug(page),
+        readOnlineBoardSnapshot(page).catch((error: unknown) => ({
+            error: error instanceof Error ? error.message : String(error),
+        })),
+        context
+            ? readServerCoreSnapshot(page, context.match, context.playerId).catch((error: unknown) => ({
+                error: error instanceof Error ? error.message : String(error),
+            }))
+            : Promise.resolve(null),
+    ]);
+
+    return {
+        context,
+        visual,
+        board,
+        server,
+    };
+}
+
+async function waitForSummonFxVisualAudit(
+    page: Page,
+    context?: SummonFxDebugContext,
+): Promise<MageWarsSummonFxAudit> {
+    const handle = await page.waitForFunction((args: { zoneId?: string } | null) => {
+        type ProbeRecord = {
+            checks: number;
+            seenSummon: boolean;
+            last: unknown;
+            best: null | {
+                objectKind: string | null;
+                objectId: string | null;
+                visible: boolean;
+                canvasWidth: number;
+                canvasHeight: number;
+                alphaPixels: number;
+                brightPixels: number;
+                sampledCanvasIndex: number;
+                canvasCount: number;
+                targetZoneId?: string | null;
+                fxCenterInsideTarget?: boolean;
+                targetCenterInsideFx?: boolean;
+                targetCenterDistancePx?: number | null;
+                targetOverlapRatio?: number | null;
+                fxMaxTargetRatio?: number | null;
+            };
+        };
+        const probeWindow = window as typeof window & { __mageWarsSummonFxAuditProbe?: ProbeRecord };
+        const probe = probeWindow.__mageWarsSummonFxAuditProbe ?? {
+            checks: 0,
+            seenSummon: false,
+            last: null,
+            best: null,
+        };
+        probe.checks += 1;
+        probeWindow.__mageWarsSummonFxAuditProbe = probe;
+
+        const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
+        const summon = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-summon"]');
+        if (!summon) {
+            probe.last = {
+                reason: 'missing-summon',
+                activeCount: layer?.dataset.fxActiveCount ?? null,
+                activeCues: layer?.dataset.fxActiveCues ?? null,
+            };
+            return null;
+        }
+        probe.seenSummon = true;
+        const rect = summon.getBoundingClientRect();
+        let targetAudit: Pick<MageWarsSummonFxAudit, 'targetZoneId' | 'fxCenterInsideTarget' | 'targetCenterInsideFx' | 'targetCenterDistancePx' | 'targetOverlapRatio'> = {};
+        if (args?.zoneId) {
+            const targetZone = document.querySelector<HTMLElement>(`[data-testid="mage-wars-arena-zone-${args.zoneId}"]`);
+            if (!targetZone) {
+                probe.last = { reason: 'missing-target-zone', zoneId: args.zoneId };
+                return null;
+            }
+            const targetRect = targetZone.getBoundingClientRect();
+            const fxCenterX = rect.left + rect.width / 2;
+            const fxCenterY = rect.top + rect.height / 2;
+            const targetCenterX = targetRect.left + targetRect.width / 2;
+            const targetCenterY = targetRect.top + targetRect.height / 2;
+            const overlapWidth = Math.max(0, Math.min(rect.right, targetRect.right) - Math.max(rect.left, targetRect.left));
+            const overlapHeight = Math.max(0, Math.min(rect.bottom, targetRect.bottom) - Math.max(rect.top, targetRect.top));
+            const targetArea = Math.max(1, targetRect.width * targetRect.height);
+            const targetCenterDistancePx = Math.hypot(fxCenterX - targetCenterX, fxCenterY - targetCenterY);
+            const fxMaxTargetRatio = Math.max(
+                rect.width / Math.max(1, targetRect.width),
+                rect.height / Math.max(1, targetRect.height),
+            );
+            const fxCenterInsideTarget = fxCenterX >= targetRect.left
+                && fxCenterX <= targetRect.right
+                && fxCenterY >= targetRect.top
+                && fxCenterY <= targetRect.bottom;
+            const targetCenterInsideFx = targetCenterX >= rect.left
+                && targetCenterX <= rect.right
+                && targetCenterY >= rect.top
+                && targetCenterY <= rect.bottom;
+            const targetOverlapRatio = (overlapWidth * overlapHeight) / targetArea;
+            targetAudit = {
+                targetZoneId: args.zoneId,
+                fxCenterInsideTarget,
+                targetCenterInsideFx,
+                targetCenterDistancePx: Math.round(targetCenterDistancePx * 10) / 10,
+                targetOverlapRatio: Math.round(targetOverlapRatio * 1_000) / 1_000,
+                fxMaxTargetRatio: Math.round(fxMaxTargetRatio * 1_000) / 1_000,
+            };
+            if (
+                targetRect.width <= 0
+                || targetRect.height <= 0
+                || !fxCenterInsideTarget
+                || !targetCenterInsideFx
+                || targetCenterDistancePx > Math.max(targetRect.width, targetRect.height) * 0.12
+                || targetOverlapRatio < 0.35
+                || fxMaxTargetRatio > 0.88
+            ) {
+                probe.last = {
+                    reason: 'summon-fx-not-aligned-to-target-zone',
+                    rect: {
+                        x: Math.round(rect.x),
+                        y: Math.round(rect.y),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                    },
+                    targetRect: {
+                        x: Math.round(targetRect.x),
+                        y: Math.round(targetRect.y),
+                        width: Math.round(targetRect.width),
+                        height: Math.round(targetRect.height),
+                    },
+                    ...targetAudit,
+                };
+                return null;
+            }
+        }
+        const canvases = Array.from(summon.querySelectorAll('canvas'));
+        if (canvases.length === 0) {
+            probe.last = {
+                reason: 'missing-canvas',
+                rect: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                },
+            };
+            return null;
+        }
+
+        const canvasAudits = canvases.flatMap((canvas, sampledCanvasIndex) => {
+            if (canvas.width <= 0 || canvas.height <= 0) return [];
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return [];
+
+            const sampleWidth = Math.min(canvas.width, 640);
+            const sampleHeight = Math.min(canvas.height, 360);
+            const offsetX = Math.max(0, Math.floor((canvas.width - sampleWidth) / 2));
+            const offsetY = Math.max(0, Math.floor((canvas.height - sampleHeight) / 2));
+            const data = ctx.getImageData(offsetX, offsetY, sampleWidth, sampleHeight).data;
+            let alphaPixels = 0;
+            let brightPixels = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const alpha = data[i + 3];
+                if (alpha <= 10) continue;
+                alphaPixels += 1;
+                if (alpha > 28 && data[i] + data[i + 1] + data[i + 2] > 360) {
+                    brightPixels += 1;
+                }
+            }
+
+            return [{
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
+                alphaPixels,
+                brightPixels,
+                sampledCanvasIndex,
+            }];
+        });
+
+        const visibleAudit = canvasAudits
+            .sort((a, b) => (b.brightPixels + b.alphaPixels) - (a.brightPixels + a.alphaPixels))[0];
+        if (!visibleAudit) {
+            probe.last = {
+                reason: 'no-readable-canvas',
+                canvasCount: canvases.length,
+                rect: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                },
+            };
+            return null;
         }
 
         const audit = {
             objectKind: summon.dataset.objectKind ?? null,
             objectId: summon.dataset.objectId ?? null,
             visible: rect.width > 0 && rect.height > 0,
-            canvasWidth: canvas.width,
-            canvasHeight: canvas.height,
-            alphaPixels,
-            brightPixels,
+            canvasWidth: visibleAudit.canvasWidth,
+            canvasHeight: visibleAudit.canvasHeight,
+            alphaPixels: visibleAudit.alphaPixels,
+            brightPixels: visibleAudit.brightPixels,
+            sampledCanvasIndex: visibleAudit.sampledCanvasIndex,
+            canvasCount: canvases.length,
+            ...targetAudit,
         };
-        if (!audit.visible || audit.alphaPixels <= 1_500 || audit.brightPixels <= 120) return null;
+        probe.last = audit;
+        if (!probe.best || (audit.brightPixels + audit.alphaPixels) > (probe.best.brightPixels + probe.best.alphaPixels)) {
+            probe.best = audit;
+        }
+        if (!audit.visible || audit.alphaPixels <= 5_000 || audit.brightPixels <= 350) return null;
         return audit;
-    }, undefined, { timeout: 5_000 });
+    }, context ? { zoneId: context.zoneId } : null, { timeout: 5_000 }).catch(async (error: unknown) => {
+        const debug = await readSummonFxFailureDebug(page, context);
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error([
+            'Mage Wars 召唤过程帧未达到可见特效审计门槛',
+            message,
+            `debug=${JSON.stringify(debug, null, 2)}`,
+        ].join('\n'));
+    });
     const audit = await handle.jsonValue() as MageWarsSummonFxAudit;
     expect(audit.visible).toBe(true);
-    expect(audit.alphaPixels).toBeGreaterThan(1_500);
-    expect(audit.brightPixels).toBeGreaterThan(120);
+    expect(audit.alphaPixels).toBeGreaterThan(5_000);
+    expect(audit.brightPixels).toBeGreaterThan(350);
+    if (context?.zoneId) {
+        expect(audit.targetZoneId).toBe(context.zoneId);
+        expect(audit.fxCenterInsideTarget).toBe(true);
+        expect(audit.targetCenterInsideFx).toBe(true);
+        expect(audit.targetOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.35);
+        expect(audit.fxMaxTargetRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(0.88);
+        expect(audit.targetCenterDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(90);
+    }
     return audit;
 }
 
@@ -590,12 +1242,43 @@ async function captureMageWarsSummonFxProcessScreenshot(
     page: Page,
     testInfo: TestInfo,
     label: string,
+    context?: SummonFxDebugContext,
 ): Promise<MageWarsSummonFxAudit> {
-    const audit = await waitForSummonFxVisualAudit(page);
+    const fxAudit = await waitForSummonFxVisualAudit(page, context);
     await expect(page.getByTestId('mage-wars-fx-summon').first()).toBeVisible({ timeout: 5_000 });
-    await page.waitForTimeout(120);
-    await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, { animations: 'allow' });
-    return audit;
+    // 过程帧必须在光柱 canvas 达到可见阈值后、光柱主体展开时落盘。
+    // 这里只等一个很短的动画窗口；牌面加载检查放在触发前和最终落场后，
+    // 避免把过程帧等成最终态。
+    await page.waitForTimeout(320);
+    await expect(page.getByTestId('mage-wars-fx-summon').first()).toBeVisible({ timeout: 1_000 });
+    const screenshotPath = await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, { animations: 'allow' });
+
+    let targetRegionAudit: ScreenshotRegionVisualAudit | undefined;
+    if (context?.beforeScreenshotPath && context.targetRect) {
+        const processTargetRect = context.zoneId
+            ? await page.getByTestId(`mage-wars-arena-zone-${context.zoneId}`).boundingBox()
+            : context.targetRect;
+        if (!processTargetRect) throw new Error(`${label} 召唤过程帧目标格 ${context.zoneId} 没有可截图矩形，无法做目标格像素审计`);
+        targetRegionAudit = await readScreenshotRegionVisualAudit(
+            context.beforeScreenshotPath,
+            screenshotPath,
+            context.targetRect,
+            processTargetRect,
+            await readViewport(page),
+        );
+        const minStrongChangedPixels = Math.max(650, Math.floor(targetRegionAudit.totalPixels * 0.006));
+        const minPositiveLumDeltaPixels = Math.max(180, Math.floor(targetRegionAudit.totalPixels * 0.0018));
+        expect(targetRegionAudit.strongChangedPixels, `${label} 召唤过程帧目标格没有足够强变化：${JSON.stringify(targetRegionAudit)}`)
+            .toBeGreaterThan(minStrongChangedPixels);
+        expect(targetRegionAudit.positiveLumDeltaPixels, `${label} 召唤过程帧目标格没有足够亮核变化：${JSON.stringify(targetRegionAudit)}`)
+            .toBeGreaterThan(minPositiveLumDeltaPixels);
+        expect(targetRegionAudit.avgLumDelta, `${label} 召唤过程帧目标格整体被压暗：${JSON.stringify(targetRegionAudit)}`)
+            .toBeGreaterThan(0);
+        expect(targetRegionAudit.positiveLumDeltaPixels, `${label} 召唤过程帧目标格亮度提升没有压过暗场变化：${JSON.stringify(targetRegionAudit)}`)
+            .toBeGreaterThan(targetRegionAudit.negativeLumDeltaPixels * 1.5);
+    }
+
+    return { ...fxAudit, screenshotPath, targetRegionAudit };
 }
 
 async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Promise<MageWarsFxAudit> {
@@ -604,19 +1287,22 @@ async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Pro
         const travel = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`);
         const sourceWake = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-source-wake"]`);
         const impact = document.querySelector<HTMLElement>(`[data-testid="${impactId}"]`);
-        if (!sourceWake || !impact) return null;
+        const requiresSourceWake = fxKind !== 'attack';
+        if (!impact || (requiresSourceWake && !sourceWake)) return null;
         return {
             sourceRow: travel?.dataset.sourceRow ?? null,
             sourceCol: travel?.dataset.sourceCol ?? null,
             targetRow: travel?.dataset.targetRow ?? null,
             targetCol: travel?.dataset.targetCol ?? null,
-            hasSourceWake: true,
+            hasSourceWake: Boolean(sourceWake),
             hasImpact: true,
             hasTravel: Boolean(travel),
         };
     }, { fxKind: kind, impactId: impactTestId }, { timeout: 5_000 });
     const audit = await handle.jsonValue() as MageWarsFxAudit;
-    expect(audit.hasSourceWake).toBe(true);
+    if (kind !== 'attack') {
+        expect(audit.hasSourceWake).toBe(true);
+    }
     expect(audit.hasImpact).toBe(true);
     return audit;
 }
@@ -656,6 +1342,54 @@ function resolveFxImpactScreenshotSuffix(kind: MageWarsFxKind): string {
     return '命中动画过程帧';
 }
 
+async function readAttackDamageFloatDebug(page: Page) {
+    return page.evaluate(() => {
+        const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
+        const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]');
+        const damageHost = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-host"]');
+        const floats = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]'));
+        const summarize = (element: HTMLElement | null) => {
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = element;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            return {
+                text: element.textContent,
+                ariaLabel: element.getAttribute('aria-label'),
+                damageValue: element.getAttribute('data-damage-value'),
+                rect: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                },
+                opacity: Math.round(effectiveOpacity * 1_000) / 1_000,
+                display: window.getComputedStyle(element).display,
+                visibility: window.getComputedStyle(element).visibility,
+            };
+        };
+        return {
+            layer: layer ? {
+                activeCount: layer.dataset.fxActiveCount ?? null,
+                activeCues: layer.dataset.fxActiveCues ?? null,
+                childTestIds: Array.from(layer.querySelectorAll<HTMLElement>('[data-testid]'))
+                    .slice(0, 20)
+                    .map((element) => element.getAttribute('data-testid')),
+            } : null,
+            impact: summarize(impact),
+            damageHost: summarize(damageHost),
+            floats: floats.map(summarize),
+        };
+    }).catch((error: unknown) => ({
+        error: error instanceof Error ? error.message : String(error),
+    }));
+}
+
 async function captureMageWarsFxProcessScreenshots(
     page: Page,
     testInfo: TestInfo,
@@ -670,20 +1404,26 @@ async function captureMageWarsFxProcessScreenshots(
         ? await waitForFxTravelAudit(page, kind)
         : await waitForFxSourceImpactAudit(page, kind);
 
-    await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`).first()).toBeVisible({ timeout: 5_000 });
+    if (kind !== 'attack') {
+        await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`).first()).toBeVisible({ timeout: 5_000 });
+    }
     await expect(page.getByTestId(resolveFxImpactTestId(kind)).first()).toBeVisible({ timeout: 5_000 });
     await page.waitForTimeout(80);
     await saveEvidenceScreenshot(
         page,
         testInfo,
-        options.expectTravel ? `${label}-来源唤醒过程帧` : `${label}-来源唤醒和命中过程帧`,
+        options.expectTravel
+            ? (kind === 'attack' ? `${label}-来源到目标投射过程帧` : `${label}-来源唤醒过程帧`)
+            : `${label}-来源唤醒和命中过程帧`,
         { animations: 'allow' },
     );
 
     if (options.expectTravel) {
         const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
         await expect(travel).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByTestId(`mage-wars-fx-${kind}-travel-mid-burst`).first()).toBeVisible({ timeout: 5_000 });
+        if (kind !== 'attack') {
+            await expect(page.getByTestId(`mage-wars-fx-${kind}-travel-mid-burst`).first()).toBeVisible({ timeout: 5_000 });
+        }
         await page.waitForTimeout(420);
         await saveEvidenceScreenshot(page, testInfo, `${label}-${resolveFxTravelScreenshotSuffix(kind)}`, { animations: 'allow' });
     } else {
@@ -708,7 +1448,15 @@ async function captureMageWarsFxProcessScreenshots(
                 && rect.height > 0
                 && effectiveOpacity > 0.35
                 && (float.textContent?.includes('-') ?? false);
-        }, undefined, { timeout: 5_000 });
+        }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
+            const message = error instanceof Error ? error.message : String(error);
+            const debug = await readAttackDamageFloatDebug(page);
+            throw new Error([
+                'Mage Wars 攻击命中过程帧未捕捉到可见伤害飘字',
+                message,
+                `debug=${JSON.stringify(debug, null, 2)}`,
+            ].join('\n'));
+        });
         await saveEvidenceScreenshot(page, testInfo, `${label}-命中动画和伤害飘字过程帧`, { animations: 'allow' });
     } else {
         const impactBurstTestId = resolveFxImpactBurstTestId(kind);
@@ -1396,6 +2144,59 @@ async function deployBothPlayers(
     await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
 }
 
+async function deployCreatureWithSummonProcessEvidence(
+    match: MageWarsOnlineMatch,
+    page: Page,
+    playerId: '0' | '1',
+    creatureName: string,
+    zoneId: ArenaZoneId,
+    testInfo: TestInfo,
+    label: string,
+    diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
+) {
+    const preparedCard = selfPreparedCardByName(page, creatureName);
+    await advanceUntilEnabled(page, preparedCard);
+    const sourceCardId = await preparedCard.getAttribute('data-source-card-id');
+    if (!sourceCardId) throw new Error(`部署 ${creatureName} 前未能读取 CardID`);
+
+    await selectPreparedSpell(page, preparedCard, `${label} 选择召唤来源`);
+    const targetZone = page.getByTestId(`mage-wars-arena-zone-${zoneId}`);
+    await expect(targetZone).toHaveAttribute('data-legal-target-zone', 'true', { timeout: 3_000 });
+    const targetRect = await targetZone.boundingBox();
+    if (!targetRect) throw new Error(`${label} 召唤目标格 ${zoneId} 没有可截图矩形，无法做过程帧目标格审计`);
+    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
+    const beforeScreenshotPath = await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, { animations: 'allow' });
+
+    const summonFxAuditPromise = captureMageWarsSummonFxProcessScreenshot(page, testInfo, label, {
+        match,
+        playerId,
+        label,
+        sourceCardId: Number(sourceCardId),
+        zoneId,
+        beforeScreenshotPath,
+        targetRect,
+    });
+    await clickLegalTargetZone(page, zoneId, `${label} 召唤落点`);
+    const summonFxAudit = await summonFxAuditPromise;
+    expect(summonFxAudit.objectKind).toBe('creature');
+    expect(summonFxAudit.objectId).toMatch(/^mwobj-/);
+
+    await waitForZoneFieldCard(page, zoneId, Number(sourceCardId), `${label} 召唤完成`, {
+        match,
+        playerId,
+        diagnostics,
+    });
+    await expect(page.getByTestId('mage-wars-fx-summon')).toHaveCount(0, { timeout: 5_000 });
+    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤落场完成截图前`);
+    await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`);
+
+    const snapshot = await readZoneFieldCardSnapshot(page, zoneId, Number(sourceCardId), `${label} 召唤完成后读取对象`);
+    return {
+        sourceCardId: Number(sourceCardId),
+        objectId: snapshot.objectId,
+    };
+}
+
 async function castPreparedSpellOnMage(
     page: Page,
     spellName: string,
@@ -1825,6 +2626,103 @@ test.describe('Mage Wars formal online runtime', () => {
             ]);
             await expectMobileLandscapeHudSlots(match.guestPage, '终末快速施法窗口访客视角');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '08-攻击行动结束后-进入终末快速施法窗口');
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
+    test('正式页面召唤和攻击必要过程帧覆盖', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(240_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const diagnostics = [
+            { label: 'host', diagnostics: hostDiagnostics },
+            { label: 'guest', diagnostics: guestDiagnostics },
+        ];
+        const attackTargetObjectId = 'mw-e2e-summon-attack-target';
+        const attackSpellCardId = 1710;
+
+        try {
+            await advanceBothPlayersToPlanning(match);
+            await planNamedSpells(match.hostPage, ['野性山猫']);
+            await planNamedSpells(match.guestPage, ['阿希拉牧师']);
+
+            const hostSummon = await deployCreatureWithSummonProcessEvidence(
+                match,
+                match.hostPage,
+                '0',
+                '野性山猫',
+                ARENA_ZONE_IDS.A3,
+                testInfo,
+                '01-兽王野性山猫',
+                diagnostics,
+            );
+            expect(hostSummon.sourceCardId).toBe(2906);
+            await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+
+            const guestSummon = await deployCreatureWithSummonProcessEvidence(
+                match,
+                match.guestPage,
+                '1',
+                '阿希拉牧师',
+                ARENA_ZONE_IDS.D1,
+                testInfo,
+                '02-女祭司阿希拉牧师',
+                diagnostics,
+            );
+            expect(guestSummon.sourceCardId).toBe(2811);
+            await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+
+            await injectMageWarsSpellFxReadyState(match, '0', {
+                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                preparedSpellCardId: attackSpellCardId,
+                targetObject: createMageWarsE2eCreatureObject(
+                    attackTargetObjectId,
+                    '1',
+                    2811,
+                    '阿希拉牧师',
+                    ARENA_ZONE_IDS.B3,
+                ),
+                mana: 12,
+            });
+
+            const attackTarget = match.hostPage
+                .locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${attackTargetObjectId}"]`)
+                .first();
+            await expect(attackTarget).toBeVisible({ timeout: 5_000 });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '攻击代表态目标牌面截图前预加载');
+            await castPreparedSpellOnFieldObject(match.hostPage, '间歇喷泉', attackTarget);
+            const attackFxAudit = await captureMageWarsFxProcessScreenshots(
+                match.hostPage,
+                testInfo,
+                'attack',
+                '03-间歇喷泉攻击阿希拉牧师',
+                {
+                    expectTravel: true,
+                    expectDamageFloat: true,
+                },
+            );
+            expect(attackFxAudit.sourceRow).toBe('2');
+            expect(attackFxAudit.sourceCol).toBe('0');
+            expect(attackFxAudit.targetRow).toBe('2');
+            expect(attackFxAudit.targetCol).toBe('1');
+
+            await expect.poll(async () => (
+                hasSpellAttackRolledEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    attackSpellCardId,
+                    attackTargetObjectId,
+                )
+            ), {
+                message: '间歇喷泉必须通过正式页面点击目标后产生攻击掷骰事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '召唤和攻击必要过程帧完成后');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }

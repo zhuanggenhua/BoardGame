@@ -6,6 +6,7 @@
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import type {
     DiceThroneCore,
+    DtResponseWindowType,
     TurnPhase,
     DiceThroneCommand,
     DiceThroneEvent,
@@ -1120,6 +1121,7 @@ export function execute(
             return executeTokenCommand(state, command, random, timestamp, phase);
 
         case 'USE_PASSIVE_ABILITY': {
+            const responseWindowType = matchState.sys?.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
             const { passiveId, actionIndex, targetDieId } = command.payload as {
                 passiveId: string;
                 actionIndex: number;
@@ -1131,7 +1133,14 @@ export function execute(
             if (!Number.isInteger(actionIndex)) break;
             const action = passive.actions[actionIndex];
             if (!action) break;
-            if (!isPassiveActionUsable(state, command.playerId, passiveId, actionIndex, phase)) break;
+            if (!isPassiveActionUsable(
+                state,
+                command.playerId,
+                passiveId,
+                actionIndex,
+                phase,
+                { responseWindowType },
+            )) break;
             if (action.type === 'rerollDie') {
                 if (!Number.isInteger(targetDieId)) break;
                 const currentDie = findCurrentRollDie(state, targetDieId, phase);

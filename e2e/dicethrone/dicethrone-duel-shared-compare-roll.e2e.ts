@@ -5,10 +5,12 @@ import { setupDTOnlineMatch } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import type { RandomFn } from '../../src/engine/types';
 import { initHeroState } from '../../src/games/dicethrone/domain/characters';
 import { getPlayerDieFace } from '../../src/games/dicethrone/domain/rules';
 import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
+import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../../src/games/dicethrone/heroes/zhanshujia/tokens';
 
 type DtState = Record<string, any>;
 
@@ -49,6 +51,26 @@ const applyOnlineMatchState = async (
 
     await injectMatchState(matchId, next, page);
     await page.waitForTimeout(waitMs);
+};
+
+const setOnlineDiceRandomSequence = async (
+    matchId: string,
+    page: Page,
+    values: number[],
+): Promise<void> => {
+    await applyOnlineMatchState(matchId, page, (state) => {
+        const root = (state.G ?? state) as DtState;
+        const sys = (root.sys ?? {}) as DtState;
+        root.sys = {
+            ...sys,
+            tutorial: {
+                ...((sys.tutorial ?? {}) as DtState),
+                active: true,
+                randomPolicy: { mode: 'sequence', values, cursor: 0 },
+            },
+        };
+        return state;
+    }, 250);
 };
 
 const dispatchHarnessCommand = async (
@@ -93,13 +115,39 @@ const primeDuelCompareDiceValues = async (page: Page) => {
     });
 };
 
-const expectCompareRollRightPanel = async (page: Page, timeout = 15000): Promise<void> => {
+const expectCompareRollMainResultLayer = async (page: Page, timeout = 15000): Promise<void> => {
+    await page.waitForFunction(() => {
+        const harnessState = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const root = harnessState?.G ?? harnessState;
+        return root?.sys?.interaction?.current?.kind === 'compare-roll-choice';
+    }, { timeout, polling: 100 });
     const panel = page.getByTestId('compare-roll-overlay');
     await expect(panel).toBeVisible({ timeout });
-    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
-    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel).toHaveAttribute('data-placement', 'main-result-layer');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
+    await expect(page.getByTestId('compare-roll-main-result-layer')).toBeVisible({ timeout });
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+    const layout = await page.evaluate(() => {
+        const panelNode = document.querySelector<HTMLElement>('[data-testid="compare-roll-overlay"]');
+        const diceTrayNode = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
+        const panelRect = panelNode?.getBoundingClientRect();
+        const diceTrayRect = diceTrayNode?.getBoundingClientRect();
+        return {
+            hasPanel: Boolean(panelNode),
+            hasDiceTray: Boolean(diceTrayNode),
+            overlapsDiceTray: Boolean(panelRect && diceTrayRect
+                && panelRect.right > diceTrayRect.left
+                && panelRect.left < diceTrayRect.right
+                && panelRect.bottom > diceTrayRect.top
+                && panelRect.top < diceTrayRect.bottom),
+            panelInSeat: Boolean(panelNode?.closest('[data-player-seat-anchor]')),
+        };
+    });
+    expect(layout.hasPanel).toBe(true);
+    expect(layout.hasDiceTray).toBe(true);
+    expect(layout.overlapsDiceTray).toBe(false);
+    expect(layout.panelInSeat).toBe(false);
 };
 
 const cloneCommonCard = (cardId: string): Record<string, any> => {
@@ -586,7 +634,7 @@ test('枪手 Duel compare-roll 通过右侧骰盘改骰后应从失败翻成胜�
             dice: [6, 5],
         });
 
-        await expectCompareRollRightPanel(guestPage);
+        await expectCompareRollMainResultLayer(guestPage);
         await expect(guestPage.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
         await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
         await expectDuelDiceVisualReady(modifiedCompareDiceTray, [
@@ -632,6 +680,165 @@ test('枪手 Duel compare-roll 通过右侧骰盘改骰后应从失败翻成胜�
         await closeTipBoardIfOpen(guestPage);
         await guestPage.screenshot({
             path: getEvidenceScreenshotPath(testInfo, '06-枪手Duel选择胜利结果后回到防御流程', { requireChineseName: true }),
+            fullPage: false,
+        });
+    } finally {
+        await guestContext.close().catch(() => {});
+        await hostContext.close().catch(() => {});
+    }
+});
+
+test('枪手 Duel compare-roll 可用战术优势重投右侧骰盘里的 Duel 骰', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupDTOnlineMatch(browser, baseURL, {
+        skipImageGate: true,
+        characterSelectionTimeout: 120000,
+    });
+    if (!setup?.guestPage) {
+        test.skip(true, '在线双人房创建失败');
+        return;
+    }
+
+    const { hostPage, guestPage, hostContext, guestContext, matchId } = setup;
+
+    try {
+        await injectSkipImageGate(hostContext, true);
+        await injectSkipImageGate(guestContext, true);
+        await setChineseLocale(hostContext);
+        await setChineseLocale(guestContext);
+        await hostPage.reload({ waitUntil: 'domcontentloaded' });
+        await guestPage.reload({ waitUntil: 'domcontentloaded' });
+        await waitForTestHarness(hostPage, 15000);
+        await waitForTestHarness(guestPage, 15000);
+
+        await primeFixedRandomQueue(hostPage);
+        await primeFixedRandomQueue(guestPage);
+        await applyOnlineMatchState(matchId, guestPage, (state) => {
+            const next = buildSharedDuelState(state);
+            next.core.players['1'] = {
+                ...next.core.players['1'],
+                resources: {
+                    ...(next.core.players['1'].resources ?? {}),
+                    [RESOURCE_IDS.CP]: 5,
+                },
+                tokens: {
+                    ...(next.core.players['1'].tokens ?? {}),
+                    [TOKEN_IDS.TACTICAL_ADVANTAGE]: 1,
+                },
+                passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+            };
+            return next;
+        });
+
+        await dismissStartDefenseShowcaseIfPresent(guestPage);
+        await primeFixedRandomQueue(guestPage);
+        await primeDuelCompareDiceValues(guestPage);
+        await dispatchHarnessCommand(guestPage, 'ROLL_DICE', '1');
+        await stabilizeDuelDefenseRollValues(matchId, guestPage, { defenderValue: 2, attackerValue: 5 });
+        await dispatchHarnessCommand(guestPage, 'CONFIRM_ROLL', '1');
+        await dispatchHarnessCommand(guestPage, 'ADVANCE_PHASE', '1');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                phase: root.sys?.phase ?? null,
+                rollContextKind: root.core?.currentRollContext?.kind ?? null,
+                rollContextStatus: root.core?.currentRollContext?.status ?? null,
+                dice: root.core?.currentRollContext?.dice?.map((die: DtState) => die?.value ?? null) ?? [],
+                tacticalAdvantage: root.core?.players?.['1']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? null,
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            rollContextKind: 'compare',
+            rollContextStatus: 'open',
+            dice: [2, 5],
+            tacticalAdvantage: 1,
+        });
+
+        const compareDiceTray = guestPage.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
+        await expectDuelDiceVisualReady(compareDiceTray, [
+            { dieButtonId: 'die-button-0', ownerId: '1', displayValue: '2', spritePathIncludes: 'dicethrone/images/gunslinger' },
+            { dieButtonId: 'die-button-1', ownerId: '0', displayValue: '5', spritePathIncludes: 'dicethrone/images/monk' },
+        ]);
+        await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+        await expect(guestPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+
+        const passiveReroll = guestPage.getByTestId('passive-action-zhanshujia-tactical-advantage-1');
+        await expect(passiveReroll).toBeVisible({ timeout: 10000 });
+        await expect(passiveReroll).toBeEnabled();
+        await guestPage.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '01-Duel右侧骰盘待战术优势重投', { requireChineseName: true }),
+            fullPage: false,
+        });
+
+        await passiveReroll.click();
+        await expect(passiveReroll).toContainText(/取消|Cancel/);
+        const defenderDieButton = compareDiceTray.getByTestId('die-button-0').first();
+        await expect(defenderDieButton).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
+        await guestPage.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '02-Duel战术优势选择右侧Duel骰', { requireChineseName: true }),
+            fullPage: false,
+        });
+        await setOnlineDiceRandomSequence(matchId, guestPage, [6]);
+        await defenderDieButton.click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                rollContextKind: root.core?.currentRollContext?.kind ?? null,
+                dice: root.core?.currentRollContext?.dice?.map((die: DtState) => die?.value ?? null) ?? [],
+                tacticalAdvantage: root.core?.players?.['1']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? null,
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            rollContextKind: 'compare',
+            dice: [6, 5],
+            tacticalAdvantage: 0,
+        });
+        await expectDuelDiceVisualReady(compareDiceTray, [
+            { dieButtonId: 'die-button-0', ownerId: '1', displayValue: '6', spritePathIncludes: 'dicethrone/images/gunslinger' },
+            { dieButtonId: 'die-button-1', ownerId: '0', displayValue: '5', spritePathIncludes: 'dicethrone/images/monk' },
+        ]);
+        await guestPage.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '03-Duel战术优势已重投为六比五', { requireChineseName: true }),
+            fullPage: false,
+        });
+
+        const guestCompareConfirmButton = compareDiceTray
+            .locator('xpath=ancestor::*[@data-player-seat-anchor][1]')
+            .locator('[data-tutorial-id="dice-confirm-button"]')
+            .first();
+        await expect(guestCompareConfirmButton).toBeVisible({ timeout: 5000 });
+        await expect(guestCompareConfirmButton).toBeEnabled();
+        await guestCompareConfirmButton.click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, guestPage) as DtState;
+            const root = (state.G ?? state) as DtState;
+            return {
+                interactionKind: root.sys?.interaction?.current?.kind ?? null,
+                interactionPlayerId: root.sys?.interaction?.current?.playerId ?? null,
+                rollContextKind: root.core?.currentRollContext?.kind ?? null,
+                rollContextStatus: root.core?.currentRollContext?.status ?? null,
+                replayOnly: root.core?.currentRollContext?.display?.replayOnly ?? null,
+                dice: root.core?.currentRollContext?.dice?.map((die: DtState) => die?.value ?? null) ?? [],
+            };
+        }, { timeout: 15000 }).toMatchObject({
+            interactionKind: 'compare-roll-choice',
+            interactionPlayerId: '1',
+            rollContextKind: 'compare',
+            rollContextStatus: 'settled',
+            replayOnly: true,
+            dice: [6, 5],
+        });
+
+        await expectCompareRollMainResultLayer(guestPage);
+        await expect(guestPage.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
+        await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
+        await guestPage.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '04-Duel战术优势重投后主舞台显示胜利结果', { requireChineseName: true }),
             fullPage: false,
         });
     } finally {
@@ -780,9 +987,9 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
             rollContextReplayOnly: true,
         });
 
-        await expectCompareRollRightPanel(guestPage);
+        await expectCompareRollMainResultLayer(guestPage);
         await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
-        await expectCompareRollRightPanel(hostPage);
+        await expectCompareRollMainResultLayer(hostPage);
         await expect(hostPage.getByTestId('compare-roll-waiting')).toBeVisible({ timeout: 5000 });
         await expect(hostPage.locator('[data-testid="compare-roll-overlay"] button')).toHaveCount(0);
 

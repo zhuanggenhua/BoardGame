@@ -7,7 +7,7 @@ import { registerDiceDefinition } from '../domain/diceRegistry';
 import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
 import { GUNSLINGER_SFX_BOUNTY } from '../heroes/gunslinger/abilities';
 import { getVisualMetaById } from '../domain/statusEffects';
-import { Dice2D } from '../ui/Dice2D';
+import { Dice2D, __resetDice2DLoadedSpriteUrlsForTests } from '../ui/Dice2D';
 import {
     buildSpriteBackgroundImage,
     DICE_BG_SIZE,
@@ -18,6 +18,7 @@ import {
 } from '../ui/assets';
 import {
     TokenBadge,
+    TokensContainer,
     __resetStatusEffectImageCachesForTests,
     getStatusEffectIconNode,
     loadStatusAtlases,
@@ -40,6 +41,7 @@ describe('StatusEffectsIcons', () => {
         clearGameAssetBaseOverrides();
         __resetAssetLoaderCachesForTests();
         __resetStatusEffectImageCachesForTests();
+        __resetDice2DLoadedSpriteUrlsForTests();
     });
 
     afterEach(() => {
@@ -433,6 +435,42 @@ describe('StatusEffectsIcons', () => {
 
         expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
         expect(html).not.toContain('atlas-shimmer');
+    });
+
+    it('多个可点击 token 应使用克制边缘流光，且各自点击热区仍可用', () => {
+        const clicked: string[] = [];
+        const { container, getByTestId } = render(
+            <TokensContainer
+                tokens={{ [TOKEN_IDS.EVASIVE]: 1, [TOKEN_IDS.TAIJI]: 1 }}
+                clickableTokens={[TOKEN_IDS.EVASIVE, TOKEN_IDS.TAIJI]}
+                onTokenClick={(tokenId) => clicked.push(tokenId)}
+                testIdPrefix="test-token"
+            />
+        );
+
+        const halos = Array.from(container.querySelectorAll<HTMLElement>('[data-dicethrone-token-halo="available"]'));
+        const bodies = Array.from(container.querySelectorAll<HTMLElement>('[data-dicethrone-token-body="available"]'));
+        expect(halos).toHaveLength(2);
+        expect(bodies).toHaveLength(2);
+        for (const halo of halos) {
+            expect(halo.className).toContain('calc(100%+0.52vw)');
+            expect(halo.getAttribute('style')).toContain('conic-gradient');
+            expect(halo.getAttribute('style')).toContain('2px solid');
+            expect(halo.getAttribute('style')).toContain('dicethrone-token-available-breathe');
+            expect(halo.getAttribute('style')).not.toContain('0 0 28px');
+        }
+        for (const body of bodies) {
+            expect(body.getAttribute('style')).toContain('brightness(1.10)');
+            expect(body.getAttribute('style')).toContain('drop-shadow');
+        }
+
+        expect(getByTestId(`test-token-${TOKEN_IDS.EVASIVE}`).className).not.toContain('ring-[5px]');
+        expect(getByTestId(`test-token-${TOKEN_IDS.TAIJI}`).className).not.toContain('ring-[5px]');
+
+        fireEvent.click(getByTestId(`test-token-${TOKEN_IDS.EVASIVE}-hit-target`));
+        fireEvent.click(getByTestId(`test-token-${TOKEN_IDS.TAIJI}-hit-target`));
+
+        expect(clicked).toEqual([TOKEN_IDS.EVASIVE, TOKEN_IDS.TAIJI]);
     });
 
     it('会把 game-data 骰图路径折算成 dice-sprite 资源 key', () => {

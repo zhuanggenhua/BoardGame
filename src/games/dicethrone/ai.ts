@@ -2359,13 +2359,14 @@ const buildPassiveActions = (
     const passiveAbilities = getPlayerPassiveAbilities(state.core, playerId);
     const currentRollContext = resolveCurrentRollContext(state.core, phase);
     const activeDice = currentRollContext?.dice ?? getAiActiveDice(state, phase);
+    const responseWindowType = state.sys.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
 
     for (const passive of passiveAbilities) {
         passive.actions.forEach((passiveAction, actionIndex) => {
             if (options.rerollOnly && passiveAction.type !== 'rerollDie') {
                 return;
             }
-            if (!isPassiveActionUsable(state.core, playerId, passive.id, actionIndex, phase)) {
+            if (!isPassiveActionUsable(state.core, playerId, passive.id, actionIndex, phase, { responseWindowType })) {
                 return;
             }
 

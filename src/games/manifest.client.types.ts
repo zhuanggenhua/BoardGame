@@ -6,6 +6,7 @@ import type { LatencyOptimizationConfig } from '../engine/transport/latency/type
 import type { CriticalImageResolver } from '../core/types';
 import type { GameRuntimeAdapter } from './gameRuntimeAdapter';
 import type { GameAudioConfig } from '../lib/audio/types';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 
 /** 游戏运行时实现（Board/engineConfig/tutorial/latencyConfig），按需懒加载 */
 export interface GameClientRuntimeModule {
@@ -14,6 +15,8 @@ export interface GameClientRuntimeModule {
     // 在统一 runtime 合同里使用宽类型避免被 Record<string, unknown> 误收窄。
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 统一 runtime 合同需要接纳各游戏具体 Board props。
     board: React.ComponentType<any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 允许具体游戏声明 Pixi/Phaser/Cocos 等自定义 Board 后端。
+    boardRenderer?: GameBoardRenderer<any, any>;
     audioConfig?: GameAudioConfig;
     tutorial?: TutorialManifest;
     tutorialCatalog?: TutorialCollection;

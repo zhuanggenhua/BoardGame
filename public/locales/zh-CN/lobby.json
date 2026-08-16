@@ -1940,6 +1940,16 @@
             "gold_strong": "金强"
           }
         },
+        "board_summon_preset": {
+          "title": "棋盘召唤预设",
+          "description": "共享棋盘召唤成品效果，供各游戏参数化调用",
+          "buttons": {
+            "blue": "蓝",
+            "blue_strong": "蓝强",
+            "gold": "金",
+            "gold_strong": "金强"
+          }
+        },
         "vortex": {
           "title": "充能旋涡",
           "description": "图形着色器特效",
@@ -1987,6 +1997,18 @@
           "preview": {
             "source": "源",
             "target": "目"
+          }
+        },
+        "board_attack_preset": {
+          "title": "棋盘投射攻击预设",
+          "description": "共享来源到目标投射、命中反馈和伤害飘字",
+          "buttons": {
+            "normal": "普通攻击",
+            "strong": "强力攻击"
+          },
+          "preview": {
+            "source": "来源",
+            "target": "目标"
           }
         }
       },
@@ -2207,6 +2229,10 @@
             "label": "召唤混合特效",
             "usage": "召唤师战争·召唤单位入场（Shader + 粒子混合版）"
           },
+          "boardSummonPreset": {
+            "label": "棋盘召唤预设",
+            "usage": "通用·召唤师战争和法师战争共享召唤入场"
+          },
           "vortex": {
             "label": "充能旋涡",
             "usage": "召唤师战争·单位充能"
@@ -2224,6 +2250,10 @@
           "coneblast": {
             "label": "锥形气浪",
             "usage": "召唤师战争·远程攻击投射"
+          },
+          "boardProjectileAttackPreset": {
+            "label": "棋盘投射攻击预设",
+            "usage": "通用·棋盘来源到目标攻击、命中和伤害飘字"
           }
         },
         "ui": {

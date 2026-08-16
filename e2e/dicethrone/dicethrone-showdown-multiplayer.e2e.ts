@@ -120,11 +120,11 @@ const saveLocatorScreenshot = async (
     return path;
 };
 
-const expectCompareRollRightPanel = async (page: Page, timeout = 8000): Promise<void> => {
+const expectCompareRollMainResultLayer = async (page: Page, timeout = 8000): Promise<void> => {
     const panel = page.getByTestId('compare-roll-overlay');
     await expect(panel).toBeVisible({ timeout });
-    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
-    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel).toHaveAttribute('data-placement', 'main-result-layer');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
 };
@@ -398,7 +398,7 @@ test.describe('DiceThrone Showdown 双端右侧对掷面板', () => {
                 };
             }, {
                 timeout: 10000,
-                message: '等待 Showdown 普通确认后生成右侧结果面板',
+                message: '等待 Showdown 普通确认后生成主结果层',
             }).toMatchObject({
                 interactionKind: 'compare-roll-choice',
                 interactionPlayerId: '0',
@@ -411,8 +411,8 @@ test.describe('DiceThrone Showdown 双端右侧对掷面板', () => {
             const hostOverlay = hostPage.getByTestId('compare-roll-overlay');
             const guestOverlay = guestPage.getByTestId('compare-roll-overlay');
 
-            await expectCompareRollRightPanel(hostPage);
-            await expectCompareRollRightPanel(guestPage);
+            await expectCompareRollMainResultLayer(hostPage);
+            await expectCompareRollMainResultLayer(guestPage);
             await expect(hostPage.getByText('枪战决斗')).toBeVisible();
             await expect(guestPage.getByText('枪战决斗')).toBeVisible();
             await expect(hostPage.getByTestId('compare-roll-participant-0')).toBeVisible();

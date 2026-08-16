@@ -225,6 +225,7 @@ export function useMatchRoomRuntimeSetup(args: {
     }, [isTutorialRoute, matchRoomScopeKey]);
     const {
         board,
+        boardRenderer,
         boardShell,
     } = useMatchRoomBoardRuntime({
         gameId,
@@ -241,6 +242,8 @@ export function useMatchRoomRuntimeSetup(args: {
 
     const onlineBoard = board && gameId ? board : null;
     const tutorialBoard = board && engineConfig && gameId ? board : null;
+    const onlineBoardRenderer = boardRenderer && gameId ? boardRenderer : null;
+    const tutorialBoardRenderer = boardRenderer && engineConfig && gameId ? boardRenderer : null;
 
     const lobbyPreloadStartedRef = useRef<string | null>(null);
     useEffect(() => {
@@ -269,7 +272,9 @@ export function useMatchRoomRuntimeSetup(args: {
         runtimeAdapter,
         latencyConfig,
         onlineBoard,
+        onlineBoardRenderer,
         tutorialBoard,
+        tutorialBoardRenderer,
         onlineBoardPreloadBlocking,
     };
 }

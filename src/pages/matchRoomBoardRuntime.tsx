@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { getGameImplementation } from '../games/registry';
 import type { GameBoardProps } from '../engine/transport/protocol';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 import { CriticalImageGate } from '../components/game/framework';
 import type { SoundKey } from '../lib/audio/types';
 
@@ -62,40 +63,23 @@ export function useMatchRoomBoardRuntime(args: {
         },
     }), []);
 
-    const wrappedBoardComponent = useMemo<ComponentType<GameBoardProps> | null>(() => {
+    const blockingAudioKeys = useMemo<SoundKey[]>(() => {
         if (!args.gameId || !args.gameImplReady) {
-            return null;
+            return [];
         }
         const impl = getGameImplementation(args.gameId);
-        if (!impl) {
-            return null;
-        }
-        const Board = impl.board as unknown as ComponentType<GameBoardProps>;
-        const blockingAudioKeys = Array.from(new Set(impl.audioConfig?.blockingSounds ?? []));
+        return Array.from(new Set(impl?.audioConfig?.blockingSounds ?? []));
+    }, [args.gameId, args.gameImplReady]);
 
+    const createWrappedBoardWithGate = (
+        Board: ComponentType<GameBoardProps>,
+        displayName: string,
+    ): ComponentType<GameBoardProps> => {
         const WrappedBoardWithGate = (props: GameBoardProps) => {
             const runtimeRef = useContext(MatchRoomBoardGateRuntimeContext);
             const effectiveRuntime: MatchRoomBoardGateRuntime = runtimeRef
                 ? { ...runtimeRef.current, blockingAudioKeys }
                 : { ...boardGateRuntimeRef.current, blockingAudioKeys };
-            if (!runtimeRef) {
-                return (
-                    <CriticalImageGate
-                        gameId={args.gameId}
-                        gameState={props?.G}
-                        locale={effectiveRuntime.locale}
-                        playerID={props?.playerID}
-                        enabled={true}
-                        blockRendering={effectiveRuntime.shouldBlockBoardOnImagePreload}
-                        loadingDescription={effectiveRuntime.loadingDescription}
-                        blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
-                        onReady={effectiveRuntime.onReady}
-                        onBlockingChange={effectiveRuntime.onBlockingChange}
-                    >
-                        <Board {...props} />
-                    </CriticalImageGate>
-                );
-            }
             return (
                 <CriticalImageGate
                     gameId={args.gameId}
@@ -114,12 +98,55 @@ export function useMatchRoomBoardRuntime(args: {
             );
         };
 
-        WrappedBoardWithGate.displayName = 'WrappedOnlineBoard';
+        WrappedBoardWithGate.displayName = displayName;
         return WrappedBoardWithGate;
-    }, [args.gameId, args.gameImplReady]);
+    };
+
+    const wrappedBoardComponent = useMemo<ComponentType<GameBoardProps> | null>(() => {
+        if (!args.gameId || !args.gameImplReady) {
+            return null;
+        }
+        const impl = getGameImplementation(args.gameId);
+        if (!impl) {
+            return null;
+        }
+        const Board = impl.board as unknown as ComponentType<GameBoardProps>;
+
+        return createWrappedBoardWithGate(Board, 'WrappedOnlineBoard');
+    }, [args.gameId, args.gameImplReady, blockingAudioKeys]);
+
+    const wrappedBoardRenderer = useMemo<GameBoardRenderer | null>(() => {
+        if (!args.gameId || !args.gameImplReady) {
+            return null;
+        }
+        const impl = getGameImplementation(args.gameId);
+        const renderer = impl?.boardRenderer;
+        if (!renderer) {
+            return null;
+        }
+
+        if (renderer.kind === 'react') {
+            const RendererBoard = renderer.component as unknown as ComponentType<GameBoardProps>;
+            return {
+                kind: 'react',
+                component: createWrappedBoardWithGate(RendererBoard, 'WrappedOnlineBoardRenderer'),
+            };
+        }
+
+        return {
+            kind: 'imperative',
+            engine: renderer.engine,
+            mount: (host, props) => {
+                boardGateRuntimeRef.current.onBlockingChange(false);
+                boardGateRuntimeRef.current.onReady();
+                return renderer.mount(host, props);
+            },
+        };
+    }, [args.gameId, args.gameImplReady, blockingAudioKeys]);
 
     return {
         board: wrappedBoardComponent,
+        boardRenderer: wrappedBoardRenderer,
         boardShell,
     };
 }

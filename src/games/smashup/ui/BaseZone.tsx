@@ -105,6 +105,8 @@ export const BaseZone: React.FC<{
     selectableMinionUids?: Set<string>;
     /** 多选随从模式：已选中的随从 UID 集合 */
     multiSelectedMinionUids?: Set<string>;
+    /** 单步来源选择：已点选的来源随从 UID 集合 */
+    selectedMinionUids?: Set<string>;
     /** 当前正在决斗的随从 UID 集合 */
     duelParticipantMinionUids?: Set<string>;
     /** 埋葬牌选择模式：场上的埋葬牌直接进入可点交互 */
@@ -148,7 +150,7 @@ export const BaseZone: React.FC<{
     onDefeatMonster?: (baseIndex: number, monsterUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, selectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -895,6 +897,9 @@ export const BaseZone: React.FC<{
                 ref={tokenRef}
                 data-base-index={baseIndex}
                 data-testid={`base-zone-${baseIndex}`}
+                data-deploy-mode={isDeployMode ? 'true' : 'false'}
+                data-selectable={isSelectable ? 'true' : 'false'}
+                data-dimmed={isDimmed ? 'true' : 'false'}
                 className={`relative aspect-[1.43] transition-all duration-300 z-20 ${baseContainerClassName}`}
                 style={{
                     width: layoutInlineSize(layout.baseCardWidth, layout),
@@ -1069,8 +1074,30 @@ export const BaseZone: React.FC<{
             >
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
+                    const buriedCardsForController = (base.buriedCards ?? []).filter((buried) => buried.controllerId === pid);
                     const hasExpandedMinionInColumn = minions.some((minion) => minion.uid === expandedMinionUid);
                     const hasFloatingAttachedMinionInColumn = minions.some((minion) => minion.uid === floatingAttachedMinionUid);
+                    const minionCardHeight = layout.minionCardWidth / CARD_ASPECT_RATIO;
+                    const fullyExpandedSelectionStackOffset = Number((-minionCardHeight * 0.2).toFixed(4));
+                    const selectionStackOffset = Number(((layout.minionStackOffset + fullyExpandedSelectionStackOffset) / 2).toFixed(4));
+                    const selectionListMaxHeight = Number(((layout.minionCardWidth / CARD_ASPECT_RATIO) * 2.65).toFixed(4));
+                    const minionSelectionContentHeight = minions.length > 0
+                        ? minionCardHeight + Math.max(minions.length - 1, 0) * (minionCardHeight + selectionStackOffset)
+                        : 0;
+                    const buriedCardWidth = Math.max(layout.minionCardWidth * 0.92, 2.6);
+                    const buriedCardHeight = buriedCardWidth / CARD_ASPECT_RATIO;
+                    const buriedVisibleSlice = Math.max(buriedCardWidth * 0.1, 0.32);
+                    const buriedToMinionOffset = Math.max(layout.minionStackOffset * 0.32, -1.9);
+                    const buriedSelectionContentHeight = buriedCardsForController.length > 0
+                        ? Math.max(
+                            buriedCardHeight
+                                + Math.max(buriedCardsForController.length - 1, 0) * buriedVisibleSlice
+                                + (minions.length > 0 ? buriedToMinionOffset : 0),
+                            0,
+                        )
+                        : 0;
+                    const shouldUseMinionSelectionScroll = isMinionSelectMode
+                        && (buriedSelectionContentHeight + minionSelectionContentHeight) > selectionListMaxHeight;
 
                     // 个人总力量口径必须走统一计算入口，避免漏掉“只影响控制者总力量、不影响基地总力量”的持续效果。
                     const total = getPlayerEffectivePowerOnBase(core, base, baseIndex, pid);
@@ -1096,7 +1123,16 @@ export const BaseZone: React.FC<{
                             <motion.div
                                 layout="position"
                                 data-testid={`su-base-stack-${baseIndex}-${pid}`}
-                                className={`flex flex-col items-center isolate ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-10 hover:z-[100]'}`}
+                                data-minion-select-mode={isMinionSelectMode ? 'true' : 'false'}
+                                data-minion-select-list={shouldUseMinionSelectionScroll ? 'true' : 'false'}
+                                className={`flex flex-col items-center isolate ${
+                                    shouldUseMinionSelectionScroll
+                                        ? 'overflow-y-auto overscroll-contain no-scrollbar'
+                                        : ''
+                                } ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-10 hover:z-[100]'}`}
+                                style={{
+                                    maxHeight: shouldUseMinionSelectionScroll ? layoutInlineSize(selectionListMaxHeight, layout) : undefined,
+                                }}
                                 transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                             >
                                 {(minions.length > 0 || (base.buriedCards?.some((buried) => buried.controllerId === pid) ?? false)) ? (
@@ -1224,6 +1260,7 @@ export const BaseZone: React.FC<{
                                             dispatch={dispatch}
                                             isMinionSelectMode={isMinionSelectMode}
                                             isMultiSelected={!!multiSelectedMinionUids?.has(m.uid)}
+                                            isSelected={!!selectedMinionUids?.has(m.uid)}
                                             isDuelParticipant={!!duelParticipantMinionUids?.has(m.uid)}
                                             isDimmed={!!isMinionSelectMode && !!selectableMinionUids && !selectableMinionUids.has(m.uid)}
                                             onMinionSelect={onMinionSelect}
@@ -1389,6 +1426,8 @@ const MinionCard: React.FC<{
     isMinionSelectMode?: boolean;
     /** 多选随从模式下已选中 */
     isMultiSelected?: boolean;
+    /** 单步来源选择下已点选 */
+    isSelected?: boolean;
     /** 当前随从处于决斗中 */
     isDuelParticipant?: boolean;
     /** 随从选择模式下该随从不可选（置灰） */
@@ -1419,7 +1458,7 @@ const MinionCard: React.FC<{
     isCoarsePointer: boolean;
     /** 该随从是否是本次状态变更中新进入基地的实体 */
     shouldAnimateEntry?: boolean;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
     const { t } = useTranslation('game-smashup');
     // 兼容融合卡：Wolf Pact 这类作为随从打出时仍使用融合卡定义的图与文案
     const minionDef = getMinionDef(minion.defId);
@@ -1510,8 +1549,8 @@ const MinionCard: React.FC<{
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
     const bottomOverlayDefId = getMinionBottomOverlayDefId(minion);
-    // 选择态仍允许重叠，但每张候选至少露出大部分卡面，确保列中多个候选都能被真实点击。
-    const selectionStackOffset = Number((-(layout.minionCardWidth / CARD_ASPECT_RATIO) * 0.2).toFixed(4));
+    const fullyExpandedSelectionStackOffset = Number((-(layout.minionCardWidth / CARD_ASPECT_RATIO) * 0.2).toFixed(4));
+    const selectionStackOffset = Number(((layout.minionStackOffset + fullyExpandedSelectionStackOffset) / 2).toFixed(4));
     const stackStyle = {
         marginTop: index === 0 ? 0 : layoutInlineSize(isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset, layout),
         zIndex: isMinionSelectMode ? 100 + index : index + 1,
@@ -1598,8 +1637,9 @@ const MinionCard: React.FC<{
     }, [isSelectableMinion, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey, onView]);
 
     const showUsedMinionState = hasTalent && minion.talentUsed && !canActivate;
+    const isVisuallySelectedMinion = !!isSelected || !!isMultiSelected;
     const hostAccentHighlightActive =
-        isMultiSelected ||
+        isVisuallySelectedMinion ||
         isSelectableMinion ||
         isExpanded ||
         canActivate ||
@@ -1614,7 +1654,7 @@ const MinionCard: React.FC<{
             : 'cursor-pointer'
     }`;
     const minionFrameClassName = `relative w-full h-full bg-white p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
-        ${isMultiSelected
+        ${isVisuallySelectedMinion
             ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_40px_rgba(74,222,128,0.34)]'
             : isSelectableMinion
             ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.68),0_0_40px_rgba(74,222,128,0.3)]'
@@ -1654,6 +1694,9 @@ const MinionCard: React.FC<{
             data-attached-actions-visible={hasAttachedActions ? (shouldShowAttachedActions ? 'true' : 'false') : 'none'}
             data-attached-overlay-visible={hasAttachedActions ? (isAttachedOverlayVisible ? 'true' : 'false') : 'none'}
             data-activation-armed={isMinionActivationArmed ? 'true' : 'false'}
+            data-highlighted={isSelectableMinion ? 'true' : 'false'}
+            data-selected={isVisuallySelectedMinion ? 'true' : 'false'}
+            data-disabled={isDimmed ? 'true' : 'false'}
             {...getMinionTouchInspectProps(`minion-${minion.uid}`, undefined)}
             onClickCapture={handleSelectCapture}
             onClick={handleClick}
@@ -1703,6 +1746,9 @@ const MinionCard: React.FC<{
             >
                 <div
                     data-testid={`su-minion-frame-${minion.uid}`}
+                    data-highlighted={isSelectableMinion ? 'true' : 'false'}
+                    data-selected={isVisuallySelectedMinion ? 'true' : 'false'}
+                    data-disabled={isDimmed ? 'true' : 'false'}
                     className={minionFrameClassName}
                 >
                     <div className="w-full h-full bg-slate-100 relative">
@@ -1733,7 +1779,7 @@ const MinionCard: React.FC<{
                 </div>
 
                 {/* 角标/按钮层与卡面高亮层拆开：仍随卡整体变形，但不参与描边 */}
-                {isMultiSelected && (
+                {isVisuallySelectedMinion && (
                     <div className="absolute top-[0.15vw] left-[0.15vw] w-[1.4vw] h-[1.4vw] bg-green-500 rounded-full flex items-center justify-center shadow-lg border-[0.1vw] border-white z-30">
                         <svg className="w-[0.8vw] h-[0.8vw] text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

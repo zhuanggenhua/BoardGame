@@ -430,6 +430,252 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(finalState.sys.responseWindow?.current).toBeUndefined();
     });
 
+    it('afterScoring 当前玩家打出一张响应牌后，对手显式让过不应提前关闭，应回到当前玩家继续响应', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('p0-source', 'giant_ant_worker', '0', '0', 3, 4),
+                        makeMinion('p1-source', 'giant_ant_soldier', '1', '1', 2, 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_great_library',
+                    minions: [
+                        makeMinion('p0-target', 'alien_invader', '0', '0', 3, 0),
+                        makeMinion('p0-local-a', 'innsmouth_the_locals', '0', '0', 2, 0),
+                        makeMinion('p0-local-b', 'innsmouth_the_locals', '0', '0', 2, 0),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_the_hill',
+                    minions: [makeMinion('p1-target', 'robot_microbot_alpha', '1', '1', 2, 0)],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].hand = [
+                { uid: 'p0-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+                { uid: 'p0-return', defId: 'innsmouth_return_to_the_sea', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [
+                { uid: 'p1-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '1' },
+            ];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const playResult = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                choice,
+                option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p0-champs',
+                '找不到 0 号玩家第一张 afterScoring 响应牌',
+            ),
+        });
+        expect(playResult.success).toBe(true);
+        eventLog.push(...playResult.events);
+
+        const sourceChoice = getCurrentChoice(runner.getState());
+        expect(sourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const chooseSource = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                sourceChoice!,
+                option => option.value?.minionUid === 'p0-source',
+                '找不到 0 号玩家的力量来源随从',
+            ),
+        });
+        expect(chooseSource.success).toBe(true);
+        eventLog.push(...chooseSource.events);
+
+        const targetChoice = getCurrentChoice(runner.getState());
+        expect(targetChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_target');
+        const chooseTarget = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                targetChoice!,
+                option => option.value?.minionUid === 'p0-target',
+                '找不到 0 号玩家的力量目标随从',
+            ),
+        });
+        expect(chooseTarget.success).toBe(true);
+        eventLog.push(...chooseTarget.events);
+
+        const chooseAmount = runner.resolveInteraction('0', {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 3, value: 3 },
+        });
+        expect(chooseAmount.success).toBe(true);
+        eventLog.push(...chooseAmount.events);
+
+        const playerOneChoice = getCurrentChoice(runner.getState());
+        expect(playerOneChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(playerOneChoice?.playerId).toBe('1');
+        expect(getPromptOptions(playerOneChoice!).some(
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p1-champs',
+        )).toBe(true);
+
+        const passResult = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+            playerId: '1',
+            reason: 'ai_pass',
+        });
+        expect(passResult.success).toBe(true);
+        eventLog.push(...passResult.events);
+
+        const resumedChoice = getCurrentChoice(runner.getState());
+        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(resumedChoice?.playerId).toBe('0');
+        expect(getPromptOptions(resumedChoice!).some(
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p0-return',
+        )).toBe(true);
+        expect(getReactionSession(runner.getState())?.activePlayerId).toBe('0');
+    });
+
+    it('afterScoring 当前玩家打出一张响应牌后，对手也打出响应牌不应提前关闭，应回到当前玩家继续响应', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('p0-source', 'giant_ant_worker', '0', '0', 3, 4),
+                        makeMinion('p1-source', 'giant_ant_soldier', '1', '1', 2, 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_great_library',
+                    minions: [
+                        makeMinion('p0-target', 'alien_invader', '0', '0', 3, 0),
+                        makeMinion('p0-local-a', 'innsmouth_the_locals', '0', '0', 2, 0),
+                        makeMinion('p0-local-b', 'innsmouth_the_locals', '0', '0', 2, 0),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_the_hill',
+                    minions: [makeMinion('p1-target', 'robot_microbot_alpha', '1', '1', 2, 0)],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].hand = [
+                { uid: 'p0-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+                { uid: 'p0-return', defId: 'innsmouth_return_to_the_sea', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [
+                { uid: 'p1-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '1' },
+            ];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const playPlayerZero = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                choice,
+                option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p0-champs',
+                '找不到 0 号玩家第一张 afterScoring 响应牌',
+            ),
+        });
+        expect(playPlayerZero.success).toBe(true);
+        eventLog.push(...playPlayerZero.events);
+
+        const playerZeroSourceChoice = getCurrentChoice(runner.getState());
+        expect(playerZeroSourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const choosePlayerZeroSource = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                playerZeroSourceChoice!,
+                option => option.value?.minionUid === 'p0-source',
+                '找不到 0 号玩家的力量来源随从',
+            ),
+        });
+        expect(choosePlayerZeroSource.success).toBe(true);
+        eventLog.push(...choosePlayerZeroSource.events);
+
+        const playerZeroTargetChoice = getCurrentChoice(runner.getState());
+        expect(playerZeroTargetChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_target');
+        const choosePlayerZeroTarget = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                playerZeroTargetChoice!,
+                option => option.value?.minionUid === 'p0-target',
+                '找不到 0 号玩家的力量目标随从',
+            ),
+        });
+        expect(choosePlayerZeroTarget.success).toBe(true);
+        eventLog.push(...choosePlayerZeroTarget.events);
+
+        const choosePlayerZeroAmount = runner.resolveInteraction('0', {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 3, value: 3 },
+        });
+        expect(choosePlayerZeroAmount.success).toBe(true);
+        eventLog.push(...choosePlayerZeroAmount.events);
+
+        const playerOneChoice = getCurrentChoice(runner.getState());
+        expect(playerOneChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(playerOneChoice?.playerId).toBe('1');
+        const playPlayerOne = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                playerOneChoice!,
+                option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p1-champs',
+                '找不到 1 号玩家的 afterScoring 响应牌',
+            ),
+        });
+        expect(playPlayerOne.success).toBe(true);
+        eventLog.push(...playPlayerOne.events);
+
+        const playerOneSourceChoice = getCurrentChoice(runner.getState());
+        expect(playerOneSourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const choosePlayerOneSource = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                playerOneSourceChoice!,
+                option => option.value?.minionUid === 'p1-source',
+                '找不到 1 号玩家的力量来源随从',
+            ),
+        });
+        expect(choosePlayerOneSource.success).toBe(true);
+        eventLog.push(...choosePlayerOneSource.events);
+
+        const playerOneTargetChoice = getCurrentChoice(runner.getState());
+        expect(playerOneTargetChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_target');
+        const choosePlayerOneTarget = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                playerOneTargetChoice!,
+                option => option.value?.minionUid === 'p1-target',
+                '找不到 1 号玩家的力量目标随从',
+            ),
+        });
+        expect(choosePlayerOneTarget.success).toBe(true);
+        eventLog.push(...choosePlayerOneTarget.events);
+
+        const choosePlayerOneAmount = runner.resolveInteraction('1', {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 2, value: 2 },
+        });
+        expect(choosePlayerOneAmount.success).toBe(true);
+        eventLog.push(...choosePlayerOneAmount.events);
+
+        const resumedChoice = getCurrentChoice(runner.getState());
+        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(resumedChoice?.playerId).toBe('0');
+        expect(getPromptOptions(resumedChoice!).some(
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p0-return',
+        )).toBe(true);
+        expect(getReactionSession(runner.getState())?.activePlayerId).toBe('0');
+    });
+
     it('afterScoring 窗口打开时不会提前清场换基地，全部让过后只补发一次', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);

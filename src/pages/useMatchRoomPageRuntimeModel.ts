@@ -34,7 +34,9 @@ export type MatchRoomPageRuntimeSetupModel = Pick<
     | 'runtimeAdapter'
     | 'latencyConfig'
     | 'onlineBoard'
+    | 'onlineBoardRenderer'
     | 'tutorialBoard'
+    | 'tutorialBoardRenderer'
     | 'onlineBoardPreloadBlocking'
 >;
 
@@ -103,6 +105,7 @@ export type MatchRoomTutorialStageAdapter = {
     tutorialCatalog: TutorialCollection | null;
     tutorialManifest: TutorialManifest | null;
     board: MatchRoomPageRuntimeSetupModel['tutorialBoard'];
+    boardRenderer: MatchRoomPageRuntimeSetupModel['tutorialBoardRenderer'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     aiSupport?: GameManifestAiSupport;
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
@@ -148,6 +151,7 @@ export type MatchRoomOnlineOverlaysStageAdapter = {
 
 export type MatchRoomOnlineStageAdapter = {
     board: MatchRoomPageRuntimeSetupModel['onlineBoard'];
+    boardRenderer: MatchRoomPageRuntimeSetupModel['onlineBoardRenderer'];
     connection: MatchRoomOnlineConnectionStageAdapter;
     overlays: MatchRoomOnlineOverlaysStageAdapter;
     seatRuntime: MatchRoomOnlineSeatRuntimeAdapter;
@@ -199,6 +203,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
         tutorialCatalog: runtimeSetup.tutorialCatalog,
         tutorialManifest: runtimeSetup.resolvedTutorialManifest,
         board: runtimeSetup.tutorialBoard,
+        boardRenderer: runtimeSetup.tutorialBoardRenderer,
         engineConfig: runtimeSetup.engineConfig,
         aiSupport: gameConfig?.ai,
         onCommandRejected: stageControllers.handleCommandRejected,
@@ -365,6 +370,7 @@ function buildMatchRoomOnlineStageAdapter(args: {
 
     return {
         board: runtimeSetup.onlineBoard,
+        boardRenderer: runtimeSetup.onlineBoardRenderer,
         connection: buildMatchRoomOnlineConnectionStageAdapter({
             runtimeSetup,
             stageControllers,

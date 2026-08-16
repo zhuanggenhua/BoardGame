@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
+import { resolveFxDpr, subscribeFxFrame, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -48,7 +48,6 @@ const VICTORY_PRESET: ParticlePreset = {
 export function VictoryParticles({ active, quality = 'full', className = '' }: VictoryParticlesProps): React.ReactElement | null {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
 
   const rgbColors = useMemo(() => VICTORY_COLORS.map(parseColorToRgb), []);
@@ -81,6 +80,7 @@ export function VictoryParticles({ active, quality = 'full', className = '' }: V
     particlesRef.current = spawnParticles(preset, rgbColors, cw / 2, ch * 0.3);
 
     let lastTime = 0;
+    let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
       if (!lastTime) lastTime = now;
@@ -92,15 +92,15 @@ export function VictoryParticles({ active, quality = 'full', className = '' }: V
       updateParticles(particlesRef.current, dt, preset);
       drawParticles(ctx, particlesRef.current, preset, cw, ch);
 
-      if (particlesRef.current.length > 0) {
-        rafRef.current = requestAnimationFrame(loop);
+      if (particlesRef.current.length === 0) {
+        unsubscribeFrame?.();
       }
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      unsubscribeFrame?.();
       particlesRef.current = [];
     };
   }, [active, quality, rgbColors]);

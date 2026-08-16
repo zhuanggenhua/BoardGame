@@ -1,7 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import type { FxEvent } from '../../../engine/fx';
+import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
+import { resetFxFrameClockForTests, type FxEvent } from '../../../engine/fx';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { RandomFn, SystemState } from '../../../engine/types';
@@ -10,7 +11,13 @@ import { MageWarsDomain, type MageWarsArenaObjectState, type MageWarsCore } from
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
 import { ARENA_ZONE_IDS } from '../domain/ids';
-import { AttackImpactRenderer, SpellPushRenderer, SpellTeleportRenderer, SummonRenderer } from '../ui/fxRenderers';
+import {
+    AttackImpactRenderer,
+    DamageImpactRenderer,
+    SpellPushRenderer,
+    SpellTeleportRenderer,
+    SummonRenderer,
+} from '../ui/fxRenderers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -78,27 +85,38 @@ vi.mock('../../../components/common/animations/ConeBlast', () => ({
     ),
 }));
 
-vi.mock('../../../components/common/animations/SummonEffect', () => ({
-    SummonEffect: ({
+vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
+    SummonHybridEffect: ({
         active,
         intensity,
         color,
         originY,
         quality,
+        durationScale,
+        dimStrength,
+        onImpact,
     }: {
         active?: boolean;
         intensity?: string;
         color?: string;
         originY?: number;
         quality?: string;
+        durationScale?: number;
+        dimStrength?: number;
+        onImpact?: () => void;
     }) => (
-        <div
-            data-testid="mock-summon-effect"
+        <button
+            type="button"
+            data-testid="mock-summon-hybrid-effect"
             data-active={String(active)}
             data-intensity={intensity ?? ''}
             data-color={color ?? ''}
             data-origin-y={String(originY ?? '')}
             data-quality={quality ?? ''}
+            data-duration-scale={String(durationScale ?? '')}
+            data-dim-strength={String(dimStrength ?? '')}
+            data-has-impact={String(Boolean(onImpact))}
+            onClick={onImpact}
         />
     ),
 }));
@@ -211,11 +229,121 @@ function renderFxRenderer(
     );
 }
 
+function advanceSharedFxClockDelay(delayMs: number) {
+    const totalMs = delayMs + 64;
+    for (let elapsed = 0; elapsed < totalMs; elapsed += 16) {
+        vi.advanceTimersByTime(16);
+    }
+}
+
 describe('MageWarsBoard FX wiring', () => {
     it('mounts the board with the event-driven FX layer attached', () => {
         render(<MageWarsBoard {...boardProps()} />);
 
         expect(screen.queryByTestId('mage-wars-board')).not.toBeNull();
+    });
+
+    it('plays summon FX when the confirmed online state arrives during reconcile', async () => {
+        let rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+        const renderWithRollback = (
+            core: MageWarsCore,
+            sysOverride?: Partial<SystemState>,
+        ) => (
+            <EventStreamRollbackContext.Provider value={rollbackValue}>
+                <MageWarsBoard {...boardProps(core, '0', sysOverride)} />
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const summoned = creatureObject('mwobj-0-cat-confirmed', '0', 2906, '确认山猫', ARENA_ZONE_IDS.A3);
+        const afterCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [summoned.id]: summoned,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A3
+                    ? { ...zone, objectIds: [summoned.id] }
+                    : zone
+            )),
+        };
+        const sysWithSummon: Partial<SystemState> = {
+            eventStream: {
+                entries: [
+                    {
+                        id: 1,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+                            payload: { object: summoned },
+                            timestamp: 1,
+                        },
+                    },
+                ],
+                maxEntries: 200,
+                nextId: 2,
+            },
+        };
+
+        const { rerender } = render(renderWithRollback(baseCore));
+
+        rollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 1,
+        };
+        act(() => {
+            rerender(renderWithRollback(afterCore, sysWithSummon));
+        });
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('mage-wars-fx-summon')).not.toBeNull();
+        });
+        expect(screen.getByTestId('mage-wars-fx-layer').getAttribute('data-fx-active-cues')).toContain('mage-wars.summon');
+    });
+
+    it('plays required summon FX when the first rendered board state already contains the summon event', async () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const summoned = creatureObject('mwobj-0-cat-initial', '0', 2906, '首屏山猫', ARENA_ZONE_IDS.A3);
+        const afterCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [summoned.id]: summoned,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A3
+                    ? { ...zone, objectIds: [summoned.id] }
+                    : zone
+            )),
+        };
+
+        render(<MageWarsBoard
+            {...boardProps(afterCore, '0', {
+                eventStream: {
+                    entries: [
+                        {
+                            id: 1,
+                            event: {
+                                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+                                payload: { object: summoned },
+                                timestamp: 1,
+                            },
+                        },
+                    ],
+                    maxEntries: 200,
+                    nextId: 2,
+                },
+            })}
+        />);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('mage-wars-fx-summon')).not.toBeNull();
+        });
+        expect(screen.getByTestId('mage-wars-fx-layer').getAttribute('data-fx-active-cues')).toContain('mage-wars.summon');
+        expect(screen.getByTestId('mage-wars-board').getAttribute('data-mage-wars-last-consumed-events')).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED);
     });
 
     it('renders summoned arena objects from core object state', () => {
@@ -282,7 +410,7 @@ describe('MageWarsBoard FX wiring', () => {
         expect(rightSeatCard?.getAttribute('data-owner-side')).toBe('seat-right');
     });
 
-    it('buffers arena object damage until attack impact', () => {
+    it('buffers arena object damage until attack impact', async () => {
         vi.useFakeTimers();
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const attacker = creatureObject('mwobj-left-attacker', '0', 2906, '缓冲来源', ARENA_ZONE_IDS.A2);
@@ -358,21 +486,23 @@ describe('MageWarsBoard FX wiring', () => {
             });
 
             const targetCard = screen.getByText('缓冲目标').closest('[data-testid="mage-wars-zone-field-card"]');
-            expect(targetCard?.textContent).not.toContain('3');
+            expect(targetCard?.getAttribute('data-visual-damage')).toBe('0');
             expect(screen.queryByTestId('mage-wars-fx-attack-travel')).not.toBeNull();
 
             act(() => {
-                vi.advanceTimersByTime(2600);
+                advanceSharedFxClockDelay(2600);
             });
+            await act(async () => {});
 
-            expect(targetCard?.textContent).toContain('3');
+            const releasedTargetCard = screen.getByText('缓冲目标').closest('[data-testid="mage-wars-zone-field-card"]');
+            expect(releasedTargetCard?.getAttribute('data-visual-damage')).toBe('3');
         } finally {
+            resetFxFrameClockForTests();
             vi.useRealTimers();
         }
     });
 
-    it('renders summons by adapting the existing SummonEffect component', () => {
-        vi.useFakeTimers();
+    it('renders summons through the shared board summon preset', () => {
         const onImpact = vi.fn();
         const event: FxEvent = {
             id: 'fx-summon',
@@ -381,33 +511,31 @@ describe('MageWarsBoard FX wiring', () => {
             params: { objectId: 'mwobj-0-cat', objectKind: 'creature' },
         };
 
-        try {
-            renderFxRenderer(
-                <SummonRenderer
-                    event={event}
-                    getCellPosition={getCellPosition}
-                    onImpact={onImpact}
-                    onComplete={vi.fn()}
-                />,
-            );
+        renderFxRenderer(
+            <SummonRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={onImpact}
+                onComplete={vi.fn()}
+            />,
+        );
 
-            const host = screen.getByTestId('mage-wars-fx-summon');
-            const summonEffect = screen.getByTestId('mock-summon-effect');
-            expect(host.getAttribute('data-object-kind')).toBe('creature');
-            expect(host.getAttribute('data-object-id')).toBe('mwobj-0-cat');
-            expect(summonEffect.getAttribute('data-active')).toBe('true');
-            expect(summonEffect.getAttribute('data-intensity')).toBe('strong');
-            expect(summonEffect.getAttribute('data-color')).toBe('blue');
-            expect(summonEffect.getAttribute('data-quality')).toBe('reduced');
-            expect(onImpact).not.toHaveBeenCalled();
+        const host = screen.getByTestId('mage-wars-fx-summon');
+        const summonEffect = screen.getByTestId('mock-summon-hybrid-effect');
+        expect(host.getAttribute('data-object-kind')).toBe('creature');
+        expect(host.getAttribute('data-object-id')).toBe('mwobj-0-cat');
+        expect(summonEffect.getAttribute('data-active')).toBe('true');
+        expect(summonEffect.getAttribute('data-intensity')).toBe('strong');
+        expect(summonEffect.getAttribute('data-color')).toBe('blue');
+        expect(summonEffect.getAttribute('data-origin-y')).toBe('0.62');
+        expect(summonEffect.getAttribute('data-quality')).toBe('reduced');
+        expect(summonEffect.getAttribute('data-duration-scale')).toBe('2.4');
+        expect(summonEffect.getAttribute('data-dim-strength')).toBe('0');
+        expect(summonEffect.getAttribute('data-has-impact')).toBe('true');
+        expect(onImpact).not.toHaveBeenCalled();
 
-            act(() => {
-                vi.advanceTimersByTime(160);
-            });
-            expect(onImpact).toHaveBeenCalledTimes(1);
-        } finally {
-            vi.useRealTimers();
-        }
+        fireEvent.click(summonEffect);
+        expect(onImpact).toHaveBeenCalledTimes(1);
     });
 
     it('uses a distinct summon color for conjurations without fabricating travel', () => {
@@ -426,7 +554,7 @@ describe('MageWarsBoard FX wiring', () => {
         );
 
         expect(screen.queryByTestId('mage-wars-fx-summon')).not.toBeNull();
-        expect(screen.getByTestId('mock-summon-effect').getAttribute('data-color')).toBe('gold');
+        expect(screen.getByTestId('mock-summon-hybrid-effect').getAttribute('data-color')).toBe('gold');
         expect(screen.queryByTestId('mage-wars-fx-teleport-travel')).toBeNull();
     });
 
@@ -456,9 +584,9 @@ describe('MageWarsBoard FX wiring', () => {
             );
 
             const travel = screen.getByTestId('mage-wars-fx-attack-travel');
-            expect(screen.queryByTestId('mage-wars-fx-attack-source-wake')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-attack-impact')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-attack-dice')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-attack-source-wake')).toBeNull();
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-show-number')).toBe('true');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-intensity')).toBe('strong');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-start-delay-ms')).toBe('0');
@@ -472,17 +600,52 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#ef4444');
-            expect(screen.queryByTestId('mage-wars-fx-attack-travel-mid-burst')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-attack-travel-mid-burst')).toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-attack-impact-burst')).not.toBeNull();
+            expect(screen
+                .getByTestId('mage-wars-fx-attack-impact-burst')
+                .querySelector('[data-testid="mock-burst-particles"]')
+                ?.getAttribute('data-preset')).toBe('explosionStrong');
+            expect(screen
+                .getByTestId('mage-wars-fx-attack-impact-burst')
+                .querySelector('[data-testid="mock-burst-particles"]')
+                ?.getAttribute('data-overflow')).toBe('2.2');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.35');
 
             act(() => {
-                vi.advanceTimersByTime(2600);
+                advanceSharedFxClockDelay(2600);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {
+            resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+
+    it('renders direct damage with Mage Wars light impact tuning through the shared preset', () => {
+        const event: FxEvent = {
+            id: 'fx-direct-damage',
+            cue: 'mage-wars.damage.impact',
+            ctx: { cell: { row: 2, col: 2 }, intensity: 'normal' },
+            params: {
+                damageAmount: 2,
+            },
+        };
+
+        renderFxRenderer(
+            <DamageImpactRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={vi.fn()}
+                onComplete={vi.fn()}
+            />,
+        );
+
+        expect(screen.queryByTestId('mage-wars-fx-damage-impact')).not.toBeNull();
+        expect(screen.queryByTestId('mage-wars-fx-damage-impact-host')).not.toBeNull();
+        expect(screen.queryByTestId('mock-burst-particles')).toBeNull();
+        expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('1.25');
+        expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1');
     });
 
     it('renders force push with source-to-target travel before impact', () => {
@@ -517,6 +680,10 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-push-travel-mid-burst')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-push')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-push-burst')).not.toBeNull();
+            expect(screen
+                .getByTestId('mage-wars-fx-spell-push-burst')
+                .querySelector('[data-testid="mock-burst-particles"]')
+                ?.getAttribute('data-overflow')).toBe('2.35');
             expect(travel.getAttribute('data-source-col')).toBe('1');
             expect(travel.getAttribute('data-target-col')).toBe('2');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
@@ -524,10 +691,11 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#38bdf8');
 
             act(() => {
-                vi.advanceTimersByTime(2600);
+                advanceSharedFxClockDelay(2600);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {
+            resetFxFrameClockForTests();
             vi.useRealTimers();
         }
     });
@@ -565,6 +733,10 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-teleport-travel-mid-burst')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-teleport')).not.toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-spell-teleport-burst')).not.toBeNull();
+            expect(screen
+                .getByTestId('mage-wars-fx-spell-teleport-burst')
+                .querySelector('[data-testid="mock-burst-particles"]')
+                ?.getAttribute('data-overflow')).toBe('2.2');
             expect(travel.getAttribute('data-source-row')).toBe('0');
             expect(travel.getAttribute('data-target-row')).toBe('2');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
@@ -572,10 +744,11 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#f59e0b');
 
             act(() => {
-                vi.advanceTimersByTime(2600);
+                advanceSharedFxClockDelay(2600);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {
+            resetFxFrameClockForTests();
             vi.useRealTimers();
         }
     });

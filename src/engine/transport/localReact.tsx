@@ -9,6 +9,7 @@ export {
     BOARD_ERROR_BOUNDARY_MAX_RETRIES,
     isBoardRenderErrorRecoverable,
     shouldShowBoardRenderFallback,
+    type BoardBridgeProps,
 } from './boardBridge';
 
 export interface LocalGameProviderProps {

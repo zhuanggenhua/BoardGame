@@ -45,7 +45,7 @@ interface ReactionOption {
     labelKey?: string;
     labelParams?: Record<string, string | number>;
     value: ReactionChoiceValue;
-    displayMode: 'button';
+    displayMode: 'button' | 'card';
 }
 
 export interface ResolvedSmashUpReactionChoice {
@@ -251,6 +251,19 @@ function clearSmashUpReactionSession(state: MatchState<SmashUpCore>): MatchState
 function buildReactionSourceNameLabel(defId: string): string {
     const source = getCardDef(defId) ?? getBaseDef(defId);
     return source ? `cards.${defId}.name` : defId;
+}
+
+function getReactionBaseDisplayName(state: SmashUpCore, baseIndex: number): string {
+    const baseDefId = state.bases[baseIndex]?.defId;
+    const baseDef = baseDefId ? getBaseDef(baseDefId) : undefined;
+    return baseDef?.name ?? baseDefId ?? `基地 ${baseIndex + 1}`;
+}
+
+function getReactionBaseNameLabel(state: SmashUpCore, baseIndex: number): string {
+    const baseDefId = state.bases[baseIndex]?.defId;
+    return baseDefId && getBaseDef(baseDefId)
+        ? buildReactionSourceNameLabel(baseDefId)
+        : getReactionBaseDisplayName(state, baseIndex);
 }
 
 function isActionLikeCardDef(def: unknown): def is ActionCardDef | FusionCardDef {
@@ -636,6 +649,8 @@ function buildPlayableCardOptions(
     for (const card of player.hand) {
         for (const targetBaseIndex of eligibleBaseIndices) {
             const def = getCardDef(card.defId);
+            const targetBaseName = getReactionBaseDisplayName(probeState.core, targetBaseIndex);
+            const targetBaseNameLabel = getReactionBaseNameLabel(probeState.core, targetBaseIndex);
             const minionValidation = validate(probeState, {
                 type: SU_COMMANDS.PLAY_MINION,
                 playerId,
@@ -648,11 +663,11 @@ function buildPlayableCardOptions(
             if (minionValidation.valid) {
                 options.push({
                     id: `play_minion:${card.uid}:${targetBaseIndex}`,
-                    label: `${def?.name ?? card.defId} -> 基地 ${targetBaseIndex + 1}`,
+                    label: `${def?.name ?? card.defId} -> ${targetBaseName}`,
                     labelKey: 'ui.reaction_choose_play_to_base',
                     labelParams: {
                         name: buildReactionSourceNameLabel(card.defId),
-                        baseNumber: targetBaseIndex + 1,
+                        baseName: targetBaseNameLabel,
                     },
                     value: {
                         kind: 'play_minion',
@@ -660,7 +675,7 @@ function buildPlayableCardOptions(
                         cardUid: card.uid,
                         baseIndex: targetBaseIndex,
                     },
-                    displayMode: 'button',
+                    displayMode: 'card',
                 });
             }
 
@@ -682,7 +697,7 @@ function buildPlayableCardOptions(
                     const targetDef = getCardDef(targetMinion.defId);
                     options.push({
                         id: `play_action:${card.uid}:${targetBaseIndex}:${targetMinion.uid}`,
-                        label: `${def.name ?? card.defId} -> ${targetDef?.name ?? targetMinion.defId}（基地 ${targetBaseIndex + 1}）`,
+                        label: `${def.name ?? card.defId} -> ${targetDef?.name ?? targetMinion.defId}（${targetBaseName}）`,
                         value: {
                             kind: 'play_action',
                             playerId,
@@ -690,7 +705,7 @@ function buildPlayableCardOptions(
                             targetBaseIndex,
                             targetMinionUid: targetMinion.uid,
                         },
-                        displayMode: 'button',
+                        displayMode: 'card',
                     });
                 }
             } else {
@@ -706,11 +721,11 @@ function buildPlayableCardOptions(
                 if (actionValidation.valid) {
                     options.push({
                         id: `play_action:${card.uid}:${targetBaseIndex}`,
-                        label: `${def?.name ?? card.defId} -> 基地 ${targetBaseIndex + 1}`,
+                        label: `${def?.name ?? card.defId} -> ${targetBaseName}`,
                         labelKey: 'ui.reaction_choose_play_to_base',
                         labelParams: {
                             name: buildReactionSourceNameLabel(card.defId),
-                            baseNumber: targetBaseIndex + 1,
+                            baseName: targetBaseNameLabel,
                         },
                         value: {
                             kind: 'play_action',
@@ -718,7 +733,7 @@ function buildPlayableCardOptions(
                             cardUid: card.uid,
                             targetBaseIndex,
                         },
-                        displayMode: 'button',
+                        displayMode: 'card',
                     });
                 }
             }
@@ -741,7 +756,7 @@ function buildPlayableCardOptions(
                     playerId,
                     cardUid: card.uid,
                 },
-                displayMode: 'button',
+                displayMode: 'card',
             });
         }
     }

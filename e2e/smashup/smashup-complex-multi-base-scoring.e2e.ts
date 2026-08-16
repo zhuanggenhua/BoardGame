@@ -58,6 +58,8 @@ async function clickInteractionOption(page: Page, optionId: string, label?: stri
 }
 
 type CurrentInteraction = {
+    id: string;
+    playerId: string;
     sourceId: string;
     options: Array<{ id: string; label?: string; value?: any }>;
 };
@@ -80,6 +82,8 @@ async function readCurrentInteraction(page: Page): Promise<null | CurrentInterac
             value: option.value,
         }));
         return {
+            id: current.id ?? '',
+            playerId: current.playerId ?? '',
             sourceId: current.data?.sourceId ?? '',
             options,
         };
@@ -217,26 +221,62 @@ async function passCurrentSmashupResponse(page: Page): Promise<void> {
 }
 
 async function respondCurrentInteractionByOptionId(page: Page, optionId: string): Promise<void> {
-    const currentPlayerId = await page.evaluate(() => {
+    const currentInteraction = await page.evaluate(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-        return state?.sys?.interaction?.current?.playerId ?? null;
+        const current = state?.sys?.interaction?.current;
+        return current
+            ? { id: current.id ?? null, playerId: current.playerId ?? null }
+            : null;
     });
-    if (!currentPlayerId) {
+    if (!currentInteraction?.playerId) {
         throw new Error(`当前没有可响应的交互，无法提交选项: ${optionId}`);
     }
 
-    await page.evaluate(async ({ playerId, nextOptionId }) => {
+    await page.evaluate(async ({ interactionId, playerId, nextOptionId }) => {
         const harness = (window as any).__BG_TEST_HARNESS__;
         await harness.command.dispatch({
             type: 'SYS_INTERACTION_RESPOND',
             playerId,
-            payload: { optionId: nextOptionId },
+            payload: { interactionId, optionId: nextOptionId },
         });
     }, {
-        playerId: currentPlayerId,
+        interactionId: currentInteraction.id,
+        playerId: currentInteraction.playerId,
         nextOptionId: optionId,
     });
     await page.waitForTimeout(200);
+}
+
+async function respondInteractionOptionIfStillCurrent(
+    page: Page,
+    expectedInteraction: Pick<CurrentInteraction, 'id' | 'sourceId'>,
+    optionId: string,
+): Promise<boolean> {
+    const submitted = await page.evaluate(async ({ expectedInteractionId, expectedSourceId, nextOptionId }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        if (!current) return false;
+        if (current.id !== expectedInteractionId) return false;
+        if ((current.data?.sourceId ?? '') !== expectedSourceId) return false;
+        if (!current.playerId) return false;
+
+        await harness.command.dispatch({
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: current.playerId,
+            payload: { interactionId: current.id, optionId: nextOptionId },
+        });
+        return true;
+    }, {
+        expectedInteractionId: expectedInteraction.id,
+        expectedSourceId: expectedInteraction.sourceId,
+        nextOptionId: optionId,
+    });
+
+    if (submitted) {
+        await page.waitForTimeout(200);
+    }
+    return submitted;
 }
 
 async function advancePhaseFromUI(page: Page, game: GameTestContext): Promise<void> {
@@ -413,6 +453,307 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
         } catch (error) {
             if (diagnostics.errors.length > 0) {
                 console.log('[页面诊断]', diagnostics.errors);
+            }
+            throw error;
+        }
+    });
+
+    test('复杂链路里海盗王可发动时应先点本体再高亮计分基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+
+        const diagnostics = attachPageDiagnostics(page);
+        page.on('console', (msg) => {
+            if (msg.type() === 'error' || msg.text().includes('[LocalGame]')) {
+                console.log(`[browser-console] ${msg.type()}: ${msg.text()}`);
+            }
+        });
+
+        const createPlayer = (id: string, factions: [string, string], hand: Array<{ uid: string; defId: string; type: 'action' | 'minion' }> = []) => ({
+            id,
+            vp: 0,
+            hand,
+            deck: [],
+            discard: [],
+            factions,
+            minionsPlayed: 0,
+            minionLimit: 1,
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayedPerBase: {},
+            sameNameMinionDefId: null,
+        });
+
+        const createMinion = (uid: string, defId: string, owner: string, basePower: number) => ({
+            uid,
+            defId,
+            owner,
+            controller: owner,
+            basePower,
+            powerModifier: 0,
+            powerCounters: 0,
+            tempPowerModifier: 0,
+            talentUsed: false,
+            attachedActions: [],
+        });
+
+        try {
+            await openSmashupScene(page, game, {
+                gameId: 'smashup',
+                phase: 'playCards',
+                currentPlayer: '0',
+                extra: {
+                    core: {
+                        turnOrder: ['0', '1'],
+                        currentPlayerIndex: 0,
+                        turnNumber: 7,
+                        players: {
+                            '0': createPlayer('0', ['pirates', 'ninjas'], [
+                                { uid: 'hidden-0', defId: 'ninja_hidden_ninja', type: 'action' },
+                                { uid: 'shinobi-hand-0', defId: 'ninja_shinobi', type: 'minion' },
+                                { uid: 'acolyte-hand-0', defId: 'ninja_acolyte', type: 'minion' },
+                            ]),
+                            '1': createPlayer('1', ['aliens', 'wizards']),
+                        },
+                        bases: [
+                            {
+                                defId: 'base_tortuga',
+                                minions: [
+                                    createMinion('mate-0', 'pirate_first_mate', '0', 2),
+                                    createMinion('tortuga-p0', 'pirate_buccaneer', '0', 10),
+                                    createMinion('tortuga-p1', 'alien_invader', '1', 10),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_the_jungle',
+                                minions: [
+                                    createMinion('king-0', 'pirate_king', '0', 5),
+                                    createMinion('jungle-p0', 'ninja_master', '0', 7),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_secret_garden',
+                                minions: [
+                                    createMinion('reserve-p1', 'wizard_apprentice', '1', 2),
+                                ],
+                                ongoingActions: [],
+                            },
+                        ],
+                        baseDeck: ['base_central_brain', 'base_cave_of_shinies'],
+                        factionSelection: undefined,
+                        scoringEligibleBases: undefined,
+                    },
+                },
+            });
+
+            await expect(page.locator('[data-tutorial-id="su-scoreboard"]')).toBeVisible({ timeout: 15000 });
+            await waitForVisibleSmashUpCardArt(page, 8);
+            await game.screenshot('complex-hand-response-01-existing-scoring-chain-ready', testInfo);
+
+            await advancePhaseFromUI(page, game);
+            await chooseScoringBaseByDefId(page, 'base_tortuga');
+            await waitForInteractionSourceIn(page, ['pirate_king_move'], 20000);
+            const pirateKingInteraction = await readCurrentInteraction(page);
+            expect(pirateKingInteraction?.sourceId).toBe('pirate_king_move');
+            const scoringBase = page.getByTestId('base-zone-0');
+            const nonScoringBase = page.getByTestId('base-zone-1');
+            const pirateKingCard = page.locator('[data-minion-uid="king-0"]').first();
+            const pirateKingFrame = page.getByTestId('su-minion-frame-king-0');
+            expect(
+                pirateKingInteraction?.options.some((option) => option.value?.move === true),
+                '海盗王移动窗口仍应在合同里携带移动选项',
+            ).toBe(true);
+            await expect(page.locator('[data-option-id="yes"]')).toHaveCount(0);
+            await expect(pirateKingCard).toHaveAttribute('data-highlighted', 'true');
+            await expect(pirateKingFrame).toHaveAttribute('data-highlighted', 'true');
+            await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'false');
+            await expect(scoringBase).toHaveAttribute('data-selectable', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-deploy-mode', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-selectable', 'false');
+            await game.screenshot('complex-hand-response-02-pirate-king-available-source-highlight', testInfo);
+
+            await pirateKingCard.click({ force: true });
+            await expect(pirateKingCard).toHaveAttribute('data-selected', 'true');
+            await expect(pirateKingFrame).toHaveAttribute('data-selected', 'true');
+            await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'true');
+            await expect(scoringBase).toHaveAttribute('data-selectable', 'true');
+            await expect(scoringBase).toHaveAttribute('data-dimmed', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-deploy-mode', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-dimmed', 'true');
+            await game.screenshot('complex-hand-response-03-pirate-king-after-source-click-target-base-highlight', testInfo);
+
+            await nonScoringBase.click({ force: true });
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    interactionSource: state.sys.interaction?.current?.data?.sourceId ?? null,
+                    base0: state.core.bases[0].minions.map((minion: any) => minion.uid),
+                    base1: state.core.bases[1].minions.map((minion: any) => minion.uid),
+                };
+            }).toEqual({
+                interactionSource: 'pirate_king_move',
+                base0: ['mate-0', 'tortuga-p0', 'tortuga-p1'],
+                base1: ['king-0', 'jungle-p0'],
+            });
+
+            await scoringBase.click({ force: true });
+
+            await waitForInteractionSourceIn(page, ['smashup_reaction_choose'], 20000);
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    base0: state.core.bases[0].minions.map((minion: any) => minion.uid),
+                    base1: state.core.bases[1].minions.map((minion: any) => minion.uid),
+                };
+            }, { timeout: 10000 }).toEqual({
+                base0: ['mate-0', 'tortuga-p0', 'tortuga-p1', 'king-0'],
+                base1: ['jungle-p0'],
+            });
+            await expect(page.getByTestId('su-reaction-pass-button')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+
+            const handArea = page.getByTestId('su-hand-area');
+            const shinobiCard = handArea.locator('[data-card-uid="shinobi-hand-0"]');
+            const hiddenNinjaCard = handArea.locator('[data-card-uid="hidden-0"]');
+            const acolyteCard = handArea.locator('[data-card-uid="acolyte-hand-0"]');
+
+            await expect(shinobiCard).toHaveAttribute('data-highlighted', 'true');
+            await expect(hiddenNinjaCard).toHaveAttribute('data-disabled', 'true');
+            await expect(acolyteCard).toHaveAttribute('data-disabled', 'true');
+            await game.screenshot('complex-hand-response-04-pirate-king-me-first-hand-highlight', testInfo);
+
+            await shinobiCard.click({ force: true });
+            await expect(shinobiCard).toHaveAttribute('data-selected', 'true');
+            await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮目标打出响应牌');
+            await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'true');
+            await expect(scoringBase).toHaveAttribute('data-dimmed', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-deploy-mode', 'false');
+            await expect(nonScoringBase).toHaveAttribute('data-dimmed', 'true');
+            await game.screenshot('complex-hand-response-05-after-select-card-target-base-highlight', testInfo);
+
+            await nonScoringBase.click({ force: true });
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    interactionSource: state.sys.interaction?.current?.data?.sourceId ?? null,
+                    hand: state.core.players['0'].hand.map((card: any) => card.uid),
+                    base0: state.core.bases[0].minions.map((minion: any) => minion.uid),
+                    base1: state.core.bases[1].minions.map((minion: any) => minion.uid),
+                };
+            }).toEqual({
+                interactionSource: 'smashup_reaction_choose',
+                hand: ['hidden-0', 'shinobi-hand-0', 'acolyte-hand-0'],
+                base0: ['mate-0', 'tortuga-p0', 'tortuga-p1', 'king-0'],
+                base1: ['jungle-p0'],
+            });
+
+            await scoringBase.click({ force: true });
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    hand: state.core.players['0'].hand.map((card: any) => card.uid),
+                    base0: state.core.bases[0].minions.map((minion: any) => minion.uid),
+                };
+            }, { timeout: 10000 }).toEqual({
+                hand: ['hidden-0', 'acolyte-hand-0'],
+                base0: ['mate-0', 'tortuga-p0', 'tortuga-p1', 'king-0', 'shinobi-hand-0'],
+            });
+            await game.screenshot('complex-hand-response-06-legal-base-played-before-scoring-chain-continues', testInfo);
+
+            const resolvedSources: string[] = ['pirate_king_move', 'smashup_reaction_choose'];
+            let capturedFirstMateChoice = false;
+            let capturedTortugaChoice = false;
+            for (let step = 0; step < 20; step += 1) {
+                const currentInteraction = await readCurrentInteraction(page);
+                if (!currentInteraction) break;
+                resolvedSources.push(currentInteraction.sourceId);
+
+                if (currentInteraction.sourceId === 'smashup_reaction_choose') {
+                    const optionText = (option: CurrentInteraction['options'][number]) =>
+                        `${option.id} ${option.label ?? ''} ${JSON.stringify(option.value ?? {})}`;
+                    const trigger = currentInteraction.options.find((option) =>
+                        option.id !== 'pass'
+                        && option.value?.kind === 'trigger'
+                        && /大副|first mate|pirate_first_mate/i.test(optionText(option)),
+                    ) ?? currentInteraction.options.find((option) =>
+                        option.id !== 'pass'
+                        && option.value?.kind === 'trigger'
+                        && /托尔图加|base_tortuga/i.test(optionText(option)),
+                    ) ?? currentInteraction.options.find((option) => option.id !== 'pass' && option.value?.kind === 'trigger');
+                    if (trigger) {
+                        await respondInteractionOptionIfStillCurrent(page, currentInteraction, trigger.id);
+                    } else {
+                        await passCurrentSmashupResponse(page);
+                    }
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'pirate_first_mate_choose_base') {
+                    if (!capturedFirstMateChoice) {
+                        await game.screenshot('complex-hand-response-07-first-mate-after-scoring-base-choice', testInfo);
+                        capturedFirstMateChoice = true;
+                    }
+                    const moveToSecretGarden = currentInteraction.options.find((option) =>
+                        option.value?.baseDefId === 'base_secret_garden'
+                        || option.value?.baseIndex === 2,
+                    );
+                    expect(moveToSecretGarden, '大副应能选择移动到第三个基地，证明 afterScoring 不是被跳过').toBeTruthy();
+                    await respondInteractionOptionIfStillCurrent(page, currentInteraction, moveToSecretGarden!.id);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'base_tortuga') {
+                    if (!capturedTortugaChoice) {
+                        await game.screenshot('complex-hand-response-08-tortuga-after-scoring-minion-choice', testInfo);
+                        capturedTortugaChoice = true;
+                    }
+                    const moveRunnerUpReserve = currentInteraction.options.find((option) =>
+                        option.value?.minionUid === 'reserve-p1'
+                        && option.value?.fromBaseIndex === 2,
+                    );
+                    expect(moveRunnerUpReserve, '托尔图加应能选择亚军在其它基地上的随从').toBeTruthy();
+                    await respondInteractionOptionIfStillCurrent(page, currentInteraction, moveRunnerUpReserve!.id);
+                    continue;
+                }
+
+                throw new Error(`复杂手牌响应链遇到未预期交互: ${currentInteraction.sourceId}`);
+            }
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    if (!state) return false;
+                    return !state.sys?.interaction?.current
+                        && !state.sys?.responseWindow?.current
+                        && state.sys?.phase === 'playCards'
+                        && state.core?.currentPlayerIndex === 1;
+                },
+                { timeout: 30000, polling: 100 },
+            );
+
+            const finalState = await game.getState();
+            expect(finalState.sys.phase).toBe('playCards');
+            expect(finalState.core.currentPlayerIndex).toBe(1);
+            expect(resolvedSources).toContain('pirate_king_move');
+            expect(resolvedSources).toContain('smashup_reaction_choose');
+            expect(resolvedSources).toContain('base_tortuga');
+            expect(resolvedSources).toContain('pirate_first_mate_choose_base');
+            expect(finalState.sys.interaction?.current ?? null).toBeNull();
+            expect(finalState.sys.responseWindow?.current ?? null).toBeNull();
+            expect(finalState.core.players['0'].vp).toBeGreaterThan(0);
+            expect(finalState.core.players['1'].vp).toBeGreaterThan(0);
+
+            await expect(page.getByTestId('su-interaction-select-banner')).toBeHidden({ timeout: 10000 });
+            await expect(page.getByTestId('su-reaction-hand-status')).toBeHidden({ timeout: 10000 });
+            await expect(page.getByTestId('su-reaction-pass-button')).toBeHidden({ timeout: 10000 });
+            await page.waitForTimeout(500);
+            await waitForVisibleSmashUpCardArt(page, 3);
+            await game.screenshot('complex-hand-response-09-scoring-chain-complete', testInfo);
+            assertNoReactNaNWarnings(diagnostics);
+        } catch (error) {
+            if (diagnostics.errors.length > 0) {
+                console.log('[page-diagnostics]', diagnostics.errors);
             }
             throw error;
         }

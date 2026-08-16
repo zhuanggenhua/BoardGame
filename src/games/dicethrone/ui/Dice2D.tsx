@@ -29,6 +29,10 @@ const DICE_2D_CUBE_STYLE_TEXT = `
 
 const loadedDiceSpriteUrls = new Set<string>();
 
+export const __resetDice2DLoadedSpriteUrlsForTests = () => {
+    loadedDiceSpriteUrls.clear();
+};
+
 const getSettledTransform = (faceValue: number) => {
     switch (faceValue) {
         case 1: return 'rotateX(0deg) rotateY(0deg)';

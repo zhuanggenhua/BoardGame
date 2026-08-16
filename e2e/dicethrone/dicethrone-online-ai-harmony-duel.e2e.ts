@@ -174,11 +174,11 @@ const saveOnlineAiAuditLog = async (
     return filePath;
 };
 
-const expectCompareRollRightPanel = async (page: Page, timeout = 5000): Promise<void> => {
+const expectCompareRollMainResultLayer = async (page: Page, timeout = 5000): Promise<void> => {
     const panel = page.getByTestId('compare-roll-overlay');
     await expect(panel).toBeVisible({ timeout });
-    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
-    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel).toHaveAttribute('data-placement', 'main-result-layer');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
 };
@@ -1036,7 +1036,7 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
                 preventHalfVisible: true,
             });
 
-            await expectCompareRollRightPanel(hostPage);
+            await expectCompareRollMainResultLayer(hostPage);
             await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-duel-before-prevent-half');
 
             await hostPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();

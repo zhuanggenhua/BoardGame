@@ -110,6 +110,7 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
         tutorialId: stage.tutorialId,
         tutorialManifest: stage.tutorialManifest,
         board: stage.board,
+        boardRenderer: stage.boardRenderer ?? undefined,
         engineConfig: stage.engineConfig,
         numPlayers: stage.tutorialManifest?.numPlayers
             ?? stage.engineConfig.minPlayers
@@ -155,6 +156,7 @@ export function buildMatchRoomOnlineBoardRuntimeModel(args: {
 
     return {
         board: stage.board,
+        boardRenderer: stage.boardRenderer ?? undefined,
         connection: buildMatchRoomOnlineConnectionModel({
             gameId,
             matchId,

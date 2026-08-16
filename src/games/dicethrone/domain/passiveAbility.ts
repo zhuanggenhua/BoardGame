@@ -10,11 +10,11 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { DiceThroneCore, TurnPhase } from './core-types';
+import type { DiceThroneCore, DtResponseWindowType, TurnPhase } from './core-types';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { resolveCurrentRollContext } from './rollContext';
-import { isPlayerAllowedByRollContextPolicy } from './rollContextPolicy';
+import { isPlayerAllowedToPassiveRerollCurrentRoll } from './rollContextPolicy';
 
 // ============================================================================
 // 被动能力数据定义
@@ -169,6 +169,7 @@ export function isPassiveActionUsable(
     passiveId: string,
     actionIndex: number,
     phase: TurnPhase,
+    context: { responseWindowType?: DtResponseWindowType } = {},
 ): boolean {
     const passives = getPlayerPassiveAbilities(state, playerId);
     const passive = passives.find(p => p.id === passiveId);
@@ -233,8 +234,7 @@ export function isPassiveActionUsable(
     if (action.type === 'rerollDie') {
         const currentRollContext = resolveCurrentRollContext(state, phase);
         if (!currentRollContext) return false;
-        if (currentRollContext.policy.allowPassiveReroll !== true) return false;
-        if (!isPlayerAllowedByRollContextPolicy(state, currentRollContext, playerId, 'reroll')) return false;
+        if (!isPlayerAllowedToPassiveRerollCurrentRoll(state, currentRollContext, playerId, context)) return false;
         // 旧主骰兼容路径仍要求已投掷过；显式 currentRollContext（如闪避/奖励骰）以自身存在为准。
         if (!state.currentRollContext && state.rollCount === 0) return false;
         const hasUnlockedDie = currentRollContext.dice.some((d) => !d.isKept);
@@ -270,11 +270,12 @@ export function hasUsablePassiveAction(
     state: DiceThroneCore,
     playerId: PlayerId,
     phase: TurnPhase,
+    context: { responseWindowType?: DtResponseWindowType } = {},
 ): boolean {
     const passives = getPlayerPassiveAbilities(state, playerId);
     for (const passive of passives) {
         for (let i = 0; i < passive.actions.length; i++) {
-            if (isPassiveActionUsable(state, playerId, passive.id, i, phase)) {
+            if (isPassiveActionUsable(state, playerId, passive.id, i, phase, context)) {
                 return true;
             }
         }
@@ -299,10 +300,11 @@ export function hasUsableDiceRerollPassiveAction(
     state: DiceThroneCore,
     playerId: PlayerId,
     phase: TurnPhase,
+    context: { responseWindowType?: DtResponseWindowType } = {},
 ): boolean {
     const passives = getPlayerPassiveAbilities(state, playerId);
     return passives.some((passive) => passive.actions.some((action, actionIndex) => (
         action.type === 'rerollDie'
-        && isPassiveActionUsable(state, playerId, passive.id, actionIndex, phase)
+        && isPassiveActionUsable(state, playerId, passive.id, actionIndex, phase, context)
     )));
 }

@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { buildAiDecisionContext, registerGameAiRuntime } from '../../../engine/ai';
 import type { SmashUpReactionSession } from '../domain/types';
-import { buildSmashUpAiLegalActions } from '../ai';
+import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
@@ -15,6 +16,7 @@ import {
 
 beforeAll(() => {
     initAllAbilities();
+    registerGameAiRuntime(smashUpAiRuntime);
 });
 
 describe('SmashUp AI reaction choice validation', () => {
@@ -295,5 +297,74 @@ describe('SmashUp AI reaction choice validation', () => {
 
         const resolved = respondToPrompt(stateForAi, 'pass', '1');
         expect(resolved.success).toBe(true);
+    });
+
+    it('smashup_reaction_choose 反馈包里的 play_action 与 pass 快照不应让在线 AI 合法动作变成 0', () => {
+        const core = makeState({
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+                '2': makePlayer('2', {
+                    factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.INNSMOUTH],
+                }),
+            },
+            bases: [
+                makeBase({ defId: 'base_the_jungle' }),
+                makeBase({ defId: 'base_great_library' }),
+                makeBase({ defId: 'base_the_hill' }),
+                makeBase({ defId: 'base_tabletop' }),
+            ],
+        });
+        const stateForAi = makeMatchState(core);
+        stateForAi.sys.phase = 'scoreBases' as any;
+        stateForAi.sys.interaction = {
+            current: createSimpleChoice(
+                'smashup_reaction_score-after-3-0_2_1786721555780',
+                '2',
+                'ui.reaction_choose_optional_title',
+                [
+                    {
+                        id: 'play_action:c113:3:0',
+                        label: '计分时效果牌',
+                        value: {
+                            kind: 'play_action',
+                            playerId: '2',
+                            cardUid: 'c113',
+                            targetBaseIndex: 3,
+                        },
+                        displayMode: 'button',
+                    },
+                    {
+                        id: 'pass:0',
+                        label: 'Pass',
+                        value: { kind: 'pass' },
+                        displayMode: 'button',
+                    },
+                ],
+                {
+                    sourceId: 'smashup_reaction_choose',
+                    targetType: 'button',
+                    responseValidationMode: 'live',
+                },
+            ),
+            queue: [],
+            isBlocked: false,
+        } as any;
+
+        const context = buildAiDecisionContext({
+            gameId: 'smashup',
+            matchId: 'feedback-6a7f3514ea9fc1b152ff3d5b',
+            playerId: '2',
+            visibleState: stateForAi,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'online',
+        });
+
+        expect(context.legalActions.length).toBeGreaterThan(0);
+        expect(context.legalActions.some(action => action.metadata?.optionId === 'play_action:c113:3:0')).toBe(true);
+        expect(context.legalActions.some(action => action.metadata?.optionId === 'pass:0')).toBe(true);
     });
 });

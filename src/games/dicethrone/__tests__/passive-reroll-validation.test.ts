@@ -6,8 +6,10 @@
 import { describe, it, expect } from 'vitest';
 import { isPassiveActionUsable } from '../domain/passiveAbility';
 import { PALADIN_TITHES_BASE } from '../heroes/paladin/abilities';
+import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../heroes/zhanshujia/tokens';
 import { RESOURCE_IDS } from '../domain/resources';
-import type { DiceThroneCore, Die, HeroState } from '../domain/types';
+import { TOKEN_IDS } from '../domain/ids';
+import type { DiceThroneCore, DiceThroneRollContextKind, Die, HeroState } from '../domain/types';
 import { PALADIN_DICE_FACE_IDS as FACES } from '../domain/ids';
 
 // ============================================================================
@@ -71,6 +73,109 @@ function createState(overrides: {
         pendingAttack: overrides.pendingAttack ?? null,
         tokenDefinitions: [],
     };
+}
+
+function giveTacticalAdvantageReroll(
+    state: DiceThroneCore,
+    playerId: string,
+): void {
+    state.selectedCharacters = { ...state.selectedCharacters, [playerId]: 'zhanshujia' };
+    state.players[playerId] = {
+        ...state.players[playerId],
+        characterId: 'zhanshujia',
+        passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+        tokens: {
+            ...state.players[playerId].tokens,
+            [TOKEN_IDS.TACTICAL_ADVANTAGE]: 1,
+        },
+    };
+}
+
+function createTacticalAdvantageCurrentRollState(
+    kind: DiceThroneRollContextKind,
+    options: {
+        allowPassiveReroll?: boolean;
+        dice?: Die[];
+        ownerPlayerId?: string;
+        tacticalPlayerId?: string;
+    } = {},
+): DiceThroneCore {
+    const state = createState({
+        cp: 5,
+        rollCount: 0,
+        rollDiceCount: 0,
+        activePlayerId: '0',
+        dice: [],
+    });
+    const tacticalPlayerId = options.tacticalPlayerId ?? '0';
+    const ownerPlayerId = options.ownerPlayerId ?? '0';
+    giveTacticalAdvantageReroll(state, tacticalPlayerId);
+
+    const settlementMode = kind === 'compare'
+        ? 'compare'
+        : kind === 'evasion'
+            ? 'tokenNegate'
+            : kind === 'targeting'
+                ? 'targetPlayer'
+                : kind === 'bonus'
+                    ? 'damage'
+                    : kind === 'offensive' || kind === 'defensive'
+                        ? 'selectAttack'
+                        : 'none';
+
+    state.currentRollContext = {
+        id: `${kind}:passive-reroll-contract`,
+        kind,
+        ownerPlayerId,
+        targetPlayerId: ownerPlayerId === '0' ? '1' : '0',
+        sourceAbilityId: `${kind}-source`,
+        phase: kind === 'offensive'
+            ? 'offensiveRoll'
+            : kind === 'defensive'
+                ? 'defensiveRoll'
+                : kind === 'targeting'
+                    ? 'targetingRoll'
+                    : undefined,
+        dice: options.dice ?? [{ ...createDie(0, 3), ownerId: ownerPlayerId, isKept: false }],
+        status: 'open',
+        policy: {
+            modifiableBy: 'any',
+            rerollableBy: 'any',
+            allowPassiveReroll: options.allowPassiveReroll ?? true,
+            allowDiceCardTargeting: true,
+            ultimateLocked: false,
+            blocksPhaseFlow: true,
+        },
+        settlement: { mode: settlementMode },
+        display: { surface: 'diceTray', replayOnly: false },
+    };
+
+    return state;
+}
+
+function createConfirmedMainRollInterferenceState(phase: 'offensiveRoll' | 'defensiveRoll'): {
+    state: DiceThroneCore;
+    actorId: string;
+} {
+    const isDefense = phase === 'defensiveRoll';
+    const actorId = isDefense ? '0' : '1';
+    const state = createState({
+        cp: 5,
+        rollCount: 1,
+        rollDiceCount: isDefense ? 3 : 5,
+        activePlayerId: '0',
+        pendingAttack: isDefense
+            ? {
+                attackerId: '0',
+                defenderId: '1',
+                isDefendable: true,
+                defenseAbilityId: 'duel',
+            }
+            : null,
+    });
+    state.rollConfirmed = true;
+    giveTacticalAdvantageReroll(state, actorId);
+    return { state, actorId };
 }
 
 // ============================================================================
@@ -172,6 +277,44 @@ describe('教皇税被动重掷校验', () => {
             expect(isPassiveActionUsable(state, '1', 'tithes', REROLL_INDEX, 'defensiveRoll')).toBe(false);
         });
 
+        it('进攻方在防御骰确认后的响应窗口可用战术优势重掷对方防御骰', () => {
+            const state = createState({
+                cp: 5,
+                rollCount: 1,
+                rollDiceCount: 3,
+                activePlayerId: '0',
+                pendingAttack: {
+                    defenderId: '1',
+                    attackerId: '0',
+                    isDefendable: true,
+                    defenseAbilityId: 'duel',
+                },
+            });
+            state.rollConfirmed = true;
+            state.players['0'] = {
+                ...state.players['0'],
+                characterId: 'zhanshujia',
+                passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+                tokens: { [TOKEN_IDS.TACTICAL_ADVANTAGE]: 1 },
+            };
+
+            expect(isPassiveActionUsable(
+                state,
+                '0',
+                'zhanshujia-tactical-advantage',
+                1,
+                'defensiveRoll',
+            )).toBe(false);
+            expect(isPassiveActionUsable(
+                state,
+                '0',
+                'zhanshujia-tactical-advantage',
+                1,
+                'defensiveRoll',
+                { responseWindowType: 'afterRollConfirmed' },
+            )).toBe(true);
+        });
+
         it('rollDiceCount=0 时所有骰子都是 isKept → 不可用', () => {
             // 防御阶段刚进入，还没选技能，rollDiceCount=0
             const dice = [1, 2, 3, 4, 5].map((v, i) => createDie(i, v, true));
@@ -194,5 +337,128 @@ describe('教皇税被动重掷校验', () => {
             const state = createState({ cp: 5, rollCount: 0 });
             expect(isPassiveActionUsable(state, '0', 'tithes', DRAW_INDEX, 'main1')).toBe(true);
         });
+    });
+});
+
+describe('战术优势当前骰区重投矩阵', () => {
+    const TACTICAL_ADVANTAGE_REROLL_INDEX = 1;
+
+    it.each([
+        'offensive',
+        'defensive',
+        'targeting',
+        'effect',
+        'bonus',
+        'evasion',
+        'compare',
+    ] as const)('当前 %s 骰区允许被动重投时，战术优势可用', (kind) => {
+        const state = createTacticalAdvantageCurrentRollState(kind);
+
+        expect(isPassiveActionUsable(
+            state,
+            '0',
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            'main1',
+        )).toBe(true);
+    });
+
+    it.each([
+        'offensive',
+        'defensive',
+        'targeting',
+        'effect',
+        'bonus',
+        'evasion',
+        'compare',
+    ] as const)('当前 %s 骰区允许任意介入时，非骰主的战术优势也可重投', (kind) => {
+        const state = createTacticalAdvantageCurrentRollState(kind, {
+            ownerPlayerId: '1',
+            tacticalPlayerId: '0',
+        });
+
+        expect(isPassiveActionUsable(
+            state,
+            '0',
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            'main1',
+        )).toBe(true);
+    });
+
+    it.each([
+        ['offensiveRoll', '主进攻骰确认后对手响应窗口'],
+        ['defensiveRoll', '主防御骰确认后攻击方响应窗口'],
+    ] as const)('%s：%s 可用战术优势介入当前骰区', (phase) => {
+        const { state, actorId } = createConfirmedMainRollInterferenceState(phase);
+
+        expect(isPassiveActionUsable(
+            state,
+            actorId,
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            phase,
+        )).toBe(false);
+        expect(isPassiveActionUsable(
+            state,
+            actorId,
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            phase,
+            { responseWindowType: 'afterRollConfirmed' },
+        )).toBe(true);
+    });
+
+    it('当前骰区禁止被动重投时，战术优势不可用', () => {
+        const state = createTacticalAdvantageCurrentRollState('bonus', {
+            allowPassiveReroll: false,
+        });
+
+        expect(isPassiveActionUsable(
+            state,
+            '0',
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            'main1',
+        )).toBe(false);
+    });
+
+    it('当前骰区没有未锁定骰子时，战术优势不可用', () => {
+        const state = createTacticalAdvantageCurrentRollState('compare', {
+            dice: [{ ...createDie(0, 3), ownerId: '0', isKept: true }],
+        });
+
+        expect(isPassiveActionUsable(
+            state,
+            '0',
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            'main1',
+        )).toBe(false);
+    });
+
+    it('当前骰区禁止骰牌介入时，确认后响应窗口也不能绕过策略重投', () => {
+        const state = createTacticalAdvantageCurrentRollState('offensive', {
+            ownerPlayerId: '1',
+            tacticalPlayerId: '0',
+        });
+        state.currentRollContext = state.currentRollContext && {
+            ...state.currentRollContext,
+            status: 'settling',
+            policy: {
+                ...state.currentRollContext.policy,
+                rerollableBy: 'owner',
+                allowDiceCardTargeting: false,
+            },
+        };
+
+        expect(isPassiveActionUsable(
+            state,
+            '0',
+            'zhanshujia-tactical-advantage',
+            TACTICAL_ADVANTAGE_REROLL_INDEX,
+            'offensiveRoll',
+            { responseWindowType: 'afterRollConfirmed' },
+        )).toBe(false);
     });
 });

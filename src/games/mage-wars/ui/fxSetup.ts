@@ -6,7 +6,7 @@ function createRegistry(): FxRegistry {
     const registry = new FxRegistry();
 
     registry.register(MW_FX.SUMMON, SummonRenderer, {
-        timeoutMs: 2400,
+        timeoutMs: 4200,
         maxConcurrent: 2,
         debounceMs: 60,
         budget: {

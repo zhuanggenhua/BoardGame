@@ -71,6 +71,16 @@
       "book": "Book",
       "classic": "Classic"
     },
+    "graphics": {
+      "title": "Graphics Quality",
+      "description": "Controls FX intensity, pixel density, and high-cost FX concurrency.",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "lowHint": "Smooth",
+      "mediumHint": "Balanced",
+      "highHint": "Full FX"
+    },
     "copyRoomId": "Copy Room ID",
     "roomId": "ID: {{id}}",
     "status": {

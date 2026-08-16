@@ -9,6 +9,7 @@ import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 import type { GameAudioConfig } from '../lib/audio/types';
+import type { GameBoardRenderer } from '../engine/boardRenderer';
 
 // ============================================================================
 // 游戏实现注册类型
@@ -23,6 +24,8 @@ export interface GameImplementation {
     engineConfig: GameEngineConfig;
     /** React 棋盘组件 */
     board: React.ComponentType<Record<string, unknown>>;
+    /** 可选的可替换棋盘渲染后端，用于 Pixi/Phaser/Cocos/custom 等实验入口 */
+    boardRenderer?: GameBoardRenderer;
     /** 可选的游戏音频配置（供房间级预加载门禁使用） */
     audioConfig?: GameAudioConfig;
     /** 可选的教程配置 */

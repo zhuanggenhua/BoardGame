@@ -13,6 +13,7 @@
  */
 
 import React, { useEffect, useCallback, useRef } from 'react';
+import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 
 export interface HitStopConfig {
   /** 冻结时长 (ms)，默认 80 */
@@ -36,7 +37,7 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
   style,
 }) => {
   const elRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<number>(0);
+  const cancelUnfreezeRef = useRef<FxFrameSubscription | undefined>(undefined);
 
   useEffect(() => {
     const el = elRef.current;
@@ -47,14 +48,17 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
     // 通过 CSS 类让子元素也暂停
     el.classList.add('hitstop-frozen');
 
-    timerRef.current = window.setTimeout(() => {
+    cancelUnfreezeRef.current?.();
+    cancelUnfreezeRef.current = scheduleFxFrameCallback(duration, () => {
       // 解冻
       el.style.animationPlayState = '';
       el.classList.remove('hitstop-frozen');
-    }, duration);
+      cancelUnfreezeRef.current = undefined;
+    });
 
     return () => {
-      window.clearTimeout(timerRef.current);
+      cancelUnfreezeRef.current?.();
+      cancelUnfreezeRef.current = undefined;
       el.style.animationPlayState = '';
       el.classList.remove('hitstop-frozen');
     };
@@ -75,17 +79,23 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
 export const useHitStop = (defaultDuration = 80) => {
   const [isActive, setIsActive] = React.useState(false);
   const [config, setConfig] = React.useState<HitStopConfig | undefined>(undefined);
-  const timerRef = useRef<number>(0);
+  const cancelResetRef = useRef<FxFrameSubscription | undefined>(undefined);
+
+  useEffect(() => () => {
+    cancelResetRef.current?.();
+    cancelResetRef.current = undefined;
+  }, []);
 
   const triggerHitStop = useCallback((overrideConfig?: HitStopConfig) => {
     setIsActive(true);
     setConfig(overrideConfig);
-    window.clearTimeout(timerRef.current);
+    cancelResetRef.current?.();
 
     const dur = (overrideConfig?.duration ?? defaultDuration) + 250;
-    timerRef.current = window.setTimeout(() => {
+    cancelResetRef.current = scheduleFxFrameCallback(dur, () => {
       setIsActive(false);
-    }, dur);
+      cancelResetRef.current = undefined;
+    });
   }, [defaultDuration]);
 
   return { isActive, triggerHitStop, config };

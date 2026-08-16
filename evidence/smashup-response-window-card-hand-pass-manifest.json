@@ -1,0 +1,142 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-08-16T20:15:00+08:00",
+  "e2e": {
+    "command": "$env:PW_E2E_SERVICE_REUSE='isolated'; npm run test:e2e:file -- e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts -g \"复杂链路里海盗王可发动时应先点本体再高亮计分基地\"",
+    "result": "1 passed (40.9s)",
+    "sourceFile": "e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts",
+    "testName": "复杂链路里海盗王可发动时应先点本体再高亮计分基地"
+  },
+  "requirements": [
+    {
+      "requirement": "最终验收图复用现成复杂计分链，而不是孤立新 E2E 场景。",
+      "status": "PASS",
+      "evidence": [
+        "复杂链用例位于 e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts，并复用现有多基地计分链。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-01-existing-scoring-chain-ready.jpg"
+      ]
+    },
+    {
+      "requirement": "海盗王是可发动效果：系统开放机会后先高亮海盗王本体，目标基地不能提前高亮或可提交。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言海盗王 data-highlighted=true，计分基地和非计分基地 data-deploy-mode=false 且 data-selectable=false。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-02-pirate-king-available-source-highlight.jpg"
+      ]
+    },
+    {
+      "requirement": "点击海盗王本体才表示发动；发动后才高亮目标计分基地，无关基地不能提交。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言点击海盗王后计分基地 data-deploy-mode=true、data-selectable=true，非计分基地 data-dimmed=true；点击非计分基地后交互仍停在 pirate_king_move。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-03-pirate-king-after-source-click-target-base-highlight.jpg"
+      ]
+    },
+    {
+      "requirement": "Me First 响应窗口里从手牌本体响应，非响应牌不可用。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言影舞者 data-highlighted=true，便衣忍者和忍者侍从 data-disabled=true。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-04-pirate-king-me-first-hand-highlight.jpg"
+      ]
+    },
+    {
+      "requirement": "选中响应手牌后，合法计分基地高亮，无关基地置灰且不能提交。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言选中影舞者后计分基地高亮、无关基地置灰；点击无关基地后手牌和基地状态不变。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-05-after-select-card-target-base-highlight.jpg",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-06-legal-base-played-before-scoring-chain-continues.jpg"
+      ]
+    },
+    {
+      "requirement": "复杂计分链必须继续触发大副和托尔图加 afterScoring。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 resolvedSources 包含 pirate_first_mate_choose_base 和 base_tortuga。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-07-first-mate-after-scoring-base-choice.jpg",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-08-tortuga-after-scoring-minion-choice.jpg"
+      ]
+    },
+    {
+      "requirement": "整条链必须收口到出牌阶段，响应窗口和交互窗口清空，双方 VP 更新。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 finalState.sys.phase=playCards、interaction/current 和 responseWindow/current 均为空、双方 VP > 0。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-09-scoring-chain-complete.jpg"
+      ]
+    },
+    {
+      "requirement": "最终展示图组必须是最新截图，且每张非空、尺寸一致、无重复图冒充流程节点。",
+      "status": "PASS",
+      "evidence": [
+        "9 张原图均为 1920x1080，sha256 前缀互不相同；标注总览图生成于 2026-08-16 20:15。",
+        "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/00-sequence-index.png"
+      ]
+    }
+  ],
+  "sourceImages": [
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-01-existing-scoring-chain-ready.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "875ac917754cda63"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-02-pirate-king-available-source-highlight.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "05d9fa5b1f2f82ab"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-03-pirate-king-after-source-click-target-base-highlight.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "6dc801572731ff4e"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-04-pirate-king-me-first-hand-highlight.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "f46698b02c608c76"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-05-after-select-card-target-base-highlight.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "7017a6df8afec7a5"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-06-legal-base-played-before-scoring-chain-continues.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "a414fd5640045912"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-07-first-mate-after-scoring-base-choice.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "c8d1d12f22836b75"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-08-tortuga-after-scoring-minion-choice.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "57c7047b9444c105"
+    },
+    {
+      "path": "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-09-scoring-chain-complete.jpg",
+      "size": "1920x1080",
+      "sha256Prefix": "85f103f7a6098360"
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/00-sequence-index.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/01-labeled-complex-hand-response-01-existing-scoring-chain-ready.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/02-labeled-complex-hand-response-02-pirate-king-available-source-highlight.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/03-labeled-complex-hand-response-03-pirate-king-after-source-click-target-base-highlight.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/04-labeled-complex-hand-response-04-pirate-king-me-first-hand-highlight.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/05-labeled-complex-hand-response-05-after-select-card-target-base-highlight.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/06-labeled-complex-hand-response-06-legal-base-played-before-scoring-chain-continues.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/07-labeled-complex-hand-response-07-first-mate-after-scoring-base-choice.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/08-labeled-complex-hand-response-08-tortuga-after-scoring-minion-choice.png",
+    "test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/_labeled-final-20260816-2013/09-labeled-complex-hand-response-09-scoring-chain-complete.png"
+  ],
+  "knownNonBlockingIssues": [
+    "interactionTargetTypeAudit.test.ts 在 audit 配置下仍有既有其它派系 targetType / generic 登记失败；本轮新增的场上来源到基地目标审计没有报出海盗王按钮退化问题。",
+    "目标文件 ESLint 无 error，但仍保留既有 warning，例如 E2E any、Board hook dependency / purity warning。"
+  ]
+}

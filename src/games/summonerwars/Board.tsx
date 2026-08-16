@@ -43,6 +43,7 @@ import { DiceResultOverlay } from './ui/DiceResultOverlay';
 import { DestroyEffectsLayer, useDestroyEffects } from './ui/DestroyEffect';
 import { useScreenShake } from './ui/BoardEffects';
 import { useFxBus, FxLayer } from '../../engine/fx';
+import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { useVisualSequenceGate } from '../../components/game/framework/hooks/useVisualSequenceGate';
 import { summonerWarsFxRegistry, SW_FX } from './ui/fxSetup';
 import type { Card, BoardUnit, BoardStructure, CellCoord, EventCard, PlayerId } from './domain/types';
@@ -120,6 +121,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const effectiveLocale = locale || 'zh-CN';
   const { t } = useTranslation('game-summonerwars');
   const { reducedCombatEffects } = useSummonerWarsCombatEffectPreference();
+  const renderPipelineSettings = useRenderPipelineSettings();
   const viewport = useRuntimeViewport();
   const viewportSafeWidth = useMemo(() => {
     const safeWidth = viewport.width - viewport.safeArea.left - viewport.safeArea.right;
@@ -128,7 +130,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isMobileViewport = viewport.width <= 1023;
   const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
   const shouldShowLifeToggle = true;
-  const shouldReduceCombatEffects = reducedCombatEffects && isMobileViewport;
+  const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced' || (reducedCombatEffects && isMobileViewport);
+  const fxQuality = shouldReduceCombatEffects ? 'reduced' : renderPipelineSettings.fxQuality;
   const desktopReferenceWidth = Math.min(
     SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
     viewportSafeWidth || SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
@@ -354,8 +357,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const fxBus = useFxBus(summonerWarsFxRegistry, {
     playSound,
     triggerShake,
-    quality: shouldReduceCombatEffects ? 'reduced' : 'full',
-    reduceWhenHighCostActiveAt: 1,
+    quality: fxQuality,
+    reduceWhenHighCostActiveAt: Math.min(renderPipelineSettings.reduceWhenHighCostActiveAt, 1),
+    dropWhenHighCostActiveAt: renderPipelineSettings.dropWhenHighCostActiveAt,
+    maxDpr: renderPipelineSettings.maxDpr,
+    reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
   });
 
   // 视觉序列门控（攻击动画期间延迟交互事件 + 游戏结束 overlay）
@@ -646,7 +652,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
           attacker: attackSnapshot.attacker,
           target: attackSnapshot.target,
         });
-        fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: attackSnapshot.target, intensity: reducedHitIntensity }, { attackType: attackSnapshot.attackType, source: attackSnapshot.attacker, soundKey: attackSoundKey, quality: shouldReduceCombatEffects ? 'reduced' : 'full' });
+        fxBus.push(SW_FX.COMBAT_SHOCKWAVE, { cell: attackSnapshot.target, intensity: reducedHitIntensity }, { attackType: attackSnapshot.attackType, source: attackSnapshot.attacker, soundKey: attackSoundKey, quality: fxQuality });
         // 伤害特效和 flushPendingDestroys 由 handleFxComplete 在气浪完成时触发
       }, 180);
     } else {
@@ -659,7 +665,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       });
       setAttackAnimState({ attacker: pending.attacker, target: pending.target, hits: pending.hits });
     }
-  }, [clearPendingAttack, core, flushPendingDestroys, fxBus, pendingAttackRef, releaseDamageSnapshot, shouldReduceCombatEffects, useSafeCombatVisualFallback]);
+  }, [clearPendingAttack, core, flushPendingDestroys, fxBus, fxQuality, pendingAttackRef, releaseDamageSnapshot, shouldReduceCombatEffects, useSafeCombatVisualFallback]);
 
   // 关闭骰子结果只负责关闭浮层；攻击动画由骰子揭示完成独立触发，关闭时兜底触发一次。
   const handleCloseDiceResult = () => {
@@ -1279,7 +1285,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       <DestroyEffectsLayer
                         effects={destroyEffects}
                         getCellPosition={getCellPositionWithView}
-                        quality={shouldReduceCombatEffects ? 'reduced' : 'full'}
+                        quality={fxQuality}
                         onEffectComplete={removeDestroyEffect}
                       />
                       {/* 召唤暗角已内置于 SummonShaderEffect（dimStrength），此处不再需要 CSS 遮罩 */}

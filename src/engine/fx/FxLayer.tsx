@@ -14,6 +14,7 @@
 import React, { useCallback, useRef, useSyncExternalStore } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { FxBus } from './useFxBus';
+import type { FxBackendRuntime, FxCellPositionResolver, FxRenderBackend } from './backend';
 
 // ============================================================================
 // Props
@@ -23,9 +24,9 @@ export interface FxLayerProps {
   /** FxBus 实例 */
   bus: FxBus;
   /** 格坐标 → 百分比定位转换 */
-  getCellPosition: (row: number, col: number) => {
-    left: number; top: number; width: number; height: number;
-  };
+  getCellPosition: FxCellPositionResolver;
+  /** 可替换 FX 后端。未传时走现有 React 渲染器注册表。 */
+  backend?: FxRenderBackend;
   /** 特效完成回调（可选，用于游戏侧后续逻辑如 flush 摧毁特效） */
   onEffectComplete?: (id: string, cue: string) => void;
   /** 特效 impact 回调（可选，飞行动画到达目标时触发，用于释放视觉状态缓冲等） */
@@ -41,12 +42,53 @@ export interface FxLayerProps {
 // ============================================================================
 
 function useFxLayerEffects(bus: FxBus) {
-  const subscribe = bus.subscribe ?? (() => () => {});
-  const getSnapshot = bus.getSnapshot ?? (() => bus.activeEffects);
+  const subscribe = useCallback((listener: () => void) => {
+    const unsubscribe = bus.subscribe?.(listener) ?? (() => {});
+    listener();
+    return unsubscribe;
+  }, [bus]);
+  const getSnapshot = useCallback(() => (
+    bus.getSnapshot?.() ?? bus.activeEffects
+  ), [bus]);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 export const FxLayer: React.FC<FxLayerProps> = ({
+  bus,
+  getCellPosition,
+  backend,
+  onEffectComplete,
+  onEffectImpact,
+  className = '',
+  'data-testid': testId,
+}) => {
+  if (backend) {
+    return (
+      <FxBackendLayer
+        bus={bus}
+        getCellPosition={getCellPosition}
+        backend={backend}
+        onEffectComplete={onEffectComplete}
+        onEffectImpact={onEffectImpact}
+        className={className}
+        data-testid={testId}
+      />
+    );
+  }
+
+  return (
+    <ReactFxLayer
+      bus={bus}
+      getCellPosition={getCellPosition}
+      onEffectComplete={onEffectComplete}
+      onEffectImpact={onEffectImpact}
+      className={className}
+      data-testid={testId}
+    />
+  );
+};
+
+const ReactFxLayer: React.FC<Omit<FxLayerProps, 'backend'>> = ({
   bus,
   getCellPosition,
   onEffectComplete,
@@ -77,6 +119,8 @@ export const FxLayer: React.FC<FxLayerProps> = ({
     <div
       className={`absolute inset-0 pointer-events-none z-20 ${className}`}
       data-testid={testId}
+      data-fx-active-count={activeEffects.length}
+      data-fx-active-cues={activeEffects.map(effect => effect.cue).join(',')}
       style={{ overflow: 'visible' }}
     >
       <AnimatePresence>
@@ -100,5 +144,72 @@ export const FxLayer: React.FC<FxLayerProps> = ({
         })}
       </AnimatePresence>
     </div>
+  );
+};
+
+const FxBackendLayer: React.FC<Required<Pick<FxLayerProps, 'bus' | 'getCellPosition' | 'backend'>> & Pick<FxLayerProps, 'onEffectComplete' | 'onEffectImpact' | 'className' | 'data-testid'>> = ({
+  bus,
+  getCellPosition,
+  backend,
+  onEffectComplete,
+  onEffectImpact,
+  className = '',
+  'data-testid': testId,
+}) => {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const instanceRef = useRef<ReturnType<FxRenderBackend['mount']> | null>(null);
+  const onCompleteRef = useRef(onEffectComplete);
+  const onImpactRef = useRef(onEffectImpact);
+  onCompleteRef.current = onEffectComplete;
+  onImpactRef.current = onEffectImpact;
+
+  const completeEffect = useCallback((id: string, cue: string) => {
+    onCompleteRef.current?.(id, cue);
+    bus.removeEffect(id);
+  }, [bus]);
+
+  const fireBackendImpact = useCallback((id: string, cue: string) => {
+    bus.fireImpact(id);
+    onImpactRef.current?.(id, cue);
+  }, [bus]);
+
+  const runtime: FxBackendRuntime = {
+    bus,
+    getCellPosition,
+    completeEffect,
+    fireImpact: fireBackendImpact,
+  };
+  const runtimeRef = useRef(runtime);
+  runtimeRef.current = runtime;
+
+  React.useLayoutEffect(() => {
+    const element = hostRef.current;
+    if (!element) return undefined;
+
+    const instance = backend.mount({ element }, runtimeRef.current);
+    instanceRef.current = instance;
+
+    return () => {
+      instanceRef.current = null;
+      try {
+        instance.destroy();
+      } catch (error) {
+        console.error('[FxLayer] FX backend destroy failed:', error);
+      }
+    };
+  }, [backend]);
+
+  React.useLayoutEffect(() => {
+    instanceRef.current?.update?.(runtime);
+  }, [runtime]);
+
+  return (
+    <div
+      ref={hostRef}
+      className={`absolute inset-0 pointer-events-none z-20 ${className}`}
+      data-testid={testId}
+      data-fx-backend={backend.kind}
+      style={{ overflow: 'visible' }}
+    />
   );
 };

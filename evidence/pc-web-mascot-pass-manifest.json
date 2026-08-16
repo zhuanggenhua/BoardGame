@@ -1,0 +1,45 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "requirements": [
+    {
+      "requirement": "看板娘不是自动轮播；每次点击才切换到不同气泡文案。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 在第一次点击后等待 2.5 秒，文案仍停留在 QQ 群提示；第二次、第三次点击后才分别切到卡死提示和视角提示。",
+        "截图 01、02、03 展示了三次点击后的不同气泡内容。"
+      ]
+    },
+    {
+      "requirement": "气泡打开或切换文案后 5 秒自动隐藏，不能一直挡住 UI。",
+      "status": "PASS",
+      "evidence": [
+        "组件使用 5 秒 timeout 隐藏气泡，并在每次点击切换文案时重启计时。",
+        "E2E 等待 5.2 秒后断言气泡节点数量为 0；截图 04 显示气泡已经退场。"
+      ]
+    },
+    {
+      "requirement": "长文本气泡要自适应文本大小和换行，不能横向撑爆或挡住过多首页 UI。",
+      "status": "PASS",
+      "evidence": [
+        "气泡正文允许换行并使用自适应字号；E2E 读取真实浏览器样式，确认正文 white-space 为 normal、overflow-wrap 为 anywhere、宽度不超过 300px，且正文无横向溢出。",
+        "截图 03 显示最长文案收进两行，气泡没有横向撑到卡片区域。"
+      ]
+    },
+    {
+      "requirement": "首页实施中横幅不能盖住看板娘气泡。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 先确认首页存在实施中横幅，再对气泡中心和四个边内点做最上层命中检测，全部命中气泡自身。",
+        "截图 01 显示气泡显示在横幅上方，没有被横幅压住。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\pc-web-mascot.e2e\\PC-Web-首页右下角显示看板娘且游戏页不显示\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\pc-web-mascot.e2e\\PC-Web-首页右下角显示看板娘且游戏页不显示\\_labeled-for-pureref\\01-labeled-首页看板娘-第一次点击显示QQ群气泡且未被实施中横幅遮挡.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\pc-web-mascot.e2e\\PC-Web-首页右下角显示看板娘且游戏页不显示\\_labeled-for-pureref\\02-labeled-首页看板娘-第二次点击切到卡死提示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\pc-web-mascot.e2e\\PC-Web-首页右下角显示看板娘且游戏页不显示\\_labeled-for-pureref\\03-labeled-首页看板娘-第三次点击切到视角提示且文本自适应换行.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\pc-web-mascot.e2e\\PC-Web-首页右下角显示看板娘且游戏页不显示\\_labeled-for-pureref\\04-labeled-首页看板娘-气泡5秒后自动隐藏.png"
+  ]
+}

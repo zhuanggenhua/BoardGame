@@ -22,7 +22,7 @@ import {
   type FeedbackPack,
   type FxQuality,
 } from '../../../engine/fx';
-import { SummonHybridEffect } from '../../../components/common/animations/SummonHybridEffect';
+import { BoardSummonEffectPreset } from '../../../components/common/animations/BoardFxPresets';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
 import { DamageFlash } from '../../../components/common/animations/DamageFlash';
@@ -94,23 +94,16 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const color = (event.params?.color as 'blue' | 'gold') ?? 'blue';
   const quality = resolveEventQuality(event);
 
-  const scale = 7.5;
-  const box = createFxScaledCellBox(pos, scale);
-
-  return React.createElement('div', {
-    className: 'absolute pointer-events-none z-30',
-    style: box,
-  },
-    React.createElement(SummonHybridEffect, {
-      active: true,
-      intensity: event.ctx.intensity ?? 'normal',
-      color,
-      originY: 0.5,
-      quality,
-      onImpact,
-      onComplete: stableComplete,
-    }),
-  );
+  return React.createElement(BoardSummonEffectPreset, {
+    cellBox: pos,
+    intensity: event.ctx.intensity ?? 'normal',
+    color,
+    originY: 0.5,
+    quality,
+    scale: 7.5,
+    onImpact,
+    onComplete: stableComplete,
+  });
 };
 
 // ============================================================================

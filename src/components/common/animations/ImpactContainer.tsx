@@ -17,6 +17,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 import { HitStopContainer, getHitStopPresetByDamage, type HitStopConfig } from './HitStopContainer';
 import { ShakeContainer } from './ShakeContainer';
 
@@ -79,7 +80,7 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
   useEffect(() => {
     if (!isActive) return;
 
-    const timers: number[] = [];
+    const cancelScheduledCallbacks: FxFrameSubscription[] = [];
     const preset = hitStopConfig ?? getHitStopPresetByDamage(damage);
     const hitStopDur = preset.duration ?? 80;
     const doShake = !!effects.shake;
@@ -96,16 +97,16 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
 
     if (doHitStop) {
       // 延迟插入钝帧：暂停震动（冻在当前偏移位置）
-      timers.push(window.setTimeout(() => {
+      cancelScheduledCallbacks.push(scheduleFxFrameCallback(hitStopDelay, () => {
         setIsPaused(true);
         setIsHitStopping(true);
 
         // 钝帧结束后解冻
-        timers.push(window.setTimeout(() => {
+        cancelScheduledCallbacks.push(scheduleFxFrameCallback(hitStopDur, () => {
           setIsPaused(false);
           setIsHitStopping(false);
-        }, hitStopDur));
-      }, hitStopDelay));
+        }));
+      }));
     }
 
     // 总时长 = 震动时长 + 钝帧冻结时长（冻结期间震动暂停，所以要加上）
@@ -113,14 +114,14 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
       ? shakeDuration + (doHitStop ? hitStopDur : 0)
       : (doHitStop ? hitStopDelay + hitStopDur + 100 : 300);
 
-    timers.push(window.setTimeout(() => {
+    cancelScheduledCallbacks.push(scheduleFxFrameCallback(totalDuration, () => {
       setIsShaking(false);
       setIsPaused(false);
       setIsHitStopping(false);
       onCompleteRef.current?.();
-    }, totalDuration));
+    }));
 
-    return () => timers.forEach(t => window.clearTimeout(t));
+    return () => cancelScheduledCallbacks.forEach(cancel => cancel());
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finalHitStopConfig = hitStopConfig ?? getHitStopPresetByDamage(damage);
@@ -153,8 +154,8 @@ export const useImpact = () => {
     const finalConfig = { ...config, ...overrideConfig };
     setConfig(finalConfig);
     setIsActive(true);
-    const timer = setTimeout(() => setIsActive(false), 50);
-    return () => clearTimeout(timer);
+    const cancel = scheduleFxFrameCallback(50, () => setIsActive(false));
+    return cancel;
   }, [config]);
 
   return { isActive, config, triggerImpact };

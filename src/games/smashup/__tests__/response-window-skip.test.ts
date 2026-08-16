@@ -19,6 +19,7 @@ import {
 } from './helpers';
 import {
     advanceSmashUpReactionSession,
+    buildReactionOptions,
     getSmashUpReactionSession,
     resolveSmashUpReactionChoice,
     startSmashUpReactionSession,
@@ -562,6 +563,70 @@ describe('响应窗口跳过逻辑', () => {
         expect(finalState.core.players['0'].hand.some(card => card.uid === 'card-m1')).toBe(false);
         expect(finalState.core.players['0'].discard.some(card => card.uid === 'card-m1')).toBe(false);
         expect(finalState.core.bases[0].minions.some(minion => minion.uid === 'card-m1')).toBe(false);
+    });
+
+    it('smashup_reaction_choose 的打出到基地选项应显示真实基地名而不是基地编号', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-m1', 'ninja_shinobi', '0'),
+                        makeCard('card-a1', 'ninja_hidden_ninja', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_mothership'),
+                makeBase('base_the_factory', [
+                    makeMinion('anchor-1', 'test_minion', '0', '0', 25),
+                ]),
+            ],
+            scoringEligibleBaseIndices: [1],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        const withSession = startSmashUpReactionSession(ms, {
+            frameId: 'score-before:base-label',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 1,
+            responseWindowType: 'meFirst',
+        });
+        const session = getReactionSession(withSession)!;
+
+        const options = buildReactionOptions(withSession, session, 1);
+        const playMinionOption = options.find(option =>
+            option.value.kind === 'play_minion' && option.value.cardUid === 'card-m1' && option.value.baseIndex === 1,
+        );
+        const playActionOption = options.find(option =>
+            option.value.kind === 'play_action' && option.value.cardUid === 'card-a1' && option.value.targetBaseIndex === 1,
+        );
+
+        expect(playMinionOption).toBeDefined();
+        expect(playMinionOption?.displayMode).toBe('card');
+        expect(playMinionOption?.label).toContain('436-1337工厂');
+        expect(playMinionOption?.label).not.toContain('基地 2');
+        expect(playMinionOption?.labelParams).toEqual({
+            name: 'cards.ninja_shinobi.name',
+            baseName: 'cards.base_the_factory.name',
+        });
+
+        expect(playActionOption).toBeDefined();
+        expect(playActionOption?.displayMode).toBe('card');
+        expect(playActionOption?.label).toContain('436-1337工厂');
+        expect(playActionOption?.label).not.toContain('基地 2');
+        expect(playActionOption?.labelParams).toEqual({
+            name: 'cards.ninja_hidden_ninja.name',
+            baseName: 'cards.base_the_factory.name',
+        });
+
+        const passOption = options.find(option => option.value.kind === 'pass');
+        expect(passOption?.displayMode).toBe('button');
     });
 
     it('invalid activePlayerId 不在 turnOrder 时，应回退到合法当前玩家而不是跳过首个响应者', () => {
