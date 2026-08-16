@@ -93,7 +93,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "80:80"
+      # Host nginx owns 80/443 and proxies the app to 127.0.0.1:18081.
+      - "18081:80"
 
 volumes:
   mongodb_data:
