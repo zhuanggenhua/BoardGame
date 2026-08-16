@@ -9,8 +9,8 @@ const WHEEL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_ch
 const WIN_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
 const LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
 
-const BGM_NORMAL_KEY = 'bgm.japanese_music_pack_vol.shadow_and_light_rt_3.japanese_vol3_shadow_and_light_main';
-const BGM_BATTLE_KEY = 'bgm.japanese_music_pack_vol.tense_sparring_rt_6.japanese_vol3_tense_sparring_main';
+const BGM_NORMAL_KEY = 'bgm.ethereal.ethereal_music_pack.luminesce_rt_4.ethereal_luminesce_main';
+const BGM_BATTLE_KEY = 'bgm.ethereal.ethereal_music_pack.luminesce_rt_4.ethereal_luminesce_intensity_2';
 
 const BATTLE_EVENT_TYPES = new Set([
     'PENDING_ACTION_RESOLVED',
@@ -59,14 +59,14 @@ export const QIDAHEN_AUDIO_CONFIG: GameAudioConfig = {
     bgm: [
         {
             key: BGM_NORMAL_KEY,
-            name: 'Shadow And Light',
+            name: 'Luminesce',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle' },
         },
         {
             key: BGM_BATTLE_KEY,
-            name: 'Tense Sparring',
+            name: 'Luminesce (Intense)',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle_intense' },

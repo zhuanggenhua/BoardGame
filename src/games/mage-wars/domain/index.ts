@@ -166,9 +166,11 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
 
 export type {
     MageWarsCommand,
+    MageWarsArenaObjectState,
     MageWarsCore,
     MageWarsEvent,
     MageWarsPlayerState,
+    MageWarsSpellCasterRef,
 } from './types';
 
 export {

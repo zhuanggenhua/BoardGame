@@ -65,6 +65,31 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
         ]));
     });
 
+    it('打出影响对局的卡牌后，afterCardPlayed 窗口只列自身前提满足的即时行动牌', () => {
+        const state = createHeroMatchup('monk', 'barbarian')(['0', '1'], fixedRandom);
+        const bossGenerous = allCards.find((card) => card.id === 'card-boss-generous')!;
+        const flick = allCards.find((card) => card.id === 'card-flick')!;
+        const nextTime = allCards.find((card) => card.id === 'card-next-time')!;
+        const transferStatus = allCards.find((card) => card.id === 'card-transfer-status')!;
+
+        state.core.activePlayerId = '0';
+        state.core.turnPhase = 'main1';
+        state.core.pendingAttack = null;
+        state.core.rollCount = 0;
+        state.core.rollConfirmed = false;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 99;
+        state.core.players['1'].hand = [bossGenerous, flick, nextTime, transferStatus];
+
+        expect(getPlayableCardsInResponseWindow(
+            state.core,
+            '1',
+            'afterCardPlayed',
+            'main1',
+        ).map((card) => card.id)).toEqual(['card-boss-generous']);
+        expect(checkPlayCard(state.core, '1', bossGenerous, 'main1', 'afterCardPlayed')).toEqual({ ok: true });
+        expect(checkPlayCard(state.core, '1', transferStatus, 'main1', 'afterCardPlayed').ok).toBe(false);
+    });
+
     it('所有应响应的改骰牌仍完整保留，且只能改自己骰子的牌不会错误加入对手响应', () => {
         const state = prepareState();
         state.core.players['1'].hand = allCards;

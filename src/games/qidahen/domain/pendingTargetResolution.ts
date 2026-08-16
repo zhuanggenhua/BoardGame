@@ -84,6 +84,7 @@ import type {
     QidahenFactionId,
     QidahenPendingTargetAction,
     QidahenPlunderSource,
+    QidahenPostBattleChoice,
     QidahenPostBattleSelection,
     QidahenRetreatLossMode,
     QidahenSpecialTroopStack,
@@ -309,6 +310,7 @@ interface QidahenPendingTargetResolutionDependencies {
         region: QidahenRuntimeRegion,
         committedTroops: number,
         movementProfileId?: string | null,
+        selectedSpecialPieceIds?: readonly string[],
     ) => QidahenRuntimeRegion;
     refreshRuntimeRegionRules: (
         runtimeRegions: QidahenRuntimeRegion[],
@@ -391,7 +393,7 @@ interface QidahenPendingTargetResolutionDependencies {
     findAutoDefenderRetreatRegion: (
         state: QidahenCore,
         battleRegion: QidahenRuntimeRegion,
-        defenderFactionId: QidahenRuntimeRegion['controller'],
+        defenderFactionId: QidahenFactionId,
     ) => QidahenRuntimeRegion | null;
     computeStructuredDefenderRout: (
         targetRegion: Pick<QidahenRuntimeRegion, 'specialTroops'>,
@@ -411,7 +413,7 @@ interface QidahenPendingTargetResolutionDependencies {
         defenderCasualtyPriority?: QidahenCasualtyPriority,
     ) => QidahenSpecialTroopStack[];
     computeStructuredAttackerRout: (
-        sourceRegion: QidahenRuntimeRegion | null,
+        sourceRegion: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'> | null,
         committedTroops: number,
         attackerLosses: number,
         movementProfileId?: string | null,
@@ -447,10 +449,7 @@ interface QidahenPendingTargetResolutionDependencies {
         troops: number;
         specialTroops: QidahenSpecialTroopStack[];
     } | null;
-    subtractSpecialTroopStacks: (
-        sourceStacks: readonly QidahenSpecialTroopStack[],
-        removedStacks: readonly QidahenSpecialTroopStack[],
-    ) => QidahenSpecialTroopStack[];
+    subtractSpecialTroopStacks: typeof subtractSpecialTroopStacks;
     resolvePendingBattleMode: (
         pendingTargetAction: QidahenPendingTargetAction,
         targetRegion: QidahenRuntimeRegion,
@@ -459,46 +458,20 @@ interface QidahenPendingTargetResolutionDependencies {
             defenderHoldCity: boolean;
         },
     ) => 'field' | 'city';
-    getPendingActionDefenderForceSnapshot: (
-        targetRegion: QidahenRuntimeRegion,
-        pendingTargetAction: QidahenPendingTargetAction,
-        battleMode: 'field' | 'city',
-    ) => Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'>;
+    getPendingActionDefenderForceSnapshot: typeof getPendingActionDefenderForceSnapshot;
     getEffectivePendingDefenderTroops: (
         targetRegion: QidahenRuntimeRegion,
         pendingTargetAction: QidahenPendingTargetAction,
         battleMode: 'field' | 'city',
     ) => number;
-    getPendingActionSourceForceSnapshot: (
-        state: QidahenCore,
-        pendingTargetAction: QidahenPendingTargetAction,
-    ) => QidahenRuntimeRegion | null;
+    getPendingActionSourceForceSnapshot: typeof getPendingActionSourceForceSnapshot;
     getCommittedArtilleryTroopCount: (
         sourceRegion: Pick<QidahenRuntimeRegion, 'specialTroops'> | null,
         committedTroops: number,
         movementProfileId?: string | null,
     ) => number;
-    computeStructuredBattleCasualties: (args: {
-        sourceRegion: QidahenRuntimeRegion | null;
-        targetRegion: Pick<QidahenRuntimeRegion, 'troops' | 'specialTroops'>;
-        committedTroops: number;
-        committedArtilleryTroops: number;
-        attackPressure: number;
-        effectiveDefenderTroops: number;
-        defenderPressure: number;
-        fallbackDefenderLoss: number;
-        fallbackAttackerLoss: number;
-        battleRolls?: QidahenBattleRolls | null;
-    }) => {
-        defenderLoss: number;
-        attackerLoss: number;
-        summary?: string;
-    };
-    applyCasualtiesToSpecialStacks: (
-        stacks: readonly QidahenSpecialTroopStack[],
-        losses: number,
-        casualtyPriority?: QidahenBattleCasualtyPriority,
-    ) => QidahenSpecialTroopStack[];
+    computeStructuredBattleCasualties: typeof computeQidahenStructuredBattleCasualties;
+    applyCasualtiesToSpecialStacks: typeof applyCasualtiesToSpecialStacks;
     addDefeatMarkerToFaction: (
         factions: QidahenCore['factions'],
         factionId: QidahenFactionId,
@@ -790,7 +763,7 @@ const resolvePendingMarriageSubjugationAction = (
     const defenderPays = defenderFactionId !== 'neutral'
         && (requiredPayCost === 0 || state.factions[defenderFactionId].handCount >= requiredPayCost);
 
-    if (defenderPays && defenderFactionId !== 'neutral') {
+    if (defenderPays) {
         const nextFactions = {
             ...factions,
             [defenderFactionId]: {
@@ -907,7 +880,7 @@ const resolvePendingCavalryPlunderAction = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
     battleRegion: QidahenRuntimeRegion,
-    sourceRegion: QidahenRuntimeRegion | null,
+    sourceRegion: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'> | null,
     attackerCavalryPlunder: boolean,
     attackerCavalryPlunderSource: QidahenPlunderSource = 'attacker',
     isCityBattle: boolean,
@@ -966,9 +939,10 @@ const resolvePendingCavalryPlunderAction = (
         && pendingTargetAction.defenderFactionId !== 'neutral'
         && pendingTargetAction.defenderFactionId !== pendingTargetAction.attackerFactionId
     );
-    const plunderSourceFactionId = canPlunderDefenderDeck
+    const defenderPlunderFactionId: QidahenFactionId | null = canPlunderDefenderDeck && pendingTargetAction.defenderFactionId !== 'neutral'
         ? pendingTargetAction.defenderFactionId
-        : pendingTargetAction.attackerFactionId;
+        : null;
+    const plunderSourceFactionId: QidahenFactionId = defenderPlunderFactionId ?? pendingTargetAction.attackerFactionId;
     const requestedCards = canPlunderDefenderDeck
         ? plunderPopulation
         : plunderPopulation * 2;
@@ -1729,8 +1703,11 @@ const resolvePendingDefenderRetreatLoss = (
         && battleRegion.controller !== 'neutral'
         && !isCityBattle
         && !(isCityRegion && defenderSortieBattle);
-    const defenderRetreatRegion = defenderCanRetreat
-        ? dependencies.findAutoDefenderRetreatRegion(state, battleRegion, battleRegion.controller)
+    const defenderRetreatFactionId = defenderCanRetreat && battleRegion.controller !== 'neutral'
+        ? battleRegion.controller
+        : null;
+    const defenderRetreatRegion = defenderRetreatFactionId
+        ? dependencies.findAutoDefenderRetreatRegion(state, battleRegion, defenderRetreatFactionId)
         : null;
     const defenderSkipsDefeatLoss = hasJinDefeatLossImmunity(state, battleRegion.controller);
     const structuredDefenderRout = defenderRetreatRegion
@@ -1927,7 +1904,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
     battleRegion: QidahenRuntimeRegion,
-    sourceRegion: QidahenRuntimeRegion | null,
+    sourceRegion: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'> | null,
     verb: string,
     attackerLoss: number,
     loss: number,
@@ -2016,7 +1993,7 @@ const resolvePendingGenericBattleOutcome = (
     pendingTargetAction: QidahenPendingTargetAction,
     battleRegion: QidahenRuntimeRegion,
     battleRegionSnapshot: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'>,
-    sourceRegion: QidahenRuntimeRegion | null,
+    sourceRegion: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'> | null,
     currentBattleMode: 'field' | 'city',
     verb: string,
     cavalryEvasionText: string,
@@ -2350,7 +2327,7 @@ const finalizePendingBattleOutcome = (
 const resolvePendingAttackerRetreatLoss = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
-    sourceRegion: QidahenRuntimeRegion | null,
+    sourceRegion: Pick<QidahenRuntimeRegion, 'troops' | 'population' | 'specialTroops'> | null,
     survivingAttackers: number,
     attackerLoss: number,
     retreatLossMode: QidahenRetreatLossMode,

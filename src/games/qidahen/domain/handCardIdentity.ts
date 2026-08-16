@@ -99,11 +99,12 @@ export const resolveQidahenAtlas05OrdinaryHandCardIdentity = (
     if (!identity) {
         return null;
     }
+    const rulesSummaryByDefId: Readonly<Record<string, string>> = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID;
     return {
         cardKind: identity.cardKind,
         armamentId: identity.armamentId,
         cardDefId: identity.cardDefId,
-        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+        rulesSummary: rulesSummaryByDefId[identity.cardDefId] ?? null,
         previewKind: 'unknown',
         previewIdentityId: identity.cardDefId,
     };

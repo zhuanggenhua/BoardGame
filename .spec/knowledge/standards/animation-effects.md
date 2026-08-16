@@ -19,7 +19,8 @@ metadata:
 - **动画库已接入**：项目使用 **framer-motion**（`motion` / `AnimatePresence`）。
 - **通用动效组件**：`src/components/common/animations/` 下已有 `FlyingEffect`、`ShakeContainer`、`PulseGlow` 与 `variants`。
 - **冲击帧音效绑定（强制）**：有动画的事件（伤害/治疗/状态/Token）音效必须通过 `FlyingEffectData.onImpact`（或 FX 渲染器 `onImpact`）在动画到达时播放，禁止在事件生成时立即播放。此类事件的 `feedbackResolver` **必须返回 `null`**；音效 key 由动画层在 `onImpact` 回调中直接 `playSound(resolvedKey)`，或由 FX 系统通过 `FeedbackPack.sound`（`source: 'params'`）从 `event.params.soundKey` 读取并播放。
-- **优先复用原则**：新增动画优先复用/扩展上述组件或 framer-motion 变体，避免重复造轮子或引入平行动画库。
+- **优先复用原则（强制）**：新增或重写动画必须先复用/扩展上述组件、`src/components/common/animations/` 中的 Canvas/Shader/受击组件、`src/engine/fx/` 的注册调度能力，或已有游戏的成熟 `fxSetup.ts` 适配模式。禁止在游戏专属文件里先手写一套 CSS 光点、细线、圆环、timer、飘字或粒子替代现有效果库；若现有组件不够，先扩展通用组件并补预览/测试，再由游戏层参数化调用。召唤 / 降临语义必须优先复用 `SummonEffect` / `SummonHybridEffect` 或其通用层扩展，不能另做一套游戏专属召唤光效。
+- **最小必要特效原则（强制）**：特效必须由规则事件的具体语义触发，不能把“能力”“施法”“结算”这类泛词直接映射成主舞台大特效。攻击 / 投射 / 伤害才需要来源、飞行、命中和飘字；召唤才需要召唤光柱；移动、推拉、传送只给位移相关反馈；装备、结界、buff、附件或同格状态变化只给宿主 / 附件槽 / 目标对象的轻量反馈，牌面和附件槽已经能表达的信息不得再用额外 UI 复读。
 - **性能友好（强制）**：
   - **禁止 `transition-all` / `transition-colors`**：会导致 `border-color` 等不可合成属性触发主线程渲染。改用具体属性：`transition-[background-color]`、`transition-[opacity,transform]`。
   - **优先合成属性**：`transform`、`opacity`、`filter`；**谨慎使用**：`background-color`、`box-shadow`、`border-*`。
@@ -308,4 +309,6 @@ onImpact: () => opponentImpact.trigger(damage);
 
 - **通用 vs 游戏特有**：除非特效包含游戏特有语义（如特定卡牌名称文字、游戏专属资源），否则必须实现为通用组件放在 `src/components/common/animations/`，游戏层通过 props 注入差异。
 - **现有通用特效清单**：新增特效前必须用 `grep` 搜索 `src/components/common/animations/` 确认是否已有可复用组件。完整清单与使用说明见 `docs/particle-engine.md`。
+- **游戏 FX 渲染器只能做适配**：游戏侧 `ui/fxSetup.ts` / `ui/fxRenderers.tsx` 的职责是把规则 cue、来源/目标、强度、颜色语义、音效和震动参数映射到通用组件；不得在这里承担主特效算法。代码审查时如果看到新的飞行、冲击、飘字、爆发、召唤或受击效果主要由游戏专属 DOM/CSS/timer 实现，默认先判职责放错层，再考虑扩展通用组件。
+- **视觉验收不能降级到技术存在性**：通用组件或 FX cue 渲染出来后，必须在真实截图/录屏里肉眼可见其主体表现；`data-testid`、canvas 存在、事件被消费、截图落盘只证明链路触发，不证明视觉质量通过。
 - **预览页同步**：新增通用特效组件后，必须在 `src/pages/devtools/EffectPreview.tsx` 的 `EFFECT_CATEGORIES` 中注册预览区块。

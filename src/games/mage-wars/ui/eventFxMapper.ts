@@ -1,6 +1,6 @@
 import type { FxCellCoord, FxContext, FxParams } from '../../../engine/fx';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
-import type { MageWarsCore, MageWarsEvent, MageWarsSpellCasterRef } from '../domain';
+import type { MageWarsCore, MageWarsEvent } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import type { ArenaZoneId } from '../domain/ids';
 import { MW_FX, type MageWarsFxCue } from './fxCues';
@@ -28,14 +28,6 @@ function resolveObjectCell(core: MageWarsCore, objectId?: string): FxCellCoord |
     return resolveZoneCell(core, core.objects[objectId]?.zoneId);
 }
 
-function resolveCasterCell(core: MageWarsCore, caster: MageWarsSpellCasterRef | undefined, fallbackPlayerId: PlayerId): FxCellCoord | null {
-    if (!caster) return resolvePlayerCell(core, fallbackPlayerId);
-    if (caster.kind === 'arena-object') {
-        return resolveObjectCell(core, caster.objectId) ?? resolvePlayerCell(core, caster.ownerId);
-    }
-    return resolvePlayerCell(core, caster.playerId);
-}
-
 function resolveIntensity(amount: number | undefined): FxContext['intensity'] {
     return amount !== undefined && amount >= 6 ? 'strong' : 'normal';
 }
@@ -47,30 +39,28 @@ export function mapMageWarsEventToFx(
     const event = entry.event as MageWarsEvent;
 
     if (event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED) {
-        const payload = event.payload;
-        const source = resolveCasterCell(core, payload.caster, payload.playerId);
-        const target = resolveZoneCell(core, payload.targetZoneId)
-            ?? resolvePlayerCell(core, payload.targetPlayerId)
-            ?? resolveObjectCell(core, payload.targetObjectId)
-            ?? source;
+        return null;
+    }
+
+    if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED) {
+        const { object } = event.payload;
+        if (object.kind !== 'creature' && object.kind !== 'conjuration') return null;
+
+        const target = resolveZoneCell(core, object.zoneId);
         if (!target) return null;
 
         return {
             sourceEventId: entry.id,
-            cue: MW_FX.SPELL_CAST,
+            cue: MW_FX.SUMMON,
             ctx: {
                 cell: target,
-                intensity: payload.castMode === 'quickcast' ? 'normal' : 'strong',
+                intensity: object.life >= 6 ? 'strong' : 'normal',
             },
             params: {
-                source,
-                caster: payload.caster,
-                spellCardId: payload.spellCardId,
-                castMode: payload.castMode,
-                playerId: payload.playerId,
-                targetPlayerId: payload.targetPlayerId,
-                targetObjectId: payload.targetObjectId,
-                targetZoneId: payload.targetZoneId,
+                objectId: object.id,
+                objectKind: object.kind,
+                ownerId: object.ownerId,
+                sourceSpellCardId: object.sourceSpellCardId,
             },
         };
     }

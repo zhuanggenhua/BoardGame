@@ -78,7 +78,6 @@ const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './cardia/Board'),
-        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -102,7 +101,6 @@ const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './dicethrone/Board'),
-        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.diceThroneLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.diceThroneGameRuntimeAdapter,
     };
@@ -196,7 +194,6 @@ const loadRuntime10 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './smashup/Board'),
-        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.smashUpLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.smashUpGameRuntimeAdapter,
     };
@@ -220,7 +217,6 @@ const loadRuntime11 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './splendor/Board'),
-        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -244,7 +240,6 @@ const loadRuntime12 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './summonerwars/Board'),
-        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.summonerWarsLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.summonerWarsGameRuntimeAdapter,
     };
@@ -291,7 +286,6 @@ const loadRuntime14 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './tictactoe/Board'),
-        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.ticTacToeLatencyConfig,
     };
 };

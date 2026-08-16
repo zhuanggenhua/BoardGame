@@ -29,6 +29,14 @@ interface QidahenDirectInputEventReducerSpec<TEventType extends QidahenDirectInp
     ) => QidahenCore;
 }
 
+type QidahenDirectInputEventReducerRuntimeSpec = {
+    eventTypes: readonly QidahenDirectInputEventType[];
+    reduce: (
+        state: QidahenCore,
+        event: never,
+    ) => QidahenCore;
+};
+
 const defineDirectInputEventReducer = <TEventType extends QidahenDirectInputEventType>(
     eventTypes: readonly TEventType[],
     reduce: (
@@ -42,7 +50,7 @@ const defineDirectInputEventReducer = <TEventType extends QidahenDirectInputEven
 
 const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<
     QidahenDirectInputEventType,
-    QidahenDirectInputEventReducerSpec
+    QidahenDirectInputEventReducerRuntimeSpec
 >();
 
 const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
@@ -88,7 +96,7 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
         ],
         reduceQidahenSelectionInputEvent,
     ),
-] as const satisfies readonly QidahenDirectInputEventReducerSpec[];
+] as const satisfies readonly QidahenDirectInputEventReducerRuntimeSpec[];
 
 for (const reducer of QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS) {
     for (const eventType of reducer.eventTypes) {

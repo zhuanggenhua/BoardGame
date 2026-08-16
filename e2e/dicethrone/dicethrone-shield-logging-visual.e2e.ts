@@ -6,6 +6,8 @@
 
 import { test, expect } from '../framework';
 
+const DICETHRONE_CHEAT_DEAL_DAMAGE_COMMAND = 'SYS_CHEAT_DEAL_DAMAGE';
+
 test.describe('DiceThrone 护盾日志显示', () => {
     test('多个护盾叠加时应显示正确的最终伤害', async ({ page, game }) => {
         await game.openTestGame('dicethrone');
@@ -26,11 +28,13 @@ test.describe('DiceThrone 护盾日志显示', () => {
             },
         });
 
-        await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
+        await page.evaluate(async (dealDamageCommand) => {
+            const holder = window as any;
+            const harness = holder.__BG_TEST_HARNESS__;
             if (!harness) {
                 throw new Error('TestHarness not available');
             }
+            delete holder.__BG_LAST_COMMAND_REJECTED__;
 
             harness.state.patch({
                 core: {
@@ -42,26 +46,26 @@ test.describe('DiceThrone 护盾日志显示', () => {
                             ],
                         },
                     },
-                    pendingAttack: {
-                        attackerId: '1',
-                        defenderId: '0',
-                        sourceAbilityId: 'test-attack',
-                        isUltimate: false,
-                        isDefendable: true,
-                    },
                 },
             });
 
-            harness.command.dispatch({
-                type: 'TEST_DAMAGE',
+            await harness.command.dispatch({
+                type: dealDamageCommand,
                 playerId: '1',
                 payload: {
                     targetId: '0',
                     amount: 10,
                     sourceAbilityId: 'test-attack',
+                    sourcePlayerId: '1',
+                    damageScope: 'direct',
                 },
             });
-        });
+
+            const rejected = holder.__BG_LAST_COMMAND_REJECTED__;
+            if (rejected?.commandType === dealDamageCommand) {
+                throw new Error(`调试伤害命令被拒绝: ${rejected.error}`);
+            }
+        }, DICETHRONE_CHEAT_DEAL_DAMAGE_COMMAND);
 
         await page.waitForFunction(
             () => {

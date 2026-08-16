@@ -163,12 +163,12 @@ export const applyCasualtyPriorityToRegion = (
     };
 };
 
-export const applyCommittedTroopRemovalToRegion = (
-    region: QidahenCore['regions'][number],
+export const applyCommittedTroopRemovalToRegion = <TRegion extends Pick<QidahenCore['regions'][number], 'troops' | 'specialTroops'>>(
+    region: TRegion,
     committedTroops: number,
     movementProfileId?: string | null,
     selectedSpecialPieceIds?: readonly string[],
-): QidahenCore['regions'][number] => {
+): TRegion => {
     const remainingRemoval = Math.max(0, committedTroops);
     if (remainingRemoval <= 0 || region.specialTroops.length === 0) {
         return region;
@@ -304,7 +304,7 @@ export const findAutoDefenderRetreatRegion = (
 );
 
 export const computeStructuredAttackerRout = (
-    sourceRegion: QidahenCore['regions'][number] | null,
+    sourceRegion: Pick<QidahenCore['regions'][number], 'troops' | 'specialTroops'> | null,
     committedTroops: number,
     attackerLosses: number,
     movementProfileId?: string | null,

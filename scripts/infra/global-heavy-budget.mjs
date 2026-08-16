@@ -10,6 +10,7 @@ const LOCK_FILE_NAME = 'registry.lock';
 const LOCK_TIMEOUT_MS = 10000;
 const LOCK_RETRY_MS = 100;
 const LOCK_STALE_MS = 30000;
+const LOCK_RETRYABLE_CODES = new Set(['EEXIST', 'EPERM', 'EBUSY']);
 const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_TTL_MS = 15000;
 
@@ -105,17 +106,23 @@ async function acquireRegistryLock(cwd = process.cwd()) {
                 }
             };
         } catch (error) {
-            if (error?.code !== 'EEXIST') {
+            const code = error?.code;
+            if (!code || !LOCK_RETRYABLE_CODES.has(code)) {
                 throw error;
             }
 
+            let removedStaleLock = false;
             try {
                 const stats = fs.statSync(lockPath);
                 if (Date.now() - stats.mtimeMs > LOCK_STALE_MS) {
                     fs.unlinkSync(lockPath);
-                    continue;
+                    removedStaleLock = true;
                 }
             } catch {
+                // Windows can transiently deny stat/unlink while another process is closing the lock.
+            }
+
+            if (removedStaleLock) {
                 continue;
             }
 

@@ -76,7 +76,7 @@ export function useBgmPreview(layout: LayoutComponent[], isPreviewMode: boolean)
       return;
     }
 
-    AudioManager.registerAll({ bgm: bgmList }, bgmBasePath);
+    AudioManager.registerAll({ bgm: bgmList, feedbackResolver: () => null }, bgmBasePath);
     setPlaylist(bgmList);
     if (autoPlayBgmKey) {
       playBgm(autoPlayBgmKey);

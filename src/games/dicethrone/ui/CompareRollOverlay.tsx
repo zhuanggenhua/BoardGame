@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 import type { CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
-import SpotlightContainer from './SpotlightContainer';
 import { GameButton } from './components/GameButton';
-import { UI_Z_INDEX } from '../../../core';
 
 interface CompareRollOverlayProps {
     compareRoll?: CompareRollChoiceData & { id: string; playerId: string };
@@ -14,7 +12,6 @@ interface CompareRollOverlayProps {
     locale?: string;
     onResolveOption: (optionId: string) => void;
     onConfirm: () => void;
-    usePortal?: boolean;
 }
 
 const RESULT_TONE_CLASS: Record<NonNullable<CompareRollChoiceData['resultTone']>, string> = {
@@ -30,7 +27,6 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     canResolve = true,
     onResolveOption,
     onConfirm,
-    usePortal,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const hasTranslation = React.useCallback((key?: string) => {
@@ -67,108 +63,79 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     const resultTone = compareRoll.resultTone ?? 'neutral';
 
     return (
-        <SpotlightContainer
-            id={compareRoll.id}
-            isVisible={isVisible}
-            onClose={() => undefined}
-            disableAutoClose={true}
-            disableBackdropClose={true}
-            closeOnContentClick={false}
-            blockPointerEvents={true}
-            zIndex={UI_Z_INDEX.overlayRaised + 120}
-            usePortal={usePortal}
+        <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="pointer-events-auto w-[13.4vw] rounded-[0.7vw] border border-amber-400/35 bg-slate-950/92 px-[0.7vw] py-[0.65vw] text-center shadow-lg shadow-black/35 backdrop-blur-sm"
+            data-testid="compare-roll-overlay"
+            data-placement="right-dice-panel"
         >
-            <div
-                className="flex flex-col items-center gap-[1.6vw] px-[1vw]"
-                data-testid="compare-roll-overlay"
-            >
-                <motion.div
-                    initial={{ opacity: 0, y: -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-black/60 border border-amber-400/30 rounded-xl px-[2.4vw] py-[0.9vw] shadow-lg"
+            <div className="text-[0.82vw] font-black leading-tight tracking-wide text-amber-100">
+                {hasTranslation(compareRoll.title)
+                    ? t(compareRoll.title)
+                    : compareRoll.title}
+            </div>
+
+            <div className="mt-[0.45vw] grid grid-cols-2 gap-[0.35vw]">
+                {contestants.map((contestant, index) => {
+                    const label = hasTranslation(contestant.labelKey)
+                        ? t(contestant.labelKey, contestant.labelParams)
+                        : contestant.label;
+
+                    return (
+                        <div
+                            key={`${compareRoll.id}-${contestant.playerId ?? index}`}
+                            className="min-w-0 rounded-[0.45vw] border border-white/10 bg-white/10 px-[0.35vw] py-[0.3vw]"
+                            data-testid={`compare-roll-participant-${index}`}
+                        >
+                            <div className="truncate text-[0.58vw] font-bold uppercase leading-tight tracking-wide text-white/75">
+                                {label}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {resultText ? (
+                <div
+                    className={`mt-[0.5vw] rounded-[0.5vw] border bg-black/35 px-[0.45vw] py-[0.45vw] text-[0.72vw] font-bold leading-snug ${RESULT_TONE_CLASS[resultTone]}`}
+                    data-testid="compare-roll-result"
                 >
-                    <span className="text-white text-[1.5vw] font-black tracking-wide">
-                        {hasTranslation(compareRoll.title)
-                            ? t(compareRoll.title)
-                            : compareRoll.title}
-                    </span>
-                </motion.div>
+                    {resultText}
+                </div>
+            ) : null}
 
-                <div className="flex items-start justify-center gap-[1vw] max-w-[90vw]">
-                    {contestants.map((contestant, index) => {
-                        const label = hasTranslation(contestant.labelKey)
-                            ? t(contestant.labelKey, contestant.labelParams)
-                            : contestant.label;
-
+            {hasOptions && canResolve ? (
+                <div className="mt-[0.55vw] flex flex-col gap-[0.35vw]">
+                    {options.map((option) => {
+                        const label = hasTranslation(option.labelKey)
+                            ? t(option.labelKey, option.labelParams)
+                            : option.label;
                         return (
-                            <motion.div
-                                key={`${compareRoll.id}-${contestant.playerId ?? index}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.12 }}
-                                className="rounded-xl border border-white/15 bg-black/45 px-[1.2vw] py-[0.55vw] text-center min-w-[10vw]"
-                                data-testid={`compare-roll-participant-${index}`}
+                            <GameButton
+                                key={option.id}
+                                onClick={() => onResolveOption(option.id)}
+                                disabled={option.disabled}
+                                variant="primary"
+                                size="sm"
+                                className="!h-[1.9vw] !min-h-0 !rounded-[0.45vw] !px-[0.45vw] !py-0 !text-[0.62vw]"
                             >
-                                <div className="text-white/90 text-[0.95vw] font-bold tracking-[0.06em] uppercase">
-                                    {label}
-                                </div>
-                            </motion.div>
+                                {label}
+                            </GameButton>
                         );
                     })}
                 </div>
-
-                {resultText ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.45 }}
-                        className={`max-w-[46vw] text-center text-[1.2vw] font-bold rounded-2xl px-[1.6vw] py-[0.9vw] bg-black/55 shadow-lg ${RESULT_TONE_CLASS[resultTone]}`}
-                        data-testid="compare-roll-result"
-                    >
-                        {resultText}
-                    </motion.div>
-                ) : null}
-
-                {hasOptions && canResolve ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="flex flex-wrap items-center justify-center gap-[1vw] max-w-[54vw]"
-                    >
-                        {options.map((option) => {
-                            const label = hasTranslation(option.labelKey)
-                                ? t(option.labelKey, option.labelParams)
-                                : option.label;
-                            return (
-                                <GameButton
-                                    key={option.id}
-                                    onClick={() => onResolveOption(option.id)}
-                                    disabled={option.disabled}
-                                    variant="primary"
-                                    size="md"
-                                    className="!text-[1.05vw] !px-[1.6vw] !py-[0.75vw]"
-                                >
-                                    {label}
-                                </GameButton>
-                            );
-                        })}
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.7 }}
-                        className="text-white/70 text-[1vw] font-semibold tracking-wide"
-                        data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
-                    >
-                        {hasOptions && !canResolve
-                            ? t('compareRoll.waitingForOwnerChoice')
-                            : t('compareRoll.confirming')}
-                    </motion.div>
-                )}
-            </div>
-        </SpotlightContainer>
+            ) : (
+                <div
+                    className="mt-[0.45vw] text-[0.66vw] font-semibold leading-tight text-white/65"
+                    data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
+                >
+                    {hasOptions && !canResolve
+                        ? t('compareRoll.waitingForOwnerChoice')
+                        : t('compareRoll.confirming')}
+                </div>
+            )}
+        </motion.div>
     );
 };
 

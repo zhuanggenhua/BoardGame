@@ -205,7 +205,6 @@
     position: fixed;
     right: clamp(2.75rem, 4vw, 4.75rem);
     bottom: max(0.75rem, var(--safe-area-bottom));
-    z-index: 3;
     display: none;
     width: clamp(8.5rem, 11vw, 12.75rem);
     max-height: min(44vh, 24rem);

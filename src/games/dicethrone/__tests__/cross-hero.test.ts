@@ -831,6 +831,23 @@ describe('cross hero battles', () => {
 
             expect(advanceResult.success).toBe(true);
             state = advanceResult.state as MatchState<DiceThroneCore>;
+            expect(state.core.currentRollContext).toMatchObject({
+                kind: 'compare',
+                ownerPlayerId: '0',
+                targetPlayerId: '1',
+                dice: [
+                    expect.objectContaining({ ownerId: '0', value: 6 }),
+                    expect.objectContaining({ ownerId: '1', value: 1 }),
+                ],
+                settlement: {
+                    metadata: {
+                        contestants: [
+                            expect.objectContaining({ playerId: '0', dieId: 0 }),
+                            expect.objectContaining({ playerId: '1', dieId: 1 }),
+                        ],
+                    },
+                },
+            });
 
             const compareConfirmResult = executePipeline(
                 pipelineConfig,
@@ -849,6 +866,10 @@ describe('cross hero battles', () => {
 
             const compareRollPrompt = getCompareRollChoicePrompt(state, 'showdown');
             expect(compareRollPrompt).toMatchObject({
+                contestants: [
+                    expect.objectContaining({ playerId: '0', roll: 6 }),
+                    expect.objectContaining({ playerId: '1', roll: 1 }),
+                ],
                 confirmValue: {
                     customId: 'gunslinger-showdown-apply-bonus',
                     value: 2,

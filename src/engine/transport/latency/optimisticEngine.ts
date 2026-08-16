@@ -736,8 +736,8 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                     const pending = pendingCommands[i];
                     if (pending.predictedStateID === undefined || pending.predictedStateID >= meta.stateID) break;
                     const pendingCoreMatches = isCoreStateEqual(pending.predictedState.core, serverState.core);
-                    const pendingPlayerMatches = meta.lastCommandPlayerId === undefined
-                        || meta.lastCommandPlayerId === pending.playerId;
+                    const pendingPlayerMatches = typeof meta.lastCommandPlayerId === 'string'
+                        && meta.lastCommandPlayerId === pending.playerId;
                     if (pendingCoreMatches || pendingPlayerMatches) break;
                     stalePrefixCountByStateAdvance = i + 1;
                 }

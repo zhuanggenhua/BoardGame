@@ -18,6 +18,7 @@ type MatchRoomBoardGateRuntime = {
     shouldBlockBoardOnImagePreload: boolean;
     blockingAudioKeys: SoundKey[];
     onReady: () => void;
+    onBlockingChange: (blocking: boolean) => void;
 };
 
 export type MatchRoomBoardShell = {
@@ -33,6 +34,7 @@ export function useMatchRoomBoardRuntime(args: {
     loadingDescription: string;
     shouldBlockBoardOnImagePreload: boolean;
     onInitialOnlinePreloadReady: () => void;
+    onBoardPreloadBlockingChange: (blocking: boolean) => void;
 }) {
     const boardGateRuntime = useMemo<MatchRoomBoardGateRuntime>(() => ({
         locale: args.locale,
@@ -40,9 +42,11 @@ export function useMatchRoomBoardRuntime(args: {
         shouldBlockBoardOnImagePreload: args.shouldBlockBoardOnImagePreload,
         blockingAudioKeys: [],
         onReady: args.onInitialOnlinePreloadReady,
+        onBlockingChange: args.onBoardPreloadBlockingChange,
     }), [
         args.locale,
         args.loadingDescription,
+        args.onBoardPreloadBlockingChange,
         args.onInitialOnlinePreloadReady,
         args.shouldBlockBoardOnImagePreload,
     ]);
@@ -86,6 +90,7 @@ export function useMatchRoomBoardRuntime(args: {
                         loadingDescription={effectiveRuntime.loadingDescription}
                         blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
                         onReady={effectiveRuntime.onReady}
+                        onBlockingChange={effectiveRuntime.onBlockingChange}
                     >
                         <Board {...props} />
                     </CriticalImageGate>
@@ -102,6 +107,7 @@ export function useMatchRoomBoardRuntime(args: {
                     loadingDescription={effectiveRuntime.loadingDescription}
                     blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
                     onReady={effectiveRuntime.onReady}
+                    onBlockingChange={effectiveRuntime.onBlockingChange}
                 >
                     <Board {...props} />
                 </CriticalImageGate>

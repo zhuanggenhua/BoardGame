@@ -40,7 +40,7 @@ export type MageWarsSpellAbilityEffect = {
     summary: string;
 };
 
-export interface MageWarsSpellAbilityMeta {
+export interface MageWarsSpellAbilityMeta extends Record<string, unknown> {
     objectId: string;
     cardId: number;
     spellType: string;
@@ -61,7 +61,7 @@ export type MageWarsObjectAbilityEffect = {
     summary: string;
 };
 
-export interface MageWarsObjectAbilityMeta {
+export interface MageWarsObjectAbilityMeta extends Record<string, unknown> {
     abilityId: MageWarsObjectAbilityId;
     sourceKind: MageWarsObjectAbilitySourceKind;
     sourceSpellCardId: number;

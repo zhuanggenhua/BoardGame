@@ -106,7 +106,7 @@ const formatQidahenFallbackLogText = (core: QidahenCore, command: Command): stri
 };
 
 const findQidahenDomainLog = (core: QidahenCore, events: GameEvent[]) => {
-    const timestampByLogId = new Map(events.map((event) => [`log-${event.timestamp}`, event.timestamp] as const));
+    const timestampByLogId: ReadonlyMap<string, number> = new Map(events.map((event) => [`log-${event.timestamp}`, event.timestamp] as const));
     const entry = core.actionLog.find((item) => timestampByLogId.has(item.id)) ?? null;
     return entry ? { entry, timestamp: timestampByLogId.get(entry.id) ?? null } : null;
 };

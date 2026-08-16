@@ -148,6 +148,13 @@ const collectManifestEntriesFromRoot = async ({ rootPath, rootLabel }) => {
         let latencyConfigExportName = null;
         let criticalImageResolverExportName = null;
         let runtimeAdapterExportName = null;
+        let hasAudioConfigExport = false;
+        if (hasGame) {
+            const content = await fs.readFile(gamePath, 'utf8');
+            hasAudioConfigExport = /\bexport\s+(?:const|let|var)\s+audioConfig\b/.test(content)
+                || /\bexport\s*\{[\s\S]*?\bas\s+audioConfig\b[\s\S]*?\}/.test(content)
+                || /\bexport\s*\{[\s\S]*?\baudioConfig\b[\s\S]*?\}/.test(content);
+        }
         if (hasLatencyConfig) {
             const content = await fs.readFile(latencyConfigPath, 'utf8');
             const match = content.match(/export\s+const\s+(\w+LatencyConfig)\b/);
@@ -183,6 +190,7 @@ const collectManifestEntriesFromRoot = async ({ rootPath, rootLabel }) => {
                 : null,
             criticalImageResolverExportName,
             thumbnailImport: hasThumbnail ? toImportPath(path.relative(gamesRoot, thumbnailPath)) : null,
+            hasAudioConfigExport,
             latencyConfigImport: hasLatencyConfig && latencyConfigExportName ? toImportPath(path.relative(gamesRoot, latencyConfigPath)) : null,
             latencyConfigExportName,
             runtimeAdapterImport: hasRuntimeAdapter && runtimeAdapterExportName ? toImportPath(path.relative(gamesRoot, runtimeAdapterPath)) : null,
@@ -269,7 +277,9 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
             lines.push(`    return {`);
             lines.push(`        engineConfig: gameModule.engineConfig,`);
             lines.push(`        board: requireLazyModuleExport(boardModule, 'default', '${entry.boardImport}'),`);
-            lines.push(`        audioConfig: gameModule.audioConfig,`);
+            if (entry.hasAudioConfigExport) {
+                lines.push(`        audioConfig: gameModule.audioConfig,`);
+            }
             if (entry.latencyConfigImport) {
                 lines.push(`        latencyConfig: latencyModule.${entry.latencyConfigExportName},`);
             }

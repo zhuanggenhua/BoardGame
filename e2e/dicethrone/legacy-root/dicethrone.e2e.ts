@@ -183,13 +183,9 @@ test.describe('DiceThrone E2E', () => {
 
         const match = await setupOnlineMatch(browser, baseURL, 'monk', 'barbarian');
         if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
-        const { hostPage, hostContext, guestContext, autoStarted } = match!;
+        const { hostPage, hostContext, guestContext } = match!;
 
         try {
-            if (autoStarted) {
-                test.skip(true, '游戏自动开始，无法选择僧侣角色');
-            }
-
             const monkPage = hostPage;
             const monkNextPhase = monkPage.locator('[data-tutorial-id="advance-phase-button"]');
             const monkActive = await monkNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);
@@ -253,13 +249,9 @@ test.describe('DiceThrone E2E', () => {
 
         const match = await setupOnlineMatch(browser, baseURL, 'monk', 'barbarian');
         if (!match) test.skip(true, '游戏服务器不可用或房间创建失败');
-        const { hostPage, hostContext, guestContext, autoStarted } = match!;
+        const { hostPage, hostContext, guestContext } = match!;
 
         try {
-            if (autoStarted) {
-                test.skip(true, '游戏自动开始，无法选择僧侣角色');
-            }
-
             const monkPage = hostPage;
             const monkNextPhase = monkPage.locator('[data-tutorial-id="advance-phase-button"]');
             const monkActive = await monkNextPhase.isEnabled({ timeout: 3000 }).catch(() => false);

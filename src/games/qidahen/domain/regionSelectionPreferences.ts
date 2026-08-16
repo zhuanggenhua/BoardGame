@@ -66,7 +66,7 @@ const getPreferredControlledRuntimeRegion = (
 export const isFriendlySiegedCityTarget = (
     region: QidahenCore['regions'][number] | null | undefined,
     attackerFactionId: QidahenFactionId,
-): region is QidahenCore['regions'][number] => Boolean(
+): boolean => Boolean(
     region
     && isQidahenCityRuntimeRegion(region.id)
     && isRegionFriendlyToFaction(region, attackerFactionId)
@@ -77,7 +77,7 @@ export const isFriendlySiegedCityTarget = (
 export const isOwnSiegedCityReinforcementTarget = (
     region: QidahenCore['regions'][number] | null | undefined,
     attackerFactionId: QidahenFactionId,
-): region is QidahenCore['regions'][number] => Boolean(
+): boolean => Boolean(
     region
     && isQidahenCityRuntimeRegion(region.id)
     && region.siegeState
@@ -87,7 +87,7 @@ export const isOwnSiegedCityReinforcementTarget = (
 export const isFriendlyDispatchSupportTarget = (
     region: QidahenCore['regions'][number] | null | undefined,
     factionId: QidahenFactionId,
-): region is QidahenCore['regions'][number] => Boolean(
+): boolean => Boolean(
     region
     && (
         (isRegionFriendlyToFaction(region, factionId) && isRegionAvailableForNonDispatchAction(region))

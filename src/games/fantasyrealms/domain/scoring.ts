@@ -46,7 +46,7 @@ export type FantasyRealmsScoreOptions = {
     playerCount?: number;
 };
 
-const CARD_BY_ID = new Map(ALL_FANTASY_REALMS_CARDS.map((card) => [card.id, card]));
+const CARD_BY_ID = new Map<string, TableCard>(ALL_FANTASY_REALMS_CARDS.map((card) => [card.id, card]));
 const BASE_RUNTIME_SUITS: FantasyRealmsSuit[] = ['军队', '神器', '巨兽', '烈焰', '洪流', '土地', '领袖', '武器', '天象', '野牌', '法师'];
 const CURSED_HOARD_RUNTIME_SUITS: FantasyRealmsSuit[] = [...BASE_RUNTIME_SUITS, '建筑', '局外人', '不死族'];
 const SHAPESHIFTER_ALLOWED_BASE_SUITS = new Set<FantasyRealmsSuit>(['神器', '领袖', '法师', '武器', '巨兽']);
@@ -439,7 +439,6 @@ function sourceAttacksTarget(
     source: EffectiveCard,
     target: EffectiveCard,
     allCards: readonly EffectiveCard[],
-    islandTargetId?: string,
 ): boolean {
     switch (source.penaltyRuleId) {
         case 'beast-basilisk':
@@ -502,7 +501,7 @@ function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTar
             if (accepted.has(card.instanceId) || rejected.has(card.instanceId)) return false;
             const attackers = attackSources.filter((attacker) => (
                 attacker.instanceId !== card.instanceId
-                && sourceAttacksTarget(attacker, card, cards, islandTargetId)
+                && sourceAttacksTarget(attacker, card, cards)
             ));
             return attackers.every((attacker) => rejected.has(attacker.instanceId));
         });
@@ -514,7 +513,7 @@ function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTar
         newlyAccepted.forEach((card) => {
             accepted.add(card.instanceId);
             attackSources.forEach((target) => {
-                if (target.instanceId !== card.instanceId && sourceAttacksTarget(card, target, cards, islandTargetId)) {
+                if (target.instanceId !== card.instanceId && sourceAttacksTarget(card, target, cards)) {
                     rejected.add(target.instanceId);
                 }
             });
@@ -538,7 +537,7 @@ function getActiveCards(
         cardsAfterDemon.forEach((target) => {
             if (
                 source.instanceId !== target.instanceId
-                && sourceAttacksTarget(source, target, cardsAfterDemon, islandTargetId)
+                && sourceAttacksTarget(source, target, cardsAfterDemon)
                 && !hasBlankingImmunity(target, cardsAfterDemon, angelTargetId)
             ) {
                 attackedIds.add(target.instanceId);

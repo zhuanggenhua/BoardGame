@@ -43,4 +43,4 @@ export {
     updateSceneNodeRect,
     updateSceneStackProps,
 } from './sceneGraph';
-export { YamlSyncPanel, type YamlSyncPanelProps } from './YamlSyncPanel';
+export { YamlSyncPanel, type YamlSyncDocumentId, type YamlSyncPanelProps } from './YamlSyncPanel';

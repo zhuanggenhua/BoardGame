@@ -98,6 +98,9 @@ export const resolveQidahenWheelMoveExecuted = (
     const nextWheelPosition = wheelSectorOrder[
         (currentWheelPositionIndex + move.steps) % wheelSectorOrder.length
     ];
+    if (!nextWheelPosition) {
+        return state;
+    }
     let wheelDrawFactions = state.factions;
     let wheelDrawHandCards = state.handCards;
     if (move.steps >= 2) {
@@ -177,13 +180,16 @@ export const resolveQidahenWheelMoveExecuted = (
             'wheel-hire',
         );
         if (diplomacySelection) {
+            const diplomacySourceRegionId = diplomacySelection.sourceRegionId
+                ?? diplomacySelection.displayAnchorRegionId
+                ?? nextState.selectedRegionId;
             nextState = {
                 ...nextState,
-                selectedRegionId: diplomacySelection.sourceRegionId,
+                selectedRegionId: diplomacySourceRegionId,
                 explicitRegionId: null,
-                regionFocusState: buildQidahenRegionFocusState(diplomacySelection.sourceRegionId, {
-                    lockedSourceRegionId: diplomacySelection.sourceRegionId,
-                    displayAnchorRegionId: diplomacySelection.displayAnchorRegionId ?? diplomacySelection.sourceRegionId,
+                regionFocusState: buildQidahenRegionFocusState(diplomacySourceRegionId, {
+                    lockedSourceRegionId: diplomacySourceRegionId,
+                    displayAnchorRegionId: diplomacySelection.displayAnchorRegionId ?? diplomacySourceRegionId,
                 }),
                 turnPhase: 'diplomacy-choice',
                 diplomacyProgress: null,

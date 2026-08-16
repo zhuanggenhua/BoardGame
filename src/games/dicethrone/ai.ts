@@ -5,6 +5,7 @@ import {
     createAiLegalActionId,
     createProfileAwareActionScorer,
     getAiActionStrategyTags,
+    isManualSetupSelectionEnabledForSeat,
     scoreActionAgainstStrategyProfile,
     withAiActionStrategyTags,
 } from '../../engine/ai';
@@ -107,6 +108,22 @@ const resolveDiceThroneCurrentDecisionPlayerId = (args: {
     fallbackPlayerId: PlayerId | null;
 }): PlayerId | null | undefined => {
     const diceThroneState = args.state as DiceThroneState | null | undefined;
+    const responseWindowCurrent = diceThroneState?.sys?.responseWindow?.current;
+    const currentInteraction = diceThroneState?.sys?.interaction?.current as {
+        kind?: unknown;
+        playerId?: unknown;
+    } | null | undefined;
+    if (!responseWindowCurrent && currentInteraction?.kind === 'dt:bonus-dice') {
+        return typeof currentInteraction.playerId === 'string' && currentInteraction.playerId.length > 0
+            ? currentInteraction.playerId
+            : args.fallbackPlayerId ?? undefined;
+    }
+    const settlement = diceThroneState?.core?.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+    if (!responseWindowCurrent && settlement && isCurrentBonusRollSettlement(diceThroneState.core, settlement)) {
+        return typeof settlement.attackerId === 'string' && settlement.attackerId.length > 0
+            ? settlement.attackerId
+            : args.fallbackPlayerId ?? undefined;
+    }
     if (diceThroneState?.sys?.phase !== 'defensiveRoll') return undefined;
     const defenderId = diceThroneState.core?.pendingAttack?.defenderId;
     return typeof defenderId === 'string' && defenderId.length > 0
@@ -119,6 +136,23 @@ const resolveDiceThroneOnlineDecisionVisibility = (args: {
     sharedState: MatchState<unknown>;
     privateOverlay: MatchState<unknown> | null;
 }): OnlineAiDecisionVisibility | null => {
+    const sharedState = args.sharedState as DiceThroneState | null | undefined;
+    const sharedInteraction = sharedState?.sys?.interaction?.current as {
+        kind?: unknown;
+        playerId?: unknown;
+    } | null | undefined;
+    const sharedResponseWindowCurrent = sharedState?.sys?.responseWindow?.current;
+    const settlement = sharedState?.core?.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+    if (
+        !sharedResponseWindowCurrent
+        && sharedInteraction?.kind === 'dt:bonus-dice'
+        && sharedInteraction.playerId === args.playerId
+        && settlement?.attackerId === args.playerId
+        && isCurrentBonusRollSettlement(sharedState.core, settlement)
+    ) {
+        return 'shared';
+    }
+
     const sharedDecisionOwnerId = resolveDiceThroneCurrentDecisionPlayerId({
         state: args.sharedState,
         fallbackPlayerId: null,
@@ -163,6 +197,7 @@ type DiceChaseCandidate = {
 type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
     meta?: {
         dtType?: 'modifyDie' | 'selectDie';
+        selectCount?: number;
         dieModifyConfig?: {
             mode?: 'set' | 'adjust' | 'copy' | 'any';
             targetValue?: number;
@@ -389,6 +424,38 @@ const enumerateOrderedSelections = <T>(
 
     dfs();
     return results;
+};
+
+const normalizePositiveStepCount = (value: unknown): number | null => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    return Math.max(1, Math.floor(value));
+};
+
+const resolveDiceInteractionSelectionBounds = (
+    data: DiceInteractionData,
+    selectableCount: number,
+    completedCount: number,
+): { selectCount: number; minSelectionCount: number } | null => {
+    if (selectableCount <= 0) return null;
+
+    const metaSelectCount = normalizePositiveStepCount(data.meta?.selectCount);
+    const maxSteps = normalizePositiveStepCount(data.maxSteps);
+    const minSteps = normalizePositiveStepCount(data.minSteps);
+    const totalSelectLimit = Math.max(1, Math.min(metaSelectCount ?? maxSteps ?? 1, selectableCount + completedCount));
+    const remainingMaxBySteps = maxSteps !== null
+        ? Math.max(0, maxSteps - completedCount)
+        : selectableCount;
+    const selectCount = Math.min(totalSelectLimit, remainingMaxBySteps, selectableCount);
+    if (selectCount <= 0) return null;
+
+    const exactModifyMinSteps = data.meta?.dtType === 'modifyDie' && maxSteps !== null
+        ? maxSteps
+        : null;
+    const requiredTotalMin = minSteps ?? exactModifyMinSteps ?? 1;
+    const remainingMin = Math.max(0, requiredTotalMin - completedCount);
+    const minSelectionCount = Math.max(1, Math.min(remainingMin > 0 ? remainingMin : 1, selectCount));
+
+    return { selectCount, minSelectionCount };
 };
 
 const sumFaceRequirement = (faces: Record<string, number>): number => {
@@ -1480,6 +1547,19 @@ const buildInteractionActions = (
     }
     if (current.playerId !== playerId) return [];
 
+    if (current.kind === 'dt:bonus-dice') {
+        if (state.sys.responseWindow?.current || hasPendingTokenResponseForPlayer(state, playerId)) {
+            return buildResponseActions(state, playerId, phase);
+        }
+        const actions = [
+            ...buildBonusDicePlayableCardActions(state, playerId, phase),
+            ...buildBonusDiceActions(state, playerId),
+        ];
+        return actions.length > 0
+            ? actions
+            : [buildEmergencyInteractionCancelAction(current.id, 'no-legal-actions')];
+    }
+
     const selectPlayerActions = buildSelectPlayerInteractionActions(state, playerId, current);
     if (selectPlayerActions) {
         return selectPlayerActions;
@@ -1791,10 +1871,14 @@ const buildInteractionActions = (
     if (selectableDice.length === 0) {
         return [buildEmergencyInteractionCancelAction(interactionId, 'empty-options')];
     }
-    const selectCount = Math.max(1, Math.min(meta?.selectCount ?? 1, selectableDice.length));
+    const selectionBounds = resolveDiceInteractionSelectionBounds(data, selectableDice.length, completedDieIds.size);
+    if (!selectionBounds) {
+        return [buildEmergencyInteractionCancelAction(interactionId, 'empty-options')];
+    }
+    const { selectCount, minSelectionCount } = selectionBounds;
 
     if (meta?.dtType === 'selectDie') {
-        const selections = enumerateArrayCombinations(selectableDice, 1, selectCount);
+        const selections = enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
         return selections.map((selection) => ({
             actionId: createAiLegalActionId('interaction', interactionId, 'reroll', ...selection.map((die) => die.id)),
             kind: 'interaction-multistep',
@@ -1818,10 +1902,11 @@ const buildInteractionActions = (
         const targetValue = meta.dieModifyConfig?.targetValue ?? 6;
         const mode = meta.dieModifyConfig?.mode;
         if (mode === 'copy') {
-            if (selectableDice.length < 2) {
+            const copySelectionCount = Math.min(2, selectCount);
+            if (copySelectionCount < 2 || minSelectionCount > copySelectionCount) {
                 return [buildEmergencyInteractionCancelAction(interactionId, 'empty-options')];
             }
-            const orderedSelections = enumerateOrderedSelections(selectableDice, Math.min(2, selectCount))
+            const orderedSelections = enumerateOrderedSelections(selectableDice, copySelectionCount)
                 // 复制同值骰不会改变目标骰面；这不是可用的 AI 行动。
                 .filter(([sourceDie, targetDie]) => sourceDie?.value !== targetDie?.value);
             if (orderedSelections.length === 0) {
@@ -1862,7 +1947,7 @@ const buildInteractionActions = (
             });
         }
 
-        const selections = enumerateArrayCombinations(selectableDice, 1, selectCount);
+        const selections = enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
         const actions = selections.flatMap((selection) => {
             const valueAssignments = mode === 'any'
                 ? enumeratePerItemValueAssignments(selection, (die) =>
@@ -1924,13 +2009,15 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
             : [],
     );
     const configuredSeatControllers = state.core.seatControllers;
-    const currentControllerType = configuredSeatControllers?.[playerId]?.type;
+    const currentSeatController = configuredSeatControllers?.[playerId];
+    const currentControllerType = currentSeatController?.type;
     const isCurrentSeatAi = currentControllerType === 'local-ai'
         || currentControllerType === 'remote-ai'
         || (currentControllerType !== 'human' && aiSeatIdSet.has(playerId));
+    const isCurrentSeatManualSetupSelection = isManualSetupSelectionEnabledForSeat(currentSeatController);
 
     if (!hasSelectedCharacter) {
-        if (isCurrentSeatAi) {
+        if (isCurrentSeatAi && !isCurrentSeatManualSetupSelection) {
             const hasPendingHumanSelection = Object.entries(state.core.selectedCharacters).some(([pid, characterId]) => {
                 const currentPid = pid as PlayerId;
                 const controllerType = configuredSeatControllers?.[currentPid]?.type;
@@ -2195,6 +2282,36 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
         commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
         metadata: withAiActionStrategyTags({}, ['dice-setup']),
     });
+
+    return actions;
+};
+
+const buildBonusDicePlayableCardActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): AiLegalAction[] => {
+    const actions: AiLegalAction[] = [];
+    const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+    const player = state.core.players[playerId];
+    if (!player || !settlement || settlement.attackerId !== playerId || !isCurrentBonusRollSettlement(state.core, settlement)) {
+        return actions;
+    }
+
+    for (const card of player.hand) {
+        const check = checkPlayCard(state.core, playerId, card, phase);
+        if (!check.ok) continue;
+        appendAction(actions, state, playerId, {
+            actionId: createAiLegalActionId('bonus-die', 'play-card', card.id),
+            kind: 'play-card',
+            label: `打出 ${card.id}`,
+            commands: [{
+                type: 'PLAY_CARD',
+                payload: { cardId: card.id },
+            }],
+            metadata: withAiActionStrategyTags({ cardId: card.id }, buildCardStrategyTags(card, 'play-card')),
+        });
+    }
 
     return actions;
 };
@@ -2610,7 +2727,10 @@ export function buildDiceThroneAiLegalActions(args: {
         return buildResponseActions(state, args.playerId, phase);
     }
 
-    const bonusDiceActions = buildBonusDiceActions(state, args.playerId);
+    const bonusDiceActions = [
+        ...buildBonusDicePlayableCardActions(state, args.playerId, phase),
+        ...buildBonusDiceActions(state, args.playerId),
+    ];
     if (bonusDiceActions.length > 0) {
         return bonusDiceActions;
     }

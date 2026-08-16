@@ -199,13 +199,19 @@ const GridLayer: React.FC<{
             data-valid-event-target={props.validEventTargets.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-ability-pos={props.validAbilityPositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-ability-unit={props.validAbilityUnits.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
-            className={`absolute transition-colors cursor-pointer ${cellVisual.className}`}
+            className="absolute cursor-pointer"
             style={{
               left: `${pos.left}%`, top: `${pos.top}%`,
               width: `${pos.width}%`, height: `${pos.height}%`,
-              ...cellVisual.style,
             }}
-          />
+          >
+            {cellVisual.isActive && (
+              <div
+                className={`pointer-events-none absolute inset-0 rounded-sm transition-opacity duration-100 ${cellVisual.className}`}
+                style={cellVisual.style}
+              />
+            )}
+          </div>
         );
       })
     )}
@@ -274,6 +280,7 @@ function getCardTargetHighlight(row: number, col: number, props: BoardGridProps)
 }
 
 type CellVisualStyle = {
+  isActive: boolean;
   className: string;
   style: React.CSSProperties;
 };
@@ -283,6 +290,7 @@ const baseCellVisualStyle = (
   backgroundColor: string,
   className = '',
 ): CellVisualStyle => ({
+  isActive: true,
   className,
   style: {
     borderStyle: 'solid',
@@ -353,13 +361,9 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isValidMove) return baseCellVisualStyle('rgba(96,165,250,1)', 'rgba(96,165,250,0.25)');
   if (isValidAttack) return baseCellVisualStyle('rgba(248,113,113,1)', 'rgba(248,113,113,0.3)');
   return {
+    isActive: false,
     className: '',
-    style: {
-      borderStyle: 'solid',
-      borderWidth: '1px',
-      borderColor: 'transparent',
-      backgroundColor: 'transparent',
-    },
+    style: {},
   };
 }
 
@@ -623,12 +627,9 @@ const UnitCell: React.FC<{
       }}
       initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
       animate={{ opacity: 1, scale: 1 }}
-      transition={shouldAnimateEntry ? {
-        type: 'spring', stiffness: 80, damping: 15, mass: 1.2,
-      } : {
-        layout: { type: 'spring', stiffness: 300, damping: 30 },
-      }}
-      layout="position"
+      transition={shouldAnimateEntry
+        ? { type: 'spring', stiffness: 80, damping: 15, mass: 1.2 }
+        : { opacity: { duration: 0 } }}
     >
       <div
         className={`relative w-[85%] group transition-transform duration-200 ${!isMyUnit ? 'rotate-180' : ''} ${
@@ -827,11 +828,7 @@ const StructureCell: React.FC<{
       }}
       initial={shouldAnimateEntry ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
-      transition={{
-        layout: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0 },
-      }}
-      layout="position"
+      transition={{ opacity: { duration: shouldAnimateEntry ? 0.15 : 0 } }}
       onClick={() => {
         if (shouldBlockInspectClick(structureInspectKey)) return;
         onCellClick(viewCoord.row, viewCoord.col);

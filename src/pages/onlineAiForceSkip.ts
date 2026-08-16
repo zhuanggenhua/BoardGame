@@ -9,6 +9,7 @@ import type {
 } from '../engine/transport/onlineAiRecovery';
 import {
     buildAiProgressMarker,
+    resolveForceEndTurnFollowUpAfterConfirmation,
     resolveOnlineAiCurrentPlayerId,
 } from '../engine/transport/onlineAiRecovery';
 
@@ -82,6 +83,8 @@ type OnlineAiResolutionClient = Pick<GameTransportClient, 'sendBatch' | 'sendCom
     subscribeError?: (listener: (error: string) => void) => () => void;
 };
 
+type OnlineAiAuthoritativeState = MatchState<unknown> | null;
+
 type SubmitOnlineAiResolutionArgs = {
     client: OnlineAiResolutionClient;
     resolution: AiResolution;
@@ -89,7 +92,7 @@ type SubmitOnlineAiResolutionArgs = {
     scheduleRetry: () => void;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
     onWillResync?: (reason: string) => void;
-    onConfirmed?: (authoritativeState: MatchState<unknown> | unknown) => void;
+    onConfirmed?: (authoritativeState: OnlineAiAuthoritativeState) => void;
     onRejected?: (reason: string) => void;
 };
 
@@ -100,17 +103,17 @@ type SubmitOnlineAiResolutionSequenceArgs = {
     scheduleRetry: () => void;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
     resolveNextResolution: (args: {
-        authoritativeState: MatchState<unknown> | unknown;
+        authoritativeState: OnlineAiAuthoritativeState;
         confirmedResolution: AiResolution;
         stepIndex: number;
     }) => AiResolution | null;
     maxSteps?: number;
     onStepConfirmed?: (args: {
-        authoritativeState: MatchState<unknown> | unknown;
+        authoritativeState: OnlineAiAuthoritativeState;
         confirmedResolution: AiResolution;
         stepIndex: number;
     }) => void;
-    onCompleted?: (authoritativeState: MatchState<unknown> | unknown) => void;
+    onCompleted?: (authoritativeState: OnlineAiAuthoritativeState) => void;
     onRejected?: (reason: string, context: {
         failedResolution: AiResolution;
         stepIndex: number;
@@ -126,7 +129,7 @@ type SubmitForceEndTurnRecoverySequenceArgs = {
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
     followUpSteps?: number;
-    onCompleted?: (authoritativeState: MatchState<unknown> | unknown) => void;
+    onCompleted?: (authoritativeState: OnlineAiAuthoritativeState) => void;
     onRejected?: (reason: string, context: {
         failedResolution: AiResolution;
         stepIndex: number;
@@ -225,7 +228,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
             }
             settled = true;
             cleanup();
-            onConfirmed?.(nextState);
+            onConfirmed?.(nextState as MatchState<unknown>);
         });
 
         timeoutHandle = setTimeout(() => {
@@ -270,7 +273,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
             // batch:confirmed 返回的是 stripEventStream 裁剪后的权威态，
             // 不能拿来污染 transport patch baseline；后续真正的 state:update/state:patch
             // 会继续把完整权威态同步到 client 内部缓存。
-            onConfirmed?.(authoritativeState);
+            onConfirmed?.(authoritativeState as MatchState<unknown>);
         },
         (reason) => {
             if (lastAiAttemptKeyRef.current === resolution.attemptKey) {

@@ -17,12 +17,6 @@ vi.mock('react-i18next', () => ({
     },
 }));
 
-vi.mock('../SpotlightContainer', () => ({
-    default: ({ children, isVisible }: { children: React.ReactNode; isVisible: boolean }) => (
-        isVisible ? <div data-testid="spotlight-container">{children}</div> : null
-    ),
-}));
-
 describe('CompareRollOverlay', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -75,7 +69,6 @@ describe('CompareRollOverlay', () => {
                 canResolve={true}
                 onResolveOption={vi.fn()}
                 onConfirm={initialConfirm}
-                usePortal={false}
             />,
         );
 
@@ -88,7 +81,6 @@ describe('CompareRollOverlay', () => {
                 canResolve={true}
                 onResolveOption={vi.fn()}
                 onConfirm={latestConfirm}
-                usePortal={false}
             />,
         );
 
@@ -109,16 +101,16 @@ describe('CompareRollOverlay', () => {
                 canResolve={false}
                 onResolveOption={vi.fn()}
                 onConfirm={vi.fn()}
-                usePortal={false}
             />,
         );
 
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
+        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'right-dice-panel');
         expect(screen.getByTestId('compare-roll-waiting').textContent).toBe('compareRoll.waitingForOwnerChoice');
         expect(screen.queryByRole('button', { name: 'choices.gunslingerDuel.deal3' })).toBeNull();
     });
 
-    it('结果选择层不应再渲染中间骰子特写', () => {
+    it('结果选择层应是右侧结果面板，且不渲染中间骰子特写', () => {
         render(
             <CompareRollOverlay
                 compareRoll={compareRoll}
@@ -126,13 +118,14 @@ describe('CompareRollOverlay', () => {
                 canResolve={true}
                 onResolveOption={vi.fn()}
                 onConfirm={vi.fn()}
-                usePortal={false}
             />,
         );
 
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
+        expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'right-dice-panel');
         expect(screen.getByTestId('compare-roll-participant-0')).toBeTruthy();
         expect(screen.getByTestId('compare-roll-participant-1')).toBeTruthy();
+        expect(screen.queryByTestId('spotlight-container')).toBeNull();
         expect(screen.queryByTestId('roll-spotlight-dice-content')).toBeNull();
         expect(screen.queryByTestId('dice-2d')).toBeNull();
     });

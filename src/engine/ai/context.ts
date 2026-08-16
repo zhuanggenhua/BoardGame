@@ -25,15 +25,29 @@ interface BuildAiDecisionContextArgs {
 function shouldBlockHiddenInteractionActions(
     visibleState: MatchState<unknown>,
     interaction: ReturnType<typeof extractAiInteractionSnapshot>,
+    responseWindow: ReturnType<typeof extractAiResponseWindowSnapshot>,
+    playerId: string,
 ): boolean {
-    return visibleState.sys?.interaction?.isBlocked === true && !interaction;
+    if (visibleState.sys?.interaction?.isBlocked !== true || interaction) {
+        return false;
+    }
+
+    const responderIndex = typeof responseWindow?.currentResponderIndex === 'number'
+        ? responseWindow.currentResponderIndex
+        : 0;
+    const currentResponderId = responseWindow?.responderQueue?.[responderIndex];
+    if (currentResponderId === playerId && !responseWindow?.pendingInteractionId) {
+        return false;
+    }
+
+    return true;
 }
 
 export function buildAiDecisionContext(args: BuildAiDecisionContextArgs): AiDecisionContext {
     const runtime = getGameAiRuntime(args.gameId);
     const interaction = extractAiInteractionSnapshot(args.visibleState);
     const responseWindow = extractAiResponseWindowSnapshot(args.visibleState);
-    const legalActions = shouldBlockHiddenInteractionActions(args.visibleState, interaction)
+    const legalActions = shouldBlockHiddenInteractionActions(args.visibleState, interaction, responseWindow, args.playerId)
         ? []
         : (runtime?.buildLegalActions({
             playerId: args.playerId,

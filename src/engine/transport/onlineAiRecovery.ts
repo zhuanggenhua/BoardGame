@@ -78,6 +78,7 @@ export type ForceSkippableHiddenAiInteraction = {
     interactionId: string;
     sourceId?: string;
     title?: string;
+    fingerprintHint?: string;
     resolution: AiResolution;
 };
 
@@ -1005,7 +1006,7 @@ export function resolveForceEndTurnForStalledAi(args: {
         if (args.seatControllers[interactionPlayerId]?.type === 'human') {
             return null;
         }
-        return buildForceEndTurnFromInteractionState(
+        const visibleInteractionRecovery = buildForceEndTurnFromInteractionState(
             args.sharedState as MatchState<unknown>,
             interactionPlayerId,
             'visible-interaction',
@@ -1014,6 +1015,11 @@ export function resolveForceEndTurnForStalledAi(args: {
                 gameId: args.gameId,
             },
         );
+        if (visibleInteractionRecovery) {
+            return visibleInteractionRecovery;
+        }
+
+        return resolveConfiguredSeatLegalOnlyRecovery(args);
     }
 
     if (shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
@@ -1052,14 +1058,7 @@ export function resolveForceEndTurnForStalledAi(args: {
                 };
             }
             if (responseWindow && responderId && args.seatControllers[responderId]?.type === 'human') {
-                return buildForceCloseHumanResponseWindowDuringAiPhase({
-                    sharedState: args.sharedState,
-                    seatControllers: args.seatControllers,
-                    responseWindow,
-                    engineConfig: args.engineConfig,
-                    gameId: args.gameId,
-                    suffixDetail: 'orphan-pending-interaction',
-                });
+                return null;
             }
             return null;
         }
@@ -1103,13 +1102,7 @@ export function resolveForceEndTurnForStalledAi(args: {
         };
     }
     if (responderId && args.seatControllers[responderId]?.type === 'human') {
-        return buildForceCloseHumanResponseWindowDuringAiPhase({
-            sharedState: args.sharedState,
-            seatControllers: args.seatControllers,
-            responseWindow,
-            engineConfig: args.engineConfig,
-            gameId: args.gameId,
-        });
+        return null;
     }
 
     const configuredSeatLegalOnlyRecovery = resolveConfiguredSeatLegalOnlyRecovery(args);

@@ -1,0 +1,148 @@
+{
+  "url": "http://127.0.0.1:6174/play/smashup/match/RVhRTIAPfjQ?playerID=0",
+  "domSummary": {
+    "totalFactionCount": 108,
+    "renderedFactionCount": 25,
+    "domFactionOptionCount": 25,
+    "documentElementCount": 571,
+    "shadowElementCount": 92,
+    "virtualWindow": {
+      "startIndex": 0,
+      "endIndex": 25
+    }
+  },
+  "scrollProbe": {
+    "snapshots": [
+      {
+        "scrollTop": 0,
+        "startIndex": "0",
+        "endIndex": "25",
+        "renderedFactions": "25",
+        "firstOption": "faction-option-pirates"
+      },
+      {
+        "scrollTop": 1736,
+        "startIndex": "10",
+        "endIndex": "50",
+        "renderedFactions": "40",
+        "firstOption": "faction-option-wizards"
+      },
+      {
+        "scrollTop": 3473,
+        "startIndex": "35",
+        "endIndex": "75",
+        "renderedFactions": "40",
+        "firstOption": "faction-option-vampires"
+      },
+      {
+        "scrollTop": 5209,
+        "startIndex": "60",
+        "endIndex": "100",
+        "renderedFactions": "40",
+        "firstOption": "faction-option-hydra"
+      },
+      {
+        "scrollTop": 6843,
+        "startIndex": "85",
+        "endIndex": "108",
+        "renderedFactions": "23",
+        "firstOption": "faction-option-mulan"
+      }
+    ],
+    "maxScrollTop": 6945
+  },
+  "frames": {
+    "idle": {
+      "count": 36,
+      "p95": 66.8,
+      "p99": 83.3,
+      "max": 83.3,
+      "over33ms": 31,
+      "over50ms": 10
+    },
+    "scroll": {
+      "count": 34,
+      "p95": 166.7,
+      "p99": 166.7,
+      "max": 166.7,
+      "over33ms": 30,
+      "over50ms": 16
+    }
+  },
+  "performanceMetricsDelta": {
+    "TaskDuration": 9.803,
+    "ScriptDuration": 5.045,
+    "LayoutDuration": 0.126,
+    "RecalcStyleDuration": 0.661
+  },
+  "traceSummary": {
+    "eventCount": 597124,
+    "propertyHits": {
+      "borderRightColor": 0,
+      "borderLeftColor": 0,
+      "borderTopColor": 0,
+      "borderBottomColor": 0
+    },
+    "durationByNameMs": {
+      "RunTask": 22222.42,
+      "EvaluateScript": 0.24,
+      "FunctionCall": 5411.48,
+      "UpdateLayoutTree": 560.81,
+      "Layout": 124.46
+    },
+    "topCompleteEvents": [
+      {
+        "name": "ThreadPool_RunTask",
+        "durationMs": 769.62
+      },
+      {
+        "name": "TaskGraphRunner::RunTask",
+        "durationMs": 624.02
+      },
+      {
+        "name": "SoftwareImageDecodeTaskImpl::RunOnWorkerThread",
+        "durationMs": 624
+      },
+      {
+        "name": "ImageDecodeTask",
+        "durationMs": 623.99
+      },
+      {
+        "name": "SoftwareImageDecodeCache::DecodeImageInTask",
+        "durationMs": 623.97
+      },
+      {
+        "name": "DecodingImageGenerator::getPixels",
+        "durationMs": 538.3
+      },
+      {
+        "name": "Decode LazyPixelRef",
+        "durationMs": 538.3
+      },
+      {
+        "name": "ImageFrameGenerator::decodeAndScale",
+        "durationMs": 538.29
+      },
+      {
+        "name": "ImageFrameGenerator::decode",
+        "durationMs": 534.07
+      },
+      {
+        "name": "ImageDecoder::DecodeFrameBufferAtIndex",
+        "durationMs": 534.06
+      },
+      {
+        "name": "Decode Image",
+        "durationMs": 534.01
+      },
+      {
+        "name": "ThreadPool_RunTask",
+        "durationMs": 486.04
+      }
+    ]
+  },
+  "files": {
+    "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-派系选择性能诊断\\2026-08-15T13-04-37-332Z\\chrome-trace-smashup-faction-selection-after.json",
+    "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\大杀四方-派系选择性能诊断\\2026-08-15T13-04-37-332Z\\smashup-faction-selection-after.png"
+  }
+}

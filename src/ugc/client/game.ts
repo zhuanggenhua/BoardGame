@@ -19,13 +19,6 @@ import { RuntimeDomainExecutor, type RuntimeDomainCore } from '../runtime/domain
 import type { UGCGameState } from '../sdk/types';
 import { loadUgcRuntimeConfig, type UgcRuntimeConfig } from './loader';
 
-export interface UgcClientGameResult {
-    engineConfig: GameEngineConfig;
-    config: UgcRuntimeConfig;
-    rulesCode: string;
-}
-
-
 export interface UgcDraftGameOptions {
     packageId?: string;
     rulesCode: string;
@@ -40,6 +33,13 @@ const DEFAULT_DRAFT_PACKAGE_ID = 'ugc-builder-preview';
 
 type RuntimeCommandLike = Command<string, Record<string, unknown>>;
 type RuntimeEventLike = GameEvent<string, Record<string, unknown>>;
+type UgcGameEngineConfig = GameEngineConfig<UGCGameState, RuntimeCommandLike, RuntimeEventLike>;
+
+export interface UgcClientGameResult {
+    engineConfig: UgcGameEngineConfig;
+    config: UgcRuntimeConfig;
+    rulesCode: string;
+}
 
 const normalizePayload = (payload: unknown): Record<string, unknown> => {
     if (payload && typeof payload === 'object') {
@@ -124,7 +124,7 @@ interface CreateGameFromRulesOptions {
 }
 
 interface CreateGameFromRulesResult {
-    engineConfig: GameEngineConfig;
+    engineConfig: UgcGameEngineConfig;
 }
 
 const createGameFromRules = async (options: CreateGameFromRulesOptions): Promise<CreateGameFromRulesResult> => {
@@ -181,7 +181,7 @@ export const createUgcClientGame = async (packageId: string): Promise<UgcClientG
 };
 
 export interface UgcDraftGameResult {
-    engineConfig: GameEngineConfig;
+    engineConfig: UgcGameEngineConfig;
 }
 
 export const createUgcDraftGame = async (options: UgcDraftGameOptions): Promise<UgcDraftGameResult> => {

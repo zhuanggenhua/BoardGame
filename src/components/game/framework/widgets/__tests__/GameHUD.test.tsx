@@ -194,6 +194,49 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('opponent-offline-banner')).toBeInTheDocument();
     });
 
+    it('联机加载期不显示对手离线横幅', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="dicethrone"
+                myPlayerId="0"
+                opponentName="玩家2"
+                opponentConnected={false}
+                presenceReady={true}
+                players={[
+                    { id: 0, name: '玩家1', isConnected: true },
+                    { id: 1, name: '玩家2', isConnected: false },
+                ]}
+                isPregameSetupPhase={true}
+                isLoading={true}
+            />,
+        );
+
+        expect(screen.queryByTestId('opponent-offline-banner')).toBeNull();
+    });
+
+    it('联机状态未确认前不显示对手离线横幅', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="dicethrone"
+                myPlayerId="0"
+                opponentName="玩家2"
+                opponentConnected={false}
+                presenceReady={false}
+                players={[
+                    { id: 0, name: '玩家1', isConnected: true },
+                    { id: 1, name: '玩家2', isConnected: false },
+                ]}
+                isPregameSetupPhase={true}
+            />,
+        );
+
+        expect(screen.queryByTestId('opponent-offline-banner')).toBeNull();
+    });
+
     it('联机赛前 setup 阶段仍显示强制结束 AI 阶段入口', () => {
         renderHud(
             <GameHUD

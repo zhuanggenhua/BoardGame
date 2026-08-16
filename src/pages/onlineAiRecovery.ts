@@ -1,11 +1,12 @@
-import { getGameImplementation } from '../games/registry';
 import { buildAiProgressMarker } from '../engine/transport/react';
 import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import {
+    getGameAiRuntime,
     resolveNextAiDispatch,
     resolveOnlineAiDecisionView,
+    type AiResolution,
     type AiSeatController,
 } from '../engine/ai';
 import {
@@ -30,7 +31,7 @@ export async function resolveManualOnlineAiRecovery(args: {
     }
     | {
         kind: 'legal-action';
-        resolution: Awaited<ReturnType<typeof resolveNextAiDispatch>> extends { kind: 'action'; resolution: infer R } ? R : never;
+        resolution: AiResolution;
     }
     | {
         kind: 'blocked';
@@ -57,13 +58,14 @@ export async function resolveManualOnlineAiRecovery(args: {
     }
 
     const dispatchImpl = args.resolveDispatchImpl ?? resolveNextAiDispatch;
+    const aiRuntime = getGameAiRuntime(args.engineConfig.gameId);
     const aiDispatchResult = await dispatchImpl({
         engineConfig: args.engineConfig as GameEngineConfig,
         state: args.sharedState,
         matchId: args.matchId,
         seatControllers: args.seatControllers,
         visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
-            runtime: getGameImplementation(args.engineConfig.gameId).ai,
+            runtime: aiRuntime,
             sharedState: args.sharedState,
             privateOverlay: args.seatStates[playerId],
             playerId,
@@ -129,17 +131,23 @@ export function resolveOnlineAiSeatRecoveryAttempt(args: {
     nextRecovery: OnlineAiSeatRecoveryTracker;
 } {
     const minIntervalMs = args.minIntervalMs ?? STALE_SEAT_RECOVERY_MIN_INTERVAL_MS;
-    const shouldRecover = !args.lastRecovery
-        || args.lastRecovery.key !== args.recoveryKey
-        || args.now - args.lastRecovery.lastRecoveryAt >= minIntervalMs;
+    if (
+        args.lastRecovery
+        && args.lastRecovery.key === args.recoveryKey
+        && args.now - args.lastRecovery.lastRecoveryAt < minIntervalMs
+    ) {
+        return {
+            shouldRecover: false,
+            nextRecovery: args.lastRecovery,
+        };
+    }
+
     return {
-        shouldRecover,
-        nextRecovery: shouldRecover
-            ? {
-                key: args.recoveryKey,
-                lastRecoveryAt: args.now,
-            }
-            : args.lastRecovery,
+        shouldRecover: true,
+        nextRecovery: {
+            key: args.recoveryKey,
+            lastRecoveryAt: args.now,
+        },
     };
 }
 

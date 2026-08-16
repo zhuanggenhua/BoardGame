@@ -62,6 +62,7 @@ describe('useMatchRoomBoardRuntime', () => {
             loadingDescription: 'loading',
             shouldBlockBoardOnImagePreload: true,
             onInitialOnlinePreloadReady: vi.fn(),
+            onBoardPreloadBlockingChange: vi.fn(),
         };
 
         const { result, rerender } = renderHook((props: typeof args) => useMatchRoomBoardRuntime(props), {
@@ -140,6 +141,7 @@ describe('useMatchRoomBoardRuntime', () => {
             loadingDescription: 'loading',
             shouldBlockBoardOnImagePreload: true,
             onInitialOnlinePreloadReady: vi.fn(),
+            onBoardPreloadBlockingChange: vi.fn(),
         };
 
         const { result, rerender } = renderHook((props: typeof args) => useMatchRoomBoardRuntime(props), {
@@ -165,6 +167,7 @@ describe('useMatchRoomBoardRuntime', () => {
             loadingDescription: 'loading',
             shouldBlockBoardOnImagePreload: true,
             onInitialOnlinePreloadReady: vi.fn(),
+            onBoardPreloadBlockingChange: vi.fn(),
         };
 
         const { result, rerender } = renderHook((props: typeof args) => useMatchRoomBoardRuntime(props), {
@@ -188,6 +191,7 @@ describe('useMatchRoomBoardRuntime', () => {
             loadingDescription: 'loading',
             shouldBlockBoardOnImagePreload: true,
             onInitialOnlinePreloadReady: vi.fn(),
+            onBoardPreloadBlockingChange: vi.fn(),
         };
 
         const { result, rerender } = renderHook((props: typeof args) => useMatchRoomBoardRuntime(props), {

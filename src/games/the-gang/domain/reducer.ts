@@ -179,6 +179,10 @@ const buildCoreWithRulesConfig = (core: TheGangCore, random: RandomFn, config: P
         || core.heistHistory.length > 0;
     if (hasStartedOrProgressed) {
         return createInitialHeistCore(core.playerIds, random, {
+            heistNumber: core.heistNumber,
+            successes: core.successes,
+            failures: core.failures,
+            heistHistory: core.heistHistory,
             rulesConfig: normalizedConfig,
         });
     }

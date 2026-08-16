@@ -789,6 +789,118 @@ describe('响应窗口交互锁定：取消交互', () => {
 });
 
 describe('AI 私有状态选择的唯一执行入口', () => {
+    it('afterCardPlayed 响应者打出即时牌后，不应被触发牌玩家的状态选择交互卡住', () => {
+        const runner = createRunner(fixedRandom, true);
+        const opened = runner.run({
+            name: '转移状态触发 afterCardPlayed 后等待对手响应',
+            setup: (playerIds, random) => {
+                const state = createHeroMatchup(
+                    'monk',
+                    'barbarian',
+                    (core) => {
+                        core.activePlayerId = '0';
+                        core.turnPhase = 'main1';
+                        core.players['0'].hand = [getCardById('card-transfer-status')];
+                        core.players['0'].deck = [];
+                        core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
+                        core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                        core.players['1'].hand = [getCardById('card-boss-generous')];
+                        core.players['1'].deck = [];
+                        core.players['1'].resources[RESOURCE_IDS.CP] = 1;
+                    },
+                )(playerIds, random);
+                state.sys.phase = 'main1';
+                return state;
+            },
+            commands: [cmd('PLAY_CARD', '0', { cardId: 'card-transfer-status' })],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterCardPlayed',
+            sourceId: 'card-transfer-status',
+            responderQueue: ['1'],
+        });
+        expect(opened.finalState.core.cardPlayedSequence).toBeGreaterThan(0);
+        expect(opened.finalState.core.afterCardResponseWindowSequence).toBe(opened.finalState.core.cardPlayedSequence);
+        expect(opened.finalState.sys.interaction?.current).toMatchObject({
+            kind: 'dt:card-interaction',
+            playerId: '0',
+        });
+
+        runner.setState(opened.finalState);
+        const responded = runner.dispatch('PLAY_CARD', {
+            playerId: '1',
+            cardId: 'card-boss-generous',
+        });
+
+        expect(responded.success).toBe(true);
+        expect(responded.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(responded.finalState.sys.interaction?.current).toMatchObject({
+            kind: 'dt:card-interaction',
+            playerId: '0',
+        });
+        expect(responded.finalState.core.players['1'].discard.map((card: any) => card.id)).toContain('card-boss-generous');
+        expect(responded.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(3);
+        expect(responded.finalState.core.cardPlayedSequence).toBe(opened.finalState.core.cardPlayedSequence);
+        expect(responded.finalState.core.afterCardResponseWindowSequence).toBe(opened.finalState.core.cardPlayedSequence);
+    });
+
+    it('AI 作为 afterCardPlayed 当前响应者时，不应被触发牌玩家的私有状态选择遮蔽为跳过响应', async () => {
+        const runner = createRunner(fixedRandom, true);
+        const opened = runner.run({
+            name: '转移状态触发 afterCardPlayed 后等待 AI 响应',
+            setup: (playerIds, random) => {
+                const state = createHeroMatchup(
+                    'monk',
+                    'barbarian',
+                    (core) => {
+                        core.activePlayerId = '0';
+                        core.turnPhase = 'main1';
+                        core.players['0'].hand = [getCardById('card-transfer-status')];
+                        core.players['0'].deck = [];
+                        core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
+                        core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                        core.players['1'].hand = [getCardById('card-boss-generous')];
+                        core.players['1'].deck = [];
+                        core.players['1'].resources[RESOURCE_IDS.CP] = 1;
+                    },
+                )(playerIds, random);
+                state.sys.phase = 'main1';
+                return state;
+            },
+            commands: [cmd('PLAY_CARD', '0', { cardId: 'card-transfer-status' })],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterCardPlayed',
+            responderQueue: ['1'],
+        });
+        expect(opened.finalState.sys.interaction?.current).toMatchObject({
+            kind: 'dt:card-interaction',
+            playerId: '0',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig,
+            state: opened.finalState,
+            matchId: 'dicethrone-after-card-played-ai-hidden-trigger-interaction',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-boss-generous' });
+        expect(resolution?.action.commands).toEqual([{
+            type: 'PLAY_CARD',
+            payload: { cardId: 'card-boss-generous' },
+        }]);
+    });
+
     it('AI 在 afterRollConfirmed 响应窗口不能打出拜拜了您嘞，非法出牌不得破坏响应窗口', () => {
         const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]), true);
         const windowOpened = runner.run({

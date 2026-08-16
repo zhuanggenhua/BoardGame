@@ -14,7 +14,7 @@ vi.mock('../../games/gameHudRuntimeAdapter', () => ({
     tryHandleGameHudForceDismiss: mockedRuntimeAdapters.tryHandleGameHudForceDismiss,
 }));
 
-vi.mock('../../games/pageRuntimeAdapter', () => ({
+vi.mock('../../games/pageRuntimeTransientUi', () => ({
     dismissGamePageTransientUi: mockedRuntimeAdapters.dismissGamePageTransientUi,
 }));
 

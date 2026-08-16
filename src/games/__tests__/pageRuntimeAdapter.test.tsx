@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { GamePageRuntimeProvider, dismissGamePageTransientUi } from '../pageRuntimeAdapter';
+import { GamePageRuntimeProvider } from '../pageRuntimeAdapter';
+import { dismissGamePageTransientUi } from '../pageRuntimeTransientUi';
 import { smashUpGameRuntimeAdapter } from '../smashup/runtimeAdapter';
 import { useSmashUpOverlay } from '../smashup/ui/SmashUpOverlayContext';
 

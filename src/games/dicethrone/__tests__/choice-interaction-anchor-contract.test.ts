@@ -629,7 +629,12 @@ describe('DiceThrone choice handler anchor contract', () => {
         } as unknown as DiceThroneEvent]);
 
         expect(nextEvents.some(event => event.type === 'CHOICE_RESOLVED')).toBe(true);
-        expect(nextEvents.some(event => event.type === 'DAMAGE_DEALT' && event.payload.amount === amount)).toBe(true);
+        expect(nextEvents.some(event => (
+            event.type === 'DAMAGE_DEALT'
+            && event.payload.amount === amount
+            && event.payload.damageScope === 'direct'
+            && event.payload.unblockable === true
+        ))).toBe(true);
     });
 
     it('gunslinger duel prevent-half followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {

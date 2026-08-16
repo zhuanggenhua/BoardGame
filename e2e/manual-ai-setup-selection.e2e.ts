@@ -489,35 +489,50 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForFactionSelectionReady(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
-            await selectFactionById(page, 'necromancer');
-            await expect.poll(async () => {
-                const core = await readLiveCore<{
-                    selectedFactions?: Record<string, string>;
-                }>(matchId, page);
-                return core.selectedFactions?.['0'] ?? 'unselected';
-            }, {
-                timeout: 15000,
-                message: '等待 SummonerWars 房主阵营写回 shared state',
-            }).toBe('necromancer');
-            await page.waitForTimeout(300);
-
             await selectFactionById(page, 'trickster');
             await expect.poll(async () => {
                 const core = await readLiveCore<{
                     selectedFactions?: Record<string, string>;
+                    readyPlayers?: Record<string, boolean>;
                     hostStarted?: boolean;
                 }>(matchId, page);
                 return {
                     hostFaction: core.selectedFactions?.['0'] ?? 'unselected',
                     aiFaction: core.selectedFactions?.['1'] ?? 'unselected',
+                    aiReady: core.readyPlayers?.['1'] ?? false,
                     hostStarted: core.hostStarted ?? null,
                 };
             }, {
                 timeout: 15000,
-                message: '等待 SummonerWars AI 阵营选择写回 shared state',
+                message: '等待 SummonerWars AI 阵营先写回并准备',
+            }).toEqual({
+                hostFaction: 'unselected',
+                aiFaction: 'trickster',
+                aiReady: true,
+                hostStarted: false,
+            });
+            await page.waitForTimeout(300);
+
+            await selectFactionById(page, 'necromancer');
+            await expect.poll(async () => {
+                const core = await readLiveCore<{
+                    selectedFactions?: Record<string, string>;
+                    readyPlayers?: Record<string, boolean>;
+                    hostStarted?: boolean;
+                }>(matchId, page);
+                return {
+                    hostFaction: core.selectedFactions?.['0'] ?? 'unselected',
+                    aiFaction: core.selectedFactions?.['1'] ?? 'unselected',
+                    aiReady: core.readyPlayers?.['1'] ?? false,
+                    hostStarted: core.hostStarted ?? null,
+                };
+            }, {
+                timeout: 15000,
+                message: '等待 SummonerWars 房主最后选择阵营',
             }).toEqual({
                 hostFaction: 'necromancer',
                 aiFaction: 'trickster',
+                aiReady: true,
                 hostStarted: false,
             });
 
@@ -589,45 +604,51 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForCharacterSelection(page);
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
-            await selectCharacter(page, 'samurai');
+            await selectCharacter(page, 'gunslinger');
             await expect.poll(async () => {
                 const core = await readLiveCore<{
                     selectedCharacters?: Record<string, string>;
+                    readyPlayers?: Record<string, boolean>;
                     hostStarted?: boolean;
                 }>(matchId, page);
                 return {
                     hostCharacter: core.selectedCharacters?.['0'] ?? 'unselected',
                     aiCharacter: core.selectedCharacters?.['1'] ?? 'unselected',
+                    aiReady: core.readyPlayers?.['1'] ?? false,
                     hostStarted: core.hostStarted ?? null,
                 };
             }, {
                 timeout: 15000,
-                message: '等待 DiceThrone 房主角色选择写回 shared state',
+                message: '等待 DiceThrone AI 角色先写回并准备',
             }).toEqual({
-                hostCharacter: 'samurai',
-                aiCharacter: 'unselected',
+                hostCharacter: 'unselected',
+                aiCharacter: 'gunslinger',
+                aiReady: true,
                 hostStarted: false,
             });
             await waitForCharacterSelection(page);
             await page.waitForTimeout(300);
 
-            await selectCharacter(page, 'gunslinger');
+            await selectCharacter(page, 'samurai');
             await expect.poll(async () => {
                 const core = await readLiveCore<{
                     selectedCharacters?: Record<string, string>;
+                    readyPlayers?: Record<string, boolean>;
                     hostStarted?: boolean;
                 }>(matchId, page);
                 return {
                     hostCharacter: core.selectedCharacters?.['0'] ?? 'unselected',
                     aiCharacter: core.selectedCharacters?.['1'] ?? 'unselected',
+                    aiReady: core.readyPlayers?.['1'] ?? false,
                     hostStarted: core.hostStarted ?? null,
                 };
             }, {
                 timeout: 15000,
-                message: '等待 DiceThrone AI 角色选择写回 shared state',
+                message: '等待 DiceThrone 房主最后选择角色',
             }).toEqual({
                 hostCharacter: 'samurai',
                 aiCharacter: 'gunslinger',
+                aiReady: true,
                 hostStarted: false,
             });
 

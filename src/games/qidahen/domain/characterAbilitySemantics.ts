@@ -18,7 +18,7 @@ export const isSunYuanhuaEnabled = (state: QidahenCore): boolean => (
 
 export const hasJinDefeatLossImmunity = (
     state: QidahenCore,
-    factionId: QidahenFactionId,
+    factionId: QidahenFactionId | 'neutral',
 ): boolean => (
     factionId === 'jin' && hasActiveCharacter(state, 'jin', 'jin-daisan')
 );

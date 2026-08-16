@@ -151,6 +151,22 @@ function parseArgs(argv) {
     };
 }
 
+function shouldRunPerFile() {
+    return process.env.BG_E2E_BATCH_PER_FILE === '1';
+}
+
+function hasFailureLimit(args) {
+    return args.some((arg) => (
+        arg === '--max-failures'
+        || arg.startsWith('--max-failures=')
+        || arg === '-x'
+    ));
+}
+
+function isPlaywrightListMode(args) {
+    return args.some((arg) => arg === '--list');
+}
+
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const allFiles = options.files.length > 0
@@ -174,6 +190,33 @@ async function main() {
         console.log(`  - ${file}`);
     }
 
+    if (!shouldRunPerFile()) {
+        process.exitCode = 0;
+        const failureLimitArgs = hasFailureLimit(options.playwrightArgs) || isPlaywrightListMode(options.playwrightArgs)
+            ? []
+            : ['--max-failures=1'];
+        console.log(`\n[test:e2e:${options.mode}:batch] 合并执行 ${selectedFiles.length} 个文件，首个失败即停止`);
+        await runE2ECommand({
+            mode: options.mode,
+            extraArgs: [...selectedFiles, ...failureLimitArgs, ...options.playwrightArgs],
+            envOverrides: {
+                PW_E2E_SERVICE_REUSE: process.env.PW_E2E_SERVICE_REUSE ?? 'shared-single',
+                PW_SERVER_WATCH: process.env.PW_SERVER_WATCH ?? 'false',
+            },
+            entrypoint: 'run-e2e-batch',
+        });
+
+        const exitCode = Number(process.exitCode || 0);
+        if (exitCode !== 0) {
+            console.error(`[test:e2e:${options.mode}:batch] 失败后停止: exitCode=${exitCode}`);
+            process.exit(exitCode);
+        }
+
+        console.log(`[test:e2e:${options.mode}:batch] 本批通过: ${selectedFiles.length}/${selectedFiles.length}`);
+        return;
+    }
+
+    console.log('[test:e2e:batch] BG_E2E_BATCH_PER_FILE=1，使用旧逐文件执行模式。');
     for (let fileIndex = 0; fileIndex < selectedFiles.length; fileIndex += 1) {
         const file = selectedFiles[fileIndex];
         process.exitCode = 0;

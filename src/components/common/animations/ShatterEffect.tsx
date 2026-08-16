@@ -13,6 +13,7 @@
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import { isTestEnvironment } from '../../../engine/testing/environment';
+import { getPreloadedImageElement } from '../../../core';
 
 /** 直接传入图片源，跳过 DOM 截取（更可靠） */
 export interface ShatterImageSource {
@@ -70,6 +71,9 @@ interface Shard {
   maxLife: number;
 }
 
+const hasUsableImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
+  Boolean(img) && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
+
 
 /**
  * 从直接传入的图片源创建离屏 Canvas（无 DOM 截取，更可靠）
@@ -89,13 +93,22 @@ function captureFromImageSource(
     if (!ctx) { resolve(null); return; }
     ctx.scale(dpr, dpr);
 
-    const img = new Image();
-    // 不设置 crossOrigin，避免 CORS 问题（我们只绘制不读取像素）
-    img.onload = () => {
+    const drawImage = (img: HTMLImageElement) => {
       const { drawW, drawH, drawX, drawY } = parseBgStyle(src.bgSize, src.bgPosition, w, h, img.naturalWidth, img.naturalHeight);
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
       resolve(offscreen);
     };
+
+    const preloaded = getPreloadedImageElement(src.url);
+    if (hasUsableImage(preloaded)) {
+      drawImage(preloaded);
+      return;
+    }
+
+    const img = new Image();
+    img.decoding = 'async';
+    // 不设置 crossOrigin，避免 CORS 问题（我们只绘制不读取像素）
+    img.onload = () => drawImage(img);
     img.onerror = () => {
       ctx.fillStyle = '#475569';
       ctx.fillRect(0, 0, w, h);

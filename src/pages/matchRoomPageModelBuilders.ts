@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import { getGameById } from '../config/games.config';
 import { getGamePageDataAttributes } from '../shared/mobileSupport';
+import type { GameManifestEntry, GameMobileBattlefieldZoom } from '../shared/gameManifest.types';
 import type { MatchRoomBlockingState } from './matchRoomBlockingResolver';
 import type {
     MatchRoomOnlineBoardStageModel,
@@ -19,7 +19,6 @@ import type {
     MatchRoomTutorialStageAdapter,
 } from './useMatchRoomPageRuntimeModel';
 
-type MatchRoomGameConfig = ReturnType<typeof getGameById>;
 type MatchRoomRootDataAttributes = ReturnType<typeof getGamePageDataAttributes>;
 
 export type MatchRoomTutorialHudModel = {
@@ -47,18 +46,10 @@ export type MatchRoomPageShellModel = {
     rootDataAttributes: MatchRoomRootDataAttributes;
     seoTitle: string;
     showSpectatorShield: boolean;
-    battlefieldZoomMode: MatchRoomGameConfig extends infer T
-        ? T extends { mobileBattlefieldZoom?: infer U }
-            ? U
-            : never
-        : never;
+    battlefieldZoomMode?: GameMobileBattlefieldZoom;
     boardShellStyle: CSSProperties;
     boardShell: MatchRoomPageRuntimeModel['shell']['boardShell'];
-    cursorThemeId: MatchRoomGameConfig extends infer T
-        ? T extends { cursorTheme?: infer U }
-            ? U
-            : never
-        : never;
+    cursorThemeId?: GameManifestEntry['cursorTheme'];
     cursorPlayerID: MatchRoomPageRuntimeModel['shell']['cursorPlayerID'];
     tutorialHud: MatchRoomTutorialHudModel | null;
     tutorialStage: MatchRoomTutorialBoardStageModel | null;

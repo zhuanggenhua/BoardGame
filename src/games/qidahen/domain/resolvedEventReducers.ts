@@ -418,6 +418,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                     cancelEnemyPrioritySourceCardDefIds: [
                         'qidahen-atlas05-1646-linked-muskets',
                     ],
+                    cancelEnemyRollAsPhaseSourceCardDefIds: [],
                 },
                 {
                     troopKind: 'cavalry',
@@ -511,6 +512,14 @@ interface QidahenResolvedEventReducerSpec<TEventType extends QidahenResolvedEven
     ) => QidahenCore;
 }
 
+type QidahenResolvedEventReducerRuntimeSpec = {
+    eventTypes: readonly QidahenResolvedEventType[];
+    reduce: (
+        state: QidahenCore,
+        event: never,
+    ) => QidahenCore;
+};
+
 const defineResolvedEventReducer = <TEventType extends QidahenResolvedEventType>(
     eventTypes: readonly TEventType[],
     reduce: (
@@ -524,7 +533,7 @@ const defineResolvedEventReducer = <TEventType extends QidahenResolvedEventType>
 
 const QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<
     QidahenResolvedEventType,
-    QidahenResolvedEventReducerSpec
+    QidahenResolvedEventReducerRuntimeSpec
 >();
 
 const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
@@ -761,7 +770,7 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             event.payload.selection,
         ),
     ),
-] as const satisfies readonly QidahenResolvedEventReducerSpec[];
+] as const satisfies readonly QidahenResolvedEventReducerRuntimeSpec[];
 
 for (const reducer of QIDAHEN_RESOLVED_EVENT_REDUCERS) {
     for (const eventType of reducer.eventTypes) {

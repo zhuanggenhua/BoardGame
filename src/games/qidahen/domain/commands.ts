@@ -373,19 +373,21 @@ export function validate(
     }
     const currentInteraction = state.sys.interaction?.current;
     switch (command.type) {
-        case QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE:
-            if (!hasPendingScenarioVote(state)) {
+        case QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE: {
+            const scenarioVote = state.core.scenarioVote;
+            if (!scenarioVote) {
                 return { valid: false, error: 'unknownAction' };
             }
-            if (command.playerId !== state.core.scenarioVote.hostPlayerId) {
+            if (command.playerId !== scenarioVote.hostPlayerId) {
                 return { valid: false, error: 'unknownAction' };
             }
             if (command.payload.scenarioId == null) {
                 return { valid: true };
             }
-            return state.core.scenarioVote.options.some((option) => option.scenarioId === command.payload.scenarioId)
+            return scenarioVote.options.some((option) => option.scenarioId === command.payload.scenarioId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
+        }
         case QIDAHEN_COMMANDS.SELECT_FACTION: {
             const selectionState = state.core.factionSelection;
             if (!selectionState || !state.core.playerIds.includes(command.playerId)) {

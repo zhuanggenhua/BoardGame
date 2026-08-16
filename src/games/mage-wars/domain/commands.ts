@@ -26,6 +26,7 @@ export interface MageWarsCastSpellCommand extends Command<typeof MAGE_WARS_COMMA
     payload: {
         spellCardId: number;
         manaCost: number;
+        casterObjectId?: string;
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;

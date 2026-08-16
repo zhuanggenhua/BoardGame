@@ -1759,6 +1759,115 @@ describe('resolveNextAiAction 在线视角', () => {
         expect(resolution).toBeNull();
     });
 
+    it('DiceThrone 右侧奖励骰普通确认应允许在线 AI 基于共享状态收口', async () => {
+        registerGameAiRuntime(diceThroneAiRuntime);
+
+        const sharedState = {
+            core: {
+                activePlayerId: '1',
+                players: {
+                    '0': {
+                        resources: { hp: 50, cp: 2 },
+                        hand: [],
+                        statusEffects: {},
+                        tokens: {},
+                        abilities: [],
+                    },
+                    '1': {
+                        resources: { hp: 50, cp: 2 },
+                        hand: [],
+                        statusEffects: {},
+                        tokens: {},
+                        abilities: [],
+                    },
+                },
+                dice: [],
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                pendingBonusDiceSettlement: {
+                    id: 'right-tray-bonus-confirm',
+                    sourceAbilityId: 'right-tray-bonus',
+                    attackerId: '1',
+                    targetId: '0',
+                    dice: [{
+                        index: 0,
+                        value: 4,
+                        face: 'chi',
+                        effectParams: { value: 4 },
+                    }],
+                    rerollCostTokenId: 'taiji',
+                    rerollCostAmount: 1,
+                    rerollCount: 0,
+                    maxRerollCount: 0,
+                    readyToSettle: true,
+                    displayOnly: true,
+                    showTotal: false,
+                    resolutionMode: 'none',
+                    allowDiceModification: true,
+                    continuation: { kind: 'complete' },
+                },
+            },
+            sys: {
+                phase: 'main2',
+                turnNumber: 3,
+                eventStream: { nextId: 12 },
+                interaction: {
+                    current: {
+                        id: 'dt-bonus-dice-right-tray-bonus-confirm',
+                        kind: 'dt:bonus-dice',
+                        playerId: '1',
+                        data: null,
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: null,
+                },
+            },
+        } as MatchState<unknown>;
+
+        const staleSeatState = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                phase: 'setup',
+                eventStream: { nextId: 8 },
+                interaction: {
+                    current: null,
+                    queue: [],
+                    isBlocked: false,
+                },
+            },
+        } as MatchState<unknown>;
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId: 'dicethrone',
+                domain: {} as never,
+                systems: [],
+            },
+            state: sharedState,
+            matchId: 'match-dicethrone-online-ai-bonus-dice-shared-confirm',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+                runtime: getGameAiRuntime('dicethrone') ?? null,
+                sharedState,
+                privateOverlay: staleSeatState,
+                playerId,
+            }),
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('skip-bonus-dice-reroll');
+        expect(resolution?.action.commands).toEqual([
+            { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+        ]);
+    });
+
     it('共享态未阻断且无交互时，private overlay 的旧交互必须判定为过期并阻止 AI 出手', async () => {
         const gameId = '__test_online_ai_private_overlay_stale_hidden_interaction__';
         registerGameAiRuntime({
@@ -3128,7 +3237,7 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
-    it('SummonerWars 在线前置阶段：房主自己还没选阵营时，不应提前接管 AI 座位', () => {
+    it('SummonerWars 在线前置阶段：房主自己还没选阵营时，也应先接管 AI 座位', () => {
         const sharedState = {
             core: {
                 hostStarted: false,
@@ -3150,10 +3259,10 @@ describe('submitOnlineAiResolution', () => {
                 '1': { type: 'local-ai', manualFactionSelection: true },
             },
             hasManualDispatch: true,
-        })).toBeNull();
+        })).toBe('1');
     });
 
-    it('DiceThrone 在线前置阶段：房主自己还没选角色时，不应提前接管 AI 座位', () => {
+    it('DiceThrone 在线前置阶段：房主自己还没选角色时，也应先接管 AI 座位', () => {
         const sharedState = {
             core: {
                 hostStarted: false,
@@ -3175,7 +3284,7 @@ describe('submitOnlineAiResolution', () => {
                 '1': { type: 'local-ai', manualFactionSelection: true },
             },
             hasManualDispatch: true,
-        })).toBeNull();
+        })).toBe('1');
     });
 
     it('DiceThrone 角色选择已写回 shared state 时，应释放 setup-select-character attempt', () => {

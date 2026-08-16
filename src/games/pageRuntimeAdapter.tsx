@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { getGameImplementation, subscribeGameImplementationReady } from './registry';
 import { defaultGameRuntimeAdapter } from './gameRuntimeAdapter';
+import { getGameImplementation, subscribeGameImplementationReady } from './registry';
 
 type GamePageRuntimeProviderProps = {
     gameId?: string | null;
@@ -24,11 +24,9 @@ export function GamePageRuntimeProvider({ gameId, children }: GamePageRuntimePro
     const PageProvider = implementation?.runtimeAdapter?.PageProvider
         ?? defaultGameRuntimeAdapter.PageProvider;
 
-    return <PageProvider key={`${normalizedGameId}:${providerVersion}`}>{children}</PageProvider>;
-}
+    if (!PageProvider) {
+        return <>{children}</>;
+    }
 
-export function dismissGamePageTransientUi(gameId?: string | null): boolean {
-    return getGameImplementation(gameId ?? '')?.runtimeAdapter?.dismissTransientUi?.()
-        ?? defaultGameRuntimeAdapter.dismissTransientUi?.()
-        ?? false;
+    return <PageProvider key={`${normalizedGameId}:${providerVersion}`}>{children}</PageProvider>;
 }

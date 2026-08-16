@@ -98,7 +98,6 @@ import {
 import { useSyncedModalStackEntry } from '../../hooks/ui/useSyncedModalStackEntry';
 import { InteractionOverlay } from './ui/InteractionOverlay';
 import { ChoiceModal } from './ui/ChoiceModal';
-import { CompareRollOverlay } from './ui/CompareRollOverlay';
 import { DefenderChoiceModal } from './ui/DefenderChoiceModal';
 import { canRerollBonusDiceSettlement } from './domain/bonusDiceSettlement';
 
@@ -515,7 +514,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     getCompletedSteps: (result: DiceModifyResult) => result.modCount,
                     // any/adjust 模式：手动确认，禁用 auto-confirm
                     maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
-                    minSteps: isManualConfirmMode ? 1 : originalData.minSteps,
+                    minSteps: isManualConfirmMode
+                        ? (Number(originalData.minSteps) || 1)
+                        : (originalData.minSteps ?? originalData.maxSteps),
                 },
             };
         }
@@ -533,7 +534,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, selectCount),
                     getCompletedSteps: (result: DiceSelectResult) => result.selectedDiceIds.length,
                     maxSteps: undefined,
-                    minSteps: 1,
+                    minSteps: originalData.minSteps ?? 1,
                     allowedDieIds: originalData.allowedDieIds,
                     completedDieIds: originalData.completedDieIds,
                 },
@@ -1490,50 +1491,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         ),
     }), [G.players, G.teamIdByPlayerId, activeResolutionFrameId, defenderChoice, engineMoves, isSpectator, locale, playerNames, rootPid, sysInteraction]);
 
-    const compareRollModalEntry = React.useMemo(() => ({
-        owner: compareRollInteraction ? {
-            system: 'interaction',
-            id: sysInteraction?.kind === 'compare-roll-choice' ? sysInteraction.id : compareRollInteraction.id,
-            kind: 'compare-roll-choice',
-            gameId: 'dicethrone',
-            namespace: 'dicethrone',
-            resolutionFrameId: sysInteraction?.kind === 'compare-roll-choice'
-                ? (sysInteraction.resolutionFrameId ?? activeResolutionFrameId)
-                : activeResolutionFrameId,
-            blocksProgress: true,
-        } : undefined,
-        closeOnBackdrop: false,
-        closeOnEsc: false,
-        onClose: () => undefined,
-        render: () => (
-            <CompareRollOverlay
-                compareRoll={compareRollInteraction}
-                isVisible={true}
-                canResolve={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
-                locale={locale}
-                onResolveOption={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: compareRollInteraction.id });
-                }}
-                onConfirm={() => {
-                    dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
-                }}
-                usePortal={false}
-            />
-        ),
-    }), [activeResolutionFrameId, compareRollInteraction, dispatch, isSpectator, locale, rootPid, sysInteraction]);
-
     useSyncedModalStackEntry({
         enabled: Boolean(isStatusInteraction && statusInteraction && (
             statusInteraction?.type !== 'selectHandCard' || isInteractionOwner
         )),
         entryId: 'dicethrone_status_interaction',
         entry: statusInteractionModalEntry,
-    });
-
-    useSyncedModalStackEntry({
-        enabled: Boolean(compareRollInteraction),
-        entryId: 'dicethrone_compare_roll',
-        entry: compareRollModalEntry,
     });
 
     useSyncedModalStackEntry({
@@ -2105,6 +2068,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage
                         }
                         passiveAbilityProps={passiveAbilityProps}
+                        compareRoll={compareRollInteraction}
+                        canResolveCompareRoll={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
+                        onResolveCompareRollOption={(optionId) => {
+                            if (!compareRollInteraction) return;
+                            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: compareRollInteraction.id });
+                        }}
+                        onConfirmCompareRoll={() => {
+                            if (!compareRollInteraction) return;
+                            dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
+                        }}
                         rootPlayerId={rootPid}
                         teamIdByPlayerId={G.teamIdByPlayerId}
                     />

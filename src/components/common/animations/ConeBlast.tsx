@@ -10,12 +10,13 @@
  * 基于自研 Canvas 粒子引擎，零 DOM 动画。
  */
 
-import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
   createParticle,
+  parseColorToRgb,
   spawnParticles,
   updateParticles,
   drawParticles,
@@ -30,6 +31,12 @@ export interface ConeBlastProps {
   intensity?: 'normal' | 'strong';
   /** 低成本模式：保留飞行和命中感，减少移动端最重的全屏粒子绘制 */
   quality?: FxQuality;
+  /** 飞行时长倍率；默认 1，供棋盘距离短但需要截运行时过程帧的游戏调长 */
+  durationScale?: number;
+  /** 明确飞行时长；设置后优先于 durationScale，适合需要让命中回调和投射物到达严格对齐的游戏 */
+  durationMs?: number;
+  /** 语义颜色，复用通用投射物算法，只改变粒子和辉光色 */
+  color?: string[];
   /** 保留兼容 */
   showProjectile?: boolean;
   /** 完成回调 */
@@ -96,11 +103,18 @@ const IMPACT_COLORS: [number, number, number][] = [
   [180, 215, 255],
 ];
 
+function rgba(rgb: [number, number, number], alpha: number): string {
+  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+}
+
 export const ConeBlast: React.FC<ConeBlastProps> = ({
   start,
   end,
   intensity = 'normal',
   quality = 'full',
+  durationScale = 1,
+  durationMs,
+  color,
   onComplete,
   className = '',
 }) => {
@@ -114,6 +128,16 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
   const isStrong = intensity === 'strong';
   const isReduced = quality === 'reduced';
+  const colorKey = color?.join('|') ?? '';
+  const trailColors = useMemo<[number, number, number][]>(() => (
+    color && color.length > 0 ? color.map(parseColorToRgb) : TRAIL_COLORS
+  ), [colorKey]);
+  const impactColors = useMemo<[number, number, number][]>(() => (
+    color && color.length > 0 ? [[255, 255, 255], ...color.map(parseColorToRgb)] : IMPACT_COLORS
+  ), [colorKey]);
+  const trailColorEnd = color && color.length > 0 ? color[color.length - 1] : TRAIL_PRESET.colorEnd;
+  const glowPrimary = trailColors[0] ?? TRAIL_COLORS[0];
+  const glowSecondary = trailColors[1] ?? trailColors[0] ?? TRAIL_COLORS[1];
 
   // 解构坐标值，避免对象引用变化导致 useCallback 重建
   const { xPct: sx0, yPct: sy0 } = start;
@@ -155,7 +179,9 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     const distPct = Math.sqrt(
       (ex0 - sx0) ** 2 + (ey0 - sy0) ** 2,
     );
-    const flightDuration = Math.max(0.15, Math.min(0.5, distPct / 180));
+    const flightDuration = durationMs !== undefined
+      ? Math.max(0.15, durationMs / 1000)
+      : Math.max(0.15, Math.min(0.5, distPct / 180)) * Math.max(0.25, durationScale);
 
     // 视觉缩放因子：基于飞行像素距离，让特效大小与格子间距成比例
     // 参考基准：totalDist ~250px 时 scale=1（原始设计值），再乘 3 倍放大
@@ -178,6 +204,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
       speed: { min: IMPACT_PRESET.speed.min * vScale, max: IMPACT_PRESET.speed.max * vScale },
       size: { min: IMPACT_PRESET.size.min * vScale, max: IMPACT_PRESET.size.max * vScale },
       spread: (IMPACT_PRESET.spread ?? 6) * vScale,
+      colorEnd: trailColorEnd,
     };
 
     // 命中阶段
@@ -216,7 +243,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
           const vy = (-dirY * backSpeed + perpY * Math.sin(spreadAngle) * 2 * vScale) * (0.7 + Math.random() * 0.6);
           const size = ((isStrong ? 2 : 1.5) + Math.random() * (isStrong ? 3 : 2)) * vScale;
           const life = 0.12 + Math.random() * 0.25;
-          const rgb = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)];
+          const rgb = trailColors[Math.floor(Math.random() * trailColors.length)];
 
           trailParticles.push(createParticle({
             x: hx + (Math.random() - 0.5) * 4 * vScale,
@@ -226,7 +253,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
             size,
             rgb,
             shape: Math.random() < 0.6 ? 'streak' : 'circle',
-            colorEnd: '#1e3a5f',
+            colorEnd: trailColorEnd,
           }));
         }
 
@@ -256,9 +283,9 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
             coneLen * 0.2, 0, 0,  // 偏向头部的中心
             0, 0, coneLen * 0.6,
           );
-          grad.addColorStop(0, `rgba(200,230,255,${isStrong ? 0.18 : 0.12})`);
-          grad.addColorStop(0.4, `rgba(170,210,255,${isStrong ? 0.08 : 0.05})`);
-          grad.addColorStop(1, 'rgba(150,200,255,0)');
+          grad.addColorStop(0, rgba(glowPrimary, isStrong ? 0.2 : 0.13));
+          grad.addColorStop(0.4, rgba(glowSecondary, isStrong ? 0.1 : 0.06));
+          grad.addColorStop(1, rgba(glowSecondary, 0));
 
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -274,9 +301,9 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         // 外层辉光
         ctx.globalAlpha = 0.5;
         const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, glowRadius);
-        glow.addColorStop(0, 'rgba(220,240,255,0.6)');
-        glow.addColorStop(0.3, 'rgba(180,215,255,0.2)');
-        glow.addColorStop(1, 'rgba(150,195,255,0)');
+        glow.addColorStop(0, rgba(glowPrimary, 0.72));
+        glow.addColorStop(0.3, rgba(glowSecondary, 0.28));
+        glow.addColorStop(1, rgba(glowSecondary, 0));
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(hx, hy, glowRadius, 0, Math.PI * 2);
@@ -313,7 +340,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         // 生成命中爆发粒子（仅一次）
         if (!impactSpawned) {
           impactSpawned = true;
-          const spawned = spawnParticles(impactPreset, IMPACT_COLORS, ex, ey);
+          const spawned = spawnParticles(impactPreset, impactColors, ex, ey);
           impactParticles.push(...spawned);
         }
 
@@ -333,8 +360,8 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         const flashAlpha = (1 - hitT * hitT) * 0.7;
         const flashGrad = ctx.createRadialGradient(ex, ey, 0, ex, ey, flashR);
         flashGrad.addColorStop(0, `rgba(255,255,255,${flashAlpha})`);
-        flashGrad.addColorStop(0.4, `rgba(200,230,255,${flashAlpha * 0.3})`);
-        flashGrad.addColorStop(1, 'rgba(150,200,255,0)');
+        flashGrad.addColorStop(0.4, rgba(glowPrimary, flashAlpha * 0.35));
+        flashGrad.addColorStop(1, rgba(glowSecondary, 0));
         ctx.globalAlpha = 1;
         ctx.fillStyle = flashGrad;
         ctx.beginPath();
@@ -344,7 +371,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
         // 扩散环
         const ringR = ((isStrong ? 30 : 22) * (0.3 + hitT * 1.5)) * vScale;
         ctx.globalAlpha = (1 - hitT) * 0.5;
-        ctx.strokeStyle = 'rgba(200,230,255,0.6)';
+        ctx.strokeStyle = rgba(glowPrimary, 0.65);
         ctx.lineWidth = (isStrong ? 2 : 1.5) * vScale;
         ctx.beginPath();
         ctx.arc(ex, ey, ringR, 0, Math.PI * 2);
@@ -368,7 +395,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality]);
+  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality, durationScale, durationMs, trailColors, impactColors, trailColorEnd, glowPrimary, glowSecondary]);
 
   useEffect(() => {
     render();

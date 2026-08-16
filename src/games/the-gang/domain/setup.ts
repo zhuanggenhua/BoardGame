@@ -19,6 +19,15 @@ const draw = (deck: PlayingCardDeck, count: number) => {
     return cards;
 };
 
+const shuffleItems = <T,>(items: readonly T[], random: RandomFn): T[] => {
+    const next = [...items];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random.random() * (index + 1));
+        [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    }
+    return next;
+};
+
 interface PlayingCardDeck {
     cards: ReturnType<typeof createDeck>;
 }
@@ -166,9 +175,9 @@ export function createInitialHeistCore(
         },
         deck: deckRef.cards,
         discardPile: [],
-        toolDeck: shuffleDeck(createToolDeck(), random),
+        toolDeck: shuffleItems(createToolDeck(), random),
         toolDiscardPile: [],
-        specialistDeck: shuffleDeck(createSpecialistDeck(), random),
+        specialistDeck: shuffleItems(createSpecialistDeck(), random),
         specialistDiscardPile: [],
         communityCards,
         round: 1,

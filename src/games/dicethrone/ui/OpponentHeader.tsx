@@ -213,7 +213,12 @@ export const OpponentHeader = ({
                                                     data-testid={testId ? `${testId}-hp` : undefined}
                                                 >
                                                     <span className={`${statLabelClassName} font-black tracking-[0.08em] text-red-200/80`}>HP</span>
-                                                    <span className="font-black">{overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}</span>
+                                                    <span
+                                                        className="font-black"
+                                                        data-testid={testId ? `${testId}-hp-value` : undefined}
+                                                    >
+                                                        {overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}
+                                                    </span>
                                                     <DamageFlash
                                                         active={!!damageFlashActive}
                                                         damage={damageFlashDamage ?? 1}

@@ -1,0 +1,1573 @@
+{
+  "timestamp": "2026-08-15T16-16-41-264Z",
+  "matchId": "05frU8yWHJh",
+  "target": "召唤师战争游戏内动画/特效性能",
+  "environment": {
+    "webdriver": false,
+    "e2eTestMode": false,
+    "devicePixelRatio": 1,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "notes": [
+    "本探针不注入 __E2E_TEST_MODE__，并在浏览器初始化时覆盖 navigator.webdriver=false，用于采样完整战斗特效。",
+    "音频请求已禁用，结果主要代表视觉动画/特效成本，不代表音频播放链路。",
+    "这是修复前诊断基线，不是修复验收。"
+  ],
+  "windows": [
+    {
+      "label": "summon-full-fx",
+      "pagePerf": {
+        "frameCount": 358,
+        "avgFrameMs": 27.681284916234432,
+        "p95FrameMs": 83.29999999998836,
+        "maxFrameMs": 500,
+        "framesOver16_7ms": 124,
+        "framesOver33ms": 94,
+        "framesOver50ms": 26,
+        "longTaskCount": 27,
+        "longTaskMaxMs": 335,
+        "longTaskTotalMs": 2702,
+        "sampleDurationMs": 9934.699999988079,
+        "memory": {}
+      },
+      "domInventory": {
+        "counts": {
+          "totalElements": 400,
+          "canvas": 0,
+          "images": 17,
+          "swCells": 48,
+          "swUnits": 14,
+          "transitionAll": 283,
+          "transitionColorOrBorder": 70,
+          "transitionBoxShadow": 11,
+          "boxShadow": 49,
+          "filter": 3,
+          "backdropFilter": 2,
+          "activeAnimation": 1,
+          "willChange": 0
+        },
+        "highCost": [
+          {
+            "tag": "html",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "head",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          }
+        ]
+      },
+      "trace": {
+        "fileBytes": 25024372,
+        "eventCount": 102364,
+        "textHits": {
+          "border-right-color": 14,
+          "border-left-color": 14,
+          "border-top-color": 14,
+          "border-bottom-color": 14,
+          "border-color": 0,
+          "box-shadow": 15,
+          "filter": 7,
+          "backdrop-filter": 0,
+          "transition-all": 31,
+          "transition-colors": 28,
+          "UpdateLayoutTree": 276,
+          "FireAnimationFrame": 575,
+          "Layout": 1453,
+          "Paint": 4437
+        },
+        "topDurations": [
+          {
+            "name": "RunTask",
+            "count": 11640,
+            "totalMs": 9303.575000000017,
+            "maxMs": 336.618
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "count": 691,
+            "totalMs": 8668.607,
+            "maxMs": 335.469
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "count": 1015,
+            "totalMs": 8140.676999999999,
+            "maxMs": 159.046
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "count": 1551,
+            "totalMs": 6609.129000000003,
+            "maxMs": 150.814
+          },
+          {
+            "name": "RasterTask",
+            "count": 1459,
+            "totalMs": 5378.9670000000015,
+            "maxMs": 76.731
+          },
+          {
+            "name": "v8.callFunction",
+            "count": 57,
+            "totalMs": 1590.013,
+            "maxMs": 311.93
+          },
+          {
+            "name": "FunctionCall",
+            "count": 1780,
+            "totalMs": 1535.4309999999996,
+            "maxMs": 311.902
+          },
+          {
+            "name": "ImageDecodeTask",
+            "count": 363,
+            "totalMs": 1106.0019999999995,
+            "maxMs": 150.797
+          },
+          {
+            "name": "Commit",
+            "count": 18,
+            "totalMs": 1017.495,
+            "maxMs": 147.911
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "count": 24,
+            "totalMs": 972.468,
+            "maxMs": 265.945
+          },
+          {
+            "name": "GPUTask",
+            "count": 16,
+            "totalMs": 760.383,
+            "maxMs": 100.744
+          },
+          {
+            "name": "Decode LazyPixelRef",
+            "count": 28,
+            "totalMs": 522.2649999999999,
+            "maxMs": 80.316
+          },
+          {
+            "name": "Receive mojo message",
+            "count": 15,
+            "totalMs": 370.924,
+            "maxMs": 335.457
+          },
+          {
+            "name": "Decode Image",
+            "count": 25,
+            "totalMs": 270.50800000000004,
+            "maxMs": 55.747
+          },
+          {
+            "name": "Paint",
+            "count": 2130,
+            "totalMs": 220.5109999999997,
+            "maxMs": 9.111
+          },
+          {
+            "name": "EventDispatch",
+            "count": 10,
+            "totalMs": 126.567,
+            "maxMs": 91.341
+          },
+          {
+            "name": "UpdateLayoutTree",
+            "count": 276,
+            "totalMs": 96.82299999999984,
+            "maxMs": 2.501
+          },
+          {
+            "name": "FireAnimationFrame",
+            "count": 575,
+            "totalMs": 94.84900000000019,
+            "maxMs": 12.508
+          },
+          {
+            "name": "ANGLEPlatformImpl::RunWorkerTask",
+            "count": 2,
+            "totalMs": 53.18,
+            "maxMs": 26.909
+          },
+          {
+            "name": "MinorGC",
+            "count": 4,
+            "totalMs": 24.945,
+            "maxMs": 7.7
+          },
+          {
+            "name": "V8.GCScavenger",
+            "count": 4,
+            "totalMs": 24.368000000000002,
+            "maxMs": 7.64
+          },
+          {
+            "name": "V8.GC_SCAVENGER_BACKGROUND_SCAVENGE_PARALLEL",
+            "count": 14,
+            "totalMs": 24.043000000000003,
+            "maxMs": 3.954
+          },
+          {
+            "name": "V8.GC_SCAVENGER",
+            "count": 4,
+            "totalMs": 23.779000000000003,
+            "maxMs": 7.618
+          },
+          {
+            "name": "V8.GC_SCAVENGER_SCAVENGE",
+            "count": 4,
+            "totalMs": 17.154,
+            "maxMs": 5.911
+          },
+          {
+            "name": "Layout",
+            "count": 18,
+            "totalMs": 11.434999999999999,
+            "maxMs": 3.283
+          }
+        ],
+        "longSlices": [
+          {
+            "name": "RunTask",
+            "durMs": 336.618,
+            "ts": 403777569744,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 335.469,
+            "ts": 403777569746,
+            "cat": "toplevel"
+          },
+          {
+            "name": "Receive mojo message",
+            "durMs": 335.457,
+            "ts": 403777569751,
+            "cat": "toplevel,mojom"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 311.93,
+            "ts": 403777592031,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 311.902,
+            "ts": 403777592044,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 266.086,
+            "ts": 403778290122,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 265.95,
+            "ts": 403778290123,
+            "cat": "toplevel"
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "durMs": 265.945,
+            "ts": 403778290127,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 265.903,
+            "ts": 403778290148,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 264.151,
+            "ts": 403778290150,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 242.192,
+            "ts": 403778257599,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 242.078,
+            "ts": 403778257600,
+            "cat": "toplevel"
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "durMs": 242.075,
+            "ts": 403778257601,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 242.021,
+            "ts": 403778257625,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 240.882,
+            "ts": 403778257626,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "durMs": 159.046,
+            "ts": 403780231946,
+            "cat": "toplevel"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 155.23,
+            "ts": 403778556765,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 155.17,
+            "ts": 403778556765,
+            "cat": "toplevel"
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "durMs": 154.644,
+            "ts": 403780259006,
+            "cat": "toplevel"
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "durMs": 150.814,
+            "ts": 403780237606,
+            "cat": "toplevel"
+          },
+          {
+            "name": "ImageDecodeTask",
+            "durMs": 150.797,
+            "ts": 403780237612,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 148.492,
+            "ts": 403777907927,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 148.439,
+            "ts": 403777907928,
+            "cat": "toplevel"
+          },
+          {
+            "name": "Commit",
+            "durMs": 147.911,
+            "ts": 403778564022,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "Commit",
+            "durMs": 135.88,
+            "ts": 403777920484,
+            "cat": "disabled-by-default-devtools.timeline"
+          }
+        ]
+      },
+      "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\召唤师战争-动画特效性能诊断\\2026-08-15T16-16-41-264Z\\chrome-trace-summon-full-fx.json"
+    },
+    {
+      "label": "ranged-kill-full-fx",
+      "pagePerf": {
+        "frameCount": 460,
+        "avgFrameMs": 25.04804347833861,
+        "p95FrameMs": 50.09999999999127,
+        "maxFrameMs": 349.8999999999942,
+        "framesOver16_7ms": 174,
+        "framesOver33ms": 123,
+        "framesOver50ms": 24,
+        "longTaskCount": 17,
+        "longTaskMaxMs": 336,
+        "longTaskTotalMs": 1689,
+        "sampleDurationMs": 11547.699999988079,
+        "memory": {}
+      },
+      "domInventory": {
+        "counts": {
+          "totalElements": 352,
+          "canvas": 0,
+          "images": 13,
+          "swCells": 48,
+          "swUnits": 8,
+          "transitionAll": 257,
+          "transitionColorOrBorder": 63,
+          "transitionBoxShadow": 7,
+          "boxShadow": 36,
+          "filter": 1,
+          "backdropFilter": 2,
+          "activeAnimation": 1,
+          "willChange": 0
+        },
+        "highCost": [
+          {
+            "tag": "html",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "head",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "title",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "script",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "link",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "style",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          },
+          {
+            "tag": "meta",
+            "testId": null,
+            "className": "",
+            "transition": "all",
+            "boxShadow": "none",
+            "filter": "none",
+            "animation": "none"
+          }
+        ]
+      },
+      "trace": {
+        "fileBytes": 36877898,
+        "eventCount": 151432,
+        "textHits": {
+          "border-right-color": 10,
+          "border-left-color": 10,
+          "border-top-color": 10,
+          "border-bottom-color": 10,
+          "border-color": 0,
+          "box-shadow": 21,
+          "filter": 7,
+          "backdrop-filter": 0,
+          "transition-all": 20,
+          "transition-colors": 20,
+          "UpdateLayoutTree": 476,
+          "FireAnimationFrame": 908,
+          "Layout": 2337,
+          "Paint": 4951
+        },
+        "topDurations": [
+          {
+            "name": "RunTask",
+            "count": 15709,
+            "totalMs": 12014.011000000386,
+            "maxMs": 337.092
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "count": 1063,
+            "totalMs": 11068.92099999999,
+            "maxMs": 336.442
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "count": 983,
+            "totalMs": 7314.688999999993,
+            "maxMs": 168.217
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "count": 1231,
+            "totalMs": 4865.239,
+            "maxMs": 164.698
+          },
+          {
+            "name": "RasterTask",
+            "count": 1149,
+            "totalMs": 3633.009,
+            "maxMs": 109.228
+          },
+          {
+            "name": "v8.callFunction",
+            "count": 146,
+            "totalMs": 2866.459999999999,
+            "maxMs": 300.449
+          },
+          {
+            "name": "FunctionCall",
+            "count": 2539,
+            "totalMs": 2837.7799999999993,
+            "maxMs": 300.431
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "count": 61,
+            "totalMs": 1465.641,
+            "maxMs": 278.756
+          },
+          {
+            "name": "ImageDecodeTask",
+            "count": 607,
+            "totalMs": 1153.9010000000012,
+            "maxMs": 164.682
+          },
+          {
+            "name": "Receive mojo message",
+            "count": 23,
+            "totalMs": 515.4420000000001,
+            "maxMs": 336.435
+          },
+          {
+            "name": "Decode LazyPixelRef",
+            "count": 38,
+            "totalMs": 495.51700000000005,
+            "maxMs": 67.868
+          },
+          {
+            "name": "FireAnimationFrame",
+            "count": 908,
+            "totalMs": 272.4400000000004,
+            "maxMs": 19.009
+          },
+          {
+            "name": "V8.GC_MC_BACKGROUND_MARKING",
+            "count": 20,
+            "totalMs": 269.656,
+            "maxMs": 21.965
+          },
+          {
+            "name": "Paint",
+            "count": 2435,
+            "totalMs": 211.53199999999924,
+            "maxMs": 9.432
+          },
+          {
+            "name": "UpdateLayoutTree",
+            "count": 476,
+            "totalMs": 166.3070000000001,
+            "maxMs": 11.987
+          },
+          {
+            "name": "Commit",
+            "count": 58,
+            "totalMs": 164.95399999999998,
+            "maxMs": 11.229
+          },
+          {
+            "name": "Decode Image",
+            "count": 25,
+            "totalMs": 133.091,
+            "maxMs": 29.402
+          },
+          {
+            "name": "MinorGC",
+            "count": 15,
+            "totalMs": 91.30099999999999,
+            "maxMs": 20.362
+          },
+          {
+            "name": "V8.GCScavenger",
+            "count": 15,
+            "totalMs": 90.24499999999999,
+            "maxMs": 20.311
+          },
+          {
+            "name": "V8.GC_SCAVENGER",
+            "count": 15,
+            "totalMs": 89.13300000000001,
+            "maxMs": 20.3
+          },
+          {
+            "name": "EventDispatch",
+            "count": 6,
+            "totalMs": 79.86999999999999,
+            "maxMs": 59.19
+          },
+          {
+            "name": "V8.GC_SCAVENGER_SCAVENGE",
+            "count": 15,
+            "totalMs": 71.978,
+            "maxMs": 17.726
+          },
+          {
+            "name": "PrePaint",
+            "count": 8,
+            "totalMs": 64.978,
+            "maxMs": 22.818
+          },
+          {
+            "name": "MajorGC",
+            "count": 3,
+            "totalMs": 53.007999999999996,
+            "maxMs": 20.421
+          },
+          {
+            "name": "V8.GC_MC_BACKGROUND_SWEEPING",
+            "count": 10,
+            "totalMs": 52.867,
+            "maxMs": 12.039
+          }
+        ],
+        "longSlices": [
+          {
+            "name": "RunTask",
+            "durMs": 337.092,
+            "ts": 403788529862,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 336.442,
+            "ts": 403788529863,
+            "cat": "toplevel"
+          },
+          {
+            "name": "Receive mojo message",
+            "durMs": 336.435,
+            "ts": 403788529864,
+            "cat": "toplevel,mojom"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 300.449,
+            "ts": 403788539706,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 300.431,
+            "ts": 403788539707,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 278.93,
+            "ts": 403788587550,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 278.762,
+            "ts": 403788587552,
+            "cat": "toplevel"
+          },
+          {
+            "name": "SimpleWatcher::OnHandleReady",
+            "durMs": 278.756,
+            "ts": 403788587556,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 278.711,
+            "ts": 403788587577,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 263.143,
+            "ts": 403788587578,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 172.07,
+            "ts": 403788391942,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 172.017,
+            "ts": 403788391943,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 171.794,
+            "ts": 403788392143,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 171.047,
+            "ts": 403788392146,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "ThreadPool_RunTask",
+            "durMs": 168.217,
+            "ts": 403791310385,
+            "cat": "toplevel"
+          },
+          {
+            "name": "TaskGraphRunner::RunTask",
+            "durMs": 164.698,
+            "ts": 403791310401,
+            "cat": "toplevel"
+          },
+          {
+            "name": "ImageDecodeTask",
+            "durMs": 164.682,
+            "ts": 403791310405,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 119.916,
+            "ts": 403788151154,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 119.86,
+            "ts": 403788151155,
+            "cat": "toplevel"
+          },
+          {
+            "name": "Receive mojo message",
+            "durMs": 119.845,
+            "ts": 403788151164,
+            "cat": "toplevel,mojom"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 116.402,
+            "ts": 403788153593,
+            "cat": "v8"
+          },
+          {
+            "name": "FunctionCall",
+            "durMs": 116.391,
+            "ts": 403788153594,
+            "cat": "devtools.timeline"
+          },
+          {
+            "name": "RunTask",
+            "durMs": 116.274,
+            "ts": 403788408739,
+            "cat": "disabled-by-default-devtools.timeline"
+          },
+          {
+            "name": "ThreadControllerImpl::RunTask",
+            "durMs": 115.63,
+            "ts": 403788408739,
+            "cat": "toplevel"
+          },
+          {
+            "name": "v8.callFunction",
+            "durMs": 115.558,
+            "ts": 403788408792,
+            "cat": "v8"
+          }
+        ]
+      },
+      "tracePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\召唤师战争-动画特效性能诊断\\2026-08-15T16-16-41-264Z\\chrome-trace-ranged-kill-full-fx.json"
+    }
+  ],
+  "finalDomInventory": {
+    "counts": {
+      "totalElements": 352,
+      "canvas": 0,
+      "images": 13,
+      "swCells": 48,
+      "swUnits": 8,
+      "transitionAll": 257,
+      "transitionColorOrBorder": 63,
+      "transitionBoxShadow": 7,
+      "boxShadow": 36,
+      "filter": 1,
+      "backdropFilter": 2,
+      "activeAnimation": 1,
+      "willChange": 0
+    },
+    "highCost": [
+      {
+        "tag": "html",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "head",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "script",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "title",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "title",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "script",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "link",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "style",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "style",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      },
+      {
+        "tag": "meta",
+        "testId": null,
+        "className": "",
+        "transition": "all",
+        "boxShadow": "none",
+        "filter": "none",
+        "animation": "none"
+      }
+    ]
+  },
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\召唤师战争-动画特效性能诊断\\2026-08-15T16-16-41-264Z\\summonerwars-combat-fx.png"
+}

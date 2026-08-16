@@ -104,7 +104,7 @@ function shouldTrustOnlineAiSeatControllers(args: {
 }
 
 export const isAiSeatController = (controller: AiSeatController | undefined): boolean => (
-    Boolean(controller) && controller.type !== 'human'
+    controller !== undefined && controller.type !== 'human'
 );
 
 export const haveAiSeatCredentialsChanged = (
@@ -146,12 +146,9 @@ export async function loadOnlineAiSeatState({
     const seatControllers: Record<string, AiSeatController> = {};
     const seatIds = collectSeatIds(matchInfo, rawSeatControllers);
     for (const playerId of seatIds) {
-        const rawController = rawSeatControllers[playerId];
+        const rawController = toPlainRecord(rawSeatControllers[playerId]);
         seatControllers[playerId] = (
             trustSeatControllers
-            && rawController
-            && typeof rawController === 'object'
-            && !Array.isArray(rawController)
             && typeof rawController.type === 'string'
         )
             ? normalizeSeatController(rawController as AiSeatController, gameConfig.ai)

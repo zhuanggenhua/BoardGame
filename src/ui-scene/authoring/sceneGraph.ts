@@ -5,8 +5,10 @@ import type {
     UISceneGridNodeSource,
     UISceneImageNodeSource,
     UISceneNodeSource,
+    UISceneNodeType,
     UISceneRect,
     UISceneSourceDocument,
+    UISceneStackDirection,
     UISceneStackNodeSource,
     UISceneTextNodeSource,
     UISceneButtonNodeSource,
@@ -35,7 +37,7 @@ function cloneRect(rect: UISceneRect): UISceneRect {
     };
 }
 
-export function getNodeKindLabel(node: Pick<UISceneNodeSource, 'type'> & Partial<UISceneStackNodeSource>): UISceneAuthoringNodeKind {
+export function getNodeKindLabel(node: { type: UISceneNodeType; direction?: UISceneStackDirection }): UISceneAuthoringNodeKind {
     if (node.type === 'stack') {
         if (node.direction === 'horizontal') {
             return '横向容器';

@@ -2541,7 +2541,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         });
     });
 
-    it('AI 当前阶段里若 human 正在响应，自动 watchdog 应强制关闭窗口而不是返回空', () => {
+    it('AI 当前阶段里若 human 正在响应，自动 watchdog 不应代替真人强制关闭窗口', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -2576,19 +2576,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
             seatStates: {},
         });
 
-        expect(result).toMatchObject({
-            playerId: '1',
-            reason: 'response-window',
-            resolution: {
-                action: {
-                    commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
-                },
-            },
-        });
-        expect(result?.resolution.action.commands).not.toContainEqual({
-            type: 'RESPONSE_PASS',
-            payload: {},
-        });
+        expect(result).toBeNull();
     });
 
     it('AI 当前阶段里若 human 正在响应，手动强制结束应强制关闭窗口而不是返回空', () => {

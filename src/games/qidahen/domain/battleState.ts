@@ -11,6 +11,7 @@ import type {
     QidahenFactionId,
     QidahenPendingTargetAction,
     QidahenPostBattleChoice,
+    QidahenSpecialTroopStack,
 } from './types';
 
 export const isRegionControlledByFaction = (
@@ -162,11 +163,12 @@ export const getPostBattlePlunderPopulationCap = (
 export const getRegionSiegeAttackerForceSnapshot = (
     region: QidahenCore['regions'][number],
     factionId: QidahenFactionId,
-): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'specialTroops'> | null => (
+): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'population' | 'specialTroops'> | null => (
     region.siegeState?.attackerFactionId === factionId
         ? {
             controller: factionId,
             troops: region.siegeState?.attackerTroops ?? 0,
+            population: 0,
             specialTroops: region.siegeState?.attackerSpecialTroops ?? [],
         }
         : null
@@ -179,7 +181,7 @@ const getPendingActionAttackerPositionRegionId = (
 export const getPendingActionSourceForceSnapshot = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
-): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'specialTroops'> | null => {
+): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'population' | 'specialTroops'> | null => {
     const forceCommitments = getQidahenBattleForceCommitments(pendingTargetAction);
     if (forceCommitments.length > 1) {
         const sourceForces = forceCommitments.flatMap((commitment) => {
@@ -209,7 +211,8 @@ export const getPendingActionSourceForceSnapshot = (
         return {
             controller: pendingTargetAction.attackerFactionId,
             troops: sourceForces.reduce((total, force) => total + force.committedTroops, 0),
-            specialTroops: sourceForces.reduce(
+            population: 0,
+            specialTroops: sourceForces.reduce<QidahenSpecialTroopStack[]>(
                 (merged, force) => mergeSpecialTroopStackGroupsAsPieces(merged, force.specialTroops),
                 [],
             ),
@@ -229,6 +232,7 @@ export const getPendingActionSourceForceSnapshot = (
             return {
                 controller: sourceSnapshot.controller,
                 troops: sourceSnapshot.troops,
+                population: sourceSnapshot.population,
                 specialTroops: sourceSnapshot.specialTroops,
             };
         })();
@@ -238,11 +242,12 @@ export const getPendingActionDefenderForceSnapshot = (
     targetRegion: QidahenCore['regions'][number],
     pendingTargetAction: QidahenPendingTargetAction,
     battleMode: QidahenBattleMode,
-): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'specialTroops'> => {
+): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'population' | 'specialTroops'> => {
     if (pendingTargetAction.targetKind === 'siege-attacker' && targetRegion.siegeState) {
         return {
             controller: targetRegion.siegeState.attackerFactionId,
             troops: targetRegion.siegeState.attackerTroops,
+            population: 0,
             specialTroops: targetRegion.siegeState.attackerSpecialTroops,
         };
     }

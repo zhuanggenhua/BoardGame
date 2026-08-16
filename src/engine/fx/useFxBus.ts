@@ -10,7 +10,7 @@
  * 替代原 `useBoardEffects()` hook，提供更通用的接口。
  */
 
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { useCallback, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import type { FxRegistry } from './FxRegistry';
 import type { FxCue, FxContext, FxParams, FxEvent, FxEventInput, FxQuality } from './types';
 import { flushRegisteredShaders } from './shader/ShaderPrecompile';
@@ -86,6 +86,10 @@ export interface FxBus {
   cancelSequence: (sequenceId: string) => void;
   /** 当前活跃特效 */
   activeEffects: FxEvent[];
+  /** 订阅活跃特效变化；FxLayer 用它隔离渲染更新，避免父级 Board 因 FX 队列变化整片重渲染 */
+  subscribe?: (listener: () => void) => () => void;
+  /** 获取当前活跃特效快照 */
+  getSnapshot?: () => FxEvent[];
   /** 移除指定特效 */
   removeEffect: (id: string) => void;
   /** 注册表引用（供 FxLayer 读取） */
@@ -95,18 +99,24 @@ export interface FxBus {
 }
 
 export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
-  const [effects, setEffects] = useState<FxEvent[]>([]);
-  // 同步 ref 用于 fireImpact 查找事件上下文（避免闭包过期）
   const effectsRef = useRef<FxEvent[]>([]);
+  const listenersRef = useRef(new Set<() => void>());
+
+  const subscribe = useCallback((listener: () => void) => {
+    listenersRef.current.add(listener);
+    return () => {
+      listenersRef.current.delete(listener);
+    };
+  }, []);
+
+  const getSnapshot = useCallback(() => effectsRef.current, []);
 
   const commitEffects = useCallback((nextEffects: FxEvent[]) => {
     effectsRef.current = nextEffects;
-    setEffects(nextEffects);
+    for (const listener of [...listenersRef.current]) {
+      listener();
+    }
   }, []);
-
-  useLayoutEffect(() => {
-    effectsRef.current = effects;
-  }, [effects]);
 
   // 挂载时自动预编译所有自注册的 shader
   useEffect(() => {
@@ -455,5 +465,18 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     }
   }, []);
 
-  return { push, pushEvent, pushSequence, cancelSequence, activeEffects: effects, removeEffect, registry, fireImpact };
+  return useMemo(() => ({
+    push,
+    pushEvent,
+    pushSequence,
+    cancelSequence,
+    get activeEffects() {
+      return effectsRef.current;
+    },
+    subscribe,
+    getSnapshot,
+    removeEffect,
+    registry,
+    fireImpact,
+  }), [cancelSequence, fireImpact, getSnapshot, push, pushEvent, pushSequence, registry, removeEffect, subscribe]);
 }

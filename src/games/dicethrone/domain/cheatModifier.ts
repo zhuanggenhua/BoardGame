@@ -9,6 +9,11 @@ import type { AbilityCard, DiceThroneCore, DiceThroneEvent, Die } from './types'
 import { getDieFaceByDefinition } from './rules';
 import { reduce } from './reducer';
 import { resolveCurrentRollContext } from './rollContext';
+import { RESOURCE_IDS } from './resources';
+
+export const DICETHRONE_CHEAT_COMMANDS = {
+    DEAL_DAMAGE: 'SYS_CHEAT_DEAL_DAMAGE',
+} as const;
 
 const getCardSourceAtlasIndex = (card: { sourceAtlasIndex?: number; previewRef?: { type: string; index?: number } }) => (
     typeof card.sourceAtlasIndex === 'number'
@@ -228,5 +233,47 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
         if (!card) return core;
 
         return appendCardToHand(core, playerId, card);
+    },
+    customCommands: {
+        [DICETHRONE_CHEAT_COMMANDS.DEAL_DAMAGE]: ({ state, command }) => {
+            const payload = command.payload as {
+                targetId?: string;
+                amount?: number;
+                sourceAbilityId?: string;
+                sourcePlayerId?: string;
+                damageScope?: 'attack' | 'direct';
+                bypassShields?: boolean;
+            };
+            const targetId = payload.targetId;
+            const amount = payload.amount;
+
+            if (!targetId || !state.core.players[targetId]) {
+                return { halt: true, error: 'cheat_damage_target_not_found' };
+            }
+            if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+                return { halt: true, error: 'cheat_damage_invalid_amount' };
+            }
+
+            const targetHp = state.core.players[targetId]?.resources[RESOURCE_IDS.HP] ?? 0;
+            const damageEvent: DiceThroneEvent = {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId,
+                    amount,
+                    actualDamage: Math.min(amount, targetHp),
+                    ...(payload.sourceAbilityId ? { sourceAbilityId: payload.sourceAbilityId } : {}),
+                    sourcePlayerId: payload.sourcePlayerId ?? command.playerId,
+                    damageScope: payload.damageScope ?? 'direct',
+                    ...(payload.bypassShields ? { bypassShields: true } : {}),
+                },
+                sourceCommandType: command.type,
+                timestamp: command.timestamp ?? Date.now(),
+            };
+
+            return {
+                halt: true,
+                events: [damageEvent],
+            };
+        },
     },
 };

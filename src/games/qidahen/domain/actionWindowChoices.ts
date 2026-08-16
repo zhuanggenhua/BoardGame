@@ -150,6 +150,7 @@ export const resolveQidahenRecruitInteractionChoice = (
         getEffectiveHomelandController,
         toFactionLabel,
         getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
     },
 ): QidahenCore => {
     const selection = getQidahenInteractionSelectionStateForCore(
@@ -361,6 +362,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         getEffectiveHomelandController,
         toFactionLabel,
         getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
     },
 ): QidahenCore => {
     const selection = getQidahenInteractionSelectionStateForCore(
@@ -448,6 +450,7 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
         getEffectiveHomelandController,
         toFactionLabel,
         getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
     },
 ): QidahenCore => {
     const selection = getQidahenInteractionSelectionStateForCore(
@@ -535,6 +538,7 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         getEffectiveHomelandController,
         toFactionLabel,
         getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
     },
 ): QidahenCore => {
     const selection = getQidahenInteractionSelectionStateForCore(
@@ -853,7 +857,7 @@ const resolveDiplomacyChoice = (
             resolvedSteps: nextResolvedSteps,
         },
     );
-    const continuedSelection = nextSelection ? {
+    const continuedSelection: QidahenDiplomacySelection = nextSelection ? {
         ...nextSelection,
         hireRegionId: selection.hireRegionId,
         hireRegionName: selection.hireRegionName,
@@ -899,6 +903,7 @@ export const resolveQidahenDiplomacyInteractionChoice = (
         getEffectiveHomelandController,
         toFactionLabel,
         getActionRuleDisplayRegionName,
+        resolveGrantPardonExecution: resolveQidahenGrantPardonExecution,
     },
 ): QidahenCore => {
     const selection = getQidahenInteractionSelectionStateForCore(

@@ -1073,8 +1073,11 @@ export function createResponseWindowSystem<TCore>(
                     if (hasInteractionLockRequest) {
                         break;
                     }
-                    // 有活跃的交互时暂不推进（等交互完成后由状态驱动解锁推进）
-                    if (newState.sys.interaction?.current) {
+                    // 有当前响应者自己的活跃交互时暂不推进；其它玩家的待处理交互不能锁住响应窗口。
+                    if (
+                        newState.sys.interaction?.current
+                        && newState.sys.interaction.current.playerId === currentResponderId
+                    ) {
                         const interactionId = newState.sys.interaction.current.id;
                         const markedForLock = loopUntilAllPass
                             ? { ...currentWindow, pendingInteractionId: interactionId, actionTakenThisRound: true, consecutivePassRounds: 0 }

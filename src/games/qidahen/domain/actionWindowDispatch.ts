@@ -81,7 +81,7 @@ const buildPendingTargetActionFromWheelDispatchChoice = (
         title?: string;
     } = {},
 ): QidahenPendingTargetAction => ({
-    actionId: options.actionId ?? selection.sourceActionId ?? 'wheel-dispatch',
+    actionId: options.actionId ?? (selection.sourceActionId === 'drive-tiger' ? 'drive-tiger' : 'wheel-dispatch'),
     battleMode: candidate.battleMode ?? (isQidahenCityRuntimeRegion(candidate.targetRuntimeRegionId) ? 'city' : 'field'),
     targetKind: candidate.targetKind ?? 'region',
     title: options.title ?? (selection.sourceActionId === 'drive-tiger' ? '驱虎吞狼待结算' : '调度进攻待结算'),

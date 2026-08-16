@@ -463,6 +463,94 @@ describe('AI legal actions', () => {
         expect(actions.filter((action) => action.kind === 'skip-bonus-dice-reroll')).toHaveLength(1);
     });
 
+    it('本地 AI 面对右侧奖励骰确认交互时应确认结算，而不是取消交互', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main2';
+        (state.core as any).pendingBonusDiceSettlement = {
+            id: 'right-tray-bonus-ai-confirm',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'fist' }],
+            rerollCount: 0,
+            displayOnly: true,
+        };
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'dt-bonus-dice-right-tray-bonus-ai-confirm',
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+                data: null,
+            },
+        };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-bonus-dice-reroll',
+            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+        }));
+        expect(actions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
+
+        const result = execCmd(state, cmd('SKIP_BONUS_DICE_REROLL', '0'));
+        expect(result.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(result.sys.interaction.current).toBeUndefined();
+    });
+
+    it('AI bonus dice modify-or-confirm: 右侧奖励骰允许改骰时应同时枚举合法改骰牌和确认动作', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'offensiveRoll';
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 2;
+        state.core.players['0'].hand = [getCardById('card-surprise')];
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'right-tray-bonus-ai-modify-or-confirm',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'fist' }],
+            rerollCount: 0,
+            allowDiceModification: true,
+        };
+        state.core.pendingBonusDiceSettlement = settlement;
+        state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'dt-bonus-dice-right-tray-bonus-ai-modify-or-confirm',
+                kind: 'dt:bonus-dice',
+                playerId: '0',
+                data: null,
+            },
+        };
+
+        expect(DiceThroneDomain.validate(state, {
+            type: 'PLAY_CARD',
+            playerId: '0',
+            payload: { cardId: 'card-surprise' },
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'play-card',
+            commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-surprise' } }],
+        }));
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-bonus-dice-reroll',
+            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+        }));
+    });
+
     it('旧 pendingBonusDiceSettlement 脏 dice shape 不应让 AI 构建奖励骰动作时崩溃', () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.activePlayerId = '0';
@@ -1437,6 +1525,79 @@ describe('AI legal actions', () => {
             '2:4,0:4',
             '2:4,1:4',
         ]);
+    });
+
+    it('modifyDie set 双骰交互应生成两条改骰命令后再确认，而不是单骰确认', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 5][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'ai-set-two-dice',
+            playerId: '0',
+            sourceCardId: 'set-two-dice-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDiceToModify',
+            selectCount: 2,
+            selected: [],
+            dieModifyConfig: { mode: 'set', targetValue: 6 },
+        });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        }).filter((action) => action.kind === 'interaction-multistep');
+
+        expect(actions.length).toBeGreaterThan(0);
+        expect(actions.every((action) =>
+            action.commands.filter((command) => command.type === 'MODIFY_DIE').length === 2
+        )).toBe(true);
+        expect(actions.every((action) =>
+            action.commands.at(-1)?.type === 'SYS_INTERACTION_CONFIRM'
+        )).toBe(true);
+        expect(actions.some((action) =>
+            action.commands
+                .filter((command) => command.type === 'MODIFY_DIE')
+                .map((command) => {
+                    const payload = command.payload as { dieId: number; newValue: number };
+                    return `${payload.dieId}:${payload.newValue}`;
+                })
+                .join(',') === '0:6,1:6'
+        )).toBe(true);
+    });
+
+    it('modifyDie set 双骰交互未达到最少步数时服务端不应允许提前确认', () => {
+        let state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 5][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'set-two-dice-confirm-gate',
+            playerId: '0',
+            sourceCardId: 'set-two-dice-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDiceToModify',
+            selectCount: 2,
+            selected: [],
+            dieModifyConfig: { mode: 'set', targetValue: 6 },
+        });
+
+        state = execCmd(state, cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }));
+
+        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+        const data = state.sys.interaction.current?.data as { completedSteps?: number; minSteps?: number } | undefined;
+        expect(data?.completedSteps).toBe(1);
+        expect(data?.minSteps).toBe(2);
+
+        const earlyConfirm = tryCmd(state, cmd('SYS_INTERACTION_CONFIRM', '0'));
+        expect(earlyConfirm.success).toBe(false);
+        expect(earlyConfirm.error).toContain('多步交互尚未达到最少步骤数');
     });
 
     it('copy 交互不能把同值骰当作源骰和目标骰，避免 AI 消耗牌但骰面不变', () => {

@@ -1673,20 +1673,31 @@ describe('DiceThrone 单槽当前骰区', () => {
         const handler = getCustomActionHandler('gunslinger-showdown-bonus');
         expect(handler).toBeDefined();
         if (!handler) return;
+        const baseState: DiceThroneCore = {
+            ...createCoreWithAttacker('gunslinger'),
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                isDefendable: true,
+                damage: 5,
+                bonusDamage: 0,
+                sourceAbilityId: 'showdown',
+            },
+        };
 
         const events = handler({
             ctx: {
                 attackerId: '0',
                 defenderId: '1',
                 sourceAbilityId: 'showdown',
-                state: createCore(),
+                state: baseState,
                 damageDealt: 4,
                 timestamp: 10,
             },
             attackerId: '0',
-            targetId: '1',
+            targetId: '0',
             sourceAbilityId: 'showdown',
-            state: createCore(),
+            state: baseState,
             damageDealt: 4,
             timestamp: 10,
             random: queuedRandom([2, 5]),
@@ -1694,11 +1705,11 @@ describe('DiceThrone 单槽当前骰区', () => {
                 type: 'custom',
                 target: 'self',
                 customActionId: 'gunslinger-showdown-bonus',
-                params: { amount: 2 },
+                params: { bonusDamageOnWin: 2 },
             },
         } as any);
 
-        const opened = events.reduce((current, event) => reduce(current, event), createCore());
+        const opened = events.reduce((current, event) => reduce(current, event), baseState);
 
         expect(opened.currentRollContext).toMatchObject({
             kind: 'compare',
@@ -1706,7 +1717,7 @@ describe('DiceThrone 单槽当前骰区', () => {
             targetPlayerId: '1',
             sourceAbilityId: 'showdown',
             dice: [
-                { id: 0, definitionId: 'zhanshujia-dice', value: 2, ownerId: '0' },
+                { id: 0, definitionId: 'gunslinger-dice', value: 2, ownerId: '0' },
                 { id: 1, definitionId: 'monk-dice', value: 5, ownerId: '1' },
             ],
             settlement: {
@@ -1714,6 +1725,10 @@ describe('DiceThrone 单槽当前骰区', () => {
                 metadata: {
                     compareKind: 'gunslingerShowdown',
                     bonusDamageOnWin: 2,
+                    contestants: [
+                        expect.objectContaining({ playerId: '0', dieId: 0 }),
+                        expect.objectContaining({ playerId: '1', dieId: 1 }),
+                    ],
                 },
             },
             display: {

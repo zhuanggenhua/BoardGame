@@ -175,12 +175,6 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
 
     const selectedFactions = isPlainRecord(core.selectedFactions) ? core.selectedFactions : null;
     if (selectedFactions) {
-        if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
-            const currentPlayerFaction = selectedFactions[args.currentPlayerId];
-            if (typeof currentPlayerFaction !== 'string' || currentPlayerFaction === 'unselected') {
-                return null;
-            }
-        }
         return manualAiSeatIds.find((playerId) => {
             const selectedFaction = selectedFactions[playerId];
             return typeof selectedFaction !== 'string' || selectedFaction === 'unselected';
@@ -189,12 +183,6 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
 
     const selectedCharacters = isPlainRecord(core.selectedCharacters) ? core.selectedCharacters : null;
     if (selectedCharacters) {
-        if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
-            const currentPlayerCharacter = selectedCharacters[args.currentPlayerId];
-            if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
-                return null;
-            }
-        }
         return manualAiSeatIds.find((playerId) => {
             const selectedCharacter = selectedCharacters[playerId];
             return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';

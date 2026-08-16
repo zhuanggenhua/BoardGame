@@ -106,9 +106,12 @@ const neutralInvasionStepValidator = (state: MatchState<unknown>, step: { id: st
     const core = asCore(state);
     switch (step.id) {
         case 'resolve-neutral':
-            return Boolean(core.pendingTargetAction)
-                && core.pendingTargetAction.targetRuntimeRegionId === 'city-region-20'
-                && core.pendingTargetAction.defenderFactionId === 'neutral';
+            {
+                const pendingTargetAction = core.pendingTargetAction;
+                return pendingTargetAction != null
+                    && pendingTargetAction.targetRuntimeRegionId === 'city-region-20'
+                    && pendingTargetAction.defenderFactionId === 'neutral';
+            }
         case 'neutral-result':
         case 'finish':
             return (core.lastSeasonSummary?.lines ?? []).some((line) => line.includes('中立守军'))
@@ -361,12 +364,10 @@ const koreaSpecialStepValidator = (state: MatchState<unknown>, step: { id: strin
             return core.turnPhase === 'season-resolution'
                 && core.actionWheelPosition === 'wheel-new-year';
         case 'korea-attrition':
-            return Boolean(core.lastSeasonSummary)
-                && core.lastSeasonSummary.title === '新年结算';
+            return core.lastSeasonSummary?.title === '新年结算';
         case 'shanhaiguan':
         case 'finish':
-            return Boolean(core.lastSeasonSummary)
-                && core.lastSeasonSummary.title === '新年结算';
+            return core.lastSeasonSummary?.title === '新年结算';
         default:
             return true;
     }

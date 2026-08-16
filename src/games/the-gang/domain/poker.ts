@@ -112,7 +112,10 @@ const applyQuantumValues = (cards: PlayingCard[], options?: PokerEvaluationOptio
         : ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     const reversed = [...normalOrder].reverse();
     const rankMap = Object.fromEntries(normalOrder.map((rank, index) => [rank, reversed[index]])) as Partial<Record<Rank, Rank>>;
-    return cards.map((card) => rankMap[card.rank] ? { ...card, rank: rankMap[card.rank] } : card);
+    return cards.map((card) => {
+        const replacementRank = rankMap[card.rank];
+        return replacementRank ? { ...card, rank: replacementRank } : card;
+    });
 };
 
 export function compareHandStrength(left: HandStrength, right: HandStrength): number {

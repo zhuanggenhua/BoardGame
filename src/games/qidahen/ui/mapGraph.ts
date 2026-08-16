@@ -265,10 +265,11 @@ export const QIDAHEN_PRINTED_REGION_BOUNDARY_TYPES = QIDAHEN_PRINTED_REGION_GRAP
 export const QIDAHEN_PRINTED_REGION_GRAPH_NODES = QIDAHEN_PRINTED_REGION_GRAPH.nodes;
 export const QIDAHEN_PRINTED_REGION_GRAPH_EDGES = QIDAHEN_PRINTED_REGION_GRAPH.edges;
 export const QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID = new Map(QIDAHEN_PRINTED_REGION_GRAPH_NODES.map((node) => [node.id, node]));
+const printedRegionMaskRegions = (printedRegionMaskRegionsData as { regions?: unknown }).regions;
 export const QIDAHEN_PRINTED_REGION_DEFINITIONS = (
-    Array.isArray((printedRegionMaskRegionsData as Record<string, unknown>).regions)
-        ? (printedRegionMaskRegionsData as Record<string, unknown>).regions
-            .map((item) => parseMaskRegionDefinition(item))
+    Array.isArray(printedRegionMaskRegions)
+        ? printedRegionMaskRegions
+            .map((item: unknown) => parseMaskRegionDefinition(item))
             .filter((item): item is QidahenMaskRegionDefinition => item !== null)
         : []
 );
@@ -277,10 +278,11 @@ export const QIDAHEN_PRINTED_REGION_BY_ID = new Map(QIDAHEN_PRINTED_REGION_DEFIN
 export const QIDAHEN_MASK_REGION_DEFINITIONS = QIDAHEN_PRINTED_REGION_DEFINITIONS;
 export const QIDAHEN_MASK_REGION_BY_ID = QIDAHEN_PRINTED_REGION_BY_ID;
 
+const runtimeRegionMaskRegions = (runtimeRegionMaskRegionsData as { regions?: unknown }).regions;
 export const QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS = (
-    Array.isArray((runtimeRegionMaskRegionsData as Record<string, unknown>).regions)
-        ? (runtimeRegionMaskRegionsData as Record<string, unknown>).regions
-            .map((item) => parseMaskRegionDefinition(item))
+    Array.isArray(runtimeRegionMaskRegions)
+        ? runtimeRegionMaskRegions
+            .map((item: unknown) => parseMaskRegionDefinition(item))
             .filter((item): item is QidahenMaskRegionDefinition => item !== null)
         : []
 );

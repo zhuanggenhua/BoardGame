@@ -39,6 +39,7 @@ import type {
     QidahenCasualtyPriority,
     QidahenCore,
     QidahenEvent,
+    QidahenFactionId,
     QidahenPendingTargetAction,
     QidahenPlunderSource,
     QidahenPostBattleSelection,
@@ -92,10 +93,10 @@ interface QidahenPendingBattleFlowDependencies extends QidahenPendingBattleFlowS
         pendingTargetAction: QidahenPendingTargetAction,
         random: RandomFn,
         options: {
-            defenderSortieBattle?: boolean;
-            defenderHoldCity?: boolean;
-            defenderCavalryEvasion?: boolean;
-            attackerCavalryPlunder?: boolean;
+            defenderSortieBattle: boolean;
+            defenderHoldCity: boolean;
+            defenderCavalryEvasion: boolean;
+            attackerCavalryPlunder: boolean;
         },
     ) => QidahenBattleRolls | null;
     resolvePendingTargetAction: (
@@ -154,6 +155,9 @@ export const resolveQidahenPendingActionFromPayload = (
         payload,
     );
     if (feignedRetreatSelection) {
+        const defenderFactionLabel = pendingTargetAction.defenderFactionId === 'neutral'
+            ? '中立守军'
+            : state.factions[pendingTargetAction.defenderFactionId].name;
         return {
             ...state,
             pendingTargetAction,
@@ -163,7 +167,7 @@ export const resolveQidahenPendingActionFromPayload = (
                 title: '诈败诱敌',
                 lines: [
                     `${state.factions[pendingTargetAction.attackerFactionId].name} 宣告骑兵劫掠。`,
-                    `${state.factions[pendingTargetAction.defenderFactionId].name} 可直接点击真实手牌「诈败诱敌」，或选择不使用。`,
+                    `${defenderFactionLabel} 可直接点击真实手牌「诈败诱敌」，或选择不使用。`,
                 ],
             },
         };
@@ -245,10 +249,10 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         defenderCasualtyPriority: payload.defenderCasualtyPriority,
         battleRolls: pendingTargetAction
             ? dependencies.createStructuredBattleRolls(state, pendingTargetAction, random, {
-                defenderSortieBattle: payload.defenderSortieBattle,
-                defenderHoldCity: payload.defenderHoldCity,
-                defenderCavalryEvasion: payload.defenderCavalryEvasion,
-                attackerCavalryPlunder: payload.attackerCavalryPlunder,
+                defenderSortieBattle: payload.defenderSortieBattle === true,
+                defenderHoldCity: payload.defenderHoldCity === true,
+                defenderCavalryEvasion: payload.defenderCavalryEvasion === true,
+                attackerCavalryPlunder: payload.attackerCavalryPlunder === true,
             })
             : null,
     }, timestamp, dependencies);

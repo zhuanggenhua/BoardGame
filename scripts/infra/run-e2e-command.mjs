@@ -9,6 +9,12 @@ import { runEncodingCheck } from './check-file-encoding.mjs';
 import { runE2ESafetyCheck } from './check-e2e-safety.js';
 import { cleanupTestConnections } from './cleanup_test_connections.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
+import {
+    formatRuntimeSummary,
+    getWorktreeRoot,
+    listActiveRuntimes,
+    pruneStaleRuntimes,
+} from './e2e-runtime-registry.js';
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 import { ensureE2EAssets } from './ensure-e2e-assets.mjs';
@@ -39,6 +45,8 @@ const PREFLIGHT_WRITE_RETRY_COUNT = 6;
 const PREFLIGHT_WRITE_RETRY_DELAY_MS = 50;
 const HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
 const HEAVY_TASK_GUARD_WAIT_POLL_MS = 10 * 1000;
+const E2E_RUNTIME_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
+const E2E_RUNTIME_WAIT_POLL_MS = 10 * 1000;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -55,6 +63,90 @@ function isHeavyTaskGuardContention(error) {
     const message = error instanceof Error ? error.message : String(error);
     return message.includes('已有同类重任务在运行')
         || message.includes('检测到冲突重任务正在运行');
+}
+
+export function findBlockingE2ERuntimes(runtimes, {
+    preferSharedSingleRun = false,
+    currentWorktreeRoot = getWorktreeRoot(process.cwd()),
+} = {}) {
+    return (Array.isArray(runtimes) ? runtimes : []).filter((runtime) => {
+        const status = runtime?.status;
+        if (status !== 'active' && status !== 'active-unhealthy') {
+            return false;
+        }
+
+        const isReusableSharedRuntime = (
+            preferSharedSingleRun
+            && status === 'active'
+            && runtime.mode === 'shared-single'
+            && runtime.scope === 'shared-single'
+            && runtime.health?.ready === true
+            && path.resolve(runtime.worktreeRoot ?? '') === path.resolve(currentWorktreeRoot)
+        );
+
+        return !isReusableSharedRuntime;
+    });
+}
+
+function formatRuntimeQueueSummary(runtimes) {
+    return runtimes
+        .map(runtime => `- ${formatRuntimeSummary(runtime)}`)
+        .join('\n');
+}
+
+async function waitForE2ERuntimeWindow({
+    isListMode,
+    mode,
+    preferSharedSingleRun,
+    logger = console,
+} = {}) {
+    if (isListMode || mode === 'parallel' || process.env.BG_BYPASS_E2E_RUNTIME_GUARD === '1') {
+        return;
+    }
+
+    const waitTimeoutMs = parsePositiveIntegerEnv(
+        'BG_E2E_RUNTIME_WAIT_TIMEOUT_MS',
+        E2E_RUNTIME_WAIT_TIMEOUT_MS,
+    );
+    const waitPollMs = parsePositiveIntegerEnv(
+        'BG_E2E_RUNTIME_WAIT_POLL_MS',
+        E2E_RUNTIME_WAIT_POLL_MS,
+    );
+    const currentWorktreeRoot = getWorktreeRoot(process.cwd());
+    const startedAt = Date.now();
+    let attempt = 0;
+
+    while (true) {
+        pruneStaleRuntimes(process.cwd(), { killOrphans: true, logger });
+        const blockingRuntimes = findBlockingE2ERuntimes(listActiveRuntimes(process.cwd()), {
+            preferSharedSingleRun,
+            currentWorktreeRoot,
+        });
+
+        if (blockingRuntimes.length === 0) {
+            return;
+        }
+
+        const elapsedMs = Date.now() - startedAt;
+        if (elapsedMs >= waitTimeoutMs) {
+            throw new Error([
+                '已有不可复用的 E2E runtime 仍在运行，拒绝继续启动新的 E2E。',
+                '这会让多个会话同时拉起浏览器/前端/游戏服/API 服务，直接增加 CPU 和内存占用。',
+                formatRuntimeQueueSummary(blockingRuntimes),
+                '请等待该 runtime 结束，或确认它已经失联后再运行安全清理。',
+            ].join('\n'));
+        }
+
+        attempt += 1;
+        const remainingMs = Math.max(0, waitTimeoutMs - elapsedMs);
+        logger.log?.([
+            '[e2e-runtime-guard] 检测到不可复用的活跃 E2E runtime，进入低资源排队等待。',
+            `第 ${attempt} 次检查命中，${Math.ceil(waitPollMs / 1000)}s 后重试。`,
+            `最长还可等待 ${Math.ceil(remainingMs / 1000)}s。`,
+            formatRuntimeQueueSummary(blockingRuntimes),
+        ].join('\n'));
+        await sleep(waitPollMs);
+    }
 }
 
 async function acquireTaskGuardWithQueue(args) {
@@ -637,15 +729,23 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         console.log('🧾 检测到 Playwright --list，仅列举用例，跳过托管 runtime 启动。');
     }
 
+    await waitForE2ERuntimeWindow({
+        isListMode,
+        mode,
+        preferSharedSingleRun,
+    });
+
     const preflightCache = readPreflightCache();
     const preflightKey = getPreflightCacheKey(mode, {
         explicitTargetPath,
         preferSharedSingleRun,
     });
 
-    await assertChildProcessSupport('E2E', { probeFork: true, probeEsbuild: true });
+    if (!isListMode) {
+        await assertChildProcessSupport('E2E', { probeFork: true, probeEsbuild: true });
+    }
 
-    if (mode === 'ci') {
+    if (mode === 'ci' && !isListMode) {
         const cleanupCacheKey = `${preflightKey}::cleanup`;
         if (shouldReusePreflight(preflightCache, cleanupCacheKey, CLEANUP_CACHE_TTL_MS)) {
             console.log('♻️ 跳过重复的 E2E 清理检查（近期已执行）。');
@@ -655,15 +755,17 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         }
     }
 
-    const encodingCacheKey = `${preflightKey}::encoding`;
-    if (shouldReusePreflight(preflightCache, encodingCacheKey, ENCODING_CACHE_TTL_MS)) {
-        console.log('♻️ 跳过重复的编码检查（近期已执行）。');
-    } else {
-        runEncodingCheck([]);
-        markPreflightDone(preflightCache, encodingCacheKey);
+    if (!isListMode) {
+        const encodingCacheKey = `${preflightKey}::encoding`;
+        if (shouldReusePreflight(preflightCache, encodingCacheKey, ENCODING_CACHE_TTL_MS)) {
+            console.log('♻️ 跳过重复的编码检查（近期已执行）。');
+        } else {
+            runEncodingCheck([]);
+            markPreflightDone(preflightCache, encodingCacheKey);
+        }
     }
 
-    if (mode !== 'parallel') {
+    if (mode !== 'parallel' && !isListMode) {
         const safetyCacheKey = `${preflightKey}::safety`;
         if (shouldReusePreflight(preflightCache, safetyCacheKey, SAFETY_CACHE_TTL_MS)) {
             console.log('♻️ 跳过重复的 E2E 环境检查（近期已执行）。');
@@ -676,24 +778,26 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     let heldRuntimeManager = null;
     let globalBudgetHandle = null;
     let managedRuntime = null;
-    const taskGuard = await acquireTaskGuardWithQueue({
-        name: 'e2e-run',
-        conflicts: ['quality-gate'],
-        command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
-        metadata: {
-            mode,
-            target: explicitTargetPath || '<all>',
-            managedRuntime: shouldUseManagedSingleRuntime,
-            runtimeScope: modeEnv.PW_RUNTIME_SCOPE || '',
-            serviceReuse: preferSharedSingleRun ? 'shared-single' : 'isolated',
-            listOnly: isListMode,
-            sessionId: modeEnv.PW_E2E_SESSION_ID,
-            entrypoint,
-        },
-    });
+    const taskGuard = isListMode
+        ? null
+        : await acquireTaskGuardWithQueue({
+            name: 'e2e-run',
+            conflicts: ['quality-gate'],
+            command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
+            metadata: {
+                mode,
+                target: explicitTargetPath || '<all>',
+                managedRuntime: shouldUseManagedSingleRuntime,
+                runtimeScope: modeEnv.PW_RUNTIME_SCOPE || '',
+                serviceReuse: preferSharedSingleRun ? 'shared-single' : 'isolated',
+                listOnly: isListMode,
+                sessionId: modeEnv.PW_E2E_SESSION_ID,
+                entrypoint,
+            },
+        });
     try {
         if (isListMode) {
-            console.log('🪶 --list 属于轻量命令，跳过全局重任务内存门禁。');
+            console.log('🪶 --list 属于轻量命令，跳过清理、编码检查、环境检查、重任务排队和全局内存门禁。');
         } else {
             globalBudgetHandle = await acquireGlobalHeavyBudget({
                 group: 'e2e',
@@ -789,7 +893,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
             stopManagedRuntime(managedRuntime.runtimeId, modeEnv);
         }
         globalBudgetHandle?.release?.();
-        taskGuard.release();
+        taskGuard?.release?.();
     }
 }
 

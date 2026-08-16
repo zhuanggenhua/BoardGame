@@ -74,7 +74,7 @@ function resolveMageWarsElementalStaffBoundSpell(
     player: MageWarsPlayerState,
     spellCardId: number | undefined,
 ): MageWarsConfigSpellCard | undefined {
-    if (!Number.isInteger(spellCardId)) return undefined;
+    if (spellCardId === undefined || !Number.isInteger(spellCardId)) return undefined;
     const spell = getMageWarsSpellCardFromConfig(spellCardId);
     return spell
         && hasSpellbookCard(player, spellCardId)

@@ -70,6 +70,19 @@ interface QidahenActionWindowResolvedCommandDependencies {
     getQidahenEventOpponentHandChoiceSelectionForCore: typeof getQidahenEventOpponentHandChoiceSelectionForCore;
 }
 
+const DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES: QidahenActionWindowResolvedCommandDependencies = {
+    getQidahenInternalDispatchSelectionForCore,
+    getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenRecruitSelectionForCore,
+    getQidahenGrantPardonSelectionForCore,
+    getQidahenMaShiTradeSelectionForCore,
+    getQidahenKhanEdictSelectionForCore,
+    getQidahenDiplomacySelectionForCore,
+    getQidahenEventCharacterTargetSelectionForCore,
+    getQidahenEventOpponentHandChoiceSelectionForCore,
+};
+
 interface QidahenPendingBattleResolvedCommandDependencies {
     getQidahenPendingTargetActionForCore: typeof getQidahenPendingTargetActionForCore;
     getQidahenPostBattleSelectionForCore: typeof getQidahenPostBattleSelectionForCore;
@@ -145,16 +158,7 @@ const buildQidahenInternalDispatchResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveInternalDispatchCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'INTERNAL_DISPATCH_RESOLVED',
     payload: {
@@ -170,16 +174,7 @@ const buildQidahenFortificationMaintenanceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveFortificationMaintenanceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'FORTIFICATION_MAINTENANCE_RESOLVED',
     payload: {
@@ -196,16 +191,7 @@ const buildQidahenDriveTigerConsentResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveDriveTigerConsentCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'DRIVE_TIGER_CONSENT_RESOLVED',
     payload: {
@@ -221,16 +207,7 @@ const buildQidahenRecruitChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveRecruitChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'RECRUIT_CHOICE_RESOLVED',
     payload: {
@@ -246,18 +223,7 @@ const buildQidahenGrantPardonChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveGrantPardonChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenGrantPardonSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-        getQidahenEventOpponentHandChoiceSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'GRANT_PARDON_CHOICE_RESOLVED',
     payload: {
@@ -273,15 +239,7 @@ const buildQidahenMaShiTradeChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveMaShiTradeChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'MA_SHI_TRADE_CHOICE_RESOLVED',
     payload: {
@@ -297,15 +255,7 @@ const buildQidahenKhanEdictChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveKhanEdictChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'KHAN_EDICT_CHOICE_RESOLVED',
     payload: {
@@ -321,15 +271,7 @@ const buildQidahenDiplomacyChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveDiplomacyChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'DIPLOMACY_CHOICE_RESOLVED',
     payload: {
@@ -345,16 +287,7 @@ const buildQidahenEventCharacterTargetResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveEventCharacterTargetCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'EVENT_CHARACTER_TARGET_RESOLVED',
     payload: {
@@ -373,17 +306,7 @@ const buildQidahenEventOpponentHandChoiceResolvedEvent = (
     state: MatchState<QidahenCore>,
     command: ResolveEventOpponentHandChoiceCommand,
     timestamp: number,
-    dependencies: QidahenActionWindowResolvedCommandDependencies = {
-        getQidahenInternalDispatchSelectionForCore,
-        getQidahenFortificationMaintenanceSelectionForCore,
-        getQidahenDriveTigerConsentSelectionForCore,
-        getQidahenRecruitSelectionForCore,
-        getQidahenMaShiTradeSelectionForCore,
-        getQidahenKhanEdictSelectionForCore,
-        getQidahenDiplomacySelectionForCore,
-        getQidahenEventCharacterTargetSelectionForCore,
-        getQidahenEventOpponentHandChoiceSelectionForCore,
-    },
+    dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES,
 ): QidahenEvent => ({
     type: 'EVENT_OPPONENT_HAND_CHOICE_RESOLVED',
     payload: {
@@ -461,10 +384,10 @@ const buildQidahenPendingActionResolvedEvent = (
             defenderCasualtyPriority: command.payload.defenderCasualtyPriority,
             battleRolls: pendingTargetAction
                 ? dependencies.createStructuredBattleRolls(state.core, pendingTargetAction, random, {
-                    defenderSortieBattle: command.payload.defenderSortieBattle,
-                    defenderHoldCity: command.payload.defenderHoldCity,
-                    defenderCavalryEvasion: command.payload.defenderCavalryEvasion,
-                    attackerCavalryPlunder: command.payload.attackerCavalryPlunder,
+                    defenderSortieBattle: command.payload.defenderSortieBattle === true,
+                    defenderHoldCity: command.payload.defenderHoldCity === true,
+                    defenderCavalryEvasion: command.payload.defenderCavalryEvasion === true,
+                    attackerCavalryPlunder: command.payload.attackerCavalryPlunder === true,
                 })
                 : null,
         },
@@ -495,7 +418,7 @@ const buildQidahenPostBattleDecisionResolvedEvent = (
 });
 
 const buildQidahenScenarioCharacterChoiceResolvedEvent = (
-    command: Extract<QidahenEvent, { type: 'RESOLVE_SCENARIO_CHARACTER_CHOICE' }>,
+    command: Extract<QidahenCommand, { type: 'RESOLVE_SCENARIO_CHARACTER_CHOICE' }>,
     timestamp: number,
 ): QidahenEvent => ({
     type: 'SCENARIO_CHARACTER_CHOICE_RESOLVED',
@@ -509,7 +432,7 @@ const buildQidahenScenarioCharacterChoiceResolvedEvent = (
 });
 
 const buildQidahenScenarioArmamentChoiceResolvedEvent = (
-    command: Extract<QidahenEvent, { type: 'RESOLVE_SCENARIO_ARMAMENT_CHOICE' }>,
+    command: Extract<QidahenCommand, { type: 'RESOLVE_SCENARIO_ARMAMENT_CHOICE' }>,
     timestamp: number,
 ): QidahenEvent => ({
     type: 'SCENARIO_ARMAMENT_CHOICE_RESOLVED',

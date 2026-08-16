@@ -126,7 +126,7 @@ export interface MageWarsObjectRegeneration {
 export interface MageWarsObjectUpkeepDirectDamage {
     sourceObjectId: string;
     sourceSpellCardId: number;
-    effect: MageWarsConfigSpellUpkeepEffect;
+    effect: Extract<MageWarsConfigSpellUpkeepEffect, { kind: 'direct-damage' }>;
 }
 
 export interface MageWarsMentalCalmSource {
@@ -987,7 +987,7 @@ export function isMageWarsSleepSpellTarget(object: MageWarsArenaObjectState): bo
 export function resolveMageWarsArenaObjectSourceLevel(object: MageWarsArenaObjectState): number | undefined {
     const sourceSpell = getMageWarsSpellCardFromConfig(object.sourceSpellCardId);
     const level = sourceSpell?.level;
-    if (!Number.isInteger(level) || level <= 0) return undefined;
+    if (!Number.isInteger(level) || level === undefined || level <= 0) return undefined;
     return level;
 }
 
@@ -1080,7 +1080,7 @@ export function resolveMageWarsEquipmentManaCost(object: MageWarsArenaObjectStat
     if (!isMageWarsEquipmentArenaObject(object)) return undefined;
     const sourceSpell = getMageWarsSpellCardFromConfig(object.sourceSpellCardId);
     const manaCost = sourceSpell?.manaCost;
-    return Number.isInteger(manaCost) && manaCost >= 0 ? manaCost : undefined;
+    return Number.isInteger(manaCost) && manaCost !== undefined && manaCost >= 0 ? manaCost : undefined;
 }
 
 export function resolveMageWarsExplodeManaCostForTarget(object: MageWarsArenaObjectState): number | undefined {

@@ -44,6 +44,7 @@ import type {
     QidahenGrantPardonChoice,
     QidahenRecruitChoice,
     QidahenScenarioId,
+    QidahenPostBattleSelection,
     QidahenWheelDispatchSelection,
     QidahenWheelMoveChoice,
 } from './domain';
@@ -129,6 +130,7 @@ import {
     QIDAHEN_REGION_ID_BY_MASK_COLOR,
     getQidahenBoundaryTypeMeta,
     qidahenRegionColorKey,
+    type QidahenPassageBoundaryType,
 } from './ui/mapGraph';
 import { renderRegionOwnershipOverlay, type RegionMaskOverlayToneKey } from './ui/regionMaskOverlay';
 import {
@@ -163,6 +165,22 @@ const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
 const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
 const QIDAHEN_MAP_MIN_ZOOM = 1;
 const QIDAHEN_MAP_MAX_ZOOM = 5;
+const QIDAHEN_PASSAGE_BOUNDARY_TYPE_IDS: ReadonlySet<QidahenPassageBoundaryType> = new Set([
+    'plain',
+    'mountain',
+    'river',
+    'coast',
+    'wall-convex',
+    'wall-flat',
+    'city',
+    'shanhaiguan',
+]);
+
+const asQidahenPassageBoundaryType = (value: string | null | undefined): QidahenPassageBoundaryType | null => (
+    value && QIDAHEN_PASSAGE_BOUNDARY_TYPE_IDS.has(value as QidahenPassageBoundaryType)
+        ? value as QidahenPassageBoundaryType
+        : null
+);
 
 type QidahenGuidePoint = { x: number; y: number };
 type QidahenGuideBounds = {
@@ -797,6 +815,7 @@ const getQidahenForegroundActionChoice = (
     options: {
         actionPaymentPreviewVisible: boolean;
         recruitSelection: unknown | null;
+        grantPardonSelection: unknown | null;
         maShiTradeSelection: unknown | null;
         khanEdictSelection: unknown | null;
         driveTigerConsentSelection: unknown | null;
@@ -809,6 +828,9 @@ const getQidahenForegroundActionChoice = (
     }
     if (options.recruitSelection) {
         return core.actionChoices.find((action) => action.id === 'recruit') ?? null;
+    }
+    if (options.grantPardonSelection) {
+        return core.actionChoices.find((action) => action.id === 'grant-pardon') ?? null;
     }
     if (options.maShiTradeSelection) {
         return core.actionChoices.find((action) => action.id === 'ma-shi-trade') ?? null;
@@ -1665,7 +1687,8 @@ const MapToken: React.FC<{
     const isArmyToken = token.type === 'army';
     const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : token.type === 'control' ? 'rounded-full' : '';
     const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';
-    const showTokenImage = Boolean(token.imageSrc) && (!isArmyToken || revealFront);
+    const tokenImageSrc = token.imageSrc;
+    const showTokenImage = tokenImageSrc !== undefined && (!isArmyToken || revealFront);
     const pendingCommittedTone = pendingCommittedSelected
         ? {
             opacity: 1,
@@ -1768,7 +1791,7 @@ const MapToken: React.FC<{
             {showTokenImage ? (
                 <>
                     <OptimizedImage
-                        src={token.imageSrc}
+                        src={tokenImageSrc}
                         alt={token.id}
                         className={`h-full w-full object-cover ${tokenShapeClass}`}
                         draggable={false}
@@ -2126,7 +2149,7 @@ const MapSceneLayer: React.FC<{
             const renderToId = renderFromId === edge.from ? edge.to : edge.from;
             const directedPassage = getQidahenDirectedPassage(edge, renderFromId, renderToId);
             const fromRuntimeRegion = runtimeRegionsById.get(renderFromId);
-            const stateBoundaryType = fromRuntimeRegion?.boundaryTypeByRegionId[renderToId];
+            const stateBoundaryType = asQidahenPassageBoundaryType(fromRuntimeRegion?.boundaryTypeByRegionId[renderToId]);
             const stateTravelCost = fromRuntimeRegion?.travelCostByRegionId[renderToId];
             const stateBattleWidth = fromRuntimeRegion?.movementCostByRegionId[renderToId];
             const statePassage = stateBoundaryType && typeof stateTravelCost === 'number' && typeof stateBattleWidth === 'number'
@@ -2148,7 +2171,7 @@ const MapSceneLayer: React.FC<{
         ? Object.entries(focusedRegion.travelCostByRegionId)
             .map(([regionId, travelCost]) => {
                 const targetRegion = core.regions.find((region) => region.id === regionId);
-                const boundaryType = focusedRegion.boundaryTypeByRegionId[regionId];
+                const boundaryType = asQidahenPassageBoundaryType(focusedRegion.boundaryTypeByRegionId[regionId]);
                 const battleWidth = focusedRegion.movementCostByRegionId[regionId];
                 const boundaryMeta = boundaryType ? getQidahenBoundaryTypeMeta(boundaryType) : getQidahenBoundaryTypeMeta('plain');
                 const boundaryLabel = boundaryMeta.label;
@@ -2383,8 +2406,9 @@ const MapSceneLayer: React.FC<{
                     const targetPoint = getWheelDispatchTargetPoint(candidate);
                     const arrowTargetPoint = getWheelDispatchArrowTargetPoint(candidate, sourcePoint, targetPoint);
                     const arrowHeadAnchorRatio = candidate.targetRuntimeRegionId === 'city-region-22' ? 0.95 : undefined;
-                    const targetTokens = getGuideArmyTokens(candidate.targetRuntimeRegionId, candidate.defenderFactionId);
-                    const targetTokenBounds = getGuideArmyTokenBounds(candidate.targetRuntimeRegionId, candidate.defenderFactionId);
+                    const defenderFactionId = candidate.defenderFactionId === 'neutral' ? null : candidate.defenderFactionId;
+                    const targetTokens = getGuideArmyTokens(candidate.targetRuntimeRegionId, defenderFactionId);
+                    const targetTokenBounds = getGuideArmyTokenBounds(candidate.targetRuntimeRegionId, defenderFactionId);
                     return {
                         id: candidate.targetRuntimeRegionId,
                         targetRegionId: candidate.targetRuntimeRegionId,
@@ -2607,7 +2631,7 @@ const MapSceneLayer: React.FC<{
                 'data-map-zoom': viewport.zoom,
                 'data-map-pan-x': viewport.panX,
                 'data-map-pan-y': viewport.panY,
-            } as React.HTMLAttributes<HTMLDivElement>}
+            }}
             style={{
                 background: '#c8a970',
                 width: STAGE_WIDTH,
@@ -6238,7 +6262,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const core = G.core;
     const isGameOver = Boolean(G.sys?.gameover);
     const gameOverResult = G.sys?.gameover;
-    useTutorialBridge(G.sys.tutorial, dispatch as (type: string, payload?: unknown) => void);
+    const runtimeDispatch = dispatch as (type: string, payload?: unknown) => void;
+    useTutorialBridge(G.sys.tutorial, runtimeDispatch);
     const { overlayProps: endgameProps } = useEndgame({
         result: gameOverResult || undefined,
         playerID,
@@ -6592,29 +6617,29 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             ...interactionMergedValue,
         };
         if (activePendingTargetInteractionId && pendingTargetAction) {
-            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+            runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
                 interactionId: activePendingTargetInteractionId,
                 optionId: choiceId,
                 ...(Object.keys(interactionMergedValue).length > 0 ? { mergedValue: interactionMergedValue } : {}),
-            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            });
             return;
         }
         dispatch(
             QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
             Object.keys(legacyPayload).length > 0 ? legacyPayload : {},
         );
-    }, [activePendingTargetInteractionId, dispatch, pendingTargetAction]);
+    }, [activePendingTargetInteractionId, dispatch, pendingTargetAction, runtimeDispatch]);
 
     const resolveRecruitChoice = React.useCallback((choiceId: QidahenRecruitChoice['id']) => {
         if (!activeRecruitInteractionId || !recruitSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeRecruitInteractionId,
             optionId: choiceId,
             mergedValue: { qidahenRecruitSelection: recruitSelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeRecruitInteractionId, dispatch, recruitSelection]);
+        });
+    }, [activeRecruitInteractionId, recruitSelection, runtimeDispatch]);
 
     const resolveGrantPardonChoice = React.useCallback((choiceId: QidahenGrantPardonChoice['id']) => {
         if (!activeGrantPardonInteractionId || !grantPardonSelection) {
@@ -6623,12 +6648,12 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (!isTutorialTargetAllowed(choiceId)) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeGrantPardonInteractionId,
             optionId: choiceId,
             mergedValue: { qidahenGrantPardonSelection: grantPardonSelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeGrantPardonInteractionId, dispatch, grantPardonSelection, isTutorialTargetAllowed]);
+        });
+    }, [activeGrantPardonInteractionId, grantPardonSelection, isTutorialTargetAllowed, runtimeDispatch]);
 
     const selectGaoDiDispatchCard = React.useCallback((cardId: string) => {
         dispatch(QIDAHEN_COMMANDS.SELECT_GAO_DI_DISPATCH_CARD, { cardId });
@@ -6651,75 +6676,75 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             return;
         }
         if (activeInternalDispatchInteractionId) {
-            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+            runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
                 interactionId: activeInternalDispatchInteractionId,
                 optionId: choiceId,
                 mergedValue: { qidahenInternalDispatchSelection: internalDispatchSelection },
-            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            });
         }
-    }, [activeInternalDispatchInteractionId, dispatch, internalDispatchSelection]);
+    }, [activeInternalDispatchInteractionId, internalDispatchSelection, runtimeDispatch]);
 
     const resolveKhanEdictChoice = React.useCallback((choiceId: 'recruit-train' | 'hire-dispatch') => {
         if (!activeKhanEdictInteractionId || !khanEdictSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeKhanEdictInteractionId,
             optionId: choiceId,
             mergedValue: { qidahenKhanEdictSelection: khanEdictSelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeKhanEdictInteractionId, dispatch, khanEdictSelection]);
+        });
+    }, [activeKhanEdictInteractionId, khanEdictSelection, runtimeDispatch]);
 
     const resolveDiplomacyChoice = React.useCallback((choiceId: 'hire-only' | 'place-friendly' | 'flip-vassal' | 'remove-marker') => {
         if (!activeDiplomacyInteractionId || !diplomacySelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeDiplomacyInteractionId,
             optionId: choiceId,
             mergedValue: { qidahenDiplomacySelection: diplomacySelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeDiplomacyInteractionId, diplomacySelection, dispatch]);
+        });
+    }, [activeDiplomacyInteractionId, diplomacySelection, runtimeDispatch]);
 
     const resolveMaShiTradeChoice = React.useCallback((troopCount: 1 | 2 | 3) => {
         if (!activeMaShiTradeInteractionId || !maShiTradeSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeMaShiTradeInteractionId,
             optionId: String(troopCount),
             mergedValue: { qidahenMaShiTradeSelection: maShiTradeSelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeMaShiTradeInteractionId, dispatch, maShiTradeSelection]);
+        });
+    }, [activeMaShiTradeInteractionId, maShiTradeSelection, runtimeDispatch]);
 
     const resolveDriveTigerConsent = React.useCallback((choiceId: 'accept' | 'decline') => {
         if (!activeDriveTigerConsentInteractionId || !driveTigerConsentSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeDriveTigerConsentInteractionId,
             optionId: choiceId,
             mergedValue: { qidahenDriveTigerConsentSelection: driveTigerConsentSelection },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeDriveTigerConsentInteractionId, dispatch, driveTigerConsentSelection]);
+        });
+    }, [activeDriveTigerConsentInteractionId, driveTigerConsentSelection, runtimeDispatch]);
 
     const resolveFortificationMaintenance = React.useCallback((choiceId: 'auto-pay' | 'skip-all', attritionPriority: QidahenCasualtyPriority) => {
         if (!fortificationMaintenanceSelection) {
             return;
         }
         if (activeFortificationMaintenanceInteractionId) {
-            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+            runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
                 interactionId: activeFortificationMaintenanceInteractionId,
                 optionId: choiceId,
                 mergedValue: { attritionPriority },
-            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            });
             return;
         }
         dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE, {
             choiceId,
             attritionPriority,
         });
-    }, [activeFortificationMaintenanceInteractionId, dispatch, fortificationMaintenanceSelection]);
+    }, [activeFortificationMaintenanceInteractionId, dispatch, fortificationMaintenanceSelection, runtimeDispatch]);
 
     const toggleHandLimitDiscardCard = React.useCallback((cardId: string) => {
         if (!handLimitDiscardSelection || !handLimitDiscardSelection.candidateCardIds.includes(cardId)) {
@@ -6738,38 +6763,38 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
 
     const resolveHandLimitDiscard = React.useCallback(() => {
         if (activeHandLimitInteractionId && handLimitDiscardSelection) {
-            dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+            runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
                 interactionId: activeHandLimitInteractionId,
                 optionIds: selectedHandLimitCardIds,
-            } as QidahenCommandMap[keyof QidahenCommandMap]);
+            });
             return;
         }
         dispatch(QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD, {});
-    }, [activeHandLimitInteractionId, dispatch, handLimitDiscardSelection, selectedHandLimitCardIds]);
+    }, [activeHandLimitInteractionId, dispatch, handLimitDiscardSelection, runtimeDispatch, selectedHandLimitCardIds]);
 
     const resolvePostBattleDecision = React.useCallback((choiceId: string) => {
         if (!activePostBattleInteractionId || !postBattleSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activePostBattleInteractionId,
             optionId: choiceId,
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activePostBattleInteractionId, dispatch, postBattleSelection]);
+        });
+    }, [activePostBattleInteractionId, postBattleSelection, runtimeDispatch]);
 
     const resolveWheelDispatchChoice = React.useCallback((choiceId: string) => {
         if (!activeWheelDispatchInteractionId || !wheelDispatchSelection) {
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
+        runtimeDispatch(INTERACTION_COMMANDS.RESPOND, {
             interactionId: activeWheelDispatchInteractionId,
             optionId: choiceId,
             mergedValue: {
                 qidahenWheelDispatchSelection: wheelDispatchSelection,
                 ...(pendingCommittedTroops != null ? { committedTroops: pendingCommittedTroops } : {}),
             },
-        } as QidahenCommandMap[keyof QidahenCommandMap]);
-    }, [activeWheelDispatchInteractionId, dispatch, pendingCommittedTroops, wheelDispatchSelection]);
+        });
+    }, [activeWheelDispatchInteractionId, pendingCommittedTroops, runtimeDispatch, wheelDispatchSelection]);
 
     const resolveScenarioCharacterChoice = React.useCallback((groupId: string, characterIds: string[]) => {
         dispatch(QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE, { groupId, characterIds });
@@ -6834,6 +6859,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const selectedPrimaryAction = getQidahenForegroundActionChoice(core, {
         actionPaymentPreviewVisible,
         recruitSelection,
+        grantPardonSelection,
         maShiTradeSelection,
         khanEdictSelection,
         driveTigerConsentSelection,
@@ -7222,7 +7248,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                                     ? draftGaoDiChoiceId === candidate.resolutionChoiceId
                                     : candidate.action === 'internal-dispatch'
                                         ? draftInternalDispatchChoiceId === candidate.resolutionChoiceId
-                                        : resolveQidahenPrimaryRuntimeRegionId(displayCore.explicitRegionId) === resolveQidahenPrimaryRuntimeRegionId(candidate.targetRegionId)}
+                                        : displayCore.explicitRegionId != null
+                                            && resolveQidahenPrimaryRuntimeRegionId(displayCore.explicitRegionId) === resolveQidahenPrimaryRuntimeRegionId(candidate.targetRegionId)}
                                 className="qidahen-map-guide-hit-target pointer-events-auto absolute cursor-pointer border-0 bg-transparent p-0"
                                 style={{
                                     left: targetPoint.x - 34,

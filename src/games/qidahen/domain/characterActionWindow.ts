@@ -50,11 +50,7 @@ interface QidahenCharacterActionWindowDependencies {
     materializeNonSiegedCityActionSourceRegion: (
         region: QidahenCore['regions'][number],
     ) => QidahenCore['regions'][number];
-    getArmamentLevel: (
-        state: QidahenCore,
-        factionId: QidahenFactionId,
-        armamentId: string,
-    ) => number;
+    getArmamentLevel: typeof getArmamentLevel;
     refreshRuntimeRegionRules: (
         regions: QidahenCore['regions'],
         fortifications: QidahenCore['fortifications'],
@@ -297,7 +293,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-mao-wenlong-conflict-${triggerKey}`,
-                            faction: 'ming',
+                            faction: 'ming' as const,
                             text: '毛文龙与袁崇焕同场，毛文龙离场。',
                         },
                         ...nextState.actionLog,
@@ -335,7 +331,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             actionLog: [
                                 {
                                     id: `log-mao-wenlong-training-${triggerKey}`,
-                                    faction: 'ming',
+                                    faction: 'ming' as const,
                                     text: `毛文龙在东江免费训练 ${trainingResult.trainedCount} 个部队：${trainingResult.trainedDetails.join('、')}。`,
                                 },
                                 ...nextState.actionLog,
@@ -359,7 +355,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                         actionLog: [
                             {
                                 id: `log-xiong-tingbi-training-${triggerKey}`,
-                                faction: 'ming',
+                                faction: 'ming' as const,
                                 text: trainingResolution.logText,
                             },
                             ...nextState.actionLog,
@@ -388,7 +384,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                         actionLog: [
                             {
                                 id: `log-sun-yuanhua-tech-${triggerKey}`,
-                                faction: 'ming',
+                                faction: 'ming' as const,
                                 text: '孙元化可在行动前弃 2 张手牌，推进 1 项科技。',
                             },
                             ...nextState.actionLog,
@@ -428,7 +424,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                         actionLog: [
                             {
                                 id: `log-gao-di-dispatch-${triggerKey}`,
-                                faction: 'ming',
+                                faction: 'ming' as const,
                                 text: `高第可在行动前弃 1 张手牌；弃牌后再选择调度目标，最多调 6 个人口或部队。`,
                             },
                             ...nextState.actionLog,
@@ -467,7 +463,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                         actionLog: [
                             {
                                 id: `log-wang-huazhen-dispatch-${triggerKey}`,
-                                faction: 'ming',
+                                faction: 'ming' as const,
                                 text: `王化贞可在行动前免费调度 2 个部队；直接在地图上选择调度目标。`,
                             },
                             ...nextState.actionLog,
@@ -490,7 +486,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-jin-nurhaci-removed-by-yuan-${triggerKey}`,
-                            faction: 'jin',
+                            faction: 'jin' as const,
                             text: '袁崇焕在场，努尔哈赤被移出游戏。',
                         },
                         ...nextState.actionLog,
@@ -510,7 +506,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-jin-huangtaiji-conflict-${triggerKey}`,
-                            faction: 'jin',
+                            faction: 'jin' as const,
                             text: '皇太极与其他后金贝勒同场，被拣弃并直接自游戏中移除。',
                         },
                         ...nextState.actionLog,
@@ -530,7 +526,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-jin-daisan-conflict-${triggerKey}`,
-                            faction: 'jin',
+                            faction: 'jin' as const,
                             text: '代善与其他后金贝勒同场，被拣弃并回到后金人物牌堆。',
                         },
                         ...nextState.actionLog,
@@ -578,7 +574,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-lindan-hutuktu-${triggerKey}`,
-                            faction: 'mongol',
+                            faction: 'mongol' as const,
                             text: influenceTarget.mode === 'place-friendly' && targetRegion
                                 ? `林丹·乎图克图在 ${dependencies.getActionRuleDisplayRegionName(targetRegion, targetRegion.name)} 放置了蒙古友好标记。`
                                 : targetRegion
@@ -611,7 +607,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     }, {
                         id: 'mongol-choghtu-taiji-cavalry-lv2',
                         label: '蒙古骑兵',
-                        faction: 'mongol',
+                        faction: 'mongol' as const,
                         troopKind: 'cavalry',
                         count: 2,
                         level: 2,
@@ -632,7 +628,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                     actionLog: [
                         {
                             id: `log-choghtu-taiji-${triggerKey}`,
-                            faction: 'mongol',
+                            faction: 'mongol' as const,
                             text: '绰克图台吉在外喀尔喀部发动漠北援军，免费建立 2 个蒙古骑兵。',
                         },
                         ...nextState.actionLog,

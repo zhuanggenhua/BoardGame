@@ -56,7 +56,7 @@ export interface QidahenReachableRuntimeRegion {
 interface FindReachableOptions {
     allowEndOnNonFriendly?: boolean;
     allowPassThroughNonFriendly?: boolean;
-    movementProfileId?: QidahenMovementProfileId | null;
+    movementProfileId?: QidahenMovementProfileId | string | null;
 }
 
 const QIDAHEN_MOVEMENT_PROFILES: QidahenMovementProfile[] = [
@@ -101,7 +101,7 @@ const getEffectiveMovementBudget = (
     state: QidahenCore,
     factionId: QidahenFactionId,
     movementBudget: number,
-    movementProfileId?: QidahenMovementProfileId | null,
+    movementProfileId?: QidahenMovementProfileId | string | null,
 ): number => (
     movementBudget
     + (
@@ -123,9 +123,11 @@ const getEffectiveMovementBudget = (
 );
 
 export const getQidahenMovementProfile = (
-    profileId: QidahenMovementProfileId,
+    profileId: QidahenMovementProfileId | string | null | undefined,
 ): QidahenMovementProfile => (
-    QIDAHEN_MOVEMENT_PROFILE_BY_ID.get(profileId) ?? QIDAHEN_MOVEMENT_PROFILES[0]
+    typeof profileId === 'string'
+        ? QIDAHEN_MOVEMENT_PROFILE_BY_ID.get(profileId as QidahenMovementProfileId) ?? QIDAHEN_MOVEMENT_PROFILES[0]
+        : QIDAHEN_MOVEMENT_PROFILES[0]
 );
 
 export const getQidahenDirectedPassageRule = (

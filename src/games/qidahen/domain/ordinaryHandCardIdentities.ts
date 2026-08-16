@@ -409,7 +409,10 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES = [
     },
 ] as const satisfies readonly QidahenAtlas05OrdinaryHandCardIdentity[];
 
-export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX = new Map(
+export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX: ReadonlyMap<
+    number,
+    QidahenAtlas05OrdinaryHandCardIdentity
+> = new Map(
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES.map((identity) => [identity.atlasIndex, identity]),
 );
 

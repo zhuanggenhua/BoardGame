@@ -815,6 +815,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         // set/copy 模式：每次点击选中一颗骰子，选满后自动 confirm
                         const isManualConfirmMode = mode === 'any' || mode === 'adjust';
                         const maxSteps = isManualConfirmMode ? undefined : selectCount;
+                        const minSteps = pendingInteraction.minSelectCount
+                            ?? (isManualConfirmMode ? 1 : selectCount);
 
                         const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> & {
                             allowedDieIds?: number[];
@@ -823,7 +825,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             title: pendingInteraction.titleKey,
                             sourceId: pendingInteraction.sourceCardId,
                             maxSteps,
-                            minSteps: isManualConfirmMode ? 1 : undefined,
+                            minSteps,
                             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
                             localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
                             toCommands: (result) => diceModifyToCommands(result, selectCount),
@@ -869,7 +871,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             title: pendingInteraction.titleKey,
                             sourceId: pendingInteraction.sourceCardId,
                             maxSteps: selectCount,
-                            minSteps: 1,
+                            minSteps: pendingInteraction.minSelectCount ?? 1,
                             initialResult: { selectedDiceIds: [] },
                             localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
                             toCommands: (result) => diceSelectToCommands(result, selectCount),

@@ -162,12 +162,12 @@ const getChronologyClaimPriority = (state: QidahenCore): QidahenFactionId[] => {
     });
 };
 
-const applyUpkeepAttritionToRegion = (
-    region: QidahenCore['regions'][number],
+const applyUpkeepAttritionToRegion = <TRegion extends Pick<QidahenCore['regions'][number], 'troops' | 'specialTroops'>>(
+    region: TRegion,
     troopLoss: number,
     casualtyPriority: QidahenCasualtyPriority = 'lowest-level',
 ): {
-    region: QidahenCore['regions'][number];
+    region: TRegion;
     removedDetails: string[];
 } => {
     const remainingLoss = Math.max(0, troopLoss);

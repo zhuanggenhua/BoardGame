@@ -93,6 +93,15 @@ const primeDuelCompareDiceValues = async (page: Page) => {
     });
 };
 
+const expectCompareRollRightPanel = async (page: Page, timeout = 15000): Promise<void> => {
+    const panel = page.getByTestId('compare-roll-overlay');
+    await expect(panel).toBeVisible({ timeout });
+    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
+    await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+};
+
 const cloneCommonCard = (cardId: string): Record<string, any> => {
     const card = COMMON_CARDS.find((nextCard) => nextCard.id === cardId);
     if (!card) {
@@ -577,11 +586,9 @@ test('枪手 Duel compare-roll 通过右侧骰盘改骰后应从失败翻成胜�
             dice: [6, 5],
         });
 
-        await expect(guestPage.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 15000 });
+        await expectCompareRollRightPanel(guestPage);
         await expect(guestPage.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
         await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
-        await expect(guestPage.locator('[data-testid="compare-roll-overlay"] [data-testid="dice-2d"]')).toHaveCount(0);
-        await expect(guestPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
         await expectDuelDiceVisualReady(modifiedCompareDiceTray, [
             { dieButtonId: 'die-button-0', ownerId: '1', displayValue: '6', spritePathIncludes: 'dicethrone/images/gunslinger' },
             { dieButtonId: 'die-button-1', ownerId: '0', displayValue: '5', spritePathIncludes: 'dicethrone/images/monk' },
@@ -773,15 +780,11 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
             rollContextReplayOnly: true,
         });
 
-        await expect(guestPage.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 15000 });
+        await expectCompareRollRightPanel(guestPage);
         await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
-        await expect(hostPage.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 15000 });
+        await expectCompareRollRightPanel(hostPage);
         await expect(hostPage.getByTestId('compare-roll-waiting')).toBeVisible({ timeout: 5000 });
         await expect(hostPage.locator('[data-testid="compare-roll-overlay"] button')).toHaveCount(0);
-        await expect(guestPage.locator('[data-testid="compare-roll-overlay"] [data-testid="dice-2d"]')).toHaveCount(0);
-        await expect(hostPage.locator('[data-testid="compare-roll-overlay"] [data-testid="dice-2d"]')).toHaveCount(0);
-        await expect(guestPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
-        await expect(hostPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
 
         const guestReplayDiceTray = guestPage.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
         const hostReplayDiceTray = hostPage.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();

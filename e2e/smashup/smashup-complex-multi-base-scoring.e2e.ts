@@ -121,6 +121,69 @@ async function chooseReactionOptionMatching(
     await respondCurrentInteractionByOptionId(page, option!.id);
 }
 
+async function chooseCurrentInteractionOptionMatching(
+    page: Page,
+    matcher: (option: CurrentInteraction['options'][number]) => boolean,
+    description: string,
+): Promise<CurrentInteraction['options'][number]> {
+    const currentInteraction = await readCurrentInteraction(page);
+    expect(currentInteraction, `${description}: 当前必须存在玩家交互`).toBeTruthy();
+    const option = currentInteraction!.options.find(matcher);
+    expect(option, `${description}: 未找到匹配的交互选项`).toBeTruthy();
+    await respondCurrentInteractionByOptionId(page, option!.id);
+    return option!;
+}
+
+async function chooseScoringBaseByDefId(page: Page, baseDefId: string): Promise<void> {
+    await waitForInteractionSourceIn(page, ['multi_base_scoring'], 20000);
+    await chooseCurrentInteractionOptionMatching(
+        page,
+        (option) => option.value?.baseDefId === baseDefId,
+        `选择计分基地 ${baseDefId}`,
+    );
+}
+
+async function waitForVisibleSmashUpCardArt(page: Page, minLoadedFrames = 1, timeout = 30000): Promise<void> {
+    await page.waitForFunction(
+        ({ minLoadedFrames: expectedMinLoadedFrames }) => {
+            const visible = (element: Element) => {
+                const style = window.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return style.visibility !== 'hidden'
+                    && style.display !== 'none'
+                    && Number(style.opacity || '1') > 0.01
+                    && rect.width > 2
+                    && rect.height > 2;
+            };
+
+            const visibleShimmers = Array.from(document.querySelectorAll('.atlas-shimmer'))
+                .filter(visible);
+            if (visibleShimmers.length > 0) {
+                return false;
+            }
+
+            const loadedFrames = Array.from(document.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"]'))
+                .filter(visible)
+                .filter((frame) => {
+                    const image = frame.querySelector<HTMLImageElement>('img[data-card-atlas-img="true"]');
+                    return !!image
+                        && image.complete
+                        && image.naturalWidth >= 16
+                        && image.naturalHeight >= 16;
+                });
+
+            return loadedFrames.length >= expectedMinLoadedFrames;
+        },
+        { minLoadedFrames },
+        { timeout, polling: 100 },
+    );
+}
+
+function assertNoReactNaNWarnings(diagnostics: { errors: string[] }): void {
+    const nanWarnings = diagnostics.errors.filter((entry) => /Received NaN/i.test(entry));
+    expect(nanWarnings, '真实页面不能把 NaN 渲染到 React DOM；这表示 UI 数值输入仍有非法状态').toEqual([]);
+}
+
 async function passOpenScoringResponsesUntilClosed(page: Page, maxSteps = 8): Promise<void> {
     for (let step = 0; step < maxSteps; step += 1) {
         const currentInteraction = await readCurrentInteraction(page);
@@ -185,7 +248,7 @@ async function advancePhaseFromUI(page: Page, game: GameTestContext): Promise<vo
     ];
     for (const locator of selectors) {
         if (await locator.isVisible({ timeout: 1500 }).catch(() => false)) {
-            await locator.click({ force: true, timeout: 5000 });
+            await locator.click({ force: true, timeout: 5000, noWaitAfter: true });
             await page.waitForTimeout(300);
             return;
         }
@@ -559,6 +622,298 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect([...finalState.vpByPlayer].sort((a, b) => a - b)).toEqual([0, 2, 3, 4]);
 
             await game.screenshot('4p-02-final', testInfo);
+        } catch (error) {
+            if (diagnostics.errors.length > 0) {
+                console.log('[page-diagnostics]', diagnostics.errors);
+            }
+            throw error;
+        }
+    });
+
+    test('四人三基地同时计分黄金链会截到计分选择、计分后响应、清场换基地和最终VP', async ({ page, game }, testInfo) => {
+        test.setTimeout(240000);
+
+        const diagnostics = attachPageDiagnostics(page);
+        await page.addInitScript(() => {
+            const originalError = console.error;
+            console.error = (...args: unknown[]) => {
+                const text = args.map((arg) => String(arg)).join(' ');
+                if (/Received NaN/i.test(text)) {
+                    const nanTextNodes: string[] = [];
+                    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+                    while (nanTextNodes.length < 20) {
+                        const node = walker.nextNode();
+                        if (!node) break;
+                        const value = node.textContent?.trim() ?? '';
+                        if (/NaN/i.test(value)) {
+                            nanTextNodes.push(value);
+                        }
+                    }
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    originalError('[smashup-nan-render-diagnostic]', JSON.stringify({
+                        args: text,
+                        stack: new Error().stack,
+                        nanTextNodes,
+                        phase: state?.sys?.phase ?? null,
+                        interactionSource: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                        baseDefIds: (state?.core?.bases ?? []).map((base: any) => base.defId),
+                        baseMinionSummary: (state?.core?.bases ?? []).map((base: any) => (base.minions ?? []).map((minion: any) => ({
+                            uid: minion.uid,
+                            defId: minion.defId,
+                            controller: minion.controller,
+                            basePower: minion.basePower,
+                            powerModifier: minion.powerModifier,
+                            powerCounters: minion.powerCounters,
+                            tempPowerModifier: minion.tempPowerModifier,
+                        }))),
+                    }));
+                }
+                originalError(...args);
+            };
+        });
+        page.on('console', (msg) => {
+            if (msg.type() === 'error' || msg.text().includes('[LocalGame]')) {
+                console.log(`[browser-console] ${msg.type()}: ${msg.text()}`);
+            }
+        });
+
+        const createPlayer = (id: string, factions: [string, string]) => ({
+            id,
+            vp: 0,
+            hand: [],
+            deck: [],
+            discard: [],
+            factions,
+            minionsPlayed: 0,
+            minionLimit: 1,
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayedPerBase: {},
+            sameNameMinionDefId: null,
+        });
+
+        const createMinion = (uid: string, defId: string, owner: string, basePower: number) => ({
+            uid,
+            defId,
+            owner,
+            controller: owner,
+            basePower,
+            powerModifier: 0,
+            powerCounters: 0,
+            tempPowerModifier: 0,
+            talentUsed: false,
+            attachedActions: [],
+        });
+
+        try {
+            await openFourPlayerTestGame(game);
+            await game.setupScene({
+                gameId: 'smashup',
+                phase: 'playCards',
+                currentPlayer: '0',
+                extra: {
+                    core: {
+                        turnOrder: ['0', '1', '2', '3'],
+                        currentPlayerIndex: 0,
+                        turnNumber: 12,
+                        players: {
+                            '0': createPlayer('0', ['robots', 'wizards']),
+                            '1': createPlayer('1', ['dinosaurs', 'ninjas']),
+                            '2': createPlayer('2', ['ghosts', 'aliens']),
+                            '3': createPlayer('3', ['dinosaurs', 'ghosts']),
+                        },
+                        bases: [
+                            {
+                                defId: 'base_tortuga',
+                                minions: [
+                                    createMinion('tortuga-winner-rex', 'dino_king_rex', '1', 7),
+                                    createMinion('tortuga-winner-laser', 'dino_laser_triceratops', '1', 4),
+                                    createMinion('tortuga-winner-assassin', 'ninja_tiger_assassin', '1', 4),
+                                    createMinion('tortuga-winner-shinobi', 'ninja_shinobi', '1', 3),
+                                    createMinion('tortuga-runnerup-archmage', 'wizard_archmage', '0', 4),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_dread_lookout',
+                                minions: [
+                                    createMinion('p0-b1-runnerup', 'robot_hoverbot', '0', 3),
+                                    createMinion('p1-b1-invader', 'alien_invader', '1', 5),
+                                    createMinion('p2-b1-spectre', 'ghost_spectre', '2', 8),
+                                    createMinion('p3-b1-rex', 'dino_king_rex', '3', 7),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_tsars_palace',
+                                minions: [
+                                    createMinion('p0-b2-grave-digger', 'zombie_grave_digger', '0', 3),
+                                    createMinion('p1-b2-assassin', 'ninja_tiger_assassin', '1', 4),
+                                    createMinion('p2-b2-spirit', 'ghost_spirit', '2', 8),
+                                    createMinion('p3-b2-rex', 'dino_king_rex', '3', 9),
+                                ],
+                                ongoingActions: [],
+                            },
+                        ],
+                        baseDeck: ['base_central_brain', 'base_cave_of_shinies', 'base_rhodes_plaza'],
+                        factionSelection: undefined,
+                        scoringEligibleBases: undefined,
+                    },
+                },
+            });
+
+            await expect.poll(async () => {
+                const text = await page.evaluate(() => document.body?.innerText ?? '');
+                return text.includes('Loading match resources...');
+            }, { timeout: 20000 }).toBe(false);
+
+            await expect(page.locator('[data-tutorial-id="su-scoreboard"]')).toBeVisible({ timeout: 15000 });
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    return state?.sys?.phase === 'playCards'
+                        && state?.core?.turnOrder?.length === 4
+                        && state?.core?.bases?.length === 3
+                        && state?.core?.bases?.[0]?.defId === 'base_tortuga'
+                        && state?.core?.bases?.[1]?.defId === 'base_dread_lookout'
+                        && state?.core?.bases?.[2]?.defId === 'base_tsars_palace';
+                },
+                { timeout: 30000 },
+            );
+
+            await waitForVisibleSmashUpCardArt(page, 12);
+            await game.screenshot('golden-01-three-scoring-bases-before-finish', testInfo);
+
+            await advancePhaseFromUI(page, game);
+            await waitForInteractionSourceIn(page, ['multi_base_scoring'], 20000);
+            await expect(page.getByText('选择先计分的基地')).toBeVisible({ timeout: 5000 });
+
+            const initialScoringPrompt = await readCurrentInteraction(page);
+            expect(initialScoringPrompt?.sourceId).toBe('multi_base_scoring');
+            expect(
+                (initialScoringPrompt?.options ?? []).map((option) => option.value?.baseDefId).sort(),
+            ).toEqual(['base_dread_lookout', 'base_tortuga', 'base_tsars_palace']);
+            await waitForVisibleSmashUpCardArt(page, 12);
+            await game.screenshot('golden-02-real-scoring-screen-three-base-choice', testInfo);
+
+            await chooseScoringBaseByDefId(page, 'base_tortuga');
+            const afterTortugaSourceId = await waitForInteractionSourceIn(page, ['smashup_reaction_choose', 'base_tortuga'], 20000);
+
+            const afterTortugaAwardState = await page.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return {
+                    phase: state?.sys?.phase,
+                    sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    p0Vp: state?.core?.players?.['0']?.vp ?? 0,
+                    p1Vp: state?.core?.players?.['1']?.vp ?? 0,
+                    base0DefId: state?.core?.bases?.[0]?.defId ?? null,
+                    base0MinionUids: (state?.core?.bases?.[0]?.minions ?? []).map((minion: any) => minion.uid),
+                };
+            });
+            expect(afterTortugaAwardState.phase).toBe('scoreBases');
+            expect(afterTortugaAwardState.p0Vp).toBe(3);
+            expect(afterTortugaAwardState.p1Vp).toBe(4);
+            expect(afterTortugaAwardState.base0DefId).toBe('base_tortuga');
+            expect(afterTortugaAwardState.base0MinionUids).toEqual(expect.arrayContaining([
+                'tortuga-winner-rex',
+                'tortuga-runnerup-archmage',
+            ]));
+            await expect(page.getByTestId('base-zone-0')).toBeVisible();
+            await waitForVisibleSmashUpCardArt(page, 12);
+            await game.screenshot('golden-03-vp-awarded-before-clear-old-base-still-visible', testInfo);
+
+            if (afterTortugaSourceId === 'smashup_reaction_choose') {
+                await chooseReactionOptionMatching(
+                    page,
+                    (option) => String(option.id).includes('base_tortuga')
+                        || /托尔图加|tortuga|base_tortuga/i.test(String(option.label ?? '')),
+                    '三基地黄金链里的托尔图加 afterScoring',
+                );
+            }
+
+            await waitForInteractionSourceIn(page, ['base_tortuga'], 20000);
+            const tortugaInteraction = await readCurrentInteraction(page);
+            expect(tortugaInteraction?.sourceId).toBe('base_tortuga');
+            const moveRunnerUpMinion = tortugaInteraction?.options.find((option) => option.value?.minionUid === 'p0-b1-runnerup');
+            expect(moveRunnerUpMinion, '托尔图加应允许亚军移动另一基地上的随从').toBeTruthy();
+            await waitForVisibleSmashUpCardArt(page, 12);
+            await game.screenshot('golden-04-tortuga-runner-up-minion-choice-before-clear', testInfo);
+            await respondCurrentInteractionByOptionId(page, moveRunnerUpMinion!.id);
+
+            await waitForInteractionSourceIn(page, ['multi_base_scoring'], 30000);
+            const afterFirstBasePrompt = await readCurrentInteraction(page);
+            const afterFirstBaseState = await page.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return {
+                    p0Vp: state?.core?.players?.['0']?.vp ?? 0,
+                    p1Vp: state?.core?.players?.['1']?.vp ?? 0,
+                    baseDefIds: (state?.core?.bases ?? []).map((base: any) => base.defId),
+                    replacementBase0MinionUids: (state?.core?.bases?.[0]?.minions ?? []).map((minion: any) => minion.uid),
+                    remainingBaseOptions: (state?.sys?.interaction?.current?.data?.options ?? []).map((option: any) => option.value?.baseDefId).sort(),
+                };
+            });
+            expect(afterFirstBasePrompt?.sourceId).toBe('multi_base_scoring');
+            expect(afterFirstBaseState.p0Vp).toBe(3);
+            expect(afterFirstBaseState.p1Vp).toBe(4);
+            expect(afterFirstBaseState.baseDefIds).toEqual(['base_central_brain', 'base_dread_lookout', 'base_tsars_palace']);
+            expect(afterFirstBaseState.replacementBase0MinionUids).toContain('p0-b1-runnerup');
+            expect(afterFirstBaseState.remainingBaseOptions).toEqual(['base_dread_lookout', 'base_tsars_palace']);
+            await waitForVisibleSmashUpCardArt(page, 8);
+            await game.screenshot('golden-05-after-first-base-cleared-replaced-back-to-scoring-choice', testInfo);
+
+            await chooseScoringBaseByDefId(page, 'base_dread_lookout');
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    if (!state) return false;
+                    return !state.sys?.interaction?.current
+                        && !state.sys?.responseWindow?.current
+                        && state.sys?.phase === 'playCards'
+                        && state.core?.currentPlayerIndex === 1;
+                },
+                { timeout: 30000, polling: 100 },
+            );
+
+            const finalState = await page.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                const vpByPlayer = Object.fromEntries(
+                    Object.entries(state?.core?.players ?? {}).map(([playerId, player]: [string, any]) => [playerId, player?.vp ?? 0]),
+                );
+                return {
+                    phase: state?.sys?.phase,
+                    currentPlayerIndex: state?.core?.currentPlayerIndex,
+                    responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                    interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    vpByPlayer,
+                    totalVp: Object.values(vpByPlayer).reduce((sum: number, value: any) => sum + Number(value ?? 0), 0),
+                    baseDefIds: (state?.core?.bases ?? []).map((base: any) => base.defId),
+                    baseMinionUids: (state?.core?.bases ?? []).map((base: any) => (base.minions ?? []).map((minion: any) => minion.uid)),
+                    triggerQueueLength: state?.core?.triggerQueue?.length ?? 0,
+                };
+            });
+
+            expect(finalState.phase).toBe('playCards');
+            expect(finalState.currentPlayerIndex).toBe(1);
+            expect(finalState.responseWindowId).toBeNull();
+            expect(finalState.interactionSourceId).toBeNull();
+            expect(finalState.vpByPlayer).toEqual({
+                '0': 3,
+                '1': 7,
+                '2': 7,
+                '3': 7,
+            });
+            expect(finalState.totalVp).toBe(24);
+            expect(finalState.baseDefIds).toEqual(['base_central_brain', 'base_cave_of_shinies', 'base_rhodes_plaza']);
+            expect(finalState.baseMinionUids[0]).toContain('p0-b1-runnerup');
+            expect(finalState.baseMinionUids[1]).toHaveLength(0);
+            expect(finalState.baseMinionUids[2]).toHaveLength(0);
+            expect(finalState.triggerQueueLength).toBe(0);
+
+            await waitForVisibleSmashUpCardArt(page, 4);
+            await game.screenshot('golden-06-final-scoring-complete-no-duplicate-vp', testInfo);
+            await page.waitForTimeout(300);
+            assertNoReactNaNWarnings(diagnostics);
         } catch (error) {
             if (diagnostics.errors.length > 0) {
                 console.log('[page-diagnostics]', diagnostics.errors);

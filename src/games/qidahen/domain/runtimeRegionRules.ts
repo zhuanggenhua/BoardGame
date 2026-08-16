@@ -84,6 +84,7 @@ const appendLogicalRuleRegions = (runtimeRegions: QidahenCore['regions']): Qidah
                 note: `${config.name} · 规则兼容区，映射 ${config.runtimeRegionIds.join('、')}。`,
                 siegeState: cloneSiegeStateAsPieceSnapshot(primary),
                 cityState: cloneCityStateAsPieceSnapshot(primary),
+                eventMarkers: members.flatMap((member) => member.eventMarkers.map((marker) => ({ ...marker }))),
                 specialTroops: mergeSpecialTroopStackGroupsAsPieces(
                     ...members.map((member) => member.specialTroops),
                 ),

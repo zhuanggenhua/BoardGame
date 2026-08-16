@@ -173,6 +173,26 @@ export class GameTransportClient {
         }
     }
 
+    private updateKnownPlayerConnection(playerID: string, connected: boolean): void {
+        let changed = false;
+        const nextPlayers = this._matchPlayers.map((player) => {
+            if (String(player.id) !== String(playerID)) {
+                return player;
+            }
+            if (player.isConnected === connected) {
+                return player;
+            }
+            changed = true;
+            return {
+                ...player,
+                isConnected: connected,
+            };
+        });
+        if (changed) {
+            this._matchPlayers = nextPlayers;
+        }
+    }
+
     /** 对局玩家信息 */
     get matchPlayers(): MatchPlayerInfo[] {
         return this._matchPlayers;
@@ -337,11 +357,13 @@ export class GameTransportClient {
 
         socket.on('player:connected', (matchID, playerID) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
+            this.updateKnownPlayerConnection(playerID, true);
             this.config.onPlayerConnectionChange?.(playerID, true);
         });
 
         socket.on('player:disconnected', (matchID, playerID) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
+            this.updateKnownPlayerConnection(playerID, false);
             this.config.onPlayerConnectionChange?.(playerID, false);
         });
 

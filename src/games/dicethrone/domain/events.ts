@@ -490,6 +490,7 @@ export interface CardPlayedEvent extends GameEvent<'CARD_PLAYED'> {
         cardId: string;
         previewRef?: CardPreviewRef;
         cpCost: number;
+        afterCardPlayedWindowSource?: boolean;
     };
 }
 

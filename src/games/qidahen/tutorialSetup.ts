@@ -30,6 +30,7 @@ type QidahenTutorialPreset = {
 };
 
 const cloneCore = (core: QidahenCore): QidahenCore => structuredClone(core);
+const ATLAS05_RULES_SUMMARY_BY_DEF_ID: Readonly<Record<string, string>> = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID;
 
 const getAtlas05TutorialHandCardIdentity = (
     cardDefId: string,
@@ -53,7 +54,7 @@ const applyAtlas05TutorialHandCardIdentity = (
         cardKind: identity.cardKind,
         armamentId: identity.armamentId,
         cardDefId: identity.cardDefId,
-        rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId],
+        rulesSummary: ATLAS05_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId] ?? null,
         previewKind: 'unknown',
         previewIdentityId: identity.cardDefId,
     };
@@ -205,7 +206,6 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedPaymentCardIds = [];
         core.payment = { required: 1, selected: 0, prompt: '需弃 1 / 已选 0' };
         core.pendingTargetAction = null;
-        core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         if (mingTacticCardId) {
@@ -278,8 +278,7 @@ const createSiegeTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedRegionId = 'city-region-25';
         core.selectedActionId = 'raid';
         core.pendingTargetAction = createSiegeDefenderChoicePendingAction();
-        core.wheelDispatchSelection = null;
-        core.driveTigerConsentSelection = null;
+        core.wheelDispatchProgress = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
@@ -404,7 +403,6 @@ const createRetreatAndRoutTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedActionId = 'raid';
         core.pendingTargetAction = createRetreatAndRoutTutorialPendingAction();
         core.wheelDispatchProgress = null;
-        core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
@@ -455,7 +453,6 @@ const createCavalryEvasionTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedActionId = 'raid';
         core.pendingTargetAction = createCavalryEvasionTutorialPendingAction();
         core.wheelDispatchProgress = null;
-        core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
@@ -528,7 +525,6 @@ const createCavalryPlunderTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedActionId = 'raid';
         core.pendingTargetAction = createCavalryPlunderTutorialPendingAction();
         core.wheelDispatchProgress = null;
-        core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
@@ -604,7 +600,6 @@ const createNeutralInvasionTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedActionId = 'wheel-dispatch';
         core.pendingTargetAction = createNeutralInvasionTutorialPendingAction();
         core.wheelDispatchProgress = null;
-        core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
         core.regions = updateRegions(core, (region) => {
@@ -654,7 +649,6 @@ const createWaterDispatchTutorialSetup = (): QidahenTutorialPreset => ({
         core.selectedRegionId = 'song-jin';
         core.selectedActionId = 'wheel-dispatch';
         core.wheelDispatchProgress = null;
-        core.driveTigerConsentSelection = null;
         core.pendingTargetAction = null;
         core.postBattleSelection = null;
         core.lastSeasonSummary = null;
@@ -1186,7 +1180,7 @@ const createKoreaSpecialMapTutorialSetup = (): QidahenTutorialPreset => ({
         core.lastSeasonSummary = null;
         core.koreaDeckCount = 9;
         core.koreaDiscardCount = 3;
-        core.factions.ming.prestige = 1;
+        core.guihuaPrestigeMarkerController = 'ming';
         core.hanseongPrestigeUnlocked = true;
         core.factions.ming.handCount = 8;
         core.factions.ming.characters = core.factions.ming.characters.map((character) => ({

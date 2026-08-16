@@ -264,6 +264,7 @@ describe('Feature: incremental-state-sync', () => {
   // 辅助函数：创建 GameTransportClient 并触发连接
   function createConnectedClient(overrides?: {
     onStateUpdate?: (...args: unknown[]) => void;
+    onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
   }) {
     const onStateUpdate = overrides?.onStateUpdate ?? vi.fn();
     const client = new GameTransportClient({
@@ -272,6 +273,7 @@ describe('Feature: incremental-state-sync', () => {
       playerID: '0',
       credentials: 'test-cred',
       onStateUpdate: onStateUpdate as never,
+      onPlayerConnectionChange: overrides?.onPlayerConnectionChange,
     });
     client.connect();
     // 手动触发 connect 事件（mock 的 io() 不会自动触发）
@@ -496,6 +498,37 @@ describe('Feature: incremental-state-sync', () => {
       // 验证：应触发 resync
       const syncEmits = mockSocket.findEmitted('sync');
       expect(syncEmits.length).toBeGreaterThan(0);
+
+      client.disconnect();
+    });
+
+    it('player connection events update cached match player presence', () => {
+      const onPlayerConnectionChange = vi.fn();
+      const { client } = createConnectedClient({ onPlayerConnectionChange });
+      simulateSync(
+        { core: { hp: 100 } },
+        [
+          { id: 0, name: 'Host', isConnected: true },
+          { id: 1, name: 'Guest', isConnected: true },
+        ],
+        1,
+      );
+
+      mockSocket.simulateEvent('player:disconnected', 'test-match', '1');
+
+      expect(client.matchPlayers).toEqual([
+        { id: 0, name: 'Host', isConnected: true },
+        { id: 1, name: 'Guest', isConnected: false },
+      ]);
+      expect(onPlayerConnectionChange).toHaveBeenCalledWith('1', false);
+
+      mockSocket.simulateEvent('player:connected', 'test-match', '1');
+
+      expect(client.matchPlayers).toEqual([
+        { id: 0, name: 'Host', isConnected: true },
+        { id: 1, name: 'Guest', isConnected: true },
+      ]);
+      expect(onPlayerConnectionChange).toHaveBeenCalledWith('1', true);
 
       client.disconnect();
     });

@@ -117,7 +117,7 @@ function resolveMageWarsElementalStaffBoundSpell(
     player: MageWarsPlayerState,
     spellCardId: number | undefined,
 ): MageWarsConfigSpellCard | undefined {
-    if (!Number.isInteger(spellCardId)) return undefined;
+    if (spellCardId === undefined || !Number.isInteger(spellCardId)) return undefined;
     const spell = getMageWarsSpellCardFromConfig(spellCardId);
     return spell
         && hasSpellbookCard(player, spellCardId)
@@ -405,7 +405,8 @@ export function validateCommand(
             if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInPresetSpellbook');
             const spell = getMageWarsSpellCardFromConfig(command.payload.spellCardId);
             const source = object.spellcastingSource;
-            if (!spell || !source.allowedSpellTypes.includes(spell.spellType)) return invalid('spellTypeNotAllowed');
+            if (!source) return invalid('objectCannotCastSpells');
+            if (!spell || !source.allowedSpellTypes?.includes(spell.spellType)) return invalid('spellTypeNotAllowed');
             if (source.maxSpellLevel !== undefined && (spell.level === undefined || spell.level > source.maxSpellLevel)) {
                 return invalid('spellLevelNotAllowed');
             }

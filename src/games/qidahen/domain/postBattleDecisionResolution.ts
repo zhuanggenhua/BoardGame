@@ -212,8 +212,7 @@ export const resolvePostBattleDecision = (
     const sourceRegion = selection.attackerPositionRegionId
         ? getPendingActionSourceForceSnapshot(state, {
             actionId: selection.actionId,
-            battleMode: selection.battleMode,
-            targetKind: selection.targetKind,
+            title: selection.title,
             attackerFactionId: selection.attackerFactionId,
             sourceRegionId: selection.sourceRegionId,
             sourceRegionName: selection.sourceRegionName,
@@ -228,11 +227,13 @@ export const resolvePostBattleDecision = (
             boundaryUnitCap: null,
             sourceAvailableTroops: selection.committedTroops,
             committedTroops: selection.committedTroops,
-            movementProfileId: selection.movementProfileId,
             attackPressure: selection.survivingTroops,
             attackBoundaryType: 'plain',
             resolutionHint: '',
             defenderPayCost: null,
+            ...(selection.battleMode ? { battleMode: selection.battleMode } : {}),
+            ...(selection.targetKind ? { targetKind: selection.targetKind } : {}),
+            ...(selection.movementProfileId != null ? { movementProfileId: selection.movementProfileId } : {}),
         })
         : (() => {
             const sourceRuntimeRegion = runtimeRegions.find((region) => region.id === sourceRemovalRegionId) ?? null;

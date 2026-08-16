@@ -7,6 +7,8 @@ import { MAGE_IDS, type MageId } from '../domain/ids';
 
 type GridAtlasDefinition = {
     source: string;
+    width: number;
+    height: number;
     cols: number;
     rows: number;
 };

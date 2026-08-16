@@ -8,6 +8,7 @@ import {
     scaleLayoutTransform,
     type UISceneDefinition,
     type UISceneNodeEvent,
+    type UISceneRect,
 } from './types';
 
 function useElementSize<T extends HTMLElement>() {
@@ -59,6 +60,12 @@ const DEBUG_REGION_STYLES = {
     hitAreas: 'border-cyan-300/55 bg-cyan-300/10',
     guides: 'border-fuchsia-300/45 bg-fuchsia-300/8',
 } as const;
+
+type ScaledContentRegion = {
+    regionId: string;
+    content: React.ReactNode;
+    rect: UISceneRect;
+};
 
 export const UISceneRenderer = ({
     scene,
@@ -125,7 +132,7 @@ export const UISceneRenderer = ({
         }
 
         return Object.entries(contentRegions)
-            .map(([regionId, content]) => {
+            .map(([regionId, content]): ScaledContentRegion | null => {
                 const region = resolveArtboardRegion(artboard, regionId);
                 if (!region || content == null) {
                     return null;
@@ -137,7 +144,7 @@ export const UISceneRenderer = ({
                     rect: scaleArtboardRect(region, scale),
                 };
             })
-            .filter((entry): entry is { regionId: string; content: React.ReactNode; rect: { x: number; y: number; width: number; height: number } } => Boolean(entry));
+            .filter((entry): entry is ScaledContentRegion => entry !== null);
     }, [artboard, contentRegions, scale]);
 
     const emit = React.useCallback(

@@ -5,6 +5,7 @@ import { ConeBlast } from '../../../components/common/animations/ConeBlast';
 import { DamageFlash } from '../../../components/common/animations/DamageFlash';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { ImpactContainer } from '../../../components/common/animations/ImpactContainer';
+import { SummonEffect } from '../../../components/common/animations/SummonEffect';
 import {
     createFxPathBox,
     createFxScaledCellBox,
@@ -17,9 +18,8 @@ import {
 type AttackDieFaceId = 'burst' | 'hit2' | 'hit1' | 'blank';
 
 const ATTACK_DIE_TEXTURE_SIZE = 1280;
-const PROJECTILE_IMPACT_DELAY_MS = 1_060;
-const PROJECTILE_IMPACT_DELAY_SECONDS = PROJECTILE_IMPACT_DELAY_MS / 1000;
-const PROJECTILE_TRAVEL_DURATION_SCALE = 2.15;
+const PROJECTILE_IMPACT_DELAY_MS = 2_600;
+const PROJECTILE_TRAVEL_DURATION_MS = 2_600;
 const ATTACK_DIE_FACES: Record<AttackDieFaceId, { x: number; y: number; rotate: string }> = {
     burst: { x: 164, y: 318, rotate: '-7deg' },
     hit2: { x: 480, y: 318, rotate: '5deg' },
@@ -166,12 +166,81 @@ function resolveEventQuality(event: FxRendererProps['event'], fallback: FxQualit
     return resolveFxQuality(event.params?.quality, resolveFxQuality(event.ctx.quality, fallback));
 }
 
-function fxColors(kind: 'spell' | 'attack' | 'push', strong = false): string[] {
+type BoardFxKind = 'attack' | 'push' | 'teleport';
+
+function fxColors(kind: BoardFxKind, strong = false): string[] {
     if (kind === 'attack') return ['#fff7ed', '#fca5a5', '#ef4444', '#7f1d1d'];
     if (kind === 'push') return ['#e0f2fe', '#bae6fd', '#38bdf8', '#0369a1'];
     return strong
         ? ['#fff7ed', '#fde68a', '#f59e0b', '#7c2d12']
         : ['#f0f9ff', '#bae6fd', '#38bdf8', '#1d4ed8'];
+}
+
+export const SummonRenderer: React.FC<FxRendererProps> = ({
+    event,
+    getCellPosition,
+    onComplete,
+    onImpact,
+}) => {
+    const cell = event.ctx.cell;
+    const stableComplete = useStableComplete(onComplete);
+    const impactFiredRef = useRef(false);
+
+    useEffect(() => {
+        if (!cell) {
+            stableComplete();
+            return undefined;
+        }
+        const timer = window.setTimeout(() => {
+            if (impactFiredRef.current) return;
+            impactFiredRef.current = true;
+            onImpact();
+        }, 160);
+        return () => window.clearTimeout(timer);
+    }, [cell, onImpact, stableComplete]);
+
+    if (!cell) return null;
+
+    const quality = resolveEventQuality(event);
+    const color = (event.params?.objectKind === 'conjuration' ? 'gold' : 'blue') as 'blue' | 'gold';
+    const pos = getCellPosition(cell.row, cell.col);
+    const box = createFxScaledCellBox(pos, event.ctx.intensity === 'strong' ? 3.6 : 3.2);
+
+    return (
+        <div
+            className="absolute pointer-events-none z-30"
+            data-testid="mage-wars-fx-summon"
+            data-object-kind={String(event.params?.objectKind ?? '')}
+            data-object-id={String(event.params?.objectId ?? '')}
+            style={box}
+        >
+            <SummonEffect
+                active
+                intensity={event.ctx.intensity ?? 'normal'}
+                color={color}
+                originY={0.58}
+                quality={quality}
+                onComplete={stableComplete}
+            />
+        </div>
+    );
+};
+
+function useDelayedActive(delayMs: number): boolean {
+    const [activation, setActivation] = React.useState(() => ({
+        delayMs,
+        active: delayMs === 0,
+    }));
+
+    useEffect(() => {
+        if (delayMs === 0) return undefined;
+        const timer = window.setTimeout(() => {
+            setActivation({ delayMs, active: true });
+        }, delayMs);
+        return () => window.clearTimeout(timer);
+    }, [delayMs]);
+
+    return delayMs === 0 || (activation.delayMs === delayMs && activation.active);
 }
 
 function DelayedBurstParticles({
@@ -189,16 +258,7 @@ function DelayedBurstParticles({
     quality: FxQuality;
     overflow?: number;
 }) {
-    const [active, setActive] = React.useState(delayMs === 0);
-
-    useEffect(() => {
-        if (delayMs === 0) {
-            setActive(true);
-            return undefined;
-        }
-        const timer = window.setTimeout(() => setActive(true), delayMs);
-        return () => window.clearTimeout(timer);
-    }, [delayMs]);
+    const active = useDelayedActive(delayMs);
 
     return (
         <div
@@ -226,16 +286,7 @@ function DelayedDamageImpact({
     damage: number;
     quality: FxQuality;
 }) {
-    const [active, setActive] = React.useState(delayMs === 0);
-
-    useEffect(() => {
-        if (delayMs === 0) {
-            setActive(true);
-            return undefined;
-        }
-        const timer = window.setTimeout(() => setActive(true), delayMs);
-        return () => window.clearTimeout(timer);
-    }, [delayMs]);
+    const active = useDelayedActive(delayMs);
 
     return (
         <div
@@ -265,12 +316,13 @@ function DelayedDamageImpact({
                     numberTestId="mage-wars-fx-attack-damage-float"
                     numberFontScale={1.75}
                     numberColorClass="text-amber-50"
+                    numberDurationSeconds={1.35}
                     quality={quality}
                     slashDurationMs={560}
                     slashActiveMs={220}
                     pulseDurationMs={620}
                     pulseActiveMs={620}
-                    completeMs={1_050}
+                    completeMs={1_550}
                 />
             </ImpactContainer>
         </div>
@@ -286,7 +338,7 @@ function BoardSourceWake({
 }: {
     source?: FxCellCoord;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'spell' | 'attack' | 'push';
+    kind: BoardFxKind;
     strong?: boolean;
     quality: FxQuality;
 }) {
@@ -322,7 +374,7 @@ function BoardTravelEffect({
     source?: FxCellCoord;
     target: FxCellCoord;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'spell' | 'attack' | 'push';
+    kind: BoardFxKind;
     strong?: boolean;
     quality: FxQuality;
 }) {
@@ -336,6 +388,8 @@ function BoardTravelEffect({
         getCellPosition(target.row, target.col),
         { paddingCells: 1.8, minSizeCells: 3 },
     );
+    const midX = pathBox.start.xPct + (pathBox.end.xPct - pathBox.start.xPct) * 0.52;
+    const midY = pathBox.start.yPct + (pathBox.end.yPct - pathBox.start.yPct) * 0.52;
 
     return (
         <div
@@ -352,8 +406,22 @@ function BoardTravelEffect({
                 end={pathBox.end}
                 intensity={kind === 'attack' || strong ? 'strong' : 'normal'}
                 quality={quality}
-                durationScale={PROJECTILE_TRAVEL_DURATION_SCALE}
+                durationMs={PROJECTILE_TRAVEL_DURATION_MS}
+                color={fxColors(kind, strong)}
             />
+            <div
+                className="absolute h-40 w-40 -translate-x-1/2 -translate-y-1/2"
+                data-testid={`mage-wars-fx-${kind}-travel-mid-burst`}
+                style={{ left: `${midX}%`, top: `${midY}%`, overflow: 'visible' }}
+            >
+                <DelayedBurstParticles
+                    delayMs={360}
+                    preset={kind === 'attack' ? 'sparks' : 'summonGlow'}
+                    color={fxColors(kind, strong)}
+                    quality={quality}
+                    overflow={3.2}
+                />
+            </div>
         </div>
     );
 }
@@ -369,7 +437,7 @@ function BoardFxTravel({
     source?: FxCellCoord;
     target: FxCellCoord;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'spell' | 'attack' | 'push';
+    kind: BoardFxKind;
     strong?: boolean;
     quality: FxQuality;
 }) {
@@ -394,7 +462,7 @@ function BoardFxTravel({
     );
 }
 
-export const SpellCastRenderer: React.FC<FxRendererProps> = ({
+export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     event,
     getCellPosition,
     onComplete,
@@ -403,54 +471,37 @@ export const SpellCastRenderer: React.FC<FxRendererProps> = ({
     const cell = event.ctx.cell;
     const source = event.params?.source as FxCellCoord | undefined;
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
-    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 180, hasTravel ? 1_800 : 950);
+    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 180, hasTravel ? 3_600 : 950);
 
     if (!cell) return null;
     const strong = event.ctx.intensity === 'strong';
+    const quality = resolveEventQuality(event);
 
     return (
         <>
-            <BoardProjectileTravel
+            <BoardFxTravel
                 source={source}
                 target={cell}
                 getCellPosition={getCellPosition}
-                kind="spell"
+                kind="teleport"
                 strong={strong}
+                quality={quality}
             />
             <div
                 className="absolute pointer-events-none z-30 grid place-items-center"
-                data-testid="mage-wars-fx-spell-cast"
+                data-testid="mage-wars-fx-spell-teleport"
                 style={{ ...cellBox(getCellPosition, cell), overflow: 'visible' }}
             >
-                <motion.div
-                    className="absolute h-24 w-24 rounded-full"
-                    style={{
-                        background: strong
-                            ? 'radial-gradient(circle, rgba(251,191,36,.72) 0%, rgba(249,115,22,.32) 38%, transparent 72%)'
-                            : 'radial-gradient(circle, rgba(125,211,252,.68) 0%, rgba(59,130,246,.28) 38%, transparent 72%)',
-                        filter: 'blur(2px)',
-                    }}
-                    initial={{ opacity: 0, scale: 0.2, rotate: -20 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.2, 1.15, 1.55], rotate: 28 }}
-                    transition={{ duration: 0.9, delay: hasTravel ? PROJECTILE_IMPACT_DELAY_SECONDS : 0, ease: 'easeOut' }}
-                />
-                <motion.div
-                    className="absolute h-16 w-16 rounded-full"
-                    style={{
-                        boxShadow: strong
-                            ? '0 0 34px rgba(251,191,36,.82), inset 0 0 24px rgba(249,115,22,.4)'
-                            : '0 0 30px rgba(125,211,252,.76), inset 0 0 20px rgba(59,130,246,.35)',
-                    }}
-                    initial={{ opacity: 0, scale: 0.35 }}
-                    animate={{ opacity: [0, 0.9, 0], scale: [0.35, 1.05, 1.42] }}
-                    transition={{ duration: 0.78, delay: hasTravel ? PROJECTILE_IMPACT_DELAY_SECONDS : 0, ease: 'easeOut' }}
-                />
-                <motion.div
-                    className="absolute h-2 w-2 rounded-full bg-amber-100"
-                    initial={{ opacity: 0, scale: 0.4 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.4, strong ? 3.2 : 2.4, 0.6] }}
-                    transition={{ duration: 0.62, delay: hasTravel ? PROJECTILE_IMPACT_DELAY_SECONDS : 0, ease: 'easeOut' }}
-                />
+                <div className="relative h-36 w-36" data-testid="mage-wars-fx-spell-teleport-host">
+                    <DelayedBurstParticles
+                        testId="mage-wars-fx-spell-teleport-burst"
+                        delayMs={hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0}
+                        preset={strong ? 'summonGlowStrong' : 'summonGlow'}
+                        color={fxColors('teleport', strong)}
+                        quality={quality}
+                        overflow={2.6}
+                    />
+                </div>
             </div>
         </>
     );
@@ -465,43 +516,35 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
     const cell = event.ctx.cell;
     const source = event.params?.source as FxCellCoord | undefined;
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
-    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 80, hasTravel ? 1_600 : 780);
+    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 80, hasTravel ? 3_300 : 780);
 
     if (!cell) return null;
+    const quality = resolveEventQuality(event);
 
     return (
         <>
-            <BoardProjectileTravel
+            <BoardFxTravel
                 source={source}
                 target={cell}
                 getCellPosition={getCellPosition}
                 kind="push"
+                quality={quality}
             />
             <div
                 className="absolute pointer-events-none z-30 grid place-items-center"
                 data-testid="mage-wars-fx-spell-push"
                 style={{ ...cellBox(getCellPosition, cell), overflow: 'visible' }}
             >
-                {[0, 1, 2].map((index) => (
-                    <motion.div
-                        key={index}
-                        className="absolute h-3 rounded-full"
-                        style={{
-                            width: `${72 - index * 12}px`,
-                            background: 'linear-gradient(90deg, transparent, rgba(186,230,253,.88), rgba(125,211,252,.28), transparent)',
-                            filter: 'blur(.5px)',
-                        }}
-                        initial={{ opacity: 0, x: -42, y: -16 + index * 16, scaleX: 0.35 }}
-                        animate={{ opacity: [0, 1, 0], x: 46, scaleX: [0.35, 1, 0.65] }}
-                        transition={{ duration: 0.52, delay: (hasTravel ? 0.36 : 0) + index * 0.08, ease: 'easeOut' }}
+                <div className="relative h-32 w-32" data-testid="mage-wars-fx-spell-push-host">
+                    <DelayedBurstParticles
+                        testId="mage-wars-fx-spell-push-burst"
+                        delayMs={hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0}
+                        preset="magicDust"
+                        color={fxColors('push')}
+                        quality={quality}
+                        overflow={2.6}
                     />
-                ))}
-                <motion.div
-                    className="absolute h-16 w-16 rounded-full border border-sky-100/65"
-                    initial={{ opacity: 0, scale: 0.45 }}
-                    animate={{ opacity: [0, 0.8, 0], scale: [0.45, 1.05, 1.35] }}
-                    transition={{ duration: 0.66, delay: hasTravel ? PROJECTILE_IMPACT_DELAY_SECONDS : 0, ease: 'easeOut' }}
-                />
+                </div>
             </div>
         </>
     );
@@ -516,7 +559,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const cell = event.ctx.cell;
     const source = event.params?.source as FxCellCoord | undefined;
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
-    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0, hasTravel ? 2_000 : 1_450);
+    useTimedImpactAndComplete(cell, onImpact, onComplete, hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0, hasTravel ? 4_200 : 1_450);
 
     if (!cell) return null;
     const damage = (event.params?.damageAmount as number | undefined) ?? 1;
@@ -526,45 +569,27 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const effectDieResult = typeof event.params?.effectDieResult === 'number'
         ? event.params.effectDieResult
         : undefined;
+    const quality = resolveEventQuality(event);
 
     return (
         <>
-            <BoardProjectileTravel
+            <BoardFxTravel
                 source={source}
                 target={cell}
                 getCellPosition={getCellPosition}
                 kind="attack"
+                quality={quality}
             />
             <div
                 className="absolute pointer-events-none z-30 grid place-items-center"
                 data-testid="mage-wars-fx-attack-impact"
                 style={{ ...cellBox(getCellPosition, cell), overflow: 'visible' }}
             >
-                <motion.div
-                    className="h-20 w-20 rounded-full"
-                    style={{
-                        background: 'radial-gradient(circle, rgba(248,113,113,.56) 0%, rgba(127,29,29,.26) 42%, transparent 74%)',
-                        boxShadow: '0 0 32px rgba(248,113,113,.48)',
-                    }}
-                    initial={{ opacity: 0, scale: 0.55 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.55, 1.12, 1.45] }}
-                    transition={{ duration: 0.55, delay: hasTravel ? PROJECTILE_IMPACT_DELAY_SECONDS : 0, ease: 'easeOut' }}
+                <DelayedDamageImpact
+                    delayMs={hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0}
+                    damage={damage}
+                    quality={quality}
                 />
-                <div
-                    className="absolute h-36 w-36"
-                    data-testid="mage-wars-fx-attack-damage-host"
-                >
-                    <DamageFlash
-                        active
-                        damage={damage}
-                        intensity="strong"
-                        startDelayMs={hasTravel ? PROJECTILE_IMPACT_DELAY_MS : 0}
-                        numberTestId="mage-wars-fx-attack-damage-float"
-                        numberFontScale={1.45}
-                        numberColorClass="text-amber-50"
-                        completeMs={620}
-                    />
-                </div>
             </div>
             <AttackDiceFeedback
                 source={source}

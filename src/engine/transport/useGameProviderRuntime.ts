@@ -254,6 +254,20 @@ export function useGameProviderRuntime(args: {
                 recoverFromRejectedCommand(error);
                 onErrorRef.current?.(error);
             },
+            onPlayerConnectionChange: (connectionPlayerId, connected) => {
+                setMatchPlayers((previous) => previous.map((player) => {
+                    if (String(player.id) !== String(connectionPlayerId)) {
+                        return player;
+                    }
+                    if (player.isConnected === connected) {
+                        return player;
+                    }
+                    return {
+                        ...player,
+                        isConnected: connected,
+                    };
+                }));
+            },
         });
 
         clientRef.current = client;

@@ -10,8 +10,8 @@ import { ABILITY_IDS } from './domain/ids';
  * Cardia 游戏体量小，使用单一 BGM 即可
  */
 
-// 主 BGM：只引用当前 Android 公共音频包中已有压缩 OGG 的曲目。
-const BGM_MAIN_KEY = 'bgm.villains_music_pack_vol.double_agent_rt_5.villains_double_agent_main';
+// 主 BGM（动感魔法主题 - Dragon Dance），避免复用 The Gang/SmashUp 反派曲目。
+const BGM_MAIN_KEY = 'bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main';
 
 /**
  * 能力音效映射表
@@ -108,7 +108,7 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
     bgm: [
         {
             key: BGM_MAIN_KEY,
-            name: 'Double Agent',
+            name: 'Dragon Dance',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'main' },

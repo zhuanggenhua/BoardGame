@@ -89,7 +89,7 @@ export interface QidahenWheelDispatchSelectionRegionSemantics {
 }
 
 export const getQidahenWheelDispatchSelectionRegionSemantics = (
-    state: Pick<QidahenCore, 'explicitRegionId' | 'selectedRegionId'>,
+    state: Pick<QidahenCore, 'explicitRegionId' | 'regionFocusState' | 'selectedRegionId'>,
     sourceRegionId: string,
     preferredSourceRegionId?: string | null,
 ): QidahenWheelDispatchSelectionRegionSemantics => {

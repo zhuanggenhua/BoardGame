@@ -16,22 +16,37 @@ type SmashUpAudioCtx = {
     isWinner?: boolean;
 };
 
-const BGM_NORMAL_KEY = 'bgm.villains_music_pack_vol.double_agent_rt_5.villains_double_agent_main';
-const BGM_BATTLE_KEY = 'bgm.villains_music_pack_vol.the_boss_rt_5.villains_the_boss_main';
-const BGM_ALPHA_KEY = 'bgm.heroes_music_pack_vol.alpha_rt_6.heroes_alpha_main';
-const BGM_DAUNTLESS_KEY = 'bgm.heroes_music_pack_vol.dauntless_rt_5.heroes_dauntless_main';
-const BGM_MAGNUS_KEY = 'bgm.heroes_music_pack_vol.magnus_rt_6.heroes_magnus_main';
-const BGM_TERMINUS_KEY = 'bgm.heroes_music_pack_vol.terminus_rt_4.heroes_terminus_main';
-const BGM_INVICTUS_KEY = 'bgm.epic_music_pack_vol.invictus_rt_5.epic_vol5_invictus_main';
-const BGM_HERCULES_KEY = 'bgm.epic_music_pack_vol.hercules_rt_3.epic_vol5_hercules_main';
-const BGM_ZENITH_KEY = 'bgm.epic_music_pack_vol.zenith_rt_3.epic_vol5_zenith_main';
-const BGM_GO_NOW_KEY = 'bgm.epic_music_pack_vol.go_now_rt_4.epic_vol5_go_now_main';
+const BGM_NORMAL_KEY = 'bgm.general.casual_music_pack_vol.tiki_party_rt_2.casual_tiki_party_main';
+const BGM_BATTLE_KEY = 'bgm.funk.funk_music_pack.move_your_feet_rt_2.funk_move_your_feet_main';
+const BGM_BUBBLEGUM_KEY = 'bgm.general.casual_music_pack_vol.bubblegum_rt_2.casual_bubblegum_main';
+const BGM_FIELD_DAY_KEY = 'bgm.general.casual_music_pack_vol.field_day_rt_2.casual_field_day_main';
+const BGM_LIZARDS_KEY = 'bgm.general.casual_music_pack_vol.lizards_rt_1.casual_lizards_main';
+const BGM_BUBBLEGUM_INTENSE_KEY = 'bgm.general.casual_music_pack_vol.bubblegum_rt_2.casual_bubblegum_intensity_2';
+const BGM_FIELD_DAY_INTENSE_KEY = 'bgm.general.casual_music_pack_vol.field_day_rt_2.casual_field_day_intensity_2';
+const BGM_SUNSET_KEY = 'bgm.general.casual_music_pack_vol.sunset_rt_1.casual_sunset_main';
+const BGM_SUNSET_INTENSE_KEY = 'bgm.general.casual_music_pack_vol.sunset_rt_1.casual_sunset_intensity_2';
+const BGM_SUNNY_DAYS_KEY = 'bgm.funk.funk_music_pack.sunny_days_rt_2.funk_sunny_days_main';
+const BGM_SUNNY_DAYS_INTENSE_KEY = 'bgm.funk.funk_music_pack.sunny_days_rt_2.funk_sunny_days_intensity_2';
+const BGM_BIG_SHOT_KEY = 'bgm.funk.funk_music_pack.big_shot_rt_4.funk_big_shot_main';
+const BGM_BIG_SHOT_INTENSE_KEY = 'bgm.funk.funk_music_pack.big_shot_rt_4.funk_big_shot_intensity_2';
+const BGM_MOVE_YOUR_FEET_INTENSE_KEY = 'bgm.funk.funk_music_pack.move_your_feet_rt_2.funk_move_your_feet_intensity_2';
+const BGM_TIKI_INTENSE_KEY = 'bgm.general.casual_music_pack_vol.tiki_party_rt_2.casual_tiki_party_intensity_2';
+const BGM_NOBODY_KNOWS_KEY = 'bgm.funk.funk_music_pack.nobody_knows_rt_4.funk_nobody_knows_intensity_1';
+const BGM_NOBODY_KNOWS_INTENSE_KEY = 'bgm.funk.funk_music_pack.nobody_knows_rt_4.funk_nobody_knows_intensity_2';
 const STINGER_WIN_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
 const STINGER_LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
 
+const SELECTION_KEY = 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none';
+const POSITIVE_SIGNAL_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a';
+const UPDATE_CHIME_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a';
 
+const MINION_PLAY_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_placing_001';
+const ACTION_PLAY_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_magic_deck_001';
+const CARD_DRAW_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_take_001';
+const CARD_DISCARD_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001';
 
 const MOVE_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
+const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
 const MADNESS_KEY = 'magic.dark.32.dark_spell_01';
 
 // 僵尸随从：DFS zombie_voices（语义高度匹配）
@@ -566,18 +581,18 @@ const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
  */
 const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'action' | 'talent'): string | null => {
     if (!defId) return null;
-    
+
     // 特殊卡牌：疯狂卡
     if (defId === 'special_madness') {
         return MADNESS_KEY;
     }
-    
+
     // 优先使用卡牌配置的 soundKey
     const cardDef = getCardDef(defId);
     if (cardDef && 'soundKey' in cardDef && cardDef.soundKey) {
         return cardDef.soundKey;
     }
-    
+
     // Fallback 到派系默认音效池
     if (defId.startsWith('zombie_')) {
         const keys = cardType === 'action' ? ZOMBIE_ACTION_KEYS : ZOMBIE_MINION_KEYS;
@@ -771,7 +786,7 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
         const keys = cardType === 'action' ? DISCO_DANCER_ACTION_KEYS : DISCO_DANCER_MINION_KEYS;
         return pickRandomSoundKey(`smashup.disco_dancers.${cardType}`, keys, { minGap: 1 });
     }
-    
+
     // 未配置音效池的派系，返回 null（静默）
     return null;
 };
@@ -789,70 +804,119 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
     bgm: [
         {
             key: BGM_NORMAL_KEY,
-            name: 'Double Agent',
+            name: 'Tiki Party',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_TIKI_INTENSE_KEY,
+            name: 'Tiki Party (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
+        },
+        {
+            key: BGM_BUBBLEGUM_KEY,
+            name: 'Bubblegum',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_FIELD_DAY_KEY,
+            name: 'Field Day',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_LIZARDS_KEY,
+            name: 'Lizards',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_BUBBLEGUM_INTENSE_KEY,
+            name: 'Bubblegum (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
+        },
+        {
+            key: BGM_FIELD_DAY_INTENSE_KEY,
+            name: 'Field Day (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
+        },
+        {
+            key: BGM_SUNSET_KEY,
+            name: 'Sunset',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_SUNSET_INTENSE_KEY,
+            name: 'Sunset (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
+        },
+        {
+            key: BGM_SUNNY_DAYS_KEY,
+            name: 'Sunny Days',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_SUNNY_DAYS_INTENSE_KEY,
+            name: 'Sunny Days (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
+        },
+        {
+            key: BGM_BIG_SHOT_KEY,
+            name: 'Big Shot',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle' },
+        },
+        {
+            key: BGM_BIG_SHOT_INTENSE_KEY,
+            name: 'Big Shot (Intense)',
+            src: '',
+            volume: 0.5,
+            category: { group: 'bgm', sub: 'battle_intense' },
         },
         {
             key: BGM_BATTLE_KEY,
-            name: 'The Boss',
-            src: '',
-            volume: 0.5,
-            category: { group: 'bgm', sub: 'battle_intense' },
-        },
-        {
-            key: BGM_ALPHA_KEY,
-            name: 'Alpha',
+            name: 'Move Your Feet',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle' },
         },
         {
-            key: BGM_DAUNTLESS_KEY,
-            name: 'Dauntless',
-            src: '',
-            volume: 0.5,
-            category: { group: 'bgm', sub: 'battle' },
-        },
-        {
-            key: BGM_MAGNUS_KEY,
-            src: '',
-            name: 'Magnus',
-            volume: 0.5,
-            category: { group: 'bgm', sub: 'battle' },
-        },
-        {
-            key: BGM_TERMINUS_KEY,
-            name: 'Terminus',
-            src: '',
-            volume: 0.5,
-            category: { group: 'bgm', sub: 'battle' },
-        },
-        {
-            key: BGM_INVICTUS_KEY,
-            name: 'Invictus',
+            key: BGM_MOVE_YOUR_FEET_INTENSE_KEY,
+            name: 'Move Your Feet (Intense)',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle_intense' },
         },
         {
-            key: BGM_HERCULES_KEY,
-            name: 'Hercules',
+            key: BGM_NOBODY_KNOWS_KEY,
+            name: 'Nobody Knows',
             src: '',
             volume: 0.5,
-            category: { group: 'bgm', sub: 'battle_intense' },
+            category: { group: 'bgm', sub: 'battle' },
         },
         {
-            key: BGM_ZENITH_KEY,
-            name: 'Zenith',
-            src: '',
-            volume: 0.5,
-            category: { group: 'bgm', sub: 'battle_intense' },
-        },
-        {
-            key: BGM_GO_NOW_KEY,
-            name: 'Go Now',
+            key: BGM_NOBODY_KNOWS_INTENSE_KEY,
+            name: 'Nobody Knows (Intense)',
             src: '',
             volume: 0.5,
             category: { group: 'bgm', sub: 'battle_intense' },
@@ -860,35 +924,39 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
     ],
     bgmGroups: {
         normal: [
+            BGM_NOBODY_KNOWS_KEY,
             BGM_NORMAL_KEY,
-            BGM_ALPHA_KEY,
-            BGM_DAUNTLESS_KEY,
-            BGM_MAGNUS_KEY,
-            BGM_TERMINUS_KEY,
+            BGM_BUBBLEGUM_KEY,
+            BGM_FIELD_DAY_KEY,
+            BGM_LIZARDS_KEY,
+            BGM_SUNSET_KEY,
+            BGM_SUNNY_DAYS_KEY,
         ],
         battle: [
             BGM_BATTLE_KEY,
-            BGM_INVICTUS_KEY,
-            BGM_HERCULES_KEY,
-            BGM_ZENITH_KEY,
-            BGM_GO_NOW_KEY,
+            BGM_MOVE_YOUR_FEET_INTENSE_KEY,
+            BGM_BIG_SHOT_KEY,
+            BGM_BIG_SHOT_INTENSE_KEY,
+            BGM_TIKI_INTENSE_KEY,
+            BGM_BUBBLEGUM_INTENSE_KEY,
+            BGM_FIELD_DAY_INTENSE_KEY,
         ],
     },
     feedbackResolver: (event) => {
         const type = event.type;
-        
+
         // ========== 特殊处理逻辑（覆盖框架默认）==========
-        
+
         // FACTION_SELECTED：UI 层已播放，EventStream 跳过
         if (type === SU_EVENT_TYPES.FACTION_SELECTED) {
             return null;
         }
-        
+
         // MINION_MOVED：移动音效
         if (type === SU_EVENT_TYPES.MINION_MOVED) {
             return MOVE_KEY;
         }
-        
+
         // MINION_PLAYED：根据阵营选择音效
         if (type === SU_EVENT_TYPES.MINION_PLAYED) {
             const defId = (event.payload as { defId?: string })?.defId;
@@ -896,7 +964,7 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
             if (factionSound) return factionSound;
             // 回退到框架默认
         }
-        
+
         // ACTION_PLAYED / ONGOING_ATTACHED：根据阵营选择音效
         if (type === SU_EVENT_TYPES.ACTION_PLAYED || type === SU_EVENT_TYPES.ONGOING_ATTACHED) {
             const defId = (event.payload as { defId?: string })?.defId;
@@ -904,7 +972,7 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
             if (factionSound) return factionSound;
             // 回退到框架默认
         }
-        
+
         // TALENT_USED：根据阵营选择音效
         if (type === SU_EVENT_TYPES.TALENT_USED) {
             const defId = (event.payload as { defId?: string })?.defId;
@@ -912,7 +980,7 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
             if (factionSound) return factionSound;
             // 回退到框架默认
         }
-        
+
         // ========== 使用框架自动生成的默认音效 ==========
         return baseFeedbackResolver(event);
     },
@@ -927,7 +995,7 @@ export const SMASHUP_AUDIO_CONFIG: GameAudioConfig = {
         },
         {
             when: () => true,
-            key: BGM_NORMAL_KEY,
+            key: BGM_NOBODY_KNOWS_KEY,
             group: 'normal',
         },
     ],

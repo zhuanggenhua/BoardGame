@@ -1,4 +1,4 @@
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type { QidahenCore } from './types';
 import {
     type QidahenInteractionSourceId,

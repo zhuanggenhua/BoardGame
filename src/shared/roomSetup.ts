@@ -108,7 +108,7 @@ function resolveCompatibleSelectValue(args: {
         ? undefined
         : args.currentValue;
     const currentOption = options.find((option) => option.value === currentValue);
-    if (isOptionCompatibleWithPlayerCount(args.field, currentOption, args.numPlayers)) {
+    if (currentOption && isOptionCompatibleWithPlayerCount(args.field, currentOption, args.numPlayers)) {
         return currentOption.value;
     }
 
@@ -116,7 +116,7 @@ function resolveCompatibleSelectValue(args: {
         ? args.field.createRoomDefault ?? args.field.default
         : args.field.default;
     const defaultOption = options.find((option) => option.value === preferredDefault);
-    if (isOptionCompatibleWithPlayerCount(args.field, defaultOption, args.numPlayers)) {
+    if (defaultOption && isOptionCompatibleWithPlayerCount(args.field, defaultOption, args.numPlayers)) {
         return defaultOption.value;
     }
 

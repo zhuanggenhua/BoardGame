@@ -268,7 +268,7 @@ export const FANTASY_REALMS_CARD_REPLACEMENTS = new Map<string, string>([
     ['wild-mirage', 'wild-mirage-ch'],
 ]);
 
-export const FANTASY_REALMS_EXTRA_CARD_IDS = new Set(
+export const FANTASY_REALMS_EXTRA_CARD_IDS: ReadonlySet<string> = new Set(
     ALL_FANTASY_REALMS_CARDS
         .filter((card) => Boolean((card as { extraCard?: boolean }).extraCard))
         .map((card) => card.id),

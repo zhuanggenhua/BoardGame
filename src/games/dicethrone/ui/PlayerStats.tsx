@@ -100,6 +100,7 @@ export const PlayerStats = ({
 
         return (
             <div
+                data-dicethrone-resource={key}
                 className={[
                     'relative h-[1.85vw] w-full overflow-hidden box-border bg-black/60',
                     'border-[0.18vw]',
@@ -108,6 +109,7 @@ export const PlayerStats = ({
                 ].join(' ')}
             >
                 <div
+                    data-dicethrone-resource-fill={key}
                     className={`absolute inset-y-0 left-0 bg-gradient-to-r ${config.fillClassName} transition-[width] duration-500 ease-out`}
                     style={{ width: `${percentage}%` }}
                 />

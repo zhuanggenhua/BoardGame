@@ -125,9 +125,13 @@ const resolveQidahenRecruitInteractionEvent = (
     if (!choiceId) {
         return null;
     }
+    const choice = recruitSelection?.choices.find((candidate) => candidate.id === choiceId) ?? null;
+    if (!choice) {
+        return null;
+    }
     return resolveQidahenRecruitInteractionChoice(
         state.core,
-        choiceId,
+        choice.id,
         event.timestamp ?? 0,
         recruitSelection,
     );
@@ -150,9 +154,10 @@ const resolveQidahenGrantPardonInteractionEvent = (
     if (!choiceId) {
         return null;
     }
+    const choice = grantPardonSelection?.choices.find((candidate) => candidate.id === choiceId) ?? null;
     return resolveQidahenGrantPardonInteractionChoice(
         state.core,
-        choiceId,
+        choice?.id ?? choiceId,
         event.timestamp ?? 0,
         grantPardonSelection,
     );
@@ -175,9 +180,13 @@ const resolveQidahenDiplomacyInteractionEvent = (
     if (!choiceId) {
         return null;
     }
+    const choice = diplomacySelection?.choices.find((candidate) => candidate.id === choiceId) ?? null;
+    if (!choice) {
+        return null;
+    }
     return resolveQidahenDiplomacyInteractionChoice(
         state.core,
-        choiceId,
+        choice.id,
         event.timestamp ?? 0,
         diplomacySelection,
     );

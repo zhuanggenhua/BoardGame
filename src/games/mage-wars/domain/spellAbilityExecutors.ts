@@ -90,6 +90,17 @@ export interface MageWarsSpellAbilityContext extends AbilityContext {
     skipDefense?: boolean;
 }
 
+export interface MageWarsSpellAbilityInput {
+    ownerId: string;
+    timestamp: number;
+    state: MatchState<MageWarsCore>;
+    command: MageWarsCastSpellCommand;
+    random: RandomFn;
+    spell: MageWarsConfigSpellCard;
+    manaCost: number;
+    skipDefense?: boolean;
+}
+
 export const mageWarsSpellAbilityExecutorRegistry = createAbilityExecutorRegistry<
     MageWarsSpellAbilityContext,
     MageWarsEvent
@@ -1493,7 +1504,7 @@ for (const def of mageWarsAbilityRegistry.getByTag('spell-type:结界')) {
     });
 }
 
-export function executeMageWarsSpellAbility(ctx: Omit<MageWarsSpellAbilityContext, 'sourceId'>): MageWarsEvent[] {
+export function executeMageWarsSpellAbility(ctx: MageWarsSpellAbilityInput): MageWarsEvent[] {
     const abilityId = getMageWarsSpellAbilityId(ctx.spell.spellCardId);
     const executor = mageWarsSpellAbilityExecutorRegistry.resolve(abilityId, MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG);
     if (!executor) return [];

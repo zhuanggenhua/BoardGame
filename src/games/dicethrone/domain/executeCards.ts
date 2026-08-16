@@ -16,13 +16,17 @@ import type {
     CardPlayedEvent,
     CpChangedEvent,
     InteractionRequestedEvent,
+    ResponseWindowOpenedEvent,
+    AbilityCard,
 } from './types';
 import {
     getUpgradeTargetAbilityId,
     cardNeedsSelectedDefender,
     getContextualOpponentId,
     getOpponents,
+    getResponderQueue,
     getSelectedCombatOpponentId,
+    hasOpponentTargetEffect,
     isTeamMode,
 } from './rules';
 import { resourceSystem } from './resourceSystem';
@@ -33,6 +37,48 @@ import { buildDrawEvents } from './deckEvents';
 type MatchStateView = {
     core: DiceThroneCore;
     sys?: { phase?: string; responseWindow?: { current?: { windowType: string } } };
+};
+
+const buildAfterCardPlayedWindowEvent = (
+    state: DiceThroneCore,
+    actingPlayerId: string,
+    card: AbilityCard,
+    phase: TurnPhase,
+    timestamp: number,
+    sourceCommandType: string,
+): ResponseWindowOpenedEvent | null => {
+    if (!hasOpponentTargetEffect(card)) {
+        return null;
+    }
+
+    const triggerId = getSelectedCombatOpponentId(state, actingPlayerId)
+        ?? getContextualOpponentId(state, actingPlayerId)
+        ?? getOpponents(state, actingPlayerId)[0]
+        ?? actingPlayerId;
+    const responderQueue = getResponderQueue(
+        state,
+        'afterCardPlayed',
+        triggerId,
+        card.id,
+        actingPlayerId,
+        phase,
+    );
+
+    if (responderQueue.length === 0) {
+        return null;
+    }
+
+    return {
+        type: 'RESPONSE_WINDOW_OPENED',
+        payload: {
+            windowId: `afterCardPlayed-${timestamp}`,
+            responderQueue,
+            windowType: 'afterCardPlayed',
+            sourceId: card.id,
+        },
+        sourceCommandType,
+        timestamp,
+    };
 };
 
 /**
@@ -117,6 +163,18 @@ export function executeCardCommand(
             if (!card || !player) {
                 break;
             }
+
+            const responseWindowEvent = !(card.type === 'upgrade' && upgradeTargetAbilityId)
+                && !matchState.sys?.responseWindow?.current
+                ? buildAfterCardPlayedWindowEvent(
+                    state,
+                    actingPlayerId,
+                    card,
+                    phase,
+                    timestamp,
+                    command.type,
+                )
+                : null;
             
             // 升级卡：自动提取目标技能并执行升级逻辑
             if (card.type === 'upgrade' && upgradeTargetAbilityId) {
@@ -187,12 +245,13 @@ export function executeCardCommand(
                 type: 'CARD_PLAYED',
                 payload: { 
                     playerId: actingPlayerId, 
-                    cardId: card.id,
-                    previewRef: card.previewRef,
-                    cpCost: card.cpCost,
-                },
-                sourceCommandType: command.type,
-                timestamp,
+                        cardId: card.id,
+                        previewRef: card.previewRef,
+                        cpCost: card.cpCost,
+                        afterCardPlayedWindowSource: Boolean(responseWindowEvent),
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
             };
             // 通过效果系统执行卡牌效果（数据驱动）
             const selectedOpponentId = getSelectedCombatOpponentId(state, actingPlayerId, phase);
@@ -266,6 +325,11 @@ export function executeCardCommand(
                 events.push(...effectEvents, event);
             } else {
                 events.push(event, ...effectEvents);
+            }
+            if (!matchState.sys?.responseWindow?.current) {
+                if (responseWindowEvent) {
+                    events.push(responseWindowEvent);
+                }
             }
             break;
         }

@@ -44,6 +44,8 @@ import { createCharacterDice, initHeroState } from '../../src/games/dicethrone/d
 import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
+import { createBonusRollContextFromSettlement } from '../../src/games/dicethrone/domain/rollContext';
+import type { DiceThroneCore, PendingBonusDiceSettlement } from '../../src/games/dicethrone/domain/core-types';
 
 type OnlineAiResponseMatchState = MatchState<unknown> & {
     sys?: {
@@ -276,6 +278,135 @@ const buildSamuraiHonorAiResponseState = (
     return next;
 };
 
+const buildAiRightTrayBonusDiceConfirmState = (
+    state: OnlineAiResponseMatchState,
+    options: { aiControllerType?: 'human' | 'local-ai'; aiDelayMs?: number } = {},
+): OnlineAiResponseMatchState => {
+    const next = structuredClone(state) as OnlineAiResponseMatchState;
+    const host = initHeroState('0', 'gunslinger', DICE_THRONE_PREPARE_RANDOM);
+    const ai = initHeroState('1', 'monk', DICE_THRONE_PREPARE_RANDOM);
+    const bonusFace = getHeroDieFace('monk', 4);
+    const settlement: PendingBonusDiceSettlement = {
+        id: 'online-ai-right-tray-bonus-confirm',
+        sourceAbilityId: 'online-ai-right-tray-bonus',
+        attackerId: '1',
+        targetId: '0',
+        dice: [{
+            index: 0,
+            value: 4,
+            face: bonusFace,
+            effectParams: { value: 4 },
+        }],
+        rerollCostTokenId: TOKEN_IDS.TAIJI,
+        rerollCostAmount: 1,
+        rerollCount: 0,
+        maxRerollCount: 0,
+        readyToSettle: true,
+        displayOnly: true,
+        showTotal: false,
+        resolutionMode: 'none',
+        allowDiceModification: true,
+        continuation: { kind: 'complete' },
+    };
+
+    host.resources = {
+        ...(host.resources ?? {}),
+        [RESOURCE_IDS.HP]: 50,
+        [RESOURCE_IDS.CP]: 2,
+    };
+    host.hand = [];
+    host.deck = [];
+    host.discard = [];
+    ai.resources = {
+        ...(ai.resources ?? {}),
+        [RESOURCE_IDS.HP]: 50,
+        [RESOURCE_IDS.CP]: 2,
+    };
+    ai.hand = [];
+    ai.deck = [];
+    ai.discard = [];
+    ai.tokens = {
+        ...(ai.tokens ?? {}),
+        [TOKEN_IDS.TAIJI]: 0,
+    };
+
+    const core = {
+        ...(next.core ?? {}),
+        phase: 'main2',
+        hostStarted: true,
+        activePlayerId: '1',
+        turnNumber: typeof next.core?.turnNumber === 'number' ? next.core.turnNumber : 1,
+        rollCount: 1,
+        rollLimit: 3,
+        rollDiceCount: 5,
+        rollConfirmed: true,
+        selectedAbilityId: null,
+        selectedCharacters: {
+            ...(next.core?.selectedCharacters ?? {}),
+            '0': 'gunslinger',
+            '1': 'monk',
+        },
+        readyPlayers: {
+            ...(next.core?.readyPlayers ?? {}),
+            '0': true,
+            '1': true,
+        },
+        seatControllers: {
+            ...(next.core?.seatControllers ?? {}),
+            '0': { type: 'human' },
+            '1': options.aiControllerType === 'human'
+                ? { type: 'human' }
+                : { type: 'local-ai', minimumActionDelayMs: options.aiDelayMs ?? 50 },
+        },
+        players: {
+            ...(next.core?.players ?? {}),
+            '0': host,
+            '1': ai,
+        },
+        dice: createCharacterDice('monk').map((die, index) => {
+            const values = [4, 1, 1, 1, 1];
+            const value = values[index] ?? 1;
+            const symbol = getHeroDieFace('monk', value);
+            return {
+                ...die,
+                value,
+                symbol,
+                symbols: [symbol],
+                isKept: false,
+            };
+        }),
+        pendingAttack: null,
+        pendingDamage: undefined,
+        pendingBonusDiceSettlement: settlement,
+    } as DiceThroneCore & NonNullable<OnlineAiResponseMatchState['core']>;
+    core.currentRollContext = createBonusRollContextFromSettlement(core, settlement);
+
+    next.core = core;
+    next.sys = {
+        ...next.sys,
+        phase: 'main2',
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 1,
+        flowHalted: false,
+        responseWindow: {
+            ...(next.sys?.responseWindow ?? {}),
+            current: null,
+        },
+        interaction: {
+            ...(next.sys?.interaction ?? {}),
+            current: {
+                id: `dt-bonus-dice-${settlement.id}`,
+                kind: 'dt:bonus-dice',
+                playerId: '1',
+                data: null,
+            },
+            queue: [],
+        },
+    };
+
+    return next;
+};
+
 const readSamuraiHonorResponseSnapshot = async (matchId: string, page: Page) => {
     const state = await getMatchState(matchId, page) as OnlineAiResponseMatchState;
     const events = await findEventsInStream(page, ['TOKEN_CONSUMED', 'TOKEN_RESPONSE_REQUESTED', 'DAMAGE_DEALT']);
@@ -295,6 +426,54 @@ const readSamuraiHonorResponseSnapshot = async (matchId: string, page: Page) => 
         )).length,
         tokenResponseRequestedCount: events.filter((event) => event.type === 'TOKEN_RESPONSE_REQUESTED').length,
         damageEventCount: events.filter((event) => event.type === 'DAMAGE_DEALT').length,
+    };
+};
+
+const readAiBonusDiceConfirmSnapshot = async (matchId: string, page: Page) => {
+    const state = await getMatchState(matchId, page) as OnlineAiResponseMatchState;
+    const debug = await page.evaluate(() => {
+        const api = (window as Window & {
+            __BG_ONLINE_AI_DEBUG__?: {
+                getSeatDecisionState?: (playerId: string) => {
+                    stage?: string | null;
+                    actionKind?: string | null;
+                    kind?: string | null;
+                } | null;
+                getSeatLatestState?: (playerId: string) => {
+                    core?: {
+                        pendingBonusDiceSettlement?: { id?: string | null } | null;
+                    } | null;
+                } | null;
+            };
+        }).__BG_ONLINE_AI_DEBUG__;
+        const decisionState = api?.getSeatDecisionState?.('1');
+        const latestState = api?.getSeatLatestState?.('1');
+        return {
+            latestPendingBonus: latestState?.core?.pendingBonusDiceSettlement?.id ?? null,
+            decisionStage: decisionState?.stage ?? null,
+            decisionKind: decisionState?.actionKind ?? decisionState?.kind ?? null,
+        };
+    }).catch(() => null);
+    const rollContext = (state.core as (NonNullable<OnlineAiResponseMatchState['core']> & {
+        currentRollContext?: {
+            kind?: string | null;
+            status?: string | null;
+            display?: { replayOnly?: boolean | null } | null;
+            dice?: Array<{ value?: number | null }>;
+        };
+    }) | undefined)?.currentRollContext;
+
+    return {
+        pendingBonus: state.core?.pendingBonusDiceSettlement ?? null,
+        interactionKind: (state.sys?.interaction?.current as { kind?: string } | null | undefined)?.kind ?? null,
+        interactionPlayerId: (state.sys?.interaction?.current as { playerId?: string } | null | undefined)?.playerId ?? null,
+        rollContextKind: rollContext?.kind ?? null,
+        rollContextStatus: rollContext?.status ?? null,
+        rollContextReplayOnly: rollContext?.display?.replayOnly ?? null,
+        rollContextDiceValues: Array.isArray(rollContext?.dice)
+            ? rollContext.dice.map((die) => die.value)
+            : [],
+        aiDebug: debug,
     };
 };
 
@@ -849,6 +1028,60 @@ test.describe('DiceThrone AI 响应窗口', () => {
             await hostPage.screenshot({
                 path: testInfo.outputPath('dicethrone-ai-response-samurai-honor-consumed.png'),
                 fullPage: false,
+            });
+        } finally {
+            await hostContext.close();
+        }
+    });
+
+    test('在线 AI: 右侧奖励骰确认态应自动确认并释放交互', async ({ browser }) => {
+        test.setTimeout(90000);
+
+        const baseURL = test.info().project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineAiRoom(browser, baseURL);
+        expect(setup, 'DiceThrone AI 联机房间创建失败').not.toBeNull();
+        if (!setup) return;
+
+        const { hostContext, hostPage, matchId } = setup;
+
+        try {
+            await waitForCharacterSelectionWithRetry(hostPage, 30000);
+            await waitForAiSeatCredential(hostPage, matchId, '1');
+            await applyOnlineAiResponseMatchState(
+                matchId,
+                hostPage,
+                (state) => buildAiRightTrayBonusDiceConfirmState(state, { aiControllerType: 'human' }),
+            );
+            await waitForTestHarness(hostPage, 15000);
+            await waitForGameBoard(hostPage, 30000);
+
+            const injectedState = await getMatchState(matchId, hostPage) as OnlineAiResponseMatchState;
+            const legalActions = buildDiceThroneAiLegalActions({
+                playerId: '1',
+                state: injectedState,
+            });
+            expect(legalActions).toContainEqual(expect.objectContaining({
+                kind: 'skip-bonus-dice-reroll',
+                commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            }));
+            expect(legalActions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
+            await expect(hostPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+            await expect(hostPage.getByTestId('bonus-die-overlay')).toHaveCount(0);
+            await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+
+            await applyOnlineAiResponseMatchState(matchId, hostPage, buildAiRightTrayBonusDiceConfirmState);
+
+            await expect.poll(async () => readAiBonusDiceConfirmSnapshot(matchId, hostPage), {
+                timeout: 30000,
+                message: '等待在线 AI 执行右侧奖励骰普通确认并释放 dt:bonus-dice 交互',
+            }).toMatchObject({
+                pendingBonus: null,
+                interactionKind: null,
+                interactionPlayerId: null,
+                rollContextKind: 'bonus',
+                rollContextStatus: 'settled',
+                rollContextReplayOnly: true,
+                rollContextDiceValues: [4],
             });
         } finally {
             await hostContext.close();

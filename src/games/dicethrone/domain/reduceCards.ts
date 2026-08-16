@@ -161,13 +161,21 @@ export const handleCardPlayed: EventHandler<Extract<DiceThroneEvent, { type: 'CA
         ? player.discard
         : [...player.discard, card];
 
-    return {
+    const nextState = {
         ...state,
         players: {
             ...state.players,
             [playerId]: { ...player, hand: newHand, discard: nextDiscard, resources: newResources },
         },
         lastSoldCardId: undefined,
+    };
+
+    if (event.payload.afterCardPlayedWindowSource !== true) {
+        return nextState;
+    }
+
+    return {
+        ...nextState,
         cardPlayedSequence: (state.cardPlayedSequence ?? 0) + 1,
     };
 };

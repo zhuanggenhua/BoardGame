@@ -63,6 +63,26 @@ export function createMultistepChoiceSystem<TCore>(
                 if (current.playerId !== command.playerId) {
                     return { halt: true, error: '不是你的交互' };
                 }
+                const data = current.data as {
+                    minSteps?: unknown;
+                    completedSteps?: unknown;
+                    completedDieIds?: unknown;
+                    meta?: { dtType?: unknown };
+                };
+                const minSteps = typeof data.minSteps === 'number' && Number.isFinite(data.minSteps)
+                    ? Math.max(0, Math.floor(data.minSteps))
+                    : 0;
+                const isTrackedDiceInteraction = data.meta?.dtType === 'modifyDie' || data.meta?.dtType === 'selectDie';
+                const completedSteps = typeof data.completedSteps === 'number' && Number.isFinite(data.completedSteps)
+                    ? Math.max(0, Math.floor(data.completedSteps))
+                    : Array.isArray(data.completedDieIds)
+                        ? data.completedDieIds.filter((dieId) => typeof dieId === 'number').length
+                        : isTrackedDiceInteraction
+                            ? 0
+                            : null;
+                if (minSteps > 0 && completedSteps !== null && completedSteps < minSteps) {
+                    return { halt: true, error: '多步交互尚未达到最少步骤数' };
+                }
                 const ts = resolveCommandTimestamp(command);
                 const newState = resolveInteraction(state);
                 const event: GameEvent = {

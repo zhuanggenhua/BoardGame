@@ -95,6 +95,8 @@ describe('暗影刺客 - 偷窃技能', () => {
 
         expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 2); // 只从银行获得 2 CP
         expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(5); // 对手 CP 不变
+        expect(state.core.pendingAttack).toBeNull();
+        expect(state.sys.phase).toBe('main2');
     });
 
     it('有 Shadow：一级扒窃至多 1 CP 来自对手，其余从银行获得', () => {
@@ -119,6 +121,8 @@ describe('暗影刺客 - 偷窃技能', () => {
 
         expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(initialP0Cp + 2); // 获得 2 CP
         expect(state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(4); // 对手只失去 1 CP (5-1=4)
+        expect(state.core.pendingAttack).toBeNull();
+        expect(state.sys.phase).toBe('main2');
     });
 
     it('有 Shadow 但对手 CP 不足：只偷取实际拥有的', () => {

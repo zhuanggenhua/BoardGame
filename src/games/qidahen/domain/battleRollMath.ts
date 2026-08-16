@@ -927,7 +927,7 @@ const rollBattleStage = (
     let attackerRolls: QidahenBattleRoll[] = [];
     let defenderRolls: QidahenBattleRoll[] = [];
 
-    if (battlePriority?.phase === phase && phase !== 'melee') {
+    if (battlePriority?.phase === phase) {
         if (battlePriority.side === 'attacker') {
             attackerRolls = stageAttackerUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'attacker'));
             const preventedDefenderUnits = trimBattleUnitsBeforeCounterRoll(

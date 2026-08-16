@@ -43,7 +43,7 @@ function stripTransientSysState(sys: MatchState<unknown>['sys']): Record<string,
         interaction: _interaction,
         responseWindow: _responseWindow,
         ...stableSys
-    } = sys as Record<string, unknown>;
+    } = sys as unknown as Record<string, unknown>;
     return stableSys;
 }
 

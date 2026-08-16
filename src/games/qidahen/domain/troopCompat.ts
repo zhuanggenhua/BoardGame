@@ -165,7 +165,7 @@ export const collapseCompatPiecesToSpecialTroopStacks = (
 };
 
 export const mergeSpecialTroopStackGroupsAsPieces = (
-    ...groups: readonly QidahenSpecialTroopStack[][]
+    ...groups: readonly (readonly QidahenSpecialTroopStack[])[]
 ): QidahenSpecialTroopStack[] => collapseCompatPiecesToSpecialTroopStacks(
     groups.flatMap((group) => expandSpecialTroopStacksToCompatPieces(group)),
 );

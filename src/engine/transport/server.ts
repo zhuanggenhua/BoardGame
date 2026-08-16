@@ -72,6 +72,7 @@ import {
     resolveOnlineAiCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
     resolveForceEndTurnForStalledAi,
+    resolveManualForceEndAiPhase,
     resolveForceAdvancePhaseAfterRecovery,
     shouldInspectSeatStatesForHiddenAiInteraction,
     shouldUseOnlineAiEmergencyOverlayFallback,
@@ -110,6 +111,9 @@ import {
 const OFFLINE_ADJUDICATION_COMMAND_BY_KIND: Record<string, string | null> = {
     'simple-choice': INTERACTION_COMMANDS.CANCEL,
 };
+
+const MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX = 'manual-immediate-ai-continuation:';
+const MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX = 'manual-force-advance-after-confirm:';
 
 const resolveOfflineAdjudicationCommandType = (
     kind: unknown,
@@ -940,6 +944,9 @@ export interface GameEngineConfig<
     };
 }
 
+/** Type-erased engine config used by registries/providers that only pass configs through. */
+export type AnyGameEngineConfig = GameEngineConfig<any, any, any>;
+
 // ============================================================================
 // 内部类型
 // ============================================================================
@@ -998,6 +1005,14 @@ type ExecuteCommandInternalOptions = {
     onlineAiCircuitSource?: OnlineAiCircuitSource;
     onlineAiAttemptKey?: string | null;
     clientTransport?: OnlineAiClientTransportDiagnostics | null;
+};
+
+type OnlineAiCommandSequenceResult = {
+    success: boolean;
+    executedCommandTypes: string[];
+    failedCommandType?: string;
+    failureReason?: string | null;
+    stateChanged: boolean;
 };
 
 const GENERIC_COMMAND_FAILURE_REASON = 'command_failed';
@@ -1930,7 +1945,18 @@ export class GameTransportServer {
             return { accepted: false, reason: 'busy' };
         }
 
-        const candidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+        const manualSeatStates: Record<string, MatchState<unknown> | null | undefined> = Object.fromEntries(
+            Object.entries(seatControllers)
+                .filter(([, controller]) => controller.type !== 'human')
+                .map(([playerId]) => [playerId, this.applyPlayerView(match, playerId) as MatchState<unknown>]),
+        );
+        const candidate = resolveManualForceEndAiPhase({
+            sharedState: match.state,
+            seatControllers,
+            seatStates: manualSeatStates,
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        }) ?? await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
         if (!candidate) {
             this.onlineAiRecoveryTrackers.delete(match.matchID);
             return { accepted: false, reason: 'unavailable' };
@@ -1958,6 +1984,7 @@ export class GameTransportServer {
                 candidate,
                 progressMarker,
                 seatControllers,
+                { allowManualImmediateAiContinuation: true },
             );
         } finally {
             this.onlineAiRecoveryInFlight.delete(match.matchID);
@@ -2694,45 +2721,28 @@ export class GameTransportServer {
             };
         }
 
-        const stateIdBefore = match.stateID;
-        const executedCommandTypes: string[] = [];
-        for (const command of resolution.action.commands) {
-            const success = await this.executeCommandInternal(
-                match,
-                resolution.playerId,
-                command.type,
-                command.payload,
-                {
-                    suppressBroadcast: true,
-                    reportFailureFeedback: false,
-                    onlineAiAttemptKey: resolution.attemptKey,
-                },
-            );
-            if (!success) {
-                if (executedCommandTypes.length > 0) {
-                    this.broadcastState(match);
-                    return {
-                        applied: true,
-                        playerId: resolution.playerId,
-                        actionKind: resolution.action.kind,
-                        executedCommandTypes,
-                        decisionMs,
-                        commandFailureReason: match.lastCommandFailureReason,
-                    };
-                }
-                return {
-                    applied: false,
-                    playerId: resolution.playerId,
-                    actionKind: resolution.action.kind,
-                    executedCommandTypes,
-                    decisionMs,
-                    commandFailureReason: match.lastCommandFailureReason,
-                };
-            }
-            executedCommandTypes.push(command.type);
+        const sequence = await this.executeOnlineAiCommandSequence(
+            match,
+            resolution.playerId,
+            resolution.action.commands,
+            {
+                reportFailureFeedback: false,
+                feedbackSource: 'online-ai-watchdog',
+                onlineAiAttemptKey: resolution.attemptKey,
+            },
+        );
+        if (!sequence.success) {
+            return {
+                applied: false,
+                playerId: resolution.playerId,
+                actionKind: resolution.action.kind,
+                executedCommandTypes: sequence.executedCommandTypes,
+                decisionMs,
+                commandFailureReason: sequence.failureReason ?? null,
+            };
         }
 
-        if (match.stateID === stateIdBefore) {
+        if (!sequence.stateChanged) {
             return {
                 applied: false,
                 playerId: resolution.playerId,
@@ -2750,9 +2760,78 @@ export class GameTransportServer {
             applied: true,
             playerId: resolution.playerId,
             actionKind: resolution.action.kind,
-            executedCommandTypes,
+            executedCommandTypes: sequence.executedCommandTypes,
             decisionMs,
             commandFailureReason: null,
+        };
+    }
+
+    private async executeOnlineAiCommandSequence(
+        match: ActiveMatch,
+        playerId: string,
+        commands: Array<{ type: string; payload: unknown }>,
+        options: {
+            reportFailureFeedback: boolean;
+            feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
+            onlineAiAttemptKey?: string | null;
+        },
+    ): Promise<OnlineAiCommandSequenceResult> {
+        const snapshotState = match.state;
+        const snapshotStateID = match.stateID;
+        const snapshotRandomCursor = match.getRandomCursor();
+        const snapshotLastCommandPlayerId = match.lastCommandPlayerId;
+        const executedCommandTypes: string[] = [];
+
+        const restoreSnapshot = async (): Promise<void> => {
+            const trackedRandom = createTrackedRandom(match.randomSeed, snapshotRandomCursor);
+            match.state = snapshotState;
+            match.stateID = snapshotStateID;
+            match.random = trackedRandom.random;
+            match.getRandomCursor = trackedRandom.getCursor;
+            match.lastCommandPlayerId = snapshotLastCommandPlayerId;
+            match.lastBroadcastedViews.clear();
+            await this.storage.setState(match.matchID, {
+                G: snapshotState,
+                _stateID: snapshotStateID,
+                randomSeed: match.randomSeed,
+                randomCursor: snapshotRandomCursor,
+            });
+            this.broadcastState(match);
+        };
+
+        for (const command of commands) {
+            const success = await this.executeCommandInternal(
+                match,
+                playerId,
+                command.type,
+                command.payload,
+                {
+                    suppressBroadcast: true,
+                    reportFailureFeedback: options.reportFailureFeedback,
+                    feedbackSource: options.feedbackSource,
+                    onlineAiCircuitSource: 'watchdog',
+                    onlineAiAttemptKey: options.onlineAiAttemptKey,
+                },
+            );
+            if (!success) {
+                const failureReason = match.lastCommandFailureReason;
+                await restoreSnapshot();
+                match.lastCommandFailureReason = failureReason;
+                return {
+                    success: false,
+                    executedCommandTypes,
+                    failedCommandType: command.type,
+                    failureReason,
+                    stateChanged: false,
+                };
+            }
+            executedCommandTypes.push(command.type);
+        }
+
+        return {
+            success: true,
+            executedCommandTypes,
+            stateChanged: match.stateID !== snapshotStateID,
         };
     }
 
@@ -2912,7 +2991,7 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
         progressMarkerBeforeRecovery: string,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
-        options?: { reuseExecutionLock?: boolean },
+        options?: { reuseExecutionLock?: boolean; allowManualImmediateAiContinuation?: boolean },
     ): Promise<void> {
         if (match.unloaded) {
             tracker.autoSubmittedAt = null;
@@ -2944,10 +3023,158 @@ export class GameTransportServer {
             }
             return nextCandidate;
         };
+        const buildManualImmediateAiContinuationCandidate = (
+            expectedPlayerId: string,
+            previousActionKind: string | null | undefined,
+        ): ForceEndTurnStalledAiResolution | null => {
+            if (options?.allowManualImmediateAiContinuation !== true) {
+                return null;
+            }
+            if (previousActionKind !== 'roll-dice') {
+                return null;
+            }
+            if (!expectedPlayerId || seatControllers[expectedPlayerId]?.type === 'human') {
+                return null;
+            }
+            if (hasHumanResponderInCurrentWindow()) {
+                return null;
+            }
+            if (resolveWatchdogCurrentPlayerId() !== expectedPlayerId) {
+                return null;
+            }
+
+            const marker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
+            const attemptKey = `${MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX}${expectedPlayerId}:${marker}`;
+            return {
+                playerId: expectedPlayerId,
+                reason: 'active-turn',
+                legalActionOnly: true,
+                fingerprintHint: attemptKey,
+                resolution: {
+                    playerId: expectedPlayerId,
+                    attemptKey,
+                    source: 'local-ai',
+                    action: {
+                        actionId: attemptKey,
+                        kind: 'manual-immediate-ai-continuation',
+                        label: '继续手动强制结束 AI 阶段',
+                        commands: [],
+                    },
+                },
+            };
+        };
+        const buildManualForceAdvanceAfterConfirmedRollCandidate = (
+            expectedPlayerId: string,
+            previousActionKind: string | null | undefined,
+        ): ForceEndTurnStalledAiResolution | null => {
+            if (options?.allowManualImmediateAiContinuation !== true) {
+                return null;
+            }
+            if (previousActionKind !== 'confirm-roll') {
+                return null;
+            }
+            if (!expectedPlayerId || seatControllers[expectedPlayerId]?.type === 'human') {
+                return null;
+            }
+            if (hasHumanResponderInCurrentWindow()) {
+                return null;
+            }
+            if (resolveWatchdogCurrentPlayerId() !== expectedPlayerId) {
+                return null;
+            }
+
+            const followUpResolution = resolveForceAdvancePhaseAfterRecovery({
+                authoritativeState: match.state,
+                seatControllers,
+                playerId: expectedPlayerId,
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
+            if (!followUpResolution) {
+                return null;
+            }
+
+            const marker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
+            const attemptKey = `${MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX}${expectedPlayerId}:${marker}`;
+            return {
+                playerId: expectedPlayerId,
+                reason: 'active-turn',
+                fingerprintHint: attemptKey,
+                resolution: {
+                    ...followUpResolution,
+                    attemptKey,
+                    action: {
+                        ...followUpResolution.action,
+                        actionId: attemptKey,
+                        kind: 'manual-force-advance-after-confirm',
+                        label: '手动强制结束 AI 阶段：确认骰面后推进阶段',
+                    },
+                },
+            };
+        };
+        const isManualRecoveryContinuationCandidate = (
+            value: ForceEndTurnStalledAiResolution,
+        ): boolean => typeof value.fingerprintHint === 'string'
+            && (
+                value.fingerprintHint.startsWith(MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX)
+                || value.fingerprintHint.startsWith(MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX)
+            );
+        const shouldPreserveManualHumanResponseWindowForceClose = (
+            expectedCandidate: ForceEndTurnStalledAiResolution,
+        ): boolean => {
+            if (
+                expectedCandidate.reason !== 'response-window'
+                || typeof expectedCandidate.fingerprintHint !== 'string'
+                || !expectedCandidate.fingerprintHint.startsWith('manual-response-window:')
+                || !expectedCandidate.resolution.action.commands.some((command) => command.type === 'SYS_RESPONSE_WINDOW_FORCE_CLOSE')
+            ) {
+                return false;
+            }
+
+            const currentWindow = (match.state.sys as { responseWindow?: { current?: unknown } } | undefined)
+                ?.responseWindow?.current as {
+                    responderQueue?: unknown;
+                    currentResponderIndex?: unknown;
+                } | undefined;
+            if (!currentWindow) {
+                return false;
+            }
+
+            const responderQueue = Array.isArray(currentWindow.responderQueue) ? currentWindow.responderQueue : [];
+            const responderIndex = typeof currentWindow.currentResponderIndex === 'number'
+                ? currentWindow.currentResponderIndex
+                : 0;
+            const responderId = typeof responderQueue[responderIndex] === 'string'
+                ? responderQueue[responderIndex]
+                : null;
+            if (!responderId || responderId === expectedCandidate.playerId || seatControllers[responderId]?.type !== 'human') {
+                return false;
+            }
+
+            if (resolveWatchdogCurrentPlayerId() !== expectedCandidate.playerId) {
+                return false;
+            }
+
+            const currentFingerprint = buildResponseWindowRecoveryFingerprintHint(
+                match.state,
+                expectedCandidate.playerId,
+                'manual-response-window',
+            );
+            return currentFingerprint === expectedCandidate.fingerprintHint;
+        };
         const revalidateRecoveryCandidate = async (
             expectedCandidate: ForceEndTurnStalledAiResolution,
         ): Promise<ForceEndTurnStalledAiResolution | null> => {
-            const rawLatestCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            let rawLatestCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            if (!rawLatestCandidate && shouldPreserveManualHumanResponseWindowForceClose(expectedCandidate)) {
+                rawLatestCandidate = expectedCandidate;
+            }
             const latestCandidate = rawLatestCandidate
                 ? this.normalizeFollowUpLegalActionOnlyCandidate(rawLatestCandidate, expectedCandidate)
                 : rawLatestCandidate;
@@ -3239,7 +3466,10 @@ export class GameTransportServer {
             seenStepKeys.add(buildRecoverySequenceStepKey(currentCandidate.playerId, progressMarkerBeforeRecovery));
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
-                if (recoverySteps >= this.onlineAiRecoveryMaxStepsPerSlice) {
+                const canUseManualImmediateContinuationSlice =
+                    isManualRecoveryContinuationCandidate(currentCandidate);
+                if (recoverySteps >= this.onlineAiRecoveryMaxStepsPerSlice
+                    && !canUseManualImmediateContinuationSlice) {
                     // 后台恢复必须分片执行，避免单个复杂 AI 房间长期独占 Node 事件循环。
                     syncRecoveryTrackerToCandidate(currentCandidate);
                     tracker.firstSeenAt = Date.now();
@@ -3290,6 +3520,13 @@ export class GameTransportServer {
                 const executedCommandTypes = new Set<string>(actionRecovery.executedCommandTypes);
 
                 if (!actionRecovery.applied) {
+                    if (
+                        isManualRecoveryContinuationCandidate(currentCandidate)
+                        && actionRecovery.outcome === 'no-legal-action'
+                        && currentCandidate.resolution.action.commands.length === 0
+                    ) {
+                        break;
+                    }
                     const shouldPauseAfterForcedInteractionOverlayResync =
                         currentCandidate.reason === 'active-turn'
                         && currentCandidate.legalActionOnly !== true
@@ -3481,6 +3718,40 @@ export class GameTransportServer {
 
                 const nextCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
                 if (!nextCandidate || nextCandidate.playerId !== candidate.playerId) {
+                    const manualForceAdvanceCandidate = buildManualForceAdvanceAfterConfirmedRollCandidate(
+                        candidate.playerId,
+                        actionRecovery.reportedAction?.actionKind,
+                    );
+                    if (manualForceAdvanceCandidate) {
+                        currentCandidate = manualForceAdvanceCandidate;
+                        continue;
+                    }
+                    const manualContinuationCandidate = buildManualImmediateAiContinuationCandidate(
+                        candidate.playerId,
+                        actionRecovery.reportedAction?.actionKind,
+                    );
+                    if (manualContinuationCandidate) {
+                        currentCandidate = manualContinuationCandidate;
+                        continue;
+                    }
+                    if (candidate.requiresConfirmedAdvancePhase === true) {
+                        const followUpResolution = resolveForceAdvancePhaseAfterRecovery({
+                            authoritativeState: match.state,
+                            seatControllers,
+                            playerId: candidate.playerId,
+                            engineConfig: match.engineConfig,
+                            gameId: match.gameId,
+                        });
+                        if (followUpResolution) {
+                            currentCandidate = {
+                                playerId: candidate.playerId,
+                                reason: 'active-turn',
+                                fingerprintHint: followUpResolution.attemptKey,
+                                resolution: followUpResolution,
+                            };
+                            continue;
+                        }
+                    }
                     break;
                 }
                 const shouldRestrictFollowUpToLegalActions = candidate.requiresConfirmedAdvancePhase
@@ -3572,6 +3843,26 @@ export class GameTransportServer {
                             }),
                     }
                     : nextCandidate;
+                const manualContinuationCandidate = buildManualImmediateAiContinuationCandidate(
+                    candidate.playerId,
+                    actionRecovery.reportedAction?.actionKind,
+                );
+                const manualForceAdvanceCandidate = buildManualForceAdvanceAfterConfirmedRollCandidate(
+                    candidate.playerId,
+                    actionRecovery.reportedAction?.actionKind,
+                );
+                if (manualForceAdvanceCandidate) {
+                    currentCandidate = manualForceAdvanceCandidate;
+                    continue;
+                }
+                if (manualContinuationCandidate) {
+                    currentCandidate = {
+                        ...normalizedNextCandidate,
+                        legalActionOnly: true,
+                        fingerprintHint: manualContinuationCandidate.fingerprintHint,
+                    };
+                    continue;
+                }
                 const shouldContinueLegalOnlyActiveTurnExecution =
                     actionRecovery.applied
                     && candidate.reason === 'active-turn-legal-only'
@@ -5075,6 +5366,9 @@ export class GameTransportServer {
     ): Promise<OnlineAiLegalActionRecoveryResult> {
         const seatController = seatControllers[candidate.playerId];
         if (!seatController || seatController.type === 'human') {
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
+        }
+        if (candidate.fingerprintHint?.startsWith(MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX)) {
             return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 

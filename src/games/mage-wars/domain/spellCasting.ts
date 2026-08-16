@@ -12,13 +12,15 @@ export function getMageWarsSpellcastingSourceKind(
 export function isMageWarsConfiguredSpellcastingSource(
     source: MageWarsSpellcastingSource | undefined,
 ): boolean {
+    const channeling = source?.channeling;
     return Boolean(
         source
         && source.kind
         && source.phase
         && source.allowedSpellTypes?.length
-        && Number.isInteger(source.channeling)
-        && source.channeling >= 0,
+        && Number.isInteger(channeling)
+        && channeling !== undefined
+        && channeling >= 0,
     );
 }
 

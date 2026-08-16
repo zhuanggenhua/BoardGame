@@ -151,6 +151,9 @@ export const MatchRoomLiveDebugBridge = ({
             responderQueue?: unknown;
             currentResponderIndex?: unknown;
         } | undefined;
+        const currentInteractionData = state?.sys?.interaction?.current?.data as {
+            sourceId?: unknown;
+        } | undefined;
         const responseWindowResponderQueue = Array.isArray(currentResponseWindow?.responderQueue)
             ? currentResponseWindow.responderQueue
             : [];
@@ -195,7 +198,9 @@ export const MatchRoomLiveDebugBridge = ({
                 stateView: {
                     phase: state?.sys?.phase ?? null,
                     currentPlayerIndex: (state?.core as { currentPlayerIndex?: number } | undefined)?.currentPlayerIndex ?? null,
-                    interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    interactionSourceId: typeof currentInteractionData?.sourceId === 'string'
+                        ? currentInteractionData.sourceId
+                        : null,
                     interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
                     responseWindowSourceId: typeof currentResponseWindow?.sourceId === 'string'
                         ? currentResponseWindow.sourceId

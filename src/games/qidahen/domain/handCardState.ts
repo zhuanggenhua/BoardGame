@@ -61,12 +61,12 @@ export const buildInitialHandCards = (
             nextId += 1;
             const ordinaryHandCard = buildAtlas05OrdinaryHandCard(getFactionAtlas05DeckIndex(factionId, index));
             return {
+                ...ordinaryHandCard,
                 id: cardId,
                 label: `${factions[factionId].name} 手牌 ${index + 1}`,
                 faction: factionId,
                 accent: factionId,
                 status: index < factions[factionId].handCount ? 'payable' as const : 'idle' as const,
-                ...ordinaryHandCard,
             };
         });
     });
@@ -90,12 +90,12 @@ export const buildDrawnHandCards = (
     const nextCards = Array.from({ length: drawCards }, (_, index) => {
         const ordinaryHandCard = buildAtlas05OrdinaryHandCard(getFactionAtlas05DeckIndex(factionId, previewBase + index));
         return {
+            ...ordinaryHandCard,
             id: `hand-${currentMaxIndex + index + 1}`,
             label: `${state.factions[factionId].name} 手牌 ${factionCardCount + index + 1}`,
             faction: factionId,
             accent: factionId,
             status: 'payable' as const,
-            ...ordinaryHandCard,
         };
     });
     return [...state.handCards, ...nextCards];

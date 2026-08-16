@@ -16,10 +16,7 @@ import type {
 type QidahenRuntimeRegion = QidahenCore['regions'][number];
 
 interface QidahenPendingBattleCommittedTroopsDependencies {
-    getPendingActionSourceForceSnapshot: (
-        state: QidahenCore,
-        pendingTargetAction: QidahenPendingTargetAction,
-    ) => QidahenRuntimeRegion | null;
+    getPendingActionSourceForceSnapshot: typeof getPendingActionSourceForceSnapshot;
 }
 
 export const getQidahenCharacterCommittedTroopLimit = (
@@ -36,7 +33,7 @@ export const getQidahenCharacterCommittedTroopLimit = (
 
 export const getMovableTroopCountForProfile = (
     region: Pick<QidahenRuntimeRegion, 'troops' | 'specialTroops'>,
-    movementProfileId: QidahenMovementProfileId,
+    movementProfileId: QidahenMovementProfileId | string | null | undefined,
 ): number => {
     if (region.specialTroops.length === 0) {
         return region.troops;

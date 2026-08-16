@@ -10,7 +10,7 @@ import { MageWarsDomain, type MageWarsArenaObjectState, type MageWarsCore } from
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
 import { ARENA_ZONE_IDS } from '../domain/ids';
-import { AttackImpactRenderer, SpellCastRenderer } from '../ui/fxRenderers';
+import { AttackImpactRenderer, SummonRenderer } from '../ui/fxRenderers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -33,6 +33,76 @@ vi.mock('../../../components/common/media/CardPreview', () => ({
     ),
 }));
 
+
+vi.mock('../../../components/common/animations/BurstParticles', () => ({
+    BurstParticles: ({
+        active,
+        preset,
+        quality,
+        overflow,
+    }: {
+        active?: boolean;
+        preset?: string;
+        quality?: string;
+        overflow?: number;
+    }) => (
+        <div
+            data-testid="mock-burst-particles"
+            data-active={String(active)}
+            data-preset={preset ?? ''}
+            data-quality={quality ?? ''}
+            data-overflow={String(overflow ?? '')}
+        />
+    ),
+}));
+
+vi.mock('../../../components/common/animations/ConeBlast', () => ({
+    ConeBlast: ({
+        intensity,
+        quality,
+        durationMs,
+        color,
+    }: {
+        intensity?: string;
+        quality?: string;
+        durationMs?: number;
+        color?: string[];
+    }) => (
+        <div
+            data-testid="mock-cone-blast"
+            data-intensity={intensity ?? ''}
+            data-quality={quality ?? ''}
+            data-duration-ms={String(durationMs ?? '')}
+            data-color={color?.join('|') ?? ''}
+        />
+    ),
+}));
+
+vi.mock('../../../components/common/animations/SummonEffect', () => ({
+    SummonEffect: ({
+        active,
+        intensity,
+        color,
+        originY,
+        quality,
+    }: {
+        active?: boolean;
+        intensity?: string;
+        color?: string;
+        originY?: number;
+        quality?: string;
+    }) => (
+        <div
+            data-testid="mock-summon-effect"
+            data-active={String(active)}
+            data-intensity={intensity ?? ''}
+            data-color={color ?? ''}
+            data-origin-y={String(originY ?? '')}
+            data-quality={quality ?? ''}
+        />
+    ),
+}));
+
 vi.mock('../../../components/common/animations/DamageFlash', () => ({
     DamageFlash: ({
         damage,
@@ -43,6 +113,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
         numberTestId,
         numberFontScale,
         numberColorClass,
+        numberDurationSeconds,
     }: {
         damage?: number;
         intensity?: string;
@@ -52,6 +123,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
         numberTestId?: string;
         numberFontScale?: number;
         numberColorClass?: string;
+        numberDurationSeconds?: number;
     }) => (
         <div
             data-testid="mock-damage-flash"
@@ -62,6 +134,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
             data-number-testid={numberTestId ?? ''}
             data-number-font-scale={String(numberFontScale ?? '')}
             data-number-color-class={numberColorClass ?? ''}
+            data-number-duration-seconds={String(numberDurationSeconds ?? '')}
         >
             {damage}
         </div>
@@ -289,7 +362,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-attack-travel')).not.toBeNull();
 
             act(() => {
-                vi.advanceTimersByTime(1060);
+                vi.advanceTimersByTime(2600);
             });
 
             expect(targetCard?.textContent).toContain('3');
@@ -298,71 +371,63 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
-    it('renders spell casts as source wake, travel, impact, and delayed resolve callback', () => {
+    it('renders summons by adapting the existing SummonEffect component', () => {
         vi.useFakeTimers();
         const onImpact = vi.fn();
-        const onComplete = vi.fn();
         const event: FxEvent = {
-            id: 'fx-spell',
-            cue: 'mage-wars.spell.cast',
-            ctx: { cell: { row: 1, col: 2 }, intensity: 'strong' },
-            params: { source: { row: 0, col: 0 } },
+            id: 'fx-summon',
+            cue: 'mage-wars.summon',
+            ctx: { cell: { row: 1, col: 2 }, intensity: 'strong', quality: 'reduced' },
+            params: { objectId: 'mwobj-0-cat', objectKind: 'creature' },
         };
 
         try {
             renderFxRenderer(
-                <SpellCastRenderer
+                <SummonRenderer
                     event={event}
                     getCellPosition={getCellPosition}
                     onImpact={onImpact}
-                    onComplete={onComplete}
+                    onComplete={vi.fn()}
                 />,
             );
 
-            const travel = screen.getByTestId('mage-wars-fx-spell-travel');
-            expect(screen.queryByTestId('mage-wars-fx-spell-source-wake')).not.toBeNull();
-            expect(screen.queryByTestId('mage-wars-fx-spell-cast')).not.toBeNull();
-            expect(travel.getAttribute('data-source-row')).toBe('0');
-            expect(travel.getAttribute('data-target-col')).toBe('2');
+            const host = screen.getByTestId('mage-wars-fx-summon');
+            const summonEffect = screen.getByTestId('mock-summon-effect');
+            expect(host.getAttribute('data-object-kind')).toBe('creature');
+            expect(host.getAttribute('data-object-id')).toBe('mwobj-0-cat');
+            expect(summonEffect.getAttribute('data-active')).toBe('true');
+            expect(summonEffect.getAttribute('data-intensity')).toBe('strong');
+            expect(summonEffect.getAttribute('data-color')).toBe('blue');
+            expect(summonEffect.getAttribute('data-quality')).toBe('reduced');
             expect(onImpact).not.toHaveBeenCalled();
 
             act(() => {
-                vi.advanceTimersByTime(1059);
-            });
-            expect(onImpact).not.toHaveBeenCalled();
-
-            act(() => {
-                vi.advanceTimersByTime(1);
+                vi.advanceTimersByTime(160);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
-
-            act(() => {
-                vi.advanceTimersByTime(740);
-            });
-            expect(onComplete).toHaveBeenCalledTimes(1);
         } finally {
             vi.useRealTimers();
         }
     });
 
-    it('keeps source wake visible for same-cell spell effects without fabricating travel', () => {
+    it('uses a distinct summon color for conjurations without fabricating travel', () => {
         const event: FxEvent = {
-            id: 'fx-spell-same-cell',
-            cue: 'mage-wars.spell.cast',
+            id: 'fx-conjuration-summon',
+            cue: 'mage-wars.summon',
             ctx: { cell: { row: 2, col: 0 }, intensity: 'normal' },
-            params: { source: { row: 2, col: 0 } },
+            params: { objectId: 'mwobj-0-vine', objectKind: 'conjuration' },
         };
 
         renderFxRenderer(
-            <SpellCastRenderer
+            <SummonRenderer
                 event={event}
                 getCellPosition={getCellPosition}
             />,
         );
 
-        expect(screen.queryByTestId('mage-wars-fx-spell-source-wake')).not.toBeNull();
-        expect(screen.queryByTestId('mage-wars-fx-spell-cast')).not.toBeNull();
-        expect(screen.queryByTestId('mage-wars-fx-spell-travel')).toBeNull();
+        expect(screen.queryByTestId('mage-wars-fx-summon')).not.toBeNull();
+        expect(screen.getByTestId('mock-summon-effect').getAttribute('data-color')).toBe('gold');
+        expect(screen.queryByTestId('mage-wars-fx-teleport-travel')).toBeNull();
     });
 
     it('renders attacks with a source-to-target travel cue before impact', () => {
@@ -396,17 +461,23 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.queryByTestId('mage-wars-fx-attack-dice')).not.toBeNull();
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-show-number')).toBe('true');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-intensity')).toBe('strong');
-            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-start-delay-ms')).toBe('1060');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-start-delay-ms')).toBe('0');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-delay-ms')).toBe('0');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-testid')).toBe('mage-wars-fx-attack-damage-float');
-            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('1.45');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('1.75');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-color-class')).toBe('text-amber-50');
             expect(screen.queryByTestId('mage-wars-fx-attack-damage-host')).not.toBeNull();
             expect(travel.getAttribute('data-source-col')).toBe('0');
             expect(travel.getAttribute('data-target-row')).toBe('2');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#ef4444');
+            expect(screen.queryByTestId('mage-wars-fx-attack-travel-mid-burst')).not.toBeNull();
+            expect(screen.queryByTestId('mage-wars-fx-attack-impact-burst')).not.toBeNull();
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.35');
 
             act(() => {
-                vi.advanceTimersByTime(1060);
+                vi.advanceTimersByTime(2600);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {

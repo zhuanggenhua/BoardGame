@@ -153,6 +153,7 @@ export const GameHUD = ({
     myPlayerId,
     opponentName,
     opponentConnected,
+    presenceReady,
     players,
     onLeave,
     onDestroy,
@@ -1159,7 +1160,12 @@ export const GameHUD = ({
     return (
         <HudPortal>
             {/* 对手状态提示（仅联机模式，加载完成后） */}
-            {isOnline && !isSpectator && opponentConnected !== undefined && isSetupPhase && (
+            {isOnline
+                && !isSpectator
+                && !isLoading
+                && (presenceReady ?? opponentConnected !== undefined)
+                && opponentConnected !== undefined
+                && isSetupPhase && (
                 <OpponentOfflineBanner
                     connected={opponentConnected}
                     name={opponentName}

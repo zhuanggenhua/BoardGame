@@ -40,7 +40,6 @@ function buildMatchRoomOnlineOverlayBridgesModel(args: {
                 shouldUseTransportSeatValidation: debug.shouldUseTransportSeatValidation,
                 matchStatusPlayers: debug.matchStatusPlayers,
                 matchStatusLoading: debug.matchStatusLoading,
-                onTransportSeatValidationSnapshotChange: debug.onTransportSeatValidationSnapshotChange,
             },
         },
         hud: overlays.hud,

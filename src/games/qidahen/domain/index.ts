@@ -105,7 +105,29 @@ export {
     findQidahenReachableRuntimeRegions,
     getQidahenMovementProfile,
 } from './movement';
-export type { QidahenCasualtyPriority, QidahenCommandMap, QidahenCore } from './types';
+export type {
+    QidahenActionChoice,
+    QidahenBattleRoll,
+    QidahenBattleRollPhase,
+    QidahenCasualtyPriority,
+    QidahenCommandMap,
+    QidahenCore,
+    QidahenDiplomacySelection,
+    QidahenDriveTigerConsentSelection,
+    QidahenFactionId,
+    QidahenFortificationMaintenanceSelection,
+    QidahenGrantPardonChoice,
+    QidahenGrantPardonSelection,
+    QidahenHandCard,
+    QidahenHandLimitDiscardSelection,
+    QidahenInternalDispatchSelection,
+    QidahenMapToken,
+    QidahenPostBattleSelection,
+    QidahenRecruitChoice,
+    QidahenScenarioId,
+    QidahenWheelDispatchSelection,
+    QidahenWheelMoveChoice,
+} from './types';
 export {
     getQidahenDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore,

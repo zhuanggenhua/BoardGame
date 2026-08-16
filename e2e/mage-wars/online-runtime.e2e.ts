@@ -412,15 +412,79 @@ type MageWarsFxAudit = {
     hasTravel: boolean;
 };
 
-async function waitForFxSourceImpactAudit(page: Page, kind: 'spell' | 'attack'): Promise<MageWarsFxAudit> {
+type MageWarsSummonFxAudit = {
+    objectKind: string | null;
+    objectId: string | null;
+    visible: boolean;
+    canvasWidth: number;
+    canvasHeight: number;
+    alphaPixels: number;
+    brightPixels: number;
+};
+
+async function waitForSummonFxVisualAudit(page: Page): Promise<MageWarsSummonFxAudit> {
+    const handle = await page.waitForFunction(() => {
+        const summon = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-summon"]');
+        if (!summon) return null;
+        const rect = summon.getBoundingClientRect();
+        const canvas = summon.querySelector('canvas');
+        if (!canvas || canvas.width <= 0 || canvas.height <= 0) return null;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        const sampleWidth = Math.min(canvas.width, 640);
+        const sampleHeight = Math.min(canvas.height, 360);
+        const offsetX = Math.max(0, Math.floor((canvas.width - sampleWidth) / 2));
+        const offsetY = Math.max(0, Math.floor((canvas.height - sampleHeight) / 2));
+        const data = ctx.getImageData(offsetX, offsetY, sampleWidth, sampleHeight).data;
+        let alphaPixels = 0;
+        let brightPixels = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            if (alpha <= 10) continue;
+            alphaPixels += 1;
+            if (alpha > 28 && data[i] + data[i + 1] + data[i + 2] > 360) {
+                brightPixels += 1;
+            }
+        }
+
+        const audit = {
+            objectKind: summon.dataset.objectKind ?? null,
+            objectId: summon.dataset.objectId ?? null,
+            visible: rect.width > 0 && rect.height > 0,
+            canvasWidth: canvas.width,
+            canvasHeight: canvas.height,
+            alphaPixels,
+            brightPixels,
+        };
+        if (!audit.visible || audit.alphaPixels <= 1_500 || audit.brightPixels <= 120) return null;
+        return audit;
+    }, undefined, { timeout: 5_000 });
+    const audit = await handle.jsonValue() as MageWarsSummonFxAudit;
+    expect(audit.visible).toBe(true);
+    expect(audit.alphaPixels).toBeGreaterThan(1_500);
+    expect(audit.brightPixels).toBeGreaterThan(120);
+    return audit;
+}
+
+async function captureMageWarsSummonFxProcessScreenshot(
+    page: Page,
+    testInfo: TestInfo,
+    label: string,
+): Promise<MageWarsSummonFxAudit> {
+    const audit = await waitForSummonFxVisualAudit(page);
+    await expect(page.getByTestId('mage-wars-fx-summon').first()).toBeVisible({ timeout: 5_000 });
+    await page.waitForTimeout(120);
+    await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, { animations: 'allow' });
+    return audit;
+}
+
+async function waitForFxSourceImpactAudit(page: Page, kind: 'attack'): Promise<MageWarsFxAudit> {
     const handle = await page.waitForFunction((fxKind) => {
         const travel = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`);
         const sourceWake = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-source-wake"]`);
-        const impact = document.querySelector<HTMLElement>(
-            fxKind === 'spell'
-                ? '[data-testid="mage-wars-fx-spell-cast"]'
-                : '[data-testid="mage-wars-fx-attack-impact"]',
-        );
+        const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]');
         if (!sourceWake || !impact) return null;
         return {
             sourceRow: travel?.dataset.sourceRow ?? null,
@@ -438,7 +502,7 @@ async function waitForFxSourceImpactAudit(page: Page, kind: 'spell' | 'attack'):
     return audit;
 }
 
-async function waitForFxTravelAudit(page: Page, kind: 'spell' | 'attack') {
+async function waitForFxTravelAudit(page: Page, kind: 'attack') {
     const audit = await waitForFxSourceImpactAudit(page, kind);
     expect(audit.hasTravel).toBe(true);
     expect(audit.sourceRow).toMatch(/^\d+$/);
@@ -449,16 +513,14 @@ async function waitForFxTravelAudit(page: Page, kind: 'spell' | 'attack') {
     return audit;
 }
 
-function resolveFxImpactTestId(kind: 'spell' | 'attack'): string {
-    return kind === 'spell'
-        ? 'mage-wars-fx-spell-cast'
-        : 'mage-wars-fx-attack-impact';
+function resolveFxImpactTestId(_kind: 'attack'): string {
+    return 'mage-wars-fx-attack-impact';
 }
 
 async function captureMageWarsFxProcessScreenshots(
     page: Page,
     testInfo: TestInfo,
-    kind: 'spell' | 'attack',
+    kind: 'attack',
     label: string,
     options: {
         expectTravel?: boolean;
@@ -469,8 +531,8 @@ async function captureMageWarsFxProcessScreenshots(
         ? await waitForFxTravelAudit(page, kind)
         : await waitForFxSourceImpactAudit(page, kind);
 
-    await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`)).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByTestId(resolveFxImpactTestId(kind))).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(resolveFxImpactTestId(kind)).first()).toBeVisible({ timeout: 5_000 });
     await page.waitForTimeout(80);
     await saveEvidenceScreenshot(
         page,
@@ -480,17 +542,17 @@ async function captureMageWarsFxProcessScreenshots(
     );
 
     if (options.expectTravel) {
-        const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`);
+        const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
         await expect(travel).toBeVisible({ timeout: 5_000 });
-        await page.waitForTimeout(260);
+        await expect(page.getByTestId(`mage-wars-fx-${kind}-travel-mid-burst`).first()).toBeVisible({ timeout: 5_000 });
+        await page.waitForTimeout(420);
         await saveEvidenceScreenshot(page, testInfo, `${label}-投射物飞行中`, { animations: 'allow' });
     } else {
         expect(audit.hasTravel).toBe(false);
         return audit;
     }
 
-    await page.waitForTimeout(280);
-    await expect(page.getByTestId(resolveFxImpactTestId(kind))).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId(resolveFxImpactTestId(kind)).first()).toBeVisible({ timeout: 5_000 });
     if (options.expectDamageFloat) {
         await page.waitForFunction(() => {
             const float = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
@@ -519,7 +581,7 @@ async function captureMageWarsFxProcessScreenshots(
 async function selectPreparedSpell(page: Page, preparedCard: Locator, contextLabel: string) {
     await preparedCard.scrollIntoViewIfNeeded();
     const beforeHit = await readHitTest(preparedCard);
-    await preparedCard.click();
+    await preparedCard.click({ timeout: 3_000, noWaitAfter: true });
     await expect(preparedCard).toHaveAttribute('data-selected', 'true', {
         timeout: 3_000,
     }).catch(async (error: unknown) => {
@@ -561,7 +623,7 @@ async function clickFieldObject(page: Page, fieldObject: Locator, contextLabel: 
     });
 
     const beforeHit = await readHitTest(fieldObject);
-    await fieldObject.click({ timeout: 3_000 }).catch(async (error: unknown) => {
+    await fieldObject.click({ timeout: 3_000, noWaitAfter: true }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const [afterHit, snapshot] = await Promise.all([
             readHitTest(fieldObject).catch((hitError: unknown) => ({
@@ -593,7 +655,7 @@ async function clickLegalTargetZone(page: Page, zoneId: string, contextLabel: st
         ].join('\n'));
     });
     const beforeHit = await readHitTest(zone);
-    await zone.click().catch(async (error: unknown) => {
+    await zone.click({ timeout: 3_000, noWaitAfter: true }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const afterHit = await readHitTest(zone).catch((hitError: unknown) => ({
             error: hitError instanceof Error ? hitError.message : String(hitError),
@@ -623,7 +685,7 @@ async function clickLegalMoveZone(page: Page, zoneId: string, contextLabel: stri
         ].join('\n'));
     });
     const beforeHit = await readHitTest(zone);
-    await zone.click().catch(async (error: unknown) => {
+    await zone.click({ timeout: 3_000, noWaitAfter: true }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const afterHit = await readHitTest(zone).catch((hitError: unknown) => ({
             error: hitError instanceof Error ? hitError.message : String(hitError),
@@ -643,12 +705,12 @@ async function clickTurnEndIfEnabled(page: Page): Promise<boolean> {
     const turnEnd = page.getByTestId('mage-wars-turn-end');
     if (!await turnEnd.isEnabled({ timeout: 200 }).catch(() => false)) return false;
     try {
-        await turnEnd.click({ timeout: 1_000 });
+        await turnEnd.click({ timeout: 1_000, noWaitAfter: true });
         await page.waitForTimeout(120);
         return true;
     } catch (error: unknown) {
         if (await turnEnd.isEnabled({ timeout: 200 }).catch(() => false)) {
-            return turnEnd.click({ timeout: 1_500, force: true })
+            return turnEnd.click({ timeout: 1_500, force: true, noWaitAfter: true })
                 .then(async () => {
                     await page.waitForTimeout(120);
                     return true;
@@ -664,12 +726,12 @@ async function clickPlanSpellsIfEnabled(page: Page): Promise<boolean> {
     if (!await planSpells.isVisible({ timeout: 200 }).catch(() => false)) return false;
     if (!await planSpells.isEnabled({ timeout: 200 }).catch(() => false)) return false;
     try {
-        await planSpells.click({ timeout: 1_000 });
+        await planSpells.click({ timeout: 1_000, noWaitAfter: true });
         await page.waitForTimeout(120);
         return true;
     } catch (error: unknown) {
         if (await planSpells.isEnabled({ timeout: 200 }).catch(() => false)) {
-            await planSpells.click({ timeout: 800, force: true });
+            await planSpells.click({ timeout: 800, force: true, noWaitAfter: true });
             await page.waitForTimeout(120);
             return true;
         }
@@ -897,23 +959,28 @@ async function selectFirstVisibleSpellbookCard(page: Page): Promise<string> {
             if (await card.isVisible().catch(() => false) && await card.isEnabled().catch(() => false)) {
                 const name = await card.getAttribute('aria-label');
                 if (!name) continue;
-                await card.click();
+                await card.click({ timeout: 3_000, noWaitAfter: true });
                 return name;
             }
         }
         const nextPage = page.getByRole('button', { name: '下一页', exact: true });
         if (await nextPage.isDisabled().catch(() => true)) break;
-        await nextPage.click();
+        await nextPage.click({ timeout: 3_000, noWaitAfter: true });
     }
     throw new Error('正式联机法术书中没有可选的生物卡牌');
 }
 
 async function selectNamedSpellbookCard(page: Page, name: string) {
-    await page.getByRole('button', { name: '全部', exact: true }).click();
+    const allFilter = page.getByRole('button', { name: '全部', exact: true });
+    if (await allFilter.isEnabled({ timeout: 500 }).catch(() => false)) {
+        await allFilter.click({ timeout: 3_000, noWaitAfter: true });
+    } else {
+        await expect(allFilter).toHaveAttribute('aria-pressed', 'true', { timeout: 3_000 });
+    }
     const previousPage = page.getByRole('button', { name: '上一页', exact: true });
     for (let index = 0; index < 8; index += 1) {
         if (await previousPage.isDisabled().catch(() => true)) break;
-        await previousPage.click();
+        await previousPage.click({ timeout: 3_000, noWaitAfter: true });
     }
     await expect(previousPage).toBeDisabled({ timeout: 3_000 });
 
@@ -931,13 +998,13 @@ async function selectNamedSpellbookCard(page: Page, name: string) {
         seenPages.push(visibleNames);
         const card = page.locator(`[data-testid="mage-wars-desktop-spellbook-card"][aria-label="${name}"]`).first();
         if (await card.isVisible().catch(() => false) && await card.isEnabled().catch(() => false)) {
-            await card.click();
+            await card.click({ timeout: 3_000, noWaitAfter: true });
             return;
         }
 
         const nextPage = page.getByRole('button', { name: '下一页', exact: true });
         if (await nextPage.isDisabled().catch(() => true)) break;
-        await nextPage.click();
+        await nextPage.click({ timeout: 3_000, noWaitAfter: true });
     }
     throw new Error(`正式联机法术书中没有找到卡牌：${name}；已查看页面：${seenPages.map((names, pageIndex) => `第${pageIndex + 1}页=${names.join('、') || '空'}`).join('；')}`);
 }
@@ -951,7 +1018,7 @@ async function selectNamedSpellbookCards(page: Page, names: string[]) {
 async function planNamedSpells(page: Page, names: string[]) {
     await selectNamedSpellbookCards(page, names);
     await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`计划 ${names.length} 张`);
-    await page.getByTestId('mage-wars-plan-spells').click();
+    await page.getByTestId('mage-wars-plan-spells').click({ timeout: 3_000, noWaitAfter: true });
 }
 
 function selfPreparedCardByName(page: Page, name: string): Locator {
@@ -1034,7 +1101,7 @@ async function deployBothPlayers(
         playerId: '0',
         diagnostics,
     });
-    await match.hostPage.getByTestId('mage-wars-turn-end').click();
+    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
 
     const guestPreparedCard = selfPreparedCardByName(match.guestPage, guestCreatureName);
     await advanceUntilEnabled(match.guestPage, guestPreparedCard);
@@ -1047,7 +1114,7 @@ async function deployBothPlayers(
         playerId: '1',
         diagnostics,
     });
-    await match.guestPage.getByTestId('mage-wars-turn-end').click();
+    await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
 }
 
 async function castPreparedSpellOnMage(
@@ -1058,7 +1125,23 @@ async function castPreparedSpellOnMage(
     const prepared = selfPreparedCardByName(page, spellName);
     await advanceUntilEnabled(page, prepared);
     await selectPreparedSpell(page, prepared, spellName);
-    await page.locator(`[data-testid="mage-wars-zone-mage-entity"][data-player-id="${targetPlayerId}"]`).first().click();
+    const mageEntity = page.locator(`[data-testid="mage-wars-zone-mage-entity"][data-player-id="${targetPlayerId}"]`).first();
+    await expect(mageEntity).toBeVisible({ timeout: 3_000 });
+    await mageEntity.click({ timeout: 3_000, noWaitAfter: true, force: true }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const [afterHit, snapshot] = await Promise.all([
+            readHitTest(mageEntity).catch((hitError: unknown) => ({
+                error: hitError instanceof Error ? hitError.message : String(hitError),
+            })),
+            readOnlineBoardSnapshot(page),
+        ]);
+        throw new Error([
+            `${spellName} 点击法师目标失败`,
+            message,
+            `afterHit=${JSON.stringify(afterHit, null, 2)}`,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    });
 }
 
 async function castPreparedSpellOnFieldObject(
@@ -1281,7 +1364,15 @@ test.describe('Mage Wars formal online runtime', () => {
             const hostPreparedCard = selfPreparedCardByName(match.hostPage, hostCreatureName);
             await advanceUntilEnabled(match.hostPage, hostPreparedCard);
             await hostPreparedCard.click();
+            const hostSummonFxAuditPromise = captureMageWarsSummonFxProcessScreenshot(
+                match.hostPage,
+                testInfo,
+                '02A-己方生物部署',
+            );
             await clickLegalTargetZone(match.hostPage, 'a3', hostCreatureName);
+            const hostSummonFxAudit = await hostSummonFxAuditPromise;
+            expect(hostSummonFxAudit.objectKind).toBe('creature');
+            expect(hostSummonFxAudit.objectId).toMatch(/^mwobj-/);
             await match.hostPage.getByTestId('mage-wars-turn-end').click();
 
             const guestPreparedCard = selfPreparedCardByName(match.guestPage, guestCreatureName);
@@ -1305,7 +1396,7 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
     });
 
-    test('正式联机入口真实施放法术并产生法力、弃牌和法术 FX', async ({ browser, baseURL }, testInfo) => {
+    test('正式联机入口真实施放强化法术并只产生法力、弃牌和卡牌结果', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const match = await setupOnlineMageWars(browser, baseURL);
@@ -1338,16 +1429,8 @@ test.describe('Mage Wars formal online runtime', () => {
             await preparedCharge.click();
             const wolfCard = match.hostPage.locator('[data-testid="mage-wars-arena-zone-a3"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
             await expect(wolfCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
-            const chargeFxAuditPromise = captureMageWarsFxProcessScreenshots(
-                match.hostPage,
-                testInfo,
-                'spell',
-                '03A-冲锋陷阵同格法术',
-                { expectTravel: false },
-            );
             await wolfCard.click();
-            const chargeFxAudit = await chargeFxAuditPromise;
-            expect(chargeFxAudit.hasTravel).toBe(false);
+            await expect(match.hostPage.getByTestId('mage-wars-fx-spell-cast')).toHaveCount(0);
 
             await expect.poll(async () => match.hostPage.getByTestId('mage-wars-mage-hud-self').innerText()).toMatch(/法力\s+[\s\S]*7/);
             await expect(match.hostPage.getByTestId('mage-wars-discard-pile')).toContainText('弃牌 2');
@@ -1524,7 +1607,7 @@ test.describe('Mage Wars formal online runtime', () => {
                         anchoredToObjectId: hostBobcatObjectId,
                     revealed: true,
                 }, '兽王结界巨熊力量应通过正式页面施放并附着到野性山猫');
-                await match.hostPage.getByTestId('mage-wars-turn-end').click();
+                await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
                 continue;
             }
 
@@ -1545,7 +1628,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     anchoredToObjectId: guestClericObjectId,
                     revealed: true,
                 }, '女祭司结界公牛耐力应通过正式页面施放并附着到阿希拉牧师');
-                await match.guestPage.getByTestId('mage-wars-turn-end').click();
+                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
             }
             const hostMageEquipment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="3711"][data-attachment-kind="equipment"]').first();
             const guestMageEquipment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="3708"][data-attachment-kind="equipment"]').first();
@@ -1611,11 +1694,11 @@ test.describe('Mage Wars formal online runtime', () => {
                         message: '兽王攻击法术间歇喷泉应通过正式页面产生攻击掷骰事件',
                         timeout: 5_000,
                     }).toBe(true);
-                    await match.hostPage.getByTestId('mage-wars-turn-end').click();
+                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
                     continue;
                 }
 
-                await match.guestPage.getByTestId('mage-wars-turn-end').click();
+                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见');
         } finally {

@@ -27,6 +27,7 @@ import type { GameBoardProps } from '../engine/transport/protocol';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
 import { SEO } from '../components/common/SEO';
+import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { TestHarness } from '../engine/testing';
 import { enableTestMode } from '../engine/testing/environment';
 import { getGamePageDataAttributes, syncGamePageDocumentAttributes } from '../shared/mobileSupport';
@@ -80,6 +81,7 @@ export const TestMatchRoom: React.FC = () => {
     } = useGameNamespaceReady(gameId, i18n);
 
     const gameConfig = gameId ? getGameById(gameId) : null;
+    const gameDisplayName = resolveGameDisplayName(gameConfig, t, gameId ?? '');
     const fixedTestPlayerId = searchParams.get('playerID');
     const shouldFollowCurrentTurnPlayer = !fixedTestPlayerId;
     const shouldKeepBoardMountedOnTurnFollow = shouldKeepBoardMountedOnPlayerViewChange(gameConfig)
@@ -174,7 +176,7 @@ export const TestMatchRoom: React.FC = () => {
 
                 setEngineConfig(impl.engineConfig);
                 setRuntimeAdapter(impl.runtimeAdapter ?? null);
-                setWrappedBoard(() => impl.board as React.ComponentType<GameBoardProps<unknown>>);
+                setWrappedBoard(() => impl.board as unknown as React.ComponentType<GameBoardProps<unknown>>);
             } catch (error) {
                 console.error(`[TestMatchRoom] 闂備礁鎲″缁樻叏閹灐褰掑炊瑜嬮埀顒佸浮瀹曘劍绻濋崒婊€绨藉┑鐘灪閸庤偐鍒掗崜褎鍠?`, error);
                 console.error(`[TestMatchRoom] 闂傚倷鐒︾€笛囨偡閵娾晩鏁嬮柕鍫濐槸闁卞洭鏌涢埄鍐剧劷闁?`, (error as Error).stack);
@@ -200,7 +202,8 @@ export const TestMatchRoom: React.FC = () => {
     // 自动执行游戏声明的本地测试 setup 命令（URL 预设）
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        if (loading || !engineConfig?.createLocalTestSetupCommands || !WrappedBoard) return;
+        const createLocalTestSetupCommands = engineConfig?.createLocalTestSetupCommands;
+        if (loading || !createLocalTestSetupCommands || !WrappedBoard) return;
         
         const runLocalTestSetupCommands = async () => {
             const harness = window.__BG_TEST_HARNESS__;
@@ -213,7 +216,7 @@ export const TestMatchRoom: React.FC = () => {
                 return;
             }
 
-            const commands = engineConfig.createLocalTestSetupCommands({ testConfig, state });
+            const commands = createLocalTestSetupCommands({ testConfig, state });
             for (const command of commands) {
                 await harness.command.dispatch(command);
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -252,7 +255,7 @@ export const TestMatchRoom: React.FC = () => {
         return (
             <LoadingScreen
                 title={gameConfig
-                    ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                    ? t('testMatchRoom.loadingWithGame', { game: gameDisplayName, defaultValue: '正在加载 {{game}}...' })
                     : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
             />
         );
@@ -269,8 +272,8 @@ export const TestMatchRoom: React.FC = () => {
     return (
         <>
             <SEO
-                title={`${gameConfig.title} - \u6d4b\u8bd5\u6a21\u5f0f`}
-                description={`${gameConfig.title} E2E \u6d4b\u8bd5\u6a21\u5f0f`}
+                title={`${gameDisplayName} - \u6d4b\u8bd5\u6a21\u5f0f`}
+                description={`${gameDisplayName} E2E \u6d4b\u8bd5\u6a21\u5f0f`}
                 noIndex
             />
             <div
@@ -305,7 +308,7 @@ export const TestMatchRoom: React.FC = () => {
                                                 <LoadingScreen
                                                     anchor="container"
                                                     title={gameConfig
-                                                        ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                                        ? t('testMatchRoom.loadingWithGame', { game: gameDisplayName, defaultValue: '正在加载 {{game}}...' })
                                                         : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
                                                 />
                                             )}
@@ -315,7 +318,7 @@ export const TestMatchRoom: React.FC = () => {
                                     <LoadingScreen
                                         anchor="container"
                                         title={gameConfig
-                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                            ? t('testMatchRoom.loadingWithGame', { game: gameDisplayName, defaultValue: '正在加载 {{game}}...' })
                                             : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
                                     />
                                 )}

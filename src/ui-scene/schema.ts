@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { UISceneCompileIssue } from './types';
+import type { UISceneCompileIssue, UISceneNodeSource } from './types';
 
 const nonEmptyString = z.string().trim().min(1);
 const safeRelativeAssetPath = z.string().trim().min(1).refine(
@@ -128,12 +128,9 @@ type NodeInput = z.input<typeof nodeBaseSchema> & {
     children?: NodeInput[];
 };
 
-type NodeOutput = z.output<typeof nodeBaseSchema> & {
-    type: string;
-    children?: NodeOutput[];
-};
+type NodeOutput = UISceneNodeSource;
 
-const nodeSchema: z.ZodType<NodeOutput, z.ZodTypeDef, NodeInput> = z.lazy(() => z.discriminatedUnion('type', [
+const nodeSchema: z.ZodType<NodeOutput, NodeInput> = z.lazy(() => z.discriminatedUnion('type', [
     nodeBaseSchema.extend({
         type: z.literal('panel'),
         children: z.array(nodeSchema).optional(),
@@ -196,7 +193,7 @@ const nodeSchema: z.ZodType<NodeOutput, z.ZodTypeDef, NodeInput> = z.lazy(() => 
         slotId: nonEmptyString,
         fallbackText: z.string().optional(),
     }),
-]));
+]) as z.ZodType<NodeOutput, NodeInput>);
 
 export const uiSceneNodeSchema = nodeSchema;
 
@@ -217,16 +214,17 @@ export const uiSceneSourceSchema = z.object({
     }),
 });
 
-function formatPath(path: Array<string | number>): string {
+function formatPath(path: PropertyKey[]): string {
     if (!path.length) {
         return 'root';
     }
 
-    return path.reduce((acc, segment) => {
+    return path.reduce<string>((acc, segment) => {
         if (typeof segment === 'number') {
             return `${acc}[${segment}]`;
         }
-        return acc ? `${acc}.${segment}` : segment;
+        const key = String(segment);
+        return acc ? `${acc}.${key}` : key;
     }, '');
 }
 

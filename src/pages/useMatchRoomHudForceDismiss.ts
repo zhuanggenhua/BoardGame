@@ -8,7 +8,7 @@ import {
     resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType,
 } from '../engine/transport/onlineAiWatchdogGameSemantics';
 import { tryHandleGameHudForceDismiss } from '../games/gameHudRuntimeAdapter';
-import { dismissGamePageTransientUi } from '../games/pageRuntimeAdapter';
+import { dismissGamePageTransientUi } from '../games/pageRuntimeTransientUi';
 
 const FORCE_END_TURN_MAX_COMMAND_STEPS = 16;
 

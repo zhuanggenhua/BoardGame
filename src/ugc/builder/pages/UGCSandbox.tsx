@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { LocalGameProvider, BoardBridge } from '../../../engine/transport/react';
 import type { GameEngineConfig } from '../../../engine/transport/server';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
+import type { UGCGameState } from '../../sdk/types';
 
 const STORAGE_KEY = 'ugc-builder-state';
 
@@ -26,6 +27,11 @@ type DraftSaveData = Pick<
 >;
 
 type LayoutComponent = DraftSaveData['layout'][number];
+type UgcSandboxEngineConfig = Awaited<ReturnType<typeof createUgcDraftGame>>['engineConfig'];
+type UgcSandboxConfig = {
+  engineConfig: UgcSandboxEngineConfig;
+  board: ComponentType<GameBoardProps<UGCGameState>>;
+};
 
 const isLayoutPoint = (value: unknown): value is { x: number; y: number } => {
   if (!value || typeof value !== 'object') return false;
@@ -90,7 +96,7 @@ export function UGCSandbox() {
   const { t } = useTranslation('lobby');
   const [draft, setDraft] = useState<DraftSaveData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [sandboxConfig, setSandboxConfig] = useState<{ engineConfig: GameEngineConfig; board: ComponentType<GameBoardProps> } | null>(null);
+  const [sandboxConfig, setSandboxConfig] = useState<UgcSandboxConfig | null>(null);
   const [sandboxLoading, setSandboxLoading] = useState(false);
   const [sandboxError, setSandboxError] = useState<string | null>(null);
 
@@ -184,7 +190,7 @@ export function UGCSandbox() {
           packageId: 'ugc-builder-sandbox',
           viewUrl: '/dev/ugc/runtime-view',
           previewConfig,
-        }) as ComponentType<GameBoardProps>;
+        });
         setSandboxConfig({ engineConfig, board });
       })
       .catch((error) => {
@@ -242,7 +248,7 @@ export function UGCSandbox() {
           <div className="ugc-preview-container flex-1">
             <GameModeProvider mode="local">
               <LocalGameProvider
-                config={sandboxConfig.engineConfig}
+                config={sandboxConfig.engineConfig as unknown as GameEngineConfig}
                 numPlayers={previewPlayerCount}
                 seed={`sandbox-${Date.now()}`}
                 followCurrentTurnPlayer

@@ -34,6 +34,7 @@ import {
 } from './manifest';
 
 type Props = GameBoardProps<FantasyRealmsCore, FantasyRealmsCommandMap>;
+const EMPTY_MATCH_DATA: NonNullable<Props['matchData']> = [];
 
 type CardRowSlot = {
     key: string;
@@ -569,10 +570,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const { t, i18n } = useTranslation('game-fantasyrealms');
     const locale = i18n.language || 'zh-CN';
     const tutorialState = ((G?.sys as { tutorial?: TutorialState | null } | undefined)?.tutorial ?? DEFAULT_TUTORIAL_STATE);
-    useTutorialBridge(tutorialState, dispatch);
+    const runtimeDispatch = React.useMemo(
+        () => dispatch as unknown as (type: string, payload?: unknown) => void,
+        [dispatch],
+    );
+    useTutorialBridge(tutorialState, runtimeDispatch);
     const isTutorialMode = useGameMode()?.mode === 'tutorial';
     const currentTutorialStep = tutorialState.step as TutorialStepSnapshot | null;
     const core = React.useMemo(() => (isFantasyRealmsCore(G?.core) ? G.core : createFallbackCore()), [G]);
+    const matchPlayers = matchData ?? EMPTY_MATCH_DATA;
     const [liveMotionCue, setLiveMotionCue] = React.useState<LiveMotionCue>(null);
     const [reviewPlayerId, setReviewPlayerId] = React.useState<string | null>(null);
     const [magnifiedCard, setMagnifiedCard] = React.useState<TableCard | null>(null);
@@ -595,11 +601,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const isGameOver = Boolean(gameOver);
     const discardCards = React.useMemo(() => core.discardPile.map((card) => ({ ...card })), [core.discardPile]);
     const currentPlayerName = React.useMemo(() => {
-        const matchPlayer = matchData.find((player) => String(player.id) === String(core.currentPlayer));
+        const matchPlayer = matchPlayers.find((player) => String(player.id) === String(core.currentPlayer));
         if (matchPlayer?.name) return matchPlayer.name;
         if (core.players[core.currentPlayer]?.name) return core.players[core.currentPlayer]!.name;
         return t('fallback.currentPlayer');
-    }, [core.currentPlayer, core.players, matchData, t]);
+    }, [core.currentPlayer, core.players, matchPlayers, t]);
     const isMyTurn = !isSpectatorView && viewerPlayerId === core.currentPlayer;
     const canDrawFromDeck = isMyTurn && !isGameOver && core.stage === 'draw' && core.drawPile.length >= getDeckDrawCount(core);
     const canTakeDiscard = isMyTurn && !isGameOver && core.stage === 'draw' && core.discardPile.length > 0;
@@ -644,14 +650,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     });
     const playerSummaries = React.useMemo(() => core.playerIds.map((id) => ({
         id,
-        name: getPlayerDisplayName(id, core, matchData, t),
+        name: getPlayerDisplayName(id, core, matchPlayers, t),
         handCount: core.players[id]?.hand.length ?? 0,
         score: core.players[id]?.score ?? 0,
         scoreVisible: isGameOver || (!isSpectatorView && id === viewerPlayerId),
         isCurrent: !isGameOver && id === core.currentPlayer,
         isViewer: !isSpectatorView && id === viewerPlayerId,
         isWinner: winnerIds.has(id),
-    })), [core, isGameOver, isSpectatorView, matchData, t, viewerPlayerId, winnerIds]);
+    })), [core, isGameOver, isSpectatorView, matchPlayers, t, viewerPlayerId, winnerIds]);
     const liveScoreOwner = React.useMemo(
         () => playerSummaries.find((player) => player.isViewer)
             ?? playerSummaries.find((player) => player.isCurrent)
@@ -664,12 +670,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         return core.playerIds
             .map((id) => ({
                 id,
-                name: getPlayerDisplayName(id, core, matchData, t),
+                name: getPlayerDisplayName(id, core, matchPlayers, t),
                 score: gameOver?.scores?.[id] ?? core.players[id]?.score ?? 0,
                 isWinner: winnerIds.has(id),
             }))
             .sort((left, right) => right.score - left.score);
-    }, [core, gameOver?.scores, isGameOver, matchData, t, winnerIds]);
+    }, [core, gameOver?.scores, isGameOver, matchPlayers, t, winnerIds]);
     const defaultReviewPlayerId = React.useMemo(() => {
         if (!isGameOver) return null;
         return viewerPlayerId ?? finalStandings[0]?.id ?? core.playerIds[0] ?? null;
@@ -699,12 +705,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     }, [liveHandHeldCard, rawDisplayedHandCards]);
     const displayedPlayerName = React.useMemo(() => {
         if (!displayedPlayerId) return null;
-        return getPlayerDisplayName(displayedPlayerId, core, matchData, t);
-    }, [core, displayedPlayerId, matchData, t]);
+        return getPlayerDisplayName(displayedPlayerId, core, matchPlayers, t);
+    }, [core, displayedPlayerId, matchPlayers, t]);
     const viewerPlayerName = React.useMemo(() => {
         if (!viewerPlayerId) return null;
-        return getPlayerDisplayName(viewerPlayerId, core, matchData, t);
-    }, [core, matchData, t, viewerPlayerId]);
+        return getPlayerDisplayName(viewerPlayerId, core, matchPlayers, t);
+    }, [core, matchPlayers, t, viewerPlayerId]);
     const handSlotCount = React.useMemo(() => {
         const baseHandLimit = getFantasyRealmsBaseHandLimit(core.setupConfig);
         const liveDesktopDiscardSlotFloor = isDuelVariant(core) && !isGameOver && core.stage === 'discard'
@@ -916,7 +922,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             }
             setLiveCenterMotionOverlay({
                 type: 'exit',
-                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchData, t),
+                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchPlayers, t),
                 cueKey: nextKey,
                 slotStyle: previousSlotStyle ?? {},
                 card: previousDiscardCard,
@@ -945,7 +951,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             }
             setLiveCenterMotionOverlay({
                 type: 'enter',
-                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchData, t),
+                playerName: getPlayerDisplayName(previousSnapshot.currentPlayer, core, matchPlayers, t),
                 cueKey: nextKey,
                 slotStyle: nextSlotStyle ?? {},
                 card: incomingDiscardCard,
@@ -965,7 +971,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         core.turn,
         core,
         discardThreshold,
-        matchData,
+        matchPlayers,
         t,
     ]);
 
@@ -1706,7 +1712,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     );
 
     return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+        <UndoProvider value={{ G, dispatch: runtimeDispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
             <div className="fr-root">
             <style>{`
                 .fr-root {

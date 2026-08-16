@@ -50,7 +50,7 @@ import { getCommandCategory, CommandCategory, validateCommandCategories } from '
 import { createDiceThroneEventSystem } from './domain/systems';
 import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { findPlayerAbility } from './domain/abilityLookup';
-import { diceThroneCheatModifier } from './domain/cheatModifier';
+import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
@@ -81,6 +81,9 @@ const ACTION_LOG_ALLOWLIST = [
     'USE_PURIFY',
     'PAY_TO_REMOVE_KNOCKDOWN',
     'USE_PASSIVE_ABILITY',
+    // 卡牌/交互改骰与重掷会生成 DIE_MODIFIED / DIE_REROLLED，需要进入玩家可见行动日志。
+    'MODIFY_DIE',
+    'REROLL_DIE',
     'REROLL_BONUS_DIE',
     // 确认投掷：记录最终骰面结果
     'CONFIRM_ROLL',
@@ -88,6 +91,8 @@ const ACTION_LOG_ALLOWLIST = [
     'CONFIRM_COMPARE_ROLL',
     // 交互确认会承载关键选择结果（如暴击/精准），需要进入操作日志
     'SYS_INTERACTION_RESPOND',
+    // 调试/测试直接伤害仍走正式 DAMAGE_DEALT 事件链，需要验证 ActionLog 渲染。
+    DICETHRONE_CHEAT_COMMANDS.DEAL_DAMAGE,
 ] as const;
 
 const UNDO_ALLOWLIST = [
@@ -1449,8 +1454,8 @@ const buildDiceThroneInteractionRecoveryFingerprintHint = (args: {
 };
 
 const shouldSuppressDiceThroneUnsatisfiableInteractionFeedback = (args: {
-    sharedInteraction: { kind?: unknown } | null;
-    seatInteraction: { kind?: unknown } | null;
+    sharedInteraction: { kind?: unknown } | null | undefined;
+    seatInteraction: { kind?: unknown } | null | undefined;
     sharedSelectability: { selectionState?: unknown } | null;
     seatSelectability: { selectionState?: unknown } | null;
 }): boolean => (
@@ -1556,7 +1561,7 @@ const resolveDiceThroneLocalRuntimeControlledPlayerId = (args: {
 const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
     sharedState: MatchState<unknown>;
     currentPlayerId: string | null;
-    seatControllers: Record<string, ManualSetupSeatControllerLike | undefined>;
+    seatControllers: Record<string, unknown>;
     hasManualDispatch: boolean;
 }): string | null => {
     if (!args.hasManualDispatch) {
@@ -1564,7 +1569,9 @@ const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
     }
 
     const manualAiSeatIds = Object.entries(args.seatControllers)
-        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(controller))
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(
+            controller as ManualSetupSeatControllerLike | null | undefined,
+        ))
         .map(([playerId]) => playerId);
     if (manualAiSeatIds.length === 0) {
         return null;
@@ -1579,13 +1586,6 @@ const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
     }
 
     const selectedCharacters = core.selectedCharacters as Record<string, unknown>;
-    if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
-        const currentPlayerCharacter = selectedCharacters[args.currentPlayerId];
-        if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
-            return null;
-        }
-    }
-
     return manualAiSeatIds.find((playerId) => {
         const selectedCharacter = selectedCharacters[playerId];
         return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';
@@ -1629,7 +1629,7 @@ export const engineConfig = {
         resolveManualSetupSelectionTakeoverPlayerId: resolveDiceThroneManualSetupSelectionTakeoverPlayerId,
         shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseDiceThroneManualSetupAttemptFromSharedState,
         buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
-            buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }),
+            buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }) ?? undefined,
         resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,
         resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
         shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,

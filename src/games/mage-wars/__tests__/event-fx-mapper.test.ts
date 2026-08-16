@@ -30,7 +30,7 @@ function getMageCell(core: ReturnType<typeof MageWarsDomain.setup>, playerId: st
 }
 
 describe('mage-wars event FX mapper', () => {
-    it('maps spell cast events to the target mage zone', () => {
+    it('does not create a generic board FX for ordinary spell cast resolution', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -46,103 +46,102 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 1,
         }), core);
 
-        expect(instruction).toMatchObject({
-            sourceEventId: 1,
-            cue: MW_FX.SPELL_CAST,
-            ctx: {
-                cell: getMageCell(core, '1'),
-                intensity: 'normal',
-            },
-            params: {
-                source: getMageCell(core, '0'),
-                spellCardId: 1700,
-                targetPlayerId: '1',
-            },
-        });
+        expect(instruction).toBeNull();
     });
 
-    it('maps zone-targeted action casts to the explicit target zone', () => {
+    it('maps creature summons to the existing summon cue at the object zone', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
-            type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
             payload: {
-                playerId: '0',
-                caster: { kind: 'mage', playerId: '0' },
-                spellCardId: 1710,
-                manaCost: 6,
-                castMode: 'action',
-                targetZoneId: ARENA_ZONE_IDS.A2,
+                object: {
+                    id: 'mwobj-0-cat',
+                    kind: 'creature',
+                    ownerId: '0',
+                    sourceSpellCardId: 2906,
+                    sourceObjectId: 'spell-2906',
+                    name: '野性山猫',
+                    zoneId: ARENA_ZONE_IDS.A2,
+                    life: 4,
+                    damage: 0,
+                    armor: 0,
+                    actionReady: false,
+                    guarding: false,
+                    statusTokens: {},
+                },
             },
             timestamp: 1,
         }), core);
 
         expect(instruction).toMatchObject({
-            cue: MW_FX.SPELL_CAST,
+            sourceEventId: 1,
+            cue: MW_FX.SUMMON,
             ctx: {
                 cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
-                intensity: 'strong',
+                intensity: 'normal',
             },
             params: {
-                source: getMageCell(core, '0'),
-                targetZoneId: ARENA_ZONE_IDS.A2,
+                objectId: 'mwobj-0-cat',
+                objectKind: 'creature',
+                ownerId: '0',
+                sourceSpellCardId: 2906,
             },
         });
     });
 
-    it('maps arena-object spell casts from the caster object zone instead of the mage zone', () => {
-        const casterId = 'mwobj-0-familiar';
-        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
-        const core = {
-            ...baseCore,
-            objects: {
-                [casterId]: {
-                    id: casterId,
-                    kind: 'creature' as const,
+    it('does not turn attachment objects into summon board FX', () => {
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+
+        const equipmentInstruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+            payload: {
+                object: {
+                    id: 'mwobj-0-equipment',
+                    kind: 'equipment',
                     ownerId: '0',
-                    sourceSpellCardId: 2803,
-                    sourceObjectId: 'spell-2803',
-                    spellcastingSource: { abilityId: 'mw.creature.test.spellcasting' },
-                    name: '施法仆从',
-                    zoneId: ARENA_ZONE_IDS.B2,
-                    life: 6,
+                    sourceSpellCardId: 3708,
+                    sourceObjectId: 'spell-3708',
+                    name: '元素法杖',
+                    zoneId: core.players['0'].mageZoneId,
+                    life: 1,
                     damage: 0,
                     armor: 0,
-                    actionReady: true,
+                    actionReady: false,
                     guarding: false,
                     statusTokens: {},
+                    anchoredToPlayerId: '0',
                 },
-            },
-            arena: baseCore.arena.map((zone) => (
-                zone.id === ARENA_ZONE_IDS.B2
-                    ? { ...zone, objectIds: [casterId] }
-                    : zone
-            )),
-        };
-
-        const instruction = mapMageWarsEventToFx(createEntry({
-            type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
-            payload: {
-                playerId: '0',
-                caster: { kind: 'arena-object', objectId: casterId, ownerId: '0' },
-                spellCardId: 1710,
-                manaCost: 6,
-                castMode: 'action',
-                targetZoneId: ARENA_ZONE_IDS.A2,
             },
             timestamp: 2,
         }), core);
 
-        expect(instruction).toMatchObject({
-            cue: MW_FX.SPELL_CAST,
-            ctx: {
-                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
+        const enchantmentInstruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+            payload: {
+                object: {
+                    id: 'mwobj-0-enchantment',
+                    kind: 'enchantment',
+                    ownerId: '0',
+                    sourceSpellCardId: 1808,
+                    sourceObjectId: 'spell-1808',
+                    name: '巨熊力量',
+                    zoneId: ARENA_ZONE_IDS.A2,
+                    life: 1,
+                    damage: 0,
+                    armor: 0,
+                    actionReady: false,
+                    guarding: false,
+                    statusTokens: {},
+                    anchoredToObjectId: 'mwobj-0-cat',
+                    revealed: true,
+                },
             },
-            params: {
-                source: getArenaCell(core, ARENA_ZONE_IDS.B2),
-                caster: { kind: 'arena-object', objectId: casterId, ownerId: '0' },
-            },
-        });
+            timestamp: 3,
+        }), core);
+
+        expect(equipmentInstruction).toBeNull();
+        expect(enchantmentInstruction).toBeNull();
     });
 
     it('maps attack and damage events to defender impact cues', () => {

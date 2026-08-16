@@ -195,7 +195,7 @@ function appendDirectDamageEventsForTarget(
             payload: {
                 objectId: target.targetId,
                 ownerId: target.ownerId,
-                sourceAbilityId,
+                sourceAbilityId: target.sourceAbilityId,
             },
             sourceCommandType,
             timestamp,

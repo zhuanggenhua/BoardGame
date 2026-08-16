@@ -6,6 +6,7 @@ import {
     type GameConfigObject,
     type GameConfigPackage,
     type GameConfigReviewTable,
+    type GameConfigStartingDeployment,
 } from '../../../game-config';
 import configPackageJson from './mage-wars.config.json';
 import {
@@ -22,6 +23,10 @@ import {
 export const MAGE_WARS_CONFIG_SOURCE_ID = 'src/games/mage-wars/data/mage-wars.config.json';
 
 export const MAGE_WARS_CONFIG_PACKAGE = configPackageJson as GameConfigPackage;
+
+type MageWarsGameConfigSetup = NonNullable<GameConfigPackage['setup']> & {
+    formalStartingDeployment?: GameConfigStartingDeployment[];
+};
 
 export interface MageWarsConfigMageSetup {
     mageId: MageId;
@@ -802,7 +807,7 @@ function readOptionalSpellAttachmentSemantics(
     return {
         kind: 'enchantment',
         visibility: expectedVisibility,
-        anchor: data.anchor,
+        anchor: data.anchor as MageWarsConfigSpellAttachmentSemantics['anchor'],
     };
 }
 
@@ -1258,7 +1263,8 @@ export function getFormalArenaZonesFromConfig(): readonly MageWarsConfigArenaZon
 }
 
 export function getFormalStartingDeploymentFromConfig(): readonly MageWarsConfigStartingDeployment[] {
-    const startingDeployment = materializeMageWarsConfigPackage().package.setup?.formalStartingDeployment;
+    const setup = materializeMageWarsConfigPackage().package.setup as MageWarsGameConfigSetup | undefined;
+    const startingDeployment = setup?.formalStartingDeployment;
     if (!startingDeployment?.length) {
         throw new Error('Mage Wars config is missing setup.formalStartingDeployment');
     }

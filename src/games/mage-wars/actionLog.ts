@@ -377,8 +377,8 @@ export function formatMageWarsActionEntry({
                 const payload = (event as MageWarsDefenseAvailableEvent).payload;
                 pushEntry(entries, event.type, payload.ownerId, entryTimestamp, [
                     i18nSeg('actionLog.defenseAvailable', {
-                        defenderObjectId: payload.defenderObjectId,
-                        attackerObjectId: payload.attackerObjectId,
+                        defenderObjectId: payload.defenderObjectId ?? payload.defenderId ?? '',
+                        attackerObjectId: payload.attackerObjectId ?? payload.attackerId ?? '',
                     }),
                 ], index);
                 break;

@@ -103,6 +103,10 @@ type DrawerResizeSession = {
     startSize: number;
 };
 
+type HomeV2StageStyle = React.CSSProperties & {
+    '--home-v2-stage-scale': number;
+};
+
 function resolveTabFlipDirection(from: HomeV2TabId, to: HomeV2TabId): 'flippingTabForward' | 'flippingTabBackward' {
     const fromIndex = HOME_V2_TAB_ORDER.indexOf(from);
     const toIndex = HOME_V2_TAB_ORDER.indexOf(to);
@@ -160,6 +164,14 @@ function renderAbsoluteRect(rect: { left: string; top: string; width: string; he
         top: rect.top,
         width: rect.width,
         height: rect.height,
+    };
+}
+
+function renderStageStyle(layout: { width: number; height: number; scale: number }): HomeV2StageStyle {
+    return {
+        width: layout.width,
+        height: layout.height,
+        '--home-v2-stage-scale': layout.scale,
     };
 }
 
@@ -1256,11 +1268,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         <div
             data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
             className="relative overflow-visible"
-            style={{
-                width: overviewStageLayout.width,
-                height: overviewStageLayout.height,
-                ['--home-v2-stage-scale' as const]: overviewStageLayout.scale,
-            }}
+            style={renderStageStyle(overviewStageLayout)}
         >
             <img
                 src={HOME_V2_OVERVIEW_BACKGROUND}
@@ -1282,11 +1290,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         <div
             data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
             className="relative overflow-visible"
-            style={{
-                width: overviewStageLayout.width,
-                height: overviewStageLayout.height,
-                ['--home-v2-stage-scale' as const]: overviewStageLayout.scale,
-            }}
+            style={renderStageStyle(overviewStageLayout)}
         >
             <img
                 src={HOME_V2_OVERVIEW_BACKGROUND}
@@ -1300,11 +1304,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         <div
             data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
             className="relative overflow-visible"
-            style={{
-                width: detailStageLayout.width,
-                height: detailStageLayout.height,
-                ['--home-v2-stage-scale' as const]: detailStageLayout.scale,
-            }}
+            style={renderStageStyle(detailStageLayout)}
         >
             <img
                 src={HOME_V2_OVERVIEW_BACKGROUND}
@@ -1447,7 +1447,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                                 {isAuthorMode && authoringDocument && overlayVisible ? (
                                     <InPageAuthoringOverlay
                                         scene={compiledContentScene}
-                                        visible={sceneState === 'overview' || sceneState === 'detail'}
+                                        visible={sceneState === 'overview'}
                                         activeState={sceneState}
                                         meta={authoringMeta}
                                         sceneDocument={authoringDocument.sceneDocument}

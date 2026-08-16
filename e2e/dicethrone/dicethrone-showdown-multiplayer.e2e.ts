@@ -38,6 +38,17 @@ type OnlineMatchState = MatchState<unknown> & {
         rollLimit?: number | null;
         rollConfirmed?: boolean | null;
         selectedAbilityId?: string | null;
+        currentRollContext?: {
+            kind?: string | null;
+            status?: string | null;
+            ownerPlayerId?: string | null;
+            display?: {
+                replayOnly?: boolean | null;
+            } | null;
+            dice?: Array<{
+                value?: number | null;
+            }>;
+        } | null;
         dice?: Array<{
             id?: number;
             value?: number;
@@ -52,6 +63,7 @@ type OnlineMatchState = MatchState<unknown> & {
         interaction?: {
             current?: {
                 kind?: string | null;
+                playerId?: string | null;
             } | null;
             queue?: unknown[];
         } | null;
@@ -106,6 +118,23 @@ const saveLocatorScreenshot = async (
         },
     });
     return path;
+};
+
+const expectCompareRollRightPanel = async (page: Page, timeout = 8000): Promise<void> => {
+    const panel = page.getByTestId('compare-roll-overlay');
+    await expect(panel).toBeVisible({ timeout });
+    await expect(panel).toHaveAttribute('data-placement', 'right-dice-panel');
+    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(1);
+    await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
+    await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+};
+
+const getRightDiceRail = (page: Page) => {
+    const diceTray = page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
+    return {
+        diceTray,
+        rail: diceTray.locator('xpath=ancestor::*[@data-player-seat-anchor][1]'),
+    };
 };
 
 async function setHarnessRandomQueue(page: Page, values: number[]): Promise<void> {
@@ -251,11 +280,14 @@ function buildOnlineShowdownState(state: OnlineMatchState): OnlineMatchState {
     return next;
 }
 
-test.describe('DiceThrone Showdown 双端特写', () => {
-    test('枪手 Showdown 应在联机双方页面同时展示枪战决斗特写并自动收口', async ({ browser }, testInfo) => {
+test.describe('DiceThrone Showdown 双端右侧对掷面板', () => {
+    test('枪手 Showdown 应在联机双方右侧骰盘旁展示枪战决斗结果并自动收口', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const setup = await setupDTOnlineMatch(browser as Browser, baseURL);
+        const setup = await setupDTOnlineMatch(browser as Browser, baseURL, {
+            skipImageGate: true,
+            characterSelectionTimeout: 120000,
+        });
         if (!setup) {
             test.skip(true, 'DiceThrone 联机房间创建失败');
             return;
@@ -294,11 +326,93 @@ test.describe('DiceThrone Showdown 双端特写', () => {
             await setHarnessRandomQueue(hostPage, [0.99, 0.0]);
             await dispatchHarnessCommand(hostPage, 'ADVANCE_PHASE', '0');
 
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage) as OnlineMatchState;
+                const context = state.core?.currentRollContext;
+                const diceValues = Array.isArray(context?.dice)
+                    ? context.dice.map((die) => die.value ?? null)
+                    : [];
+                return {
+                    phase: state.sys?.phase ?? null,
+                    interactionKind: state.sys?.interaction?.current?.kind ?? null,
+                    rollContextKind: context?.kind ?? null,
+                    rollContextStatus: context?.status ?? null,
+                    rollContextOwner: context?.ownerPlayerId ?? null,
+                    diceCount: diceValues.length,
+                    diceInRange: diceValues.every((value) => (
+                        typeof value === 'number'
+                        && value >= 1
+                        && value <= 6
+                    )),
+                };
+            }, {
+                timeout: 10000,
+                message: '等待 Showdown 对掷骰子进入右侧骰盘待确认',
+            }).toMatchObject({
+                phase: 'offensiveRoll',
+                interactionKind: null,
+                rollContextKind: 'compare',
+                rollContextStatus: 'open',
+                rollContextOwner: '0',
+                diceCount: 2,
+                diceInRange: true,
+            });
+
+            const compareRollStateBeforeConfirm = await getMatchState(matchId, hostPage) as OnlineMatchState;
+            const compareDiceValues = compareRollStateBeforeConfirm.core?.currentRollContext?.dice
+                ?.map((die) => die.value ?? null)
+                ?? [];
+            expect(compareDiceValues).toHaveLength(2);
+            const [attackerCompareRoll, defenderCompareRoll] = compareDiceValues;
+            expect(typeof attackerCompareRoll).toBe('number');
+            expect(typeof defenderCompareRoll).toBe('number');
+            const expectedBonusDamage = (attackerCompareRoll as number) >= (defenderCompareRoll as number) ? 2 : 0;
+
+            const { diceTray: hostCompareDiceTray, rail: hostCompareDiceRail } = getRightDiceRail(hostPage);
+            const { diceTray: guestCompareDiceTray } = getRightDiceRail(guestPage);
+            await expect(hostCompareDiceTray).toBeVisible({ timeout: 5000 });
+            await expect(guestCompareDiceTray).toBeVisible({ timeout: 5000 });
+            await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+            await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0);
+            await expect(hostPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+            await expect(guestPage.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+
+            const hostCompareConfirmButton = hostCompareDiceRail.locator('[data-tutorial-id="dice-confirm-button"]').first();
+            await expect(hostCompareConfirmButton).toBeVisible({ timeout: 5000 });
+            await expect(hostCompareConfirmButton).toBeEnabled();
+            await hostCompareConfirmButton.click();
+
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage) as OnlineMatchState;
+                const context = state.core?.currentRollContext;
+                const interaction = state.sys?.interaction?.current;
+                return {
+                    interactionKind: interaction?.kind ?? null,
+                    interactionPlayerId: interaction?.playerId ?? null,
+                    rollContextKind: context?.kind ?? null,
+                    rollContextStatus: context?.status ?? null,
+                    rollContextReplayOnly: context?.display?.replayOnly ?? null,
+                    dice: Array.isArray(context?.dice)
+                        ? context.dice.map((die) => die.value ?? null)
+                        : [],
+                };
+            }, {
+                timeout: 10000,
+                message: '等待 Showdown 普通确认后生成右侧结果面板',
+            }).toMatchObject({
+                interactionKind: 'compare-roll-choice',
+                interactionPlayerId: '0',
+                rollContextKind: 'compare',
+                rollContextStatus: 'settled',
+                rollContextReplayOnly: true,
+                dice: compareDiceValues,
+            });
+
             const hostOverlay = hostPage.getByTestId('compare-roll-overlay');
             const guestOverlay = guestPage.getByTestId('compare-roll-overlay');
 
-            await expect(hostOverlay).toBeVisible({ timeout: 8000 });
-            await expect(guestOverlay).toBeVisible({ timeout: 8000 });
+            await expectCompareRollRightPanel(hostPage);
+            await expectCompareRollRightPanel(guestPage);
             await expect(hostPage.getByText('枪战决斗')).toBeVisible();
             await expect(guestPage.getByText('枪战决斗')).toBeVisible();
             await expect(hostPage.getByTestId('compare-roll-participant-0')).toBeVisible();
@@ -312,7 +426,11 @@ test.describe('DiceThrone Showdown 双端特写', () => {
             const guestResultText = (await guestPage.getByTestId('compare-roll-result').textContent())?.trim() ?? '';
             expect(hostResultText.length).toBeGreaterThan(0);
             expect(guestResultText).toBe(hostResultText);
-            const expectedBonusDamage = hostResultText.includes('+2') ? 2 : 0;
+            if (expectedBonusDamage === 2) {
+                expect(hostResultText).toContain('+2');
+            } else {
+                expect(hostResultText).not.toContain('+2');
+            }
 
             const hostOpenPath = await saveLocatorScreenshot(hostPage, testInfo, 'showdown-host-open', 'compare-roll-overlay');
             const guestOpenPath = await saveLocatorScreenshot(guestPage, testInfo, 'showdown-guest-open', 'compare-roll-overlay');

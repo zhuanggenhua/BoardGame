@@ -12,7 +12,7 @@ import type {
 
 export interface SmashUpRuntimeStateAnomaly {
     path: string;
-    actual: 'null' | 'non-array' | 'invalid-entry';
+    actual: 'null' | 'non-array' | 'invalid-entry' | 'invalid-number';
 }
 
 export interface SmashUpRuntimeStateNormalizationResult {
@@ -113,6 +113,106 @@ function normalizeCardArray(value: unknown, path: string, anomalies: SmashUpRunt
     return asObjectArray<CardInstance>(value, path, anomalies);
 }
 
+function isFiniteNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value);
+}
+
+function normalizeRequiredNumber(
+    value: unknown,
+    path: string,
+    fallback: number,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): number {
+    if (isFiniteNumber(value)) return value;
+    anomalies.push({ path, actual: 'invalid-number' });
+    return fallback;
+}
+
+function normalizeOptionalNumber(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): number | undefined {
+    if (value === undefined) return undefined;
+    if (isFiniteNumber(value)) return value;
+    anomalies.push({ path, actual: 'invalid-number' });
+    return undefined;
+}
+
+function normalizeNumberRecord(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): Record<number, number> | undefined {
+    if (value === undefined) return undefined;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        anomalies.push({
+            path,
+            actual: value === null ? 'null' : 'non-array',
+        });
+        return undefined;
+    }
+
+    const normalized: Record<number, number> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+        if (!isFiniteNumber(entry)) {
+            anomalies.push({ path: `${path}.${key}`, actual: 'invalid-number' });
+            return;
+        }
+        normalized[Number(key)] = entry;
+    });
+    return normalized;
+}
+
+function normalizeNumberArray(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): number[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) {
+        anomalies.push({
+            path,
+            actual: value === null ? 'null' : 'non-array',
+        });
+        return undefined;
+    }
+
+    const normalized: number[] = [];
+    value.forEach((entry, index) => {
+        if (!isFiniteNumber(entry)) {
+            anomalies.push({ path: `${path}[${index}]`, actual: 'invalid-number' });
+            return;
+        }
+        normalized.push(entry);
+    });
+    return normalized;
+}
+
+function normalizeNumberArrayRecord(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): Record<number, number[]> | undefined {
+    if (value === undefined) return undefined;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        anomalies.push({
+            path,
+            actual: value === null ? 'null' : 'non-array',
+        });
+        return undefined;
+    }
+
+    const normalized: Record<number, number[]> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+        const arrayValue = normalizeNumberArray(entry, `${path}.${key}`, anomalies);
+        if (arrayValue !== undefined) {
+            normalized[Number(key)] = arrayValue;
+        }
+    });
+    return normalized;
+}
+
 function normalizeMadnessDeck(
     value: unknown,
     path: string,
@@ -150,6 +250,10 @@ function normalizeAttachedActions(
 function normalizeMinions(value: unknown, path: string, anomalies: SmashUpRuntimeStateAnomaly[]): MinionOnBase[] {
     return asObjectArray<MinionOnBase>(value, path, anomalies).map((minion, index) => ({
         ...minion,
+        basePower: normalizeRequiredNumber(minion.basePower, `${path}[${index}].basePower`, 0, anomalies),
+        powerCounters: normalizeRequiredNumber(minion.powerCounters, `${path}[${index}].powerCounters`, 0, anomalies),
+        powerModifier: normalizeRequiredNumber(minion.powerModifier, `${path}[${index}].powerModifier`, 0, anomalies),
+        tempPowerModifier: normalizeRequiredNumber(minion.tempPowerModifier, `${path}[${index}].tempPowerModifier`, 0, anomalies),
         attachedActions: normalizeAttachedActions(
             minion.attachedActions,
             `${path}[${index}].attachedActions`,
@@ -163,7 +267,23 @@ function normalizeOngoingActions(
     path: string,
     anomalies: SmashUpRuntimeStateAnomaly[],
 ): OngoingActionOnBase[] {
-    return asObjectArray<OngoingActionOnBase>(value, path, anomalies);
+    return asObjectArray<OngoingActionOnBase>(value, path, anomalies).map((ongoingAction, index) => {
+        if (ongoingAction.metadata === undefined || !Object.prototype.hasOwnProperty.call(ongoingAction.metadata, 'powerCounters')) {
+            return ongoingAction;
+        }
+        return {
+            ...ongoingAction,
+            metadata: {
+                ...ongoingAction.metadata,
+                powerCounters: normalizeRequiredNumber(
+                    ongoingAction.metadata.powerCounters,
+                    `${path}[${index}].metadata.powerCounters`,
+                    0,
+                    anomalies,
+                ),
+            },
+        };
+    });
 }
 
 function normalizeBuriedCards(
@@ -207,6 +327,7 @@ function normalizePlayers(
             }
             const normalizedPlayer: PlayerState = {
                 ...(player as PlayerState),
+                vp: normalizeRequiredNumber((player as PlayerState).vp, `players.${playerId}.vp`, 0, anomalies),
                 hand: normalizeCardArray((player as PlayerState).hand, `players.${playerId}.hand`, anomalies),
                 deck: normalizeCardArray((player as PlayerState).deck, `players.${playerId}.deck`, anomalies),
                 discard: normalizeCardArray((player as PlayerState).discard, `players.${playerId}.discard`, anomalies),
@@ -223,6 +344,18 @@ function normalizePlayers(
                 usedDiscardPlayAbilities: Array.isArray((player as PlayerState).usedDiscardPlayAbilities)
                     ? (player as PlayerState).usedDiscardPlayAbilities?.filter((entry): entry is string => typeof entry === 'string')
                     : undefined,
+                minionsPlayed: normalizeRequiredNumber((player as PlayerState).minionsPlayed, `players.${playerId}.minionsPlayed`, 0, anomalies),
+                minionLimit: normalizeRequiredNumber((player as PlayerState).minionLimit, `players.${playerId}.minionLimit`, 1, anomalies),
+                actionsPlayed: normalizeRequiredNumber((player as PlayerState).actionsPlayed, `players.${playerId}.actionsPlayed`, 0, anomalies),
+                actionLimit: normalizeRequiredNumber((player as PlayerState).actionLimit, `players.${playerId}.actionLimit`, 1, anomalies),
+                actionCardsPlayedThisTurn: normalizeOptionalNumber((player as PlayerState).actionCardsPlayedThisTurn, `players.${playerId}.actionCardsPlayedThisTurn`, anomalies),
+                extraCardsPlayedThisTurn: normalizeOptionalNumber((player as PlayerState).extraCardsPlayedThisTurn, `players.${playerId}.extraCardsPlayedThisTurn`, anomalies),
+                minionsPlayedPerBase: normalizeNumberRecord((player as PlayerState).minionsPlayedPerBase, `players.${playerId}.minionsPlayedPerBase`, anomalies),
+                baseLimitedMinionQuota: normalizeNumberRecord((player as PlayerState).baseLimitedMinionQuota, `players.${playerId}.baseLimitedMinionQuota`, anomalies),
+                baseLimitedMinionPowerCaps: normalizeNumberArrayRecord((player as PlayerState).baseLimitedMinionPowerCaps, `players.${playerId}.baseLimitedMinionPowerCaps`, anomalies),
+                extraMinionPowerMax: normalizeOptionalNumber((player as PlayerState).extraMinionPowerMax, `players.${playerId}.extraMinionPowerMax`, anomalies),
+                extraMinionPowerCaps: normalizeNumberArray((player as PlayerState).extraMinionPowerCaps, `players.${playerId}.extraMinionPowerCaps`, anomalies),
+                sameNameMinionRemaining: normalizeOptionalNumber((player as PlayerState).sameNameMinionRemaining, `players.${playerId}.sameNameMinionRemaining`, anomalies),
             };
             if ((player as PlayerState).usedDiscardPlayAbilities !== undefined && !Array.isArray((player as PlayerState).usedDiscardPlayAbilities)) {
                 anomalies.push({
@@ -253,7 +386,10 @@ function normalizeTitans(
     anomalies: SmashUpRuntimeStateAnomaly[],
 ): TitanState[] | undefined {
     if (titans === undefined) return undefined;
-    return asObjectArray<TitanState>(titans, 'titans', anomalies);
+    return asObjectArray<TitanState>(titans, 'titans', anomalies).map((titan, index) => ({
+        ...titan,
+        powerCounters: normalizeRequiredNumber(titan.powerCounters, `titans[${index}].powerCounters`, 0, anomalies),
+    }));
 }
 
 export function normalizeSmashUpCoreForUi(core: SmashUpCore | null | undefined): SmashUpRuntimeStateNormalizationResult {

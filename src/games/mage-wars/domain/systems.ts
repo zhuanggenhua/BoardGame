@@ -20,6 +20,8 @@ import {
     type MageWarsCounterstrikeAvailableEvent,
     type MageWarsDefenseAvailableEvent,
     type MageWarsEnchantmentResponseRequiredEvent,
+    type MageWarsEvent,
+    type MageWarsSpellCastResolvedEvent,
     type MageWarsUpkeepCostAvailableEvent,
 } from './events';
 import {
@@ -76,7 +78,6 @@ export type MageWarsCounterstrikeChoiceValue =
         incomingAttackProfileId: string;
         counterstrikeAttackProfileId: string;
         counterstrikeSourceObjectId?: string;
-        counterstrikeSourceObjectId?: string;
     }
     | {
         action: 'pass';
@@ -131,6 +132,10 @@ function isEnchantmentResponseRequiredEvent(
     return event.type === MAGE_WARS_EVENTS.ENCHANTMENT_RESPONSE_REQUIRED;
 }
 
+function isSpellCastResolvedEvent(event: GameEvent): event is MageWarsSpellCastResolvedEvent {
+    return event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED;
+}
+
 function isInteractionResolvedEvent(event: GameEvent): event is GameEvent<typeof INTERACTION_EVENTS.RESOLVED, {
     sourceId?: string;
     value?: unknown;
@@ -151,6 +156,7 @@ function isCounterstrikeChoiceValue(value: unknown): value is MageWarsCounterstr
 function isDefenseChoiceValue(value: unknown): value is MageWarsDefenseChoiceValue {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as Partial<MageWarsDefenseChoiceValue>;
+    const defenseCandidate = candidate as { defenseProfileId?: unknown };
     if (candidate.action !== 'defend' && candidate.action !== 'pass') return false;
     if (
         (typeof candidate.attackerObjectId !== 'string' && typeof candidate.attackerId !== 'string')
@@ -161,7 +167,7 @@ function isDefenseChoiceValue(value: unknown): value is MageWarsDefenseChoiceVal
     ) {
         return false;
     }
-    return candidate.action === 'pass' || typeof candidate.defenseProfileId === 'string';
+    return candidate.action === 'pass' || typeof defenseCandidate.defenseProfileId === 'string';
 }
 
 function isUpkeepCostChoiceValue(value: unknown): value is MageWarsUpkeepCostChoiceValue {
@@ -326,10 +332,10 @@ function createDefenseChoice(event: MageWarsDefenseAvailableEvent): InteractionD
         {
             titleKey: 'interaction.defense.title',
             titleParams: {
-                attackerObjectId: event.payload.attackerObjectId,
-                defenderObjectId: event.payload.defenderObjectId,
-                attackerId: event.payload.attackerId,
-                defenderId: event.payload.defenderId,
+                ...(event.payload.attackerObjectId ? { attackerObjectId: event.payload.attackerObjectId } : {}),
+                ...(event.payload.defenderObjectId ? { defenderObjectId: event.payload.defenderObjectId } : {}),
+                ...(event.payload.attackerId ? { attackerId: event.payload.attackerId } : {}),
+                ...(event.payload.defenderId ? { defenderId: event.payload.defenderId } : {}),
             },
             sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.DEFENSE_CHOICE,
             targetType: 'button',
@@ -446,8 +452,8 @@ function createEnchantmentResponseChoice(
 
     interaction.data = {
         ...interaction.data,
-        optionsGenerator: (state: { core: MageWarsCore; sys: MatchState<MageWarsCore>['sys'] }) =>
-            [createLiveRevealOption(state)],
+        optionsGenerator: <TCore>(state: { core: TCore; sys: unknown }) =>
+            [createLiveRevealOption(state as unknown as { core: MageWarsCore; sys: MatchState<MageWarsCore>['sys'] })],
     };
     return interaction;
 }
@@ -463,7 +469,7 @@ function resolveAttackAfterDefenseChoice(
         return resolveMageWarsBasicAttackEvents({
             state,
             sourceCommandType: commandType,
-            timestamp,
+            timestamp: timestamp ?? 0,
             random,
             attackerId: value.attackerId,
             defenderId: value.defenderId,
@@ -480,10 +486,11 @@ function resolveAttackAfterDefenseChoice(
             spellCardId: value.spellCardId,
         });
     }
+    if (!value.attackerObjectId || !value.defenderObjectId) return [];
     return resolveMageWarsObjectAttackEvents({
         state,
         sourceCommandType: commandType,
-        timestamp,
+        timestamp: timestamp ?? 0,
         random,
         attackerObjectId: value.attackerObjectId,
         attackProfileId: value.incomingAttackProfileId,
@@ -695,7 +702,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
             const events: GameEvent[] = [];
 
             for (const event of ctx.events) {
-                if (event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED) {
+                if (isSpellCastResolvedEvent(event)) {
                     if (event.payload.caster.kind !== 'arena-object') continue;
                     const caster = nextState.core.objects[event.payload.caster.objectId];
                     if (

@@ -116,11 +116,11 @@ export const resolveGameImplementationLoadTimeoutMs = (
             ? window
             : undefined
     );
-    const runtimeNavigator = options.navigatorObject ?? (
+    const runtimeNavigator = (options.navigatorObject ?? (
         typeof navigator !== 'undefined'
             ? navigator
             : undefined
-    );
+    )) as GameImplementationTimeoutRuntimeOptions['navigatorObject'] | undefined;
     const isTestMode = options.isTestMode ?? (
         typeof window !== 'undefined'
             ? Boolean((window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__)

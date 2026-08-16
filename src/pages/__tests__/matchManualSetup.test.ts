@@ -154,4 +154,29 @@ describe('matchManualSetup', () => {
             hasManualDispatch: true,
         })).toBe('1');
     });
+
+    it('房主还未完成前置选择时，也应先接管未选择的 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualSetupSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe('1');
+    });
 });

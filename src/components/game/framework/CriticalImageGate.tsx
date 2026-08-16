@@ -29,6 +29,8 @@ export interface CriticalImageGateProps {
     blockingAudioKeys?: SoundKey[];
     /** 每次 phaseKey 变化后，首次就绪时触发。 */
     onReady?: () => void;
+    /** 阻塞式加载屏显示/隐藏时通知外层壳层。 */
+    onBlockingChange?: (blocking: boolean) => void;
     children: React.ReactNode;
 }
 
@@ -49,6 +51,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     loadingDescription,
     blockingAudioKeys,
     onReady,
+    onBlockingChange,
     children,
 }) => {
     useEffect(() => {
@@ -82,6 +85,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const lastWarmRunKeyRef = useRef<string | null>(null);
     const latestRunKeyRef = useRef('');
     const onReadyRef = useRef(onReady);
+    const onBlockingChangeRef = useRef(onBlockingChange);
     const blockingAudioSignature = useMemo(
         () => Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean))).sort().join('|'),
         [blockingAudioKeys],
@@ -147,6 +151,10 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     }, [onReady]);
 
     useEffect(() => {
+        onBlockingChangeRef.current = onBlockingChange;
+    }, [onBlockingChange]);
+
+    useEffect(() => {
         // 教程启动常通过 useLayoutEffect 同步推进 state。
         // 当前 render 对应的 passive effect 真正执行时，组件可能已经带着新的 runKey 重渲染过。
         // 这里必须跳过旧 render 遗留的 preload，避免“教程前状态”和“教程后状态”各跑一轮。
@@ -155,12 +163,16 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         }
 
         if (!effectiveEnabled || !gameId) {
+            const shouldNotifyReady = lastReadyKeyRef.current !== runKey;
             setReady(true);
             inFlightRunKeyRef.current = null;
             preloadRequestIdRef.current += 1;
-            lastReadyKeyRef.current = null;
+            lastReadyKeyRef.current = runKey;
             lastWarmRunKeyRef.current = null;
             signalCriticalImagesReady();
+            if (shouldNotifyReady) {
+                onReadyRef.current?.();
+            }
             return;
         }
 
@@ -305,6 +317,14 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         // eslint-disable-next-line react-hooks/refs
         || (!ready && lastReadyKeyRef.current !== runKey)
     );
+
+    useEffect(() => {
+        onBlockingChangeRef.current?.(shouldBlock);
+    }, [shouldBlock]);
+
+    useEffect(() => () => {
+        onBlockingChangeRef.current?.(false);
+    }, []);
 
     if (shouldBlock) {
         const useViewportAnchor = typeof document !== 'undefined'

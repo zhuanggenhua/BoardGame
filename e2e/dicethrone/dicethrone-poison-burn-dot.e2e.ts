@@ -1,292 +1,241 @@
 /**
  * 中毒（Poison）和燃烧（Burn）持续伤害 E2E 测试
  *
- * 测试场景：
- * 1. 中毒状态注入后在 UI 中可见
- * 2. 燃烧状态注入后在 UI 中可见
- * 3. 中毒/燃烧层数递减模拟
- * 4. 中毒和燃烧可以同时存在
- * 5. 层数递减到 0 后自动移除
- *
- * 使用在线双人对局模式，通过调试面板注入状态。
+ * 这组用例只验证状态图标、状态层数和持续伤害后的权威状态，不验证在线开房。
+ * 使用单页 TestHarness 代表态，避免每条用例重复创建双人在线房间和加载完整素材门禁。
  */
 
+import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
-import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
+import type { GameTestContext } from '../framework';
+import type { MatchState } from '../../src/engine/types';
+import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
-
-type __ThreeAxeGameMarker = {
-  openTestGame: (gameId: string) => Promise<void>;
-  setupScene: (config: { gameId: string }) => Promise<void>;
-};
-
-const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
-  await game.openTestGame('dicethrone');
-  await game.setupScene({ gameId: 'dicethrone' });
-};
-void __ensureThreeAxesMarker;
-
+import type { DiceThroneCore } from '../../src/games/dicethrone/types';
 import {
-    setupOnlineMatch,
-    readCoreState,
-    applyCoreStateDirect,
-    closeDebugPanelIfOpen,
+    patchDiceThroneHarnessState,
+    readDiceThroneHarnessState,
+    waitForDiceThroneHarness,
 } from '../helpers/dicethrone';
 
-/** 读取指定玩家状态 */
-const getPlayerState = (core: Record<string, unknown>, playerId: string) => {
-    const players = core.players as Record<string, Record<string, unknown>>;
-    return players[playerId];
-};
+type DiceThroneMatchState = MatchState<DiceThroneCore>;
 
-/** 注入 statusEffects 和 resources */
-const injectPlayerState = async (
-    page: import('@playwright/test').Page,
-    playerId: string,
-    statusEffects: Record<string, number>,
-    resourceOverrides?: Record<string, number>,
-) => {
-    const core = await readCoreState(page) as Record<string, unknown>;
-    const players = core.players as Record<string, Record<string, unknown>>;
-    const player = players[playerId];
-    const updatedPlayer: Record<string, unknown> = {
-        ...player,
-        statusEffects: { ...((player.statusEffects as Record<string, number>) ?? {}), ...statusEffects },
-    };
-    if (resourceOverrides) {
-        updatedPlayer.resources = { ...((player.resources as Record<string, number>) ?? {}), ...resourceOverrides };
-    }
-    await applyCoreStateDirect(page, {
-        ...core,
-        players: { ...players, [playerId]: updatedPlayer },
+const OPEN_TIMEOUT_MS = 45000;
+const TEST_TIMEOUT_MS = 90000;
+const ATTACKER_ID = '0';
+const DEFENDER_ID = '1';
+
+async function setupPoisonBurnScene(page: Page, game: GameTestContext): Promise<void> {
+    await game.openTestGame('dicethrone', { playerID: ATTACKER_ID, disableLocalAiAutomation: true }, OPEN_TIMEOUT_MS);
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { [RESOURCE_IDS.CP]: 3, [RESOURCE_IDS.HP]: 50 },
+            tokens: {},
+        },
+        player1: {
+            resources: { [RESOURCE_IDS.CP]: 3, [RESOURCE_IDS.HP]: 50 },
+            tokens: {},
+        },
+        currentPlayer: ATTACKER_ID,
+        phase: 'main1',
+        extra: {
+            selectedCharacters: { [ATTACKER_ID]: 'barbarian', [DEFENDER_ID]: 'monk' },
+            hostStarted: true,
+        },
+        sys: {
+            phase: 'main1',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        },
     });
-    await page.waitForTimeout(500);
-};
+
+    await waitForDiceThroneHarness(page);
+    await expect(page.getByTestId('dicethrone-board-root')).toBeVisible({ timeout: 10000 });
+}
+
+async function readCore(page: Page): Promise<DiceThroneCore> {
+    const state = await readDiceThroneHarnessState<DiceThroneMatchState>(page);
+    return state.core;
+}
+
+function getPlayerState(core: DiceThroneCore, playerId: string) {
+    return core.players[playerId];
+}
+
+async function patchPlayerState(
+    page: Page,
+    playerId: string,
+    options: {
+        statusEffects?: Record<string, number>;
+        resources?: Record<string, number>;
+        tokens?: Record<string, number>;
+    },
+): Promise<void> {
+    await patchDiceThroneHarnessState(page, {
+        core: {
+            players: {
+                [playerId]: options,
+            },
+        },
+    });
+}
+
+async function expectPlayerState(
+    page: Page,
+    playerId: string,
+    expected: {
+        statusEffects?: Record<string, number>;
+        resources?: Record<string, number>;
+        tokens?: Record<string, number>;
+    },
+): Promise<void> {
+    await expect.poll(async () => {
+        const player = getPlayerState(await readCore(page), playerId);
+        return {
+            statusEffects: expected.statusEffects
+                ? Object.fromEntries(Object.keys(expected.statusEffects).map((id) => [id, player.statusEffects?.[id] ?? 0]))
+                : undefined,
+            resources: expected.resources
+                ? Object.fromEntries(Object.keys(expected.resources).map((id) => [id, player.resources?.[id] ?? 0]))
+                : undefined,
+            tokens: expected.tokens
+                ? Object.fromEntries(Object.keys(expected.tokens).map((id) => [id, player.tokens?.[id] ?? 0]))
+                : undefined,
+        };
+    }, { timeout: 5000 }).toEqual({
+        statusEffects: expected.statusEffects,
+        resources: expected.resources,
+        tokens: expected.tokens,
+    });
+}
+
+async function expectStatusVisible(page: Page, playerId: string, statusId: string): Promise<void> {
+    await expect(page.getByTestId(`dt-player-${playerId}-status-${statusId}`)).toBeVisible({ timeout: 10000 });
+}
 
 test.describe('中毒和燃烧持续伤害机制', () => {
+    test('中毒状态注入后可见，回合伤害模拟正确', async ({ page, game }, testInfo: TestInfo) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupPoisonBurnScene(page, game);
 
-    test('中毒状态注入后可见，回合伤害模拟正确', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const hpBefore = getPlayerState(await readCore(page), DEFENDER_ID).resources[RESOURCE_IDS.HP] ?? 0;
 
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'monk');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 2 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 2 },
+        });
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.POISON);
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 1 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 2 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 1 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 2 },
+        });
 
-            // 读取防御方初始 HP
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const defenderBefore = getPlayerState(coreBefore, defenderId);
-            const hpBefore = (defenderBefore.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            // 注入 2 层中毒
-            await injectPlayerState(page, defenderId, { [STATUS_IDS.POISON]: 2 });
-
-            // 验证中毒注入成功
-            const coreAfterInject = await readCoreState(page) as Record<string, unknown>;
-            const statusAfterInject = (getPlayerState(coreAfterInject, defenderId).statusEffects as Record<string, number>) ?? {};
-            expect(statusAfterInject[STATUS_IDS.POISON], '中毒注入失败').toBe(2);
-
-            // 模拟回合开始：2 层中毒造成 2 点伤害，层数减 1
-            await injectPlayerState(page, defenderId,
-                { [STATUS_IDS.POISON]: 1 },
-                { [RESOURCE_IDS.HP]: hpBefore - 2 },
-            );
-
-            const coreAfterTurn1 = await readCoreState(page) as Record<string, unknown>;
-            const defenderAfterTurn1 = getPlayerState(coreAfterTurn1, defenderId);
-            const hpAfterTurn1 = (defenderAfterTurn1.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-            const poisonAfterTurn1 = ((defenderAfterTurn1.statusEffects as Record<string, number>) ?? {})[STATUS_IDS.POISON] ?? 0;
-
-            expect(hpAfterTurn1, '中毒应造成 2 点伤害').toBe(hpBefore - 2);
-            expect(poisonAfterTurn1, '中毒应减少 1 层').toBe(1);
-
-            await closeDebugPanelIfOpen(page);
-            await page.screenshot({ path: testInfo.outputPath('poison-dot.png'), fullPage: false });
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await page.screenshot({ path: testInfo.outputPath('poison-dot.png'), fullPage: false });
     });
 
-    test('燃烧状态注入后可见，回合伤害模拟正确', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('燃烧状态注入后可见，回合伤害模拟正确', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupPoisonBurnScene(page, game);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'monk');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        const hpBefore = getPlayerState(await readCore(page), DEFENDER_ID).resources[RESOURCE_IDS.HP] ?? 0;
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.BURN]: 3 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.BURN]: 3 },
+        });
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.BURN);
 
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const hpBefore = (getPlayerState(coreBefore, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            // 注入 3 层燃烧
-            await injectPlayerState(page, defenderId, { [STATUS_IDS.BURN]: 3 });
-
-            const coreAfterInject = await readCoreState(page) as Record<string, unknown>;
-            expect(((getPlayerState(coreAfterInject, defenderId).statusEffects as Record<string, number>) ?? {})[STATUS_IDS.BURN], '燃烧注入失败').toBe(3);
-
-            // 模拟回合开始：3 层燃烧造成 3 点伤害，层数减 1
-            await injectPlayerState(page, defenderId,
-                { [STATUS_IDS.BURN]: 2 },
-                { [RESOURCE_IDS.HP]: hpBefore - 3 },
-            );
-
-            const coreAfterTurn = await readCoreState(page) as Record<string, unknown>;
-            const defenderAfterTurn = getPlayerState(coreAfterTurn, defenderId);
-            expect((defenderAfterTurn.resources as Record<string, number>)[RESOURCE_IDS.HP], '燃烧应造成 3 点伤害').toBe(hpBefore - 3);
-            expect(((defenderAfterTurn.statusEffects as Record<string, number>) ?? {})[STATUS_IDS.BURN], '燃烧应减少 1 层').toBe(2);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.BURN]: 2 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 3 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.BURN]: 2 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 3 },
+        });
     });
 
-    test('层数递减到 0 后自动移除', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('层数递减到 0 后自动移除', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupPoisonBurnScene(page, game);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'monk');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 1 },
+        });
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.POISON);
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
-
-            // 注入 1 层中毒
-            await injectPlayerState(page, defenderId, { [STATUS_IDS.POISON]: 1 });
-
-            // 模拟回合：层数减到 0
-            await injectPlayerState(page, defenderId, { [STATUS_IDS.POISON]: 0 });
-
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const poisonFinal = ((getPlayerState(coreFinal, defenderId).statusEffects as Record<string, number>) ?? {})[STATUS_IDS.POISON] ?? 0;
-            expect(poisonFinal, '中毒应被完全移除').toBe(0);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 0 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 0 },
+        });
     });
 
-    test('中毒和燃烧可以同时存在', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('中毒和燃烧可以同时存在', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupPoisonBurnScene(page, game);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'monk');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        const hpBefore = getPlayerState(await readCore(page), DEFENDER_ID).resources[RESOURCE_IDS.HP] ?? 0;
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
-
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const hpBefore = (getPlayerState(coreBefore, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            // 同时注入中毒和燃烧
-            await injectPlayerState(page, defenderId, {
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: {
                 [STATUS_IDS.POISON]: 2,
                 [STATUS_IDS.BURN]: 2,
-            });
+            },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: {
+                [STATUS_IDS.POISON]: 2,
+                [STATUS_IDS.BURN]: 2,
+            },
+        });
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.POISON);
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.BURN);
 
-            const coreAfterInject = await readCoreState(page) as Record<string, unknown>;
-            const statusAfterInject = (getPlayerState(coreAfterInject, defenderId).statusEffects as Record<string, number>) ?? {};
-            expect(statusAfterInject[STATUS_IDS.POISON], '中毒注入失败').toBe(2);
-            expect(statusAfterInject[STATUS_IDS.BURN], '燃烧注入失败').toBe(2);
-
-            // 模拟回合：2 中毒 + 2 燃烧 = 4 点伤害，各减 1 层
-            await injectPlayerState(page, defenderId,
-                { [STATUS_IDS.POISON]: 1, [STATUS_IDS.BURN]: 1 },
-                { [RESOURCE_IDS.HP]: hpBefore - 4 },
-            );
-
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const defenderFinal = getPlayerState(coreFinal, defenderId);
-            const hpFinal = (defenderFinal.resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-            const statusFinal = (defenderFinal.statusEffects as Record<string, number>) ?? {};
-
-            expect(hpFinal, '应受到 4 点伤害（2 中毒 + 2 燃烧）').toBe(hpBefore - 4);
-            expect(statusFinal[STATUS_IDS.POISON], '中毒应减少 1 层').toBe(1);
-            expect(statusFinal[STATUS_IDS.BURN], '燃烧应减少 1 层').toBe(1);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 1, [STATUS_IDS.BURN]: 1 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 4 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 1, [STATUS_IDS.BURN]: 1 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore - 4 },
+        });
     });
 
-    test('中毒可以被净化移除后不再造成伤害', async ({ browser }, testInfo) => {
-        test.setTimeout(120000);
-        const baseURL = testInfo.project.use.baseURL as string | undefined;
+    test('中毒可以被净化移除后不再造成伤害', async ({ page, game }) => {
+        test.setTimeout(TEST_TIMEOUT_MS);
+        await setupPoisonBurnScene(page, game);
 
-        const match = await setupOnlineMatch(browser, baseURL, 'barbarian', 'monk');
-        if (!match) { test.skip(true, '游戏服务器不可用或房间创建失败'); return; }
-        const { hostPage, hostContext, guestContext } = match;
+        const hpBefore = getPlayerState(await readCore(page), DEFENDER_ID).resources[RESOURCE_IDS.HP] ?? 0;
 
-        try {
-            await hostPage.waitForTimeout(2000);
-            const hostNextPhase = hostPage.locator('[data-tutorial-id="advance-phase-button"]');
-            const hostIsActive = await hostNextPhase.isEnabled({ timeout: 5000 }).catch(() => false);
-            const page = hostIsActive ? hostPage : match.guestPage;
-            const defenderId = hostIsActive ? '1' : '0';
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 2 },
+            tokens: { [TOKEN_IDS.PURIFY]: 1 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 2 },
+            tokens: { [TOKEN_IDS.PURIFY]: 1 },
+        });
+        await expectStatusVisible(page, DEFENDER_ID, STATUS_IDS.POISON);
 
-            const coreBefore = await readCoreState(page) as Record<string, unknown>;
-            const hpBefore = (getPlayerState(coreBefore, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-
-            // 注入中毒 + 净化
-            const core = await readCoreState(page) as Record<string, unknown>;
-            const players = core.players as Record<string, Record<string, unknown>>;
-            const defender = players[defenderId];
-            await applyCoreStateDirect(page, {
-                ...core,
-                players: {
-                    ...players,
-                    [defenderId]: {
-                        ...defender,
-                        statusEffects: { ...((defender.statusEffects as Record<string, number>) ?? {}), [STATUS_IDS.POISON]: 2 },
-                        tokens: { ...((defender.tokens as Record<string, number>) ?? {}), purify: 1 },
-                    },
-                },
-            });
-            await page.waitForTimeout(500);
-
-            // 模拟净化移除中毒
-            await injectPlayerState(page, defenderId, { [STATUS_IDS.POISON]: 0 });
-
-            // 验证 HP 不变（中毒已被移除，不造成伤害）
-            const coreFinal = await readCoreState(page) as Record<string, unknown>;
-            const hpFinal = (getPlayerState(coreFinal, defenderId).resources as Record<string, number>)[RESOURCE_IDS.HP] ?? 0;
-            expect(hpFinal, '净化后不应受到中毒伤害').toBe(hpBefore);
-
-            await closeDebugPanelIfOpen(page);
-        } finally {
-            await hostContext.close();
-            await guestContext.close();
-        }
+        await patchPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 0 },
+        });
+        await expectPlayerState(page, DEFENDER_ID, {
+            statusEffects: { [STATUS_IDS.POISON]: 0 },
+            resources: { [RESOURCE_IDS.HP]: hpBefore },
+        });
     });
 });

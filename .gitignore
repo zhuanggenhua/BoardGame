@@ -321,3 +321,7 @@ evidence/**/*.jpeg
 evidence/**/*.webp
 evidence/**/*.gif
 evidence/**/*.avif
+
+# 性能诊断原始采集文件很大，只在本机保留；Git 只提交轻量结论或摘要。
+evidence/performance-diagnostics/
+evidence/**/chrome-trace-*.json

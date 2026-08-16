@@ -136,7 +136,7 @@ export interface QidahenRegionEventMarker {
     mapLabel?: string;
 }
 
-interface QidahenRegionSummary {
+export interface QidahenRegionSummary {
     id: string;
     name: string;
     isLogicalRegion: boolean;
@@ -870,8 +870,9 @@ interface QidahenRouteLine {
 
 interface QidahenLogEntry {
     id: string;
-    faction: QidahenFactionId;
+    faction?: QidahenFactionId;
     text: string;
+    timestamp?: number;
 }
 
 interface QidahenPendingScenarioCharacterChoice {

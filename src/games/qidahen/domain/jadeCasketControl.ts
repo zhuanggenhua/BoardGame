@@ -29,8 +29,9 @@ export const syncQidahenJadeCasketControlAfterRegionChange = (
     const previousOwner = previousState.activeEventCards.find((card) => (
         card.cardDefId === QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID
     ))?.ownerFactionId ?? null;
-    const transferTarget = previousOwner
-        ? CONTROL_REGION_IDS
+    let transferTarget: QidahenFactionId | null = null;
+    if (previousOwner) {
+        const transfer = CONTROL_REGION_IDS
             .map((regionId) => ({
                 previousController: getRegionController(previousState, regionId),
                 nextController: getRegionController(nextState, regionId),
@@ -40,8 +41,11 @@ export const syncQidahenJadeCasketControlAfterRegionChange = (
                 && nextController !== previousController
                 && nextController != null
                 && nextController !== 'neutral'
-            ))?.nextController ?? null
-        : null;
+            ));
+        if (transfer?.nextController && transfer.nextController !== 'neutral') {
+            transferTarget = transfer.nextController;
+        }
+    }
     const guihuaPrestigeMarkerController = getQidahenGuihuaController(nextState);
     const activeEventCards = transferTarget
         ? nextState.activeEventCards.map((card) => (

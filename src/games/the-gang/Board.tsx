@@ -2457,7 +2457,9 @@ function HandChipRail({
                                 onReturnCurrentChip?.(currentChip.handSlot ?? handSlot, event);
                                 return;
                             }
-                            onTakeCurrentChip?.(currentChip.chip, event);
+                            const chip = currentChip.chip;
+                            if (chip === undefined) return;
+                            onTakeCurrentChip?.(chip, event);
                         }}
                         {...currentChipDragHandlers}
                     >
@@ -2601,7 +2603,8 @@ export default function TheGangBoard({
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
     const toast = useToast();
-    useTutorialBridge(G.sys.tutorial, dispatch);
+    const runtimeDispatch = dispatch as unknown as (type: string, payload?: unknown) => void;
+    useTutorialBridge(G.sys.tutorial, runtimeDispatch);
     useGameAudio({
         config: THE_GANG_AUDIO_CONFIG,
         gameId: THE_GANG_MANIFEST.id,
@@ -2789,7 +2792,9 @@ export default function TheGangBoard({
             if (event.type !== CHIP_DRAG_UI_EVENT || event.playerId === localPlayerId) return;
             if (!isChipDragUiPayload(event.payload)) return;
 
-            if (event.payload.action === 'end') {
+            const payload = event.payload;
+
+            if (payload.action === 'end') {
                 setRemoteChipDrags((current) => {
                     const next = { ...current };
                     delete next[event.playerId];
@@ -2798,15 +2803,15 @@ export default function TheGangBoard({
                 return;
             }
 
-            if (event.payload.action === 'transfer') {
-                const { chip, round, target } = event.payload;
+            if (payload.action === 'transfer') {
+                const { chip, round, target } = payload;
                 if (typeof chip !== 'number' || !isTheGangRound(round) || !isChipTransferUiTarget(target)) {
                     return;
                 }
                 enqueueChipTransferAnimation(
                     chip,
                     round,
-                    resolveChipTransferSourcePoint(event.playerId, localPlayerId, event.payload, core.rules.config.twoHand),
+                    resolveChipTransferSourcePoint(event.playerId, localPlayerId, payload, core.rules.config.twoHand),
                     getElementViewportCenter(resolveChipTransferTargetElement(
                         event.playerId,
                         localPlayerId,
@@ -2818,7 +2823,7 @@ export default function TheGangBoard({
                 return;
             }
 
-            const { chip, round, x, y } = event.payload;
+            const { chip, round, x, y } = payload;
             if (typeof chip !== 'number' || !isTheGangRound(round) || typeof x !== 'number' || typeof y !== 'number') {
                 return;
             }
@@ -2829,9 +2834,9 @@ export default function TheGangBoard({
                     playerId: event.playerId,
                     chip,
                     round,
-                    origin: event.payload.origin,
-                    handSlot: event.payload.handSlot,
-                    sourcePlayerId: event.payload.sourcePlayerId,
+                    origin: payload.origin,
+                    handSlot: payload.handSlot,
+                    sourcePlayerId: payload.sourcePlayerId,
                     x: Math.min(1, Math.max(0, x)),
                     y: Math.min(1, Math.max(0, y)),
                     updatedAt: Date.now(),
@@ -2905,7 +2910,7 @@ export default function TheGangBoard({
         dispatch(type, {
             ...(payload as Record<string, unknown>),
             __internalPlayerId: commandPlayerId,
-        } as TheGangCommandMap[K]);
+        } as unknown as TheGangCommandMap[K]);
     };
 
     const updateChipDrag = (next: ChipDragState | null) => {
@@ -3305,7 +3310,7 @@ export default function TheGangBoard({
     };
 
     return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!G.sys.gameover, isLocalMode: !isMultiplayer }}>
+        <UndoProvider value={{ G, dispatch: runtimeDispatch, playerID, isGameOver: !!G.sys.gameover, isLocalMode: !isMultiplayer }}>
         <main
             className="the-gang-desktop-table h-full min-h-0 overflow-hidden bg-[#203b23] text-stone-50"
             data-game-ui="the-gang"

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { GameTutorialSource, TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameManifestEntry } from './manifest.types';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { AnyGameEngineConfig } from '../engine/transport/server';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import type { CriticalImageResolver } from '../core/types';
 import type { GameRuntimeAdapter } from './gameRuntimeAdapter';
@@ -9,9 +9,10 @@ import type { GameAudioConfig } from '../lib/audio/types';
 
 /** 游戏运行时实现（Board/engineConfig/tutorial/latencyConfig），按需懒加载 */
 export interface GameClientRuntimeModule {
-    engineConfig: GameEngineConfig;
+    engineConfig: AnyGameEngineConfig;
     // 各游戏 Board 组件的 props 都是具体的 GameBoardProps<...>，
     // 在统一 runtime 合同里使用宽类型避免被 Record<string, unknown> 误收窄。
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 统一 runtime 合同需要接纳各游戏具体 Board props。
     board: React.ComponentType<any>;
     audioConfig?: GameAudioConfig;
     tutorial?: TutorialManifest;
@@ -32,8 +33,9 @@ export interface GameClientManifestEntry {
 
     // ---- 以下字段已废弃，保留仅为向后兼容过渡 ----
     /** @deprecated 使用 loadRuntime() 替代 */
-    engineConfig?: GameEngineConfig;
+    engineConfig?: AnyGameEngineConfig;
     /** @deprecated 使用 loadRuntime() 替代 */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 兼容旧 manifest 字段的游戏具体 Board props。
     board?: React.ComponentType<any>;
     /** @deprecated 使用 loadRuntime() 替代 */
     tutorial?: TutorialManifest;

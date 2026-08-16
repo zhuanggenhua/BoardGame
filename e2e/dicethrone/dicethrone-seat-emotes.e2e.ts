@@ -61,7 +61,10 @@ test.describe('DiceThrone 座位表情', () => {
 
     test('客座从聊天窗口发送表情后只有对方能在客座锚点看到座位弹出表情', async ({ browser, baseURL }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
-        const setup = await setupOnlineMatch(browser, baseURL, { blockLobbySocket: false });
+        const setup = await setupOnlineMatch(browser, baseURL, {
+            skipImageGate: true,
+            blockLobbySocket: false,
+        });
         if (!setup) {
             test.skip(true, 'DiceThrone online match setup failed.');
             return;

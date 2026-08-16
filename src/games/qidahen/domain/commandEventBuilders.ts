@@ -4,11 +4,6 @@ import { createQidahenStructuredBattleRolls } from './battleRollMath';
 import {
     isQidahenFeignedRetreatCardPlayable,
 } from './feignedRetreatSelection';
-import type {
-    QidahenCommand,
-    QidahenCore,
-    QidahenEvent,
-} from './types';
 import {
     getActionChoiceById,
     getQidahenHandCardPaymentValue,

@@ -33,7 +33,7 @@ const resolvePrintedRegionName = (
     printedRegionNameById?: ReadonlyMap<string, string>,
 ) => (
     printedRegionNameById?.get(printedRegionId)
-    ?? QIDAHEN_MASK_REGION_BY_ID.get(printedRegionId)?.name
+    ?? (QIDAHEN_MASK_REGION_BY_ID.get(printedRegionId) as { name?: string } | undefined)?.name
     ?? printedRegionId
 );
 

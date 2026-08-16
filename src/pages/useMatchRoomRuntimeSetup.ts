@@ -195,10 +195,33 @@ export function useMatchRoomRuntimeSetup(args: {
     }, [gameId, gameImplReady, isTutorialRoute, matchId]);
 
     const shouldBlockBoardOnImagePreload = isTutorialRoute || !hasCompletedInitialOnlinePreload;
+    const [onlineBoardPreloadBlockingState, setOnlineBoardPreloadBlockingState] = useState(() => ({
+        scopeKey: matchRoomScopeKey,
+        blocking: false,
+    }));
+    const inferredOnlineBoardPreloadBlocking = !isTutorialRoute && shouldBlockBoardOnImagePreload;
+    const onlineBoardPreloadBlocking = inferredOnlineBoardPreloadBlocking
+        || (
+            !isTutorialRoute
+            && onlineBoardPreloadBlockingState.scopeKey === matchRoomScopeKey
+            && onlineBoardPreloadBlockingState.blocking
+        );
     const handleInitialOnlinePreloadReady = useCallback(() => {
         if (!isTutorialRoute) {
             setOnlinePreloadState({ scopeKey: matchRoomScopeKey, ready: true });
         }
+    }, [isTutorialRoute, matchRoomScopeKey]);
+    const handleOnlineBoardPreloadBlockingChange = useCallback((blocking: boolean) => {
+        setOnlineBoardPreloadBlockingState((previous) => {
+            const nextBlocking = !isTutorialRoute && blocking;
+            if (previous.scopeKey === matchRoomScopeKey && previous.blocking === nextBlocking) {
+                return previous;
+            }
+            return {
+                scopeKey: matchRoomScopeKey,
+                blocking: nextBlocking,
+            };
+        });
     }, [isTutorialRoute, matchRoomScopeKey]);
     const {
         board,
@@ -210,6 +233,7 @@ export function useMatchRoomRuntimeSetup(args: {
         loadingDescription: tLobby('matchRoom.loadingResources'),
         shouldBlockBoardOnImagePreload,
         onInitialOnlinePreloadReady: handleInitialOnlinePreloadReady,
+        onBoardPreloadBlockingChange: handleOnlineBoardPreloadBlockingChange,
     });
     const engineConfig = gameImplementation?.engineConfig ?? null;
     const latencyConfig = gameImplementation?.latencyConfig;
@@ -246,5 +270,6 @@ export function useMatchRoomRuntimeSetup(args: {
         latencyConfig,
         onlineBoard,
         tutorialBoard,
+        onlineBoardPreloadBlocking,
     };
 }

@@ -327,7 +327,7 @@ describe('Cardia - 音频配置', () => {
             const rule = CARDIA_AUDIO_CONFIG.bgmRules?.find(r => r.when(mockContext));
             expect(rule).toBeDefined();
             expect(rule?.group).toBe('main');
-            expect(rule?.key).toBe('bgm.villains_music_pack_vol.double_agent_rt_5.villains_double_agent_main');
+            expect(rule?.key).toBe('bgm.fantasy.fantasy_music_pack_vol.dragon_dance_rt_2.fantasy_vol5_dragon_dance_main');
         });
     });
     

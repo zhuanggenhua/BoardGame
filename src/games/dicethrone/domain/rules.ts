@@ -1203,7 +1203,13 @@ const checkResponseWindowCardPlay = (
             return { ok: true };
         }
         case 'afterCardPlayed':
-            return failResponseWindow();
+            if (card.timing !== 'instant') {
+                return failResponseWindow();
+            }
+            if (!hasAnyActionEffect(card)) {
+                return failResponseWindow();
+            }
+            return { ok: true };
         case 'afterAttackResolved':
             if (cond?.pendingDamage) {
                 if (card.timing !== 'instant' && card.timing !== 'roll') {

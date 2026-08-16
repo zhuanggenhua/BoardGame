@@ -283,7 +283,7 @@ export function InspectorPanel({
     const isMultiSelected = selectedCount > 1;
     const primarySelectedNodeId = resolvedSelectedNodeIds[0] ?? null;
     const selectedRect = buildRect(sourceNode, compiledNode?.rect);
-    const nodeLabel = sourceNode ? getNodeKindLabel(sourceNode as UISceneNodeSource & { direction?: 'absolute' | 'horizontal' | 'vertical' }) : null;
+    const nodeLabel = sourceNode ? getNodeKindLabel(sourceNode) : null;
     const nodeName = isMultiSelected
         ? `已选 ${selectedCount} 个节点`
         : selectedNodeId

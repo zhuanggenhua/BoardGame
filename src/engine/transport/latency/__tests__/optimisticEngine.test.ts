@@ -558,6 +558,26 @@ describe('OptimisticEngine — stateID 确认健壮性', () => {
         expect((suspicious.stateToRender.core as CounterCore).value).toBe(10);
         expect(engine.hasPendingCommands()).toBe(false);
     });
+
+    it('服务端 stateID 已越过本地 pending 且未携带执行玩家时，应丢弃旧 pending，不在外部全量状态上重放旧命令', () => {
+        const engine = createTestEngine({
+            INCREMENT: 'deterministic',
+        });
+
+        engine.reconcile(createTestState(10), { stateID: 0 });
+
+        const optimistic = engine.processCommand('INCREMENT', {}, '0');
+        expect((optimistic.stateToRender!.core as CounterCore).value).toBe(11);
+        expect(engine.hasPendingCommands()).toBe(true);
+
+        const externallyInjected = engine.reconcile(createTestState(50), {
+            stateID: 3,
+        });
+
+        expect(externallyInjected.didRollback).toBe(true);
+        expect((externallyInjected.stateToRender.core as CounterCore).value).toBe(50);
+        expect(engine.hasPendingCommands()).toBe(false);
+    });
 });
 
 // ============================================================================

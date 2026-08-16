@@ -404,7 +404,6 @@ export function getQidahenDriveTigerConsentSelectionForCore(
     if (
         commanderFactionId == null
         || dispatchSelection.attackerFactionId === commanderFactionId
-        || dispatchSelection.attackerFactionId === 'neutral'
     ) {
         return null;
     }

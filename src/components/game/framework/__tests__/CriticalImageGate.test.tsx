@@ -115,6 +115,20 @@ describe('CriticalImageGate', () => {
         expect(html).not.toContain('data-loading="true"');
     });
 
+    it('enabled=false 时仍应通知外层预加载已就绪', async () => {
+        const onReady = vi.fn();
+
+        render(
+            <CriticalImageGate enabled={false} gameId="dicethrone" gameState={{}} onReady={onReady}>
+                <div>子内容</div>
+            </CriticalImageGate>,
+        );
+
+        await waitFor(() => {
+            expect(onReady).toHaveBeenCalledTimes(1);
+        });
+    });
+
     it('enabled=true 且需要加载时显示加载屏', () => {
         const html = renderToStaticMarkup(
             <CriticalImageGate

@@ -32,6 +32,7 @@ type SetupDTOnlineMatchOptions = {
     blockLobbySocket?: boolean;
     skipImageGate?: boolean;
     characterSelectionTimeout?: number;
+    gameServerBaseURL?: string;
 };
 
 export const createDTRoomViaAPI = async (
@@ -71,8 +72,9 @@ export const joinDTMatchViaAPI = async (
     playerId: string,
     playerName: string,
     guestId?: string,
+    gameServerBaseURLOverride?: string,
 ): Promise<string | null> => {
-    const gameServerBaseURL = getGameServerBaseURL();
+    const gameServerBaseURL = gameServerBaseURLOverride ?? getGameServerBaseURL();
     const url = `${gameServerBaseURL}/games/${GAME_NAME}/${matchId}/join`;
     
     const response = await page.request.post(url, {
@@ -688,6 +690,7 @@ export interface DTMatchSetup {
     hostPage: Page;
     guestPage: Page;
     matchId: string;
+    autoStarted?: boolean;
 }
 
 export type DTPlayerSetup = {
@@ -709,11 +712,24 @@ export interface DTMultiMatchSetup {
 export const setupDTOnlineMatch = async (
     browser: Browser,
     baseURL: string | undefined,
-    options?: SetupDTOnlineMatchOptions,
+    optionsOrHostCharacter?: SetupDTOnlineMatchOptions | SelectableCharacterId,
+    legacyGuestCharacter?: SelectableCharacterId,
 ): Promise<DTMatchSetup | null> => {
+    const legacyHostCharacter = typeof optionsOrHostCharacter === 'string'
+        ? optionsOrHostCharacter
+        : undefined;
+    const options = typeof optionsOrHostCharacter === 'object' && optionsOrHostCharacter !== null
+        ? optionsOrHostCharacter
+        : legacyHostCharacter
+            ? {
+                skipImageGate: true,
+                characterSelectionTimeout: 90000,
+            }
+            : undefined;
+    const gameServerBaseURL = options?.gameServerBaseURL ?? getGameServerBaseURL();
     const contextInitOptions = typeof options === 'object' && options !== null
-        ? { blockLobbySocket: options.blockLobbySocket, skipImageGate: options.skipImageGate }
-        : {};
+        ? { blockLobbySocket: options.blockLobbySocket, skipImageGate: options.skipImageGate ?? true }
+        : { skipImageGate: true };
     const hostContext = await browser.newContext({ baseURL });
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
@@ -724,15 +740,16 @@ export const setupDTOnlineMatch = async (
     await waitForFrontendAssetsBestEffort(hostPage, 30000);
     await preloadDTMatchRouteModule(hostPage);
 
-    if (!(await ensureGameServerAvailable(hostPage))) return null;
+    if (!(await ensureGameServerAvailable(hostPage, gameServerBaseURL))) return null;
 
     const hostGuestId = `e2e_host_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const matchId = await createDTRoomViaAPI(hostPage, hostGuestId);
+    const matchId = await createDTRoomViaAPI(hostPage, { guestId: hostGuestId, gameServerBaseURL });
     if (!matchId) return null;
 
     const hostCredentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
         guestId: hostGuestId,
         playerName: `Host-${Date.now()}`,
+        gameServerBaseURL,
     });
     if (!hostCredentials) return null;
 
@@ -744,7 +761,14 @@ export const setupDTOnlineMatch = async (
     const guestPage = await guestContext.newPage();
 
     const guestGuestId = `e2e_guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const guestCredentials = await joinDTMatchViaAPI(guestPage, matchId, '1', `Guest-${Date.now()}`, guestGuestId);
+    const guestCredentials = await joinDTMatchViaAPI(
+        guestPage,
+        matchId,
+        '1',
+        `Guest-${Date.now()}`,
+        guestGuestId,
+        gameServerBaseURL,
+    );
     if (!guestCredentials) return null;
 
     await seedDTMatchCredentials(guestContext, matchId, '1', guestCredentials);
@@ -762,7 +786,24 @@ export const setupDTOnlineMatch = async (
         }),
     ]);
 
-    return { hostContext, guestContext, hostPage, guestPage, matchId };
+    if (legacyHostCharacter && legacyGuestCharacter) {
+        await selectCharacter(hostPage, legacyHostCharacter);
+        await selectCharacter(guestPage, legacyGuestCharacter);
+        await readyAndStartGame(hostPage, guestPage);
+        await Promise.all([
+            waitForGameBoard(hostPage),
+            waitForGameBoard(guestPage),
+        ]);
+    }
+
+    return {
+        hostContext,
+        guestContext,
+        hostPage,
+        guestPage,
+        matchId,
+        autoStarted: Boolean(legacyHostCharacter && legacyGuestCharacter),
+    };
 };
 
 export const setupDTOnlineMatchWithPlayers = async (
@@ -788,7 +829,7 @@ export const setupDTOnlineMatchWithPlayers = async (
     const shouldBatchWaitForCharacterSelection = !options.skipCharacterSelectionWait && joinPlayerIds.length > 0;
     const contextInitOptions = {
         blockLobbySocket: options.blockLobbySocket,
-        skipImageGate: options.skipImageGate,
+        skipImageGate: options.skipImageGate ?? true,
     };
 
     const hostContext = await browser.newContext({
@@ -859,6 +900,7 @@ export const setupDTOnlineMatchWithPlayers = async (
             playerId,
             `Guest-${playerId}-${Date.now()}`,
             guestGuestId,
+            gameServerBaseURL,
         );
         if (!guestCredentials) {
             await guestContext.close();
@@ -1416,11 +1458,18 @@ export const getModalContainerByHeading = (page: Page, heading: string | RegExp)
 /**
  * 断言手牌可见
  */
-export const assertHandCardsVisible = async (page: Page) => {
-    const handArea = page.getByTestId('dt-hand-area');
+export const assertHandCardsVisible = async (
+    page: Page,
+    expectedCount = 1,
+    label = 'player',
+) => {
+    const handArea = page.getByTestId('hand-area');
     await expect(handArea).toBeVisible({ timeout: 5000 });
     const cards = handArea.locator('[data-card-id]');
-    await expect(cards.first()).toBeVisible({ timeout: 3000 });
+    if (expectedCount > 0) {
+        await expect(cards, `${label} 手牌数量应为 ${expectedCount}`).toHaveCount(expectedCount, { timeout: 10000 });
+    }
+    await expect(cards.first(), `${label} 至少应有 1 张可见手牌`).toBeVisible({ timeout: 3000 });
 };
 
 /**

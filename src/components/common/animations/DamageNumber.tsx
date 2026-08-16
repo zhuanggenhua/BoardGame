@@ -26,6 +26,8 @@ export interface DamageNumberProps {
   fontScale?: number;
   /** 自定义颜色 class，默认 text-red-400 */
   colorClass?: string;
+  /** 飘字动画时长，默认 0.8s */
+  durationSeconds?: number;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export const DamageNumber: React.FC<DamageNumberProps> = ({
   testId = 'damage-number-float',
   fontScale = 1,
   colorClass = 'text-red-400',
+  durationSeconds = 0.8,
   className = '',
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -67,7 +70,7 @@ export const DamageNumber: React.FC<DamageNumberProps> = ({
       aria-label={`伤害 -${damage}`}
       initial={{ y: 0, opacity: 0, scale: 0.5 }}
       animate={{ y: floatY, opacity: [0, 1, 1, 0], scale: [0.5, 1.3, 1.1, 0.8] }}
-      transition={{ duration: 0.8, delay, ease: 'easeOut' }}
+      transition={{ duration: durationSeconds, delay, ease: 'easeOut' }}
     >
       <span
         className={`font-black whitespace-nowrap ${colorClass}`}

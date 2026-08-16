@@ -9,7 +9,6 @@ import type { PendingInteraction } from '../core-types';
 import type { AbilityDef, AbilityVariantDef } from '../combat';
 import type {
     BonusDamageAddedEvent,
-    ChoiceRequestedEvent,
     CpChangedEvent,
     DamageDealtEvent,
     DamageShieldGrantedEvent,
@@ -177,11 +176,18 @@ function handleShowdownBonus({ attackerId, targetId, sourceAbilityId, state, tim
 
     const attackerRoll = random.d(6);
     const defenderRoll = random.d(6);
-    const resolvedDefenderId = targetId ?? getSelectedCombatOpponentId(
+    const selectedDefenderId = getSelectedCombatOpponentId(
         state,
         attackerId,
         state.turnPhase,
-    ) ?? state.pendingAttack?.defenderId ?? attackerId;
+    ) ?? state.pendingAttack?.defenderId;
+    const explicitOpponentId = targetId !== attackerId && getOpponents(state, attackerId).includes(targetId)
+        ? targetId
+        : undefined;
+    const resolvedDefenderId = selectedDefenderId ?? explicitOpponentId;
+    if (!resolvedDefenderId) {
+        throw new Error(`[DiceThrone] ${sourceAbilityId} 枪战决斗缺少目标对手：attackerId=${attackerId}`);
+    }
 
     const amount = typeof action.params?.bonusDamageOnWin === 'number'
         ? action.params.bonusDamageOnWin
@@ -902,9 +908,19 @@ export function registerGunslingerCustomActions(): void {
             target: { playerId: originalAttackerId },
             baseDamage: 3,
             state,
+            damageScope: 'direct',
             timestamp,
         });
-        return damageCalc.toEvents() as DiceThroneEvent[];
+        return damageCalc.toEvents().map(event => event.type === 'DAMAGE_DEALT'
+            ? {
+                ...event,
+                payload: {
+                    ...event.payload,
+                    damageScope: 'direct',
+                    unblockable: true,
+                },
+            }
+            : event) as DiceThroneEvent[];
     });
 
     registerChoiceResolvedEventHandler('gunslinger-duel-lose', ({ state, playerId, sourceAbilityId, timestamp }) => {
@@ -916,9 +932,19 @@ export function registerGunslingerCustomActions(): void {
             target: { playerId: originalAttackerId },
             baseDamage: 1,
             state,
+            damageScope: 'direct',
             timestamp,
         });
-        return damageCalc.toEvents() as DiceThroneEvent[];
+        return damageCalc.toEvents().map(event => event.type === 'DAMAGE_DEALT'
+            ? {
+                ...event,
+                payload: {
+                    ...event.payload,
+                    damageScope: 'direct',
+                    unblockable: true,
+                },
+            }
+            : event) as DiceThroneEvent[];
     });
 
     registerChoiceResolvedEventHandler('gunslinger-duel-prevent-half', ({ playerId, sourceAbilityId, timestamp }) => ([{

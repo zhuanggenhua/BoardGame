@@ -11,7 +11,7 @@
  * 额外功能（如召唤暗角遮罩）由游戏侧在 FxLayer 外部自行处理。
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useSyncExternalStore } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { FxBus } from './useFxBus';
 
@@ -40,6 +40,12 @@ export interface FxLayerProps {
 // 组件
 // ============================================================================
 
+function useFxLayerEffects(bus: FxBus) {
+  const subscribe = bus.subscribe ?? (() => () => {});
+  const getSnapshot = bus.getSnapshot ?? (() => bus.activeEffects);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
 export const FxLayer: React.FC<FxLayerProps> = ({
   bus,
   getCellPosition,
@@ -48,7 +54,8 @@ export const FxLayer: React.FC<FxLayerProps> = ({
   className = '',
   'data-testid': testId,
 }) => {
-  const { activeEffects, removeEffect, registry, fireImpact } = bus;
+  const activeEffects = useFxLayerEffects(bus);
+  const { removeEffect, registry, fireImpact } = bus;
 
   // 稳定化外部回调引用
   const onCompleteRef = useRef(onEffectComplete);

@@ -43,7 +43,6 @@ function buildQidahenFeignedRetreatInteraction(
             labelKey: 'board.actions.common.skip',
             value: { choiceId: 'skip' },
             displayMode: 'button' as const,
-            description: '保留手牌并继续原骑兵劫掠',
         }],
         {
             sourceId: QIDAHEN_FEIGNED_RETREAT_INTERACTION_SOURCE_ID,
@@ -81,7 +80,6 @@ function buildQidahenRaidAndAmbushInteraction(
             label: getQidahenTroopKindLabel(troopKind),
             value: { choiceId: `troop-kind:${troopKind}` },
             displayMode: 'button' as const,
-            description: `使敌方${getQidahenTroopKindLabel(troopKind)}本场战斗骰子等级 -1`,
         }))
         : [{
             id: selection.phase === 'offer' ? 'skip' : 'skip-follow-up',
@@ -91,9 +89,6 @@ function buildQidahenRaidAndAmbushInteraction(
                 : 'board.actions.raidAndAmbush.skipFollowUp',
             value: { choiceId: selection.phase === 'offer' ? 'skip' : 'skip-follow-up' },
             displayMode: 'button' as const,
-            description: selection.phase === 'offer'
-                ? '保留手牌并继续当前战斗'
-                : '结束响应并继续当前战斗',
         }];
     const interaction = createSimpleChoice(
         `qidahen-raid-and-ambush-${selection.targetRuntimeRegionId}-${selection.phase}`,
@@ -130,10 +125,8 @@ function buildQidahenPendingTargetInteraction(
         return null;
     }
 
-    const description = `${pendingTargetAction.resolutionHint}${pendingTargetAction.defenderPayCost != null ? ` · 守方需付 ${pendingTargetAction.defenderPayCost}` : ''}`;
     const options = buildPendingTargetChoiceOptions(state.core, pendingTargetAction).map((option) => ({
         ...option,
-        description,
         displayMode: 'button' as const,
     }));
 
@@ -185,7 +178,6 @@ function buildQidahenPostBattleInteraction(
         label: choice.label,
         value: { choiceId: choice.id },
         displayMode: 'button' as const,
-        description: choice.detail,
     }));
 
     const interaction = createSimpleChoice(

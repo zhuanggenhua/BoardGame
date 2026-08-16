@@ -26,10 +26,15 @@ export function QidahenPregameScenarioGate({
         () => resolveQidahenLocalSetup({ searchParams, tutorialId, tutorialMode }),
         [searchParams, tutorialId, tutorialMode],
     );
+    const readyState: QidahenPregameScenarioGateReadyState = {
+        numPlayers: setup.numPlayers,
+        setupSelections: setup.setupSelections ?? {},
+        setupData: setup.setupData ?? {},
+    };
 
     return (
         <>
-            {children(setup)}
+            {children(readyState)}
         </>
     );
 }

@@ -57,7 +57,7 @@ export const applyQidahenWheelImmediateEffect = (
                 : getPreferredSelectedRegionIdForFaction(state, factionId)
         )
         : state.selectedRegionId;
-    const targetRegionId = selectedRegion?.id ?? fallbackRegionId;
+    const targetRegionId = selectedRegion?.id ?? fallbackRegionId ?? state.selectedRegionId;
     const targetRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
     const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));
     const summaryLines: string[] = [];

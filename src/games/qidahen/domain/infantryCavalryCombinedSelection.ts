@@ -34,10 +34,11 @@ const getCommittedPiecesForCommitment = (
     if (!sourceRegion) {
         return [];
     }
-    const sourceSnapshot = getRegionSiegeAttackerForceSnapshot(
-        sourceRegion,
-        state.pendingTargetAction?.attackerFactionId ?? sourceRegion.controller,
-    ) ?? getNonSiegedCityActionSourceSnapshot(sourceRegion);
+    const sourceFactionId = state.pendingTargetAction?.attackerFactionId
+        ?? (sourceRegion.controller === 'neutral' ? null : sourceRegion.controller);
+    const sourceSnapshot = sourceFactionId
+        ? getRegionSiegeAttackerForceSnapshot(sourceRegion, sourceFactionId) ?? getNonSiegedCityActionSourceSnapshot(sourceRegion)
+        : getNonSiegedCityActionSourceSnapshot(sourceRegion);
     const allPieces = expandSpecialTroopStacksToCompatPieces(sourceSnapshot.specialTroops);
     if (commitment.selectedSpecialPieceIds != null) {
         const selectedIds = new Set(commitment.selectedSpecialPieceIds);

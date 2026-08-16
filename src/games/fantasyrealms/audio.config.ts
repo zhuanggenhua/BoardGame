@@ -89,6 +89,12 @@ export const FANTASY_REALMS_AUDIO_CONFIG: GameAudioConfig = {
             BGM_MOONVEIL_KEY,
             BGM_SORCERER_KEY,
         ],
+        battle: [
+            BGM_ROYALTY_KEY,
+            BGM_MYSTWOOD_REVERIE_KEY,
+            BGM_MOONVEIL_KEY,
+            BGM_SORCERER_KEY,
+        ],
         endgame: [BGM_CLOUD_CATHEDRAL_KEY],
     },
     feedbackResolver: (event, context) => {

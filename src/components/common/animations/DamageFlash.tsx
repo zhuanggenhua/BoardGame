@@ -53,6 +53,8 @@ export interface DamageFlashProps {
   numberFontScale?: number;
   /** 伤害数字颜色 class */
   numberColorClass?: string;
+  /** 伤害数字动画时长（秒），用于远景棋盘截图保留更长可读窗口 */
+  numberDurationSeconds?: number;
   /** 自定义斜切颜色 */
   slashColor?: string;
   /** 自定义红脉冲颜色 */
@@ -86,6 +88,7 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   numberTestId,
   numberFontScale,
   numberColorClass,
+  numberDurationSeconds,
   slashColor,
   pulseColor,
   slashDurationMs,
@@ -180,6 +183,7 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
           testId={numberTestId}
           fontScale={numberFontScale}
           colorClass={numberColorClass}
+          durationSeconds={numberDurationSeconds}
         />
       )}
     </div>

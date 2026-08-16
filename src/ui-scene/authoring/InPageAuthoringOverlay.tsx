@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UISceneCompiledArtifact, UISceneCompiledNode, UISceneRect, UISceneSourceDocument } from '../types';
+import type { UISceneCompiledArtifact, UISceneCompiledNode, UISceneNodeSource, UISceneRect, UISceneSourceDocument } from '../types';
 import type { UISceneAuthoringMeta } from './authoringMeta';
 import { getAuthoringNodeName } from './authoringMeta';
 import {
@@ -23,6 +23,10 @@ type CanvasDropTarget = {
     position: UISceneNodeMovePosition;
     containerId: string;
     indicatorRect?: UISceneRect;
+};
+type SyntheticFlowChild = {
+    sourceChild: UISceneNodeSource;
+    compiledChild: UISceneCompiledNode;
 };
 type ResizeModifierState = {
     preserveAspectRatio: boolean;
@@ -229,13 +233,13 @@ function buildSyntheticFlowChildren(
     let cursorX = containerRect.x + padding.left;
     let cursorY = containerRect.y + padding.top;
 
-    return sourceContainer.children
+    return (sourceContainer.children ?? [])
         .filter((child) => !blockedIds.has(child.id))
         .map((child) => ({
             sourceChild: child,
             compiledChild: containerNode.children.find((compiledChild) => compiledChild.id === child.id) ?? null,
         }))
-        .filter((child) => child.compiledChild && isNodeVisible(child.compiledChild, activeState))
+        .filter((child): child is SyntheticFlowChild => child.compiledChild !== null && isNodeVisible(child.compiledChild, activeState))
         .map(({ sourceChild, compiledChild }) => {
             const layout = sourceChild.layout ?? {};
             const width = sourceContainer.direction === 'horizontal'

@@ -1,5 +1,5 @@
 export const MW_FX = {
-    SPELL_CAST: 'mage-wars.spell.cast',
+    SUMMON: 'mage-wars.summon',
     SPELL_PUSH: 'mage-wars.spell.push',
     SPELL_TELEPORT: 'mage-wars.spell.teleport',
     ATTACK_IMPACT: 'mage-wars.attack.impact',

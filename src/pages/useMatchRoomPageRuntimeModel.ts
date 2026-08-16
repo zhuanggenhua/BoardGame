@@ -35,6 +35,7 @@ export type MatchRoomPageRuntimeSetupModel = Pick<
     | 'latencyConfig'
     | 'onlineBoard'
     | 'tutorialBoard'
+    | 'onlineBoardPreloadBlocking'
 >;
 
 export type MatchRoomPageStageControllersModel = Pick<
@@ -235,6 +236,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
     stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
     seatRuntime: MatchRoomOnlineSeatRuntimeAdapter;
+    runtimeSetup: MatchRoomPageRuntimeSetupModel;
 }): MatchRoomOnlineHudBridgeProps {
     const {
         matchId,
@@ -245,6 +247,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         stageControllers,
         exitFlow,
         seatRuntime,
+        runtimeSetup,
     } = args;
 
     return {
@@ -260,7 +263,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         onForceExit: exitFlow.handleForceExitLocal,
         onForceEndAiPhase: stageControllers.forceEndAiPhaseHandler ?? undefined,
         showForceEndAiPhase: sessionState.matchStatus.isHost && sessionState.hasOnlineAiSeat,
-        isLoading: exitFlow.isLeaving,
+        isLoading: exitFlow.isLeaving || runtimeSetup.onlineBoardPreloadBlocking,
         seatControllers: seatRuntime.seatControllers,
         seatSwapConfig,
         engineConfig: seatRuntime.engineConfig,
@@ -298,6 +301,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
     stageControllers: MatchRoomPageStageControllersModel;
     exitFlow: MatchRoomPageExitFlowModel;
     seatRuntime: MatchRoomOnlineSeatRuntimeAdapter;
+    runtimeSetup: MatchRoomPageRuntimeSetupModel;
 }): MatchRoomOnlineOverlaysStageAdapter {
     const {
         matchId,
@@ -308,6 +312,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
         stageControllers,
         exitFlow,
         seatRuntime,
+        runtimeSetup,
     } = args;
 
     return {
@@ -332,6 +337,7 @@ function buildMatchRoomOnlineOverlaysStageAdapter(args: {
             stageControllers,
             exitFlow,
             seatRuntime,
+            runtimeSetup,
         }),
     };
 }

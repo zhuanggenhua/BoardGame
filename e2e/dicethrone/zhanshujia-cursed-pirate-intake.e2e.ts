@@ -10925,7 +10925,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 (window as Window).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.playerId === '3'
             ), { timeout: 10000 });
             await expect(defenderCaptainPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 10000 });
-            await expect(defenderCaptainPage.locator('[data-testid^="dt-defender-choice-option-"]')).toHaveCount(2, { timeout: 10000 });
+            await expect(defenderCaptainPage.locator('[data-testid^="dt-defender-choice-option-"][data-player-id]')).toHaveCount(2, { timeout: 10000 });
             await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-1')).toBeVisible({ timeout: 10000 });
             await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-3')).toBeVisible({ timeout: 10000 });
             await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-2')).toHaveCount(0);
@@ -11028,7 +11028,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 (window as Window).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.playerId === '0'
             ), { timeout: 10000 });
             await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 10000 });
-            await expect(hostPage.locator('[data-testid^="dt-defender-choice-option-"]')).toHaveCount(2, { timeout: 10000 });
+            await expect(hostPage.locator('[data-testid^="dt-defender-choice-option-"][data-player-id]')).toHaveCount(2, { timeout: 10000 });
             await expect(hostPage.getByTestId('dt-defender-choice-option-1')).toHaveAttribute('data-team-tone', 'enemy');
             await expect(hostPage.getByTestId('dt-defender-choice-option-3')).toHaveAttribute('data-team-tone', 'enemy');
             await expect(hostPage.getByTestId('dt-defender-choice-option-2')).toHaveCount(0);

@@ -766,12 +766,14 @@ export function injectPendingInteraction(
         const selectCount = interaction.selectCount ?? 1;
         const maxSteps = (mode === 'adjust' || mode === 'any') ? undefined
             : selectCount;
+        const minSteps = interaction.minSelectCount
+            ?? ((mode === 'adjust' || mode === 'any') ? 1 : selectCount);
 
         const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> = {
             title: interaction.titleKey,
             sourceId: interaction.sourceCardId,
             maxSteps,
-            minSteps: (mode === 'adjust' || mode === 'any') ? 1 : undefined,
+            minSteps,
             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
             localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
             toCommands: (result) => diceModifyToCommands(result, selectCount),
@@ -803,7 +805,7 @@ export function injectPendingInteraction(
         title: interaction.titleKey,
         sourceId: interaction.sourceCardId,
         maxSteps: selectCount,
-        minSteps: 1,
+        minSteps: interaction.minSelectCount ?? 1,
         initialResult: { selectedDiceIds: [] },
         localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
         toCommands: (result) => diceSelectToCommands(result, selectCount),

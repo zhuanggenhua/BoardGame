@@ -193,4 +193,117 @@ describe('大杀四方 UI 运行时状态规范化', () => {
         expect(normalized.core?.madnessDeck).toEqual(['special_madness', 'special_madness']);
         expect(normalized.anomalies).toEqual([]);
     });
+
+    it('会把 UI 会直接渲染的非法数字字段收敛为安全值并上报异常', () => {
+        const normalized = normalizeSmashUpCoreForUi({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: Number.NaN,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: undefined,
+                    minionLimit: Number.NaN,
+                    actionsPlayed: null,
+                    actionLimit: 'bad',
+                    factions: ['pirates', 'wizards'],
+                    minionsPlayedPerBase: { 0: Number.NaN, 1: 2 },
+                    baseLimitedMinionQuota: { 0: 1, 1: Number.NaN },
+                    baseLimitedMinionPowerCaps: { 0: [2, Number.NaN, 'bad'] },
+                    extraMinionPowerMax: Number.NaN,
+                    extraMinionPowerCaps: [2, Number.NaN],
+                    sameNameMinionRemaining: Number.NaN,
+                },
+            },
+            turnOrder: ['0'],
+            currentPlayerIndex: 0,
+            bases: [
+                {
+                    defId: 'base_tortuga',
+                    minions: [
+                        {
+                            uid: 'minion-1',
+                            defId: 'pirate_first_mate',
+                            controller: '0',
+                            owner: '0',
+                            basePower: undefined,
+                            powerCounters: Number.NaN,
+                            powerModifier: null,
+                            tempPowerModifier: 'bad',
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                    ],
+                    ongoingActions: [
+                        {
+                            uid: 'ongoing-1',
+                            defId: 'vampire_summon_wolves',
+                            ownerId: '0',
+                            metadata: {
+                                powerCounters: Number.NaN,
+                            },
+                        },
+                    ],
+                },
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 1,
+            titans: [
+                {
+                    uid: 'titan-1',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: Number.NaN,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0 },
+                },
+            ],
+        } as any);
+
+        const player = normalized.core?.players['0'];
+        expect(player?.vp).toBe(0);
+        expect(player?.minionsPlayed).toBe(0);
+        expect(player?.minionLimit).toBe(1);
+        expect(player?.actionsPlayed).toBe(0);
+        expect(player?.actionLimit).toBe(1);
+        expect(player?.minionsPlayedPerBase).toEqual({ 1: 2 });
+        expect(player?.baseLimitedMinionQuota).toEqual({ 0: 1 });
+        expect(player?.baseLimitedMinionPowerCaps).toEqual({ 0: [2] });
+        expect(player?.extraMinionPowerMax).toBeUndefined();
+        expect(player?.extraMinionPowerCaps).toEqual([2]);
+        expect(player?.sameNameMinionRemaining).toBeUndefined();
+
+        const minion = normalized.core?.bases[0]?.minions[0];
+        expect(minion?.basePower).toBe(0);
+        expect(minion?.powerCounters).toBe(0);
+        expect(minion?.powerModifier).toBe(0);
+        expect(minion?.tempPowerModifier).toBe(0);
+        expect(normalized.core?.bases[0]?.ongoingActions[0]?.metadata?.powerCounters).toBe(0);
+        expect(normalized.core?.titans?.[0]?.powerCounters).toBe(0);
+
+        expect(normalized.anomalies).toEqual(expect.arrayContaining([
+            { path: 'players.0.vp', actual: 'invalid-number' },
+            { path: 'players.0.minionsPlayed', actual: 'invalid-number' },
+            { path: 'players.0.minionLimit', actual: 'invalid-number' },
+            { path: 'players.0.actionsPlayed', actual: 'invalid-number' },
+            { path: 'players.0.actionLimit', actual: 'invalid-number' },
+            { path: 'players.0.minionsPlayedPerBase.0', actual: 'invalid-number' },
+            { path: 'players.0.baseLimitedMinionQuota.1', actual: 'invalid-number' },
+            { path: 'players.0.baseLimitedMinionPowerCaps.0[1]', actual: 'invalid-number' },
+            { path: 'players.0.baseLimitedMinionPowerCaps.0[2]', actual: 'invalid-number' },
+            { path: 'players.0.extraMinionPowerMax', actual: 'invalid-number' },
+            { path: 'players.0.extraMinionPowerCaps[1]', actual: 'invalid-number' },
+            { path: 'players.0.sameNameMinionRemaining', actual: 'invalid-number' },
+            { path: 'bases[0].minions[0].basePower', actual: 'invalid-number' },
+            { path: 'bases[0].minions[0].powerCounters', actual: 'invalid-number' },
+            { path: 'bases[0].minions[0].powerModifier', actual: 'invalid-number' },
+            { path: 'bases[0].minions[0].tempPowerModifier', actual: 'invalid-number' },
+            { path: 'bases[0].ongoingActions[0].metadata.powerCounters', actual: 'invalid-number' },
+            { path: 'titans[0].powerCounters', actual: 'invalid-number' },
+        ]));
+    });
 });
