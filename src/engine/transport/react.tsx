@@ -19,6 +19,7 @@
  * const { state, dispatch, playerId, isConnected } = useGameClient<MyCore, MyCommands>();
  * ```
  */
+/* eslint-disable react-refresh/only-export-components -- Public transport entry keeps legacy component and helper re-exports. */
 
 import type { ReactNode } from 'react';
 import type { GameEngineConfig } from './server';
@@ -37,9 +38,11 @@ import {
 } from './reactContext';
 export {
     useGameClient,
-    GameClientOverrideProvider,
     useBoardProps,
 } from './reactContext';
+export {
+    GameClientOverrideProvider,
+} from './gameClientOverrideProvider';
 export {
     BoardBridge,
     BOARD_ERROR_BOUNDARY_MAX_RETRIES,
