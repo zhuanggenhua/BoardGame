@@ -1111,7 +1111,6 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(hostPage, (state) => state.sys?.interaction?.current?.data?.meta?.dtType === 'modifyDie');
             await screenshotStep(hostPage, testInfo, '05-进攻方打出改骰牌-等待选择骰子');
             await clickVisibleDie(hostPage, 4);
-            await confirmDiceInteraction(hostPage);
             await waitForState(hostPage, (state) => state.core?.dice?.[4]?.value === 6 && !state.sys?.interaction?.current);
             await screenshotStep(hostPage, testInfo, '06-进攻方改骰完成-一颗骰子改为六');
 

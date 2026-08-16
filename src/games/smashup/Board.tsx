@@ -140,6 +140,12 @@ type ReactionChoicePromptOptionValue = {
     targetMinionUid?: unknown;
 };
 type FieldSourceBaseTargetPromptOptionValue = {
+    fieldInteractionType?: unknown;
+    fieldSourceType?: unknown;
+    fieldTargetType?: unknown;
+    sourceUid?: unknown;
+    targetBaseIndex?: unknown;
+    /** Legacy marker kept only so old queued interactions can still be resolved. */
     fieldSourceTargetType?: unknown;
     minionUid?: unknown;
     baseIndex?: unknown;
@@ -167,16 +173,47 @@ function getReactionChoiceTargetMinionUid(value: unknown): string | undefined {
     return typeof candidate?.targetMinionUid === 'string' ? candidate.targetMinionUid : undefined;
 }
 
-function isFieldSourceBaseTargetValue(value: unknown): value is FieldSourceBaseTargetPromptOptionValue & {
-    fieldSourceTargetType: 'base';
-    minionUid: string;
-    baseIndex: number;
-} {
+function readFieldSourceBaseTargetValue(value: unknown): {
+    sourceMinionUid: string;
+    targetBaseIndex: number;
+    sourceBaseIndex?: number;
+} | null {
     const candidate = value as FieldSourceBaseTargetPromptOptionValue | undefined;
-    return candidate?.fieldSourceTargetType === 'base'
+    if (!candidate) return null;
+
+    if (
+        candidate.fieldInteractionType === 'source-target'
+        && candidate.fieldSourceType === 'minion'
+        && candidate.fieldTargetType === 'base'
+        && typeof candidate.sourceUid === 'string'
+        && typeof candidate.targetBaseIndex === 'number'
+        && candidate.targetBaseIndex >= 0
+    ) {
+        return {
+            sourceMinionUid: candidate.sourceUid,
+            targetBaseIndex: candidate.targetBaseIndex,
+            sourceBaseIndex: typeof candidate.fromBaseIndex === 'number' ? candidate.fromBaseIndex : undefined,
+        };
+    }
+
+    if (
+        candidate.fieldSourceTargetType === 'base'
         && typeof candidate.minionUid === 'string'
         && typeof candidate.baseIndex === 'number'
-        && candidate.baseIndex >= 0;
+        && candidate.baseIndex >= 0
+    ) {
+        return {
+            sourceMinionUid: candidate.minionUid,
+            targetBaseIndex: candidate.baseIndex,
+            sourceBaseIndex: typeof candidate.fromBaseIndex === 'number' ? candidate.fromBaseIndex : undefined,
+        };
+    }
+
+    return null;
+}
+
+function isFieldSourceBaseTargetValue(value: unknown): boolean {
+    return readFieldSourceBaseTargetValue(value) !== null;
 }
 
 const EMPTY_PLAYERS = {} as SmashUpCore['players'];
@@ -637,21 +674,37 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [currentPrompt, playerID]);
     const fieldSourceBaseTargetPrompt = useMemo(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return null;
+        const sourceTargetOptions = new Map<string, {
+            sourceMinionUid: string;
+            sourceBaseIndex?: number;
+            targetOptionIdsByBaseIndex: Map<number, string>;
+        }>();
         for (const opt of currentPrompt.options) {
             if (opt.disabled) continue;
-            if (isFieldSourceBaseTargetValue(opt.value)) {
-                return {
-                    optionId: opt.id,
-                    sourceMinionUid: opt.value.minionUid,
-                    targetBaseIndex: opt.value.baseIndex,
-                    sourceBaseIndex: typeof opt.value.fromBaseIndex === 'number' ? opt.value.fromBaseIndex : undefined,
-                };
-            }
+            const parsed = readFieldSourceBaseTargetValue(opt.value);
+            if (!parsed) continue;
+            const entry = sourceTargetOptions.get(parsed.sourceMinionUid) ?? {
+                sourceMinionUid: parsed.sourceMinionUid,
+                sourceBaseIndex: parsed.sourceBaseIndex,
+                targetOptionIdsByBaseIndex: new Map<number, string>(),
+            };
+            entry.targetOptionIdsByBaseIndex.set(parsed.targetBaseIndex, opt.id);
+            sourceTargetOptions.set(parsed.sourceMinionUid, entry);
         }
-        return null;
+        if (sourceTargetOptions.size === 0) return null;
+        return {
+            sourceMinionUids: new Set(sourceTargetOptions.keys()),
+            sourceTargetOptions,
+        };
     }, [currentPrompt, isCurrentPromptForPlayer]);
     const isFieldSourceBaseTargetReady = !!fieldSourceBaseTargetPrompt
-        && selectedFieldPromptSourceMinionUid === fieldSourceBaseTargetPrompt.sourceMinionUid;
+        && selectedFieldPromptSourceMinionUid !== null
+        && fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid);
+    const fieldSourceBaseTargetOptionIdsByBaseIndex = useMemo(() => {
+        if (!fieldSourceBaseTargetPrompt || !selectedFieldPromptSourceMinionUid) return new Map<number, string>();
+        return fieldSourceBaseTargetPrompt.sourceTargetOptions.get(selectedFieldPromptSourceMinionUid)?.targetOptionIdsByBaseIndex
+            ?? new Map<number, string>();
+    }, [fieldSourceBaseTargetPrompt, selectedFieldPromptSourceMinionUid]);
     const handPromptUiMode = useMemo(() => {
         return resolveSmashUpHandPromptUiMode({
             currentPrompt,
@@ -2616,18 +2669,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
         if (fieldSourceBaseTargetPrompt) {
-            if (selectedFieldPromptSourceMinionUid !== fieldSourceBaseTargetPrompt.sourceMinionUid) {
+            if (!selectedFieldPromptSourceMinionUid || !fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid)) {
                 playDeniedSound();
                 return;
             }
-            if (index !== fieldSourceBaseTargetPrompt.targetBaseIndex) {
+            const optionId = fieldSourceBaseTargetOptionIdsByBaseIndex.get(index);
+            if (!optionId) {
                 toast(t('ui.invalid_base_target'));
                 return;
             }
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             setSelectedFieldPromptSourceMinionUid(null);
-            respondCurrentPrompt({ optionId: fieldSourceBaseTargetPrompt.optionId });
+            respondCurrentPrompt({ optionId });
             return;
         }
         // 基地选择交互模式：直接响应 interaction
@@ -3037,7 +3091,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     /** 随从点击回调：ongoing-minion 模式下附着行动卡到随从，或交互驱动的随从选择 */
     const handleMinionSelect = useCallback((minionUid: string, baseIndex: number) => {
         if (fieldSourceBaseTargetPrompt) {
-            if (minionUid !== fieldSourceBaseTargetPrompt.sourceMinionUid) return;
+            if (!fieldSourceBaseTargetPrompt.sourceMinionUids.has(minionUid)) return;
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             setSelectedFieldPromptSourceMinionUid((current) => current === minionUid ? null : minionUid);

@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "requirements": [
+    {
+      "requirement": "打开 Mage Wars 当前通过后的特效尺寸匹配截图组",
+      "status": "PASS",
+      "evidence": [
+        "召唤/攻击 E2E: 1 passed (1.4m)",
+        "推斥 E2E: 1 passed (42.9s)",
+        "传送 E2E: 1 passed (42.1s)"
+      ]
+    },
+    {
+      "requirement": "截图中关键卡牌与单位素材不是空白壳层",
+      "status": "PASS",
+      "evidence": [
+        "E2E waitForVisibleMageWarsAtlasCardsLoaded 已通过",
+        "已人工查看新召唤过程图，单位与牌面可见"
+      ]
+    },
+    {
+      "requirement": "局部特效大小与单位周边匹配，不再按整格或全屏放大",
+      "status": "PASS",
+      "evidence": [
+        "召唤 E2E 特效盒最大边 <= 目标格 0.88x",
+        "推斥/传送尺寸调参后对应 E2E 均通过"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\01-labeled-01-兽王野性山猫-召唤来源和目标区域.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\02-labeled-01-兽王野性山猫-召唤光柱过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\03-labeled-01-兽王野性山猫-召唤完成单位落场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\04-labeled-02-女祭司阿希拉牧师-召唤来源和目标区域.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\05-labeled-02-女祭司阿希拉牧师-召唤光柱过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\06-labeled-02-女祭司阿希拉牧师-召唤完成单位落场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\07-labeled-03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\08-labeled-03-间歇喷泉攻击阿希拉牧师-投射物飞行中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\09-labeled-03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\10-labeled-12A-原力推斥-来源唤醒过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\11-labeled-12A-原力推斥-气流推离路径中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\12-labeled-12A-原力推斥-命中推离过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\13-labeled-12B-传送-来源唤醒过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\14-labeled-12B-传送-传送轨迹过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\pureref-current-fx-size-pass-20260817\\15-labeled-12B-传送-目标区域落点过程帧.png"
+  ]
+}

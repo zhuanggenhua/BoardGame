@@ -2484,6 +2484,59 @@ export function buildBaseTargetOptions(
     });
 }
 
+export type FieldSourceBaseTargetValue<TExtra extends Record<string, unknown> = Record<string, never>> = TExtra & {
+    fieldInteractionType: 'source-target';
+    fieldSourceType: 'minion';
+    fieldTargetType: 'base';
+    sourceUid: string;
+    targetBaseIndex: number;
+    minionUid: string;
+    baseIndex: number;
+    fromBaseIndex?: number;
+    baseDefId?: string;
+};
+
+/**
+ * 构建“先点场上来源随从，再点目标基地”的共享交互选项。
+ *
+ * 规则语义：来源随从本体是第一入口；目标基地只有在来源被玩家点选后才高亮。
+ * handler 仍消费同一份 live option，不允许 UI 反推来源或目标。
+ */
+export function buildFieldSourceBaseTargetOptions<TExtra extends Record<string, unknown> = Record<string, never>>(
+    source: {
+        uid: string;
+        defId: string;
+        fromBaseIndex?: number;
+    },
+    targets: { baseIndex: number; label: string }[],
+    state: SmashUpCore,
+    extra?: TExtra,
+): EnginePromptOption<FieldSourceBaseTargetValue<TExtra>>[] {
+    return targets.map((target, index) => {
+        const baseDefId = state.bases[target.baseIndex]?.defId;
+        return {
+            id: `source-${source.uid}-base-${target.baseIndex}-${index}`,
+            label: target.label,
+            value: {
+                ...(extra ?? {} as TExtra),
+                fieldInteractionType: 'source-target',
+                fieldSourceType: 'minion',
+                fieldTargetType: 'base',
+                sourceUid: source.uid,
+                targetBaseIndex: target.baseIndex,
+                minionUid: source.uid,
+                minionDefId: source.defId,
+                defId: source.defId,
+                ...(source.fromBaseIndex !== undefined ? { fromBaseIndex: source.fromBaseIndex } : {}),
+                baseIndex: target.baseIndex,
+                ...(baseDefId ? { baseDefId } : {}),
+            } as FieldSourceBaseTargetValue<TExtra>,
+            _source: 'field' as const,
+            displayMode: 'card' as const,
+        };
+    });
+}
+
 // ============================================================================
 // 数据驱动选择：resolveOrPrompt
 // ============================================================================
