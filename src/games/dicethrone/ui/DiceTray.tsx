@@ -229,6 +229,8 @@ export const DiceTray = ({
             `}
             data-tutorial-id="dice-tray"
             data-testid="dicethrone-2d-dice-tray"
+            data-current-phase={_currentPhase}
+            data-dice-count={dice.length}
             style={diceTrayStyle}
         >
             <div className={glossClassName} />

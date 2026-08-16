@@ -700,6 +700,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const isFieldSourceBaseTargetReady = !!fieldSourceBaseTargetPrompt
         && selectedFieldPromptSourceMinionUid !== null
         && fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid);
+    const fieldSourceBaseTargetSelectableMinionUids = fieldSourceBaseTargetPrompt?.sourceMinionUids;
     const fieldSourceBaseTargetOptionIdsByBaseIndex = useMemo(() => {
         if (!fieldSourceBaseTargetPrompt || !selectedFieldPromptSourceMinionUid) return new Map<number, string>();
         return fieldSourceBaseTargetPrompt.sourceTargetOptions.get(selectedFieldPromptSourceMinionUid)?.targetOptionIdsByBaseIndex
@@ -1333,7 +1334,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         let raw = '';
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.title;
-        else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.title;
+        else if ((isMinionSelectPrompt || fieldSourceBaseTargetPrompt) && currentPrompt) raw = currentPrompt.title;
         else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
@@ -1342,13 +1343,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return raw
             ? resolvePromptText(raw, currentPrompt?.titleKey, currentPrompt?.titleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceBaseTargetPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
         let raw = '';
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
-        else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
+        else if ((isMinionSelectPrompt || fieldSourceBaseTargetPrompt) && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
@@ -1356,7 +1357,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return raw
             ? resolvePromptText(raw, currentPrompt?.subtitleKey, currentPrompt?.subtitleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceBaseTargetPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
     const isDiscardMinionPrompt = useMemo(() => {
@@ -3915,7 +3916,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 交互选择提示横幅（基地/随从/手牌选择） --- */}
                 <AnimatePresence>
-                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isMonsterSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
+                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || !!fieldSourceBaseTargetPrompt || isMonsterSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
                         <motion.div
                             initial={{ y: -20, opacity: 0, scale: 0.95 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -4361,12 +4362,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isMinionSelectMode={!(isOngoingSelectPrompt && !isBoardSelectPrompt) && (
                                         ((selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') && ongoingMinionTargetUids.size > 0)
                                         || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0)
+                                        || !!fieldSourceBaseTargetPrompt
                                         || (isMinionSelectPrompt && selectableMinionUids.size > 0)
                                         || (isBoardSelectPrompt && boardSelectableMinionUids.size > 0)
                                         || (!!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion') && dragOngoingMinionTargetUids.size > 0)
                                     )}
                                     selectableMinionUids={
-                                        isBoardSelectPrompt
+                                        fieldSourceBaseTargetSelectableMinionUids
+                                            ? fieldSourceBaseTargetSelectableMinionUids
+                                        : isBoardSelectPrompt
                                             ? boardSelectableMinionUids
                                             : isMinionSelectPrompt
                                             ? selectableMinionUids
@@ -4731,6 +4735,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         && !isBaseSelectPrompt
                         && !isBuriedSelectPrompt
                         && !isMinionSelectPrompt
+                        && !fieldSourceBaseTargetPrompt
                         && !isMonsterSelectPrompt
                         && !isOngoingSelectPrompt
                         && !isBoardSelectPrompt

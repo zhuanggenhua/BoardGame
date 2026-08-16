@@ -104,6 +104,9 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     dragons_flank_attack_source: { targetType: 'button' },
     pirate_buccaneer_move: { targetType: 'base' },
     pirate_king_move: { targetType: 'minion' },
+    pirate_first_mate_choose_base: { targetType: 'minion' },
+    ancient_egyptians_mummy_after_scoring: { targetType: 'minion', responseValidationMode: 'live' },
+    world_champs_mummy_after_scoring: { targetType: 'minion' },
     pirate_sea_dogs_choose_faction: { targetType: 'generic' },
     giant_ant_who_wants_to_live_forever: { targetType: 'minion', responseValidationMode: 'live' },
     giant_ant_drone_prevent_destroy: { targetType: 'minion' },
@@ -176,6 +179,13 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     base_q_point: { targetType: 'board' },
     base_primate_park_return: { targetType: 'ongoing', responseValidationMode: 'live' },
 };
+
+const FIELD_SOURCE_BASE_TARGET_SOURCE_IDS = [
+    'pirate_king_move',
+    'pirate_first_mate_choose_base',
+    'ancient_egyptians_mummy_after_scoring',
+    'world_champs_mummy_after_scoring',
+] as const;
 
 const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     ancient_egyptians_pyramid_engineer_uncover: '翻开这里你的埋葬牌时，需要保留 buried card 与原基地上下文，不能压缩成单一实体直点。',
@@ -510,13 +520,20 @@ function isBoardLikeGenericOption(options: ts.ObjectLiteralExpression[]): boolea
 function findFieldSourceBaseTargetIssue(options: ts.ObjectLiteralExpression[]): string | undefined {
     for (const opt of options) {
         const props = extractValueProps(opt);
-        if (!props.has('fieldSourceTargetType')) continue;
+        if (props.has('fieldSourceTargetType')) {
+            return '旧 fieldSourceTargetType 已废弃；能力层必须使用 fieldInteractionType/source-target + fieldSourceType/minion + fieldTargetType/base。';
+        }
+
+        if (!props.has('fieldInteractionType')) continue;
 
         const displayMode = extractTopLevelStringProp(opt, 'displayMode');
         if (displayMode === 'button') {
             return '场上来源到基地目标的效果不能用按钮作为主路径，必须先点来源对象本体再点目标基地。';
         }
-        if (!props.has('minionUid') || !props.has('baseIndex')) {
+        if (!props.has('fieldSourceType') || !props.has('fieldTargetType')) {
+            return '场上来源到基地目标的效果必须显式声明 source-target/minion/base 三段语义，不能让 UI 猜。';
+        }
+        if (!props.has('sourceUid') || !props.has('targetBaseIndex') || !props.has('minionUid') || !props.has('baseIndex')) {
             return '场上来源到基地目标的效果必须同时携带来源随从和目标基地，不能让 UI 反推。';
         }
     }

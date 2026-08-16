@@ -62,15 +62,21 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
     it('场上可发动效果必须先点来源本体，再点目标基地，不能退化成响应按钮', () => {
         const source = readBoardSource();
         expect(source).toContain('function isFieldSourceBaseTargetValue');
-        expect(source).toContain("candidate.fieldSourceTargetType === 'base'");
+        expect(source).toContain("candidate.fieldInteractionType === 'source-target'");
+        expect(source).toContain("candidate.fieldSourceType === 'minion'");
+        expect(source).toContain("candidate.fieldTargetType === 'base'");
         expect(source).toContain('const fieldSourceBaseTargetPrompt = useMemo');
         expect(source).toContain('const isFieldSourceBaseTargetReady');
+        expect(source).toContain('const fieldSourceBaseTargetSelectableMinionUids = fieldSourceBaseTargetPrompt?.sourceMinionUids');
         expect(source).toContain('setSelectedFieldPromptSourceMinionUid((current) => current === minionUid ? null : minionUid)');
         expect(source).toContain('fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid)');
         expect(source).toContain('const fieldSourceBaseTargetOptionIdsByBaseIndex = useMemo');
         expect(source).toContain('const optionId = fieldSourceBaseTargetOptionIdsByBaseIndex.get(index)');
         expect(source).toContain('respondCurrentPrompt({ optionId })');
         expect(source).toContain('!isReactionHandPlayValue(opt.value) && !isFieldSourceBaseTargetValue(opt.value)');
+        expect(source).toContain('|| !!fieldSourceBaseTargetPrompt');
+        expect(source).toContain('fieldSourceBaseTargetSelectableMinionUids');
+        expect(source).toContain('&& !fieldSourceBaseTargetPrompt');
         expect(source).toContain('selectedMinionUids={isFieldSourceBaseTargetReady && selectedFieldPromptSourceMinionUid ? new Set([selectedFieldPromptSourceMinionUid]) : undefined}');
         expect(source).toContain('isFieldSourceBaseTargetReady && fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx)');
         expect(source).toContain('isFieldSourceBaseTargetReady && !fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx)');

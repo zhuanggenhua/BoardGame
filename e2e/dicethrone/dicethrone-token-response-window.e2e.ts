@@ -664,9 +664,12 @@ test.describe('Token 响应窗口完整流程', () => {
                     const element = node as HTMLElement;
                     const rect = element.getBoundingClientRect();
                     const style = window.getComputedStyle(element);
+                    const tray = element.closest<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
                     return {
                         ownerId: element.dataset.ownerId ?? '',
                         value: element.dataset.displayValue ?? '',
+                        trayPhase: tray?.dataset.currentPhase ?? '',
+                        trayDiceCount: tray?.dataset.diceCount ?? '',
                         visible: rect.width > 0
                             && rect.height > 0
                             && style.visibility !== 'hidden'
@@ -675,7 +678,35 @@ test.describe('Token 响应窗口完整流程', () => {
                     };
                 })
                 .filter((entry) => entry.visible));
-        expect(visibleDiceAfterConfirm).toEqual([]);
+        const postConfirmState = await game.getState();
+        expect({
+            visibleDiceAfterConfirm,
+            phase: postConfirmState?.sys?.phase ?? null,
+            interactionKind: postConfirmState?.sys?.interaction?.current?.kind ?? null,
+            currentRollContextKind: postConfirmState?.core?.currentRollContext?.kind ?? null,
+            currentRollContextStatus: postConfirmState?.core?.currentRollContext?.status ?? null,
+            currentRollContextDice: postConfirmState?.core?.currentRollContext?.dice?.map((die: any) => ({
+                ownerId: die.ownerId,
+                value: die.value,
+            })) ?? null,
+            pendingBonusDiceSettlement: postConfirmState?.core?.pendingBonusDiceSettlement
+                ? {
+                    id: postConfirmState.core.pendingBonusDiceSettlement.id,
+                    attackerId: postConfirmState.core.pendingBonusDiceSettlement.attackerId,
+                    dice: postConfirmState.core.pendingBonusDiceSettlement.dice?.map((die: any) => ({
+                        value: die.value,
+                    })),
+                }
+                : null,
+        }).toEqual({
+            visibleDiceAfterConfirm: [],
+            phase: 'main2',
+            interactionKind: null,
+            currentRollContextKind: null,
+            currentRollContextStatus: null,
+            currentRollContextDice: null,
+            pendingBonusDiceSettlement: null,
+        });
         await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);
     });
 });

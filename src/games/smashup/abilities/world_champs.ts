@@ -68,6 +68,7 @@ type SheriffContinuation = {
 
 type MummyContinuation = {
     cardUid: string;
+    defId: string;
 };
 
 type AkyeContinuation = {
@@ -1527,6 +1528,7 @@ function worldChampsMummyAfterScoring(ctx: TriggerContext): AbilityResult {
         worldChampsMummyAfterScoringPromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             cardUid: ctx.sourceCardUid,
+            defId: sourceBase.minions.find(minion => minion.uid === ctx.sourceCardUid)?.defId ?? ctx.sourceDefId ?? 'world_champs_mummy',
             sourceBaseIndex: ctx.sourceBaseIndex,
             sourceControllerId: ctx.sourceControllerId,
         } satisfies MummyContinuation & { sourceBaseIndex: number; sourceControllerId: PlayerId }),
