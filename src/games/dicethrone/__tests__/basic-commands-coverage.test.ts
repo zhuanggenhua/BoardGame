@@ -2374,7 +2374,6 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
-            cmd('ADVANCE_PHASE', '0'),
         ];
 
         for (const input of setupCommands) {
@@ -2452,7 +2451,6 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
-            cmd('ADVANCE_PHASE', '0'),
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('ADVANCE_PHASE', '0'),
@@ -2534,7 +2532,6 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
-            cmd('ADVANCE_PHASE', '0'),
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('ADVANCE_PHASE', '0'),

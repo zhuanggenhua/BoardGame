@@ -5,10 +5,11 @@ import {
     injectSimpleChoiceBlockingInteraction,
 } from '../../../engine/testing/interactionTestFacade';
 
+import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions } from '../ai';
-import { checkPlayCard } from '../domain/rules';
+import { canAdvancePhase, checkPlayCard } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
-import { cmd, createRunner, createSetupWithHand, fixedRandom, getCardById } from './test-utils';
+import { cmd, createHeroMatchup, createRunner, createSetupWithHand, fixedRandom, getCardById } from './test-utils';
 
 describe('DiceThrone AI 主阶段候选门禁', () => {
     it('非当前回合玩家不应生成主阶段出牌或卖牌候选', () => {
@@ -224,5 +225,173 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         expect(playedCardIds).not.toContain('card-play-six');
         expect(playedCardIds).not.toContain('card-flick');
+    });
+
+    it('线上反馈：进攻技能已选中且无阻塞窗口时，进攻方应能继续推进结算', () => {
+        const state = createHeroMatchup('tianshi', 'shadow_thief')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '1';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'shadow-fang',
+            settlementStage: 'preDamage',
+            isDefendable: true,
+        };
+        state.core.currentRollContext = {
+            id: 'roll:offensive:1:1',
+            kind: 'offensive',
+            ownerPlayerId: '1',
+            phase: 'offensiveRoll',
+            dice: state.core.dice.slice(0, 5),
+            status: 'settling',
+            policy: {
+                modifiableBy: 'owner',
+                rerollableBy: 'owner',
+                allowPassiveReroll: true,
+                allowDiceCardTargeting: true,
+                ultimateLocked: false,
+                blocksPhaseFlow: true,
+            },
+            settlement: { mode: 'selectAttack' },
+            display: { surface: 'diceTray', replayOnly: false },
+        };
+
+        expect(canAdvancePhase(state.core, 'offensiveRoll')).toBe(true);
+        expect(DiceThroneDomain.validate(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'advance-phase',
+            commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+        }));
+    });
+
+    it('线上反馈：AI 是伤害响应者时必须生成可执行的跳过响应动作', () => {
+        const state = createHeroMatchup('zhanshujia', 'shadow_thief')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'drum-movement-2-indirect',
+            settlementStage: 'preDamage',
+            isDefendable: false,
+            preDefenseResolved: true,
+        };
+        state.core.pendingDamage = {
+            id: 'online-ai-before-damage-received',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 2,
+            currentDamage: 2,
+            responseType: 'beforeDamageReceived',
+            responderId: '1',
+            sourceAbilityId: 'drum-movement-2-indirect',
+            damageScope: 'attack',
+        };
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-token-response',
+            commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: {} }],
+        }));
+        expect(DiceThroneDomain.validate(state, {
+            type: 'SKIP_TOKEN_RESPONSE',
+            playerId: '1',
+            payload: {},
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+    });
+
+    it('线上反馈：已不属于当前骰盘的展示型奖励骰残留不应永久阻塞防御阶段推进', () => {
+        const state = createHeroMatchup('tianshi', 'shadow_thief')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'archangel-resolve',
+            defenseAbilityId: 'fearless-riposte',
+            settlementStage: 'postDamagePending',
+            isDefendable: true,
+            preDefenseResolved: true,
+        };
+        state.core.currentRollContext = {
+            id: 'bonus:flight-display-current',
+            kind: 'bonus',
+            ownerPlayerId: '0',
+            targetPlayerId: '1',
+            sourceAbilityId: 'flight',
+            dice: [{
+                id: 0,
+                definitionId: 'tianshi-dice',
+                value: 2,
+                symbol: 'blade',
+                symbols: ['blade'],
+                isKept: false,
+                ownerId: '0',
+                displayOnly: true,
+            }],
+            status: 'settled',
+            policy: {
+                modifiableBy: 'none',
+                rerollableBy: 'none',
+                allowPassiveReroll: false,
+                allowDiceCardTargeting: false,
+                ultimateLocked: false,
+                blocksPhaseFlow: false,
+            },
+            settlement: { mode: 'damage', metadata: { pendingBonusDiceSettlementId: 'flight-display-current' } },
+            display: { surface: 'diceTray', replayOnly: true },
+        };
+        state.core.pendingBonusDiceSettlement = {
+            id: 'flight-display-stale',
+            sourceAbilityId: 'flight',
+            attackerId: '0',
+            targetId: '1',
+            dice: [
+                { index: 0, value: 1, face: 'blade' },
+                { index: 1, value: 4, face: 'wing' },
+            ],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            displayOnly: true,
+            continuation: { kind: 'complete' },
+            allowDiceModification: true,
+        };
+
+        expect(canAdvancePhase(state.core, 'defensiveRoll')).toBe(true);
+        expect(DiceThroneDomain.validate(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'advance-phase',
+            commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+        }));
     });
 });

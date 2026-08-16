@@ -158,6 +158,35 @@ export const hasPendingBonusDiceSettlement = (
     && getPendingBonusSettlementDice(settlement).length > 0,
 );
 
+export const hasPhaseBlockingPendingBonusDiceSettlement = (state: DiceThroneCore): boolean => {
+    const settlement = state.pendingBonusDiceSettlement;
+    if (!hasPendingBonusDiceSettlement(settlement)) {
+        return false;
+    }
+
+    if (isCurrentBonusRollSettlement(state, settlement)) {
+        return true;
+    }
+
+    const currentContext = state.currentRollContext;
+    const isSettledBonusReplay = currentContext?.kind === 'bonus'
+        && currentContext.status === 'settled'
+        && currentContext.display.replayOnly === true
+        && currentContext.policy.blocksPhaseFlow === false;
+    const isPureDisplayCompleteFrame = settlement.displayOnly === true
+        && settlement.continuation?.kind === 'complete'
+        && !settlement.customResolutionId
+        && !settlement.rollDieResolution;
+
+    // 线上旧局可能留下一个已被后续只读奖励骰回看取代的展示帧。
+    // 这类帧没有待执行规则副作用，也不再是当前骰盘；继续把它当阻塞项会让防御阶段永久无法推进。
+    if (isSettledBonusReplay && isPureDisplayCompleteFrame) {
+        return false;
+    }
+
+    return true;
+};
+
 /**
  * 奖励骰始终需要右侧骰盘的普通确认收口。
  * 这里仅判断骰主是否还能先执行奖励骰自身声明的内置重投；
@@ -550,7 +579,7 @@ export const isSetupReadyToStart = (args: {
  */
 export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolean => {
     // 任何未结算奖励骰都必须先由响应窗口或自身结算规则收口。
-    if (hasPendingBonusDiceSettlement(state.pendingBonusDiceSettlement)) {
+    if (hasPhaseBlockingPendingBonusDiceSettlement(state)) {
         return false;
     }
 
