@@ -87,6 +87,7 @@ export const engineConfig = {
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['factionSelect'],
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+        legacyResponseWindowMirrorSourceIds: ['smashup_reaction_choose'],
         resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
             type === SU_COMMANDS.SELECT_FACTION && hasSmashUpFactionPayload(payload)
                 ? 'select-faction'

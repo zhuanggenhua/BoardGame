@@ -48,3 +48,15 @@
 
 - 本轮未执行生产状态回写、部署、重启或数据修改。
 - 生产仍有 6 条旧 `open` 系统反馈；本地已补强后续同类反馈的可定位性。
+
+## 2026-08-16 补记：SmashUp 旧响应窗口镜像清理
+
+- 现实现象：SmashUp 旧持久化局面里，AI 已通过真实 `smashup_reaction_choose` 交互让过并进入 `playCards`，但历史保存下来的通用 `sys.responseWindow.current` 镜像仍残留；watchdog 会把它误当成正式通用响应窗口，继续尝试 `RESPONSE_PASS`，在 SmashUp 当前系统列表没有 `ResponseWindowSystem` 时落成失败。
+- 根本机制：SmashUp 当前反应轮权威在游戏自己的 reaction session / interaction 链；`smashup_reaction_choose` 对应的 `responseWindow` 只是历史镜像残留，不是当前正式执行入口。恢复链如果不区分“真实响应窗口”和“历史镜像”，就会把已完成的真实恢复重新导向通用 `RESPONSE_PASS`。
+- 修复边界：服务端新增 `onlineAiRecovery.legacyResponseWindowMirrorSourceIds` 配置，只在游戏显式声明的 `sourceId` 命中时清理旧镜像；SmashUp 声明 `smashup_reaction_choose`。这不改变 DiceThrone / SummonerWars 等真正启用通用 ResponseWindow 的恢复口径。
+- AI-only / human guard：清理只发生在 online AI watchdog 成功执行恢复命令之后；它不替真人选择、不替真人 pass，也不关闭未声明为 legacy mirror 的正式窗口。
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "smashup 持久化 stale reaction choice 走 watchdog 恢复时，不应落成 blocker_persisted"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "smashup AI reaction pass 后仍停在同一交互时，应升级为硬取消而不是 blocker_persisted"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 响应循环时应强制关闭响应窗口"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker 已进入同一 incident 的 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window"` -> `1 file passed, 1 passed`

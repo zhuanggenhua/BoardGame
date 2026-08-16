@@ -850,6 +850,8 @@ export interface GameEngineConfig<
             currentPlayerId: string;
         }) => boolean | undefined;
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds?: string[];
+        /** 历史存档里残留的私有响应轮镜像；watchdog 恢复真实交互后可按 sourceId 清理，避免误走通用 RESPONSE_PASS。 */
+        legacyResponseWindowMirrorSourceIds?: string[];
         allowForceCommandAfterLegalActionExhausted?: (args: {
             state: MatchState<unknown>;
             phase: string;
@@ -3244,6 +3246,52 @@ export class GameTransportServer {
             engineConfig: match.engineConfig,
             gameId: match.gameId,
         });
+        const clearConfiguredLegacyResponseWindowMirror = async (): Promise<boolean> => {
+            const legacySourceIds = match.engineConfig.onlineAiRecovery?.legacyResponseWindowMirrorSourceIds ?? [];
+            if (legacySourceIds.length === 0) {
+                return false;
+            }
+
+            const responseWindow = match.state.sys?.responseWindow as {
+                current?: {
+                    sourceId?: unknown;
+                } | null;
+            } | undefined;
+            const sourceId = typeof responseWindow?.current?.sourceId === 'string'
+                ? responseWindow.current.sourceId
+                : '';
+            if (!sourceId || !legacySourceIds.includes(sourceId)) {
+                return false;
+            }
+
+            match.state = {
+                ...match.state,
+                sys: {
+                    ...match.state.sys,
+                    responseWindow: {
+                        ...(match.state.sys?.responseWindow ?? {}),
+                        current: undefined,
+                    },
+                },
+            };
+            match.stateID += 1;
+            match.lastBroadcastedViews.clear();
+            await this.storage.setState(match.matchID, {
+                G: match.state,
+                _stateID: match.stateID,
+                randomSeed: match.randomSeed,
+                randomCursor: match.getRandomCursor(),
+            });
+            this.broadcastState(match);
+
+            logger.info('[GameTransport] online-ai-watchdog cleared legacy response-window mirror', {
+                matchID: match.matchID,
+                gameId: match.gameId,
+                playerID: currentCandidate.playerId,
+                sourceId,
+            });
+            return true;
+        };
         const canExecuteWatchdogAdvancePhase = (playerId: string): boolean => {
             if (!playerId || seatControllers[playerId]?.type === 'human') {
                 return false;
@@ -3659,6 +3707,9 @@ export class GameTransportServer {
 
                 recoverySteps += 1;
                 const attemptedInteractionRespond = executedCommandTypes.has(INTERACTION_COMMANDS.RESPOND);
+                if (executedCommandTypes.size > 0) {
+                    await clearConfiguredLegacyResponseWindowMirror();
+                }
                 const nextMarker = buildAiProgressMarker(match.state, {
                     engineConfig: match.engineConfig,
                     gameId: match.gameId,
