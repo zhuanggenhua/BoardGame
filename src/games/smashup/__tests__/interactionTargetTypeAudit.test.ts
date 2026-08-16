@@ -867,38 +867,62 @@ describe('SmashUp Interaction targetType 审计', () => {
         expect(violations, `以下高风险通用交互缺少显式配置：\n${violations.join('\n')}`).toEqual([]);
     });
 
-    it('场上来源随从到目标基地的交互必须统一使用 source-target 构造器', () => {
-        const violations: string[] = [];
+    it('场上来源随从到目标基地的计分效果必须先点来源本体再点基地', () => {
+        const allCalls: SimpleChoiceCallInfo[] = [];
 
         for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-
-            const visit = (node: ts.Node) => {
-                if (!isCreateSimpleChoiceCall(node)) {
-                    ts.forEachChild(node, visit);
-                    return;
-                }
-
-                const config = extractSimpleChoiceConfig(node);
-                if (!FIELD_SOURCE_BASE_TARGET_SOURCE_IDS.includes(config.sourceId as typeof FIELD_SOURCE_BASE_TARGET_SOURCE_IDS[number])) {
-                    ts.forEachChild(node, visit);
-                    return;
-                }
-
-                const optionsArg = getChoiceOptionsArg(node);
-                if (!expressionContainsCall(sourceFile, optionsArg, node, ['buildFieldSourceBaseTargetOptions'])) {
-                    const line = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
-                    violations.push(`${filePath}:${line} [${config.sourceId}] 未使用 buildFieldSourceBaseTargetOptions`);
-                }
-
-                ts.forEachChild(node, visit);
-            };
-
-            visit(sourceFile);
+            try {
+                const { calls } = analyzeFile(filePath);
+                allCalls.push(...calls);
+            } catch {
+                continue;
+            }
         }
 
-        expect(violations, `以下来源到基地交互没有走共享 source-target 构造器：\n${violations.join('\n')}`).toEqual([]);
+        const violations: string[] = [];
+        for (const sourceId of FIELD_SOURCE_BASE_TARGET_SOURCE_IDS) {
+            const matches = allCalls.filter(call => call.sourceId === sourceId);
+            if (matches.length === 0) {
+                violations.push(`[${sourceId}] 缺少 createSimpleChoice 调用，无法证明计分来源本体交互合同`);
+                continue;
+            }
+
+            for (const match of matches) {
+                if (match.targetType !== 'minion') {
+                    violations.push(`${match.file}:${match.line} [${sourceId}] targetType 必须是 "minion"，实际 "${match.targetType ?? '未声明'}"`);
+                }
+                if (!match.usesFieldSourceBaseTargetOptions) {
+                    violations.push(`${match.file}:${match.line} [${sourceId}] 必须使用 buildFieldSourceBaseTargetOptions，不能把按钮或基地选项当作发动主路径`);
+                }
+            }
+        }
+
+        const helperPath = resolve(__dirname, '../domain/abilityHelpers.ts');
+        const helperSource = readFileSync(helperPath, 'utf-8');
+        const requiredHelperSnippets = [
+            "fieldInteractionType: 'source-target'",
+            "fieldSourceType: 'minion'",
+            "fieldTargetType: 'base'",
+            'sourceUid: source.uid',
+            'targetBaseIndex: target.baseIndex',
+            'minionUid: source.uid',
+            'baseIndex: target.baseIndex',
+            "displayMode: 'card' as const",
+        ];
+        for (const snippet of requiredHelperSnippets) {
+            if (!helperSource.includes(snippet)) {
+                violations.push(`${helperPath} 缺少共享来源-目标合同片段：${snippet}`);
+            }
+        }
+
+        for (const filePath of [...getFilesToScan(), helperPath]) {
+            const content = readFileSync(filePath, 'utf-8');
+            if (content.includes('fieldSourceTargetType')) {
+                violations.push(`${filePath} 仍在能力/domain 层产出旧 fieldSourceTargetType，必须迁移到三段语义字段`);
+            }
+        }
+
+        expect(violations, `以下计分来源随从交互仍可能退回按钮/旧字段主路径：\n${violations.join('\n')}`).toEqual([]);
     });
 
     it('同一 sourceId 不允许混用多种 targetType 语义', () => {
