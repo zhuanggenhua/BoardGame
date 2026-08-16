@@ -659,7 +659,6 @@ test.describe('Token 响应窗口完整流程', () => {
         });
 
         await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
-        await page.waitForTimeout(1200);
         const visibleDiceAfterConfirm = await page
             .locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')
             .evaluateAll((nodes) => nodes
