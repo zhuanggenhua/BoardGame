@@ -1,0 +1,44 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "requirements": [
+    {
+      "requirement": "闪避响应等待确认时，有效确认入口必须是共享响应框确认按钮，不能显示右侧普通灰色骰盘确认按钮。",
+      "status": "PASS",
+      "evidence": [
+        "E2E: e2e/dicethrone/dicethrone-token-response-window.e2e.ts 用例“月精灵闪避成功后由共享响应框确认收口到 main2，不再卡在 defensiveRoll”通过。",
+        "断言: dicethrone-response-pass-button 可用且文本为确认；data-tutorial-id=\"dice-confirm-button\" 数量为 0。",
+        "截图: 02-labeled-闪避响应-成功后右侧只显示闪避骰且共享提示可确认.png"
+      ]
+    },
+    {
+      "requirement": "点击共享响应框确认后，闪避伤害必须收口回主阶段，响应窗口和待处理伤害清空。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言: phase = main2, pendingDamage = null, interaction = null, defenderHp = 50。",
+        "截图: 03-labeled-闪避响应-确认后免伤收口回到主阶段.png"
+      ]
+    },
+    {
+      "requirement": "确认后右侧不能残留对方单颗骰、奖励骰或其它临时骰。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言: visibleDiceAfterConfirm = [], currentRollContextKind = null, currentRollContextDice = null, pendingBonusDiceSettlement = null。",
+        "截图: 03-labeled-闪避响应-确认后免伤收口回到主阶段.png"
+      ]
+    },
+    {
+      "requirement": "最终打开的图组必须覆盖完整链路：使用前、闪避成功等待确认、确认后收口。",
+      "status": "PASS",
+      "evidence": [
+        "截图顺序: 00-sequence-index.png, 01-labeled-闪避响应-使用前共享提示贴近手牌且Token可点.png, 02-labeled-闪避响应-成功后右侧只显示闪避骰且共享提示可确认.png, 03-labeled-闪避响应-确认后免伤收口回到主阶段.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/_labeled-for-pureref/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/_labeled-for-pureref/01-labeled-闪避响应-使用前共享提示贴近手牌且Token可点.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/_labeled-for-pureref/02-labeled-闪避响应-成功后右侧只显示闪避骰且共享提示可确认.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/_labeled-for-pureref/03-labeled-闪避响应-确认后免伤收口回到主阶段.png"
+  ]
+}
