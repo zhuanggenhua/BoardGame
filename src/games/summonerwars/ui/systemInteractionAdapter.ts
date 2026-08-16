@@ -305,7 +305,7 @@ export function isActivatedAbilityInteraction(
   swInteraction: SwSimpleChoiceInteraction | null | undefined,
   abilityId: ActivatedAbilityId,
   step?: string,
-): boolean {
+): swInteraction is SwSimpleChoiceInteraction {
   if (!swInteraction || swInteraction.type !== 'activated_ability_target') return false;
   if (swInteraction.meta?.abilityId !== abilityId) return false;
   if (step && swInteraction.meta?.step !== step) return false;

@@ -135,7 +135,7 @@ const resolveLoadedCandidateUrl = (candidateUrls: string[]) => {
 
   for (const candidateUrl of candidateUrls) {
     const img = getPreloadedImageElement(candidateUrl);
-    if (!hasUsableImage(img)) {
+    if (img == null || !hasUsableImage(img)) {
       continue;
     }
 

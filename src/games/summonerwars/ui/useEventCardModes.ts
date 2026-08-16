@@ -754,9 +754,13 @@ export function useEventCardModes({
             && (swInteraction.meta.step === 'selectDirection'))
         ) {
           if (swInteraction?.type === 'activated_ability_target') {
+            const abilityId = telekinesisTargetMode.abilityId;
+            if (abilityId !== 'telekinesis_instead' && abilityId !== 'high_telekinesis_instead') {
+              return true;
+            }
             const option = findActivatedAbilityDirectionOptionByPosition(
               swInteraction,
-              telekinesisTargetMode.abilityId,
+              abilityId,
               { row: gameRow, col: gameCol },
             );
             respondInteractionOption(option?.id ?? null);

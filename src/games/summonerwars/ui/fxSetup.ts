@@ -205,13 +205,12 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
           className: 'absolute inset-0',
           style: { overflow: 'visible' },
           onComplete: stableComplete,
-        },
-          React.createElement(DamageFlash, {
+          children: React.createElement(DamageFlash, {
             active: true,
             damage: dmg,
             intensity: event.ctx.intensity ?? 'normal',
           }),
-        ),
+        }),
       ),
     );
   }
@@ -287,8 +286,7 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
         className: 'absolute inset-0',
         style: { overflow: 'visible' },
         onComplete: stableComplete,
-      },
-        React.createElement(DamageFlash, {
+        children: React.createElement(DamageFlash, {
           active: true,
           damage: dmg,
           intensity: event.ctx.intensity ?? 'normal',
@@ -297,7 +295,7 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
           showRedPulse: true,
           showNumber: true,
         }),
-      ),
+      }),
     ),
   );
 };

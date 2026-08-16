@@ -19,7 +19,8 @@ import {
     CharacterSelectionSystem,
     type CheatResourceModifier,
 } from '../../engine';
-import { createGameEngine } from '../../engine/adapter';
+import { createGameEngine, type AdapterConfig } from '../../engine/adapter';
+import type { EngineSystem } from '../../engine/systems/types';
 import type { MatchState } from '../../engine/types';
 import { SummonerWarsDomain, SW_COMMANDS } from './domain';
 import type { Card, FactionId, GamePhase, PlayerId, SummonerWarsCore } from './domain/types';
@@ -341,10 +342,10 @@ const systems = [
     createResponseWindowSystem(),
     createTutorialSystem(),
     createCheatSystem<SummonerWarsCore>(summonerWarsCheatModifier),
-];
+] as unknown as EngineSystem<SummonerWarsCore>[];
 
 // 适配器配置
-const adapterConfig = {
+const adapterConfig: AdapterConfig<SummonerWarsCore> = {
     domain: SummonerWarsDomain,
     systems,
     minPlayers: 2,

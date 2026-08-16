@@ -67,7 +67,7 @@ export interface FactionSelectionProps {
 
 /** 自定义牌组选择信息（用于 UI 展示） */
 interface CustomDeckInfo {
-  deckId: string;
+  deckId?: string;
   deckName: string;
   summonerName: string;
   summonerFaction: FactionId;
