@@ -310,5 +310,5 @@ onImpact: () => opponentImpact.trigger(damage);
 - **通用 vs 游戏特有**：除非特效包含游戏特有语义（如特定卡牌名称文字、游戏专属资源），否则必须实现为通用组件放在 `src/components/common/animations/`，游戏层通过 props 注入差异。
 - **现有通用特效清单**：新增特效前必须用 `grep` 搜索 `src/components/common/animations/` 确认是否已有可复用组件。完整清单与使用说明见 `docs/particle-engine.md`。
 - **游戏 FX 渲染器只能做适配**：游戏侧 `ui/fxSetup.ts` / `ui/fxRenderers.tsx` 的职责是把规则 cue、来源/目标、强度、颜色语义、音效和震动参数映射到通用组件；不得在这里承担主特效算法。代码审查时如果看到新的飞行、冲击、飘字、爆发、召唤或受击效果主要由游戏专属 DOM/CSS/timer 实现，默认先判职责放错层，再考虑扩展通用组件。
-- **视觉验收不能降级到技术存在性**：通用组件或 FX cue 渲染出来后，必须在真实截图/录屏里肉眼可见其主体表现；`data-testid`、canvas 存在、事件被消费、截图落盘只证明链路触发，不证明视觉质量通过。
+- **视觉验收不能降级到技术存在性**：通用组件或 FX cue 渲染出来后，必须在真实截图/录屏里肉眼可见其主体表现；`data-testid`、canvas 存在、事件被消费、截图落盘只证明链路触发，不证明视觉质量通过。Canvas / WebGL 类过程帧的自动门槛必须等到画布真实绘出可见内容，例如非透明 / 高亮像素、动画进度或组件暴露的阶段信号达到本轮验收要求；空画布、刚挂载的画布或弱到肉眼不可辨的像素不能作为过程帧通过证据。
 - **预览页同步**：新增通用特效组件后，必须在 `src/pages/devtools/EffectPreview.tsx` 的 `EFFECT_CATEGORIES` 中注册预览区块。

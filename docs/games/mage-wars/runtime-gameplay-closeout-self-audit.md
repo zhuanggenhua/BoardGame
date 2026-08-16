@@ -1,14 +1,14 @@
 # 法师战争标准竞技场两派系运行链收口自审
 
-> 状态：`formal-two-faction-runtime-e2e-pass / spell-type-representative-e2e-pass / fx-process-frames-current-readable / attachment-rendering-fixed / wall-family-deferred / visual-audit-revise / scoped-not-full-game`。本文件只证明标准竞技场下兽王 / 女祭司两派系的正式联机核心链和当前运行池代表对象已经打通；装备 / 结界代表链已补充“附件显示而非场上单位”的 UI 断言；旧攻击 / 法术 FX 截图曾补充来源唤醒、投射物飞行、命中和伤害飘字过程帧，但用户在 PureRef 正常审图时看不到特效，因此旧过程帧结论已降级为 `REVISE / visual-effect-not-readable`。`2026-08-15 23:06` 与 `2026-08-15 23:14` 重新生成的过程帧已单独通过原图核验：来源唤醒、跨格飞行、命中斩击和伤害飘字在正常观看下可见。端到端截图仍只能证明本轮覆盖到的玩法链和特效过程帧，不表示完整实体版 Mage Wars、全卡表、墙体 / 墙壁法术、教程或后续产品系统完成。
+> 状态：`formal-two-faction-runtime-e2e-pass / spell-type-representative-e2e-pass / summon-and-attack-fx-process-frames-current-readable / attachment-rendering-fixed / wall-family-deferred / visual-audit-revise / scoped-not-full-game`。本文件只证明标准竞技场下兽王 / 女祭司两派系的正式联机核心链和当前运行池代表对象已经打通；装备 / 结界代表链已补充“附件显示而非场上单位”的 UI 断言；旧攻击 / 法术 FX 截图曾补充来源唤醒、投射物飞行、命中和伤害飘字过程帧，但用户在 PureRef 正常审图时看不到特效，因此旧过程帧结论已降级为 `REVISE / visual-effect-not-readable`。当前重新生成并已通过原图核验的过程帧是：`2026-08-16 09:22` 生物部署召唤光柱，`2026-08-15 23:06` 间歇喷泉攻击法术来源唤醒、跨格飞行、命中斩击和伤害飘字。`冲锋陷阵` 是同格强化 / 律令效果，当前实现按最小必要特效原则不再生成泛化施法大特效；`2026-08-16 09:25` 截图只证明法力、弃牌和卡牌结果链。端到端截图仍只能证明本轮覆盖到的玩法链和必要特效过程帧，不表示完整实体版 Mage Wars、全卡表、墙体 / 墙壁法术、教程或后续产品系统完成。
 
 ## 收口结论
 
 - 已证明：正式双人联机入口从初始房间进入标准竞技场，默认两名法师为兽王 / 女祭司，起始席位来自配置包 `formalStartingDeployment`，不是教程学徒地图。
-- 已证明：当前核心链覆盖计划法术、部署生物、对手计划隐藏、施法、法力 / 弃牌变化、法术 FX、横屏移动、攻击、攻击骰 / 效果骰、伤害 token 和阶段推进。
+- 已证明：当前核心链覆盖计划法术、部署生物、召唤光柱过程帧、对手计划隐藏、强化法术的法力 / 弃牌 / 卡牌结果、攻击法术来源 / 飞行 / 命中 / 飘字过程帧、横屏移动、攻击、攻击骰 / 效果骰、伤害 token 和阶段推进。
 - 已证明 / 代表覆盖：两派系预设运行池已有浏览器端到端代表覆盖；兽王覆盖生物、装备、结界、咒语、攻击、魔物，女祭司覆盖生物、装备、结界、咒语、攻击。女祭司法术书没有魔物类型，因此不适用。
 - 已证明：装备 / 结界代表链已从“状态附着通过”补强到“UI 附件表达通过”；巨熊皮甲、风龙皮甲、公牛耐力和巨熊力量均断言为附件卡，不再允许作为场上单位卡片出现。
-- 已证明：玩法链 E2E 已触发技能 / 法术表现节点，不再只截最终态；本轮重拍后的冲锋陷阵 / 间歇喷泉过程截图能分别看到同格来源 / 命中、跨格来源唤醒、投射物飞行、命中斩击和伤害飘字。旧不可读过程帧仍保留为历史作废证据，不能混用为当前通过证据。
+- 已证明：玩法链 E2E 已触发必要表现节点，不再只截最终态；本轮重拍后的部署生物能看到召唤光柱过程帧，间歇喷泉能看到跨格来源唤醒、投射物飞行、命中斩击和伤害飘字。冲锋陷阵只作为强化法术结果链验证，不再声明同格过程特效通过。旧不可读过程帧仍保留为历史作废证据，不能混用为当前通过证据。
 - 已证明：Mage Wars 游戏侧 FX 渲染器只做 cue、坐标和参数适配；飞行路径、粒子、命中、斩击和伤害飘字复用 / 扩展通用 `ConeBlast`、`BurstParticles`、`ImpactContainer`、`DamageFlash`、`DamageNumber`，没有在游戏侧新造一套主特效系统。
 - 已证明：能力扩展边界已落到注册表合同；预设法术能力由配置 ability catalog、法术能力注册表和法术执行器注册表同步承接，场上对象主动能力由对象能力注册表和对象执行器注册表分发。
 - 已证明：截图证据来自真实页面，不是 Open Design 设计稿、静态预览或状态注入布局图。
@@ -29,8 +29,8 @@
 | 正式入局与座位 | 从正式双人房间进入标准竞技场，默认两名法师为兽王 / 女祭司 | 已证明 | `online-runtime.e2e.ts` 三条正式联机用例；截图 `01-双方计划后-对手计划仍隐藏.jpg` | 完整远端素材 bootstrap 当前未证明 |
 | 标准竞技场与基础牌桌 | 看到 4x3 标准竞技场、法师实体、牌桌 HUD 和正式素材 | 已证明 | `foundation-board-runtime.e2e.ts` 桌面与移动横屏两条用例；截图时间 `2026-08-14 22:01-22:02` | 不替代正式联机流程 |
 | 法术计划 | 双方从法术书选择并计划法术，对手计划保持隐藏 | 已证明 | `online-runtime.e2e.ts` 用例“从双方计划到部署并保持对手计划隐藏”；截图 `01-双方计划后-对手计划仍隐藏.jpg` | 目前只覆盖两派系预设法术，不覆盖自由构筑 |
-| 部署生物 | 双方把已计划生物部署到场上指定区域 | 已证明 | 截图 `02-部署完成后-场地生物和隐藏计划.jpg` | 更多召唤类型、熟宠 / spawn point 只由低层测试和能力合同覆盖 |
-| 施放法术 | 选择已计划法术并点选真实目标，结算法力、弃牌和法术 FX | 玩法已证明 / 当前 FX 过程帧可读 | `online-runtime.e2e.ts` 用例“真实施放法术并产生法力、弃牌和法术 FX”；截图 `03A-冲锋陷阵同格法术-来源唤醒和命中过程帧.jpg`、`03-冲锋陷阵结算后-法力弃牌已变化.jpg` | 只证明代表法术链，不表示全 322 张法术逐张完成；同格法术不伪造 travel |
+| 部署生物 | 双方把已计划生物部署到场上指定区域，并在部署时播放召唤光柱 | 已证明 / 召唤过程帧可读 | 截图 `02A-己方生物部署-召唤光柱过程帧.jpg`、`02-部署完成后-场地生物和隐藏计划.jpg` | 更多召唤类型、熟宠 / spawn point 只由低层测试和能力合同覆盖 |
+| 施放法术 | 选择已计划法术并点选真实目标；强化法术只结算法力、弃牌和卡牌结果，攻击法术另有来源 / 飞行 / 命中 / 飘字过程帧 | 玩法已证明 / 强化法术不产生泛化大特效 / 攻击过程帧可读 | `online-runtime.e2e.ts` 用例“真实施放强化法术并只产生法力、弃牌和卡牌结果”；截图 `03-冲锋陷阵结算后-法力弃牌已变化.jpg`；攻击过程帧见 `11A` 三张 | 只证明代表法术链，不表示全 322 张法术逐张完成；没有攻击 / 投射 / 召唤语义的强化法术不伪造 travel 或命中大特效 |
 | 两派系法术类型代表链 | 两派系通过正式页面计划并施放各自预设法术类型代表 | 已证明 / 代表覆盖 | `online-runtime.e2e.ts` 用例“覆盖两派系法术类型代表链”；截图 `09` / `10` / `11` | 代表性覆盖，不表示逐张法术全量完成；法师固有能力和场上对象主动能力另列为未覆盖 |
 | 场地对象直选 | 场上生物本体可直接作为移动 / 攻击来源 | 已证明 | `online-runtime.e2e.ts` 用例“真实移动、攻击并切换回合”；截图 `05-生物行动前-场地对象可直选.jpg` | 需继续覆盖更多对象能力来源 |
 | 移动 | 丛林灰狼从源区域移动到目标区域 | 已证明 / 视觉未收口 | 截图 `06-横屏移动后-丛林灰狼进入目标区域.jpg` | 玩法链通过；移动横屏底部 UI 拥挤，视觉仍 `REVISE` |
@@ -45,8 +45,8 @@
 
 | E2E 文件 | 用例 | 挂接的流程段落 | 当前证据状态 |
 | --- | --- | --- | --- |
-| `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口从双方计划到部署并保持对手计划隐藏 | 正式入局、法术计划、部署生物、对手隐藏计划 | 本轮主证据；截图存在，时间为 `2026-08-15 10:13-10:13` |
-| `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实施放法术并产生法力、弃牌和法术 FX | 施放法术、法力 / 弃牌变化、同格法术来源唤醒 / 命中过程帧 | 本轮重跑证据；最新截图存在，时间为 `2026-08-15 23:14`，命令结果 `1 passed (1.5m)` |
+| `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口从双方计划到部署并保持对手计划隐藏 | 正式入局、法术计划、部署生物、召唤光柱过程帧、对手隐藏计划 | 本轮重跑证据；最新截图存在，时间为 `2026-08-16 09:22`，命令结果 `1 passed (53.5s)` |
+| `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实施放强化法术并只产生法力、弃牌和卡牌结果 | 强化法术施放、法力 / 弃牌变化、旧泛化施法大特效不存在 | 本轮重跑证据；最新截图存在，时间为 `2026-08-16 09:25`，命令结果 `1 passed (55.5s)` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实移动、攻击并切换回合 | 场地对象直选、移动、攻击与伤害、阶段推进 | 本轮主证据；截图存在，时间为 `2026-08-15 10:15`；图面审计仍为 `REVISE / visual-layout` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口覆盖两派系法术类型代表链 | 生物、装备、结界、咒语、攻击、魔物的两派系预设法术类型代表链；跨格攻击法术来源 / 飞行 / 命中 / 伤害飘字过程帧 | 本轮重跑证据；最新 `2026-08-15 23:06` 生成 6 张截图，命令结果 `1 passed (2.4m)` |
 | `e2e/mage-wars/foundation-board-runtime.e2e.ts` | 真实入口加载正式牌桌素材并落桌面验收截图 | 标准竞技场、基础牌桌、桌面布局、攻击结算视觉 | 已有覆盖；截图存在，时间为 `2026-08-14 22:01-22:02`，不替代正式联机玩法链 |
@@ -63,21 +63,25 @@
 $env:PW_E2E_SERVICE_REUSE='isolated'
 node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口覆盖两派系法术类型代表链"
 
-# 本轮同格法术 FX 过程帧定向验证：当前过程帧可读
-$env:PW_E2E_SERVICE_REUSE='isolated'
-node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放法术并产生法力、弃牌和法术 FX"
+# 本轮部署召唤过程帧定向验证：当前过程帧可读
+$env:PW_E2E_SERVICE_REUSE='ci'
+node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口从双方计划到部署"
+
+# 本轮强化法术结果链定向验证：不产生泛化施法大特效
+$env:PW_E2E_SERVICE_REUSE='ci'
+node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放强化法术"
 ```
 
-结果：本轮同格法术 FX 最新定向验证 `1 passed (1.5m)`；两派系法术类型代表链最新定向验证 `1 passed (2.4m)`。两条命令均使用标准 isolated runtime 和本地完整素材包，证明对应真实页面链路和截图落盘通过；它们不表示全文件或整局自然终局重新跑过。
+结果：本轮部署召唤最新定向验证 `1 passed (53.5s)`；强化法术结果链最新定向验证 `1 passed (55.5s)`；两派系法术类型代表链最新定向验证 `1 passed (2.4m)`。这些命令使用项目 E2E runtime 和本地完整素材包，证明对应真实页面链路和截图落盘通过；它们不表示全文件或整局自然终局重新跑过。
 
 覆盖关系：
 
 | 用例 | 覆盖内容 | 本轮截图证据 |
 | --- | --- | --- |
 | 正式联机入口从双方计划到部署并保持对手计划隐藏 | 双人正式房间、双方计划、部署、隐藏计划卡背 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/01-双方计划后-对手计划仍隐藏.jpg` |
+| 正式联机入口从双方计划到部署并保持对手计划隐藏 | 己方生物部署过程中的召唤光柱，E2E 等待真实画布可见像素后截图 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02A-己方生物部署-召唤光柱过程帧.jpg` |
 | 正式联机入口从双方计划到部署并保持对手计划隐藏 | 部署后场地生物与隐藏边界 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02-部署完成后-场地生物和隐藏计划.jpg` |
-| 正式联机入口真实施放法术并产生法力、弃牌和法术 FX | 真实施放冲锋陷阵、法力和弃牌变化、法术 FX DOM 断言 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实施放法术并产生法力、弃牌和法术-FX/03-冲锋陷阵结算后-法力弃牌已变化.jpg` |
-| 正式联机入口真实施放法术并产生法力、弃牌和法术 FX | 冲锋陷阵同格法术来源唤醒和命中过程帧；同格效果不要求 travel | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实施放法术并产生法力、弃牌和法术-FX/03A-冲锋陷阵同格法术-来源唤醒和命中过程帧.jpg` |
+| 正式联机入口真实施放强化法术并只产生法力、弃牌和卡牌结果 | 真实施放冲锋陷阵、法力和弃牌变化，且旧 `mage-wars-fx-spell-cast` 泛化施法大特效不存在 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实施放强化法术并只产生法力、弃牌和卡牌结果/03-冲锋陷阵结算后-法力弃牌已变化.jpg` |
 | 正式联机入口真实移动、攻击并切换回合 | 场地对象直选 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/05-生物行动前-场地对象可直选.jpg` |
 | 正式联机入口真实移动、攻击并切换回合 | 丛林灰狼真实移动到目标区域 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06-横屏移动后-丛林灰狼进入目标区域.jpg` |
 | 正式联机入口真实移动、攻击并切换回合 | 圣光之柱攻击、攻击骰、效果骰、伤害 token | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg` |
@@ -91,17 +95,16 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e
 
 这些截图只作为 E2E 过程证据；除非用户明确要求打开图片，或后续已经进入稳定候选最终视觉验收，否则不把截图展示动作当成本阶段门禁。
 
-## 当前已打开特效图组清单
+## 当前已核验过程帧清单
 
-本组是 `2026-08-15 23:06` / `23:14` 之后重新生成并已通过原图核验的当前特效验收图。标记副本目录为 `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/_labeled-for-pureref-current-fx/`；已通过 `scripts/verify/open-verified-image.mjs --viewer pureref --paths ...` 一次性打开到 PureRef。
+本组是当前有效的特效过程帧原图核验清单。它不依赖标记副本，也不把“打开图片”当作过程门禁；只有达到稳定最终验收图标准或用户明确要求时，才另走用户可见开图入口。
 
-| 序号 | 标记副本 | 对应原图 | 覆盖阶段 | 图面结论 |
-| --- | --- | --- | --- | --- |
-| 0 | `00-sequence-index.png` | 不适用 | 中文顺序索引 | PureRef 审查辅助 |
-| 1 | `01-labeled-03A-冲锋陷阵同格法术-来源唤醒和命中过程帧.png` | `03A-冲锋陷阵同格法术-来源唤醒和命中过程帧.jpg` | 同格法术来源唤醒 / 命中 | 粒子可见；同格效果不伪造 travel |
-| 2 | `02-labeled-11A-间歇喷泉攻击法术-来源唤醒过程帧.png` | `11A-间歇喷泉攻击法术-来源唤醒过程帧.jpg` | 跨格攻击来源唤醒 | 兽王侧来源格发光粒子和路径起点可见 |
-| 3 | `03-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png` | `11A-间歇喷泉攻击法术-投射物飞行中.jpg` | 跨格攻击 travel | 投射物 / 路径处于飞行中段，尚未出现伤害飘字 |
-| 4 | `04-labeled-11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.png` | `11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` | 跨格攻击 impact / resolve | 红色斩击和清晰 `-6` 伤害飘字可见 |
+| 序号 | 原图 | 覆盖阶段 | 图面结论 |
+| --- | --- | --- | --- |
+| 1 | `02A-己方生物部署-召唤光柱过程帧.jpg` | 生物部署召唤 | 召唤光柱和环形扩散在正常观看下可见；E2E 等待真实 canvas 可见像素后截图 |
+| 2 | `11A-间歇喷泉攻击法术-来源唤醒过程帧.jpg` | 跨格攻击来源唤醒 | 兽王侧来源格发光粒子和路径起点可见 |
+| 3 | `11A-间歇喷泉攻击法术-投射物飞行中.jpg` | 跨格攻击 travel | 投射物 / 路径处于飞行中段，尚未出现伤害飘字 |
+| 4 | `11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` | 跨格攻击 impact / resolve | 红色斩击和清晰 `-6` 伤害飘字可见 |
 
 ## 历史已打开图组清单
 
@@ -127,8 +130,8 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e
 | --- | --- | --- |
 | `01-双方计划后-对手计划仍隐藏.jpg` | 标准竞技场、双方计划隐藏和兽王 / 女祭司初始身份可见。 | 流程证据有效 |
 | `02-部署完成后-场地生物和隐藏计划.jpg` | 双方部署后的场地对象可见，隐藏计划边界仍在。 | 流程证据有效 |
-| `03A-冲锋陷阵同格法术-来源唤醒和命中过程帧.jpg` | 兽王同格法术在来源 / 目标同区域释放，来源和目标区域粒子可见；同格效果没有伪造投射物飞行段。 | 当前过程帧 `PASS`；截图时间 `2026-08-15 23:14` |
-| `03-冲锋陷阵结算后-法力弃牌已变化.jpg` | 行动环节、弃牌区和法力变化可见。 | 流程证据有效 |
+| `02A-己方生物部署-召唤光柱过程帧.jpg` | 己方生物部署时，场上能看到明显召唤光柱、底部白光和环形扩散。 | 当前召唤过程帧 `PASS`；截图时间 `2026-08-16 09:22` |
+| `03-冲锋陷阵结算后-法力弃牌已变化.jpg` | 行动环节、弃牌区和法力变化可见；画面没有旧 `mage-wars-fx-spell-cast` 泛化施法大特效。 | 强化法术结果链有效；不登记为过程特效图 |
 | `05-生物行动前-场地对象可直选.jpg` | 行动环节和可操作场地对象可见。 | 流程证据有效 |
 | `06-横屏移动后-丛林灰狼进入目标区域.jpg` | 丛林灰狼移动结果可见；但移动横屏底部牌堆、回合结束按钮和悬浮入口贴得过近。 | `REVISE / visual-layout` |
 | `07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg` | 伤害 / 状态 token 可见；底部手牌、牌堆、回合结束按钮和悬浮入口仍拥挤。 | `REVISE / visual-layout` |
@@ -148,7 +151,7 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e
 | 兽王 | 生物 | 野性山猫 / 丛林灰狼 | `09`，以及既有 `02` / `05` / `06` | 代表链，不逐张覆盖全部生物 |
 | 兽王 | 装备 | 巨熊皮甲 | `10` | 附件显示已覆盖；装备主动能力 UI 不在本轮 |
 | 兽王 | 结界 | 巨熊力量 | `10` | 结界 rawCost 由正式 UI 解析后施放 |
-| 兽王 | 咒语 | 冲锋陷阵 | `03A` / `03` | 代表链，不逐张覆盖全部咒语；同格法术有来源 / 命中过程帧 |
+| 兽王 | 咒语 | 冲锋陷阵 | `03` | 代表链，不逐张覆盖全部咒语；强化 / 律令效果只证明法力、弃牌和卡牌结果，不生成泛化施法大特效 |
 | 兽王 | 攻击 | 间歇喷泉 | `11A` / `11` | 代表链，不逐张覆盖全部攻击法术；跨格攻击有来源 / 飞行 / 命中 / 伤害飘字过程帧 |
 | 兽王 | 魔物 | 缠绕藤蔓 | `11` | 兽王预设法术书有魔物类型 |
 | 女祭司 | 生物 | 阿希拉牧师 | `09`，以及既有 `02` / `07` | 代表链，不逐张覆盖全部生物 |
@@ -185,12 +188,13 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e
 
 | 门禁 | 命令 | 结果 |
 | --- | --- | --- |
-| TypeScript 静态检查 | `npm run typecheck` | 通过 |
-| Mage Wars FX 单测 | `node scripts/infra/vitest-cli-safe.mjs run src/games/mage-wars/__tests__/Board.fx.test.tsx --config vitest.config.core.ts --configLoader native` | `1 file / 7 tests passed` |
+| TypeScript 静态检查 | `npx tsc --noEmit --pretty false --skipLibCheck false --project tsconfig.json` | 通过 |
+| Mage Wars FX 单测 | `node scripts/infra/vitest-cli-safe.mjs run src/games/mage-wars/__tests__/event-fx-mapper.test.ts src/games/mage-wars/__tests__/Board.fx.test.tsx --config vitest.config.core.ts --configLoader native` | `2 files / 16 tests passed` |
 | 项目规范 lint | `npm run spec:lint` | `spec-lint: OK` |
 | Diff 空白检查 | `git diff --check -- <本轮相关文件>` | 通过；仅输出 CRLF 提示 |
 | 两派系法术类型代表链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口覆盖两派系法术类型代表链"` | 最新命令 `1 passed (2.4m)`；6 张截图落盘，含 3 张 11A 过程帧；当前原图核验为 `PASS / fx-process-frames-readable` |
-| 同格法术 FX E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放法术并产生法力、弃牌和法术 FX"` | 最新命令 `1 passed (1.5m)`；2 张截图落盘，含 03A 过程帧；当前原图核验为 `PASS / fx-process-frames-readable` |
+| 部署召唤过程帧 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口从双方计划到部署"` | 最新命令 `1 passed (53.5s)`；3 张截图落盘，含 `02A` 召唤光柱过程帧；当前原图核验为 `PASS / summon-process-frame-readable` |
+| 强化法术结果链 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放强化法术"` | 最新命令 `1 passed (55.5s)`；1 张截图落盘；断言旧泛化施法大特效不存在 |
 | OpenSpec | `openspec validate add-mage-wars-runtime-gameplay-closeout --strict --no-interactive` | valid |
 | 主 spec | `openspec validate mage-wars --strict --no-interactive` | valid |
 
