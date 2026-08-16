@@ -17,6 +17,7 @@ import { selectCharacter, waitForCharacterSelection } from './helpers/dicethrone
 import { waitForFactionDraft, waitForSmashUpUI } from './helpers/smashup';
 import { getMatchState } from './helpers/state-injection';
 import {
+    clickFactionReady,
     getPlayerStatusCard,
     selectFactionById,
     waitForFactionSelectionReady,
@@ -434,7 +435,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
         }
     });
 
-    test('SummonerWars 在线房间房主可替 AI 选择阵营并写回 shared state', async ({ browser }, testInfo) => {
+    test('SummonerWars 在线房间房主替 AI 点阵营后需点准备就绪才写回 shared state', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -490,6 +491,25 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
             await selectFactionById(page, 'trickster');
+            await page.waitForTimeout(800);
+            await expect(page.getByTestId('sw-faction-card-trickster')).toHaveAttribute('data-selected', 'true');
+            await expect(getPlayerStatusCard(page, '1')).toHaveAttribute('data-faction-id', 'trickster');
+            expect(await readLiveCore<{
+                selectedFactions?: Record<string, string>;
+                readyPlayers?: Record<string, boolean>;
+                hostStarted?: boolean;
+            }>(matchId, page)).toMatchObject({
+                selectedFactions: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+                readyPlayers: {
+                    '1': false,
+                },
+                hostStarted: false,
+            });
+
+            await clickFactionReady(page);
             await expect.poll(async () => {
                 const core = await readLiveCore<{
                     selectedFactions?: Record<string, string>;
@@ -504,7 +524,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
                 };
             }, {
                 timeout: 15000,
-                message: '等待 SummonerWars AI 阵营先写回并准备',
+                message: '等待 SummonerWars AI 阵营在准备就绪后写回并准备',
             }).toEqual({
                 hostFaction: 'unselected',
                 aiFaction: 'trickster',
@@ -548,7 +568,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
         }
     });
 
-    test('DiceThrone 在线房间房主可替 AI 选择角色并写回 shared state', async ({ browser }, testInfo) => {
+    test('DiceThrone 在线房间房主替 AI 点角色后需点准备就绪才写回 shared state', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -605,6 +625,26 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForAiSeatCredentials(page, matchId, ['1']);
 
             await selectCharacter(page, 'gunslinger');
+            await page.waitForTimeout(800);
+            await expect(page.locator('[data-character-id="gunslinger"], [data-char-id="gunslinger"]').first()).toContainText(/P2/i);
+            expect(await readLiveCore<{
+                selectedCharacters?: Record<string, string>;
+                readyPlayers?: Record<string, boolean>;
+                hostStarted?: boolean;
+            }>(matchId, page)).toMatchObject({
+                selectedCharacters: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+                readyPlayers: {
+                    '1': false,
+                },
+                hostStarted: false,
+            });
+
+            const readyButton = page.getByRole('button', { name: /Ready|准备/i }).first();
+            await expect(readyButton).toBeVisible({ timeout: 5000 });
+            await readyButton.click();
             await expect.poll(async () => {
                 const core = await readLiveCore<{
                     selectedCharacters?: Record<string, string>;
@@ -619,7 +659,7 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
                 };
             }, {
                 timeout: 15000,
-                message: '等待 DiceThrone AI 角色先写回并准备',
+                message: '等待 DiceThrone AI 角色在准备就绪后写回并准备',
             }).toEqual({
                 hostCharacter: 'unselected',
                 aiCharacter: 'gunslinger',

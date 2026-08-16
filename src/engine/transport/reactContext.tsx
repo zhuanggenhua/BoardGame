@@ -85,10 +85,12 @@ export function useGameClient<
 
 export function GameClientOverrideProvider({
     children,
+    state,
     playerId,
     dispatch,
 }: {
     children: ReactNode;
+    state?: MatchState<unknown> | null;
     playerId?: string | null;
     dispatch?: (type: string, payload: unknown) => void;
 }) {
@@ -99,9 +101,10 @@ export function GameClientOverrideProvider({
 
     const value = useMemo<GameClientContextValue>(() => ({
         ...ctx,
+        ...(state !== undefined ? { state } : {}),
         ...(playerId !== undefined ? { playerId } : {}),
         ...(dispatch ? { dispatch } : {}),
-    }), [ctx, dispatch, playerId]);
+    }), [ctx, dispatch, playerId, state]);
 
     return (
         <GameClientContext.Provider value={value}>

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameClientOverrideProvider, useGameClient } from '../engine/transport/react';
 import type { MatchState } from '../engine/types';
 import type { OnlineManualSetupSelectionBridgeProps } from './onlineManualSetup.types';
 import {
+    isManualSetupReadyCommand,
     resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
+    shouldStageManualSetupSelectionBeforeReady,
     shouldReleaseManualSetupAttemptFromSharedState,
 } from './matchManualSetup';
 
@@ -16,6 +18,55 @@ type PendingManualSetupSelection = {
     actionKind: string;
     selectionId: string;
 };
+
+type DraftManualSetupSelection = PendingManualSetupSelection & {
+    commandType: string;
+    payload: unknown;
+};
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function buildManualSetupDraftState(
+    sharedState: MatchState<unknown> | null,
+    draft: DraftManualSetupSelection | null,
+): MatchState<unknown> | undefined {
+    if (!sharedState || !draft) {
+        return undefined;
+    }
+
+    const core = isPlainRecord(sharedState.core) ? sharedState.core : {};
+    if (draft.actionKind === 'setup-select-faction') {
+        const selectedFactions = isPlainRecord(core.selectedFactions) ? core.selectedFactions : {};
+        return {
+            ...sharedState,
+            core: {
+                ...core,
+                selectedFactions: {
+                    ...selectedFactions,
+                    [draft.playerId]: draft.selectionId,
+                },
+            },
+        };
+    }
+
+    if (draft.actionKind === 'setup-select-character') {
+        const selectedCharacters = isPlainRecord(core.selectedCharacters) ? core.selectedCharacters : {};
+        return {
+            ...sharedState,
+            core: {
+                ...core,
+                selectedCharacters: {
+                    ...selectedCharacters,
+                    [draft.playerId]: draft.selectionId,
+                },
+            },
+        };
+    }
+
+    return undefined;
+}
 
 export const OnlineManualSetupSelectionBridge = ({
     children,
@@ -37,10 +88,17 @@ export const OnlineManualSetupSelectionBridge = ({
     const latestSharedStateRef = useRef<MatchState<unknown> | null>(sharedState);
     const pendingManualSetupSelectionRef = useRef<PendingManualSetupSelection | null>(null);
     const [pendingManualSetupSelection, setPendingManualSetupSelectionState] = useState<PendingManualSetupSelection | null>(null);
+    const draftManualSetupSelectionRef = useRef<DraftManualSetupSelection | null>(null);
+    const [draftManualSetupSelection, setDraftManualSetupSelectionState] = useState<DraftManualSetupSelection | null>(null);
 
     const setPendingManualSetupSelection = useCallback((next: PendingManualSetupSelection | null) => {
         pendingManualSetupSelectionRef.current = next;
         setPendingManualSetupSelectionState(next);
+    }, []);
+
+    const setDraftManualSetupSelection = useCallback((next: DraftManualSetupSelection | null) => {
+        draftManualSetupSelectionRef.current = next;
+        setDraftManualSetupSelectionState(next);
     }, []);
 
     const isManualSetupSelectionPending = pendingManualSetupSelection !== null
@@ -55,7 +113,50 @@ export const OnlineManualSetupSelectionBridge = ({
 
     useEffect(() => {
         latestSharedStateRef.current = sharedState;
-    }, [sharedState]);
+
+        const pending = pendingManualSetupSelectionRef.current;
+        if (pending && shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: pending.playerId,
+            actionKind: pending.actionKind,
+            selectionId: pending.selectionId,
+            engineConfig,
+        })) {
+            setPendingManualSetupSelection(null);
+        }
+
+        const draft = draftManualSetupSelectionRef.current;
+        if (draft && shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: draft.playerId,
+            actionKind: draft.actionKind,
+            selectionId: draft.selectionId,
+            engineConfig,
+        })) {
+            setDraftManualSetupSelection(null);
+        }
+    }, [
+        engineConfig,
+        setDraftManualSetupSelection,
+        setPendingManualSetupSelection,
+        sharedState,
+    ]);
+
+    const manualSetupDraftState = useMemo(() => {
+        if (
+            !shouldOverrideManualSetupSelection
+            || !draftManualSetupSelection
+            || draftManualSetupSelection.playerId !== manualSetupPlayerId
+        ) {
+            return undefined;
+        }
+        return buildManualSetupDraftState(sharedState, draftManualSetupSelection);
+    }, [
+        draftManualSetupSelection,
+        manualSetupPlayerId,
+        sharedState,
+        shouldOverrideManualSetupSelection,
+    ]);
 
     const manualDispatch = useCallback((type: string, payload: unknown) => {
         const latestSharedState = latestSharedStateRef.current;
@@ -81,6 +182,33 @@ export const OnlineManualSetupSelectionBridge = ({
             engineConfig,
         });
         if (latestManualSetupPlayerId) {
+            const draft = draftManualSetupSelectionRef.current;
+            if (isManualSetupReadyCommand(type)) {
+                if (!draft || draft.playerId !== latestManualSetupPlayerId) {
+                    return;
+                }
+                setPendingManualSetupSelection({
+                    playerId: draft.playerId,
+                    actionKind: draft.actionKind,
+                    selectionId: draft.selectionId,
+                });
+                const accepted = requestManualSetupSelection
+                    ? requestManualSetupSelection({
+                        targetPlayerId: draft.playerId,
+                        actionKind: draft.actionKind,
+                        selectionId: draft.selectionId,
+                    }, (result) => {
+                        if (!result.accepted) {
+                            setPendingManualSetupSelection(null);
+                        }
+                    })
+                    : dispatchManualSetupCommand?.(draft.playerId, draft.commandType, draft.payload) ?? false;
+                if (!accepted) {
+                    setPendingManualSetupSelection(null);
+                }
+                return;
+            }
+
             const actionKind = resolveManualSetupSelectionActionKindFromCommand({
                 type,
                 payload,
@@ -90,6 +218,17 @@ export const OnlineManualSetupSelectionBridge = ({
                 ? resolveManualSetupSelectionId({ actionKind, payload, engineConfig })
                 : null;
             if (actionKind && selectionId) {
+                if (shouldStageManualSetupSelectionBeforeReady(actionKind)) {
+                    setDraftManualSetupSelection({
+                        playerId: latestManualSetupPlayerId,
+                        actionKind,
+                        selectionId,
+                        commandType: type,
+                        payload,
+                    });
+                    return;
+                }
+
                 setPendingManualSetupSelection({
                     playerId: latestManualSetupPlayerId,
                     actionKind,
@@ -122,11 +261,13 @@ export const OnlineManualSetupSelectionBridge = ({
         engineConfig,
         requestManualSetupSelection,
         seatControllers,
+        setDraftManualSetupSelection,
         setPendingManualSetupSelection,
     ]);
 
     return (
         <GameClientOverrideProvider
+            state={manualSetupDraftState}
             playerId={shouldOverrideManualSetupSelection ? manualSetupPlayerId : undefined}
             dispatch={shouldOverrideManualSetupSelection ? manualDispatch : undefined}
         >

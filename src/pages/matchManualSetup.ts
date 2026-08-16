@@ -16,6 +16,11 @@ const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'setup-select-character',
 ]);
 
+const MANUAL_SETUP_READY_COMMAND_TYPES = new Set([
+    'PLAYER_READY',
+    'sw:player_ready',
+]);
+
 type ManualSetupRecoveryEngineConfig = OnlineAiRecoveryEngineConfig;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -24,6 +29,14 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 export function isManualSetupSelectionActionKind(kind: string): kind is ManualSetupSelectionActionKind {
     return MANUAL_SETUP_SELECTION_ACTION_KINDS.has(kind);
+}
+
+export function shouldStageManualSetupSelectionBeforeReady(actionKind: string): boolean {
+    return actionKind === 'setup-select-faction' || actionKind === 'setup-select-character';
+}
+
+export function isManualSetupReadyCommand(type: string): boolean {
+    return MANUAL_SETUP_READY_COMMAND_TYPES.has(type);
 }
 
 function resolveManualSetupSelectionTakeoverOverride(args: {
