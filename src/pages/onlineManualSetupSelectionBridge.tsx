@@ -166,7 +166,7 @@ export const OnlineManualSetupSelectionBridge = ({
             engineConfig,
         });
         if (latestManualSetupPlayerId) {
-            const draft = draftManualSetupSelectionRef.current;
+            let draft = draftManualSetupSelectionRef.current;
             if (draft && shouldReleaseManualSetupAttemptFromSharedState({
                 sharedState: latestSharedState,
                 playerId: draft.playerId,
@@ -175,7 +175,7 @@ export const OnlineManualSetupSelectionBridge = ({
                 engineConfig,
             })) {
                 setDraftManualSetupSelection(null);
-                return;
+                draft = null;
             }
             if (isManualSetupReadyCommand(type)) {
                 if (!draft || draft.playerId !== latestManualSetupPlayerId) {
