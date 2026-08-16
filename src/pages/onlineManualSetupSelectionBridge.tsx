@@ -110,49 +110,33 @@ export const OnlineManualSetupSelectionBridge = ({
             engineConfig,
         });
     const shouldOverrideManualSetupSelection = shouldTakeOver && !isManualSetupSelectionPending;
+    const isDraftManualSetupSelectionReleased = draftManualSetupSelection !== null
+        && shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: draftManualSetupSelection.playerId,
+            actionKind: draftManualSetupSelection.actionKind,
+            selectionId: draftManualSetupSelection.selectionId,
+            engineConfig,
+        });
+    const activeDraftManualSetupSelection = isDraftManualSetupSelectionReleased
+        ? null
+        : draftManualSetupSelection;
 
     useEffect(() => {
         latestSharedStateRef.current = sharedState;
-
-        const pending = pendingManualSetupSelectionRef.current;
-        if (pending && shouldReleaseManualSetupAttemptFromSharedState({
-            sharedState,
-            playerId: pending.playerId,
-            actionKind: pending.actionKind,
-            selectionId: pending.selectionId,
-            engineConfig,
-        })) {
-            setPendingManualSetupSelection(null);
-        }
-
-        const draft = draftManualSetupSelectionRef.current;
-        if (draft && shouldReleaseManualSetupAttemptFromSharedState({
-            sharedState,
-            playerId: draft.playerId,
-            actionKind: draft.actionKind,
-            selectionId: draft.selectionId,
-            engineConfig,
-        })) {
-            setDraftManualSetupSelection(null);
-        }
-    }, [
-        engineConfig,
-        setDraftManualSetupSelection,
-        setPendingManualSetupSelection,
-        sharedState,
-    ]);
+    }, [sharedState]);
 
     const manualSetupDraftState = useMemo(() => {
         if (
             !shouldOverrideManualSetupSelection
-            || !draftManualSetupSelection
-            || draftManualSetupSelection.playerId !== manualSetupPlayerId
+            || !activeDraftManualSetupSelection
+            || activeDraftManualSetupSelection.playerId !== manualSetupPlayerId
         ) {
             return undefined;
         }
-        return buildManualSetupDraftState(sharedState, draftManualSetupSelection);
+        return buildManualSetupDraftState(sharedState, activeDraftManualSetupSelection);
     }, [
-        draftManualSetupSelection,
+        activeDraftManualSetupSelection,
         manualSetupPlayerId,
         sharedState,
         shouldOverrideManualSetupSelection,
@@ -183,6 +167,16 @@ export const OnlineManualSetupSelectionBridge = ({
         });
         if (latestManualSetupPlayerId) {
             const draft = draftManualSetupSelectionRef.current;
+            if (draft && shouldReleaseManualSetupAttemptFromSharedState({
+                sharedState: latestSharedState,
+                playerId: draft.playerId,
+                actionKind: draft.actionKind,
+                selectionId: draft.selectionId,
+                engineConfig,
+            })) {
+                setDraftManualSetupSelection(null);
+                return;
+            }
             if (isManualSetupReadyCommand(type)) {
                 if (!draft || draft.playerId !== latestManualSetupPlayerId) {
                     return;
