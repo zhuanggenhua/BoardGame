@@ -4027,6 +4027,12 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('sharks_megalodon_before_scoring');
+        expect(prompt?.data?.targetType).toBe('field-source-target');
+        const options = prompt?.options ?? prompt?.data?.options ?? [];
+        const destroyOptions = options.filter((option: any) => option.value?.fieldInteractionType === 'source-target');
+        expect(destroyOptions).toHaveLength(2);
+        expect(destroyOptions.every((option: any) => option.value?.sourceUid === 'mega-0')).toBe(true);
+        expect(destroyOptions.map((option: any) => option.value?.targetMinionUid).sort()).toEqual(['small-1', 'small-2']);
     });
 
     it('queued afterScoring per-instance trigger 在对手计分时仍应把 giant_ant_we_are_the_champions 的确认权交给控制者', () => {

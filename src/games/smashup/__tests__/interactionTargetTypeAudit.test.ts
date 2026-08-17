@@ -115,6 +115,7 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     giant_ant_drone_prevent_destroy: { targetType: 'minion' },
     giant_ant_we_are_the_champions_choose_source: { targetType: 'minion' },
     giant_ant_we_are_the_champions_choose_snapshot_source: { targetType: 'generic' },
+    sharks_megalodon_before_scoring: { targetType: 'field-source-target', autoRefresh: 'field', responseValidationMode: 'live' },
     robot_microbot_reclaimer: { targetType: 'generic' },
     robot_hoverbot: { targetType: 'generic' },
     steampunk_scrap_diving: { targetType: 'generic' },
@@ -1192,6 +1193,25 @@ function getFilesToScan(): string[] {
     return [...abilityFiles, ...baseAbilityFiles];
 }
 
+function getSmashUpSourceAndTestFiles(): string[] {
+    const root = resolve(__dirname, '..');
+    const files: string[] = [];
+    const visit = (dir: string) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const fullPath = join(dir, entry.name);
+            if (entry.isDirectory()) {
+                visit(fullPath);
+                continue;
+            }
+            if (/\.(ts|tsx)$/.test(entry.name)) {
+                files.push(fullPath);
+            }
+        }
+    };
+    visit(root);
+    return files;
+}
+
 describe('SmashUp Interaction targetType 审计', () => {
     it('所有 createSimpleChoice 的直点/通用交互都显式声明正确的 targetType', () => {
         const allIssues: TargetTypeIssue[] = [];
@@ -1482,6 +1502,47 @@ describe('SmashUp Interaction targetType 审计', () => {
         }
 
         expect(violations, `smashup_reaction_choose 选项显示职责异常：\n${violations.join('\n')}`).toEqual([]);
+    });
+
+    it('smashup_reaction_choose 的手写夹具不得继续声明 button targetType 或手牌按钮模式', () => {
+        const violations: string[] = [];
+
+        for (const filePath of getSmashUpSourceAndTestFiles()) {
+            const source = readFileSync(filePath, 'utf-8');
+            const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+
+            const visit = (node: ts.Node) => {
+                if (ts.isObjectLiteralExpression(node)) {
+                    const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+                    if (
+                        extractTopLevelStringProp(node, 'sourceId') === 'smashup_reaction_choose'
+                        && extractTopLevelStringProp(node, 'targetType') === 'button'
+                    ) {
+                        violations.push(`${filePath}:${line} smashup_reaction_choose 仍声明 targetType: 'button'，响应窗口必须使用 field-source-action 以支持场上来源本体入口。`);
+                    }
+
+                    const valueProp = node.properties.find(
+                        prop => ts.isPropertyAssignment(prop) && getObjectPropertyName(prop.name) === 'value'
+                    ) as ts.PropertyAssignment | undefined;
+                    const value = unwrapAuditExpression(valueProp?.initializer);
+                    const kind = value && ts.isObjectLiteralExpression(value)
+                        ? extractTopLevelStringProp(value, 'kind')
+                        : undefined;
+                    if (
+                        (kind === 'play_action' || kind === 'play_minion')
+                        && extractTopLevelStringProp(node, 'displayMode') === 'button'
+                    ) {
+                        violations.push(`${filePath}:${line} smashup_reaction_choose 的手牌响应仍以按钮模式渲染，必须改为卡牌本体入口 displayMode: 'card'。`);
+                    }
+                }
+
+                ts.forEachChild(node, visit);
+            };
+
+            visit(sourceFile);
+        }
+
+        expect(violations, `以下手写响应窗口夹具仍保留旧按钮合同：\n${violations.join('\n')}`).toEqual([]);
     });
 
     it('同一 sourceId 不允许混用多种 targetType 语义', () => {

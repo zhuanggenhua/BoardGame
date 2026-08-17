@@ -76,7 +76,7 @@ describe('SmashUp AI reaction choice validation', () => {
             ],
             {
                 sourceId: 'smashup_reaction_choose',
-                targetType: 'button',
+                targetType: 'field-source-action',
                 responseValidationMode: 'live',
             },
         );
@@ -183,7 +183,7 @@ describe('SmashUp AI reaction choice validation', () => {
             ],
             {
                 sourceId: 'smashup_reaction_choose',
-                targetType: 'button',
+                targetType: 'field-source-action',
                 responseValidationMode: 'live',
             },
         );
@@ -271,7 +271,7 @@ describe('SmashUp AI reaction choice validation', () => {
             ],
             {
                 sourceId: 'smashup_reaction_choose',
-                targetType: 'button',
+                targetType: 'field-source-action',
                 responseValidationMode: 'live',
             },
         );
@@ -334,7 +334,7 @@ describe('SmashUp AI reaction choice validation', () => {
                             cardUid: 'c113',
                             targetBaseIndex: 3,
                         },
-                        displayMode: 'button',
+                        displayMode: 'card',
                     },
                     {
                         id: 'pass:0',
@@ -345,7 +345,7 @@ describe('SmashUp AI reaction choice validation', () => {
                 ],
                 {
                     sourceId: 'smashup_reaction_choose',
-                    targetType: 'button',
+                    targetType: 'field-source-action',
                     responseValidationMode: 'live',
                 },
             ),

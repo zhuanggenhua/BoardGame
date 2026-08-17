@@ -5,6 +5,8 @@ import {
     addPowerCounter,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildFieldSourceTargetOptions,
+    buildFieldSourceTargetPromptConfig,
     buildMinionTargetOptions,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
@@ -25,6 +27,7 @@ import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import type { SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { getCardDef } from '../data/cards';
 import {
     SHAYU_TRIGGER_CONTRACT,
     type BaseChoice,
@@ -45,6 +48,11 @@ type SharksDestroyContext = PromptContext & {
     destroyerId?: PlayerId;
     sourceDefId?: string;
     sourceKind?: 'action' | 'nonAction';
+    fieldSource?: {
+        uid: string;
+        defId: string;
+        baseIndex: number;
+    };
 };
 
 type SharksBaseThenDestroyContext = PromptContext & {
@@ -94,6 +102,31 @@ type SharksMultiDestroyContext = PromptContext & {
     sourceKind?: 'action' | 'nonAction';
 };
 
+type SharksDestroyChoice = MinionChoice & {
+    fieldInteractionType?: unknown;
+    targetMinionUid?: string;
+    targetUid?: string;
+    targetBaseIndex?: number;
+    targetDefId?: string;
+    targetMinionDefId?: string;
+};
+
+function resolveSharksDestroyChoice(choice: SharksDestroyChoice): { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean } {
+    if (choice.skip) return { skip: true };
+    if (choice.fieldInteractionType === 'source-target') {
+        return {
+            minionUid: choice.targetMinionUid ?? choice.targetUid,
+            baseIndex: choice.targetBaseIndex ?? choice.baseIndex,
+            defId: choice.targetMinionDefId ?? choice.targetDefId,
+        };
+    }
+    return {
+        minionUid: choice.minionUid,
+        baseIndex: choice.baseIndex,
+        defId: choice.defId,
+    };
+}
+
 function destroyTarget(
     state: SmashUpCore | { core: SmashUpCore },
     target: { minionUid: string; defId: string; baseIndex: number },
@@ -141,24 +174,59 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
         'sharks_freakin_laser_beam',
         'sharks_great_white_destroy',
     ],
-    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `${context.sourceId}_${context.now}`,
-        context.playerId,
-        context.title,
-        [
-            ...(context.optional ? [createSkipOption()] : []),
-            ...buildMinionTargetOptions(context.targets, {
-                state: context.matchState.core,
-                sourcePlayerId: context.playerId,
-                sourceKind: context.sourceKind ?? 'action',
-                effectType: 'destroy',
-            }),
-        ],
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
-    ),
+    buildInteraction: (context) => {
+        if (context.fieldSource) {
+            const sourceName = getCardDef(context.fieldSource.defId)?.name ?? context.fieldSource.defId;
+            return createAbilityRuntimeSimpleChoice(
+                `${context.sourceId}_${context.now}`,
+                context.playerId,
+                context.title,
+                [
+                    ...(context.optional ? [createSkipOption()] : []),
+                    ...buildFieldSourceTargetOptions(
+                        {
+                            type: 'minion',
+                            uid: context.fieldSource.uid,
+                            defId: context.fieldSource.defId,
+                            baseIndex: context.fieldSource.baseIndex,
+                        },
+                        context.targets.map(target => ({
+                            type: 'minion' as const,
+                            uid: target.uid,
+                            defId: target.defId,
+                            baseIndex: target.baseIndex,
+                            label: target.label,
+                        })),
+                        { sourceLabel: sourceName },
+                    ),
+                ],
+                buildFieldSourceTargetPromptConfig({
+                    sourceId: context.sourceId,
+                    autoResolveIfSingle: false,
+                    autoRefresh: 'field',
+                    responseValidationMode: 'live',
+                }),
+            );
+        }
+        return createAbilityRuntimeSimpleChoice(
+            `${context.sourceId}_${context.now}`,
+            context.playerId,
+            context.title,
+            [
+                ...(context.optional ? [createSkipOption()] : []),
+                ...buildMinionTargetOptions(context.targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    sourceKind: context.sourceKind ?? 'action',
+                    effectType: 'destroy',
+                }),
+            ],
+            { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
+        );
+    },
     onResolve: (args) => {
         const { context, state, playerId, value, timestamp } = args;
-        const choice = value as MinionChoice;
+        const choice = resolveSharksDestroyChoice(value as SharksDestroyChoice);
         if (choice.skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
         const events = destroyTarget(state, {
@@ -673,6 +741,13 @@ function sharksMegalodonBeforeScoring(ctx: TriggerContext) {
         destroyerId: playerId,
         sourceDefId: 'sharks_megalodon',
         sourceKind: 'nonAction',
+        fieldSource: source
+            ? {
+                uid: source.uid,
+                defId: source.defId,
+                baseIndex,
+            }
+            : undefined,
     }), ctx.matchState);
 }
 

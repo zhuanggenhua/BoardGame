@@ -1406,7 +1406,7 @@ describe('scoreBases 阶段自动推进', () => {
                                 {
                                     id: 'play_action:c1:0',
                                     label: '我们乃最强 -> 基地 1',
-                                    displayMode: 'button',
+                                    displayMode: 'card',
                                     value: {
                                         kind: 'play_action',
                                         playerId: '0',

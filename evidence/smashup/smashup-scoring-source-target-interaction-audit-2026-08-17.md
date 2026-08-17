@@ -14,6 +14,7 @@
 
 - 共享交互合同：`buildFieldSourceTargetOptions(...)` + `buildFieldSourceTargetPromptConfig(...)`
 - 场上来源自身执行合同：`buildFieldSourceActionOptions(...)` + `buildFieldSourceActionPromptConfig(...)`
+- 响应窗口职责合同：`smashup_reaction_choose` 只承担开放响应时机、跳过/触发排序和提交 live option；手牌响应选项必须是卡牌入口，场上 `activate_special` 必须是来源本体入口。
 - 目标基地包装入口：`buildFieldSourceToBaseTargetOptions(...)`
 - 目标随从包装入口：`buildFieldSourceToMinionTargetOptions(...)`
 - UI 消费链：
@@ -68,6 +69,7 @@
 - 本轮共享族分两类：一类规则动作是“场上来源对象本体可发动，再选择目标对象”；另一类规则动作是“场上来源对象本体可发动，但没有第二目标，点击来源本体即执行”。来源可以是随从、持续行动/行动或泰坦；目标可以是基地，也可以是另一张随从；第一入口仍应是来源对象本体，不是目标对象，也不是提示区按钮。
 - 当前实现把十三个 sourceId 统一到 `targetType: 'field-source-target'`，并通过 `buildFieldSourceTargetOptions(...)` / `buildFieldSourceToBaseTargetOptions(...)` / `buildFieldSourceToMinionTargetOptions(...)` 输出同一条来源-目标合同；`随从 -> 基地` 包装继续显式输出 `fieldInteractionType: 'source-target'`、`fieldSourceType: 'minion'`、`fieldTargetType: 'base'`，警长和麦克尔分支输出 `fieldSourceType: 'minion'`、`fieldTargetType: 'minion'` 与 `targetMinionUid`，沉船湾/墓碑/飞天猴分支输出 `fieldSourceType: 'ongoing'` 或 `fieldSourceType: 'action'` 与 `fieldTargetType: 'base'`，垃圾处理分支输出 `fieldSourceType: 'ongoing'` 与 `fieldTargetType: 'minion'`，超级佐德/五级风暴分支输出 `fieldSourceType: 'titan'` 与 `fieldTargetType: 'base'`，克拉肯救随从第一段输出 `fieldSourceType: 'titan'` 与 `fieldTargetType: 'minion'`。
 - 侦察兵 `alien_scout_return` 统一到 `targetType: 'field-source-action'`，并通过 `buildFieldSourceActionOptions(...)` 输出 `fieldInteractionType: 'source-action'`、`fieldSourceType: 'minion'`、`sourceUid/minionUid`。该效果没有第二目标，因此点击侦察兵本体即代表“发动返回手牌”；“留在基地”仍是按钮。
+- 响应窗口 `smashup_reaction_choose` 不再整体按按钮窗口处理：手牌 `play_action` / `play_minion` 选项保持 `displayMode: 'card'`，场上 `activate_special` 选项迁入 `field-source-action` 来源本体入口，只有 `trigger` 排序项与 `pass` / 跳过项继续是按钮。
 - `src/games/smashup/ui/fieldSourceTargetInteraction.ts` 统一解析这两套选项值并生成来源高亮、目标高亮和提交映射；Board 只在 prompt 声明 `field-source-target` 或 `field-source-action` 时消费对应模型。未点击来源前只高亮来源对象；来源-目标类点击来源后才把合法目标基地或目标随从转成可选；来源自身执行类点击来源直接提交当前 live prompt option。
 - 复杂链路 E2E 覆盖海盗王、大副、手牌响应、托尔图加后续移动和最终无残留；单独 E2E 覆盖世界冠军木乃伊从来源点击到埋葬落地；警长 E2E 覆盖来源随从到目标随从再进入决斗；沉船湾/墓碑复用现成 E2E 文件覆盖持续行动来源本体高亮、点击来源后目标基地高亮；超级佐德复用现成泰坦 E2E 文件覆盖泰坦来源本体高亮、点击泰坦后目标基地高亮、点击基地后移动落地；垃圾处理和克拉肯复用现成复杂 E2E 文件补上 `持续行动 -> 随从` 与 `泰坦 -> 随从` 的来源先点、目标后亮链路；侦察兵复用现成核心流程 E2E 文件补上“触发排序 -> 侦察兵本体高亮 -> 点击本体回手 -> 第二只留在基地 -> 无残留”链路。
 - 仍有残余范围：全牌库所有计分时效果的逐牌行为深审没有在本文完成，不能用十三个来源-目标 sourceId 加一个来源自身执行 sourceId 外推其它职责不同的效果。
@@ -287,10 +289,11 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
   - 能力/domain 层不得再产出旧 `fieldSourceTargetType`；Board UI 也不再读取旧字段，避免留下第二套来源-目标语义。
 
 - 命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`
-- 结果：通过，12 passed。
+- 结果：通过，13 passed。
 - 本轮补充断言：
   - 同一 `sourceId` 不能同时承载多种 `targetType` 语义；一锅豆子、模块化科技、合体超级佐德 POD、音乐会场地和力量城堡等已拆到步骤级或职责正确的来源 ID。
-  - `smashup_reaction_choose` 的手牌响应必须保持 `displayMode: 'card'`，让玩家点击手牌本体；触发项、跳过项和当前仍待后续治理的场上 special 保持按钮/辅助入口，不能伪装成手牌。
+  - `smashup_reaction_choose` 的手牌响应必须保持 `displayMode: 'card'`，让玩家点击手牌本体；场上 `activate_special` 必须使用 `targetType: 'field-source-action'` 和来源本体入口；触发排序项、跳过项才允许保留按钮。
+  - 新增 AST 守卫扫描 Smash Up 源码与测试夹具，禁止 `smashup_reaction_choose` 手写夹具继续声明 `targetType: 'button'`，也禁止 `play_action` / `play_minion` 响应牌继续用 `displayMode: 'button'`。
   - 计分窗口中的 `button` 只能承载纯控制、跳过或模式选择；按钮选项值不得携带 `baseIndex`、`minionUid`、`sourceUid`、`targetBaseIndex`、`targetMinionUid`、`cardUid`、`ongoingUid` 等场上对象目标字段。
   - 已保留的计分按钮必须逐项登记现实理由，例如援手选择是否获得 VP、海怪是否替换基地、联结点选择基地弃牌堆定义；这些都不能代理场上目标点击。飞天猴已从计分按钮登记中删除，迁入 `field-source-target` 家族。
   - AST 扫描已能识别 `value: moveChoices[choiceIndex]` 这类间接 payload；若按钮值通过数组变量携带 `actionUid/minionUid/fromBaseIndex/toBaseIndex`，也会被判为按钮代理对象目标。
@@ -547,6 +550,7 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
 ### L4 治理证据
 
 - 共享根因项：之前容易把“可发动场上来源对象 -> 目标对象 / 自身执行”误建成按钮或直接目标选项；当前共享 helper 明确把来源、目标和自身执行拆成结构化字段，并用统一 `field-source-target` prompt 类型支持来源随从到目标基地、来源随从到目标随从、来源持续行动/行动到目标基地、来源持续行动到目标随从、来源泰坦到目标基地、来源泰坦到目标随从六个分支，用 `field-source-action` prompt 类型支持来源随从自身执行。计分窗口的按钮另加门禁：只能承载纯控制、跳过或模式选择，不能携带场上对象目标字段来代理目标点击。
+- 响应窗口收口项：`smashup_reaction_choose` 当前统一声明 `targetType: 'field-source-action'`，以允许场上可选 special 从来源本体发动；手牌响应仍由手牌区本体承接，非响应手牌置灰，窗口按钮只承载跳过、触发排序和纯控制。
 - 命中 D 维度：D1 语义保真、D3 数据流闭环、D5 交互完整、D8 时序正确、D15 UI 状态同步、D34 交互选项渲染模式、D35 交互上下文快照、D36 延迟事件补发、D55 多消费者一致性、D58 可完成性。
 - 流程收口证据：九条 E2E 都断言最终交互链不会残留；复杂链回到下一玩家出牌阶段；世界冠军木乃伊链回到 AI 2 号位出牌阶段；警长链进入决斗并清空 `activeDuel`；沉船湾和墓碑链分别从来源本体点击进入目标基地选择并收口；超级佐德链从泰坦本体点击进入目标基地选择，点击基地后移动到计分基地并回到出牌阶段；垃圾处理链从持续行动本体点击进入目标随从选择并移动落地；克拉肯救随从链从泰坦本体点击进入目标随从选择，再进入后续目标基地选择并移动落地；侦察兵链从触发排序进入来源本体高亮，点击侦察兵本体回手，第二只侦察兵走“留在基地”分支，最终回到出牌阶段。
 - 同类扩审记录：
@@ -578,6 +582,7 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
 
 - 共享根因项：来源和目标职责曾容易混在同一按钮/目标选项里，来源自身执行也曾容易被做成按钮主路径，导致玩家看不懂“是谁发动、作用到哪里”。当前共享合同把来源对象、目标对象和来源自身执行拆开。
 - 已一并检查项：field source-target 共享 helper、field-source-action 共享 helper、三段字段、疑似手拼来源/目标 payload 形状、疑似来源自身执行 payload 形状、Board 消费路径、复杂链 E2E、世界冠军木乃伊 E2E、警长 E2E、沉船湾 E2E、墓碑 E2E、超级佐德 E2E、垃圾处理 E2E、克拉肯救随从 E2E、侦察兵 E2E、侦察兵领域测试、飞天猴领域与队列运行态测试、麦克尔定向行为测试。
+- 本轮新增守卫：`smashup_reaction_choose` 的手写夹具不得回退成按钮窗口；响应手牌不得回退成按钮模式；旧 `activate_special:minion/titan` 字符串只允许存在于禁用断言中。
 - 当前范围外：
   - 全部 102 个运行时计分调用点逐项 L2/L3/L4 深审。
   - 数据定义层 179 个计分时机标记对应的牌 / 场上 special 逐牌 L2/L3/L4 深审。
