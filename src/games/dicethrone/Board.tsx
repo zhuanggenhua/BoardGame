@@ -930,10 +930,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 响应窗口状态已在上方声明（380-381行），这里直接使用
     const responseWindow = access.responseWindow;
     const isResponder = isManualSelfResponseWindow;
-    const sharedResponsePrompt = tokenInteraction && !canConfirmTokenEvasionFromRightTray
-        ? (tokenInteraction.onSkip
-            ? { onPass: tokenInteraction.onSkip, kind: 'token' as const, passLabel: tokenInteraction.passLabel }
-            : undefined)
+    const sharedResponsePrompt = tokenInteraction
+        ? {
+            onPass: canConfirmTokenEvasionFromRightTray ? undefined : tokenInteraction.onSkip,
+            kind: 'token' as const,
+            passLabel: canConfirmTokenEvasionFromRightTray ? undefined : tokenInteraction.passLabel,
+        }
         : isResponder
             ? { onPass: () => engineMoves.responsePass(currentResponderId), kind: 'card' as const }
             : undefined;

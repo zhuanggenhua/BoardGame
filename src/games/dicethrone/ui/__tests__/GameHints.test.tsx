@@ -25,7 +25,7 @@ const baseProps = {
 };
 
 describe('GameHints', () => {
-    it('纯标记二选一没有跳过操作时不渲染让过按钮', () => {
+    it('响应窗口没有跳过操作时仍渲染状态提示但不渲染让过按钮', () => {
         render(
             <GameHints
                 {...baseProps}
@@ -33,7 +33,7 @@ describe('GameHints', () => {
             />,
         );
 
-        expect(screen.queryByTestId('dicethrone-response-window-hint')).toBeNull();
+        expect(screen.getByTestId('dicethrone-response-window-hint')).toBeInTheDocument();
         expect(screen.queryByTestId('dicethrone-response-pass-button')).toBeNull();
     });
 

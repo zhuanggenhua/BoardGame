@@ -11,6 +11,10 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { validate, getManualSpecialScoringBaseIndices } from './commands';
 import { execute } from './reducer';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
+import {
+    FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
+    buildFieldSourceActionOptions,
+} from './fieldInteractionOptions';
 import { executeTriggerProgramExecutor } from './triggerExecutors';
 import { partitionMandatoryReactionOrderingComponents } from './reactionOrdering';
 import {
@@ -632,6 +636,42 @@ function withConsumedSpecialCardUid(
     };
 }
 
+function buildReactionActivateSpecialOption(args: {
+    sourceType: 'minion' | 'titan';
+    sourceUid: string;
+    sourceDefId: string;
+    playerId: PlayerId;
+    baseIndex: number;
+}): ReactionOption {
+    const [option] = buildFieldSourceActionOptions<Extract<ReactionChoiceValue, { kind: 'activate_special' }>>(
+        {
+            type: args.sourceType,
+            uid: args.sourceUid,
+            defId: args.sourceDefId,
+            baseIndex: args.baseIndex,
+            label: `${getCardDef(args.sourceDefId)?.name ?? args.sourceDefId} 特殊能力`,
+            labelKey: 'ui.reaction_choose_activate_special',
+        },
+        {
+            kind: 'activate_special',
+            playerId: args.playerId,
+            ...(args.sourceType === 'minion' ? { minionUid: args.sourceUid } : { titanUid: args.sourceUid }),
+            baseIndex: args.baseIndex,
+        },
+    );
+
+    return {
+        id: option.id,
+        label: option.label,
+        labelKey: option.labelKey,
+        labelParams: {
+            name: buildReactionSourceNameLabel(args.sourceDefId),
+        },
+        value: option.value,
+        displayMode: 'card',
+    };
+}
+
 function buildPlayableCardOptions(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
@@ -776,22 +816,13 @@ function buildPlayableCardOptions(
                 timestamp: now,
             } as any);
             if (!validation.valid) continue;
-            const def = getCardDef(minion.defId);
-            options.push({
-                id: `activate_special:minion:${minion.uid}:${baseIndex}`,
-                label: `${def?.name ?? minion.defId} 特殊能力`,
-                labelKey: 'ui.reaction_choose_activate_special',
-                labelParams: {
-                    name: buildReactionSourceNameLabel(minion.defId),
-                },
-                value: {
-                    kind: 'activate_special',
-                    playerId,
-                    minionUid: minion.uid,
-                    baseIndex,
-                },
-                displayMode: 'button',
-            });
+            options.push(buildReactionActivateSpecialOption({
+                sourceType: 'minion',
+                sourceUid: minion.uid,
+                sourceDefId: minion.defId,
+                playerId,
+                baseIndex,
+            }));
         }
 
         for (const titan of state.core.titans ?? []) {
@@ -806,22 +837,13 @@ function buildPlayableCardOptions(
                 timestamp: now,
             } as any);
             if (!validation.valid) continue;
-            const def = getCardDef(titan.defId);
-            options.push({
-                id: `activate_special:titan:${titan.uid}:${baseIndex}`,
-                label: `${def?.name ?? titan.defId} 特殊能力`,
-                labelKey: 'ui.reaction_choose_activate_special',
-                labelParams: {
-                    name: buildReactionSourceNameLabel(titan.defId),
-                },
-                value: {
-                    kind: 'activate_special',
-                    playerId,
-                    titanUid: titan.uid,
-                    baseIndex,
-                },
-                displayMode: 'button',
-            });
+            options.push(buildReactionActivateSpecialOption({
+                sourceType: 'titan',
+                sourceUid: titan.uid,
+                sourceDefId: titan.defId,
+                playerId,
+                baseIndex,
+            }));
         }
     }
 
@@ -1265,7 +1287,7 @@ function buildReactionInteraction(
         initialOptions,
         {
             sourceId: 'smashup_reaction_choose',
-            targetType: 'button',
+            targetType: FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
             responseValidationMode: 'live',
             autoResolveIfSingle: false,
             allowedCommands: [SU_COMMANDS.REACTION_PASS],

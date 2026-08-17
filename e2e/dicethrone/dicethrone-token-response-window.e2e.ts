@@ -635,7 +635,10 @@ test.describe('Token 响应窗口完整流程', () => {
         await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);
         await expect(confirmButton).toBeEnabled();
         await expectNoLegacyTokenResponseSurfaces(page);
-        await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toBeVisible({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
+        await expect(page.getByTestId('dicethrone-response-pass-button')).toHaveCount(0);
+        await expectSharedResponsePromptInFixedHandLiftSlot(page);
         await expect(page.getByTestId('dicethrone-2d-dice-tray')).toBeVisible({ timeout: 5000 });
         await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')).toHaveCount(1);
         await game.screenshot('闪避响应-成功后右侧骰盘确认按钮可用', testInfo);

@@ -1290,7 +1290,8 @@ describe('SmashUp Interaction targetType 审计', () => {
         }
 
         const helperPath = resolve(__dirname, '../domain/abilityHelpers.ts');
-        const helperSource = readFileSync(helperPath, 'utf-8');
+        const fieldInteractionPath = resolve(__dirname, '../domain/fieldInteractionOptions.ts');
+        const helperSource = readFileSync(helperPath, 'utf-8') + '\n' + readFileSync(fieldInteractionPath, 'utf-8');
         const requiredHelperSnippets = [
             'export const FIELD_SOURCE_TARGET_PROMPT_TARGET_TYPE',
             'export function buildFieldSourceTargetPromptConfig',
@@ -1320,7 +1321,7 @@ describe('SmashUp Interaction targetType 审计', () => {
             }
         }
 
-        for (const filePath of [...getFilesToScan(), helperPath]) {
+        for (const filePath of [...getFilesToScan(), helperPath, fieldInteractionPath]) {
             const content = readFileSync(filePath, 'utf-8');
             if (content.includes('fieldSourceTargetType')) {
                 violations.push(`${filePath} 仍在能力/domain 层产出旧 fieldSourceTargetType，必须迁移到三段语义字段`);
@@ -1361,7 +1362,8 @@ describe('SmashUp Interaction targetType 审计', () => {
         }
 
         const helperPath = resolve(__dirname, '../domain/abilityHelpers.ts');
-        const helperSource = readFileSync(helperPath, 'utf-8');
+        const fieldInteractionPath = resolve(__dirname, '../domain/fieldInteractionOptions.ts');
+        const helperSource = readFileSync(helperPath, 'utf-8') + '\n' + readFileSync(fieldInteractionPath, 'utf-8');
         const requiredHelperSnippets = [
             'export const FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE',
             'export function buildFieldSourceActionPromptConfig',
@@ -1430,7 +1432,7 @@ describe('SmashUp Interaction targetType 审计', () => {
         expect(violations, `以下计分按钮仍可能代理对象选择或缺少审计登记：\n${violations.join('\n')}`).toEqual([]);
     });
 
-    it('smashup_reaction_choose 中手牌响应必须是卡牌模式，跳过/触发/场上 special 不能冒充手牌', () => {
+    it('smashup_reaction_choose 中手牌响应走手牌，场上 special 走来源本体，跳过/触发才是按钮', () => {
         const reactionSessionSource = readFileSync(resolve(__dirname, '../domain/reactionSession.ts'), 'utf-8');
         const violations: string[] = [];
 
@@ -1448,13 +1450,34 @@ describe('SmashUp Interaction targetType 审计', () => {
 
         const requiredButtonModePatterns = [
             /id: `trigger:\$\{trigger\.id\}`[\s\S]*?value: \{ kind: 'trigger'[\s\S]*?displayMode: 'button'/,
-            /id: `activate_special:minion:[\s\S]*?value: \{[\s\S]*?kind: 'activate_special'[\s\S]*?displayMode: 'button'/,
-            /id: `activate_special:titan:[\s\S]*?value: \{[\s\S]*?kind: 'activate_special'[\s\S]*?displayMode: 'button'/,
             /id: 'pass'[\s\S]*?value: \{ kind: 'pass' \}[\s\S]*?displayMode: 'button'/,
         ];
         for (const pattern of requiredButtonModePatterns) {
             if (!pattern.test(reactionSessionSource)) {
                 violations.push(`缺少非手牌响应 button displayMode 片段：${pattern}`);
+            }
+        }
+
+        const requiredFieldSourceActionSnippets = [
+            'FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE',
+            'targetType: FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE',
+            'function buildReactionActivateSpecialOption',
+            "buildFieldSourceActionOptions<Extract<ReactionChoiceValue, { kind: 'activate_special' }>>",
+            "displayMode: 'card'",
+        ];
+        for (const snippet of requiredFieldSourceActionSnippets) {
+            if (!reactionSessionSource.includes(snippet)) {
+                violations.push(`缺少场上 special 来源本体交互片段：${snippet}`);
+            }
+        }
+
+        const forbiddenOldButtonSnippets = [
+            'id: `activate_special:minion:',
+            'id: `activate_special:titan:',
+        ];
+        for (const snippet of forbiddenOldButtonSnippets) {
+            if (reactionSessionSource.includes(snippet)) {
+                violations.push(`场上 special 仍保留旧按钮 id 入口：${snippet}`);
             }
         }
 

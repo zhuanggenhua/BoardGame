@@ -174,14 +174,19 @@ function createPersistedStaleReactionChoiceState(): MatchState<SmashUpCore> {
                     '选择一个反应动作',
                     [
                         {
-                            id: 'activate_special:titan:titan_1_wizards_arcane_protector:0',
+                            id: 'source-titan_1_wizards_arcane_protector-action',
                             label: '奥术守护者 特殊能力',
-                            displayMode: 'button',
+                            displayMode: 'card',
                             value: {
+                                fieldInteractionType: 'source-action',
+                                fieldSourceType: 'titan',
+                                sourceUid: 'titan_1_wizards_arcane_protector',
                                 kind: 'activate_special',
                                 playerId: '1',
                                 titanUid: 'titan_1_wizards_arcane_protector',
                                 baseIndex: 0,
+                                sourceBaseIndex: 0,
+                                fromBaseIndex: 0,
                             },
                         },
                         {
@@ -193,7 +198,7 @@ function createPersistedStaleReactionChoiceState(): MatchState<SmashUpCore> {
                     ],
                     {
                         sourceId: 'smashup_reaction_choose',
-                        targetType: 'button',
+                        targetType: 'field-source-action',
                         responseValidationMode: 'live',
                     },
                 ),
@@ -1649,7 +1654,7 @@ describe('scoreBases 阶段自动推进', () => {
                         ],
                         {
                             sourceId: 'smashup_reaction_choose',
-                            targetType: 'button',
+                            targetType: 'field-source-action',
                             responseValidationMode: 'live',
                         },
                     ),

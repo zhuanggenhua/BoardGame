@@ -1,6 +1,6 @@
 # DiceThrone 弹窗回归与 Token 响应截图证据
 
-> 2026-08-17 更新：本文中“月精灵闪避使用后由共享响应提示确认”的截图口径已被取代，只能作为历史弹窗位置 / Token 高亮证据。当前闪避临时骰确认合同见 `evidence/dicethrone/dicethrone-token-evasion-right-tray-confirm-2026-08-17.md`：闪避骰进入右侧骰盘后，必须由右侧骰盘普通“确认”按钮收口。
+> 2026-08-17 更新：本文中“月精灵闪避使用后由共享响应提示确认”的截图口径已被取代，只能作为历史弹窗位置 / Token 高亮证据。当前闪避临时骰确认合同见 `evidence/dicethrone/dicethrone-token-evasion-right-tray-confirm-2026-08-17.md`：闪避骰进入右侧骰盘后，共享响应提示保留为无按钮状态层，必须由右侧骰盘普通“确认”按钮收口。
 
 ## 结论
 
@@ -23,7 +23,7 @@
 - Token 使用前必须有可点击高亮：中等边缘流光、2px 描边、轻呼吸、Token 本体轻亮度和投影；禁止恢复大面积强光圈，也禁止弱到只有发丝线。
 - 旧 Token 弹窗、旧内嵌响应条、奖励骰旧覆盖层和奖励骰旧确认按钮都不存在。
 - 太极使用后当前伤害从 5 降到 4，跳过后按 4 点伤害结算。
-- 闪避使用后闪避骰在右侧骰盘等待确认，确认后免伤并回到主阶段。
+- 闪避使用后闪避骰在右侧骰盘等待确认，共享响应提示保留为状态层但不承担确认；点击右侧骰盘确认后免伤并回到主阶段。
 
 ## 截图清单
 
@@ -36,8 +36,8 @@
 | 05 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/武僧太极减伤走共享响应框并在跳过后结算血量/太极响应-减伤后仍由共享提示跳过收口.jpg` | 点击太极后仍由手牌上方共享响应提示继续收口，没有恢复旧 Token 弹窗。 |
 | 06 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/武僧太极减伤走共享响应框并在跳过后结算血量/太极响应-跳过后按四点伤害扣血收口.jpg` | 跳过响应后按 4 点伤害正式扣血，太极减伤效果已经落地。 |
 | 07 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/闪避响应-使用前共享提示贴近手牌且Token可点.jpg` | 闪避 Token 在玩家面板原位可见，当前高亮为中等边缘流光，能看出可点但没有变成大光圈。 |
-| 08 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/闪避响应-成功后闪避骰在右侧骰盘等待确认.jpg` | 点击闪避后，闪避骰进入右侧骰盘等待确认；共享提示不占骰盘。 |
-| 09 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/闪避响应-确认后免伤收口回到主阶段.jpg` | 确认闪避骰后免伤收口并回到主阶段。 |
+| 08 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/闪避响应-成功后闪避骰在右侧骰盘等待确认.jpg` | 历史坏基线：点击闪避后，闪避骰进入右侧骰盘等待确认；共享提示不占骰盘，但旧图仍让共享提示承担确认。当前正确合同是共享提示只做状态层，右侧骰盘确认。 |
+| 09 | `test-results/evidence-screenshots/dicethrone/dicethrone-token-response-window.e2e/月精灵闪避成功后由共享响应框确认收口到-main2，不再卡在-defensiveRoll/闪避响应-确认后免伤收口回到主阶段.jpg` | 确认闪避骰后响应窗口收口、免伤生效并回到主阶段。 |
 
 ## 验证命令
 

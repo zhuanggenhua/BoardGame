@@ -159,7 +159,7 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
  * 响应窗口：当前玩家可响应
  */
 const ResponseWindowHint: React.FC<{
-    onResponsePass: () => void;
+    onResponsePass?: () => void;
     kind: 'card' | 'token';
     passLabel?: string;
 }> = ({ onResponsePass, kind, passLabel }) => {
@@ -168,12 +168,14 @@ const ResponseWindowHint: React.FC<{
 
     const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
         if (event.button !== 0) return;
+        if (!onResponsePass) return;
         pointerPassHandledRef.current = true;
         event.stopPropagation();
         onResponsePass();
     }, [onResponsePass]);
     const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
+        if (!onResponsePass) return;
         if (pointerPassHandledRef.current) {
             pointerPassHandledRef.current = false;
             return;
@@ -194,6 +196,7 @@ const ResponseWindowHint: React.FC<{
                 bottom: 'clamp(10rem, 42vh, 26rem)',
                 left: '50%',
                 transform: 'translateX(-50%)',
+                pointerEvents: onResponsePass ? 'auto' : 'none',
             }}
         >
             <div
@@ -236,23 +239,25 @@ const ResponseWindowHint: React.FC<{
                     <span className="relative z-10 text-[#fff3bd] text-[0.95vw] font-black tracking-wider">
                         {t('response.yourTurn')}
                     </span>
-                    <button
-                        type="button"
-                        data-testid="dicethrone-response-pass-button"
-                        onPointerDown={handlePointerDown}
-                        onClick={handleClick}
-                        className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
-                        style={{
-                            minHeight: 44,
-                            border: '2px solid #fff0ae',
-                            borderRadius: '0.5rem',
-                            backgroundColor: '#9b7118',
-                            boxShadow: 'none',
-                            pointerEvents: 'auto',
-                        }}
-                    >
-                        {passLabel ?? t('response.pass')}
-                    </button>
+                    {onResponsePass && (
+                        <button
+                            type="button"
+                            data-testid="dicethrone-response-pass-button"
+                            onPointerDown={handlePointerDown}
+                            onClick={handleClick}
+                            className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
+                            style={{
+                                minHeight: 44,
+                                border: '2px solid #fff0ae',
+                                borderRadius: '0.5rem',
+                                backgroundColor: '#9b7118',
+                                boxShadow: 'none',
+                                pointerEvents: 'auto',
+                            }}
+                        >
+                            {passLabel ?? t('response.pass')}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -316,7 +321,7 @@ export const GameHints: React.FC<GameHintsProps> = ({
             )}
 
             {/* 响应窗口：当前玩家可响应 */}
-            {responsePrompt?.onPass && (
+            {responsePrompt && (
                 <ResponseWindowHint
                     onResponsePass={responsePrompt.onPass}
                     kind={responsePrompt.kind}

@@ -1079,7 +1079,9 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             isFullyEvaded: true,
             tacticalAdvantage: 1,
         });
-        await expect(tokenResponse).toBeHidden({ timeout: 5000 });
+        await expect(tokenResponse).toBeVisible({ timeout: 5000 });
+        await expect(tokenResponse).toHaveAttribute('data-response-kind', 'token');
+        await expect(page.getByTestId('dicethrone-response-pass-button')).toHaveCount(0);
         await page.mouse.move(960, 80);
         await game.screenshot('闪避骰-成功后可干预', testInfo);
 
@@ -1126,6 +1128,8 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await game.screenshot('闪避骰-战术优势重掷后', testInfo);
 
         const rightTrayConfirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        await expect(tokenResponse).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('dicethrone-response-pass-button')).toHaveCount(0);
         await expect(rightTrayConfirmButton).toBeVisible({ timeout: 5000 });
         await expect(rightTrayConfirmButton).toHaveText(/^(确认|Confirm)$/);
         await expect(rightTrayConfirmButton).toBeEnabled();

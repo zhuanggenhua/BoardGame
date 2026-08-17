@@ -7,7 +7,7 @@
       "status": "PASS",
       "evidence": [
         "E2E: e2e/dicethrone/dicethrone-token-response-window.e2e.ts 用例“月精灵闪避成功后由右侧骰盘确认收口到 main2，不再卡在 defensiveRoll”通过。",
-        "断言: data-tutorial-id=\"dice-confirm-button\" 可见、文本为确认且 enabled；dicethrone-response-window-hint 在该帧隐藏。",
+        "断言: data-tutorial-id=\"dice-confirm-button\" 可见、文本为确认且 enabled；dicethrone-response-window-hint 在该帧仍可见且 data-response-kind=\"token\"；dicethrone-response-pass-button 不存在。",
         "截图: 闪避响应-成功后右侧骰盘确认按钮可用.jpg"
       ]
     },
