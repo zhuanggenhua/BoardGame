@@ -45,6 +45,7 @@ jobs:
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-native-production' || 'android-native-nonprod' }}
     env:
       BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
+      ANDROID_BACKEND_URL: ${{ vars.VITE_ANDROID_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_ANDROID_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL || 'http://8.148.71.102' }}
       ANDROID_DOWNLOAD_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
       ANDROID_CONTROL_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_CONTROL_ASSETS_BASE_URL || vars.ANDROID_CONTROL_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
 
@@ -85,7 +86,6 @@ jobs:
         id: prereq
         shell: bash
         env:
-          ANDROID_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -96,7 +96,7 @@ jobs:
         run: |
           missing=()
 
-          [[ -n "${ANDROID_BACKEND_URL}" ]] || missing+=("VITE_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
+          [[ -n "${ANDROID_BACKEND_URL}" ]] || missing+=("VITE_ANDROID_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
           [[ -n "${ANDROID_KEYSTORE_BASE64}" ]] || missing+=("ANDROID_KEYSTORE_BASE64")
           [[ -n "${ANDROID_KEYSTORE_PASSWORD}" ]] || missing+=("ANDROID_KEYSTORE_PASSWORD")
           [[ -n "${ANDROID_KEY_ALIAS}" ]] || missing+=("ANDROID_KEY_ALIAS")
@@ -171,7 +171,8 @@ jobs:
         if: steps.prereq.outputs.ready == 'true'
         run: |
           cat <<'EOF' > .env.android
-          VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
+          VITE_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
+          VITE_ANDROID_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
           VITE_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_CONTROL_ASSETS_BASE_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}

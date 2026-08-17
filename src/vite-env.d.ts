@@ -4,6 +4,7 @@ interface ImportMetaEnv {
     readonly MODE: string;
     readonly VITE_AUTH_API_URL?: string;
     readonly VITE_GAME_SERVER_URL?: string;
+    readonly VITE_ANDROID_BACKEND_URL?: string;
     readonly VITE_ASSETS_BASE_URL?: string;
     readonly VITE_ANDROID_ASSETS_BASE_URL?: string;
     readonly VITE_ANDROID_CONTROL_ASSETS_BASE_URL?: string;

@@ -10,6 +10,7 @@
 - Android OTA 内部游标永久下限为 `6.0.0`；默认发布会自动取 `max(package.json.version, 6.0.0)`，禁止再次降回 `0.6.x` 导致历史客户端无法更新
 - 客户端发现新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
 - Android 更新入口分两层：`latest.json` 控制入口固定为 `https://assets.easyboardgame.top/official/...` 且必须直返 JSON、不允许 30x；OTA zip / APK 下载 URL 可走 `http://8.148.71.102/official/...`，新客户端同时内置 IP 清单兜底
+- Android App 的业务后端默认直连 `http://8.148.71.102`；如需覆盖只能用 `VITE_ANDROID_BACKEND_URL` / `ANDROID_VITE_BACKEND_URL`，不得让网页通用 `VITE_BACKEND_URL` 域名覆盖 App 包
 - 已上线问题默认走“修代码 -> 提交 push -> stable OTA -> 回查线上”；除非用户明确要求，不操作连接设备、不走 ADB 安装
 - 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → `node scripts/release/deploy-and-ota.mjs`；脚本默认触发 CI 构建并由 CI 直接把镜像 tar 输送到服务器后走 `update-local`，再触发 `Android OTA Publish` workflow 发布 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 或只等普通 push workflow 后汇报完成
 - 原生 APK：发版时用 `--bump patch|minor|major` 自动更新版本

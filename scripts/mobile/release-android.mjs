@@ -11,6 +11,7 @@ import {
     resolveAndroidAssetsBaseUrl,
     resolveAndroidControlAssetsBaseUrl,
 } from './android-assets-base-url.mjs';
+import { resolveAndroidBackendUrl } from './android-backend-url.mjs';
 import { resolveAndroidOtaClientBuildEnv } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
@@ -248,6 +249,12 @@ const applyOtaClientBuildDefaults = () => {
     );
 };
 
+const applyAndroidBackendDefaults = () => {
+    const backendUrl = resolveAndroidBackendUrl(process.env);
+    process.env.VITE_BACKEND_URL = backendUrl;
+    logStep(`Android 后端地址: ${backendUrl}`);
+};
+
 const ensureForcedOta = (sourceArgs = args) => {
     if (hasFlag('no-force-update', sourceArgs)) {
         throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
@@ -342,6 +349,7 @@ const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
     ensureForcedOta();
+    applyAndroidBackendDefaults();
     applyOtaClientBuildDefaults();
     await runDoctor();
     await runTypecheck();
@@ -365,6 +373,7 @@ const prepareNativeVersion = () => {
 
 const runNativeRelease = async () => {
     const nativeInfo = prepareNativeVersion();
+    applyAndroidBackendDefaults();
     await runDoctor();
     await runTypecheck();
     if (!hasFlag('skip-build', args)) {
@@ -382,6 +391,7 @@ const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
     ensureForcedOta();
+    applyAndroidBackendDefaults();
     applyOtaClientBuildDefaults();
     await runDoctor();
     await runSync();

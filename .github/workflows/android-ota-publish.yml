@@ -70,6 +70,7 @@ jobs:
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-ota-production' || 'android-ota-nonprod' }}
     env:
       BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
+      ANDROID_BACKEND_URL: ${{ vars.VITE_ANDROID_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_ANDROID_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL || 'http://8.148.71.102' }}
       ANDROID_DOWNLOAD_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
       ANDROID_CONTROL_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_CONTROL_ASSETS_BASE_URL || vars.ANDROID_CONTROL_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
 
@@ -129,7 +130,6 @@ jobs:
         id: prereq
         shell: bash
         env:
-          ANDROID_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
           ASSET_SERVER_UPLOAD_URL: ${{ vars.ASSET_SERVER_UPLOAD_URL || secrets.ASSET_SERVER_UPLOAD_URL || 'https://assets-upload.easyboardgame.top/asset-publish' }}
           ASSET_SERVER_UPLOAD_TOKEN: ${{ secrets.ASSET_SERVER_UPLOAD_TOKEN || secrets.BG_ASSET_PUBLISH_TOKEN }}
           DRY_RUN: ${{ steps.params.outputs.dry_run }}
@@ -137,7 +137,7 @@ jobs:
           missing=()
 
           if [[ -z "${ANDROID_BACKEND_URL}" ]]; then
-            missing+=("VITE_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
+            missing+=("VITE_ANDROID_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
           fi
 
           if [[ "${DRY_RUN}" != "true" ]]; then
@@ -236,7 +236,8 @@ jobs:
         shell: bash
         run: |
           cat <<EOF > .env.android
-          VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
+          VITE_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
+          VITE_ANDROID_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
           VITE_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_CONTROL_ASSETS_BASE_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}
