@@ -123,6 +123,25 @@ jobs:
         with:
           ref: ${{ steps.params.outputs.target_ref }}
 
+      - name: Prepare asset SSH fallback
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        shell: bash
+        env:
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
+        run: |
+          missing=()
+          [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
+          [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Android native SSH fallback 缺少配置: ${missing[*]}"
+            exit 1
+          fi
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/asset-publisher" "${HOME}/.ssh/known_hosts"
+
       - name: Resolve native metadata
         id: native
         if: steps.prereq.outputs.ready == 'true'
@@ -208,6 +227,10 @@ jobs:
         env:
           ASSET_SERVER_UPLOAD_URL: ${{ vars.ASSET_SERVER_UPLOAD_URL || secrets.ASSET_SERVER_UPLOAD_URL || 'https://assets-upload.easyboardgame.top/asset-publish' }}
           ASSET_SERVER_UPLOAD_TOKEN: ${{ secrets.ASSET_SERVER_UPLOAD_TOKEN || secrets.BG_ASSET_PUBLISH_TOKEN }}
+          ASSET_SERVER_ALLOW_SSH_FALLBACK: '1'
+          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
         run: |
           args=(--channel "${{ steps.params.outputs.channel }}")
           if [ "${{ steps.params.outputs.dry_run }}" = "true" ]; then

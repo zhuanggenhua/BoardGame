@@ -524,16 +524,25 @@ export const publishStagedAssetsBySsh = async ({ stagingRoot }) => {
 };
 
 export const publishStagedAssetsToServer = async (staged) => {
-    const uploadUrl = resolveAssetUploadUrl();
-    if (uploadUrl) {
-        await publishStagedAssetsToUploadEndpoint({
-            stagingRoot: staged.stagingRoot,
-            uploadUrl,
-        });
-        return;
-    }
     const allowSshFallback = process.env.ASSET_SERVER_ALLOW_SSH_FALLBACK === '1'
         || process.env.BG_ASSET_ALLOW_SSH_FALLBACK === '1';
+    const uploadUrl = resolveAssetUploadUrl();
+    if (uploadUrl) {
+        try {
+            await publishStagedAssetsToUploadEndpoint({
+                stagingRoot: staged.stagingRoot,
+                uploadUrl,
+            });
+            return;
+        } catch (error) {
+            if (!allowSshFallback) {
+                throw error;
+            }
+            console.warn(
+                `[server-primary] HTTP 素材上传入口失败，改用 SSH 发布: ${error.message}`,
+            );
+        }
+    }
     if (!allowSshFallback) {
         throw new Error(
             '缺少素材直连发布凭据：请配置 ASSET_SERVER_UPLOAD_TOKEN 或 BG_ASSET_PUBLISH_TOKEN。'
