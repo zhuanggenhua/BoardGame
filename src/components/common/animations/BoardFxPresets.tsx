@@ -114,6 +114,16 @@ function cellBox(getCellPosition: CellPositionResolver, cell: FxCellCoord) {
   };
 }
 
+function fxBoxStyle(box: FxBox) {
+  return {
+    left: `${box.left}%`,
+    top: `${box.top}%`,
+    width: `${box.width}%`,
+    height: `${box.height}%`,
+    overflow: 'visible' as const,
+  };
+}
+
 function DelayedBurstParticles({
   testId,
   delayMs = 0,
@@ -212,6 +222,10 @@ export interface BoardProjectilePathPresetProps {
   source?: FxCellCoord;
   target: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  sourceBox?: FxBox | null;
+  targetBox?: FxBox | null;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
   intensity?: 'normal' | 'strong';
   quality?: FxQuality;
   color?: string[];
@@ -237,6 +251,10 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
   source,
   target,
   getCellPosition,
+  sourceBox,
+  targetBox,
+  sourceAnchorId,
+  targetAnchorId,
   intensity = 'normal',
   quality = 'full',
   color,
@@ -258,10 +276,12 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
   pathMinSizeCells = 2.25,
 }) => {
   if (!source || sameCell(source, target)) return null;
+  const resolvedSourceBox = sourceBox ?? getCellPosition(source.row, source.col);
+  const resolvedTargetBox = targetBox ?? getCellPosition(target.row, target.col);
 
   const pathBox = createFxPathBox(
-    getCellPosition(source.row, source.col),
-    getCellPosition(target.row, target.col),
+    resolvedSourceBox,
+    resolvedTargetBox,
     { paddingCells: pathPaddingCells, minSizeCells: pathMinSizeCells },
   );
   const midX = pathBox.start.xPct + (pathBox.end.xPct - pathBox.start.xPct) * 0.52;
@@ -273,7 +293,8 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
         <div
           className="absolute pointer-events-none z-30 grid place-items-center"
           data-testid={sourceWakeTestId}
-          style={{ ...cellBox(getCellPosition, source), overflow: 'visible' }}
+          data-source-anchor-id={sourceAnchorId ?? ''}
+          style={fxBoxStyle(resolvedSourceBox)}
         >
           <div className={sourceWakeSizeClassName}>
             <DelayedBurstParticles
@@ -293,6 +314,8 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
         data-source-col={source.col}
         data-target-row={target.row}
         data-target-col={target.col}
+        data-source-anchor-id={sourceAnchorId ?? ''}
+        data-target-anchor-id={targetAnchorId ?? ''}
         style={pathBox.style}
       >
         <ConeBlast
@@ -423,6 +446,8 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
 export interface BoardBurstImpactPresetProps {
   cell: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  box?: FxBox | null;
+  targetAnchorId?: string;
   quality?: FxQuality;
   delayMs?: number;
   hostTestId?: string;
@@ -436,6 +461,8 @@ export interface BoardBurstImpactPresetProps {
 export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
   cell,
   getCellPosition,
+  box,
+  targetAnchorId,
   quality = 'full',
   delayMs = 0,
   hostTestId = 'board-fx-burst-impact',
@@ -448,7 +475,8 @@ export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
   <div
     className="absolute pointer-events-none z-30 grid place-items-center"
     data-testid={hostTestId}
-    style={{ ...cellBox(getCellPosition, cell), overflow: 'visible' }}
+    data-target-anchor-id={targetAnchorId ?? ''}
+    style={box ? fxBoxStyle(box) : { ...cellBox(getCellPosition, cell), overflow: 'visible' }}
   >
     <div className={sizeClassName}>
       <DelayedBurstParticles
@@ -467,6 +495,10 @@ export interface BoardProjectileAttackPresetProps {
   source?: FxCellCoord;
   target?: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  sourceBox?: FxBox | null;
+  targetBox?: FxBox | null;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
   damage?: number;
   quality?: FxQuality;
   intensity?: 'normal' | 'strong';
@@ -503,6 +535,10 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   source,
   target,
   getCellPosition,
+  sourceBox,
+  targetBox,
+  sourceAnchorId,
+  targetAnchorId,
   damage = 1,
   quality = 'full',
   intensity = 'strong',
@@ -557,6 +593,10 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
         source={source}
         target={target}
         getCellPosition={getCellPosition}
+        sourceBox={sourceBox}
+        targetBox={targetBox}
+        sourceAnchorId={sourceAnchorId}
+        targetAnchorId={targetAnchorId}
         intensity={intensity}
         quality={quality}
         color={color}
@@ -573,7 +613,8 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
       <div
         className="absolute pointer-events-none z-30 grid place-items-center"
         data-testid={hostTestId}
-        style={{ ...cellBox(getCellPosition, target), overflow: 'visible' }}
+        data-target-anchor-id={targetAnchorId ?? ''}
+        style={targetBox ? fxBoxStyle(targetBox) : { ...cellBox(getCellPosition, target), overflow: 'visible' }}
       >
         <BoardDamageImpactPreset
           damage={damage}

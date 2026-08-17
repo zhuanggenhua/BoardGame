@@ -23,6 +23,9 @@ import {
     addTitanPowerCounter,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToBaseTargetOptions,
+    buildFieldSourceToMinionTargetOptions,
     buildPlayerTargetOptions,
     buildStandardDrawEvents,
     buildMinionTargetOptions,
@@ -90,6 +93,77 @@ import type {
 } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_EVENTS } from '../domain/types';
 import { getPlayerLabel } from '../domain/utils';
+
+type ScoringTitanMoveCandidate = {
+    titanUid: string;
+    titanDefId: string;
+    controllerId: string;
+    fromBaseIndex: number;
+};
+
+type ScoringTitanMoveContinuation = {
+    titanUid: string;
+    titanDefId: string;
+    fromBaseIndex: number;
+    scoringBaseIndex: number;
+    scoringBaseDefId: string;
+    remaining: ScoringTitanMoveCandidate[];
+};
+
+function buildScoringTitanMoveInteraction(args: {
+    sourceId: 'titan_mega_troopers_megabot_move' | 'titan_tornados_category_5_move';
+    id: string;
+    playerId: string;
+    title: string;
+    titleKey: string;
+    titleNameKey: string;
+    state: SmashUpCore;
+    source: ScoringTitanMoveCandidate;
+    scoringBaseIndex: number;
+    scoringBaseDefId: string;
+    remaining: ScoringTitanMoveCandidate[];
+    now: number;
+}) {
+    const interaction = createSimpleChoice(
+        args.id,
+        args.playerId,
+        args.title,
+        [
+            ...buildFieldSourceToBaseTargetOptions(
+                {
+                    type: 'titan',
+                    uid: args.source.titanUid,
+                    defId: args.source.titanDefId,
+                    fromBaseIndex: args.source.fromBaseIndex,
+                },
+                [{
+                    baseIndex: args.scoringBaseIndex,
+                    label: getBaseDef(args.scoringBaseDefId)?.name ?? `基地 ${args.scoringBaseIndex + 1}`,
+                }],
+                args.state,
+                { move: true as const },
+            ),
+            { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
+        ],
+        buildFieldSourceTargetPromptConfig({
+            sourceId: args.sourceId,
+            titleKey: args.titleKey,
+            titleParams: {
+                name: args.titleNameKey,
+                baseName: `cards.${args.scoringBaseDefId}.name`,
+            },
+        }),
+    );
+    (interaction.data as { continuationContext?: ScoringTitanMoveContinuation }).continuationContext = {
+        titanUid: args.source.titanUid,
+        titanDefId: args.source.titanDefId,
+        fromBaseIndex: args.source.fromBaseIndex,
+        scoringBaseIndex: args.scoringBaseIndex,
+        scoringBaseDefId: args.scoringBaseDefId,
+        remaining: args.remaining,
+    };
+    return interaction;
+}
 
 function getPlayedCardCount(ctx: AbilityContext): number {
     const player = ctx.state.players[ctx.playerId];
@@ -1146,46 +1220,20 @@ function megaTroopersMegabotBeforeScoring(ctx: TriggerContext): TriggerResult | 
     }
 
     const [first, ...remaining] = megabots;
-    const interaction = createSimpleChoice(
-        `titan_mega_troopers_megabot_move_${first.titanUid}_${ctx.now}`,
-        first.controllerId,
-        'ui.titan_megabot_move_title',
-        [
-            { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
-            { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
-        ],
-        {
-            sourceId: 'titan_mega_troopers_megabot_move',
-            targetType: 'button',
-            titleKey: 'ui.titan_megabot_move_title',
-            titleParams: {
-                name: 'cards.mega_troopers_megabot.name',
-                baseName: `cards.${scoringBase.defId}.name`,
-            },
-        },
-    );
-    (interaction.data as {
-        continuationContext?: {
-            titanUid: string;
-            titanDefId: string;
-            fromBaseIndex: number;
-            scoringBaseIndex: number;
-            scoringBaseDefId: string;
-            remaining: Array<{
-                titanUid: string;
-                titanDefId: string;
-                controllerId: string;
-                fromBaseIndex: number;
-            }>;
-        };
-    }).continuationContext = {
-        titanUid: first.titanUid,
-        titanDefId: first.titanDefId,
-        fromBaseIndex: first.fromBaseIndex,
+    const interaction = buildScoringTitanMoveInteraction({
+        sourceId: 'titan_mega_troopers_megabot_move',
+        id: `titan_mega_troopers_megabot_move_${first.titanUid}_${ctx.now}`,
+        playerId: first.controllerId,
+        title: 'ui.titan_megabot_move_title',
+        titleKey: 'ui.titan_megabot_move_title',
+        titleNameKey: 'cards.mega_troopers_megabot.name',
+        state: ctx.state,
+        source: first,
         scoringBaseIndex,
         scoringBaseDefId: scoringBase.defId,
         remaining,
-    };
+        now: ctx.now,
+    });
 
     return {
         events: [],
@@ -2122,46 +2170,20 @@ function tornadosCategory5BeforeScoring(ctx: TriggerContext): TriggerResult | Sm
     }
 
     const [first, ...remaining] = category5Titans;
-    const interaction = createSimpleChoice(
-        `titan_tornados_category_5_move_${first.titanUid}_${ctx.now}`,
-        first.controllerId,
-        '五级风暴：是否移动到将要计分的基地？',
-        [
-            { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
-            { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
-        ],
-        {
-            sourceId: 'titan_tornados_category_5_move',
-            targetType: 'button',
-            titleKey: 'ui.titan_megabot_move_title',
-            titleParams: {
-                name: 'cards.tornados_category_5.name',
-                baseName: `cards.${scoringBase.defId}.name`,
-            },
-        },
-    );
-    (interaction.data as {
-        continuationContext?: {
-            titanUid: string;
-            titanDefId: string;
-            fromBaseIndex: number;
-            scoringBaseIndex: number;
-            scoringBaseDefId: string;
-            remaining: Array<{
-                titanUid: string;
-                titanDefId: string;
-                controllerId: string;
-                fromBaseIndex: number;
-            }>;
-        };
-    }).continuationContext = {
-        titanUid: first.titanUid,
-        titanDefId: first.titanDefId,
-        fromBaseIndex: first.fromBaseIndex,
+    const interaction = buildScoringTitanMoveInteraction({
+        sourceId: 'titan_tornados_category_5_move',
+        id: `titan_tornados_category_5_move_${first.titanUid}_${ctx.now}`,
+        playerId: first.controllerId,
+        title: '五级风暴：是否移动到将要计分的基地？',
+        titleKey: 'ui.titan_megabot_move_title',
+        titleNameKey: 'cards.tornados_category_5.name',
+        state: ctx.state,
+        source: first,
         scoringBaseIndex,
         scoringBaseDefId: scoringBase.defId,
         remaining,
-    };
+        now: ctx.now,
+    });
 
     return {
         events: [],
@@ -3466,12 +3488,26 @@ function piratesTheKrakenAfterScoring(ctx: {
             `titan_pirates_the_kraken_choose_minion_${titan.uid}_${ctx.now}`,
             titan.controllerId,
             '克拉肯：将此处一个你的随从移到其他基地，代替弃置',
-            buildMinionTargetOptions(minionTargets, { state: ctx.state, sourcePlayerId: titan.controllerId, effectType: 'move' }),
-            {
+            buildFieldSourceToMinionTargetOptions(
+                {
+                    type: 'titan',
+                    uid: titan.uid,
+                    defId: titan.defId,
+                    baseIndex: ctx.baseIndex,
+                },
+                minionTargets,
+                {
+                    state: ctx.state,
+                    sourcePlayerId: titan.controllerId,
+                    sourceDefId: titan.defId,
+                    effectType: 'move',
+                    sourceKind: 'nonAction',
+                },
+            ),
+            buildFieldSourceTargetPromptConfig({
                 sourceId: 'titan_pirates_the_kraken_choose_minion',
-                targetType: 'minion',
                 titleKey: 'ui.titan_kraken_choose_minion_title',
-            },
+            }),
         );
         (interaction.data as {
             continuationContext?: unknown;
@@ -3487,17 +3523,35 @@ function piratesTheKrakenAfterScoring(ctx: {
             optionsGenerator?: (state: MatchState<SmashUpCore>, data: Record<string, unknown> | undefined) => PromptOption[];
         }).optionsGenerator = (nextState, data) => {
             const continuation = (data as {
-                continuationContext?: { controllerId?: string; scoringBaseIndex?: number };
+                continuationContext?: { titanUid?: string; titanDefId?: string; controllerId?: string; scoringBaseIndex?: number };
             } | undefined)?.continuationContext;
-            if (!continuation?.controllerId || continuation.scoringBaseIndex === undefined) {
+            if (!continuation?.titanUid || !continuation.titanDefId || !continuation.controllerId || continuation.scoringBaseIndex === undefined) {
                 return [];
             }
-            return buildMinionTargetOptions(
+            const liveTitan = getTitanByUid(nextState.core, continuation.titanUid);
+            if (
+                !liveTitan
+                || liveTitan.defId !== continuation.titanDefId
+                || liveTitan.controllerId !== continuation.controllerId
+                || liveTitan.location.zone !== 'base'
+                || liveTitan.location.baseIndex !== continuation.scoringBaseIndex
+            ) {
+                return [];
+            }
+            return buildFieldSourceToMinionTargetOptions(
+                {
+                    type: 'titan',
+                    uid: liveTitan.uid,
+                    defId: liveTitan.defId,
+                    baseIndex: continuation.scoringBaseIndex,
+                },
                 getKrakenRescueMinionTargets(nextState.core, continuation.controllerId, continuation.scoringBaseIndex),
                 {
                     state: nextState.core,
                     sourcePlayerId: continuation.controllerId,
+                    sourceDefId: continuation.titanDefId,
                     effectType: 'move',
+                    sourceKind: 'nonAction',
                 },
             );
         };
@@ -6758,21 +6812,7 @@ export function registerTitanInteractionHandlers(): void {
 
     registerInteractionHandler('titan_mega_troopers_megabot_move', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { move?: boolean } | undefined;
-        const continuation = (data as {
-            continuationContext?: {
-                titanUid?: string;
-                titanDefId?: string;
-                fromBaseIndex?: number;
-                scoringBaseIndex?: number;
-                scoringBaseDefId?: string;
-                remaining?: Array<{
-                    titanUid: string;
-                    titanDefId: string;
-                    controllerId: string;
-                    fromBaseIndex: number;
-                }>;
-            };
-        } | undefined)?.continuationContext;
+        const continuation = (data as { continuationContext?: Partial<ScoringTitanMoveContinuation> } | undefined)?.continuationContext;
 
         const events: SmashUpEvent[] = [];
         if (
@@ -6809,46 +6849,20 @@ export function registerTitanInteractionHandlers(): void {
         }
 
         const [next, ...rest] = remaining;
-        const interaction = createSimpleChoice(
-            `titan_mega_troopers_megabot_move_${next.titanUid}_${timestamp}`,
-            next.controllerId,
-            'ui.titan_megabot_move_title',
-            [
-                { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
-                { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
-            ],
-            {
-                sourceId: 'titan_mega_troopers_megabot_move',
-                targetType: 'button',
-                titleKey: 'ui.titan_megabot_move_title',
-                titleParams: {
-                    name: 'cards.mega_troopers_megabot.name',
-                    baseName: `cards.${continuation.scoringBaseDefId}.name`,
-                },
-            },
-        );
-        (interaction.data as {
-            continuationContext?: {
-                titanUid: string;
-                titanDefId: string;
-                fromBaseIndex: number;
-                scoringBaseIndex: number;
-                scoringBaseDefId: string;
-                remaining: Array<{
-                    titanUid: string;
-                    titanDefId: string;
-                    controllerId: string;
-                    fromBaseIndex: number;
-                }>;
-            };
-        }).continuationContext = {
-            titanUid: next.titanUid,
-            titanDefId: next.titanDefId,
-            fromBaseIndex: next.fromBaseIndex,
+        const interaction = buildScoringTitanMoveInteraction({
+            sourceId: 'titan_mega_troopers_megabot_move',
+            id: `titan_mega_troopers_megabot_move_${next.titanUid}_${timestamp}`,
+            playerId: next.controllerId,
+            title: 'ui.titan_megabot_move_title',
+            titleKey: 'ui.titan_megabot_move_title',
+            titleNameKey: 'cards.mega_troopers_megabot.name',
+            state: state.core,
+            source: next,
             scoringBaseIndex: continuation.scoringBaseIndex,
             scoringBaseDefId: continuation.scoringBaseDefId,
             remaining: rest,
-        };
+            now: timestamp,
+        });
 
         return {
             state: queueInteraction(state, interaction),
@@ -6858,21 +6872,7 @@ export function registerTitanInteractionHandlers(): void {
 
     registerInteractionHandler('titan_tornados_category_5_move', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { move?: boolean } | undefined;
-        const continuation = (data as {
-            continuationContext?: {
-                titanUid?: string;
-                titanDefId?: string;
-                fromBaseIndex?: number;
-                scoringBaseIndex?: number;
-                scoringBaseDefId?: string;
-                remaining?: Array<{
-                    titanUid: string;
-                    titanDefId: string;
-                    controllerId: string;
-                    fromBaseIndex: number;
-                }>;
-            };
-        } | undefined)?.continuationContext;
+        const continuation = (data as { continuationContext?: Partial<ScoringTitanMoveContinuation> } | undefined)?.continuationContext;
 
         const events: SmashUpEvent[] = [];
         if (
@@ -6909,46 +6909,20 @@ export function registerTitanInteractionHandlers(): void {
         }
 
         const [next, ...rest] = remaining;
-        const interaction = createSimpleChoice(
-            `titan_tornados_category_5_move_${next.titanUid}_${timestamp}`,
-            next.controllerId,
-            '五级风暴：是否移动到将要计分的基地？',
-            [
-                { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
-                { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
-            ],
-            {
-                sourceId: 'titan_tornados_category_5_move',
-                targetType: 'button',
-                titleKey: 'ui.titan_megabot_move_title',
-                titleParams: {
-                    name: 'cards.tornados_category_5.name',
-                    baseName: `cards.${continuation.scoringBaseDefId}.name`,
-                },
-            },
-        );
-        (interaction.data as {
-            continuationContext?: {
-                titanUid: string;
-                titanDefId: string;
-                fromBaseIndex: number;
-                scoringBaseIndex: number;
-                scoringBaseDefId: string;
-                remaining: Array<{
-                    titanUid: string;
-                    titanDefId: string;
-                    controllerId: string;
-                    fromBaseIndex: number;
-                }>;
-            };
-        }).continuationContext = {
-            titanUid: next.titanUid,
-            titanDefId: next.titanDefId,
-            fromBaseIndex: next.fromBaseIndex,
+        const interaction = buildScoringTitanMoveInteraction({
+            sourceId: 'titan_tornados_category_5_move',
+            id: `titan_tornados_category_5_move_${next.titanUid}_${timestamp}`,
+            playerId: next.controllerId,
+            title: '五级风暴：是否移动到将要计分的基地？',
+            titleKey: 'ui.titan_megabot_move_title',
+            titleNameKey: 'cards.tornados_category_5.name',
+            state: state.core,
+            source: next,
             scoringBaseIndex: continuation.scoringBaseIndex,
             scoringBaseDefId: continuation.scoringBaseDefId,
             remaining: rest,
-        };
+            now: timestamp,
+        });
 
         return {
             state: queueInteraction(state, interaction),
@@ -8166,7 +8140,17 @@ export function registerTitanInteractionHandlers(): void {
     });
 
     registerInteractionHandler('titan_pirates_the_kraken_choose_minion', (state, playerId, value, data, _random, timestamp) => {
-        const selected = value as { skip?: boolean; minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        const selected = value as {
+            skip?: boolean;
+            minionUid?: string;
+            targetMinionUid?: string;
+            targetUid?: string;
+            defId?: string;
+            minionDefId?: string;
+            targetMinionDefId?: string;
+            targetDefId?: string;
+            baseIndex?: number;
+        } | undefined;
         const continuation = (data as {
             continuationContext?: {
                 titanUid?: string;
@@ -8178,7 +8162,9 @@ export function registerTitanInteractionHandlers(): void {
         if (selected?.skip || continuation?.scoringBaseIndex === undefined || continuation.controllerId !== playerId) {
             return { state, events: [] };
         }
-        if (!selected?.minionUid || !selected.defId) {
+        const targetMinionUid = selected?.targetMinionUid ?? selected?.targetUid ?? selected?.minionUid;
+        const targetDefId = selected?.targetMinionDefId ?? selected?.targetDefId ?? selected?.minionDefId ?? selected?.defId;
+        if (!targetMinionUid || !targetDefId) {
             return { state, events: [] };
         }
 
@@ -8195,7 +8181,8 @@ export function registerTitanInteractionHandlers(): void {
 
         const sourceBase = state.core.bases[continuation.scoringBaseIndex];
         const selectedMinion = sourceBase?.minions.find(minion =>
-            minion.uid === selected.minionUid
+            minion.uid === targetMinionUid
+            && minion.defId === targetDefId
             && minion.controller === continuation.controllerId,
         );
         if (!selectedMinion) {
@@ -8208,7 +8195,7 @@ export function registerTitanInteractionHandlers(): void {
         }
 
         const interaction = createSimpleChoice(
-            `titan_pirates_the_kraken_choose_base_${selected.minionUid}_${timestamp}`,
+            `titan_pirates_the_kraken_choose_base_${selectedMinion.uid}_${timestamp}`,
             playerId,
             '克拉肯：选择要移动到的基地',
             buildBaseTargetOptions(baseOptions, state.core),

@@ -7,6 +7,8 @@ import {
     addTempPower,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildFieldSourceToBaseTargetOptions,
+    buildFieldSourceTargetPromptConfig,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedMoveEvents,
@@ -693,16 +695,24 @@ const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMove
                 ...createSkipOption(context.skipLabel ?? '跳过'),
                 ...(context.skipLabelKey ? { labelKey: context.skipLabelKey } : {}),
             }] : []),
-            ...buildBaseTargetOptions(getOtherBases(context.matchState.core, context.fromBaseIndex), context.matchState.core),
+            ...buildFieldSourceToBaseTargetOptions(
+                {
+                    type: 'ongoing',
+                    uid: context.cardUid,
+                    defId: context.defId,
+                    fromBaseIndex: context.fromBaseIndex,
+                },
+                getOtherBases(context.matchState.core, context.fromBaseIndex),
+                context.matchState.core,
+            ),
         ] as any[],
-        {
+        buildFieldSourceTargetPromptConfig({
             sourceId: context.reason === 'mermaids_shipwreck_cove'
                 ? 'mermaids_shipwreck_cove_after_scoring'
                 : 'mermaids_becalmed_shores',
-            targetType: 'base',
             titleKey: context.titleKey,
             titleParams: context.titleParams,
-        },
+        }),
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;

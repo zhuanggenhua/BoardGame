@@ -10104,7 +10104,10 @@ describe('smashup', () => {
         const chooseMinionPrompt = getSimpleChoicePrompt(promptState, 'titan_pirates_the_kraken_choose_minion');
         const staleOption = getPromptOption(
             chooseMinionPrompt,
-            entry => entry.value?.minionUid === 'kraken-save-target',
+            entry =>
+                entry.value?.sourceUid === 'kraken-first-stale'
+                && entry.value?.fieldSourceType === 'titan'
+                && entry.value?.targetMinionUid === 'kraken-save-target',
             'Kraken choose-minion option before source goes stale',
         );
 
@@ -10182,7 +10185,10 @@ describe('smashup', () => {
         const chooseMinionPrompt = getSimpleChoicePrompt(promptState, 'titan_pirates_the_kraken_choose_minion');
         const chooseMinionOption = getPromptOption(
             chooseMinionPrompt,
-            entry => entry.value?.minionUid === 'kraken-save-target-second',
+            entry =>
+                entry.value?.sourceUid === 'kraken-second-stale'
+                && entry.value?.fieldSourceType === 'titan'
+                && entry.value?.targetMinionUid === 'kraken-save-target-second',
             'Kraken choose-base stale minion option',
         );
         const eventSystem = createSmashUpEventSystem();

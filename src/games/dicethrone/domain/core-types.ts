@@ -114,6 +114,13 @@ export interface CharacterDefinition {
     hasTipBoard?: boolean;
 }
 
+const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: import('../../../core/ui').CharacterBadgeDef = {
+    id: 'implementation_in_progress',
+    labelKey: 'common:status_tags.under_construction',
+    tone: 'warning',
+    variant: 'disabled-overlay',
+};
+
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'monk', nameKey: 'characters.monk' },
     { id: 'barbarian', nameKey: 'characters.barbarian' },
@@ -129,7 +136,12 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
     { id: 'artificer', nameKey: 'characters.artificer' },
     { id: 'tianshi', nameKey: 'characters.tianshi' },
-    { id: 'lieren', nameKey: 'characters.lieren', hasTipBoard: false },
+    {
+        id: 'lieren',
+        nameKey: 'characters.lieren',
+        badges: [DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE],
+        hasTipBoard: false,
+    },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(

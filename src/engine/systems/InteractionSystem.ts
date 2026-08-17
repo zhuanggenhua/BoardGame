@@ -222,6 +222,8 @@ export type SimpleChoiceTargetType =
     | 'minion'
     | 'hand'
     | 'ongoing'
+    | 'field-source-target'
+    | 'field-source-action'
     | 'player'
     | 'button'
     | 'discard'
@@ -269,6 +271,7 @@ export interface SimpleChoiceData<T = unknown> {
      * - 'minion': 高亮棋盘上的候选随从，点击随从完成选择
      * - 'hand': 高亮手牌区的候选卡牌，点击卡牌完成选择
      * - 'ongoing': 高亮棋盘上的候选持续行动卡，点击行动卡完成选择
+     * - 'field-source-target': 先高亮场上来源对象，点击来源后再高亮目标对象
      * - 'player': 使用通用弹窗中的玩家选项按钮完成选择
      * - 'button': 使用通用弹窗中的纯分支/确认按钮完成选择
      * - 'discard_minion': 使用游戏自定义的“弃牌堆选随从后再点击基地”直点交互
@@ -667,7 +670,7 @@ export interface SimpleChoiceConfig {
     sourceId?: string;
     timeout?: number;
     multi?: PromptMultiConfig;
-    /** 选择目标类型，决定 UI 渲染方式（'base' | 'minion' | 'hand' | 'ongoing' | 'player' | 'button' | 'discard_minion' | 'generic'） */
+    /** 选择目标类型，决定 UI 渲染方式（'base' | 'minion' | 'hand' | 'ongoing' | 'field-source-target' | 'field-source-action' | 'player' | 'button' | 'discard_minion' | 'generic'） */
     targetType?: SimpleChoiceTargetType;
     /** 可选：按钮类/目标类交互需要同时展示的一张上下文卡牌 */
     displayCard?: {

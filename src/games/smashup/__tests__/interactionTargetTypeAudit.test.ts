@@ -37,7 +37,12 @@ interface SimpleChoiceCallInfo {
     responseValidationMode?: string;
     revalidateOnRespond?: boolean;
     hasMulti?: boolean;
-    usesFieldSourceBaseTargetOptions?: boolean;
+    usesFieldSourceTargetOptions?: boolean;
+    usesFieldSourceActionOptions?: boolean;
+    hasFieldSourceTargetLiteral?: boolean;
+    hasFieldSourceActionLiteral?: boolean;
+    hasImplicitFieldSourceTargetShape?: boolean;
+    valueProps?: string[];
 }
 
 const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh?: string; responseValidationMode?: string }> = {
@@ -56,7 +61,7 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     base_miskatonic_university_base: { targetType: 'button' },
     base_greenhouse: { targetType: 'generic' },
     base_inventors_salon: { targetType: 'generic' },
-    alien_scout_return: { targetType: 'minion' },
+    alien_scout_return: { targetType: 'field-source-action' },
     alien_supreme_overlord: { targetType: 'minion' },
     alien_collector: { targetType: 'minion' },
     alien_probe_choose_target: { targetType: 'player' },
@@ -105,10 +110,6 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     dragons_burn_it_down: { targetType: 'button' },
     dragons_flank_attack_source: { targetType: 'button' },
     pirate_buccaneer_move: { targetType: 'base' },
-    pirate_king_move: { targetType: 'minion' },
-    pirate_first_mate_choose_base: { targetType: 'minion' },
-    ancient_egyptians_mummy_after_scoring: { targetType: 'minion', responseValidationMode: 'live' },
-    world_champs_mummy_after_scoring: { targetType: 'minion' },
     pirate_sea_dogs_choose_faction: { targetType: 'generic' },
     giant_ant_who_wants_to_live_forever: { targetType: 'minion', responseValidationMode: 'live' },
     giant_ant_drone_prevent_destroy: { targetType: 'minion' },
@@ -182,15 +183,35 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     base_primate_park_return: { targetType: 'ongoing', responseValidationMode: 'live' },
 };
 
-const FIELD_SOURCE_BASE_TARGET_SOURCE_IDS = [
-    'pirate_king_move',
-    'pirate_first_mate_choose_base',
-    'ancient_egyptians_mummy_after_scoring',
-    'world_champs_mummy_after_scoring',
+const SCORING_BUTTON_SOURCE_REASONS: Record<string, string> = {
+    base_gingerbread_house: '计分前由基地效果做纯分支选择，不代表点击目标基地或随从。',
+    huluwawa_liu_wa_before_scoring: '计分前只有取消/放弃分支，不能代理目标选择。',
+    munchkin_elves_helping_hands_choose_vp: '计分后在获得胜点与不获得之间选择，属于纯模式分支。',
+    titan_pirates_the_kraken_play_replacement: '海怪结算后先确认是否替换基地，后续目标另走随从选择。',
+    base_the_nexus_choose: '枢纽计分后在抽牌/胜点等奖励分支中选择，不代表场上目标点击。',
+} as const;
+
+const OBJECT_TARGET_VALUE_PROPS = [
+    'actionUid',
+    'baseIndex',
+    'targetBaseIndex',
+    'fromBaseIndex',
+    'toBaseIndex',
+    'minionUid',
+    'targetMinionUid',
+    'sourceUid',
+    'cardUid',
+    'ongoingUid',
+    'targetUid',
+    'targetPlayerId',
+    'playerId',
 ] as const;
 
 const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
+    anansi_tales_anansi_the_spider: '从牌库标准行动卡快照中选择并额外打出，来源是 deck 卡面，不是当前手牌直点。',
+    anansi_tales_the_perfect_gift: '从牌库标准行动卡快照中选择并额外打出，来源是 deck 卡面，不是当前手牌直点。',
     ancient_egyptians_pyramid_engineer_uncover: '翻开这里你的埋葬牌时，需要保留 buried card 与原基地上下文，不能压缩成单一实体直点。',
+    ancient_incas_llama: '选择其它基地上的场上行动卡作为来源并固定打到当前基地，选项需同时携带 card/base/sourceBase 上下文。',
     titan_sphinx_after_scoring: '狮身人面像结算后回收埋葬牌时，需要保留 buried card 与结算基地上下文，generic 语义更准确。',
     titan_sphinx_start_turn: '狮身人面像部署时既要选埋葬牌又要读取其原基地用于放置泰坦，不能压成单一实体直点。',
     ancient_egyptians_lost_knowledge_uncover: '翻开埋葬牌时要保留埋葬区卡牌与原基地上下文，不能压缩成单一 hand/base 直点。',
@@ -218,11 +239,9 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     kaiju_they_say_hes_got_to_go_choose_titan: '选择对象是泰坦实体，当前 UI 没有 titan 专用 targetType，需保留 generic 并携带来源基地上下文。',
     killer_plant_sprout_search: '牌库搜索结果卡面选择，需要 autoRefresh/live 重验而非棋盘直点。',
     killer_plant_venus_man_trap_search: '牌库搜索结果卡面选择，需要 autoRefresh/live 重验而非棋盘直点。',
-    magical_girls_black_magicat: '同时搜索牌库与弃牌堆的指定随从，候选来源可能是 deck 或 discard 卡面，不能映射为当前手牌/棋盘实体。',
     magical_girls_kiss_the_sky_spell: '从弃牌堆随从卡面中选择回手目标，来源为 discard 卡面。',
     magical_girls_lunar_captain: '从弃牌堆随从卡面中选择回手目标，来源为 discard 卡面。',
     magical_girls_lunar_healing_love_spell: '多选每位玩家弃牌堆随从卡面并按拥有者回手，来源为 discard 卡面且跨玩家分组。',
-    magical_girls_white_magicat: '同时搜索牌库与弃牌堆的指定随从，候选来源可能是 deck 或 discard 卡面，不能映射为当前手牌/棋盘实体。',
     mega_troopers_plan_for_more: '揭示牌库顶后既可拿牌又可选择其中一张打到指定基地，选项同时携带 deck 卡面和目标基地上下文。',
     mega_troopers_plan_for_more_order: '揭示牌库顶后的剩余牌排序交互，候选来源是 deck reveal 快照，不是当前手牌或棋盘实体。',
     miskatonic_book_of_iter_the_unseen: '候选项来自特殊卡牌池/效果分支，不是棋盘实体直选。',
@@ -233,6 +252,7 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     pirate_sea_dogs_choose_faction: '选择的是派系标识，而不是棋盘或手牌实体。',
     princesses_direct_to_dvd_sequel: '从弃牌堆静态卡面中选择随从洗回牌库并抽牌，来源为 discard 卡面。',
     princesses_griselda: '从弃牌堆静态卡面中选择传家宝回手，来源为 discard 卡面。',
+    princesses_griselda_pod: '同一弹窗混合弃牌堆传家宝卡面选择与额外行动按钮分支，不能压成纯 card 或纯 button。',
     robot_hoverbot: '牌库顶揭示后的处理分支，不对应棋盘实体。',
     robot_microbot_reclaimer: '多选弃牌堆 microbot 卡，来源为 discard 卡面。',
     steampunk_mechanic: '候选项是复合效果分支，不能压成单一实体语义。',
@@ -275,14 +295,13 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     zombie_not_enough_bullets: '从弃牌堆同名卡组中选择恢复目标，来源为 discard 卡面。',
     base_drakkar: '从牌库顶揭示卡牌并按分支处理，候选来源是 deck 快照而非场上实体。',
     base_longhouse_card: '候选项来自揭示卡牌快照，需保留卡牌上下文再决定后续处理。',
+    base_brood_hive: '计分前从牌库顶额外打出佣兵到当前基地，候选来源是 deck 顶卡，baseIndex 只是固定目的地上下文，不是场上基地直点。',
     cowboys_gold_in_them_thar_hills: '候选项来自牌库顶揭示的卡牌快照，需保留 deck 上下文。',
     cowboys_gold_in_them_thar_hills_order: '这是剩余揭示卡牌的排序交互，不是单一实体直选。',
     cowboys_stagecoach_cards: '候选项混合随从/持续行动/埋葬牌，需保留复合卡面上下文。',
     innsmouth_return_to_the_sea_choose_name: '选择的是随从名(defId)而非某个单一场上实体。',
     mythic_greeks_favor_of_athena_order: '候选项来自本次揭示牌堆的临时排序快照，需要保留 deck 卡面与排序上下文，不能压成 hand/base 直选。',
     mythic_greeks_favor_of_athena_pick: '候选项来自本次揭示牌堆的临时行动卡快照，来源为 deck reveal 卡面而非当前手牌实体。',
-    mythic_greeks_favor_of_hades: '候选项是已揭示牌库卡面的处理分支，既保留卡牌身份又不是当前手牌/棋盘实体。',
-    mythic_greeks_favor_of_poseidon: '候选项是已揭示牌库卡面的处理分支，既保留卡牌身份又不是当前手牌/棋盘实体。',
     titan_cthulhu_cthulhu_titan_talent_target: '候选项带有泰坦技能分支上下文，不能压缩成单一实体直选。',
     titan_dinosaurs_fort_titanosaurus_ongoing: '候选项是泰坦持续效果分支，需保留通用上下文。',
     titan_frankenstein_the_bride_start_choose_branch: '候选项是新娘起始阶段分支选择，不是单一实体直选。',
@@ -300,7 +319,6 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     penguins_regurgitating_penguin: '反刍企鹅候选项来自牌库顶揭示快照，拿走行动后还要串联剩余牌排序，不是当前手牌或棋盘实体直选。',
     penguins_regurgitating_penguin_order: '反刍企鹅剩余揭示牌需要按玩家选择顺序回到牌库顶，必须保留排序快照语义。',
     titan_vampires_ancient_lord_special: '特殊触发候选包含场上目标与额外语义，需保留 generic。',
-    vampire_crack_of_dusk_pod: '候选项来自弃牌堆随从卡面，不是当前棋盘实体，也不是当前手牌直选。',
     vikings_berserk_card: '候选项来自手牌卡面并串联后续目标选择，保留 generic 以承载链路上下文。',
     vikings_cast_the_runes_order: '牌库顶揭示后的排序交互，来源为 deck 快照而非场上实体。',
     vikings_cast_the_runes_player: '先选目标玩家再处理揭示结果，属于玩家+卡牌复合上下文。',
@@ -315,10 +333,10 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     base_faceless_city_choose: '候选项来自牌库中的同名随从快照，并会在抽到手后重洗剩余牌库，不是单一棋盘实体直选。',
     base_isis_swingin_pad_reorder: '这是查看并重排牌库顶三张的排序交互，必须保留 top/bottom 顺序语义而不是单点选择。',
     cyborg_apes_monkey_see_monkey_do_choose: '候选项来自牌库顶五张揭示结果，允许多选行动加入手牌并重洗剩余牌库，需保留 deck 快照上下文。',
-    mythic_greeks_favor_of_athena_order: '这是对已揭示牌组逐张决定回牌库顶顺序的排序交互，不能压缩成单一实体直选。',
-    mythic_greeks_favor_of_athena_pick: '候选项来自牌库顶揭示的行动卡快照，并且后续还要串联剩余牌排序。',
     mythic_greeks_favor_of_hades: '从弃牌堆静态卡面中选择行动回手，来源为 discard 卡面而不是棋盘实体。',
     mythic_greeks_favor_of_poseidon: '多选弃牌堆卡牌洗回牌库，来源为 discard 卡面且带多选语义。',
+    mythic_horses_teaching_power_order: '教学之力第二步排序剩余展示牌，baseIndex 只是保留此前选中随从要打到的基地上下文，不是当前棋盘基地直点。',
+    polynesian_voyagers_growth_of_the_tribes: '同一弹窗混合“额外打出到基地”按钮分支和“移动己方随从”实体分支，必须保留复合语义。',
     shapeshifters_genetic_shift_choose: '候选项混合“全体己方随从 +1”的按钮分支与“单个己方随从 +3”的实体分支，必须保留复合语义。',
     shapeshifters_mitosis_choose: '候选项来自手牌中的同名随从卡面，并携带目标基地与同名约束，属于额外打出链路而不是普通手牌直选。',
     super_spies_for_my_eyes_only_reorder: '这是查看并重排自己牌库顶五张的排序交互，需要保留 top/bottom 分组与揭示快照语义。',
@@ -329,22 +347,132 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     time_travelers_time_is_fleeting_choose: '选择的是基地弃牌堆中的基地定义并改写基地牌库顶，不对应当前场上基地实体。',
 };
 
-function extractValueProps(optionNode: ts.ObjectLiteralExpression): Set<string> {
-    const props = new Set<string>();
-    const valueProp = optionNode.properties.find(
-        prop => ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name) && prop.name.text === 'value'
-    ) as ts.PropertyAssignment | undefined;
-
-    if (!valueProp || !ts.isObjectLiteralExpression(valueProp.initializer)) return props;
-
-    for (const prop of valueProp.initializer.properties) {
+function collectObjectLiteralPropertyNames(objectNode: ts.ObjectLiteralExpression, props: Set<string>): void {
+    for (const prop of objectNode.properties) {
         if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
             props.add(prop.name.text);
         } else if (ts.isShorthandPropertyAssignment(prop)) {
             props.add(prop.name.text);
         }
     }
+}
+
+function findNearestVariableDeclarationForAudit(
+    sourceFile: ts.SourceFile,
+    referenceNode: ts.Node,
+    name: string,
+): ts.VariableDeclaration | undefined {
+    let best: ts.VariableDeclaration | undefined;
+    const referencePos = referenceNode.getStart(sourceFile);
+    const visit = (node: ts.Node) => {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name) {
+            const start = node.getStart(sourceFile);
+            if (start < referencePos && (!best || start > best.getStart(sourceFile))) {
+                best = node;
+            }
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    return best;
+}
+
+function extractObjectLiteralFromMapCallback(expr: ts.Expression): ts.ObjectLiteralExpression | undefined {
+    const unwrapped = unwrapAuditExpression(expr);
+    if (
+        !unwrapped
+        || !ts.isCallExpression(unwrapped)
+        || !ts.isPropertyAccessExpression(unwrapped.expression)
+        || unwrapped.expression.name.text !== 'map'
+    ) {
+        return undefined;
+    }
+
+    const callback = unwrapped.arguments[0];
+    if (!callback || (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback))) {
+        return undefined;
+    }
+
+    const body = callback.body;
+    const bodyExpression = unwrapAuditExpression(body as ts.Expression);
+    if (bodyExpression && ts.isObjectLiteralExpression(bodyExpression)) return bodyExpression;
+    if (!ts.isBlock(body)) return undefined;
+
+    for (const statement of body.statements) {
+        if (!ts.isReturnStatement(statement)) continue;
+        const returned = unwrapAuditExpression(statement.expression);
+        if (returned && ts.isObjectLiteralExpression(returned)) return returned;
+    }
+    return undefined;
+}
+
+function collectValuePropsFromExpression(
+    sourceFile: ts.SourceFile,
+    referenceNode: ts.Node,
+    expr: ts.Expression | undefined,
+    props: Set<string>,
+    seen: Set<number> = new Set(),
+): void {
+    const unwrapped = unwrapAuditExpression(expr);
+    if (!unwrapped) return;
+
+    if (ts.isObjectLiteralExpression(unwrapped)) {
+        collectObjectLiteralPropertyNames(unwrapped, props);
+        return;
+    }
+
+    if (ts.isArrayLiteralExpression(unwrapped)) {
+        for (const element of unwrapped.elements) {
+            if (ts.isSpreadElement(element)) {
+                collectValuePropsFromExpression(sourceFile, referenceNode, element.expression, props, seen);
+                continue;
+            }
+            collectValuePropsFromExpression(sourceFile, referenceNode, element, props, seen);
+        }
+        return;
+    }
+
+    const mappedObject = extractObjectLiteralFromMapCallback(unwrapped);
+    if (mappedObject) {
+        collectObjectLiteralPropertyNames(mappedObject, props);
+        return;
+    }
+
+    const identifier = ts.isIdentifier(unwrapped)
+        ? unwrapped
+        : ts.isElementAccessExpression(unwrapped) && ts.isIdentifier(unwrapped.expression)
+            ? unwrapped.expression
+            : undefined;
+    if (!identifier) return;
+
+    const declaration = findNearestVariableDeclarationForAudit(sourceFile, referenceNode, identifier.text);
+    if (!declaration?.initializer) return;
+    const declarationStart = declaration.getStart(sourceFile);
+    if (seen.has(declarationStart)) return;
+    seen.add(declarationStart);
+    collectValuePropsFromExpression(sourceFile, referenceNode, declaration.initializer, props, seen);
+}
+
+function extractValueProps(optionNode: ts.ObjectLiteralExpression): Set<string> {
+    const props = new Set<string>();
+    const valueProp = optionNode.properties.find(
+        prop => ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name) && prop.name.text === 'value'
+    ) as ts.PropertyAssignment | undefined;
+
+    if (!valueProp) return props;
+    collectValuePropsFromExpression(optionNode.getSourceFile(), optionNode, valueProp.initializer, props);
     return props;
+}
+
+function extractChoiceValuePropNames(options: ts.ObjectLiteralExpression[]): string[] {
+    return Array.from(
+        options.reduce((props, optionNode) => {
+            for (const prop of extractValueProps(optionNode)) {
+                props.add(prop);
+            }
+            return props;
+        }, new Set<string>()),
+    ).sort();
 }
 
 function extractTopLevelStringProp(optionNode: ts.ObjectLiteralExpression, propName: string): string | undefined {
@@ -363,6 +491,107 @@ function extractTopLevelStringProp(optionNode: ts.ObjectLiteralExpression, propN
         }
     }
     return undefined;
+}
+
+function getObjectPropertyName(name: ts.PropertyName): string | undefined {
+    if (ts.isIdentifier(name)) return name.text;
+    if (ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) return name.text;
+    return undefined;
+}
+
+function getCallName(node: ts.CallExpression): string | undefined {
+    const expr = node.expression;
+    if (ts.isIdentifier(expr)) return expr.text;
+    if (ts.isPropertyAccessExpression(expr)) return expr.name.text;
+    return undefined;
+}
+
+function extractStringLiteralValue(expr: ts.Expression): string | undefined {
+    if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text;
+    return undefined;
+}
+
+function unwrapAuditExpression(expr: ts.Expression | undefined): ts.Expression | undefined {
+    let current = expr;
+    while (current) {
+        if (ts.isParenthesizedExpression(current) || ts.isAsExpression(current) || ts.isTypeAssertionExpression(current)) {
+            current = current.expression;
+            continue;
+        }
+        return current;
+    }
+    return current;
+}
+
+function resolveLocalStringLiteral(
+    sourceFile: ts.SourceFile,
+    referenceNode: ts.Node,
+    expr: ts.Expression | undefined,
+): string | undefined {
+    const unwrapped = unwrapAuditExpression(expr);
+    if (!unwrapped) return undefined;
+    if (ts.isStringLiteral(unwrapped) || ts.isNoSubstitutionTemplateLiteral(unwrapped)) return unwrapped.text;
+    if (!ts.isIdentifier(unwrapped)) return undefined;
+
+    let best: ts.VariableDeclaration | undefined;
+    const referencePos = referenceNode.getStart(sourceFile);
+    const visit = (node: ts.Node) => {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === unwrapped.text) {
+            const start = node.getStart(sourceFile);
+            if (start < referencePos && (!best || start > best.getStart(sourceFile))) {
+                best = node;
+            }
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+
+    return resolveLocalStringLiteral(sourceFile, referenceNode, best?.initializer);
+}
+
+function extractChoiceConfigArgForAudit(node: ts.CallExpression): ts.Expression | undefined {
+    const callName = getCallName(node);
+    if (callName === 'resolveOrPrompt') return node.arguments[2] as ts.Expression | undefined;
+    return node.arguments[4] as ts.Expression | undefined;
+}
+
+function extractChoiceSourceIdForAudit(sourceFile: ts.SourceFile, node: ts.CallExpression): string | undefined {
+    const rawConfigArg = unwrapAuditExpression(extractChoiceConfigArgForAudit(node));
+    const rawConfigCallName = rawConfigArg && ts.isCallExpression(rawConfigArg)
+        ? getCallName(rawConfigArg)
+        : undefined;
+    const configArg = rawConfigCallName === 'buildFieldSourceTargetPromptConfig'
+        || rawConfigCallName === 'buildFieldSourceActionPromptConfig'
+        ? unwrapAuditExpression(rawConfigArg.arguments[0] as ts.Expression | undefined)
+        : rawConfigArg;
+    if (!configArg || !ts.isObjectLiteralExpression(configArg)) return undefined;
+
+    const sourceIdProp = configArg.properties.find(entry =>
+        ts.isPropertyAssignment(entry) && getObjectPropertyName(entry.name) === 'sourceId'
+    ) as ts.PropertyAssignment | undefined;
+    if (!sourceIdProp) return undefined;
+
+    return resolveLocalStringLiteral(sourceFile, node, sourceIdProp.initializer);
+}
+
+function getEnclosingPromptProgramInteractionSourceIds(node: ts.Node): string[] {
+    let current: ts.Node | undefined = node.parent;
+    while (current) {
+        if (ts.isCallExpression(current) && getCallName(current) === 'createPromptProgram') {
+            const config = current.arguments[0];
+            if (!config || !ts.isObjectLiteralExpression(config)) return [];
+            const prop = config.properties.find(entry =>
+                ts.isPropertyAssignment(entry)
+                && getObjectPropertyName(entry.name) === 'interactionSourceIds'
+            ) as ts.PropertyAssignment | undefined;
+            if (!prop || !ts.isArrayLiteralExpression(prop.initializer)) return [];
+            return prop.initializer.elements
+                .map(element => extractStringLiteralValue(element))
+                .filter((value): value is string => !!value);
+        }
+        current = current.parent;
+    }
+    return [];
 }
 
 function checkMinionSelectFallback(options: ts.ObjectLiteralExpression[]): boolean {
@@ -519,27 +748,87 @@ function isBoardLikeGenericOption(options: ts.ObjectLiteralExpression[]): boolea
     });
 }
 
-function findFieldSourceBaseTargetIssue(options: ts.ObjectLiteralExpression[]): string | undefined {
+function hasSourceTargetObjectFields(props: Set<string>): boolean {
+    return props.has('targetUid')
+        || props.has('targetBaseIndex')
+        || props.has('targetMinionUid');
+}
+
+function hasSourceActionShape(props: Set<string>): boolean {
+    return props.has('fieldInteractionType')
+        && props.has('fieldSourceType')
+        && props.has('sourceUid')
+        && !props.has('fieldTargetType')
+        && !hasSourceTargetObjectFields(props);
+}
+
+function findFieldSourceInteractionIssue(options: ts.ObjectLiteralExpression[]): string | undefined {
     for (const opt of options) {
         const props = extractValueProps(opt);
         if (props.has('fieldSourceTargetType')) {
-            return '旧 fieldSourceTargetType 已废弃；能力层必须使用 fieldInteractionType/source-target + fieldSourceType/minion + fieldTargetType/base。';
+            return '旧 fieldSourceTargetType 已废弃；能力层必须使用 fieldInteractionType/source-target 或 source-action 的共享合同。';
         }
 
         if (!props.has('fieldInteractionType')) continue;
 
         const displayMode = extractTopLevelStringProp(opt, 'displayMode');
         if (displayMode === 'button') {
-            return '场上来源到基地目标的效果不能用按钮作为主路径，必须先点来源对象本体再点目标基地。';
+            return '场上来源对象效果不能用按钮作为主路径，必须点击来源对象本体。';
+        }
+
+        if (hasSourceActionShape(props)) {
+            continue;
         }
         if (!props.has('fieldSourceType') || !props.has('fieldTargetType')) {
-            return '场上来源到基地目标的效果必须显式声明 source-target/minion/base 三段语义，不能让 UI 猜。';
+            return '场上来源对象到目标对象的效果必须显式声明 source-target/source/target 三段语义，不能让 UI 猜。';
         }
-        if (!props.has('sourceUid') || !props.has('targetBaseIndex') || !props.has('minionUid') || !props.has('baseIndex')) {
-            return '场上来源到基地目标的效果必须同时携带来源随从和目标基地，不能让 UI 反推。';
+        if (!props.has('sourceUid')) {
+            return '场上来源对象到目标对象的效果必须携带稳定来源对象，不能让 UI 反推。';
+        }
+        if (!hasSourceTargetObjectFields(props) && !props.has('baseIndex')) {
+            return '场上来源对象到目标对象的效果必须携带稳定目标对象，不能让 UI 反推。';
         }
     }
     return undefined;
+}
+
+function hasFieldSourceTargetLiteral(options: ts.ObjectLiteralExpression[]): boolean {
+    return options.some(opt => {
+        const props = extractValueProps(opt);
+        return props.has('fieldSourceTargetType')
+            || (props.has('fieldInteractionType') && (props.has('fieldTargetType') || hasSourceTargetObjectFields(props)));
+    });
+}
+
+function hasFieldSourceActionLiteral(options: ts.ObjectLiteralExpression[]): boolean {
+    return options.some(opt => {
+        const props = extractValueProps(opt);
+        return hasSourceActionShape(props);
+    });
+}
+
+function hasImplicitFieldSourceTargetShape(options: ts.ObjectLiteralExpression[]): boolean {
+    return options.some(opt => {
+        const props = extractValueProps(opt);
+        if (props.has('fieldInteractionType') || props.has('fieldSourceTargetType')) return false;
+
+        const hasExplicitSource = props.has('sourceUid');
+        const hasLegacySourceMove = props.has('minionUid') && props.has('fromBaseIndex') && props.has('targetBaseIndex');
+        const hasTargetObject =
+            props.has('targetBaseIndex')
+            || props.has('targetMinionUid')
+            || props.has('targetUid');
+
+        return (hasExplicitSource && hasTargetObject) || hasLegacySourceMove;
+    });
+}
+
+function extractObjectStringProperty(objectNode: ts.ObjectLiteralExpression, propName: string): string | undefined {
+    const prop = objectNode.properties.find(
+        entry => ts.isPropertyAssignment(entry) && getObjectPropertyName(entry.name) === propName,
+    ) as ts.PropertyAssignment | undefined;
+    if (!prop) return undefined;
+    return extractStringLiteralValue(prop.initializer);
 }
 
 function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: SimpleChoiceCallInfo[] } {
@@ -549,16 +838,49 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
     const calls: SimpleChoiceCallInfo[] = [];
 
     const visit = (node: ts.Node) => {
+        if (ts.isCallExpression(node) && getCallName(node) === 'buildScoringTitanMoveInteraction') {
+            const config = node.arguments[0];
+            const line = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
+            const sourceId = config && ts.isObjectLiteralExpression(config)
+                ? extractObjectStringProperty(config, 'sourceId') ?? 'unknown'
+                : 'unknown';
+            calls.push({
+                file: filePath,
+                line,
+                sourceId,
+                targetType: 'field-source-target',
+                usesFieldSourceTargetOptions: true,
+                hasFieldSourceTargetLiteral: false,
+            });
+        }
+
         if (isCreateSimpleChoiceCall(node)) {
             const config = extractSimpleChoiceConfig(node);
+            const resolvedSourceId = extractChoiceSourceIdForAudit(sourceFile, node);
+            if (resolvedSourceId) config.sourceId = resolvedSourceId;
             const optionsArg = getChoiceOptionsArg(node);
             const line = ts.getLineAndCharacterOfPosition(sourceFile, node.getStart()).line + 1;
-            const usesFieldSourceBaseTargetOptions = expressionContainsCall(
+            const usesFieldSourceTargetOptions = expressionContainsCall(
                 sourceFile,
                 optionsArg,
                 node,
-                ['buildFieldSourceBaseTargetOptions'],
+                [
+                    'buildFieldSourceTargetOptions',
+                    'buildFieldSourceToBaseTargetOptions',
+                    'buildFieldSourceToMinionTargetOptions',
+                ],
             );
+            const usesFieldSourceActionOptions = expressionContainsCall(
+                sourceFile,
+                optionsArg,
+                node,
+                ['buildFieldSourceActionOptions'],
+            );
+            const resolvedOptionsForAudit = collectOptionObjectLiterals(sourceFile, optionsArg, node);
+            const hasFieldSourceTargetOptionLiteral = hasFieldSourceTargetLiteral(resolvedOptionsForAudit);
+            const hasFieldSourceActionOptionLiteral = hasFieldSourceActionLiteral(resolvedOptionsForAudit);
+            const hasImplicitFieldSourceTargetOptionShape = hasImplicitFieldSourceTargetShape(resolvedOptionsForAudit);
+            const isApprovedGeneric = config.targetType === 'generic' && !!APPROVED_GENERIC_SOURCE_REASONS[config.sourceId];
             calls.push({
                 file: filePath,
                 line,
@@ -568,22 +890,91 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 responseValidationMode: config.responseValidationMode,
                 revalidateOnRespond: config.revalidateOnRespond,
                 hasMulti: config.hasMulti,
-                usesFieldSourceBaseTargetOptions,
+                usesFieldSourceTargetOptions,
+                usesFieldSourceActionOptions,
+                hasFieldSourceTargetLiteral: hasFieldSourceTargetOptionLiteral,
+                hasFieldSourceActionLiteral: hasFieldSourceActionOptionLiteral,
+                hasImplicitFieldSourceTargetShape: hasImplicitFieldSourceTargetOptionShape,
+                valueProps: extractChoiceValuePropNames(resolvedOptionsForAudit),
             });
+            const shouldMirrorEnclosingInteractionSourceIds = config.sourceId === 'unknown' || config.sourceId === '[unknown]';
+            for (const interactionSourceId of shouldMirrorEnclosingInteractionSourceIds ? getEnclosingPromptProgramInteractionSourceIds(node) : []) {
+                calls.push({
+                    file: filePath,
+                    line,
+                    sourceId: interactionSourceId,
+                    targetType: config.targetType,
+                    autoRefresh: config.autoRefresh,
+                    responseValidationMode: config.responseValidationMode,
+                    revalidateOnRespond: config.revalidateOnRespond,
+                    hasMulti: config.hasMulti,
+                    usesFieldSourceTargetOptions,
+                    usesFieldSourceActionOptions,
+                    hasFieldSourceTargetLiteral: hasFieldSourceTargetOptionLiteral,
+                    hasFieldSourceActionLiteral: hasFieldSourceActionOptionLiteral,
+                    hasImplicitFieldSourceTargetShape: hasImplicitFieldSourceTargetOptionShape,
+                    valueProps: extractChoiceValuePropNames(resolvedOptionsForAudit),
+                });
+            }
 
-            const fieldSourceBaseTargetIssue = findFieldSourceBaseTargetIssue(collectOptionObjectLiterals(sourceFile, optionsArg, node));
-            if (fieldSourceBaseTargetIssue) {
+            const fieldSourceInteractionIssue = findFieldSourceInteractionIssue(resolvedOptionsForAudit);
+            if (fieldSourceInteractionIssue) {
                 issues.push({
                     file: filePath,
                     line,
                     sourceId: config.sourceId,
                     issue: '场上来源效果交互载体错误',
-                    detail: fieldSourceBaseTargetIssue,
+                    detail: fieldSourceInteractionIssue,
+                });
+            }
+            if (hasFieldSourceTargetOptionLiteral && !usesFieldSourceTargetOptions) {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源效果绕过共享入口',
+                    detail: '同一种“场上来源对象 -> 目标对象”交互必须使用 buildFieldSourceTargetOptions / buildFieldSourceToBaseTargetOptions / buildFieldSourceToMinionTargetOptions，禁止每张牌手拼 option payload。',
+                });
+            }
+            if (hasFieldSourceActionOptionLiteral && !usesFieldSourceActionOptions) {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源自身可选执行绕过共享入口',
+                    detail: '同一种“场上来源对象本体 -> 执行自身效果”交互必须使用 buildFieldSourceActionOptions，禁止每张牌手拼 option payload。',
+                });
+            }
+            if (hasImplicitFieldSourceTargetOptionShape && !usesFieldSourceTargetOptions) {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源效果疑似手拼来源/目标 payload',
+                    detail: '选项同时携带稳定来源对象和目标对象字段时，必须走 field source-target 共享入口；不要为单张牌手写一套来源先点、目标后点逻辑。',
+                });
+            }
+            if (usesFieldSourceTargetOptions && config.targetType !== 'field-source-target') {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源效果 targetType 声明错误',
+                    detail: `使用 field source-target 共享入口的交互必须通过 buildFieldSourceTargetPromptConfig 声明 targetType: "field-source-target"，当前为 "${config.targetType ?? '未声明'}"。`,
+                });
+            }
+            if (usesFieldSourceActionOptions && config.targetType !== 'field-source-action') {
+                issues.push({
+                    file: filePath,
+                    line,
+                    sourceId: config.sourceId,
+                    issue: '场上来源自身可选执行 targetType 声明错误',
+                    detail: `使用 field source-action 共享入口的交互必须通过 buildFieldSourceActionPromptConfig 声明 targetType: "field-source-action"，当前为 "${config.targetType ?? '未声明'}"。`,
                 });
             }
 
             if (!config.hasTargetType) {
-                const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);
+                const resolvedOptions = resolvedOptionsForAudit;
                 const inferredDirectTargetType = inferDirectTargetTypeFromOptions(sourceFile, optionsArg, node);
 
                 if (checkHandSelectFallback(resolvedOptions)) {
@@ -681,7 +1072,7 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 }
             }
 
-            if (config.hasTargetType && config.targetType !== 'hand') {
+            if (!isApprovedGeneric && config.hasTargetType && config.targetType !== 'hand') {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, node.arguments[3], node);
                 if (checkHandSelectFallback(resolvedOptions)) {
                     issues.push({
@@ -694,7 +1085,7 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 }
             }
 
-            if (config.hasTargetType && config.targetType !== 'minion') {
+            if (!isApprovedGeneric && config.hasTargetType && config.targetType !== 'minion') {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);
                 const inferredDirectTargetType = inferDirectTargetTypeFromOptions(sourceFile, optionsArg, node);
                 const looksLikePureMinionDirect = checkMinionSelectFallback(resolvedOptions) || inferredDirectTargetType === 'minion';
@@ -712,7 +1103,7 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 }
             }
 
-            if (config.hasTargetType && config.targetType !== 'base') {
+            if (!isApprovedGeneric && config.hasTargetType && config.targetType !== 'base') {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);
                 const inferredDirectTargetType = inferDirectTargetTypeFromOptions(sourceFile, optionsArg, node);
                 const looksLikePureBaseDirect = checkBaseSelectFallback(resolvedOptions) || inferredDirectTargetType === 'base';
@@ -730,7 +1121,7 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 }
             }
 
-            if (config.hasTargetType && config.targetType !== 'player') {
+            if (!isApprovedGeneric && config.hasTargetType && config.targetType !== 'player') {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);
                 if (checkPlayerSelectFallback(resolvedOptions)) {
                     issues.push({
@@ -743,7 +1134,7 @@ function analyzeFile(filePath: string): { issues: TargetTypeIssue[]; calls: Simp
                 }
             }
 
-            if (config.hasTargetType && config.targetType !== 'button') {
+            if (!isApprovedGeneric && config.hasTargetType && config.targetType !== 'button') {
                 const resolvedOptions = collectOptionObjectLiterals(sourceFile, optionsArg, node);
                 if (checkButtonSelectFallback(resolvedOptions)) {
                     issues.push({
@@ -867,7 +1258,7 @@ describe('SmashUp Interaction targetType 审计', () => {
         expect(violations, `以下高风险通用交互缺少显式配置：\n${violations.join('\n')}`).toEqual([]);
     });
 
-    it('场上来源随从到目标基地的计分效果必须先点来源本体再点基地', () => {
+    it('场上来源对象到目标对象的交互必须统一走 field-source-target 共享合同', () => {
         const allCalls: SimpleChoiceCallInfo[] = [];
 
         for (const filePath of getFilesToScan()) {
@@ -880,38 +1271,52 @@ describe('SmashUp Interaction targetType 审计', () => {
         }
 
         const violations: string[] = [];
-        for (const sourceId of FIELD_SOURCE_BASE_TARGET_SOURCE_IDS) {
-            const matches = allCalls.filter(call => call.sourceId === sourceId);
-            if (matches.length === 0) {
-                violations.push(`[${sourceId}] 缺少 createSimpleChoice 调用，无法证明计分来源本体交互合同`);
-                continue;
-            }
+        const fieldSourceTargetCalls = allCalls.filter(call =>
+            call.usesFieldSourceTargetOptions
+            || call.hasFieldSourceTargetLiteral
+            || call.hasImplicitFieldSourceTargetShape
+        );
+        if (fieldSourceTargetCalls.length === 0) {
+            violations.push('未发现任何场上来源对象到目标对象的共享交互；如果本族被删除，必须先回写 evidence 降级。');
+        }
 
-            for (const match of matches) {
-                if (match.targetType !== 'minion') {
-                    violations.push(`${match.file}:${match.line} [${sourceId}] targetType 必须是 "minion"，实际 "${match.targetType ?? '未声明'}"`);
-                }
-                if (!match.usesFieldSourceBaseTargetOptions) {
-                    violations.push(`${match.file}:${match.line} [${sourceId}] 必须使用 buildFieldSourceBaseTargetOptions，不能把按钮或基地选项当作发动主路径`);
-                }
+        for (const match of fieldSourceTargetCalls) {
+            if (match.targetType !== 'field-source-target') {
+                violations.push(`${match.file}:${match.line} [${match.sourceId}] 使用场上来源-目标语义时 targetType 必须是 "field-source-target"，实际 "${match.targetType ?? '未声明'}"`);
+            }
+            if (!match.usesFieldSourceTargetOptions) {
+                violations.push(`${match.file}:${match.line} [${match.sourceId}] 必须使用 field source-target 共享入口，不能手拼 payload 或把按钮/目标对象选项当作发动主路径`);
             }
         }
 
         const helperPath = resolve(__dirname, '../domain/abilityHelpers.ts');
         const helperSource = readFileSync(helperPath, 'utf-8');
         const requiredHelperSnippets = [
+            'export const FIELD_SOURCE_TARGET_PROMPT_TARGET_TYPE',
+            'export function buildFieldSourceTargetPromptConfig',
+            'export function buildFieldSourceTargetOptions',
+            'export function buildFieldSourceToBaseTargetOptions',
+            'export function buildFieldSourceToMinionTargetOptions',
+            'FieldObjectType',
+            "targetType: FIELD_SOURCE_TARGET_PROMPT_TARGET_TYPE",
+            'buildFieldSourceTargetOptions<TExtra>',
             "fieldInteractionType: 'source-target'",
-            "fieldSourceType: 'minion'",
-            "fieldTargetType: 'base'",
+            'fieldSourceType: source.type',
+            'fieldTargetType: target.type',
             'sourceUid: source.uid',
+            'cardUid: source.uid',
+            'ongoingUid: source.uid',
             'targetBaseIndex: target.baseIndex',
+            'targetMinionUid: target.uid',
+            'targetMinionDefId: target.defId',
+            'targetDefId: target.defId',
             'minionUid: source.uid',
             'baseIndex: target.baseIndex',
             "displayMode: 'card' as const",
         ];
         for (const snippet of requiredHelperSnippets) {
             if (!helperSource.includes(snippet)) {
-                violations.push(`${helperPath} 缺少共享来源-目标合同片段：${snippet}`);
+                violations.push(`${helperPath} 缺少通用场上来源-目标合同片段：${snippet}`);
             }
         }
 
@@ -922,7 +1327,138 @@ describe('SmashUp Interaction targetType 审计', () => {
             }
         }
 
-        expect(violations, `以下计分来源随从交互仍可能退回按钮/旧字段主路径：\n${violations.join('\n')}`).toEqual([]);
+        expect(violations, `以下计分来源对象交互仍可能退回按钮/旧字段主路径：\n${violations.join('\n')}`).toEqual([]);
+    });
+
+    it('场上来源对象自身可选执行必须统一走 field-source-action 共享合同', () => {
+        const allCalls: SimpleChoiceCallInfo[] = [];
+
+        for (const filePath of getFilesToScan()) {
+            try {
+                const { calls } = analyzeFile(filePath);
+                allCalls.push(...calls);
+            } catch {
+                continue;
+            }
+        }
+
+        const violations: string[] = [];
+        const fieldSourceActionCalls = allCalls.filter(call =>
+            call.usesFieldSourceActionOptions
+            || call.hasFieldSourceActionLiteral
+        );
+        if (fieldSourceActionCalls.length === 0) {
+            violations.push('未发现任何场上来源对象自身可选执行共享交互；如果本族被删除，必须先回写 evidence 降级。');
+        }
+
+        for (const match of fieldSourceActionCalls) {
+            if (match.targetType !== 'field-source-action') {
+                violations.push(`${match.file}:${match.line} [${match.sourceId}] 使用场上来源自身执行语义时 targetType 必须是 "field-source-action"，实际 "${match.targetType ?? '未声明'}"`);
+            }
+            if (!match.usesFieldSourceActionOptions) {
+                violations.push(`${match.file}:${match.line} [${match.sourceId}] 必须使用 field source-action 共享入口，不能手拼 payload 或把按钮当作发动主路径`);
+            }
+        }
+
+        const helperPath = resolve(__dirname, '../domain/abilityHelpers.ts');
+        const helperSource = readFileSync(helperPath, 'utf-8');
+        const requiredHelperSnippets = [
+            'export const FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE',
+            'export function buildFieldSourceActionPromptConfig',
+            'export function buildFieldSourceActionOptions',
+            "targetType: FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE",
+            'buildFieldSourceActionOptions<TExtra extends',
+            "fieldInteractionType: 'source-action'",
+            'fieldSourceType: source.type',
+            'sourceUid: source.uid',
+            'minionUid: source.uid',
+            'cardUid: source.uid',
+            'ongoingUid: source.uid',
+            'titanUid: source.uid',
+            "displayMode: 'card' as const",
+        ];
+        for (const snippet of requiredHelperSnippets) {
+            if (!helperSource.includes(snippet)) {
+                violations.push(`${helperPath} 缺少通用场上来源自身执行合同片段：${snippet}`);
+            }
+        }
+
+        expect(violations, `以下场上来源自身可选执行仍可能退回按钮/手拼主路径：\n${violations.join('\n')}`).toEqual([]);
+    });
+
+    it('计分窗口里的按钮只能承载纯控制或模式选择，不能代理场上对象目标', () => {
+        const allCalls: SimpleChoiceCallInfo[] = [];
+
+        for (const filePath of getFilesToScan()) {
+            try {
+                const { calls } = analyzeFile(filePath);
+                allCalls.push(...calls);
+            } catch {
+                continue;
+            }
+        }
+
+        const violations: string[] = [];
+        const scoringButtonSourceIds = Object.keys(SCORING_BUTTON_SOURCE_REASONS);
+
+        for (const sourceId of scoringButtonSourceIds) {
+            const matches = allCalls.filter(call => call.sourceId === sourceId);
+            if (matches.length === 0) {
+                violations.push(`[${sourceId}] 已登记为计分按钮，但当前扫描不到对应 createSimpleChoice；如果实现已迁移，必须同步删掉登记并回写 evidence。`);
+                continue;
+            }
+
+            for (const match of matches) {
+                if (match.targetType !== 'button') {
+                    violations.push(`${match.file}:${match.line} [${sourceId}] 已登记为计分按钮，但 targetType 是 "${match.targetType ?? '未声明'}"。`);
+                }
+
+                const objectProps = (match.valueProps ?? []).filter(prop =>
+                    (OBJECT_TARGET_VALUE_PROPS as readonly string[]).includes(prop)
+                );
+                if (objectProps.length > 0) {
+                    violations.push(`${match.file}:${match.line} [${sourceId}] 计分按钮携带了对象/目标字段 ${objectProps.join(', ')}；这类字段必须走手牌、场上来源或目标直选，不能由按钮代理。`);
+                }
+            }
+
+            const reason = SCORING_BUTTON_SOURCE_REASONS[sourceId];
+            if (!reason || reason.trim().length === 0) {
+                violations.push(`[${sourceId}] 计分按钮登记缺少现实理由。`);
+            }
+        }
+
+        expect(violations, `以下计分按钮仍可能代理对象选择或缺少审计登记：\n${violations.join('\n')}`).toEqual([]);
+    });
+
+    it('smashup_reaction_choose 中手牌响应必须是卡牌模式，跳过/触发/场上 special 不能冒充手牌', () => {
+        const reactionSessionSource = readFileSync(resolve(__dirname, '../domain/reactionSession.ts'), 'utf-8');
+        const violations: string[] = [];
+
+        const requiredCardModePatterns = [
+            /id: `play_minion:[\s\S]*?value: \{[\s\S]*?kind: 'play_minion'[\s\S]*?displayMode: 'card'/,
+            /id: `play_action:\$\{card\.uid\}:\$\{targetBaseIndex\}:\$\{targetMinion\.uid\}`[\s\S]*?value: \{[\s\S]*?kind: 'play_action'[\s\S]*?targetMinionUid:[\s\S]*?displayMode: 'card'/,
+            /id: `play_action:\$\{card\.uid\}:\$\{targetBaseIndex\}`[\s\S]*?value: \{[\s\S]*?kind: 'play_action'[\s\S]*?targetBaseIndex[\s\S]*?displayMode: 'card'/,
+            /id: `play_action:\$\{card\.uid\}:none`[\s\S]*?value: \{[\s\S]*?kind: 'play_action'[\s\S]*?displayMode: 'card'/,
+        ];
+        for (const pattern of requiredCardModePatterns) {
+            if (!pattern.test(reactionSessionSource)) {
+                violations.push(`缺少手牌响应 card displayMode 片段：${pattern}`);
+            }
+        }
+
+        const requiredButtonModePatterns = [
+            /id: `trigger:\$\{trigger\.id\}`[\s\S]*?value: \{ kind: 'trigger'[\s\S]*?displayMode: 'button'/,
+            /id: `activate_special:minion:[\s\S]*?value: \{[\s\S]*?kind: 'activate_special'[\s\S]*?displayMode: 'button'/,
+            /id: `activate_special:titan:[\s\S]*?value: \{[\s\S]*?kind: 'activate_special'[\s\S]*?displayMode: 'button'/,
+            /id: 'pass'[\s\S]*?value: \{ kind: 'pass' \}[\s\S]*?displayMode: 'button'/,
+        ];
+        for (const pattern of requiredButtonModePatterns) {
+            if (!pattern.test(reactionSessionSource)) {
+                violations.push(`缺少非手牌响应 button displayMode 片段：${pattern}`);
+            }
+        }
+
+        expect(violations, `smashup_reaction_choose 选项显示职责异常：\n${violations.join('\n')}`).toEqual([]);
     });
 
     it('同一 sourceId 不允许混用多种 targetType 语义', () => {
@@ -1021,7 +1557,7 @@ describe('SmashUp Interaction targetType 审计', () => {
         expect(violations, `以下通用弹窗交互缺少显式响应语义：\n${violations.join('\n')}`).toEqual([]);
     });
 
-    it('所有 generic targetType 都必须登记保留原因', () => {
+    it('高风险 generic targetType 必须登记保留原因，低风险 generic 不强制逐项白名单', () => {
         const allCalls: SimpleChoiceCallInfo[] = [];
 
         for (const filePath of getFilesToScan()) {
@@ -1045,7 +1581,7 @@ describe('SmashUp Interaction targetType 审计', () => {
 
         const approvedSourceIds = Object.keys(APPROVED_GENERIC_SOURCE_REASONS).sort();
 
-        const missingReasons = genericSourceIds.filter(sourceId => {
+        const emptyApprovalReasons = approvedSourceIds.filter(sourceId => {
             const reason = APPROVED_GENERIC_SOURCE_REASONS[sourceId];
             return typeof reason !== 'string' || reason.trim().length === 0;
         });
@@ -1053,8 +1589,8 @@ describe('SmashUp Interaction targetType 审计', () => {
         const staleApprovals = approvedSourceIds.filter(sourceId => !genericSourceIds.includes(sourceId));
 
         const violations: string[] = [];
-        if (missingReasons.length > 0) {
-            violations.push(`缺少登记理由的 generic sourceId:\n${missingReasons.join('\n')}`);
+        if (emptyApprovalReasons.length > 0) {
+            violations.push(`已登记但缺少现实理由的 generic sourceId:\n${emptyApprovalReasons.join('\n')}`);
         }
         if (staleApprovals.length > 0) {
             violations.push(`已不再使用 generic 的登记项:\n${staleApprovals.join('\n')}`);

@@ -65,6 +65,67 @@ const ALIENS_OR_QUERY = {
     seed: 717171,
 };
 
+async function advanceToAlienScoutReturnPrompt(
+    page: { waitForTimeout: (ms: number) => Promise<void>; waitForFunction: (...args: any[]) => Promise<any> },
+    game: {
+        getState: () => Promise<any>;
+        waitForInteraction: (sourceId: string, timeout?: number) => Promise<void>;
+        selectOption: (optionId: string) => Promise<void>;
+    },
+    scoutUid: string,
+) {
+    for (let step = 0; step < 12; step += 1) {
+        const state = await game.getState();
+        const sourceId = state?.sys?.interaction?.current?.data?.sourceId ?? null;
+
+        if (sourceId === 'alien_scout_return') {
+            await page.waitForFunction(
+                (expectedScoutUid) => {
+                    const current = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current;
+                    const options = current?.data?.options ?? [];
+                    return current?.data?.sourceId === 'alien_scout_return'
+                        && options.some((option: any) => (
+                            option?.value?.sourceUid === expectedScoutUid
+                            || option?.value?.minionUid === expectedScoutUid
+                        ));
+                },
+                scoutUid,
+                { timeout: 5000, polling: 200 },
+            );
+            return;
+        }
+
+        if (sourceId === 'smashup_reaction_choose') {
+            const triggerOptionId = await page.waitForFunction(
+                (expectedScoutUid) => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    const current = state?.sys?.interaction?.current;
+                    if (current?.data?.sourceId !== 'smashup_reaction_choose') return null;
+                    const triggers = state?.core?.triggerQueue ?? [];
+                    const options = current?.data?.options ?? [];
+                    const match = options.find((option: any) => {
+                        const triggerId = option?.value?.triggerId;
+                        const trigger = triggers.find((candidate: any) => candidate?.id === triggerId);
+                        return option?.value?.kind === 'trigger'
+                            && trigger?.sourceDefId === 'alien_scout'
+                            && trigger?.sourceCardUid === expectedScoutUid;
+                    });
+                    return match?.id ?? null;
+                },
+                scoutUid,
+                { timeout: 5000, polling: 200 },
+            );
+            await game.selectOption(await triggerOptionId.jsonValue());
+            await game.waitForInteraction('alien_scout_return', 10000);
+            continue;
+        }
+
+        await page.waitForTimeout(300);
+    }
+
+    throw new Error(`未能推进到侦察兵 ${scoutUid} 的返回手牌交互`);
+}
+
 test.describe('SmashUp - 核心流程与交互稳定性', () => {
     test('主流程：打出随从到基地后结束回合，应切到对手的出牌阶段', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
@@ -311,13 +372,16 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         }, { timeout: 10000 });
 
         await game.advancePhase();
-        await game.waitForInteraction('alien_scout_return', 20000);
+        await advanceToAlienScoutReturnPrompt(page, game, 'score-scout');
 
         await expect(page.getByText(/侦察兵：基地记分后，是否将此侦察兵返回手牌/i)).toBeVisible();
         await expect(page.getByRole('button', { name: /留在基地/i })).toBeVisible();
-        await game.screenshot('legacy-or-alien-scout-prompt-visible', testInfo);
+        await expect(page.getByRole('button', { name: /返回手牌/i })).toHaveCount(0);
+        const firstScoutSource = page.locator('[data-minion-uid="score-scout"][data-highlighted="true"]');
+        await expect(firstScoutSource).toBeVisible();
+        await game.screenshot('legacy-or-alien-scout-source-highlighted', testInfo);
 
-        await page.getByRole('button', { name: /返回手牌/i }).click();
+        await firstScoutSource.click();
         await page.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'score-scout') === true;
@@ -328,7 +392,11 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
                 filename: 'legacy-or-alien-scout-return-in-hand.png',
             }),
         });
+
+        await advanceToAlienScoutReturnPrompt(page, game, 'score-scout-b');
         await expect(page.getByText(/侦察兵：基地记分后，是否将此侦察兵返回手牌/i)).toBeVisible();
+        await expect(page.locator('[data-minion-uid="score-scout-b"][data-highlighted="true"]')).toBeVisible();
+        await expect(page.getByRole('button', { name: /返回手牌/i })).toHaveCount(0);
         await page.getByRole('button', { name: /留在基地/i }).click();
         await game.waitForNoInteraction(20000);
 

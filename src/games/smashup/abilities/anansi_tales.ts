@@ -52,6 +52,9 @@ type AnansiPromptContext = {
     now: number;
 };
 
+const ANANSI_POT_OF_BEANS_GIFT_PLAYER_SOURCE_ID = 'anansi_tales_pot_of_beans_gift_player';
+const ANANSI_POT_OF_BEANS_COUNTER_SOURCE_ID = 'anansi_tales_pot_of_beans_counter_allocation';
+
 type GiftCardChoice = {
     cardUid?: string;
     defId?: string;
@@ -90,6 +93,7 @@ type GiftCardsAfterTransferContext = GiftCardsContext & {
 
 type GiftSelfContext = AnansiPromptContext & {
     sourceId: string;
+    effectSourceId?: string;
     cardUid: string;
     defId: string;
     fromPlayerId?: PlayerId;
@@ -117,9 +121,10 @@ type PotOfWisdomContext = AnansiPromptContext & {
 
 type CounterPromptContext = AnansiPromptContext & {
     sourceId: string;
+    effectSourceId?: string;
     counterCount: number;
     ownMinionsOnly?: boolean;
-    giftSelf?: { cardUid: string; defId: string };
+    giftSelf?: { cardUid: string; defId: string; sourceId?: string; effectSourceId?: string };
 };
 
 type MoveSourceContext = AnansiPromptContext & {
@@ -591,7 +596,7 @@ const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, 
     interactionSourceIds: [
         'anansi_tales_let_it_be_full_and_eat',
         'anansi_tales_feather_gifts',
-        'anansi_tales_pot_of_beans',
+        ANANSI_POT_OF_BEANS_GIFT_PLAYER_SOURCE_ID,
         'anansi_tales_ear_of_corn',
         'anansi_tales_the_perfect_gift_gift',
         'anansi_tales_anansi_the_spider_gift',
@@ -623,13 +628,14 @@ const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, 
         const { context, state, value, timestamp } = args;
         const choice = value as { targetPlayerId?: PlayerId } | undefined;
         if (!choice?.targetPlayerId || choice.targetPlayerId === context.playerId) return { events: [] };
+        const effectSourceId = context.effectSourceId ?? context.sourceId;
         const transferEvent = buildGiftSelfEvent(
             state.core,
             context.fromPlayerId ?? context.playerId,
             context.cardUid,
             context.defId,
             choice.targetPlayerId,
-            context.sourceId,
+            effectSourceId,
             timestamp,
         );
         const events: SmashUpEvent[] = [transferEvent];
@@ -649,7 +655,7 @@ const giftSelfPromptProgram = createPromptProgram<GiftSelfContext, SmashUpCore, 
 const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'anansi_tales_counter_allocation',
     interactionSourceIds: [
-        'anansi_tales_pot_of_beans',
+        ANANSI_POT_OF_BEANS_COUNTER_SOURCE_ID,
         'anansi_tales_onini_the_python_counter',
     ],
     buildInteraction: (context) => {
@@ -690,16 +696,17 @@ const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCo
     },
     onResolve: ({ context, state, value, timestamp }) => {
         const choices = (Array.isArray(value) ? value : [value]) as MinionChoice[];
+        const effectSourceId = context.effectSourceId ?? context.sourceId;
         const valid = choices.filter(choice =>
             choice?.minionUid
             && choice.baseIndex !== undefined
             && state.core.bases[choice.baseIndex]?.minions.some(minion => minion.uid === choice.minionUid));
         const events: SmashUpEvent[] = [];
         if (valid.length === 1) {
-            events.push(addPowerCounter(valid[0].minionUid!, valid[0].baseIndex!, context.counterCount, context.sourceId, timestamp));
+            events.push(addPowerCounter(valid[0].minionUid!, valid[0].baseIndex!, context.counterCount, effectSourceId, timestamp));
         } else {
             for (const choice of valid.slice(0, context.counterCount)) {
-                events.push(addPowerCounter(choice.minionUid!, choice.baseIndex!, 1, context.sourceId, timestamp));
+                events.push(addPowerCounter(choice.minionUid!, choice.baseIndex!, 1, effectSourceId, timestamp));
             }
         }
         if (context.giftSelf) {
@@ -709,7 +716,8 @@ const counterPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCo
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
-                    sourceId: context.sourceId,
+                    sourceId: context.giftSelf.sourceId ?? context.sourceId,
+                    effectSourceId: context.giftSelf.effectSourceId ?? effectSourceId,
                     ...context.giftSelf,
                 } satisfies GiftSelfContext,
                 nextProgram: giftSelfPromptProgram,
@@ -874,7 +882,8 @@ const deckActionSearchPromptProgram = createPromptProgram<DeckActionSearchContex
             })),
             {
                 sourceId: context.sourceId,
-                targetType: 'hand',
+                targetType: 'generic',
+                autoRefresh: 'deck',
                 responseValidationMode: 'live',
             },
         );
@@ -1308,7 +1317,8 @@ function potOfBeans(ctx: AbilityContext): AbilityResult {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
-            sourceId: 'anansi_tales_pot_of_beans',
+            sourceId: ANANSI_POT_OF_BEANS_GIFT_PLAYER_SOURCE_ID,
+            effectSourceId: 'anansi_tales_pot_of_beans',
             cardUid: ctx.cardUid,
             defId: ctx.defId,
         }));
@@ -1317,9 +1327,15 @@ function potOfBeans(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
-        sourceId: 'anansi_tales_pot_of_beans',
+        sourceId: ANANSI_POT_OF_BEANS_COUNTER_SOURCE_ID,
+        effectSourceId: 'anansi_tales_pot_of_beans',
         counterCount: 2,
-        giftSelf: { cardUid: ctx.cardUid, defId: ctx.defId },
+        giftSelf: {
+            cardUid: ctx.cardUid,
+            defId: ctx.defId,
+            sourceId: ANANSI_POT_OF_BEANS_GIFT_PLAYER_SOURCE_ID,
+            effectSourceId: 'anansi_tales_pot_of_beans',
+        },
     }));
 }
 

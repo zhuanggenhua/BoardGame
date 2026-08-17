@@ -3,7 +3,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import {
     SU_COMMANDS,
@@ -373,6 +373,49 @@ describe('DIY 杀人狂 abilities', () => {
         expect(result.success, result.error).toBe(true);
         expect(result.finalState.core.bases[0].minions.some(minion => minion.uid === 'killer1')).toBe(false);
         expect(result.finalState.core.bases[1].minions.some(minion => minion.uid === 'killer1')).toBe(true);
+    });
+
+    it('麦克尔·麦尔斯计分前先以本体作为来源，再选择同基地弱随从摧毁', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [
+                makeMinion('michael', 'diy_killers_michael_myers', '0', 5),
+                makeMinion('weak1', 'test_weak', '1', 2),
+            ])],
+        });
+
+        const triggered = fireTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            now: 20,
+        });
+
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'diy_killers_michael_myers');
+        expect(prompt.options).toHaveLength(2);
+        const targetOption = getPromptOption(
+            prompt,
+            option =>
+                option.value?.sourceUid === 'michael'
+                && option.value?.minionUid === 'michael'
+                && option.value?.fieldSourceType === 'minion'
+                && option.value?.targetMinionUid === 'weak1',
+            'Michael Myers field source-target option',
+        );
+        expect(targetOption.value).toMatchObject({
+            fieldInteractionType: 'source-target',
+            fieldTargetType: 'minion',
+            targetMinionDefId: 'test_weak',
+        });
+
+        const resolved = respondToPrompt(triggered.matchState!, targetOption.id);
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'weak1')).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'michael')).toBe(true);
     });
 
     it('梦魇世界计分前摧毁所有力量最低的仆从', () => {

@@ -7,6 +7,8 @@ import {
     addTempPower,
     buildAbilityFeedback,
     buildStandardDrawEvents,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToBaseTargetOptions,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -55,10 +57,12 @@ import type {
     ExtraTurnQueuedEvent,
     FusionCardDef,
     DeckReorderedEvent,
+    AttachedActionOnMinion,
     MinionCardDef,
     MinionOnBase,
     MinionPlayedEvent,
     OngoingDetachedEvent,
+    OngoingActionOnBase,
     SmashUpCore,
     SmashUpEvent,
 } from '../domain/types';
@@ -888,34 +892,19 @@ function cyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): TriggerResult 
             .map((candidate, index) => ({ base: candidate, index }))
             .filter(candidate => candidate.index !== ctx.baseIndex);
         if (destinations.length === 0 || !ctx.matchState) return { events: [] };
-        const moveChoices: FlyingMonkeyMoveChoice[] = destinations.map(({ index }) => ({
-            minionUid: minion.uid,
-            actionUid: action.uid,
+        return queueFlyingMonkeyMoveInteraction({
+            matchState: ctx.matchState,
+            state: ctx.state,
+            minion,
+            action,
             fromBaseIndex: ctx.baseIndex,
-            toBaseIndex: index,
+            destinations,
+            now: ctx.now,
+            title: '飞猴：选择要移动到的另一基地',
+            titleKey: 'ui.cyborg_apes_flying_monkey_move_title',
             reason: 'cyborg_apes_flying_monkey',
-        }));
-        const interaction = createSimpleChoice(
-            `cyborg_apes_flying_monkey_move_${ctx.now}`,
-            getOngoingActionControllerId(action),
-            '飞猴：选择要移动到的另一基地',
-            [
-                createSkipOption('跳过（照常进入弃牌堆）', 'ui.cyborg_apes_flying_monkey_skip_discard_option'),
-                ...destinations.map(({ base: targetBase, index }, choiceIndex) => ({
-                    id: `base-${index}`,
-                    label: getBaseDef(targetBase.defId)?.name ?? targetBase.defId,
-                    value: moveChoices[choiceIndex],
-                    displayMode: 'button' as const,
-                })),
-            ],
-            {
-                sourceId: 'cyborg_apes_flying_monkey_move',
-                targetType: 'button',
-                titleKey: 'ui.cyborg_apes_flying_monkey_move_title',
-            },
-        );
-        interaction.data.allowedFlyingMonkeyMoves = moveChoices;
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+            interactionIdPrefix: 'cyborg_apes_flying_monkey_move',
+        });
     }
     return { events: [] };
 }
@@ -961,34 +950,19 @@ function shapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): TriggerR
         .map((candidate, index) => ({ base: candidate, index }))
         .filter(candidate => candidate.index !== ctx.baseIndex);
     if (destinations.length === 0 || !ctx.matchState) return { events: [] };
-    const moveChoices: FlyingMonkeyMoveChoice[] = destinations.map(({ index }) => ({
-        minionUid: host.minion.uid,
-        actionUid: bondingAction.uid,
+    return queueFlyingMonkeyMoveInteraction({
+        matchState: ctx.matchState,
+        state: ctx.state,
+        minion: host.minion,
+        action: bondingAction,
         fromBaseIndex: host.baseIndex,
-        toBaseIndex: index,
+        destinations,
+        now: ctx.now,
+        title: '细胞结合-飞猴：选择要移动到的另一基地',
+        titleKey: 'ui.shapeshifters_cellular_bonding_flying_monkey_move_title',
         reason: 'shapeshifters_cellular_bonding_flying_monkey',
-    }));
-    const interaction = createSimpleChoice(
-        `shapeshifters_cellular_bonding_flying_monkey_move_${ctx.now}`,
-        getOngoingActionControllerId(bondingAction),
-        '细胞结合-飞猴：选择要移动到的另一基地',
-        [
-            createSkipOption('跳过（照常进入弃牌堆）', 'ui.cyborg_apes_flying_monkey_skip_discard_option'),
-            ...destinations.map(({ base: targetBase, index }, choiceIndex) => ({
-                id: `base-${index}`,
-                label: getBaseDef(targetBase.defId)?.name ?? targetBase.defId,
-                value: moveChoices[choiceIndex],
-                displayMode: 'button' as const,
-            })),
-        ],
-        {
-            sourceId: 'cyborg_apes_flying_monkey_move',
-            targetType: 'button',
-            titleKey: 'ui.shapeshifters_cellular_bonding_flying_monkey_move_title',
-        },
-    );
-    interaction.data.allowedFlyingMonkeyMoves = moveChoices;
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        interactionIdPrefix: 'shapeshifters_cellular_bonding_flying_monkey_move',
+    });
 }
 
 function superSpiesSpy(ctx: AbilityContext): AbilityResult {
@@ -2049,14 +2023,112 @@ type WormholeMinionChoice = { minionUid?: string };
 type FlyingMonkeyMoveChoice = {
     minionUid?: string;
     actionUid?: string;
+    cardUid?: string;
+    ongoingUid?: string;
     fromBaseIndex?: number;
+    sourceBaseIndex?: number;
     toBaseIndex?: number;
+    targetBaseIndex?: number;
+    reason?: string;
+};
+type FlyingMonkeyResolvedMove = {
+    minionUid: string;
+    actionUid: string;
+    fromBaseIndex: number;
+    toBaseIndex: number;
     reason?: string;
 };
 type OperativeBottomChoice = { targetPlayerId: PlayerId; cardUid: string };
 
+function normalizeFlyingMonkeyMove(selected: FlyingMonkeyMoveChoice | undefined): FlyingMonkeyResolvedMove | undefined {
+    if (!selected) return undefined;
+    const actionUid = selected.actionUid ?? selected.cardUid ?? selected.ongoingUid;
+    const fromBaseIndex = selected.fromBaseIndex ?? selected.sourceBaseIndex;
+    const toBaseIndex = selected.toBaseIndex ?? selected.targetBaseIndex;
+    if (!selected.minionUid || !actionUid || fromBaseIndex === undefined || toBaseIndex === undefined) {
+        return undefined;
+    }
+    return {
+        minionUid: selected.minionUid,
+        actionUid,
+        fromBaseIndex,
+        toBaseIndex,
+        reason: selected.reason,
+    };
+}
+
+function buildFlyingMonkeyAllowedMoves(params: {
+    minion: MinionOnBase;
+    action: OngoingActionOnBase | AttachedActionOnMinion;
+    fromBaseIndex: number;
+    destinations: { index: number }[];
+    reason: string;
+}): FlyingMonkeyResolvedMove[] {
+    return params.destinations.map(({ index }) => ({
+        minionUid: params.minion.uid,
+        actionUid: params.action.uid,
+        fromBaseIndex: params.fromBaseIndex,
+        toBaseIndex: index,
+        reason: params.reason,
+    }));
+}
+
+function queueFlyingMonkeyMoveInteraction(params: {
+    matchState: MatchState<SmashUpCore>;
+    state: SmashUpCore;
+    minion: MinionOnBase;
+    action: OngoingActionOnBase | AttachedActionOnMinion;
+    fromBaseIndex: number;
+    destinations: { base: SmashUpCore['bases'][number]; index: number }[];
+    now: number;
+    title: string;
+    titleKey: string;
+    reason: string;
+    interactionIdPrefix: string;
+}): TriggerResult {
+    const allowedMoves = buildFlyingMonkeyAllowedMoves({
+        minion: params.minion,
+        action: params.action,
+        fromBaseIndex: params.fromBaseIndex,
+        destinations: params.destinations,
+        reason: params.reason,
+    });
+    const interaction = createSimpleChoice(
+        `${params.interactionIdPrefix}_${params.now}`,
+        getOngoingActionControllerId(params.action),
+        params.title,
+        [
+            createSkipOption('跳过（照常进入弃牌堆）', 'ui.cyborg_apes_flying_monkey_skip_discard_option'),
+            ...buildFieldSourceToBaseTargetOptions(
+                {
+                    type: 'action',
+                    uid: params.action.uid,
+                    defId: params.action.defId,
+                    fromBaseIndex: params.fromBaseIndex,
+                },
+                params.destinations.map(({ base, index }) => ({
+                    baseIndex: index,
+                    label: getBaseDef(base.defId)?.name ?? base.defId,
+                })),
+                params.state,
+                {
+                    minionUid: params.minion.uid,
+                    actionUid: params.action.uid,
+                    reason: params.reason,
+                },
+            ),
+        ],
+        buildFieldSourceTargetPromptConfig({
+            sourceId: 'cyborg_apes_flying_monkey_move',
+            titleKey: params.titleKey,
+        }),
+    );
+    interaction.data.allowedFlyingMonkeyMoves = allowedMoves;
+    return { events: [], matchState: queueInteraction(params.matchState, interaction) };
+}
+
 function isAllowedFlyingMonkeyMove(
-    selected: FlyingMonkeyMoveChoice,
+    selected: FlyingMonkeyResolvedMove,
     interactionData: Record<string, unknown> | undefined,
 ): boolean {
     const allowedMoves = Array.isArray(interactionData?.allowedFlyingMonkeyMoves)
@@ -2064,7 +2136,7 @@ function isAllowedFlyingMonkeyMove(
         : [];
     return allowedMoves.some((move): boolean => {
         if (!move || typeof move !== 'object') return false;
-        const candidate = move as FlyingMonkeyMoveChoice;
+        const candidate = move as FlyingMonkeyResolvedMove;
         return candidate.minionUid === selected.minionUid
             && candidate.actionUid === selected.actionUid
             && candidate.fromBaseIndex === selected.fromBaseIndex
@@ -3247,16 +3319,14 @@ export function registerYuanhouAbilities(): void {
     registerInteractionHandler('cyborg_apes_flying_monkey_move', (state, _playerId, value, _iData, _random, timestamp) => {
         const selected = value as FlyingMonkeyMoveChoice | { skip?: true } | undefined;
         if (!selected || 'skip' in selected) return { state, events: [] };
-        if (!selected.minionUid || !selected.actionUid || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+        const move = normalizeFlyingMonkeyMove(selected);
+        if (!move || !isAllowedFlyingMonkeyMove(move, _iData)) return { state, events: [] };
+        const minion = state.core.bases[move.fromBaseIndex]?.minions.find(candidate => candidate.uid === move.minionUid);
+        const action = minion?.attachedActions.find(candidate => candidate.uid === move.actionUid);
+        if (!minion || !action || move.toBaseIndex === move.fromBaseIndex || !state.core.bases[move.toBaseIndex]) {
             return { state, events: [] };
         }
-        if (!isAllowedFlyingMonkeyMove(selected, _iData)) return { state, events: [] };
-        const minion = state.core.bases[selected.fromBaseIndex]?.minions.find(candidate => candidate.uid === selected.minionUid);
-        const action = minion?.attachedActions.find(candidate => candidate.uid === selected.actionUid);
-        if (!minion || !action || selected.toBaseIndex === selected.fromBaseIndex || !state.core.bases[selected.toBaseIndex]) {
-            return { state, events: [] };
-        }
-        const reason = selected.reason ?? 'cyborg_apes_flying_monkey';
+        const reason = move.reason ?? 'cyborg_apes_flying_monkey';
         const sourceControllerId = getOngoingActionControllerId(action);
         return {
             state,
@@ -3264,15 +3334,15 @@ export function registerYuanhouAbilities(): void {
                 ...buildValidatedMoveEvents(state.core, {
                     minionUid: minion.uid,
                     minionDefId: minion.defId,
-                    fromBaseIndex: selected.fromBaseIndex,
-                    toBaseIndex: selected.toBaseIndex,
-                    toBaseDefId: state.core.bases[selected.toBaseIndex]?.defId,
+                    fromBaseIndex: move.fromBaseIndex,
+                    toBaseIndex: move.toBaseIndex,
+                    toBaseDefId: state.core.bases[move.toBaseIndex]?.defId,
                     reason,
                     now: timestamp,
                     sourcePlayerId: sourceControllerId,
                     sourceDefId: action.defId,
                     sourceControllerId,
-                    sourceBaseIndex: selected.fromBaseIndex,
+                    sourceBaseIndex: move.fromBaseIndex,
                 }),
                 detachOngoing(action.uid, action.defId, action.ownerId, reason, timestamp),
             ],

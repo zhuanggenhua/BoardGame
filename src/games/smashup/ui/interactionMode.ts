@@ -107,6 +107,7 @@ export function resolveSmashUpHandPromptUiMode({
 }: ResolveHandPromptUiModeInput): SmashUpHandPromptUiMode {
     if (!isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID })) return 'none';
     if (targetType !== 'hand') return 'none';
+    if (currentPrompt?.multi) return 'overlay';
     if (hasEnabledCardOptionOutsideHand(currentPrompt, hand)) return 'overlay';
     return 'direct';
 }

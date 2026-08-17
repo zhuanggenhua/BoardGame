@@ -502,6 +502,111 @@ describe('MageWarsBoard FX wiring', () => {
         }
     });
 
+    it('keeps a defeated attack target visually anchored until the attack FX completes', async () => {
+        vi.useFakeTimers();
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const attacker = creatureObject('mwobj-left-finisher', '0', 2906, '击败来源', ARENA_ZONE_IDS.A2);
+        const targetBefore = creatureObject('mwobj-right-defeated', '1', 2909, '击败目标', ARENA_ZONE_IDS.B2);
+        const beforeCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [attacker.id]: attacker,
+                [targetBefore.id]: targetBefore,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [attacker.id] }
+                    : zone.id === ARENA_ZONE_IDS.B2
+                        ? { ...zone, objectIds: [targetBefore.id] }
+                        : zone
+            )),
+        };
+        const afterCore: MageWarsCore = {
+            ...beforeCore,
+            objects: {
+                [attacker.id]: attacker,
+            },
+            arena: beforeCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.B2
+                    ? { ...zone, objectIds: [] }
+                    : zone
+            )),
+        };
+        const sysWithDefeatingAttack = {
+            eventStream: {
+                entries: [
+                    {
+                        id: 1,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
+                            payload: {
+                                ownerId: '0',
+                                attackerObjectId: attacker.id,
+                                attackProfileId: 'bite',
+                                targetObjectId: targetBefore.id,
+                                targetZoneId: ARENA_ZONE_IDS.B2,
+                                diceResults: [3],
+                                baseDamage: 4,
+                            },
+                            timestamp: 1,
+                        },
+                    },
+                    {
+                        id: 2,
+                        event: {
+                            type: 'DAMAGE_DEALT',
+                            payload: {
+                                targetId: targetBefore.id,
+                                amount: 4,
+                                actualDamage: 4,
+                                sourceAbilityId: 'test.attack',
+                            },
+                            timestamp: 2,
+                        },
+                    },
+                    {
+                        id: 3,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                            payload: {
+                                objectId: targetBefore.id,
+                                ownerId: targetBefore.ownerId,
+                                sourceAbilityId: 'test.attack',
+                            },
+                            timestamp: 3,
+                        },
+                    },
+                ],
+                maxEntries: 200,
+                nextId: 4,
+            },
+        };
+
+        try {
+            const { rerender } = render(<MageWarsBoard {...boardProps(beforeCore)} />);
+
+            act(() => {
+                rerender(<MageWarsBoard {...boardProps(afterCore, '0', sysWithDefeatingAttack)} />);
+            });
+
+            const heldTargetCard = screen.getByText('击败目标').closest('[data-testid="mage-wars-zone-field-card"]');
+            expect(heldTargetCard).not.toBeNull();
+            expect(heldTargetCard?.getAttribute('data-object-id')).toBe(targetBefore.id);
+            expect(heldTargetCard?.getAttribute('data-visual-held')).toBe('true');
+            expect(screen.queryByTestId('mage-wars-fx-attack-travel')).not.toBeNull();
+
+            act(() => {
+                advanceSharedFxClockDelay(4200);
+            });
+            await act(async () => {});
+
+            expect(screen.queryByText('击败目标')).toBeNull();
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
     it('renders summons through the shared board summon preset', () => {
         const onImpact = vi.fn();
         const event: FxEvent = {

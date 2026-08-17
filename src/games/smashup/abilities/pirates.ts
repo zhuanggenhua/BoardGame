@@ -6,7 +6,7 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, buildFieldSourceBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
+import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, buildFieldSourceToBaseTargetOptions, buildFieldSourceTargetPromptConfig, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import type { SmashUpEvent, MinionCardDef, SmashUpCore } from '../domain/types';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
@@ -1491,8 +1491,9 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
             context.current.controller,
             `海盗王可发动：点击海盗王移动到即将计分的「${baseName}」`,
             [
-                ...buildFieldSourceBaseTargetOptions(
+                ...buildFieldSourceToBaseTargetOptions(
                     {
+                        type: 'minion',
                         uid: context.current.uid,
                         defId: context.current.defId,
                         fromBaseIndex: context.current.fromBaseIndex,
@@ -1506,12 +1507,11 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
                 ),
                 { id: 'no', label: '不发动', labelKey: 'ui.pirate_king_stay_option', value: { move: false }, displayMode: 'button' as const },
             ],
-            {
+            buildFieldSourceTargetPromptConfig({
                 sourceId: 'pirate_king_move',
-                targetType: 'minion',
                 titleKey: 'ui.pirate_king_move_title',
                 titleParams: { baseName },
-            },
+            }),
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1564,8 +1564,9 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
         const otherBases = context.matchState.core.bases
             .map((b, i) => ({ baseIndex: i, label: getBaseDef(b.defId)?.name ?? `基地 ${i + 1}` }))
             .filter((b) => b.baseIndex !== context.mateBaseIndex);
-        const baseOptions = buildFieldSourceBaseTargetOptions(
+        const baseOptions = buildFieldSourceToBaseTargetOptions(
             {
+                type: 'minion',
                 uid: context.mateUid,
                 defId: context.mateDefId,
                 fromBaseIndex: context.mateBaseIndex ?? context.scoringBaseIndex,
@@ -1581,12 +1582,11 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
                 { id: 'skip', label: '跳过（不移动大副）', labelKey: 'ui.pirate_first_mate_skip_move_option', value: { skip: true }, displayMode: 'button' as const },
                 ...baseOptions,
             ] as any[],
-            {
+            buildFieldSourceTargetPromptConfig({
                 sourceId: 'pirate_first_mate_choose_base',
-                targetType: 'minion',
                 titleKey: 'ui.pirate_first_mate_choose_base_title',
                 titleParams: { mateName },
-            },
+            }),
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {

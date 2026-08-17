@@ -8,6 +8,8 @@ import {
     addPermanentPower,
     addPowerCounter,
     addTempPower,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToMinionTargetOptions,
     buildMinionTargetOptions,
     buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
@@ -1525,9 +1527,21 @@ function michaelMyersBeforeScoring(ctx: TriggerContext): TriggerResult {
         '麦克尔·麦尔斯：选择是否摧毁这里印刷力量≤3的仆从',
         [
             createSkipOption('不摧毁', 'ui.skip'),
-            ...buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.sourceControllerId, effectType: 'destroy' }),
+            ...buildFieldSourceToMinionTargetOptions(
+                {
+                    type: 'minion',
+                    uid: ctx.sourceCardUid,
+                    defId: 'diy_killers_michael_myers',
+                    baseIndex: ctx.sourceBaseIndex,
+                },
+                targets,
+                { state: ctx.state, sourcePlayerId: ctx.sourceControllerId, effectType: 'destroy' },
+            ),
         ],
-        { sourceId: 'diy_killers_michael_myers', targetType: 'minion', titleKey: 'ui.diy_killers_michael_myers_title' },
+        buildFieldSourceTargetPromptConfig({
+            sourceId: 'diy_killers_michael_myers',
+            titleKey: 'ui.diy_killers_michael_myers_title',
+        }),
     );
     (interaction.data as Record<string, unknown>).continuationContext = {
         sourceCardUid: ctx.sourceCardUid,
@@ -1539,11 +1553,22 @@ function michaelMyersBeforeScoring(ctx: TriggerContext): TriggerResult {
 const michaelMyersHandler: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
     if ((value as { skip?: boolean } | undefined)?.skip) return { state, events: [] };
     const context = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
-    const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
-    if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { state, events: [] };
+    const selected = value as {
+        minionUid?: string;
+        targetMinionUid?: string;
+        targetUid?: string;
+        defId?: string;
+        minionDefId?: string;
+        targetMinionDefId?: string;
+        targetDefId?: string;
+        baseIndex?: number;
+    } | undefined;
+    const targetMinionUid = selected?.targetMinionUid ?? selected?.targetUid ?? selected?.minionUid;
+    const targetDefId = selected?.targetMinionDefId ?? selected?.targetDefId ?? selected?.minionDefId ?? selected?.defId;
+    if (!targetMinionUid || !targetDefId || selected?.baseIndex === undefined) return { state, events: [] };
     const events = buildValidatedDestroyEvents(state, {
-        minionUid: selected.minionUid,
-        minionDefId: selected.defId,
+        minionUid: targetMinionUid,
+        minionDefId: targetDefId,
         fromBaseIndex: selected.baseIndex,
         destroyerId: playerId,
         reason: 'diy_killers_michael_myers',

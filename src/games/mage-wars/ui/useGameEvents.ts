@@ -4,7 +4,7 @@ import { useVisualStateBuffer, type UseVisualStateBufferReturn } from '../../../
 import type { FxBus } from '../../../engine/fx';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import type { MatchState } from '../../../engine/types';
-import type { MageWarsCore, MageWarsEvent } from '../domain';
+import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { mapMageWarsEventToFx } from './eventFxMapper';
 
@@ -15,6 +15,7 @@ interface UseMageWarsGameEventsParams {
 
 interface UseMageWarsGameEventsResult {
     damageBuffer: UseVisualStateBufferReturn;
+    heldObjects: MageWarsArenaObjectState[];
     onEffectImpact: (id: string) => void;
     onEffectComplete: (id: string) => void;
     debug: {
@@ -34,17 +35,24 @@ export function mageWarsObjectDamageKey(objectId: string): string {
     return `mage-wars:object-damage:${objectId}`;
 }
 
-function getDamageTargetKey(core: MageWarsCore, targetId: string): string | null {
+function getDamageTargetKey(core: MageWarsCore, targetId: string, previousCore?: MageWarsCore): string | null {
     if (core.players[targetId]) return mageWarsPlayerDamageKey(targetId);
-    if (core.objects[targetId]) return mageWarsObjectDamageKey(targetId);
+    if (core.objects[targetId] ?? previousCore?.objects[targetId]) return mageWarsObjectDamageKey(targetId);
     return null;
 }
 
-function getDamageTargetFinalValue(core: MageWarsCore, targetId: string): number | null {
+function getDamageTargetFinalValue(
+    core: MageWarsCore,
+    previousCore: MageWarsCore | undefined,
+    targetId: string,
+    damageAmount: number,
+): number | null {
     const player = core.players[targetId];
     if (player) return player.damage;
     const object = core.objects[targetId];
     if (object) return object.damage;
+    const previousObject = previousCore?.objects[targetId];
+    if (previousObject) return Math.min(previousObject.life, previousObject.damage + damageAmount);
     return null;
 }
 
@@ -71,6 +79,7 @@ function collectDrivenDamageTargetIds(events: MageWarsEvent[]): Set<string> {
 function collectDamageFreezeEntries(
     events: MageWarsEvent[],
     core: MageWarsCore,
+    previousCore?: MageWarsCore,
 ): {
     entries: Array<{ key: string; value: number }>;
     targetKeys: Map<string, string>;
@@ -86,8 +95,8 @@ function collectDamageFreezeEntries(
     const entries: Array<{ key: string; value: number }> = [];
     const targetKeys = new Map<string, string>();
     for (const [targetId, totalDamage] of damageByTarget) {
-        const key = getDamageTargetKey(core, targetId);
-        const finalDamage = getDamageTargetFinalValue(core, targetId);
+        const key = getDamageTargetKey(core, targetId, previousCore);
+        const finalDamage = getDamageTargetFinalValue(core, previousCore, targetId, totalDamage);
         if (!key || finalDamage == null) continue;
         targetKeys.set(targetId, key);
         entries.push({ key, value: Math.max(0, finalDamage - totalDamage) });
@@ -121,10 +130,73 @@ function getDamageReleaseKeysForEvent(
     return [];
 }
 
+function collectDamageByTarget(events: MageWarsEvent[]): Map<string, number> {
+    const damageByTarget = new Map<string, number>();
+    for (const event of events) {
+        if (event.type !== 'DAMAGE_DEALT') continue;
+        const damage = event.payload.actualDamage ?? event.payload.amount;
+        if (damage <= 0) continue;
+        damageByTarget.set(event.payload.targetId, (damageByTarget.get(event.payload.targetId) ?? 0) + damage);
+    }
+    return damageByTarget;
+}
+
+function collectDefeatedObjectHoldCandidates(
+    events: MageWarsEvent[],
+    core: MageWarsCore,
+    previousCore: MageWarsCore | undefined,
+): Map<string, MageWarsArenaObjectState> {
+    const damageByTarget = collectDamageByTarget(events);
+    const heldObjects = new Map<string, MageWarsArenaObjectState>();
+
+    for (const event of events) {
+        if (event.type !== MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED) continue;
+        const objectId = event.payload.objectId;
+        if (core.objects[objectId]) continue;
+        const previousObject = previousCore?.objects[objectId];
+        if (!previousObject) continue;
+        const damage = damageByTarget.get(objectId) ?? 0;
+        heldObjects.set(objectId, {
+            ...previousObject,
+            damage: Math.min(previousObject.life, previousObject.damage + damage),
+        });
+    }
+
+    return heldObjects;
+}
+
+function getHeldObjectIdsForEvent(
+    event: MageWarsEvent,
+    heldObjectCandidates: Map<string, MageWarsArenaObjectState>,
+): string[] {
+    if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED) {
+        return event.payload.targetObjectId && heldObjectCandidates.has(event.payload.targetObjectId)
+            ? [event.payload.targetObjectId]
+            : [];
+    }
+    if (event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED) {
+        return event.payload.targetObjectId && heldObjectCandidates.has(event.payload.targetObjectId)
+            ? [event.payload.targetObjectId]
+            : [];
+    }
+    if (event.type === 'DAMAGE_DEALT') {
+        return heldObjectCandidates.has(event.payload.targetId) ? [event.payload.targetId] : [];
+    }
+    if (event.type === MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED || event.type === MAGE_WARS_EVENTS.SPELL_TELEPORT_RESOLVED) {
+        return event.payload.targetObjectId && heldObjectCandidates.has(event.payload.targetObjectId)
+            ? [event.payload.targetObjectId]
+            : [];
+    }
+    return [];
+}
+
 export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams): UseMageWarsGameEventsResult {
     const fxBusRef = useRef(fxBus);
     const fxImpactMapRef = useRef(new Map<string, string[]>());
+    const fxHeldObjectMapRef = useRef(new Map<string, string[]>());
+    const previousCoreRef = useRef(G.core);
     const damageBuffer = useVisualStateBuffer();
+    const [heldObjectMap, setHeldObjectMap] = useState<Map<string, MageWarsArenaObjectState>>(() => new Map());
     const [debug, setDebug] = useState<UseMageWarsGameEventsResult['debug']>(() => ({
         eventCount: 0,
         latestEntryId: 0,
@@ -151,9 +223,12 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
         const fxCues: string[] = [];
         if (didReset) {
             fxImpactMapRef.current.clear();
+            fxHeldObjectMapRef.current.clear();
             damageBuffer.clear();
+            setHeldObjectMap(new Map());
         }
         if (newEntries.length === 0) {
+            previousCoreRef.current = G.core;
             setDebug((current) => {
                 const nextDebug = {
                     eventCount: entries.length,
@@ -174,9 +249,12 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
         }
 
         const events = newEntries.map((entry) => entry.event as MageWarsEvent);
+        const previousCore = previousCoreRef.current;
         consumedTypes.push(...events.map((event) => event.type));
         const drivenDamageTargetIds = collectDrivenDamageTargetIds(events);
-        const damageTargets = collectDamageFreezeEntries(events, G.core);
+        const damageTargets = collectDamageFreezeEntries(events, G.core, previousCore);
+        const heldObjectCandidates = collectDefeatedObjectHoldCandidates(events, G.core, previousCore);
+        const linkedHeldObjectIds = new Set<string>();
         damageBuffer.freezeBatch(damageTargets.entries);
 
         for (const entry of newEntries) {
@@ -193,6 +271,21 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
             if (releaseKeys.length > 0) {
                 fxImpactMapRef.current.set(fxId, releaseKeys);
             }
+            const heldObjectIds = getHeldObjectIdsForEvent(event, heldObjectCandidates);
+            if (heldObjectIds.length > 0) {
+                fxHeldObjectMapRef.current.set(fxId, heldObjectIds);
+                heldObjectIds.forEach((objectId) => linkedHeldObjectIds.add(objectId));
+            }
+        }
+        if (linkedHeldObjectIds.size > 0) {
+            setHeldObjectMap((current) => {
+                const next = new Map(current);
+                for (const objectId of linkedHeldObjectIds) {
+                    const object = heldObjectCandidates.get(objectId);
+                    if (object && !G.core.objects[objectId]) next.set(objectId, object);
+                }
+                return next;
+            });
         }
         const nextDebug = {
             eventCount: entries.length,
@@ -210,6 +303,7 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
                 ? current
                 : nextDebug
         ));
+        previousCoreRef.current = G.core;
 
     }, [G.core, damageBuffer, entries.length, latestEntryId, consumeNew, getCursor, entries]);
 
@@ -222,7 +316,24 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
 
     const onEffectComplete = useCallback((id: string) => {
         fxImpactMapRef.current.delete(id);
+        const completedHeldObjectIds = fxHeldObjectMapRef.current.get(id) ?? [];
+        fxHeldObjectMapRef.current.delete(id);
+        if (completedHeldObjectIds.length === 0) return;
+        const stillHeldObjectIds = new Set(Array.from(fxHeldObjectMapRef.current.values()).flat());
+        setHeldObjectMap((current) => {
+            const next = new Map(current);
+            for (const objectId of completedHeldObjectIds) {
+                if (!stillHeldObjectIds.has(objectId)) next.delete(objectId);
+            }
+            return next;
+        });
     }, []);
 
-    return { damageBuffer, onEffectImpact, onEffectComplete, debug };
+    return {
+        damageBuffer,
+        heldObjects: Array.from(heldObjectMap.values()),
+        onEffectImpact,
+        onEffectComplete,
+        debug,
+    };
 }

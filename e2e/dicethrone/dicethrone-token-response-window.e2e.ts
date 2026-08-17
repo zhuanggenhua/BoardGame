@@ -579,7 +579,7 @@ test.describe('Token 响应窗口完整流程', () => {
         await game.screenshot('太极响应-跳过后按四点伤害扣血收口', testInfo);
     });
 
-    test('月精灵闪避成功后由共享响应框确认收口到 main2，不再卡在 defensiveRoll', async ({ page, game }, testInfo) => {
+    test('月精灵闪避成功后由右侧骰盘确认收口到 main2，不再卡在 defensiveRoll', async ({ page, game }, testInfo) => {
         await setupTokenScene(game, { '0': 'moon_elf', '1': 'shadow_thief' }, '0');
         await injectMoonElfEvasiveResponseScene(page);
 
@@ -630,15 +630,15 @@ test.describe('Token 响应窗口完整流程', () => {
             evasionSuccess: true,
         });
 
-        const confirmButton = page.getByTestId('dicethrone-response-pass-button');
+        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        await expect(confirmButton).toBeVisible({ timeout: 5000 });
         await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);
         await expect(confirmButton).toBeEnabled();
         await expectNoLegacyTokenResponseSurfaces(page);
-        await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        await expect(sharedResponsePrompt).toBeHidden({ timeout: 5000 });
         await expect(page.getByTestId('dicethrone-2d-dice-tray')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('[data-tutorial-id="dice-confirm-button"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"] [data-testid^="die-button-"]')).toHaveCount(1);
-        await game.screenshot('闪避响应-成功后右侧只显示闪避骰且共享提示可确认', testInfo);
+        await game.screenshot('闪避响应-成功后右侧骰盘确认按钮可用', testInfo);
         await confirmButton.click();
 
         await expect.poll(async () => {

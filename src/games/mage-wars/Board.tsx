@@ -654,6 +654,7 @@ function ZoneFieldCard({
     ownerSide,
     onClick,
     visualDamage = object?.damage,
+    visualHeld = false,
 }: {
     cardId: number;
     object?: MageWarsArenaObjectState;
@@ -662,6 +663,7 @@ function ZoneFieldCard({
     ownerSide?: SeatOwnerSide;
     onClick?: () => void;
     visualDamage?: number;
+    visualHeld?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const previewRef = getMageWarsSpellCardPreviewRef(cardId);
@@ -757,6 +759,7 @@ function ZoneFieldCard({
             data-owner-side={ownerSide}
             data-field-card-role={role}
             data-visual-damage={visualDamage ?? 0}
+            data-visual-held={visualHeld ? 'true' : undefined}
         >
             {content}
         </button>
@@ -1322,6 +1325,7 @@ function ArenaStage({
     onFxComplete,
     getVisualObjectDamage,
     getVisualPlayerDamage,
+    visualHeldObjects = [],
     desktopFrame = false,
 }: {
     core: MageWarsCore;
@@ -1344,6 +1348,7 @@ function ArenaStage({
     onFxComplete?: (id: string, cue: string) => void;
     getVisualObjectDamage: (object: MageWarsArenaObjectState) => number;
     getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
+    visualHeldObjects?: MageWarsArenaObjectState[];
     desktopFrame?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1458,9 +1463,16 @@ function ArenaStage({
             {core.arena.map((zone) => {
                 const rect = ZONE_RECTS[zone.id];
                 const fieldCardIds = zone.fieldCardIds ?? [];
-                const zoneObjects = zone.objectIds
+                const coreZoneObjects = zone.objectIds
                     .map((objectId) => core.objects[objectId])
                     .filter((object): object is MageWarsArenaObjectState => object != null);
+                const zoneHeldObjects = visualHeldObjects.filter((object) => (
+                    object.zoneId === zone.id
+                    && core.objects[object.id] == null
+                    && !coreZoneObjects.some((current) => current.id === object.id)
+                ));
+                const zoneObjects = [...coreZoneObjects, ...zoneHeldObjects];
+                const zoneHeldObjectIds = new Set(zoneHeldObjects.map((object) => object.id));
                 const attachedObjects = zoneObjects.filter(isMageWarsAttachmentObject);
                 const fieldObjects = zoneObjects.filter((object) => !isMageWarsAttachmentObject(object));
                 const zoneAttachmentObjects = attachedObjects.filter((object) => (
@@ -1520,6 +1532,7 @@ function ArenaStage({
                     return isSpellObjectTarget ? () => onObjectSelect?.(object.id) : undefined;
                 };
                 const renderFieldObject = (object: MageWarsArenaObjectState, density: ZoneEntityDensity = 'solo') => {
+                    const visualHeld = zoneHeldObjectIds.has(object.id);
                     const objectAttachments = attachedObjects.filter((attachment) => (
                         isMageWarsObjectAttachmentObject(attachment, object.id)
                     ));
@@ -1553,6 +1566,7 @@ function ArenaStage({
                                 density={density}
                                 ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
                                 visualDamage={getVisualObjectDamage(object)}
+                                visualHeld={visualHeld}
                                 role={object.id === pendingSpellTargetObjectId || object.id === selectedObjectId
                                     ? 'source'
                                     : isSpellObjectTarget || isObjectAttackTarget
@@ -2073,6 +2087,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                 onFxComplete={mageWarsEvents.onEffectComplete}
                 getVisualObjectDamage={getVisualObjectDamage}
                 getVisualPlayerDamage={getVisualPlayerDamage}
+                visualHeldObjects={mageWarsEvents.heldObjects}
                 desktopFrame={isLandscapeMobileViewport}
             />
             <div className={cx(

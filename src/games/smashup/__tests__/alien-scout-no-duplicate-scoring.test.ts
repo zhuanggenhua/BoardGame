@@ -48,7 +48,8 @@ function chooseAlienScoutTrigger(runner: GameTestRunner<SmashUpCore, SmashUpComm
 function chooseReturnScout(runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>): void {
     const state = runner.getState();
     const prompt = getSimpleChoicePrompt(state, 'alien_scout_return');
-    const option = getPromptOptions(prompt).find((candidate: any) => candidate.id === 'yes');
+    expect(prompt.targetType ?? prompt.data?.targetType).toBe('field-source-action');
+    const option = getPromptOptions(prompt).find((candidate: any) => candidate.value?.returnIt === true);
     expect(option).toBeDefined();
     const result = runner.resolveInteraction('0', { optionId: option.id });
     expect(result.success, result.error).toBe(true);

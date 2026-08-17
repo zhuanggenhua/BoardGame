@@ -489,6 +489,7 @@ const paladinsHeavenlyMinionPromptProgram = createPromptProgram<
                     id: `minion-${card.uid}`,
                     label: getCardDef(card.defId)?.name ?? card.defId,
                     value: { cardUid: card.uid, defId: card.defId },
+                    _source: 'hand' as const,
                     displayMode: 'card' as const,
                 })),
                 {

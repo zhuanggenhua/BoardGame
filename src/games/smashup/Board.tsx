@@ -100,10 +100,23 @@ import { resolveMinionUiPlayPlan } from './ui/resolveMinionUiPlayPlan';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
+import {
+    getSmashUpReactionChoiceBaseIndex,
+    getSmashUpReactionChoiceTargetMinionUid,
+    isSmashUpReactionHandPlayValue,
+    matchesSmashUpReactionHandPlayTarget,
+} from './domain/reactionChoiceInteraction';
 import { normalizeSmashUpCoreForUi } from './ui/normalizeRuntimeState';
 import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
 import { collectLegalActionPlayTargets, getActionPlayTargetMode } from './domain/playLegality';
 import { buildDiscardStripCards } from './ui/discardStripCards';
+import {
+    buildFieldSourceActionPromptModel,
+    buildFieldSourceTargetPromptModel,
+    isFieldSourceActionValue,
+    isFieldSourceTargetValue,
+    resolveFieldSourceTargetSelectionState,
+} from './ui/fieldSourceTargetInteraction';
 
 const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'ui.extra_minion_granted': '获得{{count}}次额外随从机会',
@@ -132,89 +145,6 @@ type BuriedPromptOptionValue = {
     skip?: boolean;
     done?: boolean;
 };
-type ReactionChoicePromptOptionValue = {
-    kind?: unknown;
-    cardUid?: unknown;
-    baseIndex?: unknown;
-    targetBaseIndex?: unknown;
-    targetMinionUid?: unknown;
-};
-type FieldSourceBaseTargetPromptOptionValue = {
-    fieldInteractionType?: unknown;
-    fieldSourceType?: unknown;
-    fieldTargetType?: unknown;
-    sourceUid?: unknown;
-    targetBaseIndex?: unknown;
-    /** Legacy marker kept only so old queued interactions can still be resolved. */
-    fieldSourceTargetType?: unknown;
-    minionUid?: unknown;
-    baseIndex?: unknown;
-    fromBaseIndex?: unknown;
-};
-
-function isReactionHandPlayValue(value: unknown): value is { kind: 'play_action' | 'play_minion'; cardUid: string } {
-    const candidate = value as ReactionChoicePromptOptionValue | undefined;
-    return (candidate?.kind === 'play_action' || candidate?.kind === 'play_minion')
-        && typeof candidate.cardUid === 'string';
-}
-
-function getReactionChoiceBaseIndex(value: unknown): number | undefined {
-    const candidate = value as ReactionChoicePromptOptionValue | undefined;
-    const rawIndex = candidate?.kind === 'play_minion'
-        ? candidate.baseIndex
-        : candidate?.targetBaseIndex ?? candidate?.baseIndex;
-    return typeof rawIndex === 'number' && Number.isInteger(rawIndex) && rawIndex >= 0
-        ? rawIndex
-        : undefined;
-}
-
-function getReactionChoiceTargetMinionUid(value: unknown): string | undefined {
-    const candidate = value as ReactionChoicePromptOptionValue | undefined;
-    return typeof candidate?.targetMinionUid === 'string' ? candidate.targetMinionUid : undefined;
-}
-
-function readFieldSourceBaseTargetValue(value: unknown): {
-    sourceMinionUid: string;
-    targetBaseIndex: number;
-    sourceBaseIndex?: number;
-} | null {
-    const candidate = value as FieldSourceBaseTargetPromptOptionValue | undefined;
-    if (!candidate) return null;
-
-    if (
-        candidate.fieldInteractionType === 'source-target'
-        && candidate.fieldSourceType === 'minion'
-        && candidate.fieldTargetType === 'base'
-        && typeof candidate.sourceUid === 'string'
-        && typeof candidate.targetBaseIndex === 'number'
-        && candidate.targetBaseIndex >= 0
-    ) {
-        return {
-            sourceMinionUid: candidate.sourceUid,
-            targetBaseIndex: candidate.targetBaseIndex,
-            sourceBaseIndex: typeof candidate.fromBaseIndex === 'number' ? candidate.fromBaseIndex : undefined,
-        };
-    }
-
-    if (
-        candidate.fieldSourceTargetType === 'base'
-        && typeof candidate.minionUid === 'string'
-        && typeof candidate.baseIndex === 'number'
-        && candidate.baseIndex >= 0
-    ) {
-        return {
-            sourceMinionUid: candidate.minionUid,
-            targetBaseIndex: candidate.baseIndex,
-            sourceBaseIndex: typeof candidate.fromBaseIndex === 'number' ? candidate.fromBaseIndex : undefined,
-        };
-    }
-
-    return null;
-}
-
-function isFieldSourceBaseTargetValue(value: unknown): boolean {
-    return readFieldSourceBaseTargetValue(value) !== null;
-}
 
 const EMPTY_PLAYERS = {} as SmashUpCore['players'];
 const EMPTY_BASES = [] as SmashUpCore['bases'];
@@ -568,7 +498,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
     const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
-    const [selectedFieldPromptSourceMinionUid, setSelectedFieldPromptSourceMinionUid] = useState<string | null>(null);
+    const [selectedFieldPromptSourceUid, setSelectedFieldPromptSourceUid] = useState<string | null>(null);
     const [pendingFusionChoiceUid, setPendingFusionChoiceUid] = useState<string | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
@@ -672,40 +602,52 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const isCurrentPromptForPlayer = useMemo(() => {
         return isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID });
     }, [currentPrompt, playerID]);
-    const fieldSourceBaseTargetPrompt = useMemo(() => {
-        if (!isCurrentPromptForPlayer || !currentPrompt) return null;
-        const sourceTargetOptions = new Map<string, {
-            sourceMinionUid: string;
-            sourceBaseIndex?: number;
-            targetOptionIdsByBaseIndex: Map<number, string>;
-        }>();
-        for (const opt of currentPrompt.options) {
-            if (opt.disabled) continue;
-            const parsed = readFieldSourceBaseTargetValue(opt.value);
-            if (!parsed) continue;
-            const entry = sourceTargetOptions.get(parsed.sourceMinionUid) ?? {
-                sourceMinionUid: parsed.sourceMinionUid,
-                sourceBaseIndex: parsed.sourceBaseIndex,
-                targetOptionIdsByBaseIndex: new Map<number, string>(),
-            };
-            entry.targetOptionIdsByBaseIndex.set(parsed.targetBaseIndex, opt.id);
-            sourceTargetOptions.set(parsed.sourceMinionUid, entry);
-        }
-        if (sourceTargetOptions.size === 0) return null;
-        return {
-            sourceMinionUids: new Set(sourceTargetOptions.keys()),
-            sourceTargetOptions,
-        };
-    }, [currentPrompt, isCurrentPromptForPlayer]);
-    const isFieldSourceBaseTargetReady = !!fieldSourceBaseTargetPrompt
-        && selectedFieldPromptSourceMinionUid !== null
-        && fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid);
-    const fieldSourceBaseTargetSelectableMinionUids = fieldSourceBaseTargetPrompt?.sourceMinionUids;
-    const fieldSourceBaseTargetOptionIdsByBaseIndex = useMemo(() => {
-        if (!fieldSourceBaseTargetPrompt || !selectedFieldPromptSourceMinionUid) return new Map<number, string>();
-        return fieldSourceBaseTargetPrompt.sourceTargetOptions.get(selectedFieldPromptSourceMinionUid)?.targetOptionIdsByBaseIndex
-            ?? new Map<number, string>();
-    }, [fieldSourceBaseTargetPrompt, selectedFieldPromptSourceMinionUid]);
+    const fieldSourceTargetPrompt = useMemo(() => {
+        return buildFieldSourceTargetPromptModel({
+            isCurrentPromptForPlayer,
+            targetType: currentPromptData?.targetType,
+            options: currentPrompt?.options,
+        });
+    }, [currentPrompt?.options, currentPromptData?.targetType, isCurrentPromptForPlayer]);
+    const fieldSourceActionPrompt = useMemo(() => {
+        return buildFieldSourceActionPromptModel({
+            isCurrentPromptForPlayer,
+            targetType: currentPromptData?.targetType,
+            options: currentPrompt?.options,
+        });
+    }, [currentPrompt?.options, currentPromptData?.targetType, isCurrentPromptForPlayer]);
+    const fieldSourceTargetSelection = useMemo(() => {
+        return resolveFieldSourceTargetSelectionState(fieldSourceTargetPrompt, selectedFieldPromptSourceUid);
+    }, [fieldSourceTargetPrompt, selectedFieldPromptSourceUid]);
+    const isFieldSourceTargetReady = fieldSourceTargetSelection.isReady;
+    const selectedFieldSourceTargetEntry = fieldSourceTargetSelection.selectedEntry;
+    const fieldSourceTargetExtraOptions = useMemo(() => {
+        if (!fieldSourceTargetPrompt || !currentPrompt) return [];
+        return currentPrompt.options
+            .filter(opt => !isFieldSourceTargetValue(opt.value))
+            .map(opt => ({
+                ...opt,
+                label: resolvePromptOptionLabel(opt),
+            }));
+    }, [currentPrompt, fieldSourceTargetPrompt, resolvePromptOptionLabel]);
+    const fieldSourceActionExtraOptions = useMemo(() => {
+        if (!fieldSourceActionPrompt || !currentPrompt) return [];
+        return currentPrompt.options
+            .filter(opt => !isFieldSourceActionValue(opt.value))
+            .map(opt => ({
+                ...opt,
+                label: resolvePromptOptionLabel(opt),
+            }));
+    }, [currentPrompt, fieldSourceActionPrompt, resolvePromptOptionLabel]);
+    const fieldSourceTargetOptionIdsByBaseIndex = fieldSourceTargetSelection.targetOptionIdsByBaseIndex;
+    const fieldSourceTargetOptionIdsByMinionUid = fieldSourceTargetSelection.targetOptionIdsByMinionUid;
+    const fieldSourceTargetSelectableMinionUids = fieldSourceTargetSelection.selectableMinionUids;
+    const fieldSourceTargetSelectableOngoingUids = fieldSourceTargetSelection.selectableOngoingUids;
+    const fieldSourceTargetSelectableTitanUids = fieldSourceTargetSelection.selectableTitanUids;
+    const fieldSourceActionOptionIdsBySourceUid = fieldSourceActionPrompt?.sourceOptionIdsByUid;
+    const fieldSourceActionSelectableMinionUids = fieldSourceActionPrompt?.sourceMinionUids;
+    const fieldSourceActionSelectableOngoingUids = fieldSourceActionPrompt?.sourceOngoingUids;
+    const fieldSourceActionSelectableTitanUids = fieldSourceActionPrompt?.sourceTitanUids;
     const handPromptUiMode = useMemo(() => {
         return resolveSmashUpHandPromptUiMode({
             currentPrompt,
@@ -721,7 +663,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return result;
         for (const opt of currentPrompt.options) {
             if (opt.disabled) continue;
-            if (isReactionHandPlayValue(opt.value)) {
+            if (isSmashUpReactionHandPlayValue(opt.value)) {
                 result.add(opt.value.cardUid);
             }
         }
@@ -740,17 +682,17 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return result;
 
         for (const opt of currentPrompt.options) {
-            if (opt.disabled || !isReactionHandPlayValue(opt.value)) continue;
+            if (opt.disabled || !isSmashUpReactionHandPlayValue(opt.value)) continue;
             const entry = result.get(opt.value.cardUid) ?? {
                 baseIndices: new Set<number>(),
                 minionUids: new Set<string>(),
                 hasUntargetedAction: false,
             };
-            const baseIndex = getReactionChoiceBaseIndex(opt.value);
+            const baseIndex = getSmashUpReactionChoiceBaseIndex(opt.value);
             if (typeof baseIndex === 'number') {
                 entry.baseIndices.add(baseIndex);
             }
-            const targetMinionUid = getReactionChoiceTargetMinionUid(opt.value);
+            const targetMinionUid = getSmashUpReactionChoiceTargetMinionUid(opt.value);
             if (targetMinionUid) {
                 entry.minionUids.add(targetMinionUid);
             }
@@ -785,24 +727,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (currentPrompt?.sourceId !== 'smashup_reaction_choose') return undefined;
         const option = currentPrompt.options.find(opt => {
             if (opt.disabled) return false;
-            const value = opt.value as {
-                kind?: string;
-                cardUid?: string;
-                baseIndex?: number;
-                targetBaseIndex?: number;
-                targetMinionUid?: string;
-            } | undefined;
-            if (value?.kind !== params.kind || value.cardUid !== params.cardUid) return false;
-            if (params.kind === 'play_minion') {
-                return value.baseIndex === params.baseIndex;
-            }
-            const baseMatches = params.baseIndex === undefined
-                ? value.targetBaseIndex === undefined
-                : value.targetBaseIndex === params.baseIndex;
-            const minionMatches = params.targetMinionUid === undefined
-                ? value.targetMinionUid === undefined
-                : value.targetMinionUid === params.targetMinionUid;
-            return baseMatches && minionMatches;
+            return matchesSmashUpReactionHandPlayTarget(opt.value, params);
         });
         return option?.id;
     }, [currentPrompt]);
@@ -914,7 +839,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const reactionChoiceExtraOptions = useMemo(() => {
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => !isReactionHandPlayValue(opt.value) && !isFieldSourceBaseTargetValue(opt.value)).map(opt => ({
+        return currentPrompt.options.filter(opt => !isSmashUpReactionHandPlayValue(opt.value) && !isFieldSourceTargetValue(opt.value) && !isFieldSourceActionValue(opt.value)).map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -1334,7 +1259,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         let raw = '';
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.title;
-        else if ((isMinionSelectPrompt || fieldSourceBaseTargetPrompt) && currentPrompt) raw = currentPrompt.title;
+        else if ((isMinionSelectPrompt || fieldSourceTargetPrompt || fieldSourceActionPrompt) && currentPrompt) raw = currentPrompt.title;
         else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
@@ -1343,13 +1268,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return raw
             ? resolvePromptText(raw, currentPrompt?.titleKey, currentPrompt?.titleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceBaseTargetPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceTargetPrompt, fieldSourceActionPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
         let raw = '';
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
-        else if ((isMinionSelectPrompt || fieldSourceBaseTargetPrompt) && currentPrompt) raw = currentPrompt.subtitle ?? '';
+        else if ((isMinionSelectPrompt || fieldSourceTargetPrompt || fieldSourceActionPrompt) && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
@@ -1357,7 +1282,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return raw
             ? resolvePromptText(raw, currentPrompt?.subtitleKey, currentPrompt?.subtitleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceBaseTargetPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, fieldSourceTargetPrompt, fieldSourceActionPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
     const isDiscardMinionPrompt = useMemo(() => {
@@ -1403,7 +1328,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isMonsterSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isDiscardCardPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isMonsterSelectPrompt || fieldSourceTargetPrompt || fieldSourceActionPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isDiscardCardPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
             return 'board';
         }
         return 'overlay';
@@ -1415,6 +1340,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         isDiscardMinionPrompt,
         isDirectHandSelectPrompt,
         isTitanReactionPrompt,
+        fieldSourceTargetPrompt,
+        fieldSourceActionPrompt,
         isMinionSelectPrompt,
         isMonsterSelectPrompt,
         isOngoingSelectPrompt,
@@ -1478,7 +1405,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setSelectedCardMode(null);
                 setPendingFusionChoiceUid(null);
                 setSelectedSetAsideTitanUid(null);
-                setSelectedFieldPromptSourceMinionUid(null);
+                setSelectedFieldPromptSourceUid(null);
             }
             setDiscardStripSelectedUid(null);
             setMultiSelectedOptionIds(new Set());
@@ -2669,19 +2596,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedSetAsideTitanUid(null);
             return;
         }
-        if (fieldSourceBaseTargetPrompt) {
-            if (!selectedFieldPromptSourceMinionUid || !fieldSourceBaseTargetPrompt.sourceMinionUids.has(selectedFieldPromptSourceMinionUid)) {
+        if (fieldSourceTargetPrompt) {
+            if (!selectedFieldPromptSourceUid || !fieldSourceTargetPrompt.sourceTargetOptions.has(selectedFieldPromptSourceUid)) {
                 playDeniedSound();
                 return;
             }
-            const optionId = fieldSourceBaseTargetOptionIdsByBaseIndex.get(index);
+            const optionId = fieldSourceTargetOptionIdsByBaseIndex.get(index);
             if (!optionId) {
                 toast(t('ui.invalid_base_target'));
                 return;
             }
             setSelectedCardUid(null);
             setSelectedCardMode(null);
-            setSelectedFieldPromptSourceMinionUid(null);
+            setSelectedFieldPromptSourceUid(null);
             respondCurrentPrompt({ optionId });
             return;
         }
@@ -2757,7 +2684,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             dispatch(SU_COMMANDS.USE_BASE_ABILITY, { baseIndex: index });
         }
-    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceBaseTargetPrompt, selectedFieldPromptSourceMinionUid, fieldSourceBaseTargetOptionIdsByBaseIndex]);
+    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, fieldSourceTargetOptionIdsByBaseIndex]);
 
     const handleBuriedCardSelect = useCallback((cardUid: string) => {
         if (!isBuriedSelectPrompt || !currentPrompt) return;
@@ -3091,11 +3018,37 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     /** 随从点击回调：ongoing-minion 模式下附着行动卡到随从，或交互驱动的随从选择 */
     const handleMinionSelect = useCallback((minionUid: string, baseIndex: number) => {
-        if (fieldSourceBaseTargetPrompt) {
-            if (!fieldSourceBaseTargetPrompt.sourceMinionUids.has(minionUid)) return;
-            setSelectedCardUid(null);
-            setSelectedCardMode(null);
-            setSelectedFieldPromptSourceMinionUid((current) => current === minionUid ? null : minionUid);
+        if (fieldSourceActionPrompt) {
+            const optionId = fieldSourceActionOptionIdsBySourceUid?.get(minionUid);
+            if (optionId) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid(null);
+                respondCurrentPrompt({ optionId });
+                return;
+            }
+            playDeniedSound();
+            return;
+        }
+        if (fieldSourceTargetPrompt) {
+            const selectedSourceEntry = selectedFieldPromptSourceUid
+                ? fieldSourceTargetPrompt.sourceTargetOptions.get(selectedFieldPromptSourceUid)
+                : undefined;
+            const targetOptionId = selectedSourceEntry?.targetOptionIdsByMinionUid.get(minionUid);
+            if (targetOptionId) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid(null);
+                respondCurrentPrompt({ optionId: targetOptionId });
+                return;
+            }
+            if (fieldSourceTargetPrompt.sourceMinionUids.has(minionUid)) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid((current) => current === minionUid ? null : minionUid);
+                return;
+            }
+            playDeniedSound();
             return;
         }
         // 交互驱动的随从选择
@@ -3164,10 +3117,32 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setDiscardStripSelectedUid(null);
             }
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isBoardSelectPrompt, isMultiMinionSelect, isMultiBoardSelect, multiMinionConstraints, selectableMinionUids, boardSelectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed, fieldSourceBaseTargetPrompt]);
+    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isBoardSelectPrompt, isMultiMinionSelect, isMultiBoardSelect, multiMinionConstraints, selectableMinionUids, boardSelectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, respondCurrentPrompt, playDeniedSound]);
 
     /** 持续行动卡点击回调：交互驱动的行动卡选择 */
     const handleOngoingSelect = useCallback((ongoingUid: string) => {
+        if (fieldSourceActionPrompt) {
+            const optionId = fieldSourceActionOptionIdsBySourceUid?.get(ongoingUid);
+            if (optionId) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid(null);
+                respondCurrentPrompt({ optionId });
+                return;
+            }
+            playDeniedSound();
+            return;
+        }
+        if (fieldSourceTargetPrompt) {
+            if (fieldSourceTargetPrompt.sourceOngoingUids.has(ongoingUid)) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid((current) => current === ongoingUid ? null : ongoingUid);
+                return;
+            }
+            playDeniedSound();
+            return;
+        }
         if ((!isOngoingSelectPrompt && !isBoardSelectPrompt) || !currentPrompt) return;
         const promptSelectableOngoingUids = isBoardSelectPrompt ? boardSelectableOngoingUids : selectableOngoingUids;
         if (!promptSelectableOngoingUids.has(ongoingUid)) return;
@@ -3191,7 +3166,30 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardMode(null);
             respondCurrentPrompt({ optionId: option.id });
         }
-    }, [currentPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isMultiOngoingSelect, isMultiBoardSelect, selectableOngoingUids, boardSelectableOngoingUids, multiMinionConstraints.max, setSelectedCardMode, setSelectedCardUid]);
+    }, [currentPrompt, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isMultiOngoingSelect, isMultiBoardSelect, selectableOngoingUids, boardSelectableOngoingUids, multiMinionConstraints.max, respondCurrentPrompt, setSelectedCardMode, setSelectedCardUid, playDeniedSound]);
+
+    const handleFieldSourceTitanSelect = useCallback((titanUid: string) => {
+        if (fieldSourceActionPrompt) {
+            const optionId = fieldSourceActionOptionIdsBySourceUid?.get(titanUid);
+            if (optionId) {
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                setSelectedFieldPromptSourceUid(null);
+                respondCurrentPrompt({ optionId });
+                return;
+            }
+            playDeniedSound();
+            return;
+        }
+        if (!fieldSourceTargetPrompt) return;
+        if (fieldSourceTargetPrompt.sourceTitanUids.has(titanUid)) {
+            setSelectedCardUid(null);
+            setSelectedCardMode(null);
+            setSelectedFieldPromptSourceUid((current) => current === titanUid ? null : titanUid);
+            return;
+        }
+        playDeniedSound();
+    }, [fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, playDeniedSound, respondCurrentPrompt]);
 
     const handleViewCardDetail = useCallback((card: CardInstance) => {
         const nextTarget = { defId: card.defId, type: card.type === 'minion' ? 'minion' : 'action' } as const;
@@ -3916,7 +3914,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 交互选择提示横幅（基地/随从/手牌选择） --- */}
                 <AnimatePresence>
-                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || !!fieldSourceBaseTargetPrompt || isMonsterSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
+                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || !!fieldSourceTargetPrompt || !!fieldSourceActionPrompt || isMonsterSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
                         <motion.div
                             initial={{ y: -20, opacity: 0, scale: 0.95 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -3937,6 +3935,35 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         </span>
                                     )}
                                 </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* --- 场上来源-目标交互浮动操作栏（跳过/不发动按钮） --- */}
+                <AnimatePresence>
+                    {((fieldSourceTargetPrompt && fieldSourceTargetExtraOptions.length > 0) || (fieldSourceActionPrompt && fieldSourceActionExtraOptions.length > 0)) && (
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            className={floatingHintClassName}
+                            style={floatingHintStyle}
+                        >
+                            <div className="flex gap-3 pointer-events-auto">
+                                {(fieldSourceTargetPrompt ? fieldSourceTargetExtraOptions : fieldSourceActionExtraOptions).map(opt => (
+                                    <SmashUpGameButton
+                                        key={opt.id}
+                                        variant="secondary"
+                                        size="md"
+                                        onClick={() => {
+                                            setSelectedFieldPromptSourceUid(null);
+                                            respondCurrentPrompt({ optionId: opt.id });
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </SmashUpGameButton>
+                                ))}
                             </div>
                         </motion.div>
                     )}
@@ -4356,20 +4383,23 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx))
                                         || (!!activeSelectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.has(idx))
-                                        || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx))
+                                        || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx))
                                         || (!!handDragPreview && draggedCardMode !== 'action' && dragDeployableBaseIndices.has(idx))
                                     }
-                                    isMinionSelectMode={!(isOngoingSelectPrompt && !isBoardSelectPrompt) && (
+                                    isMinionSelectMode={!(isOngoingSelectPrompt && !isBoardSelectPrompt && !fieldSourceTargetPrompt && !fieldSourceActionPrompt) && (
                                         ((selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') && ongoingMinionTargetUids.size > 0)
                                         || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0)
-                                        || !!fieldSourceBaseTargetPrompt
+                                        || ((fieldSourceActionSelectableMinionUids?.size ?? 0) > 0)
+                                        || ((fieldSourceTargetSelectableMinionUids?.size ?? 0) > 0)
                                         || (isMinionSelectPrompt && selectableMinionUids.size > 0)
                                         || (isBoardSelectPrompt && boardSelectableMinionUids.size > 0)
                                         || (!!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion') && dragOngoingMinionTargetUids.size > 0)
                                     )}
                                     selectableMinionUids={
-                                        fieldSourceBaseTargetSelectableMinionUids
-                                            ? fieldSourceBaseTargetSelectableMinionUids
+                                        fieldSourceActionSelectableMinionUids
+                                            ? fieldSourceActionSelectableMinionUids
+                                        : fieldSourceTargetSelectableMinionUids
+                                            ? fieldSourceTargetSelectableMinionUids
                                         : isBoardSelectPrompt
                                             ? boardSelectableMinionUids
                                             : isMinionSelectPrompt
@@ -4383,15 +4413,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     : undefined
                                     }
                                     multiSelectedMinionUids={isMultiMinionSelect || isMultiBoardSelect ? multiSelectedMinionUids : undefined}
-                                    selectedMinionUids={isFieldSourceBaseTargetReady && selectedFieldPromptSourceMinionUid ? new Set([selectedFieldPromptSourceMinionUid]) : undefined}
+                                    selectedMinionUids={isFieldSourceTargetReady && selectedFieldPromptSourceUid && selectedFieldSourceTargetEntry?.sourceType === 'minion' ? new Set([selectedFieldPromptSourceUid]) : undefined}
                                     duelParticipantMinionUids={activeDuelParticipantUids.size > 0 ? activeDuelParticipantUids : undefined}
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceBaseTargetReady && fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
-                                        || (isFieldSourceBaseTargetReady && !fieldSourceBaseTargetOptionIdsByBaseIndex.has(idx))
+                                        || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && !fieldSourceTargetOptionIdsByBaseIndex.has(idx))
                                         || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
                                         || (!!selectedCardUid && selectedCardMode !== 'ongoing-minion' && selectedCardMode !== 'action-minion' && selectedCardMode !== 'action' && !deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && !meFirstEligibleBaseIndices.has(idx))
@@ -4405,7 +4435,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onMinionSelect={handleMinionSelect}
                                     onOngoingSelect={handleOngoingSelect}
                                     onBuriedCardSelect={handleBuriedCardSelect}
-                                    selectableOngoingUids={isBoardSelectPrompt ? boardSelectableOngoingUids : isOngoingSelectPrompt ? selectableOngoingUids : undefined}
+                                    selectableOngoingUids={fieldSourceActionSelectableOngoingUids ? fieldSourceActionSelectableOngoingUids : fieldSourceTargetSelectableOngoingUids ? fieldSourceTargetSelectableOngoingUids : isBoardSelectPrompt ? boardSelectableOngoingUids : isOngoingSelectPrompt ? selectableOngoingUids : undefined}
+                                    selectedOngoingUids={isFieldSourceTargetReady && selectedFieldPromptSourceUid && (selectedFieldSourceTargetEntry?.sourceType === 'ongoing' || selectedFieldSourceTargetEntry?.sourceType === 'action') ? new Set([selectedFieldPromptSourceUid]) : undefined}
                                     multiSelectedOngoingUids={isMultiOngoingSelect || isMultiBoardSelect ? multiSelectedOngoingUids : undefined}
                                     onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
                                     onViewAction={handleViewAction}
@@ -4418,6 +4449,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     usableTitanOngoingUids={usableTitanOngoingUids}
                                     reactionTitanTriggerUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
                                     onResolveTitanReaction={handleTitanReactionTrigger}
+                                    selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids}
+                                    selectedTitanUids={isFieldSourceTargetReady && selectedFieldPromptSourceUid && selectedFieldSourceTargetEntry?.sourceType === 'titan' ? new Set([selectedFieldPromptSourceUid]) : undefined}
+                                    onTitanSelect={handleFieldSourceTitanSelect}
                                     isMonsterSelectMode={isMonsterSelectPrompt}
                                     selectableMonsterUids={isMonsterSelectPrompt ? selectableMonsterUids : undefined}
                                     onMonsterSelect={handleMonsterSelect}
@@ -4735,7 +4769,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         && !isBaseSelectPrompt
                         && !isBuriedSelectPrompt
                         && !isMinionSelectPrompt
-                        && !fieldSourceBaseTargetPrompt
+                        && !fieldSourceTargetPrompt
+                        && !fieldSourceActionPrompt
                         && !isMonsterSelectPrompt
                         && !isOngoingSelectPrompt
                         && !isBoardSelectPrompt

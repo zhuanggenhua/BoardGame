@@ -974,6 +974,10 @@ function collectModularSources(state: SmashUpCore, playerId: PlayerId): ModularS
 
 const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'avengers_modular_tech_destination',
+    interactionSourceIds: [
+        'avengers_modular_tech_destination_base',
+        'avengers_modular_tech_destination_minion',
+    ],
     buildInteraction: (context) => {
         if (context.kind === 'base') {
             return createAbilityRuntimeSimpleChoice(
@@ -990,7 +994,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
                     context.matchState.core,
                 ),
                 {
-                    sourceId: 'avengers_modular_tech_destination',
+                    sourceId: 'avengers_modular_tech_destination_base',
                     targetType: 'base',
                     titleKey: 'ui.avengers_modular_tech_destination_base_title',
                     responseValidationMode: 'live',
@@ -1019,7 +1023,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
                 respectActionProtection: true,
             }),
             {
-                sourceId: 'avengers_modular_tech_destination',
+                sourceId: 'avengers_modular_tech_destination_minion',
                 targetType: 'minion',
                 titleKey: 'ui.avengers_modular_tech_destination_minion_title',
                 responseValidationMode: 'live',

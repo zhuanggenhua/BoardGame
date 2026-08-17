@@ -21,7 +21,7 @@ import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     buildActionMinionTargetOptions, buildBaseTargetOptions, buildMinionTargetOptions, buildPlayerTargetOptions, getMinionPower,
     grantContextualExtraMinion, grantExtraMinion, shuffleBaseDeck,
-    applySemanticMinionEffectBatch, buildAbilityFeedback, buildValidatedMoveEvents, buildValidatedReturnEvents,
+    applySemanticMinionEffectBatch, buildAbilityFeedback, buildFieldSourceActionOptions, buildFieldSourceActionPromptConfig, buildValidatedMoveEvents, buildValidatedReturnEvents,
     canControllerPlayTitan, getSetAsideTitansPlayableAs, playTitan,
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -731,13 +731,14 @@ const alienScoutReturnPromptProgram = createPromptProgram<
         context.playerId,
         '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
         [
-            {
-                id: 'yes',
+            ...buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: context.scout.uid,
+                defId: context.scout.defId,
+                baseIndex: context.scout.baseIndex,
                 label: '返回手牌',
                 labelKey: 'ui.alien_scout_return_option',
-                value: { returnIt: true },
-                displayMode: 'button' as const,
-            },
+            }, { returnIt: true }),
             {
                 id: 'no',
                 label: '留在基地',
@@ -746,12 +747,11 @@ const alienScoutReturnPromptProgram = createPromptProgram<
                 displayMode: 'button' as const,
             },
         ],
-        {
+        buildFieldSourceActionPromptConfig({
             sourceId: 'alien_scout_return',
-            targetType: 'minion',
             autoResolveIfSingle: false,
             titleKey: 'ui.alien_scout_return_title',
-        },
+        }),
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as { returnIt?: boolean } | undefined;

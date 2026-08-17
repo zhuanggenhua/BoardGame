@@ -180,9 +180,24 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
     }
 
     const unwrapped = unwrapExpression(arg5);
-    if (!unwrapped || !ts.isObjectLiteralExpression(unwrapped)) {
+    const unwrappedCallName = ts.isCallExpression(unwrapped)
+        ? getExpressionName(unwrapped.expression)
+        : undefined;
+    const configObject = unwrappedCallName === 'buildFieldSourceTargetPromptConfig'
+        || unwrappedCallName === 'buildFieldSourceActionPromptConfig'
+        ? unwrapExpression(unwrapped.arguments[0] as ts.Expression | undefined)
+        : unwrapped;
+    const forcedTargetType =
+        unwrappedCallName === 'buildFieldSourceTargetPromptConfig'
+            ? 'field-source-target'
+            : unwrappedCallName === 'buildFieldSourceActionPromptConfig'
+                ? 'field-source-action'
+                : undefined;
+
+    if (!configObject || !ts.isObjectLiteralExpression(configObject)) {
         return {
             sourceId: 'unknown',
+            targetType: forcedTargetType,
             hasTargetType: false,
             hasAutoRefresh: false,
             hasResponseValidationMode: false,
@@ -191,12 +206,12 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
     }
 
     let sourceId = 'unknown';
-    let targetType: string | undefined;
+    let targetType: string | undefined = forcedTargetType;
     let autoRefresh: string | undefined;
     let responseValidationMode: string | undefined;
     let revalidateOnRespond: boolean | undefined;
     let hasMulti = false;
-    for (const prop of unwrapped.properties) {
+    for (const prop of configObject.properties) {
         if (!ts.isPropertyAssignment(prop)) continue;
         const name = getPropertyName(prop.name);
         if (name === 'sourceId') sourceId = extractStringLiteral(prop.initializer) ?? sourceId;

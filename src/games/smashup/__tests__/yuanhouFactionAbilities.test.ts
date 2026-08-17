@@ -10205,7 +10205,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(triggered.matchState?.sys.interaction.current?.data?.sourceId).toBe('cyborg_apes_flying_monkey_move');
 
         const resolved = resolveInteractionChain(triggered.matchState!, prompt => {
-            const option = findInteractionOption(prompt, candidate => candidate.value?.toBaseIndex === 1);
+            const option = findInteractionOption(prompt, candidate =>
+                candidate.value?.targetBaseIndex === 1 || candidate.value?.baseIndex === 1
+            );
             return { optionId: option.id };
         });
 
@@ -10350,7 +10352,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                 return { optionId: option.id };
             }
             if (prompt?.data?.sourceId === 'cyborg_apes_flying_monkey_move') {
-                const option = findInteractionOption(prompt, candidate => candidate.value?.toBaseIndex === 1);
+                const option = findInteractionOption(prompt, candidate =>
+                    candidate.value?.targetBaseIndex === 1 || candidate.value?.baseIndex === 1
+                );
                 return { optionId: option.id };
             }
             throw new Error(`未处理的飞猴真实计分交互：${prompt?.data?.sourceId ?? 'unknown'}`);

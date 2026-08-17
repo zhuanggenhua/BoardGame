@@ -55,6 +55,7 @@ import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './dom
 import {
     getSmashUpReactionChoiceOptions,
     isSmashUpReactionChoiceInteraction,
+    readSmashUpReactionChoiceValue,
 } from './domain/reactionChoiceInteraction';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
 import { getSmashUpReactionSession } from './domain/reactionSession';
@@ -2195,16 +2196,6 @@ const interactionValueScorer: LocalAiActionScorer = createInteractionHintScorer(
     id: 'interaction-value',
 });
 
-type SmashUpReactionChoiceValue = {
-    kind?: string;
-    triggerId?: string;
-    cardUid?: string;
-    targetBaseIndex?: number;
-    baseIndex?: number;
-    minionUid?: string;
-    titanUid?: string;
-};
-
 type SmashUpInteractionVisibilityOption = {
     value?: {
         kind?: unknown;
@@ -2253,12 +2244,6 @@ function shouldUseSharedDecisionViewForReactionOrdering(args: {
     });
 }
 
-const readSmashUpReactionChoiceValue = (action: AiLegalAction): SmashUpReactionChoiceValue | null => {
-    const rawValue = action.metadata?.optionValue;
-    if (!rawValue || typeof rawValue !== 'object') return null;
-    return rawValue as SmashUpReactionChoiceValue;
-};
-
 const getSmashUpReactionTriggerById = (
     state: SmashUpState,
     triggerId: string | undefined,
@@ -2283,14 +2268,10 @@ const estimateSmashUpReactionChoiceUrgency = (
 ): { score: number; reason: string } | null => {
     if (action.kind !== 'interaction-choice') return null;
 
-    const choiceValue = readSmashUpReactionChoiceValue(action);
+    const choiceValue = readSmashUpReactionChoiceValue(action.metadata?.optionValue);
     if (!choiceValue) return null;
 
-    const normalizedKind = typeof choiceValue.kind === 'string'
-        ? choiceValue.kind
-        : typeof choiceValue.triggerId === 'string'
-            ? 'trigger'
-            : null;
+    const normalizedKind = choiceValue.kind;
     if (!normalizedKind || normalizedKind === 'pass') return null;
 
     if (normalizedKind === 'trigger') {
@@ -2405,7 +2386,7 @@ const smashUpReactionChoiceScorer: LocalAiActionScorer = {
         if (action.kind !== 'interaction-choice') return null;
         if (context.interaction?.sourceId !== 'smashup_reaction_choose') return null;
 
-        const choiceValue = readSmashUpReactionChoiceValue(action);
+        const choiceValue = readSmashUpReactionChoiceValue(action.metadata?.optionValue);
         if (!choiceValue) return null;
 
         if (choiceValue.kind === 'pass') {

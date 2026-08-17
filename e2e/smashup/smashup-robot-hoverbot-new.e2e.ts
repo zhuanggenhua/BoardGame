@@ -3228,15 +3228,48 @@ test.describe('Smash Up 牌库检索交互', () => {
                     options: (Array.isArray(data?.options) ? data.options : []).map((option: any) => ({
                         id: option.id,
                         minionUid: option.value?.minionUid ?? null,
+                        sourceUid: option.value?.sourceUid ?? null,
+                        targetMinionUid: option.value?.targetMinionUid ?? null,
+                        fieldInteractionType: option.value?.fieldInteractionType ?? null,
+                        fieldSourceType: option.value?.fieldSourceType ?? null,
+                        fieldTargetType: option.value?.fieldTargetType ?? null,
                         defId: option.value?.defId ?? null,
                     })),
                 };
             })();
 
             expect(sheriffPrompt.sourceId).toBe('world_champs_sheriff_before_scoring');
-            expect(sheriffPrompt.options.map((option: any) => option.minionUid)).toContain('enemy-target');
+            expect(sheriffPrompt.options).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    fieldInteractionType: 'source-target',
+                    fieldSourceType: 'minion',
+                    fieldTargetType: 'minion',
+                    minionUid: 'sheriff-live',
+                    sourceUid: 'sheriff-live',
+                    targetMinionUid: 'enemy-target',
+                }),
+            ]));
 
-            await hostPage.screenshot({ path: testInfo.outputPath('sheriff-before-scoring-target-select.png'), fullPage: true });
+            const sheriffCard = hostPage.locator('[data-minion-uid="sheriff-live"]').first();
+            const sheriffFrame = hostPage.getByTestId('su-minion-frame-sheriff-live');
+            const targetCard = hostPage.locator('[data-minion-uid="enemy-target"]').first();
+            const targetFrame = hostPage.getByTestId('su-minion-frame-enemy-target');
+
+            await expect(sheriffCard).toHaveAttribute('data-highlighted', 'true');
+            await expect(sheriffFrame).toHaveAttribute('data-highlighted', 'true');
+            await expect(targetCard).toHaveAttribute('data-highlighted', 'false');
+            await expect(targetFrame).toHaveAttribute('data-highlighted', 'false');
+            await hostPage.screenshot({ path: testInfo.outputPath('sheriff-before-scoring-source-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-world-champs-sheriff-source-highlight-2026-08-17');
+
+            await clickMinionOnBoard(hostPage, 'sheriff-live', 10000);
+            await expect(sheriffCard).toHaveAttribute('data-selected', 'true');
+            await expect(sheriffFrame).toHaveAttribute('data-selected', 'true');
+            await expect(targetCard).toHaveAttribute('data-highlighted', 'true');
+            await expect(targetFrame).toHaveAttribute('data-highlighted', 'true');
+            await hostPage.screenshot({ path: testInfo.outputPath('sheriff-before-scoring-target-minion-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-world-champs-sheriff-target-minion-highlight-2026-08-17');
+
             await clickMinionOnBoard(hostPage, 'enemy-target', 10000);
 
             await waitForInteractionSource(hostPage, 'smashup_duel_card', 10000);
@@ -3445,18 +3478,39 @@ test.describe('Smash Up 牌库检索交互', () => {
                 const data = asRecord(current?.data);
                 return {
                     sourceId: data?.sourceId ?? null,
+                    targetType: data?.targetType ?? null,
                     options: (Array.isArray(data?.options) ? data.options : []).map((option: any) => ({
                         id: option.id,
+                        fieldInteractionType: option.value?.fieldInteractionType ?? null,
+                        fieldSourceType: option.value?.fieldSourceType ?? null,
+                        fieldTargetType: option.value?.fieldTargetType ?? null,
+                        sourceUid: option.value?.sourceUid ?? null,
                         baseIndex: option.value?.baseIndex ?? null,
+                        targetBaseIndex: option.value?.targetBaseIndex ?? null,
                     })),
                 };
             })();
 
             expect(prompt.sourceId).toBe('mermaids_shipwreck_cove_after_scoring');
-            expect(prompt.options.some((option: any) => option.baseIndex === 1)).toBe(true);
+            expect(prompt.targetType).toBe('field-source-target');
+            expect(prompt.options).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    fieldInteractionType: 'source-target',
+                    fieldSourceType: 'ongoing',
+                    fieldTargetType: 'base',
+                    sourceUid: 'shipwreck-cove-live',
+                    baseIndex: 1,
+                    targetBaseIndex: 1,
+                }),
+            ]));
 
-            await hostPage.screenshot({ path: testInfo.outputPath('shipwreck-cove-after-scoring-prompt.png'), fullPage: true });
-            await saveStableScreenshot(hostPage, testInfo, 'smashup-mermaids-shipwreck-cove-after-scoring-prompt-2026-04-29');
+            await expect(hostPage.locator('[data-ongoing-uid="shipwreck-cove-live"]')).toBeVisible({ timeout: 5000 });
+            await hostPage.screenshot({ path: testInfo.outputPath('shipwreck-cove-after-scoring-source-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-mermaids-shipwreck-cove-source-highlight-2026-08-17');
+
+            await hostPage.locator('[data-ongoing-uid="shipwreck-cove-live"]').click({ force: true });
+            await hostPage.screenshot({ path: testInfo.outputPath('shipwreck-cove-after-scoring-target-base-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-mermaids-shipwreck-cove-target-base-highlight-2026-08-17');
 
             await clickBaseOnBoard(hostPage, 1, 10000);
             await waitForNoInteraction(hostPage, 10000);
@@ -4670,18 +4724,39 @@ test.describe('Smash Up 牌库检索交互', () => {
                 const data = asRecord(current?.data);
                 return {
                     sourceId: data?.sourceId ?? null,
+                    targetType: data?.targetType ?? null,
                     options: (Array.isArray(data?.options) ? data.options : []).map((option: any) => ({
                         id: option.id,
+                        fieldInteractionType: option.value?.fieldInteractionType ?? null,
+                        fieldSourceType: option.value?.fieldSourceType ?? null,
+                        fieldTargetType: option.value?.fieldTargetType ?? null,
+                        sourceUid: option.value?.sourceUid ?? null,
                         baseIndex: option.value?.baseIndex ?? null,
+                        targetBaseIndex: option.value?.targetBaseIndex ?? null,
                     })),
                 };
             })();
 
             expect(prompt.sourceId).toBe('skeletons_gravestones_after_scoring');
-            expect(prompt.options.some((option: any) => option.baseIndex === 1)).toBe(true);
+            expect(prompt.targetType).toBe('field-source-target');
+            expect(prompt.options).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    fieldInteractionType: 'source-target',
+                    fieldSourceType: 'ongoing',
+                    fieldTargetType: 'base',
+                    sourceUid: 'gravestones-live',
+                    baseIndex: 1,
+                    targetBaseIndex: 1,
+                }),
+            ]));
 
-            await hostPage.screenshot({ path: testInfo.outputPath('gravestones-after-scoring-prompt.png'), fullPage: true });
-            await saveStableScreenshot(hostPage, testInfo, 'smashup-skeletons-gravestones-after-scoring-prompt-2026-04-29');
+            await expect(hostPage.locator('[data-ongoing-uid="gravestones-live"]')).toBeVisible({ timeout: 5000 });
+            await hostPage.screenshot({ path: testInfo.outputPath('gravestones-after-scoring-source-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-skeletons-gravestones-source-highlight-2026-08-17');
+
+            await hostPage.locator('[data-ongoing-uid="gravestones-live"]').click({ force: true });
+            await hostPage.screenshot({ path: testInfo.outputPath('gravestones-after-scoring-target-base-highlight.png'), fullPage: true });
+            await saveStableScreenshot(hostPage, testInfo, 'smashup-skeletons-gravestones-target-base-highlight-2026-08-17');
 
             await clickBaseOnBoard(hostPage, 1, 10000);
             await waitForNoInteraction(hostPage, 10000);

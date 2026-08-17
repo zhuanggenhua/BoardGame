@@ -121,6 +121,8 @@ export const BaseZone: React.FC<{
     isDimmed?: boolean;
     /** 交互驱动的持续行动卡选择：只有这些 UID 的行动卡可被选中 */
     selectableOngoingUids?: Set<string>;
+    /** 单步来源选择：已点选的持续行动 UID 集合 */
+    selectedOngoingUids?: Set<string>;
     /** 多选持续行动模式：已选中的行动卡 UID 集合 */
     multiSelectedOngoingUids?: Set<string>;
     isMyTurn: boolean;
@@ -141,6 +143,9 @@ export const BaseZone: React.FC<{
     usableTitanOngoingUids?: Set<string>;
     reactionTitanTriggerUids?: Set<string>;
     onResolveTitanReaction?: (titanUid: string) => void;
+    selectableTitanUids?: Set<string>;
+    selectedTitanUids?: Set<string>;
+    onTitanSelect?: (titanUid: string) => void;
     /** 交互驱动的怪物选择：直接复用基地下方的怪物行 */
     isMonsterSelectMode?: boolean;
     /** 怪物选择模式下可点击的怪物 UID */
@@ -150,7 +155,7 @@ export const BaseZone: React.FC<{
     onDefeatMonster?: (baseIndex: number, monsterUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, selectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, selectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, selectableTitanUids, selectedTitanUids, onTitanSelect, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -344,10 +349,12 @@ export const BaseZone: React.FC<{
         const ongoingActivationKey = `ongoing-${oa.uid}`;
         const isOngoingActivationArmed = isActivationArmed(ongoingActivationKey);
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
+        const isSelectedOngoing = !!selectedOngoingUids?.has(oa.uid);
         const isMultiSelectedOngoing = !!multiSelectedOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
         const ongoingAccentHighlightActive =
+            isSelectedOngoing ||
             isMultiSelectedOngoing ||
             isSelectableOngoing ||
             isOngoingActivationArmed ||
@@ -377,6 +384,9 @@ export const BaseZone: React.FC<{
             >
                 <motion.div
                     data-ongoing-uid={oa.uid}
+                    data-highlighted={isSelectableOngoing ? 'true' : 'false'}
+                    data-selected={(isSelectedOngoing || isMultiSelectedOngoing) ? 'true' : 'false'}
+                    data-disabled={isDimmedOngoing ? 'true' : 'false'}
                     {...getOngoingTouchInspectProps(`ongoing-${oa.uid}`, { defId: oa.defId })}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -429,6 +439,8 @@ export const BaseZone: React.FC<{
                                 ? 'cursor-not-allowed'
                                 : isMultiSelectedOngoing
                                 ? 'border-green-400 ring-4 ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_36px_rgba(74,222,128,0.34)]'
+                                : isSelectedOngoing
+                                ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75),0_0_36px_rgba(251,191,36,0.35)]'
                                 : isSelectableOngoing
                                 ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52)]'
                                 : isOngoingActivationArmed
@@ -538,6 +550,8 @@ export const BaseZone: React.FC<{
         const canUseTitanTalent = !!usableTitanTalentUids?.has(titan.uid);
         const canUseTitanOngoing = !!usableTitanOngoingUids?.has(titan.uid);
         const canUseTitanReaction = !!reactionTitanTriggerUids?.has(titan.uid);
+        const canSelectTitanSource = !!selectableTitanUids?.has(titan.uid);
+        const isSelectedTitanSource = !!selectedTitanUids?.has(titan.uid);
         const hasMultipleTitanActivations = canUseTitanTalent && canUseTitanOngoing;
         const canActivateTitan = canUseTitanReaction || canUseTitanTalent || canUseTitanOngoing;
         const timeBoxCounterLabel = getTimeBoxCounterLabel(titan);
@@ -545,14 +559,18 @@ export const BaseZone: React.FC<{
         const titanActivationKey = `titan-${titan.uid}`;
         const isTitanActivationArmed = isActivationArmed(titanActivationKey);
         const showUsedTitanState = titan.talentUsed && !canActivateTitan;
-        const titanAccentHighlightActive = isTitanActivationArmed || canActivateTitan || showUsedTitanState;
+        const titanAccentHighlightActive = isTitanActivationArmed || canActivateTitan || canSelectTitanSource || isSelectedTitanSource || showUsedTitanState;
         const titanAccessoryChromeClass = getAccessoryChromeClass(titanAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
         const titanTimeboxSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-sky-300', 'bg-gradient-to-br from-cyan-200 to-sky-400');
         const titanPowerCounterSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
         const titanFrameClassName = `relative aspect-[0.714] w-full cursor-pointer rounded-[0.18vw] border-[0.12vw] bg-white shadow-lg origin-bottom transition-[transform,box-shadow,filter,opacity] duration-200 ${
             isCoarsePointer ? '' : 'hover:scale-110 hover:-translate-y-[0.12vw]'
         } ${
-            isTitanActivationArmed
+            isSelectedTitanSource
+                ? 'border-emerald-300 ring-4 ring-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.75)]'
+                : canSelectTitanSource
+                ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]'
+                : isTitanActivationArmed
                 ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
                 : canActivateTitan
                 ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
@@ -572,10 +590,17 @@ export const BaseZone: React.FC<{
             <motion.div
                 data-titan-uid={titan.uid}
                 data-testid={`su-base-titan-${titan.uid}`}
+                data-highlighted={canSelectTitanSource ? 'true' : 'false'}
+                data-selected={isSelectedTitanSource ? 'true' : 'false'}
                 {...getTitanTouchInspectProps(`titan-${titan.uid}`, { defId: titan.defId })}
                 onClick={(e) => {
                     e.stopPropagation();
                     if (shouldBlockTitanClick(`titan-${titan.uid}`)) return;
+                    if (canSelectTitanSource && onTitanSelect) {
+                        clearArmedActivation();
+                        onTitanSelect(titan.uid);
+                        return;
+                    }
                     if (canUseTitanReaction) {
                         clearArmedActivation();
                         onResolveTitanReaction?.(titan.uid);
@@ -1267,6 +1292,7 @@ export const BaseZone: React.FC<{
                                             onView={() => onViewMinion(m.defId, { overlayDefId: getMinionBottomOverlayDefId(m) })}
                                             onViewAction={onViewAction}
                                             selectableOngoingUids={selectableOngoingUids}
+                                            selectedOngoingUids={selectedOngoingUids}
                                             multiSelectedOngoingUids={multiSelectedOngoingUids}
                                             onOngoingSelect={onOngoingSelect}
                                             usableMinionTalentUids={usableMinionTalentUids}
@@ -1437,6 +1463,8 @@ const MinionCard: React.FC<{
     onViewAction: (defId: string) => void;
     /** 交互驱动的持续行动卡选择：只有这些 UID 的行动卡可被选中 */
     selectableOngoingUids?: Set<string>;
+    /** 单步来源选择：已点选的持续行动 UID 集合 */
+    selectedOngoingUids?: Set<string>;
     /** 多选持续行动模式：已选中的行动卡 UID 集合 */
     multiSelectedOngoingUids?: Set<string>;
     onOngoingSelect?: (ongoingUid: string) => void;
@@ -1458,7 +1486,7 @@ const MinionCard: React.FC<{
     isCoarsePointer: boolean;
     /** 该随从是否是本次状态变更中新进入基地的实体 */
     shouldAnimateEntry?: boolean;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
     const { t } = useTranslation('game-smashup');
     // 兼容融合卡：Wolf Pact 这类作为随从打出时仍使用融合卡定义的图与文案
     const minionDef = getMinionDef(minion.defId);
@@ -1894,6 +1922,7 @@ const MinionCard: React.FC<{
                             const actionText = resolveCardText(actionDef, t);
                             const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
                             const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
+                            const isSelectedAA = !!selectedOngoingUids?.has(aa.uid);
                             const isMultiSelectedAA = !!multiSelectedOngoingUids?.has(aa.uid);
                             const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
                             const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
@@ -1905,6 +1934,9 @@ const MinionCard: React.FC<{
                                 <motion.div
                                     key={aa.uid}
                                     data-attached-action-uid={aa.uid}
+                                    data-highlighted={isSelectableAA ? 'true' : 'false'}
+                                    data-selected={(isSelectedAA || isMultiSelectedAA) ? 'true' : 'false'}
+                                    data-disabled={isDimmedAA ? 'true' : 'false'}
                                     data-activation-armed={isAttachedActivationArmed ? 'true' : 'false'}
                                     {...getAttachedTouchInspectProps(`attached-${aa.uid}`, { defId: aa.defId })}
                                     onClick={(e) => {
@@ -1927,6 +1959,8 @@ const MinionCard: React.FC<{
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
                                             : isMultiSelectedAA
                                             ? 'border-green-400 ring-4 ring-green-400 shadow-[0_0_14px_rgba(74,222,128,0.72),0_0_26px_rgba(74,222,128,0.34)]'
+                                            : isSelectedAA
+                                            ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.75),0_0_26px_rgba(251,191,36,0.34)]'
                                             : isSelectableAA
                                             ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
                                             : isAttachedActivationArmed

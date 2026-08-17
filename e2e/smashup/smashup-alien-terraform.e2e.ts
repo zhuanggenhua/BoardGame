@@ -1188,13 +1188,25 @@ async function openMegabotBeforeScoringScene(game: any): Promise<void> {
                     data: {
                         title: '超级佐德：是否移动到即将计分的基地？',
                         sourceId: 'titan_mega_troopers_megabot_move',
-                        targetType: 'button',
+                        targetType: 'field-source-target',
                         options: [
                             {
-                                id: 'move',
+                                id: 'source-titan-megabot-live-base-1-0',
                                 label: '移动到该基地',
-                                value: { move: true },
-                                displayMode: 'button',
+                                value: {
+                                    move: true,
+                                    fieldInteractionType: 'source-target',
+                                    fieldSourceType: 'titan',
+                                    fieldTargetType: 'base',
+                                    sourceUid: 'titan-megabot-live',
+                                    sourceBaseIndex: 0,
+                                    fromBaseIndex: 0,
+                                    targetBaseIndex: 1,
+                                    baseIndex: 1,
+                                    baseDefId: 'base_the_mothership',
+                                },
+                                displayMode: 'card',
+                                _source: 'field',
                             },
                             {
                                 id: 'stay',
@@ -1736,13 +1748,26 @@ async function openKrakenRescueScene(game: any): Promise<void> {
                     data: {
                         title: '海怪克拉肯：你可以将此处你的一个随从移动到其他基地而不进入弃牌堆',
                         sourceId: 'titan_pirates_the_kraken_choose_minion',
-                        targetType: 'minion',
+                        targetType: 'field-source-target',
                         options: [
                             {
-                                id: 'kraken-save-pirate',
+                                id: 'source-titan-kraken-on-score-base-minion-kraken-save-pirate-0',
                                 label: '大副',
-                                value: { minionUid: 'kraken-save-pirate', defId: 'pirate_first_mate', baseIndex: 0 },
+                                value: {
+                                    fieldInteractionType: 'source-target',
+                                    fieldSourceType: 'titan',
+                                    fieldTargetType: 'minion',
+                                    sourceUid: 'titan-kraken-on-score-base',
+                                    sourceBaseIndex: 0,
+                                    fromBaseIndex: 0,
+                                    targetUid: 'kraken-save-pirate',
+                                    targetMinionUid: 'kraken-save-pirate',
+                                    targetMinionDefId: 'pirate_first_mate',
+                                    targetDefId: 'pirate_first_mate',
+                                    baseIndex: 0,
+                                },
                                 displayMode: 'card',
+                                _source: 'field',
                             },
                             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' },
                         ],
@@ -2426,12 +2451,37 @@ test.describe('Smash Up - Alien Terraform', () => {
         await openKrakenRescueScene(game);
 
         await game.waitForInteraction('titan_pirates_the_kraken_choose_minion');
-        await game.screenshot('kraken-rescue-choose-minion', testInfo);
-        await selectInteractionOptionBy(
-            game,
-            (option: any) => option?.value?.minionUid === 'kraken-save-pirate',
-            '海怪克拉肯：选择要救下的己方随从',
-        );
+        const rescuePromptState = await game.getState();
+        const rescuePrompt = rescuePromptState.sys?.interaction?.current?.data;
+        const rescueOptions = Array.isArray(rescuePrompt?.options) ? rescuePrompt.options : [];
+        expect(rescuePrompt?.targetType).toBe('field-source-target');
+        expect(rescueOptions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    fieldInteractionType: 'source-target',
+                    fieldSourceType: 'titan',
+                    fieldTargetType: 'minion',
+                    sourceUid: 'titan-kraken-on-score-base',
+                    targetMinionUid: 'kraken-save-pirate',
+                    targetMinionDefId: 'pirate_first_mate',
+                }),
+            }),
+        ]));
+        const krakenTitan = page.locator('[data-titan-uid="titan-kraken-on-score-base"]').first();
+        const rescueMinion = page.locator('[data-minion-uid="kraken-save-pirate"]').first();
+        await expect(krakenTitan).toHaveAttribute('data-highlighted', 'true');
+        await expect(krakenTitan).toHaveAttribute('data-selected', 'false');
+        await expect(rescueMinion).toHaveAttribute('data-highlighted', 'false');
+        await game.screenshot('kraken-rescue-source-titan-highlight', testInfo);
+
+        await krakenTitan.click({ force: true });
+        await page.waitForTimeout(300);
+        await expect(krakenTitan).toHaveAttribute('data-selected', 'true');
+        await expect(rescueMinion).toHaveAttribute('data-highlighted', 'true');
+        await game.screenshot('kraken-rescue-after-source-click-target-minion-highlight', testInfo);
+
+        await rescueMinion.click({ force: true });
+        await page.waitForTimeout(300);
 
         await game.waitForInteraction('titan_pirates_the_kraken_choose_base');
         await game.screenshot('kraken-rescue-choose-base', testInfo);
@@ -2830,12 +2880,25 @@ test.describe('Smash Up - Alien Terraform', () => {
         await openMegabotBeforeScoringScene(game);
 
         await game.waitForInteraction('titan_mega_troopers_megabot_move');
-        await game.screenshot('megabot-before-scoring-choice', testInfo);
-        await selectInteractionOptionBy(
-            game,
-            (option: any) => option?.value?.move === true,
-            '超级佐德：移动到计分基地',
-        );
+        const megabotCard = page.locator('[data-titan-uid="titan-megabot-live"]').first();
+        const scoringBase = page.getByTestId('base-zone-1');
+        const nonScoringBase = page.getByTestId('base-zone-0');
+        await expect(megabotCard).toBeVisible();
+        await expect(megabotCard).toHaveClass(/ring-2/);
+        await expect(scoringBase).toHaveAttribute('data-selectable', 'false');
+        await expect(nonScoringBase).toHaveAttribute('data-selectable', 'false');
+        await game.screenshot('megabot-before-scoring-source-highlight', testInfo);
+
+        await megabotCard.click({ force: true });
+        await expect(megabotCard).toHaveClass(/ring-4/);
+        await expect(scoringBase).toHaveAttribute('data-selectable', 'true');
+        await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'true');
+        await expect(scoringBase).toHaveAttribute('data-dimmed', 'false');
+        await expect(nonScoringBase).toHaveAttribute('data-selectable', 'false');
+        await expect(nonScoringBase).toHaveAttribute('data-dimmed', 'true');
+        await game.screenshot('megabot-before-scoring-target-base-highlight', testInfo);
+
+        await game.selectBase(1);
         await waitForNoInteraction(game);
 
         const finalState = await game.getState();

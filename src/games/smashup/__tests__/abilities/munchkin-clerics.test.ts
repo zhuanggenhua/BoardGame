@@ -450,11 +450,15 @@ describe('萌奇金牧师派系', () => {
         const prompt = getSimpleChoicePrompt(triggered.matchState!, 'munchkin_clerics_bin_and_gone_minion');
         expect(prompt.options).toHaveLength(2);
         expect(prompt.autoResolveIfSingle).toBe(false);
-        expect(prompt.options.some((option: any) => option.value?.minionUid === 'move-to-bin')).toBe(true);
+        expect(prompt.options.some((option: any) =>
+            option.value?.sourceUid === 'bin'
+            && option.value?.fieldSourceType === 'ongoing'
+            && option.value?.targetMinionUid === 'move-to-bin',
+        )).toBe(true);
 
         const resolved = respondToPromptOption(
             triggered.matchState!,
-            option => option.value?.minionUid === 'move-to-bin',
+            option => option.value?.targetMinionUid === 'move-to-bin',
             '选择垃圾处理移动的随从',
             '0',
             defaultTestRandom,

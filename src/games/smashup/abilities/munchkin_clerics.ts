@@ -1,8 +1,9 @@
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
-    buildActionMinionTargetOptions,
     buildBaseTargetOptions,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToMinionTargetOptions,
     buildValidatedMoveEvents,
     createSkipOption,
     grantExtraAction,
@@ -501,7 +502,7 @@ function binAndGoneCanTrigger(ctx: TriggerContext): boolean {
 }
 
 function binAndGoneAfterScoring(ctx: TriggerContext): TriggerResult {
-    if (!ctx.matchState || ctx.sourceBaseIndex === undefined || ctx.baseIndex === undefined || !ctx.sourceControllerId) {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.baseIndex === undefined || !ctx.sourceControllerId) {
         return { events: [] };
     }
     const candidates = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
@@ -513,28 +514,38 @@ function binAndGoneAfterScoring(ctx: TriggerContext): TriggerResult {
             label: `${getCardDef(minion.defId)?.name ?? minion.defId}（${getBaseDef(ctx.state.bases[ctx.baseIndex!]?.defId ?? '')?.name ?? '计分基地'}）`,
         }));
     if (candidates.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<{ minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean }>(
+    const interaction = createSimpleChoice(
         `${BIN_AND_GONE_MINION_SOURCE_ID}_${ctx.sourceCardUid ?? 'source'}_${ctx.baseIndex}_${ctx.now}`,
         ctx.sourceControllerId,
         '垃圾处理：选择一个随从移动到垃圾处理所在基地，或跳过',
         [
             createSkipOption('不移动', 'ui.munchkin_clerics_bin_and_gone_skip'),
-            ...buildActionMinionTargetOptions(candidates, {
+            ...buildFieldSourceToMinionTargetOptions(
+                {
+                    type: 'ongoing',
+                    uid: ctx.sourceCardUid,
+                    defId: BIN_AND_GONE,
+                    baseIndex: ctx.sourceBaseIndex,
+                },
+                candidates,
+                {
                 state: ctx.state,
                 sourcePlayerId: ctx.sourceControllerId,
                 sourceDefId: BIN_AND_GONE,
                 effectType: 'move',
-            }),
+                sourceKind: 'action',
+                respectActionProtection: true,
+                },
+            ),
         ],
-        {
+        buildFieldSourceTargetPromptConfig({
             sourceId: BIN_AND_GONE_MINION_SOURCE_ID,
-            targetType: 'minion',
             titleKey: 'ui.munchkin_clerics_bin_and_gone_title',
             responseValidationMode: 'live',
             autoRefresh: 'field',
             autoResolveIfSingle: false,
             displayCard: { defId: BIN_AND_GONE, cardUid: ctx.sourceCardUid },
-        },
+        }),
     );
     interaction.data = {
         ...interaction.data,
@@ -545,7 +556,13 @@ function binAndGoneAfterScoring(ctx: TriggerContext): TriggerResult {
     } satisfies BinAndGoneInteractionData & Record<string, unknown>;
     interaction.data.optionsGenerator = latestState => [
         createSkipOption('不移动', 'ui.munchkin_clerics_bin_and_gone_skip'),
-        ...buildActionMinionTargetOptions(
+        ...buildFieldSourceToMinionTargetOptions(
+            {
+                type: 'ongoing',
+                uid: ctx.sourceCardUid!,
+                defId: BIN_AND_GONE,
+                baseIndex: ctx.sourceBaseIndex!,
+            },
             ((latestState.core as SmashUpCore).bases[ctx.baseIndex!]?.minions ?? [])
                 .filter(minion => minion.controller === ctx.sourceControllerId)
                 .map(minion => ({
@@ -559,6 +576,8 @@ function binAndGoneAfterScoring(ctx: TriggerContext): TriggerResult {
                 sourcePlayerId: ctx.sourceControllerId!,
                 sourceDefId: BIN_AND_GONE,
                 effectType: 'move',
+                sourceKind: 'action',
+                respectActionProtection: true,
             },
         ),
     ];
@@ -894,7 +913,17 @@ export function registerMunchkinClericsInteractionHandlers(): void {
     });
 
     registerInteractionHandler(BIN_AND_GONE_MINION_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
-        const choice = value as { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean } | undefined;
+        const choice = value as {
+            minionUid?: string;
+            targetMinionUid?: string;
+            targetUid?: string;
+            defId?: string;
+            minionDefId?: string;
+            targetMinionDefId?: string;
+            targetDefId?: string;
+            baseIndex?: number;
+            skip?: boolean;
+        } | undefined;
         const data = interactionData as BinAndGoneInteractionData | undefined;
         if (
             !data?.sourcePlayerId
@@ -905,12 +934,14 @@ export function registerMunchkinClericsInteractionHandlers(): void {
         ) {
             return { state, events: [] };
         }
-        if (choice.baseIndex !== data.scoringBaseIndex || !choice.minionUid || !choice.defId) {
+        const targetMinionUid = choice?.targetMinionUid ?? choice?.targetUid ?? choice?.minionUid;
+        const targetDefId = choice?.targetMinionDefId ?? choice?.targetDefId ?? choice?.minionDefId ?? choice?.defId;
+        if (choice?.baseIndex !== data.scoringBaseIndex || !targetMinionUid || !targetDefId) {
             return { state, events: [] };
         }
         const target = state.core.bases[data.scoringBaseIndex]?.minions.find(minion =>
-            minion.uid === choice.minionUid
-            && minion.defId === choice.defId
+            minion.uid === targetMinionUid
+            && minion.defId === targetDefId
             && minion.controller === playerId,
         );
         if (!target) return { state, events: [] };

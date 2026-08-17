@@ -5,7 +5,8 @@ import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAb
 import {
     addTempPower,
     buildBaseTargetOptions,
-    buildFieldSourceBaseTargetOptions,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
@@ -936,8 +937,9 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
         '木乃伊：你可以将此随从埋葬到另一个基地，而不是进入弃牌堆',
         [
             createSkipOption(),
-            ...buildFieldSourceBaseTargetOptions(
+            ...buildFieldSourceToBaseTargetOptions(
                 {
+                    type: 'minion',
                     uid: context.cardUid,
                     defId: context.defId,
                     fromBaseIndex: context.sourceBaseIndex,
@@ -948,13 +950,12 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
                 context.state,
             ),
         ] as any[],
-        {
+        buildFieldSourceTargetPromptConfig({
             sourceId: 'ancient_egyptians_mummy_after_scoring',
-            targetType: 'minion',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
             titleKey: 'ui.ancient_egyptians_mummy_after_scoring_title',
-        },
+        }),
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         const selected = value as { baseIndex?: number; baseDefId?: string } | undefined;

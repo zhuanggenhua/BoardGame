@@ -6,7 +6,7 @@ import { registerInteractionHandler, type InteractionHandler } from '../domain/a
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
-import { addPowerCounter, buildAbilityFeedback, buildBaseTargetOptions, buildStandardDrawEvents, createSkipOption } from '../domain/abilityHelpers';
+import { addPowerCounter, buildAbilityFeedback, buildBaseTargetOptions, buildFieldSourceTargetPromptConfig, buildFieldSourceToBaseTargetOptions, buildStandardDrawEvents, createSkipOption } from '../domain/abilityHelpers';
 import { createEffectProgram, executeAbilityProgram } from '../domain/abilityRuntime';
 import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilities';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -462,8 +462,17 @@ function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
         `skeletons_gravestones_after_scoring_${ctx.now}`,
         ctx.sourceControllerId,
         '墓碑：选择把这张牌埋葬到的基地',
-        buildBaseTargetOptions(getBaseOptions(ctx.state).filter(base => base.baseIndex !== ctx.sourceBaseIndex), ctx.state),
-        { sourceId: 'skeletons_gravestones_after_scoring', targetType: 'base', titleKey: 'ui.skeletons_gravestones_after_scoring_title' },
+        buildFieldSourceToBaseTargetOptions(
+            {
+                type: 'ongoing',
+                uid: ctx.sourceCardUid,
+                defId: 'skeletons_gravestones',
+                fromBaseIndex: ctx.sourceBaseIndex,
+            },
+            getBaseOptions(ctx.state).filter(base => base.baseIndex !== ctx.sourceBaseIndex),
+            ctx.state,
+        ),
+        buildFieldSourceTargetPromptConfig({ sourceId: 'skeletons_gravestones_after_scoring', titleKey: 'ui.skeletons_gravestones_after_scoring_title' }),
     );
     (interaction.data as any).continuationContext = { sourceBaseIndex: ctx.sourceBaseIndex, sourceCardUid: ctx.sourceCardUid };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };

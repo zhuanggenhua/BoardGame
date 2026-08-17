@@ -827,8 +827,6 @@ const powerPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore, 
         'pearl_images_pearl_temp',
         'pearl_images_truly_outstanding_own',
         'base_sewer_hideout',
-        'base_concert_venue',
-        'base_power_castle',
     ],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,

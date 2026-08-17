@@ -482,9 +482,16 @@ const completeFactionSelectionOnline = async (
             await page.waitForTimeout(200);
         }
 
+        const searchInput = page.getByTestId('faction-search-input');
+        if (await searchInput.isVisible().catch(() => false)) {
+            await searchInput.fill(factionId);
+            await page.waitForTimeout(250);
+        }
+
         // 点击派系卡片打开详情弹窗
         const factionCard = page.getByTestId(`faction-option-${factionId}`);
         await expect(factionCard).toBeVisible({ timeout: 10000 });
+        await factionCard.scrollIntoViewIfNeeded();
         await factionCard.click({ force: true });
         await page.waitForTimeout(500);
 

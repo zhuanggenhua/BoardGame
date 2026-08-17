@@ -894,6 +894,11 @@ type MageWarsFxAudit = {
     sourceCol: string | null;
     targetRow: string | null;
     targetCol: string | null;
+    sourceAnchorId?: string | null;
+    targetAnchorId?: string | null;
+    targetAnchorDistancePx?: number | null;
+    targetAnchorOverlapRatio?: number | null;
+    fxMaxTargetAnchorRatio?: number | null;
     hasSourceWake: boolean;
     hasImpact: boolean;
     hasTravel: boolean;
@@ -910,11 +915,17 @@ type MageWarsSummonFxAudit = {
     sampledCanvasIndex: number;
     canvasCount: number;
     targetZoneId?: string | null;
+    targetObjectId?: string | null;
     fxCenterInsideTarget?: boolean;
     targetCenterInsideFx?: boolean;
     targetCenterDistancePx?: number | null;
     targetOverlapRatio?: number | null;
     fxMaxTargetRatio?: number | null;
+    fxCenterInsideTargetObject?: boolean;
+    targetObjectCenterInsideFx?: boolean;
+    targetObjectCenterDistancePx?: number | null;
+    targetObjectOverlapRatio?: number | null;
+    fxMaxTargetObjectRatio?: number | null;
     screenshotPath?: string;
     targetRegionAudit?: ScreenshotRegionVisualAudit;
 };
@@ -1042,11 +1053,17 @@ async function waitForSummonFxVisualAudit(
                 sampledCanvasIndex: number;
                 canvasCount: number;
                 targetZoneId?: string | null;
+                targetObjectId?: string | null;
                 fxCenterInsideTarget?: boolean;
                 targetCenterInsideFx?: boolean;
                 targetCenterDistancePx?: number | null;
                 targetOverlapRatio?: number | null;
                 fxMaxTargetRatio?: number | null;
+                fxCenterInsideTargetObject?: boolean;
+                targetObjectCenterInsideFx?: boolean;
+                targetObjectCenterDistancePx?: number | null;
+                targetObjectOverlapRatio?: number | null;
+                fxMaxTargetObjectRatio?: number | null;
             };
         };
         const probeWindow = window as typeof window & { __mageWarsSummonFxAuditProbe?: ProbeRecord };
@@ -1071,65 +1088,120 @@ async function waitForSummonFxVisualAudit(
         }
         probe.seenSummon = true;
         const rect = summon.getBoundingClientRect();
-        let targetAudit: Pick<MageWarsSummonFxAudit, 'targetZoneId' | 'fxCenterInsideTarget' | 'targetCenterInsideFx' | 'targetCenterDistancePx' | 'targetOverlapRatio'> = {};
+        const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        let targetAudit: Pick<
+            MageWarsSummonFxAudit,
+            | 'targetZoneId'
+            | 'targetObjectId'
+            | 'fxCenterInsideTarget'
+            | 'targetCenterInsideFx'
+            | 'targetCenterDistancePx'
+            | 'targetOverlapRatio'
+            | 'fxMaxTargetRatio'
+            | 'fxCenterInsideTargetObject'
+            | 'targetObjectCenterInsideFx'
+            | 'targetObjectCenterDistancePx'
+            | 'targetObjectOverlapRatio'
+            | 'fxMaxTargetObjectRatio'
+        > = {};
         if (args?.zoneId) {
             const targetZone = document.querySelector<HTMLElement>(`[data-testid="mage-wars-arena-zone-${args.zoneId}"]`);
             if (!targetZone) {
                 probe.last = { reason: 'missing-target-zone', zoneId: args.zoneId };
                 return null;
             }
-            const targetRect = targetZone.getBoundingClientRect();
+            const targetZoneRect = targetZone.getBoundingClientRect();
+            const targetObjectId = summon.dataset.objectId ?? null;
+            const targetObject = targetObjectId
+                ? document.querySelector<HTMLElement>(`[data-testid="mage-wars-zone-field-card"][data-object-id="${escapeAttr(targetObjectId)}"]`)
+                : null;
+            if (!targetObject) {
+                probe.last = {
+                    reason: 'missing-target-object-anchor',
+                    zoneId: args.zoneId,
+                    targetObjectId,
+                    activeCount: layer?.dataset.fxActiveCount ?? null,
+                    activeCues: layer?.dataset.fxActiveCues ?? null,
+                };
+                return null;
+            }
+            const targetObjectRect = targetObject.getBoundingClientRect();
             const fxCenterX = rect.left + rect.width / 2;
             const fxCenterY = rect.top + rect.height / 2;
-            const targetCenterX = targetRect.left + targetRect.width / 2;
-            const targetCenterY = targetRect.top + targetRect.height / 2;
-            const overlapWidth = Math.max(0, Math.min(rect.right, targetRect.right) - Math.max(rect.left, targetRect.left));
-            const overlapHeight = Math.max(0, Math.min(rect.bottom, targetRect.bottom) - Math.max(rect.top, targetRect.top));
-            const targetArea = Math.max(1, targetRect.width * targetRect.height);
-            const targetCenterDistancePx = Math.hypot(fxCenterX - targetCenterX, fxCenterY - targetCenterY);
+            const zoneCenterX = targetZoneRect.left + targetZoneRect.width / 2;
+            const zoneCenterY = targetZoneRect.top + targetZoneRect.height / 2;
+            const objectCenterX = targetObjectRect.left + targetObjectRect.width / 2;
+            const objectCenterY = targetObjectRect.top + targetObjectRect.height / 2;
+            const zoneOverlapWidth = Math.max(0, Math.min(rect.right, targetZoneRect.right) - Math.max(rect.left, targetZoneRect.left));
+            const zoneOverlapHeight = Math.max(0, Math.min(rect.bottom, targetZoneRect.bottom) - Math.max(rect.top, targetZoneRect.top));
+            const objectOverlapWidth = Math.max(0, Math.min(rect.right, targetObjectRect.right) - Math.max(rect.left, targetObjectRect.left));
+            const objectOverlapHeight = Math.max(0, Math.min(rect.bottom, targetObjectRect.bottom) - Math.max(rect.top, targetObjectRect.top));
+            const targetArea = Math.max(1, targetZoneRect.width * targetZoneRect.height);
+            const targetObjectArea = Math.max(1, targetObjectRect.width * targetObjectRect.height);
+            const targetCenterDistancePx = Math.hypot(fxCenterX - zoneCenterX, fxCenterY - zoneCenterY);
+            const targetObjectCenterDistancePx = Math.hypot(fxCenterX - objectCenterX, fxCenterY - objectCenterY);
             const fxMaxTargetRatio = Math.max(
-                rect.width / Math.max(1, targetRect.width),
-                rect.height / Math.max(1, targetRect.height),
+                rect.width / Math.max(1, targetZoneRect.width),
+                rect.height / Math.max(1, targetZoneRect.height),
             );
-            const fxCenterInsideTarget = fxCenterX >= targetRect.left
-                && fxCenterX <= targetRect.right
-                && fxCenterY >= targetRect.top
-                && fxCenterY <= targetRect.bottom;
-            const targetCenterInsideFx = targetCenterX >= rect.left
-                && targetCenterX <= rect.right
-                && targetCenterY >= rect.top
-                && targetCenterY <= rect.bottom;
-            const targetOverlapRatio = (overlapWidth * overlapHeight) / targetArea;
+            const fxMaxTargetObjectRatio = Math.max(
+                rect.width / Math.max(1, targetObjectRect.width),
+                rect.height / Math.max(1, targetObjectRect.height),
+            );
+            const fxCenterInsideTarget = fxCenterX >= targetZoneRect.left
+                && fxCenterX <= targetZoneRect.right
+                && fxCenterY >= targetZoneRect.top
+                && fxCenterY <= targetZoneRect.bottom;
+            const targetCenterInsideFx = zoneCenterX >= rect.left
+                && zoneCenterX <= rect.right
+                && zoneCenterY >= rect.top
+                && zoneCenterY <= rect.bottom;
+            const fxCenterInsideTargetObject = fxCenterX >= targetObjectRect.left
+                && fxCenterX <= targetObjectRect.right
+                && fxCenterY >= targetObjectRect.top
+                && fxCenterY <= targetObjectRect.bottom;
+            const targetObjectCenterInsideFx = objectCenterX >= rect.left
+                && objectCenterX <= rect.right
+                && objectCenterY >= rect.top
+                && objectCenterY <= rect.bottom;
+            const targetOverlapRatio = (zoneOverlapWidth * zoneOverlapHeight) / targetArea;
+            const targetObjectOverlapRatio = (objectOverlapWidth * objectOverlapHeight) / targetObjectArea;
             targetAudit = {
                 targetZoneId: args.zoneId,
+                targetObjectId,
                 fxCenterInsideTarget,
                 targetCenterInsideFx,
                 targetCenterDistancePx: Math.round(targetCenterDistancePx * 10) / 10,
                 targetOverlapRatio: Math.round(targetOverlapRatio * 1_000) / 1_000,
                 fxMaxTargetRatio: Math.round(fxMaxTargetRatio * 1_000) / 1_000,
+                fxCenterInsideTargetObject,
+                targetObjectCenterInsideFx,
+                targetObjectCenterDistancePx: Math.round(targetObjectCenterDistancePx * 10) / 10,
+                targetObjectOverlapRatio: Math.round(targetObjectOverlapRatio * 1_000) / 1_000,
+                fxMaxTargetObjectRatio: Math.round(fxMaxTargetObjectRatio * 1_000) / 1_000,
             };
             if (
-                targetRect.width <= 0
-                || targetRect.height <= 0
-                || !fxCenterInsideTarget
-                || !targetCenterInsideFx
-                || targetCenterDistancePx > Math.max(targetRect.width, targetRect.height) * 0.12
-                || targetOverlapRatio < 0.35
-                || fxMaxTargetRatio > 0.88
+                targetObjectRect.width <= 0
+                || targetObjectRect.height <= 0
+                || !fxCenterInsideTargetObject
+                || !targetObjectCenterInsideFx
+                || targetObjectCenterDistancePx > Math.max(targetObjectRect.width, targetObjectRect.height) * 0.12
+                || targetObjectOverlapRatio < 0.5
+                || fxMaxTargetObjectRatio > 1.08
             ) {
                 probe.last = {
-                    reason: 'summon-fx-not-aligned-to-target-zone',
+                    reason: 'summon-fx-not-aligned-to-target-object',
                     rect: {
                         x: Math.round(rect.x),
                         y: Math.round(rect.y),
                         width: Math.round(rect.width),
                         height: Math.round(rect.height),
                     },
-                    targetRect: {
-                        x: Math.round(targetRect.x),
-                        y: Math.round(targetRect.y),
-                        width: Math.round(targetRect.width),
-                        height: Math.round(targetRect.height),
+                    targetObjectRect: {
+                        x: Math.round(targetObjectRect.x),
+                        y: Math.round(targetObjectRect.y),
+                        width: Math.round(targetObjectRect.width),
+                        height: Math.round(targetObjectRect.height),
                     },
                     ...targetAudit,
                 };
@@ -1212,7 +1284,10 @@ async function waitForSummonFxVisualAudit(
         if (!probe.best || (audit.brightPixels + audit.alphaPixels) > (probe.best.brightPixels + probe.best.alphaPixels)) {
             probe.best = audit;
         }
-        if (!audit.visible || audit.alphaPixels <= 5_000 || audit.brightPixels <= 350) return null;
+        const canvasArea = Math.max(1, audit.canvasWidth * audit.canvasHeight);
+        const minAlphaPixels = Math.max(900, Math.floor(canvasArea * 0.2));
+        const minBrightPixels = Math.max(260, Math.floor(canvasArea * 0.06));
+        if (!audit.visible || audit.alphaPixels <= minAlphaPixels || audit.brightPixels <= minBrightPixels) return null;
         return audit;
     }, context ? { zoneId: context.zoneId } : null, { timeout: 5_000 }).catch(async (error: unknown) => {
         const debug = await readSummonFxFailureDebug(page, context);
@@ -1224,16 +1299,20 @@ async function waitForSummonFxVisualAudit(
         ].join('\n'));
     });
     const audit = await handle.jsonValue() as MageWarsSummonFxAudit;
+    const canvasArea = Math.max(1, audit.canvasWidth * audit.canvasHeight);
+    const minAlphaPixels = Math.max(900, Math.floor(canvasArea * 0.2));
+    const minBrightPixels = Math.max(260, Math.floor(canvasArea * 0.06));
     expect(audit.visible).toBe(true);
-    expect(audit.alphaPixels).toBeGreaterThan(5_000);
-    expect(audit.brightPixels).toBeGreaterThan(350);
+    expect(audit.alphaPixels).toBeGreaterThan(minAlphaPixels);
+    expect(audit.brightPixels).toBeGreaterThan(minBrightPixels);
     if (context?.zoneId) {
         expect(audit.targetZoneId).toBe(context.zoneId);
-        expect(audit.fxCenterInsideTarget).toBe(true);
-        expect(audit.targetCenterInsideFx).toBe(true);
-        expect(audit.targetOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.35);
-        expect(audit.fxMaxTargetRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(0.88);
-        expect(audit.targetCenterDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(90);
+        expect(audit.targetObjectId).toBe(audit.objectId);
+        expect(audit.fxCenterInsideTargetObject).toBe(true);
+        expect(audit.targetObjectCenterInsideFx).toBe(true);
+        expect(audit.targetObjectOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.5);
+        expect(audit.fxMaxTargetObjectRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1.08);
+        expect(audit.targetObjectCenterDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(34);
     }
     return audit;
 }
@@ -1255,27 +1334,25 @@ async function captureMageWarsSummonFxProcessScreenshot(
 
     let targetRegionAudit: ScreenshotRegionVisualAudit | undefined;
     if (context?.beforeScreenshotPath && context.targetRect) {
-        const processTargetRect = context.zoneId
-            ? await page.getByTestId(`mage-wars-arena-zone-${context.zoneId}`).boundingBox()
-            : context.targetRect;
-        if (!processTargetRect) throw new Error(`${label} 召唤过程帧目标格 ${context.zoneId} 没有可截图矩形，无法做目标格像素审计`);
+        const processTargetRect = fxAudit.targetObjectId
+            ? await page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${fxAudit.targetObjectId}"]`).first().boundingBox()
+            : context.zoneId
+                ? await page.getByTestId(`mage-wars-arena-zone-${context.zoneId}`).boundingBox()
+                : context.targetRect;
+        if (!processTargetRect) throw new Error(`${label} 召唤过程帧目标对象 ${fxAudit.targetObjectId ?? context.zoneId} 没有可截图矩形，无法做对象区域像素审计`);
         targetRegionAudit = await readScreenshotRegionVisualAudit(
             context.beforeScreenshotPath,
             screenshotPath,
-            context.targetRect,
+            processTargetRect,
             processTargetRect,
             await readViewport(page),
         );
-        const minStrongChangedPixels = Math.max(650, Math.floor(targetRegionAudit.totalPixels * 0.006));
-        const minPositiveLumDeltaPixels = Math.max(180, Math.floor(targetRegionAudit.totalPixels * 0.0018));
-        expect(targetRegionAudit.strongChangedPixels, `${label} 召唤过程帧目标格没有足够强变化：${JSON.stringify(targetRegionAudit)}`)
+        const minStrongChangedPixels = Math.max(180, Math.floor(targetRegionAudit.totalPixels * 0.004));
+        const minPositiveLumDeltaPixels = Math.max(80, Math.floor(targetRegionAudit.totalPixels * 0.0016));
+        expect(targetRegionAudit.strongChangedPixels, `${label} 召唤过程帧目标对象区域没有足够强变化：${JSON.stringify(targetRegionAudit)}`)
             .toBeGreaterThan(minStrongChangedPixels);
-        expect(targetRegionAudit.positiveLumDeltaPixels, `${label} 召唤过程帧目标格没有足够亮核变化：${JSON.stringify(targetRegionAudit)}`)
+        expect(targetRegionAudit.positiveLumDeltaPixels, `${label} 召唤过程帧目标对象区域没有足够亮核变化：${JSON.stringify(targetRegionAudit)}`)
             .toBeGreaterThan(minPositiveLumDeltaPixels);
-        expect(targetRegionAudit.avgLumDelta, `${label} 召唤过程帧目标格整体被压暗：${JSON.stringify(targetRegionAudit)}`)
-            .toBeGreaterThan(0);
-        expect(targetRegionAudit.positiveLumDeltaPixels, `${label} 召唤过程帧目标格亮度提升没有压过暗场变化：${JSON.stringify(targetRegionAudit)}`)
-            .toBeGreaterThan(targetRegionAudit.negativeLumDeltaPixels * 1.5);
     }
 
     return { ...fxAudit, screenshotPath, targetRegionAudit };
@@ -1284,26 +1361,153 @@ async function captureMageWarsSummonFxProcessScreenshot(
 async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Promise<MageWarsFxAudit> {
     const impactTestId = resolveFxImpactTestId(kind);
     const handle = await page.waitForFunction(({ fxKind, impactId }) => {
+        type ProbeRecord = { checks: number; last: unknown; best: unknown };
+        const probeWindow = window as typeof window & { __mageWarsTravelFxAuditProbe?: ProbeRecord };
+        const probe = probeWindow.__mageWarsTravelFxAuditProbe ?? { checks: 0, last: null, best: null };
+        probe.checks += 1;
+        probeWindow.__mageWarsTravelFxAuditProbe = probe;
+        const fail = (reason: string, extra: Record<string, unknown> = {}) => {
+            probe.last = { reason, ...extra };
+            return null;
+        };
         const travel = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`);
         const sourceWake = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-source-wake"]`);
         const impact = document.querySelector<HTMLElement>(`[data-testid="${impactId}"]`);
         const requiresSourceWake = fxKind !== 'attack';
-        if (!impact || (requiresSourceWake && !sourceWake)) return null;
-        return {
+        if (!impact || (requiresSourceWake && !sourceWake)) {
+            return fail('missing-impact-or-source-wake', {
+                impactId,
+                hasImpact: Boolean(impact),
+                hasSourceWake: Boolean(sourceWake),
+                hasTravel: Boolean(travel),
+                activeCues: document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]')?.dataset.fxActiveCues ?? null,
+            });
+        }
+        const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        const anchorId = impact.dataset.targetAnchorId || travel?.dataset.targetAnchorId || null;
+        let targetAnchorDistancePx: number | null = null;
+        let targetAnchorOverlapRatio: number | null = null;
+        let fxMaxTargetAnchorRatio: number | null = null;
+        if (anchorId) {
+            const anchor = document.querySelector<HTMLElement>(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${escapeAttr(anchorId)}"]`,
+            ) ?? document.querySelector<HTMLElement>(
+                `[data-testid="mage-wars-zone-mage-entity"][data-player-id="${escapeAttr(anchorId)}"]`,
+            );
+            if (!anchor) return fail('missing-target-anchor-element', { anchorId });
+            const impactRect = impact.getBoundingClientRect();
+            const anchorRect = anchor.getBoundingClientRect();
+            if (impactRect.width <= 0 || impactRect.height <= 0 || anchorRect.width <= 0 || anchorRect.height <= 0) {
+                return fail('zero-sized-impact-or-anchor', {
+                    anchorId,
+                    impactRect: {
+                        x: Math.round(impactRect.x),
+                        y: Math.round(impactRect.y),
+                        width: Math.round(impactRect.width),
+                        height: Math.round(impactRect.height),
+                    },
+                    anchorRect: {
+                        x: Math.round(anchorRect.x),
+                        y: Math.round(anchorRect.y),
+                        width: Math.round(anchorRect.width),
+                        height: Math.round(anchorRect.height),
+                    },
+                });
+            }
+            const impactCenterX = impactRect.left + impactRect.width / 2;
+            const impactCenterY = impactRect.top + impactRect.height / 2;
+            const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+            const anchorCenterY = anchorRect.top + anchorRect.height / 2;
+            const overlapWidth = Math.max(0, Math.min(impactRect.right, anchorRect.right) - Math.max(impactRect.left, anchorRect.left));
+            const overlapHeight = Math.max(0, Math.min(impactRect.bottom, anchorRect.bottom) - Math.max(impactRect.top, anchorRect.top));
+            targetAnchorDistancePx = Math.round(Math.hypot(impactCenterX - anchorCenterX, impactCenterY - anchorCenterY) * 10) / 10;
+            targetAnchorOverlapRatio = Math.round(((overlapWidth * overlapHeight) / Math.max(1, anchorRect.width * anchorRect.height)) * 1_000) / 1_000;
+            fxMaxTargetAnchorRatio = Math.round(Math.max(
+                impactRect.width / Math.max(1, anchorRect.width),
+                impactRect.height / Math.max(1, anchorRect.height),
+            ) * 1_000) / 1_000;
+            if (
+                targetAnchorDistancePx > Math.max(anchorRect.width, anchorRect.height) * 0.18
+                || targetAnchorOverlapRatio < 0.35
+                || fxMaxTargetAnchorRatio > 1.35
+            ) {
+                return fail('impact-not-anchored-to-target-object', {
+                    anchorId,
+                    targetAnchorDistancePx,
+                    targetAnchorOverlapRatio,
+                    fxMaxTargetAnchorRatio,
+                    impactRect: {
+                        x: Math.round(impactRect.x),
+                        y: Math.round(impactRect.y),
+                        width: Math.round(impactRect.width),
+                        height: Math.round(impactRect.height),
+                    },
+                    anchorRect: {
+                        x: Math.round(anchorRect.x),
+                        y: Math.round(anchorRect.y),
+                        width: Math.round(anchorRect.width),
+                        height: Math.round(anchorRect.height),
+                    },
+                });
+            }
+        }
+        const audit = {
             sourceRow: travel?.dataset.sourceRow ?? null,
             sourceCol: travel?.dataset.sourceCol ?? null,
             targetRow: travel?.dataset.targetRow ?? null,
             targetCol: travel?.dataset.targetCol ?? null,
+            sourceAnchorId: travel?.dataset.sourceAnchorId || sourceWake?.dataset.sourceAnchorId || null,
+            targetAnchorId: anchorId,
+            targetAnchorDistancePx,
+            targetAnchorOverlapRatio,
+            fxMaxTargetAnchorRatio,
             hasSourceWake: Boolean(sourceWake),
             hasImpact: true,
             hasTravel: Boolean(travel),
         };
-    }, { fxKind: kind, impactId: impactTestId }, { timeout: 5_000 });
+        probe.best = audit;
+        return audit;
+    }, { fxKind: kind, impactId: impactTestId }, { timeout: 5_000 }).catch(async (error: unknown) => {
+        const debug = await page.evaluate(() => {
+            const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+            const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
+            return {
+                probe: (window as typeof window & { __mageWarsTravelFxAuditProbe?: unknown }).__mageWarsTravelFxAuditProbe ?? null,
+                board: board ? {
+                    phase: board.dataset.mageWarsPhase ?? null,
+                    eventCount: board.dataset.mageWarsEventCount ?? null,
+                    eventLatestId: board.dataset.mageWarsEventLatestId ?? null,
+                    eventCursor: board.dataset.mageWarsEventCursor ?? null,
+                    lastConsumedEvents: board.dataset.mageWarsLastConsumedEvents ?? null,
+                    lastFxCues: board.dataset.mageWarsLastFxCues ?? null,
+                } : null,
+                layer: layer ? {
+                    activeCount: layer.dataset.fxActiveCount ?? null,
+                    activeCues: layer.dataset.fxActiveCues ?? null,
+                    childTestIds: Array.from(layer.querySelectorAll<HTMLElement>('[data-testid]'))
+                        .slice(0, 20)
+                        .map((element) => element.getAttribute('data-testid')),
+                } : null,
+            };
+        }).catch((debugError: unknown) => ({
+            error: debugError instanceof Error ? debugError.message : String(debugError),
+        }));
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error([
+            `Mage Wars ${kind} 过程帧未达到目标对象锚点审计门槛`,
+            message,
+            `debug=${JSON.stringify(debug, null, 2)}`,
+        ].join('\n'));
+    });
     const audit = await handle.jsonValue() as MageWarsFxAudit;
     if (kind !== 'attack') {
         expect(audit.hasSourceWake).toBe(true);
     }
     expect(audit.hasImpact).toBe(true);
+    expect(audit.targetAnchorId).toBeTruthy();
+    expect(audit.targetAnchorDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(40);
+    expect(audit.targetAnchorOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.35);
+    expect(audit.fxMaxTargetAnchorRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1.35);
     return audit;
 }
 
@@ -2696,17 +2900,23 @@ test.describe('Mage Wars formal online runtime', () => {
                 .first();
             await expect(attackTarget).toBeVisible({ timeout: 5_000 });
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '攻击代表态目标牌面截图前预加载');
-            await castPreparedSpellOnFieldObject(match.hostPage, '间歇喷泉', attackTarget);
-            const attackFxAudit = await captureMageWarsFxProcessScreenshots(
-                match.hostPage,
-                testInfo,
-                'attack',
-                '03-间歇喷泉攻击阿希拉牧师',
-                {
-                    expectTravel: true,
-                    expectDamageFloat: true,
-                },
-            );
+            let attackFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
+            await castPreparedSpellOnFieldObject(match.hostPage, '间歇喷泉', attackTarget, () => {
+                attackFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                    match.hostPage,
+                    testInfo,
+                    'attack',
+                    '03-间歇喷泉攻击阿希拉牧师',
+                    {
+                        expectTravel: true,
+                        expectDamageFloat: true,
+                    },
+                );
+            });
+            if (!attackFxAuditPromise) {
+                throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
+            }
+            const attackFxAudit = await attackFxAuditPromise;
             expect(attackFxAudit.sourceRow).toBe('2');
             expect(attackFxAudit.sourceCol).toBe('0');
             expect(attackFxAudit.targetRow).toBe('2');

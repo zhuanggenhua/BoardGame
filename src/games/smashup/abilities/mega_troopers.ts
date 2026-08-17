@@ -270,7 +270,7 @@ function formMegabotPod(ctx: AbilityContext): AbilityResult {
             }),
         ],
         {
-            sourceId: 'mega_troopers_form_megabot_pod',
+            sourceId: 'mega_troopers_form_megabot_pod_move_minions',
             targetType: 'minion',
             multi: { min: 0, max: targets.length },
             titleKey: 'ui.mega_troopers_form_megabot_pod_move_title',
@@ -1613,7 +1613,7 @@ export function registerMegaTroopersInteractionHandlers(): void {
         return { state, events: buildMegabotToBaseEvents(state.core, playerId, selected.baseIndex, 'mega_troopers_red_trooper', timestamp) };
     });
 
-    registerInteractionHandler('mega_troopers_form_megabot_pod', (state, playerId, value, data, _random, timestamp) => {
+    const formMegabotPodHandler = (state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) => {
         const selectedValues = (Array.isArray(value) ? value : [value]) as Array<{
             skip?: boolean;
             baseIndex?: number;
@@ -1657,7 +1657,9 @@ export function registerMegaTroopersInteractionHandlers(): void {
             });
         });
         return { state, events };
-    });
+    };
+    registerInteractionHandler('mega_troopers_form_megabot_pod', formMegabotPodHandler);
+    registerInteractionHandler('mega_troopers_form_megabot_pod_move_minions', formMegabotPodHandler);
 
     registerInteractionHandler('mega_troopers_red_trooper_pod', (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as { baseIndex?: number } | undefined;

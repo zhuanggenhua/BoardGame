@@ -57,7 +57,16 @@ describe('alien_scout afterScoring trigger', () => {
         const prompt = getSimpleChoicePrompt(result.matchState!, 'alien_scout_return');
         const optionIds = getPromptOptions(prompt).map(option => option.id);
 
-        expect(optionIds).toEqual(expect.arrayContaining(['yes', 'no']));
+        expect(prompt.targetType ?? prompt.data?.targetType).toBe('field-source-action');
+        expect(optionIds).toEqual(expect.arrayContaining(['source-scout1-action', 'no']));
+        expect(getPromptOptions(prompt).find(option => option.id === 'source-scout1-action')?.value).toEqual(
+            expect.objectContaining({
+                fieldInteractionType: 'source-action',
+                fieldSourceType: 'minion',
+                sourceUid: 'scout1',
+                returnIt: true,
+            }),
+        );
     });
 
     it('选择回手后侦察兵从基地进入控制者手牌', () => {

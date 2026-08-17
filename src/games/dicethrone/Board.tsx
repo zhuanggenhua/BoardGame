@@ -587,6 +587,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 否则本地重新挂载的特写遮罩会把可用 Token 留在画面里却无法点击。
     const hasBlockingAttackShowcase = isAttackShowcaseVisible && !isTokenResponseInteraction;
     const isTokenResponder = pendingDamage && (pendingDamage.responderId === rootPid);
+    const canConfirmTokenEvasionFromRightTray = Boolean(
+        isTokenEvasionRollContextActive
+        && isTokenResponder
+        && !isSpectator
+    );
     // 领域层计算当前阶段可用的 Token 列表（唯一数据源）
     const usableTokens = React.useMemo(() => {
         if (!pendingDamage) return [];
@@ -925,7 +930,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 响应窗口状态已在上方声明（380-381行），这里直接使用
     const responseWindow = access.responseWindow;
     const isResponder = isManualSelfResponseWindow;
-    const sharedResponsePrompt = tokenInteraction
+    const sharedResponsePrompt = tokenInteraction && !canConfirmTokenEvasionFromRightTray
         ? (tokenInteraction.onSkip
             ? { onPass: tokenInteraction.onSkip, kind: 'token' as const, passLabel: tokenInteraction.passLabel }
             : undefined)
@@ -1324,7 +1329,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [canRerollBonusDiceFromRightTray, engineMoves]);
     const isReplayOnlyRollContextActive = Boolean(replayOnlyRollDice);
     const canInteractRightSidebarDice = !isReplayOnlyRollContextActive
-        && (canInteractDice || !!rerollSelectingAction || isRightTrayBonusDiceSettlementActive);
+        && (
+            canInteractDice
+            || !!rerollSelectingAction
+            || isRightTrayBonusDiceSettlementActive
+            || canConfirmTokenEvasionFromRightTray
+        );
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -2087,6 +2097,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             advanceTutorialIfNeeded('dice-roll-button');
                         }}
                         onConfirm={() => {
+                            if (canConfirmTokenEvasionFromRightTray) {
+                                engineMoves.skipTokenResponse();
+                                return;
+                            }
                             if (isRightTrayBonusDiceSettlementActive) {
                                 completeRightTrayBonusDiceSettlement();
                                 return;
@@ -2117,12 +2131,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
                         showDiceTray={showRailDiceTray || Boolean(bonusDiceTrayDice)}
-                        showDiceActions={!isTokenEvasionRollContextActive && !isReplayOnlyRollContextActive && (
+                        showDiceActions={!isReplayOnlyRollContextActive && (
+                            !isTokenEvasionRollContextActive
+                            || canConfirmTokenEvasionFromRightTray
+                        ) && (
                             !rightTrayBonusDiceSettlement
                             || Boolean(diceMultistepInteraction)
                             || isRightTrayBonusDiceSettlementActive
                         )}
-                        isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive}
+                        isBonusDiceSettlement={isRightTrayBonusDiceSettlementActive || canConfirmTokenEvasionFromRightTray}
                         canRerollBonusDice={canRerollBonusDiceFromRightTray}
                         onRerollBonusDice={isRightTrayBonusDiceSettlementActive
                             ? handleRerollBonusDiceFromRightTray

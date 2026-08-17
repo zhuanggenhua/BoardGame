@@ -13,7 +13,9 @@ import {
     addTempPower,
     buildAbilityFeedback,
     buildBaseTargetOptions,
-    buildFieldSourceBaseTargetOptions,
+    buildFieldSourceTargetOptions,
+    buildFieldSourceTargetPromptConfig,
+    buildFieldSourceToBaseTargetOptions,
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildSemanticOngoingAttachEvents,
@@ -65,6 +67,7 @@ type BaseChoice = { baseIndex?: number; baseDefId?: string; skip?: boolean };
 type SheriffContinuation = {
     friendlyMinionUid: string;
     casterPlayerId: PlayerId;
+    sourceDefId: string;
 };
 
 type MummyContinuation = {
@@ -240,7 +243,12 @@ function buildMinionMetadataUpdatedEvent(
     };
 }
 
-function buildEnemyMinionOptions(state: SmashUpCore, baseIndex: number, sourcePlayerId: PlayerId) {
+function buildEnemyMinionFieldTargets(
+    state: SmashUpCore,
+    baseIndex: number,
+    sourcePlayerId: PlayerId,
+    sourceDefId: string,
+) {
     const base = state.bases[baseIndex];
     if (!base) return [];
     const targets = base.minions
@@ -251,12 +259,20 @@ function buildEnemyMinionOptions(state: SmashUpCore, baseIndex: number, sourcePl
             baseIndex,
             label: `${getCardDef(minion.defId)?.name ?? minion.defId}（力量 ${getMinionPower(state, minion, baseIndex)}）`,
         }));
-    return buildMinionTargetOptions(targets, {
+    const targetOptions = buildMinionTargetOptions(targets, {
         state,
         sourcePlayerId,
-        sourceDefId: 'world_champs_sheriff',
+        sourceDefId,
         effectType: 'destroy',
     });
+    return targetOptions.map(option => ({
+        type: 'minion' as const,
+        label: option.label,
+        uid: option.value.minionUid,
+        defId: option.value.defId,
+        baseIndex: option.value.baseIndex,
+        aiHint: option._ai,
+    }));
 }
 
 const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
@@ -819,18 +835,32 @@ const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldCh
         '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
         [
             createSkipOption('跳过（不决斗）', 'ui.world_champs_sheriff_before_scoring_skip_option'),
-            ...buildEnemyMinionOptions(context.matchState.core, context.sourceBaseIndex, context.casterPlayerId),
+            ...buildFieldSourceTargetOptions(
+                {
+                    type: 'minion',
+                    uid: context.friendlyMinionUid,
+                    defId: context.sourceDefId,
+                    fromBaseIndex: context.sourceBaseIndex,
+                },
+                buildEnemyMinionFieldTargets(
+                    context.matchState.core,
+                    context.sourceBaseIndex,
+                    context.casterPlayerId,
+                    context.sourceDefId,
+                ),
+            ),
         ],
-        { sourceId: 'world_champs_sheriff_before_scoring', targetType: 'minion', titleKey: 'ui.world_champs_sheriff_before_scoring_title' },
+        buildFieldSourceTargetPromptConfig({ sourceId: 'world_champs_sheriff_before_scoring', titleKey: 'ui.world_champs_sheriff_before_scoring_title' }),
     ),
     onResolve: ({ state, context, value, timestamp }) => {
-        const selected = value as MinionChoice;
-        if (selected.skip || !selected.minionUid) return { events: [] };
+        const selected = value as MinionChoice & { targetMinionUid?: string };
+        const challengedMinionUid = selected.targetMinionUid;
+        if (selected.skip || !challengedMinionUid) return { events: [] };
         const duelStarted = startDuelWithEvents(state, {
             sourceId: 'world_champs_sheriff_before_scoring',
             sourcePlayerId: context.casterPlayerId,
             challengerMinionUid: context.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
+            challengedMinionUid,
             outcome: 'destroy_loser',
             destroyReason: 'world_champs_sheriff',
         }, timestamp);
@@ -853,8 +883,9 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
             '木乃伊：你可以将本随从埋葬到另一个基地',
             [
                 createSkipOption('跳过（不埋葬）', 'ui.world_champs_mummy_after_scoring_skip_option'),
-                ...buildFieldSourceBaseTargetOptions(
+                ...buildFieldSourceToBaseTargetOptions(
                     {
+                        type: 'minion',
                         uid: context.cardUid,
                         defId: context.defId,
                         fromBaseIndex: context.sourceBaseIndex,
@@ -863,7 +894,7 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
                     context.matchState.core,
                 ),
             ],
-            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'minion', titleKey: 'ui.world_champs_mummy_after_scoring_title' },
+            buildFieldSourceTargetPromptConfig({ sourceId: 'world_champs_mummy_after_scoring', titleKey: 'ui.world_champs_mummy_after_scoring_title' }),
         );
     },
     onResolve: ({ state, context, value, random, timestamp }) => {
@@ -1488,13 +1519,17 @@ function worldChampsSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
         return { events: [] };
     }
     if (!canStartDuel(ctx.state)) return { events: [] };
-    const enemyOptions = buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.sourceControllerId);
-    if (enemyOptions.length === 0) return { events: [] };
+    const sourceDefId = ctx.sourceDefId
+        ?? ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid)?.defId
+        ?? 'world_champs_sheriff';
+    const enemyTargets = buildEnemyMinionFieldTargets(ctx.state, ctx.baseIndex, ctx.sourceControllerId, sourceDefId);
+    if (enemyTargets.length === 0) return { events: [] };
     return executeAbilityProgram(
         worldChampsSheriffBeforeScoringPromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             friendlyMinionUid: ctx.sourceCardUid,
             casterPlayerId: ctx.sourceControllerId,
+            sourceDefId,
             sourceBaseIndex: ctx.baseIndex,
         } satisfies SheriffContinuation & { sourceBaseIndex: number }),
     );

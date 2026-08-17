@@ -1116,8 +1116,20 @@ describe('Skeletons abilities', () => {
             now: 3901,
         });
         const prompt = getSimpleChoicePrompt(triggered.matchState ?? makeMatchState(core), 'skeletons_gravestones_after_scoring');
+        expect(prompt.targetType).toBe('field-source-target');
         expect(getPromptOptions(prompt).some((entry: any) => entry.value?.skip)).toBe(false);
         const baseOption = getPromptOption(prompt, entry => entry.value?.baseIndex === 1, 'baseOption');
+        expect(baseOption.value).toMatchObject({
+            fieldInteractionType: 'source-target',
+            fieldSourceType: 'ongoing',
+            fieldTargetType: 'base',
+            sourceUid: 'gravestones-1',
+            cardUid: 'gravestones-1',
+            ongoingUid: 'gravestones-1',
+            sourceBaseIndex: 0,
+            targetBaseIndex: 1,
+            baseIndex: 1,
+        });
 
         const resolved = respondToPrompt(
             triggered.matchState ?? makeMatchState(core),

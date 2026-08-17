@@ -967,6 +967,7 @@ function grayWolf(ctx: AbilityContext): AbilityResult {
             id: `hand-minion-${index}`,
             label: cardLabel(card.defId),
             value: { cardUid: card.uid, defId: card.defId, zone: 'hand', mode: 'play', baseIndex: ctx.baseIndex },
+            _source: 'hand' as const,
             displayMode: 'card' as const,
         })),
         {

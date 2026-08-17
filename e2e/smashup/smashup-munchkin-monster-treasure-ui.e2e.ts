@@ -489,6 +489,14 @@ async function clickManualMinionChoice(page: Page, minionUid: string, descriptio
     await page.waitForTimeout(300);
 }
 
+async function clickManualOngoingChoice(page: Page, ongoingUid: string, description: string): Promise<void> {
+    const ongoing = page.locator(`[data-ongoing-uid="${ongoingUid}"]`).first();
+    await expect(ongoing, `${description}：持续行动本体必须可见`).toBeVisible({ timeout: 15000 });
+    await expect(ongoing, `${description}：持续行动本体必须处于可发动高亮`).toHaveAttribute('data-highlighted', 'true');
+    await ongoing.click({ force: true });
+    await page.waitForTimeout(300);
+}
+
 async function expectCurrentInteractionManual(game: GameTestContext, description: string): Promise<void> {
     const state = await game.getState();
     expect(
@@ -18219,13 +18227,35 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.advancePhase();
         await game.waitForInteraction('munchkin_clerics_bin_and_gone_minion', 20000);
         await waitForSmashUpFxToSettle(page);
-        await expectManualMinionChoiceVisible(
-            page,
-            'clerics-bin-move',
-            '垃圾处理应显示计分基地上的己方随从本体供手动选择',
-            { forbidPromptContext: true },
-        );
-        await game.screenshot('牧师-垃圾处理-计分后手动选择随从', testInfo);
+        const promptState = await game.getState();
+        const promptData = promptState.sys?.interaction?.current?.data;
+        const promptOptions = Array.isArray(promptData?.options) ? promptData.options : [];
+        expect(promptData?.targetType).toBe('field-source-target');
+        expect(promptOptions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    fieldInteractionType: 'source-target',
+                    fieldSourceType: 'ongoing',
+                    fieldTargetType: 'minion',
+                    sourceUid: 'clerics-bin-1',
+                    targetMinionUid: 'clerics-bin-move',
+                    targetMinionDefId: 'alien_invader',
+                }),
+            }),
+        ]));
+        const binSource = page.locator('[data-ongoing-uid="clerics-bin-1"]').first();
+        const targetMinion = page.locator('[data-minion-uid="clerics-bin-move"]').first();
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await expect(binSource).toHaveAttribute('data-highlighted', 'true');
+        await expect(binSource).toHaveAttribute('data-selected', 'false');
+        await expect(targetMinion).toHaveAttribute('data-highlighted', 'false');
+        await game.screenshot('牧师-垃圾处理-来源持续行动可发动', testInfo);
+
+        await clickManualOngoingChoice(page, 'clerics-bin-1', '垃圾处理选择来源持续行动');
+        await expect(binSource).toHaveAttribute('data-selected', 'true');
+        await expect(targetMinion).toHaveAttribute('data-highlighted', 'true');
+        await game.screenshot('牧师-垃圾处理-点击来源后目标随从高亮', testInfo);
+
         await clickManualMinionChoice(page, 'clerics-bin-move', '垃圾处理选择移动随从');
         await game.waitForNoInteraction(15000);
         await waitForSmashUpFxToSettle(page);

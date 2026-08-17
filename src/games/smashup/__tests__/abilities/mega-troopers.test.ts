@@ -698,7 +698,7 @@ describe('Mega Troopers 代表性玩法行为', () => {
             payload: { cardUid: 'form-pod' },
             timestamp: 137,
         }, FIXED_RANDOM);
-        const movePrompt = getSimpleChoicePrompt(movingPlay.finalState, 'mega_troopers_form_megabot_pod');
+        const movePrompt = getSimpleChoicePrompt(movingPlay.finalState, 'mega_troopers_form_megabot_pod_move_minions');
         const moveOptions = getPromptOptions(movePrompt);
         const selected = moveOptions
             .filter(option => ['ally-a', 'ally-b'].includes(option.value?.minionUid))

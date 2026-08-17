@@ -10,8 +10,8 @@ import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { defaultTestRandom, runCommand } from '../testRunner';
 import {
     getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
     getPromptOption,
-    getPromptOptions,
     getSimpleChoicePrompt,
     makeBase,
     makeMatchState,
@@ -255,7 +255,30 @@ describe('World Champs queued source-controller runtime context', () => {
             4202,
         );
         expect(queuedState).toBeDefined();
-        expect(getReactionPrompt(queuedState!.state)?.playerId).toBe('1');
+        const reactionPrompt = getReactionPrompt(queuedState!.state);
+        expect(reactionPrompt?.playerId).toBe('1');
+        const sheriffReactionOption = getReactionPromptOptionBySourceDefId(queuedState!.state, reactionPrompt, 'world_champs_sheriff');
+        const openedSheriffPrompt = respondToPrompt(queuedState!.state, sheriffReactionOption.id, '1', defaultTestRandom);
+        expect(openedSheriffPrompt.success).toBe(true);
+        const sheriffPrompt = getSimpleChoicePrompt(openedSheriffPrompt.finalState, 'world_champs_sheriff_before_scoring');
+        const duelTargetOption = getPromptOption(
+            sheriffPrompt,
+            option => option?.value?.targetMinionUid === 'enemy-1',
+            'World Champs Sheriff source-target duel option',
+        );
+        expect(duelTargetOption.value).toEqual(expect.objectContaining({
+            fieldInteractionType: 'source-target',
+            fieldSourceType: 'minion',
+            fieldTargetType: 'minion',
+            sourceUid: 'wc-sheriff-1',
+            minionUid: 'wc-sheriff-1',
+            targetUid: 'enemy-1',
+            targetMinionUid: 'enemy-1',
+            sourceBaseIndex: 0,
+            fromBaseIndex: 0,
+            baseIndex: 0,
+            defId: 'world_champs_sheriff',
+        }));
     });
 
     it('world_champs_sheriff_pod 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
@@ -295,5 +318,33 @@ describe('World Champs queued source-controller runtime context', () => {
         const sheriffTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'wc-sheriff-pod-1');
         expect(sheriffTrigger).toBeDefined();
         expect(sheriffTrigger.ownerPlayerId).toBe('1');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+            defaultTestRandom,
+            4204,
+        );
+        expect(queuedState).toBeDefined();
+        const reactionPrompt = getReactionPrompt(queuedState!.state);
+        expect(reactionPrompt?.playerId).toBe('1');
+        const sheriffReactionOption = getReactionPromptOptionBySourceDefId(queuedState!.state, reactionPrompt, 'world_champs_sheriff_pod');
+        const openedSheriffPrompt = respondToPrompt(queuedState!.state, sheriffReactionOption.id, '1', defaultTestRandom);
+        expect(openedSheriffPrompt.success).toBe(true);
+        const sheriffPrompt = getSimpleChoicePrompt(openedSheriffPrompt.finalState, 'world_champs_sheriff_before_scoring');
+        const duelTargetOption = getPromptOption(
+            sheriffPrompt,
+            option => option?.value?.targetMinionUid === 'enemy-pod-1',
+            'World Champs Sheriff POD source-target duel option',
+        );
+        expect(duelTargetOption.value).toEqual(expect.objectContaining({
+            fieldInteractionType: 'source-target',
+            fieldSourceType: 'minion',
+            fieldTargetType: 'minion',
+            sourceUid: 'wc-sheriff-pod-1',
+            minionUid: 'wc-sheriff-pod-1',
+            targetUid: 'enemy-pod-1',
+            targetMinionUid: 'enemy-pod-1',
+            defId: 'world_champs_sheriff_pod',
+        }));
     });
 });

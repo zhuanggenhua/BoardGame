@@ -39,7 +39,7 @@ export type ReactionChoiceValue =
     | { kind: 'activate_special'; playerId: PlayerId; baseIndex: number; minionUid?: string; titanUid?: string }
     | { kind: 'pass' };
 
-interface ReactionOption {
+export interface ReactionOption {
     id: string;
     label: string;
     labelKey?: string;

@@ -857,7 +857,7 @@ const giveControlPrompt = createPromptProgram<
             [createSkipOption(), ...options],
             {
                 sourceId: context.sourceId,
-                targetType: 'generic',
+                targetType: 'player',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
             },

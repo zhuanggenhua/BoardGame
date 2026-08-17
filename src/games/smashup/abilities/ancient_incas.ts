@@ -437,7 +437,7 @@ function llama(ctx: AbilityContext): AbilityResult {
         ],
         {
             sourceId: 'ancient_incas_llama',
-            targetType: 'card',
+            targetType: 'generic',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },

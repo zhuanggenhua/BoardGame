@@ -591,7 +591,19 @@ describe('Mermaids abilities', () => {
         });
         const promptState = triggered.matchState ?? played.finalState;
         const prompt = getSimpleChoicePrompt(promptState, 'mermaids_shipwreck_cove_after_scoring');
+        expect(prompt.targetType).toBe('field-source-target');
         const option = getPromptOption(prompt, entry => entry.value?.baseIndex === 1, 'destination base');
+        expect(option.value).toMatchObject({
+            fieldInteractionType: 'source-target',
+            fieldSourceType: 'ongoing',
+            fieldTargetType: 'base',
+            sourceUid: sourceCardUid,
+            cardUid: sourceCardUid,
+            ongoingUid: sourceCardUid,
+            sourceBaseIndex: 0,
+            targetBaseIndex: 1,
+            baseIndex: 1,
+        });
 
         const resolved = respondToPrompt(promptState, option.id, '0', defaultTestRandom);
         expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(false);
