@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 import { checkChildProcessSupport } from '../infra/assert-child-process-support.mjs';
 import { generateAndroidBrandAssets, getAndroidBrandAssetConfig } from './android-assets.mjs';
 import { detectAndroidReleaseSigning, prepareAndroidReleaseSigning } from './android-signing.mjs';
-import { resolveAndroidBackendUrl } from './android-backend-url.mjs';
+import { assertNoPublicBackendSplit, resolveAndroidBackendUrl } from './android-backend-url.mjs';
 import {
     DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS,
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
@@ -62,6 +62,7 @@ for (const file of envFiles) {
 const resolvedAndroidBackendUrl = resolveAndroidBackendUrl(process.env);
 process.env.VITE_BACKEND_URL = resolvedAndroidBackendUrl;
 process.env.VITE_ANDROID_BACKEND_URL = resolvedAndroidBackendUrl;
+assertNoPublicBackendSplit(process.env, resolvedAndroidBackendUrl);
 process.env.VITE_CAPACITOR_APP_ID = process.env.VITE_CAPACITOR_APP_ID?.trim()
     || process.env.CAPACITOR_APP_ID?.trim()
     || '';

@@ -11,7 +11,7 @@ import {
     resolveAndroidAssetsBaseUrl,
     resolveAndroidControlAssetsBaseUrl,
 } from './android-assets-base-url.mjs';
-import { resolveAndroidBackendUrl } from './android-backend-url.mjs';
+import { assertNoPublicBackendSplit, resolveAndroidBackendUrl } from './android-backend-url.mjs';
 import { resolveAndroidOtaClientBuildEnv } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
@@ -253,6 +253,7 @@ const applyAndroidBackendDefaults = () => {
     const backendUrl = resolveAndroidBackendUrl(process.env);
     process.env.VITE_BACKEND_URL = backendUrl;
     process.env.VITE_ANDROID_BACKEND_URL = backendUrl;
+    assertNoPublicBackendSplit(process.env, backendUrl);
     logStep(`Android 后端地址: ${backendUrl}`);
 };
 

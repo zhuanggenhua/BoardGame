@@ -65,7 +65,8 @@ jobs:
       - name: Validate required configuration
         shell: bash
         env:
-          IOS_BACKEND_URL: ${{ vars.IOS_VITE_BACKEND_URL || vars.VITE_BACKEND_URL || secrets.IOS_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          IOS_VITE_BACKEND_URL_LEGACY: ${{ vars.IOS_VITE_BACKEND_URL || secrets.IOS_VITE_BACKEND_URL }}
           IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
           IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
           IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
@@ -73,7 +74,7 @@ jobs:
         run: |
           missing=()
 
-          [[ -n "${IOS_BACKEND_URL}" ]] || missing+=("IOS_VITE_BACKEND_URL or VITE_BACKEND_URL")
+          [[ -n "${VITE_BACKEND_URL}" ]] || missing+=("VITE_BACKEND_URL")
           [[ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64}" ]] || missing+=("IOS_DISTRIBUTION_CERTIFICATE_BASE64")
           [[ -n "${IOS_DISTRIBUTION_CERTIFICATE_PASSWORD}" ]] || missing+=("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD")
           [[ -n "${IOS_PROVISION_PROFILE_BASE64}" ]] || missing+=("IOS_PROVISION_PROFILE_BASE64")
@@ -81,6 +82,10 @@ jobs:
 
           if [[ ${#missing[@]} -gt 0 ]]; then
             echo "::error::Missing required iOS release configuration: ${missing[*]}"
+            exit 1
+          fi
+          if [[ -n "${IOS_VITE_BACKEND_URL_LEGACY}" && "${IOS_VITE_BACKEND_URL_LEGACY}" != "${VITE_BACKEND_URL}" ]]; then
+            echo "::error::iOS 后端入口必须与 Web/App 共用 VITE_BACKEND_URL，不能单独配置 IOS_VITE_BACKEND_URL=${IOS_VITE_BACKEND_URL_LEGACY}"
             exit 1
           fi
 
@@ -134,7 +139,7 @@ jobs:
         shell: bash
         run: |
           cat <<EOF > .env.ios
-          VITE_BACKEND_URL=${{ vars.IOS_VITE_BACKEND_URL || vars.VITE_BACKEND_URL || secrets.IOS_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
           VITE_ASSETS_BASE_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
           CAPACITOR_APP_ID=${{ vars.IOS_CAPACITOR_APP_ID || vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.IOS_CAPACITOR_APP_NAME || vars.CAPACITOR_APP_NAME || '易桌游' }}

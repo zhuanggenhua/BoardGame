@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
     DEFAULT_ANDROID_BACKEND_URL,
+    assertNoPublicBackendSplit,
     resolveAndroidBackendUrl,
 } from './android-backend-url.mjs';
 
@@ -60,5 +61,43 @@ test('后端地址必须是 HTTP 或 HTTPS 绝对地址', () => {
             VITE_BACKEND_URL: '8.148.71.102',
         }),
         /绝对 HTTP\/HTTPS URL/,
+    );
+});
+
+test('生产服务级后端覆盖必须与公开入口同源同路径', () => {
+    assert.doesNotThrow(() => assertNoPublicBackendSplit({
+        VITE_BACKEND_URL: 'http://8.148.71.102',
+        VITE_GAME_SERVER_URL: 'http://8.148.71.102',
+        VITE_AUTH_API_URL: 'http://8.148.71.102/auth',
+        VITE_FEEDBACK_API_URL: 'http://8.148.71.102/feedback',
+    }, 'http://8.148.71.102'));
+
+    assert.throws(
+        () => assertNoPublicBackendSplit({
+            VITE_BACKEND_URL: 'http://8.148.71.102',
+            VITE_GAME_SERVER_URL: 'https://api.easyboardgame.top',
+        }, 'http://8.148.71.102'),
+        /公开后端必须保持单一真相/,
+    );
+
+    assert.throws(
+        () => assertNoPublicBackendSplit({
+            VITE_BACKEND_URL: 'http://8.148.71.102',
+            VITE_AUTH_API_URL: '/auth',
+        }, 'http://8.148.71.102'),
+        /VITE_AUTH_API_URL=\/auth/,
+    );
+});
+
+test('没有公开入口时不能只配置服务级绝对后端', () => {
+    assert.doesNotThrow(() => assertNoPublicBackendSplit({
+        VITE_AUTH_API_URL: '/auth',
+    }));
+
+    assert.throws(
+        () => assertNoPublicBackendSplit({
+            VITE_AUTH_API_URL: 'http://8.148.71.102/auth',
+        }),
+        /未配置 VITE_BACKEND_URL/,
     );
 });

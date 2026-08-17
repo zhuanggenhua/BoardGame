@@ -33,6 +33,8 @@ IOS_DEVELOPMENT_TEAM=<Apple Team ID，可选；不填则从 provisioning profile
 IOS_CODE_SIGN_IDENTITY=Apple Distribution
 ```
 
+不要配置 `IOS_VITE_BACKEND_URL` 作为独立后端入口；iOS、Android 和 Web 必须共用同一个 `VITE_BACKEND_URL`。如果临时从域名切到 IP，也改这一处。
+
 ### GitHub Secrets
 
 必须放在 repository secrets：
@@ -71,7 +73,7 @@ PowerShell 转 base64：
 - App Store Connect 里已创建对应 App 记录。
 - provisioning profile 类型是 App Store / App Store Connect 分发，Bundle ID 是 `top.easyboardgame.app`，Team ID 与证书一致。
 - workflow 默认 `app-store-connect`，不要用 development/debug profile。
-- `VITE_BACKEND_URL` 指向线上 HTTPS API。
+- `VITE_BACKEND_URL` 指向与 Web / Android 共用的公开后端入口。
 - `VITE_ASSETS_BASE_URL` 指向 `https://assets.easyboardgame.top/official`。
 - 仓库当前 ref 已包含最新 `ios/`、`capacitor.config.ts`、`package-lock.json`。
 
@@ -107,6 +109,8 @@ VITE_IOS_OTA_CHANNEL=stable
 VITE_IOS_OTA_APP_READY_TIMEOUT_MS=15000
 VITE_MOBILE_PACKAGE_MANIFEST_URL=https://assets.easyboardgame.top/official/mobile-packages/ios
 ```
+
+本地 iOS 调试也不要新增 `IOS_VITE_BACKEND_URL`；需要切后端时仍改同一个 `VITE_BACKEND_URL`。
 
 ## TestFlight 发布步骤
 

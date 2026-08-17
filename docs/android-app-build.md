@@ -6,6 +6,7 @@
 
 - Android Release / OTA workflow 与 Web 使用同一个公开后端入口：`VITE_BACKEND_URL`。
 - `VITE_ANDROID_BACKEND_URL`、`ANDROID_VITE_BACKEND_URL`、`ANDROID_BACKEND_URL` 只作为迁移期旧别名；如果它们与 `VITE_BACKEND_URL` 同时存在但不一致，构建会直接失败，防止 Web/App 分叉。
+- 生产构建不允许再用 `VITE_GAME_SERVER_URL`、`VITE_AUTH_API_URL`、`VITE_FEEDBACK_API_URL` 等服务级变量把房间创建、联机 Socket、登录或反馈拆到不同后端；这些变量只能在本地调试同源路径时使用。
 - 未配置任何后端入口时，当前默认回退到 `http://8.148.71.102`；这只是统一公开入口的默认值，不是 Android 独立后端。
 - OTA 发布到服务器素材主源，不再要求对象存储凭据。
 - 推荐最小配置：

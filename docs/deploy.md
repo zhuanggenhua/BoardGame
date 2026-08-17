@@ -267,7 +267,7 @@ curl -I http://127.0.0.1/
 - 正确：`http://127.0.0.1/` → `/lobby-socket`、`/games/*`
 - 错误：直接访问 `http://127.0.0.1:18000`（该端口仅供容器内部使用）
 
-如果你本地用 Vite 直连后端，请确认 `VITE_BACKEND_URL` 指向正确的同域入口或代理入口。
+如果你本地用 Vite 直连后端，请确认 `VITE_BACKEND_URL` 指向正确的同域入口或代理入口。生产构建只允许 `VITE_BACKEND_URL` 作为公开后端入口；不要用 `VITE_GAME_SERVER_URL`、`VITE_AUTH_API_URL`、`VITE_FEEDBACK_API_URL` 等服务级变量把房间创建、联机 Socket、登录或反馈拆到不同后端。
 
 ### 可选环境变量
 
@@ -305,6 +305,7 @@ Cloudflare 控制台 → **Workers & Pages** → 选择你的 Pages 项目 → *
 - **环境变量**（非常重要）：
   - `VITE_BACKEND_URL` = `https://api.<你的域名>`
   - 例如：`VITE_BACKEND_URL=https://api.easyboardgame.top`
+  - 当前后端入口需要临时切到 IP 时，Web 和 App 都改同一个 `VITE_BACKEND_URL`，不要再配置单独的 Android 或 Socket 后端变量
 - **如果 Android App 临时使用 remote WebView 模式**：
   - `ANDROID_REMOTE_WEB_URL` 应指向实际对外可访问的前端页面入口，例如 `https://easyboardgame.top`
   - 不要把 `ANDROID_REMOTE_WEB_URL` 指到纯 API 域名，例如 `https://api.easyboardgame.top`
@@ -574,7 +575,7 @@ Android OTA 产物也走同一个服务器资源主源，但前缀独立：
 
 - **端口**：前端开发 `5173`；游戏服务 `18000`（容器内部）；API 单体 `80`（镜像部署）/ `3000`（Git 部署）；MongoDB `27017`
 - **CORS/Origin 白名单**：`WEB_ORIGINS`（生产环境必填实际域名）
-- **前端 API 指向**：`VITE_BACKEND_URL`（仅 Pages 分离部署时配置）
+- **前端 API 指向**：`VITE_BACKEND_URL`（公开后端单一真相；Pages 分离部署和 Android App 必须共用）
 - **环境变量模板**：`.env.example`（开发）、`.env.server`（生产，已 gitignore）
 
 ### 环境自动区分
@@ -699,7 +700,7 @@ BG_GAME_SERVER_CPU_WATCH_RESTART=1 bash scripts/deploy/install-game-server-cpu-w
   - 或者只改 `docker-compose.yml` 中 `web` 的端口映射，并同步 `WEB_ORIGINS`
 - **WebSocket 不通**：检查 `docker/nginx.conf` 的 Upgrade/Connection 头，以及访问路径是否以 `/default/`、`/lobby-socket/` 开头
 - **Vite 本地直连 18000**：
-  - `VITE_GAME_SERVER_URL` 仅用于分离部署；本地 dev 建议留空，走 Vite 代理。
+  - `VITE_GAME_SERVER_URL` 仅用于本地调试覆盖；生产 / Pages / App 分离部署统一改 `VITE_BACKEND_URL`。
   - 查看 `src/config/server.ts` 的回退逻辑，确保 dev 时不会强制指向 `http://127.0.0.1:18000`。
 - **为什么 dev 没问题但部署报错**：
   - 本地 `npm run dev:api` 现在通过 `node scripts/infra/dev-bundle-runner.mjs --label api --entry apps/api/src/main.ts --outfile temp/dev-bundles/api/main.mjs --tsconfig apps/api/tsconfig.json`

@@ -19,9 +19,23 @@ const LEGACY_ANDROID_BACKEND_URL_SOURCES = [
     'BG_ANDROID_BACKEND_URL_SECRET',
 ];
 
+const PUBLIC_SERVICE_BACKEND_URL_SOURCES = [
+    ['VITE_GAME_SERVER_URL', ''],
+    ['VITE_AUTH_API_URL', '/auth'],
+    ['VITE_ADMIN_API_URL', '/admin'],
+    ['VITE_FEEDBACK_API_URL', '/feedback'],
+    ['VITE_SPONSOR_API_URL', '/sponsors'],
+    ['VITE_NOTIFICATION_API_URL', '/notifications'],
+    ['VITE_GAME_CHANGELOG_API_URL', '/game-changelogs'],
+    ['VITE_UGC_API_URL', '/ugc'],
+    ['VITE_LAYOUT_API_URL', '/layout'],
+];
+
 export const normalizeBackendUrl = (value) => String(value || '').trim().replace(/\/+$/u, '');
 
 const isHttpBackendUrl = (value) => /^https?:\/\//iu.test(value);
+
+const isRelativeBackendPath = (value) => value === '' || value.startsWith('/');
 
 const collectSources = (env, names) => names
     .map((name) => ({
@@ -69,3 +83,60 @@ export const resolvePublicBackendUrl = (env = process.env) => {
 };
 
 export const resolveAndroidBackendUrl = resolvePublicBackendUrl;
+
+const joinBackendPath = (backendUrl, pathname) => {
+    const normalizedBackendUrl = normalizeBackendUrl(backendUrl);
+    if (!pathname) return normalizedBackendUrl;
+    return `${normalizedBackendUrl}${pathname}`;
+};
+
+const describeExpectedBackendUrl = (publicBackendUrl, expectedPath) => {
+    const normalizedPublicBackendUrl = normalizeBackendUrl(publicBackendUrl);
+    if (normalizedPublicBackendUrl) {
+        return joinBackendPath(normalizedPublicBackendUrl, expectedPath);
+    }
+    return expectedPath || '(unset)';
+};
+
+export const assertNoPublicBackendSplit = (env = process.env, publicBackendUrl = '') => {
+    const normalizedPublicBackendUrl = normalizeBackendUrl(publicBackendUrl || env?.VITE_BACKEND_URL || '');
+    const mismatches = [];
+
+    for (const [name, expectedPath] of PUBLIC_SERVICE_BACKEND_URL_SOURCES) {
+        const configuredValue = normalizeBackendUrl(env?.[name] || '');
+        if (!configuredValue) continue;
+
+        const expectedValue = describeExpectedBackendUrl(normalizedPublicBackendUrl, expectedPath);
+        if (isHttpBackendUrl(configuredValue)) {
+            if (!normalizedPublicBackendUrl) {
+                mismatches.push(`${name}=${configuredValue}，但未配置 VITE_BACKEND_URL`);
+                continue;
+            }
+            if (configuredValue !== expectedValue) {
+                mismatches.push(`${name}=${configuredValue}，应为 ${expectedValue}`);
+            }
+            continue;
+        }
+
+        if (!isRelativeBackendPath(configuredValue)) {
+            mismatches.push(`${name}=${configuredValue}，必须是绝对 HTTP/HTTPS URL 或同源路径`);
+            continue;
+        }
+
+        if (normalizedPublicBackendUrl) {
+            mismatches.push(`${name}=${configuredValue}，但 VITE_BACKEND_URL=${normalizedPublicBackendUrl} 时应使用 ${expectedValue}`);
+            continue;
+        }
+
+        if (configuredValue !== expectedValue) {
+            mismatches.push(`${name}=${configuredValue}，同源部署时应为 ${expectedValue}`);
+        }
+    }
+
+    if (mismatches.length > 0) {
+        throw new Error(
+            '公开后端必须保持单一真相：生产构建只允许 VITE_BACKEND_URL 作为公开后端入口，'
+            + `服务级覆盖不能让 Web/App 或 API/Socket 分叉：${mismatches.join('; ')}`,
+        );
+    }
+};

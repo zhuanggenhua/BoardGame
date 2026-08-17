@@ -13,7 +13,7 @@ import {
   normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta,
   readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat,
 } from './src/games/qidahen/regionAuthoritativeGuideFormats.ts'
-import { resolveAndroidBackendUrl } from './scripts/mobile/public-backend-url.js'
+import { assertNoPublicBackendSplit, resolveAndroidBackendUrl } from './scripts/mobile/public-backend-url.js'
 import type {
   QidahenRegionMaskLoadPayload,
   QidahenRegionMaskSavePayload,
@@ -577,6 +577,7 @@ const createDevApiDisabledPlugin = (enabled: boolean) => ({
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const publicBackendEnv = { ...env, ...process.env }
   const appVersion = readBuildMetaValue(env.VITE_APP_VERSION)
     || readBuildMetaValue(process.env.VITE_APP_VERSION)
     || readBuildMetaValue(process.env.APP_VERSION)
@@ -625,11 +626,18 @@ export default defineConfig(({ mode }) => {
   const useStableOptimizeDeps = mode === 'development' || useStableE2EOptimizeDeps
   const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = mode === 'android'
-    ? resolveAndroidBackendUrl(env)
-    : (env.VITE_BACKEND_URL || '')
+    ? resolveAndroidBackendUrl(publicBackendEnv)
+    : (publicBackendEnv.VITE_BACKEND_URL || '')
   if (mode === 'android') {
     env.VITE_BACKEND_URL = backendUrl
     process.env.VITE_BACKEND_URL = backendUrl
+  }
+  const shouldEnforcePublicBackendSingleSource = mode === 'android'
+    || mode === 'production'
+    || env.BG_ENFORCE_PUBLIC_BACKEND_SINGLE_SOURCE === '1'
+    || process.env.BG_ENFORCE_PUBLIC_BACKEND_SINGLE_SOURCE === '1'
+  if (shouldEnforcePublicBackendSingleSource) {
+    assertNoPublicBackendSplit(publicBackendEnv, backendUrl)
   }
   const viteCacheDir = resolveViteCacheDir(devPort)
 
