@@ -1535,8 +1535,15 @@ const parseStandaloneStringLiteral = (expression: string): { value: string; dyna
 const hasObjectLiteralTitleKey = (expression: string | undefined): boolean => {
     if (!expression) return false;
     const trimmed = expression.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return false;
-    return /\btitleKey\s*:/.test(trimmed);
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        return /\btitleKey\s*:/.test(trimmed);
+    }
+
+    const wrapperMatch = trimmed.match(/^(buildFieldSourceTargetPromptConfig|buildFieldSourceActionPromptConfig)\s*\(/);
+    if (!wrapperMatch) return false;
+    const openParenIndex = trimmed.indexOf('(');
+    const [configArg] = splitTopLevelCallArguments(trimmed, openParenIndex);
+    return hasObjectLiteralTitleKey(configArg?.expression);
 };
 
 const findNearestObjectLiteral = (expression: string, position: number): string | null => {
