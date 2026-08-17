@@ -4,12 +4,12 @@
 
 ## GitHub Actions 配置口径（先看这里）
 
-- Android Release / OTA workflow 默认使用 App 专用后端地址，不继承网页通用后端域名。
-- 后端地址优先使用 GitHub Variables / Secrets 的 `VITE_ANDROID_BACKEND_URL`，其次兼容 `ANDROID_VITE_BACKEND_URL`。
-- 未配置 App 专用后端地址时，Android 默认使用 `http://8.148.71.102`；只有通用 `VITE_BACKEND_URL` 已经是 IP / localhost 直连地址时，本地脚本才兼容沿用。
+- Android Release / OTA workflow 与 Web 使用同一个公开后端入口：`VITE_BACKEND_URL`。
+- `VITE_ANDROID_BACKEND_URL`、`ANDROID_VITE_BACKEND_URL`、`ANDROID_BACKEND_URL` 只作为迁移期旧别名；如果它们与 `VITE_BACKEND_URL` 同时存在但不一致，构建会直接失败，防止 Web/App 分叉。
+- 未配置任何后端入口时，当前默认回退到 `http://8.148.71.102`；这只是统一公开入口的默认值，不是 Android 独立后端。
 - OTA 发布到服务器素材主源，不再要求对象存储凭据。
 - 推荐最小配置：
-  - Variables: `VITE_ANDROID_BACKEND_URL`、`VITE_ANDROID_CONTROL_ASSETS_BASE_URL`、`VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
+  - Variables: `VITE_BACKEND_URL`、`VITE_ANDROID_CONTROL_ASSETS_BASE_URL`、`VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
   - Secrets: 服务器素材主源发布所需的受限 SSH / 发布令牌
 
 ## 命令
@@ -552,7 +552,7 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 可选 GitHub Variables：
 
-- `VITE_ANDROID_BACKEND_URL`
+- `VITE_BACKEND_URL`
 - `VITE_ASSETS_BASE_URL`
 - `ANDROID_OTA_APP_READY_TIMEOUT_MS`
 - `CAPACITOR_APP_ID`
@@ -560,6 +560,7 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 兼容旧配置：
 
+- `VITE_ANDROID_BACKEND_URL`
 - `ANDROID_VITE_BACKEND_URL`
 - `secrets.VITE_ANDROID_BACKEND_URL`
 

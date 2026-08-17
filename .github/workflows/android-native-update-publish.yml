@@ -45,7 +45,14 @@ jobs:
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-native-production' || 'android-native-nonprod' }}
     env:
       BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
-      ANDROID_BACKEND_URL: ${{ vars.VITE_ANDROID_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_ANDROID_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL || 'http://8.148.71.102' }}
+      BG_VITE_BACKEND_URL_VAR: ${{ vars.VITE_BACKEND_URL || '' }}
+      BG_VITE_BACKEND_URL_SECRET: ${{ secrets.VITE_BACKEND_URL || '' }}
+      BG_VITE_ANDROID_BACKEND_URL_VAR: ${{ vars.VITE_ANDROID_BACKEND_URL || '' }}
+      BG_VITE_ANDROID_BACKEND_URL_SECRET: ${{ secrets.VITE_ANDROID_BACKEND_URL || '' }}
+      BG_ANDROID_VITE_BACKEND_URL_VAR: ${{ vars.ANDROID_VITE_BACKEND_URL || '' }}
+      BG_ANDROID_VITE_BACKEND_URL_SECRET: ${{ secrets.ANDROID_VITE_BACKEND_URL || '' }}
+      BG_ANDROID_BACKEND_URL_VAR: ${{ vars.ANDROID_BACKEND_URL || '' }}
+      BG_ANDROID_BACKEND_URL_SECRET: ${{ secrets.ANDROID_BACKEND_URL || '' }}
       ANDROID_DOWNLOAD_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
       ANDROID_CONTROL_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_CONTROL_ASSETS_BASE_URL || vars.ANDROID_CONTROL_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
 
@@ -96,7 +103,6 @@ jobs:
         run: |
           missing=()
 
-          [[ -n "${ANDROID_BACKEND_URL}" ]] || missing+=("VITE_ANDROID_BACKEND_URL(or ANDROID_VITE_BACKEND_URL)")
           [[ -n "${ANDROID_KEYSTORE_BASE64}" ]] || missing+=("ANDROID_KEYSTORE_BASE64")
           [[ -n "${ANDROID_KEYSTORE_PASSWORD}" ]] || missing+=("ANDROID_KEYSTORE_PASSWORD")
           [[ -n "${ANDROID_KEY_ALIAS}" ]] || missing+=("ANDROID_KEY_ALIAS")
@@ -122,6 +128,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.params.outputs.target_ref }}
+
+      - name: Resolve Android backend URL
+        id: backend
+        if: steps.prereq.outputs.ready == 'true'
+        shell: bash
+        run: |
+          backend_url="$(node --input-type=module -e "import { resolveAndroidBackendUrl } from './scripts/mobile/android-backend-url.mjs'; console.log(resolveAndroidBackendUrl(process.env))")"
+          echo "ANDROID_BACKEND_URL=${backend_url}" >> "${GITHUB_ENV}"
+          echo "backend_url=${backend_url}" >> "${GITHUB_OUTPUT}"
 
       - name: Prepare asset SSH fallback
         if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
@@ -190,8 +205,8 @@ jobs:
         if: steps.prereq.outputs.ready == 'true'
         run: |
           cat <<'EOF' > .env.android
-          VITE_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
-          VITE_ANDROID_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
+          VITE_BACKEND_URL=${{ steps.backend.outputs.backend_url }}
+          VITE_ANDROID_BACKEND_URL=${{ steps.backend.outputs.backend_url }}
           VITE_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_CONTROL_ASSETS_BASE_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}

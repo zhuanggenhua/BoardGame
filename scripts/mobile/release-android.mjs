@@ -252,6 +252,7 @@ const applyOtaClientBuildDefaults = () => {
 const applyAndroidBackendDefaults = () => {
     const backendUrl = resolveAndroidBackendUrl(process.env);
     process.env.VITE_BACKEND_URL = backendUrl;
+    process.env.VITE_ANDROID_BACKEND_URL = backendUrl;
     logStep(`Android 后端地址: ${backendUrl}`);
 };
 

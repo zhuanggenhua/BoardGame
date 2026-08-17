@@ -8,16 +8,14 @@
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { ServerOptions } from 'socket.io';
 import msgpackParser from 'socket.io-msgpack-parser';
+import { resolveSocketIoServerTransports } from '../../../../src/server/socketTransports';
 
 export class MsgpackIoAdapter extends IoAdapter {
     createIOServer(port: number, options?: ServerOptions) {
         const opts: ServerOptions = {
             ...options,
             parser: msgpackParser,
-            transports:
-                process.env.SOCKET_IO_ALLOW_POLLING === 'true'
-                    ? ['websocket', 'polling']
-                    : ['websocket'],
+            transports: resolveSocketIoServerTransports(process.env),
         };
         return super.createIOServer(port, opts);
     }

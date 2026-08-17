@@ -13,6 +13,7 @@ import {
   normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta,
   readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat,
 } from './src/games/qidahen/regionAuthoritativeGuideFormats.ts'
+import { resolveAndroidBackendUrl } from './scripts/mobile/public-backend-url.js'
 import type {
   QidahenRegionMaskLoadPayload,
   QidahenRegionMaskSavePayload,
@@ -136,7 +137,6 @@ const resolveGitCommitSha = (): string | undefined => {
 }
 
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa'])
-const DEFAULT_ANDROID_BACKEND_URL = 'http://8.148.71.102'
 const sanitizeViteCacheSegment = (value: string) => (
   value
     .trim()
@@ -163,37 +163,6 @@ const isNonReleaseAndroidAppId = (appId: string) => (
     .split('.')
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
 )
-
-const normalizeBackendUrl = (value: string | undefined) => (value || '').trim().replace(/\/+$/g, '')
-const isHttpBackendUrl = (value: string) => /^https?:\/\//i.test(value)
-const isDirectAddressBackendUrl = (value: string) => {
-  if (!isHttpBackendUrl(value)) return false
-
-  try {
-    const { hostname } = new URL(value)
-    return hostname === 'localhost'
-      || hostname === '127.0.0.1'
-      || hostname === '0.0.0.0'
-      || /^\d{1,3}(?:\.\d{1,3}){3}$/u.test(hostname)
-      || hostname.includes(':')
-  } catch {
-    return false
-  }
-}
-
-const resolveAndroidBackendUrl = (env: Record<string, string>) => {
-  const explicitAndroidBackendUrl = normalizeBackendUrl(
-    env.VITE_ANDROID_BACKEND_URL
-      || env.ANDROID_VITE_BACKEND_URL
-      || env.ANDROID_BACKEND_URL,
-  )
-  if (explicitAndroidBackendUrl) return explicitAndroidBackendUrl
-
-  const legacyGenericBackendUrl = normalizeBackendUrl(env.VITE_BACKEND_URL)
-  if (isDirectAddressBackendUrl(legacyGenericBackendUrl)) return legacyGenericBackendUrl
-
-  return DEFAULT_ANDROID_BACKEND_URL
-}
 
 const createAndroidBuildMetaPlugin = (
   mode: string,

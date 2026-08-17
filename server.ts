@@ -54,6 +54,7 @@ import { getAiSeatIds } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { buildMatchDetailPayload } from './src/server/lobbyMatch';
+import { resolveSocketIoServerTransports } from './src/server/socketTransports';
 import logger, { gameLogger } from './server/logger';
 import { createTrainingDataRecorderFromEnv } from './server/trainingDataRecorder';
 import { requestLogger, errorHandler } from './server/middleware/logging';
@@ -270,15 +271,7 @@ const isAllowedCorsOrigin = (origin?: string) => {
 };
 const USE_PERSISTENT_STORAGE = process.env.USE_PERSISTENT_STORAGE !== 'false';
 const GAME_SERVER_PORT = Number(process.env.GAME_SERVER_PORT) || 18000;
-const SOCKET_IO_ALLOW_POLLING = process.env.SOCKET_IO_ALLOW_POLLING;
-const SOCKET_IO_SERVER_TRANSPORTS =
-    SOCKET_IO_ALLOW_POLLING === 'true'
-        ? ['websocket', 'polling']
-        : SOCKET_IO_ALLOW_POLLING === 'false'
-            ? ['websocket']
-            : process.env.NODE_ENV === 'production'
-                ? ['websocket']
-                : ['websocket', 'polling'];
+const SOCKET_IO_SERVER_TRANSPORTS = resolveSocketIoServerTransports(process.env);
 const TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS = (() => {
     const raw = process.env.TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS
         ?? process.env.TRAINING_DATA_MIN_MATCH_DURATION_MS;

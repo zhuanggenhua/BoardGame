@@ -59,7 +59,9 @@ for (const file of envFiles) {
     if (!existsSync(fullPath)) continue;
     dotenv.config({ path: fullPath, override: false, quiet: true });
 }
-process.env.VITE_BACKEND_URL = resolveAndroidBackendUrl(process.env);
+const resolvedAndroidBackendUrl = resolveAndroidBackendUrl(process.env);
+process.env.VITE_BACKEND_URL = resolvedAndroidBackendUrl;
+process.env.VITE_ANDROID_BACKEND_URL = resolvedAndroidBackendUrl;
 process.env.VITE_CAPACITOR_APP_ID = process.env.VITE_CAPACITOR_APP_ID?.trim()
     || process.env.CAPACITOR_APP_ID?.trim()
     || '';

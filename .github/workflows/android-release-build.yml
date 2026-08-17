@@ -30,14 +30,23 @@ jobs:
         run: npm ci
 
       - name: Create Android env file
+        id: android-env
         env:
-          ANDROID_BACKEND_URL: ${{ vars.VITE_ANDROID_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_ANDROID_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL || 'http://8.148.71.102' }}
+          BG_VITE_BACKEND_URL_VAR: ${{ vars.VITE_BACKEND_URL || '' }}
+          BG_VITE_BACKEND_URL_SECRET: ${{ secrets.VITE_BACKEND_URL || '' }}
+          BG_VITE_ANDROID_BACKEND_URL_VAR: ${{ vars.VITE_ANDROID_BACKEND_URL || '' }}
+          BG_VITE_ANDROID_BACKEND_URL_SECRET: ${{ secrets.VITE_ANDROID_BACKEND_URL || '' }}
+          BG_ANDROID_VITE_BACKEND_URL_VAR: ${{ vars.ANDROID_VITE_BACKEND_URL || '' }}
+          BG_ANDROID_VITE_BACKEND_URL_SECRET: ${{ secrets.ANDROID_VITE_BACKEND_URL || '' }}
+          BG_ANDROID_BACKEND_URL_VAR: ${{ vars.ANDROID_BACKEND_URL || '' }}
+          BG_ANDROID_BACKEND_URL_SECRET: ${{ secrets.ANDROID_BACKEND_URL || '' }}
           ANDROID_DOWNLOAD_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.ANDROID_DOWNLOAD_ASSETS_BASE_URL || vars.VITE_ANDROID_ASSETS_BASE_URL || vars.ANDROID_VITE_ASSETS_BASE_URL || 'http://8.148.71.102/official' }}
           ANDROID_CONTROL_ASSETS_BASE_URL: ${{ vars.VITE_ANDROID_CONTROL_ASSETS_BASE_URL || vars.ANDROID_CONTROL_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
         run: |
-          cat <<'EOF' > .env.android
-          VITE_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
-          VITE_ANDROID_BACKEND_URL=${{ env.ANDROID_BACKEND_URL }}
+          ANDROID_BACKEND_URL="$(node --input-type=module -e "import { resolveAndroidBackendUrl } from './scripts/mobile/android-backend-url.mjs'; console.log(resolveAndroidBackendUrl(process.env))")"
+          cat <<EOF > .env.android
+          VITE_BACKEND_URL=${ANDROID_BACKEND_URL}
+          VITE_ANDROID_BACKEND_URL=${ANDROID_BACKEND_URL}
           VITE_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_DOWNLOAD_ASSETS_BASE_URL=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}
           VITE_ANDROID_CONTROL_ASSETS_BASE_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}
