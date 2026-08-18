@@ -607,6 +607,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [G, pendingDamage]);
 
     const isActivePlayer = G.activePlayerId === rootPid;
+    const isSelfNyraDamageResponse = Boolean(
+        isTokenResponseInteraction
+        && pendingDamage
+        && isTokenResponder
+        && player?.characterId === 'lieren'
+        && (player.companion?.hp ?? 0) > 0
+        && !G.pendingAttack?.isUltimate
+        && Math.max(0, pendingDamage.currentDamage) > 0,
+    );
 
     // 响应窗口状态
     // 自动跳过逻辑：
@@ -647,7 +656,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         isResponseWindowOpen,
         currentResponderId,
         currentResponderIndex,
-        pendingDamage,
+        pendingDamage: isSelfNyraDamageResponse ? undefined : pendingDamage,
         isTeamDirectActor: isDirectDiceActor,
     });
     const responseAutoViewSessionRef = React.useRef<{
@@ -669,6 +678,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             setViewMode(transition.nextViewMode);
         }
     }, [responseViewSuggestionKey, manualResponseEnabledForCurrentWindow, manualViewMode, setViewMode]);
+
+    React.useEffect(() => {
+        if (isSelfNyraDamageResponse && manualViewMode !== 'self') {
+            setViewMode('self');
+        }
+    }, [isSelfNyraDamageResponse, manualViewMode, setViewMode]);
 
     const isFourPlayerView = otherPids.length > 1;
     const handleOpponentHeaderSelect = React.useCallback((targetPid: string) => {

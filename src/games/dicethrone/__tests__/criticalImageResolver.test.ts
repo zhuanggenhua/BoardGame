@@ -184,6 +184,7 @@ describe('diceThroneCriticalImageResolver', () => {
             pyromancer: { width: 2048, height: 1260 },
             shadow_thief: { width: 2048, height: 1260 },
             tianshi: { width: 3643, height: 2234 },
+            lieren: { width: 3632, height: 2234 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {

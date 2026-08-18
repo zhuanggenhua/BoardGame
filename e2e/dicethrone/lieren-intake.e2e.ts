@@ -217,7 +217,7 @@ const expectNyraInsidePlayerBoardImage = async (page: Page): Promise<void> => {
     expect(nyraBox!.y).toBeGreaterThanOrEqual(boardBox!.y - epsilon);
     expect(nyraBox!.x + nyraBox!.width).toBeLessThanOrEqual(boardBox!.x + boardBox!.width + epsilon);
     expect(nyraBox!.y + nyraBox!.height).toBeLessThanOrEqual(boardBox!.y + boardBox!.height + epsilon);
-    expect(nyraBox!.x - boardBox!.x, '妮拉状态应在玩家板图片左上方的空白带内，不得留在左侧 HUD').toBeLessThan(boardBox!.width * 0.58);
+    expect(nyraBox!.x - boardBox!.x, '妮拉状态应贴在玩家板图片左上角空白带内，不得漂到中央虎图或左侧 HUD').toBeLessThan(boardBox!.width * 0.18);
     expect(nyraBox!.y - boardBox!.y, '妮拉状态应落在玩家板图片顶部空白，不得跑到 Buff / 血条区').toBeLessThan(boardBox!.height * 0.12);
     expect(nyraBox!.width, '妮拉状态在玩家板图片内只能是小徽章，不能压住技能牌').toBeLessThanOrEqual(boardBox!.width * 0.14);
     expect(nyraBox!.height, '妮拉状态在玩家板图片内只能占小角标高度').toBeLessThanOrEqual(boardBox!.height * 0.13);

@@ -1,45 +1,23 @@
 {
-  "verdict": "PASS",
-  "scope": "current-user-request",
+  "verdict": "REVISE",
+  "scope": "superseded-failed-candidate",
+  "reason": "旧清单引用的是已废弃的左侧面板/左上响应面板口径，不能再用于打开最终验收图。",
+  "supersededBy": "evidence/dicethrone/nyra-player-board-badge-center-modal-pass-manifest-2026-08-18.json",
   "requirements": [
     {
-      "requirement": "妮拉状态放在玩家面板内部左上角空白处，不能挤压 Buff 或生命 / CP 条。",
-      "status": "PASS",
+      "requirement": "妮拉状态必须放在中间女猎手玩家板图片本身左上角空白带。",
+      "status": "REVISE",
       "evidence": [
-        "02 原始截图显示妮拉徽章在自己的玩家面板内部左上空白，生命 / CP 条保持完整宽度，Buff 图标在下方独立显示。",
-        "E2E 断言确认妮拉面板不在生命 / CP 统计行内，不与真实状态 / Token 图标、生命 / CP 条、牌堆、回合顺序或中间玩家板重叠。"
+        "旧清单描述为左侧自己的玩家面板内部左上空白，不符合用户当前锁定的图片内部左上空白。"
       ]
     },
     {
-      "requirement": "妮拉承伤与羁绊分配必须是清楚、可读、可点的正式交互面板。",
-      "status": "PASS",
+      "requirement": "妮拉承伤与羁绊分配必须使用居中响应弹窗。",
+      "status": "REVISE",
       "evidence": [
-        "03 原始截图显示 4 点伤害响应以左上正式大面板呈现，包含妮拉头像、当前伤害、妮拉生命、妮拉之系、分配滑杆、转移伤害和确认分配按钮。",
-        "E2E 断言确认响应面板宽度不低于 320px，两个操作按钮宽度不低于 280px、高度不低于 48px，滑杆宽度不低于 280px，按钮字号不低于 15px。"
-      ]
-    },
-    {
-      "requirement": "截图必须覆盖妮拉直接承伤流程。",
-      "status": "PASS",
-      "evidence": [
-        "04 原始截图显示点击转移伤害后响应面板退场，妮拉生命变为 1/7。",
-        "同一条真实在线双玩家 E2E 从响应窗口点击转移伤害并断言按钮退场、妮拉生命更新。"
-      ]
-    },
-    {
-      "requirement": "截图必须覆盖妮拉之系羁绊分配流程。",
-      "status": "PASS",
-      "evidence": [
-        "05 原始截图显示确认分配后响应面板退场，妮拉生命为 1/7，妮拉之系变为 0/1。",
-        "同一条真实在线双玩家 E2E 重新进入伤害响应，点击确认分配并断言滑杆退场、妮拉生命和羁绊数量更新。"
+        "旧清单描述为左上正式大面板，不符合当前居中弹窗口径。"
       ]
     }
   ],
-  "images": [
-    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-panel-redo-20260818/00-sequence-index.png",
-    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-panel-redo-20260818/01-labeled-02-牌桌-妮拉在玩家面板内部左上空白.png",
-    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-panel-redo-20260818/02-labeled-03-伤害响应-妮拉正式承伤与羁绊分配面板.png",
-    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-panel-redo-20260818/03-labeled-04-转移伤害后-妮拉直接承伤收口.png",
-    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-panel-redo-20260818/04-labeled-05-确认羁绊分配后-妮拉承伤收口.png"
-  ]
+  "images": []
 }

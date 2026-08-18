@@ -107,6 +107,7 @@ node scripts/verify/open-verified-image.mjs --pass-manifest "<本轮要求达标
 
 - `scripts/verify/open-verified-image.mjs` 是查看器执行入口；它负责解析路径、调用 PureRef / 系统查看器并回报结果；实际开图 / 开录屏必须显式传 `--pass-manifest`，否则脚本拒绝执行。
 - `--pass-manifest` 指向的 JSON 必须只覆盖本轮用户要求，最低结构为：`verdict: "PASS"`、`scope: "current-user-request"`、`requirements: [{ requirement, status: "PASS", evidence: [...] }]`、`images: [...]` 或 `media: [...]`。脚本会校验每项要求都是 `PASS`、证据非空、并且本次打开的图片 / GIF / 视频全部在清单中；这防止用“我确认过了”或泛化 UI PASS 代替本轮要求达标。
+- 查看器入口会记录最近一次成功打开的 PASS 清单和媒体列表；同一份清单、同一组媒体默认拒绝重复打开。只有用户明确说没看到、打开错图、要重开或要改用另一通道时，才允许在同一命令后追加 `--force-reopen`。
 - PASS 清单必须覆盖截图可理解性所依赖的关键画面对象：如果最终图组里可见的卡牌、法术、技能、装备、附件、单位或牌库 / 法术书是本轮流程、动画来源、目标或上下文承载，必须有证据说明这些牌面 / 素材已经真实渲染、不是空白壳层或纯色占位。关键牌面空白时，不管动画像素、E2E、文件路径或脚本开图是否成功，都不得创建 `PASS` 清单，也不得打开给用户。
 - 多图、`--paths`、`--path` 重复参数一律直接调用上述 `node` 入口；不要通过 `npm run verify:open-image -- --paths ...` 转发参数，避免 npm 把 `--paths` 或图片路径解析成自己的参数并产生误导性 warning。
 - 脚本成功只证明打开动作已发起并有进程/命令结果；用户说没看到、打开错图、只有一张或图为空时，按展示失败处理。展示失败只能用同一份 `--pass-manifest` 重试同一组已 `PASS` 的最终图，或在确认字节等价 / 格式等价后重试同一最终图组的复制件；不得借失败处理改开候选图、诊断图、失败图或未验收的新图。

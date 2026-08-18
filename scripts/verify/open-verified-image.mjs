@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
 const MEDIA_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]);
+const OPEN_STATE_PATH = path.resolve('test-results/evidence-screenshots/.open-verified-image-state.json');
 
 const usage = () => {
     console.log(`用法:
@@ -24,6 +26,7 @@ const usage = () => {
   --pureref         等同于 --viewer pureref
   --pass-manifest <路径>  本轮用户要求达标清单；没有清单禁止实际开图
   --confirmed-pass  历史参数，已废弃；请使用 --pass-manifest
+  --force-reopen    强制重开同一份已 PASS 媒体；只在用户明确说没看到、打开错图或要求重开时使用
   --dry-run         只解析路径，不实际打开
   --help            显示帮助
 `);
@@ -56,6 +59,7 @@ const parseArgs = (argv) => {
         viewer: process.env.BG_IMAGE_VIEWER ?? 'pureref',
         dryRun: false,
         confirmedPass: false,
+        forceReopen: false,
         passManifest: null,
         help: false,
     };
@@ -72,6 +76,10 @@ const parseArgs = (argv) => {
         }
         if (current === '--confirmed-pass') {
             parsed.confirmedPass = true;
+            continue;
+        }
+        if (current === '--force-reopen') {
+            parsed.forceReopen = true;
             continue;
         }
         if (current === '--pass-manifest') {
@@ -285,6 +293,73 @@ const validatePassManifest = (manifestPath, imagePaths) => {
     console.log(`PASS_MANIFEST=${resolvedManifestPath}`);
 };
 
+const fileSignature = (targetPath) => {
+    const resolved = path.resolve(targetPath);
+    const stats = statSync(resolved);
+    return {
+        path: resolved,
+        size: stats.size,
+        mtimeMs: Math.trunc(stats.mtimeMs),
+    };
+};
+
+const buildOpenFingerprintPayload = ({ passManifest, imagePaths, viewer }) => {
+    if (!passManifest) {
+        throw new Error('拒绝打开：缺少 --pass-manifest，无法建立防重复开图指纹');
+    }
+
+    return {
+        version: 1,
+        viewer,
+        passManifest: fileSignature(passManifest),
+        media: imagePaths.map(fileSignature),
+    };
+};
+
+const hashJson = (value) => (
+    createHash('sha256').update(JSON.stringify(value)).digest('hex')
+);
+
+const readOpenState = () => {
+    if (!existsSync(OPEN_STATE_PATH)) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(readFileSync(OPEN_STATE_PATH, 'utf8'));
+    } catch {
+        return null;
+    }
+};
+
+const assertNotDuplicateOpen = ({ passManifest, imagePaths, viewer, forceReopen }) => {
+    const payload = buildOpenFingerprintPayload({ passManifest, imagePaths, viewer });
+    const fingerprint = hashJson(payload);
+    const state = readOpenState();
+
+    if (!forceReopen && state?.lastOpen?.fingerprint === fingerprint) {
+        const openedAt = state.lastOpen.openedAt ?? '未知时间';
+        throw new Error(`拒绝重复打开：同一 PASS 清单和同一组媒体已在 ${openedAt} 打开过。若用户明确说没看到、打开错图或要求重开，请追加 --force-reopen。状态文件: ${OPEN_STATE_PATH}`);
+    }
+
+    return { fingerprint, payload };
+};
+
+const recordSuccessfulOpen = ({ fingerprint, payload }) => {
+    mkdirSync(path.dirname(OPEN_STATE_PATH), { recursive: true });
+    writeFileSync(
+        OPEN_STATE_PATH,
+        JSON.stringify({
+            lastOpen: {
+                fingerprint,
+                openedAt: new Date().toISOString(),
+                ...payload,
+            },
+        }, null, 2),
+        'utf8',
+    );
+};
+
 const openImage = (imagePath) => {
     if (process.platform === 'win32') {
         const openResult = spawnSync(
@@ -386,11 +461,20 @@ const main = () => {
         return;
     }
 
+    const openRecord = assertNotDuplicateOpen({
+        passManifest: parsed.passManifest,
+        imagePaths: resolvedImages,
+        viewer: normalizedViewer,
+        forceReopen: parsed.forceReopen,
+    });
+
     if (normalizedViewer === 'pureref') {
         openImagesWithPureRef(resolvedImages);
     } else {
         openImages(resolvedImages);
     }
+
+    recordSuccessfulOpen(openRecord);
 
     for (const resolvedImage of resolvedImages) {
         console.log(`OPENED_MEDIA=${resolvedImage}`);

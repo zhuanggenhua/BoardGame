@@ -122,7 +122,7 @@
 
 | 对象 | 玩家看到的入口/提示 | 真实结算窗口 | 来源归属 | 共享消费者 | 易混淆对象 | 负向断言 | 结论 |
 |---|---|---|---|---|---|---|---|
-| 妮拉紧凑面板 | 左侧伙伴面板、治疗按钮、伤害转移/分配按钮 | 普通牌桌 / pendingDamage 响应 | 女猎手自己的伙伴和 token | `USE_TOKEN`、`pendingDamage`、`TOKEN_RESPONSE_CLOSED` | 旧 `token-response-modal` | E2E 断言旧 modal 不出现，控件在妮拉面板中 | 通过 |
+| 妮拉紧凑面板 | 历史左侧伙伴面板、治疗按钮、伤害转移/分配按钮 | 普通牌桌 / pendingDamage 响应 | 女猎手自己的伙伴和 token | `USE_TOKEN`、`pendingDamage`、`TOKEN_RESPONSE_CLOSED` | 旧 `token-response-modal` | 2026-08-18 已被“玩家板图片左上空白徽章 + 居中响应弹窗”取代；本行仅保留历史语义 | 历史归档 |
 | 妮拉之系治疗 | “消耗羁绊治疗妮拉”按钮 | 无 pendingDamage 时的 token 使用 | 女猎手自己持有 | `commandValidation` + `executeTokens` | 普通防御 token | 满血或无 token 时按钮/命令不应成立 | 通过 |
 | 妮拉之系伤害分配 | 滑杆 + 确认分配 | beforeDamageReceived | 女猎手自己持有，分配给妮拉与女猎手 | `executeTokens` 分别写伙伴 HP 与英雄 HP | 妮拉全额承伤 | 分配量不能超过当前伤害或妮拉生命 | 通过 |
 | 妮拉承伤 | “转移伤害”按钮 | beforeDamageReceived | 妮拉伙伴生命 | `executeTokens` 清理 pendingDamage | 妮拉之系分配 | 终极攻击不应允许 `nyra_redirect` | 通过 |
@@ -190,3 +190,4 @@ Open Design 环境已于 2026-08-08 重新接入：`node D:\codex-home\tools\ope
 | 旧文档中“提交 / PR 收口前只需最终 diff 审阅” | PR #137 已合入，当前工作在 `main`；该句已不是当前任务状态 | `evidence/merge-conflict-pr-137-2026-08-16.md`、当前 Git 历史 | 当前文档转为女猎手审计总账，不再作为 PR 待合并清单 |
 | 旧规则文档写“资源上传/HEAD 尚未收口” | 2026-08-14 和 PR #137 冲突收口后均已完成服务器发布与公开回查 | 本文“资源边界”“当前验证”与 PR #137 evidence | 资源发布状态更新为 `passed` |
 | 旧 evidence 只有代表性 E2E 与测试摘要 | 缺少对象全集、D 维度、缺口分类和旧结论回写，不能支撑“全面无死角” | 2026-08-17 本节对象级审计矩阵 | 允许说“代表性玩法已验证、对象级审计留档已补”；不允许说“逐卡 L3/L4 全覆盖” |
+| 旧 evidence 写“左侧紧凑妮拉面板 / 控件在妮拉面板中” | 2026-08-18 用户锁定当前 UI 目标为“中间女猎手玩家板图片本身左上角空白带”和“居中承伤 / 羁绊分配弹窗” | `evidence/dicethrone/dicethrone-lieren-nyra-panel-damage-bond-e2e-2026-08-18.md`、`evidence/dicethrone/nyra-player-board-badge-center-modal-pass-manifest-2026-08-18.json` | 旧左侧面板口径只保留为历史归档，不再作为当前实现、测试或开图依据 |

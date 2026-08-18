@@ -3,7 +3,7 @@ import { HeartPulse, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
 import { ASSETS } from './assets';
-import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
+import { buildLocalizedImageSet, HudPortal, UI_Z_INDEX } from '../../../core';
 import { GameButton } from './components/GameButton';
 
 const NYRA_CROP = {
@@ -58,13 +58,15 @@ export const NyraCompanionPanel = ({
     const isBoardBadge = variant === 'boardBadge';
     const damageResponseDock = activeDamageResponse ? (
         <div
-            className="fixed left-1/2 top-1/2 w-[32vw] min-w-[380px] max-w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-emerald-300/65 bg-slate-950/97 px-4 py-3 shadow-2xl shadow-black/70 backdrop-blur-md"
-            style={{ zIndex: UI_Z_INDEX.hud + 12 }}
+            className="fixed left-1/2 top-1/2 w-[32vw] min-w-[380px] max-w-[430px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-emerald-300/65 bg-slate-950/97 px-3.5 py-2 shadow-2xl shadow-black/70 backdrop-blur-md"
+            style={{ zIndex: UI_Z_INDEX.overlayRaised + 20 }}
             data-testid="nyra-damage-response-dock"
+            data-board-magnify-ignore="true"
+            onClick={(event) => event.stopPropagation()}
         >
-            <div className="mb-3 grid grid-cols-[3.75rem_minmax(0,1fr)_4.75rem] items-center gap-3">
+            <div className="mb-2 grid grid-cols-[3.15rem_minmax(0,1fr)_4.25rem] items-center gap-2.5">
                 <div
-                    className="h-[3.75rem] w-[3.75rem] rounded-xl border border-emerald-100/45 bg-black shadow-lg shadow-emerald-950/50"
+                    className="h-[3.15rem] w-[3.15rem] rounded-xl border border-emerald-100/45 bg-black shadow-lg shadow-emerald-950/50"
                     style={{ backgroundImage, backgroundRepeat: 'no-repeat', ...NYRA_CROP }}
                     role="img"
                     aria-label={t('companion.nyra.name')}
@@ -73,8 +75,8 @@ export const NyraCompanionPanel = ({
                     <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300/80">
                         {t('companion.nyra.name')} · <span className="text-amber-200">{t('tokens.nyras_bond.name')}</span>
                     </div>
-                    <div className="mt-1 text-[20px] font-black text-emerald-50">{t('companion.nyra.takeDamage')}</div>
-                    <div className="mt-1 flex items-center gap-3 text-[13px] font-bold text-slate-200">
+                    <div className="mt-0.5 text-[18px] font-black text-emerald-50">{t('companion.nyra.takeDamage')}</div>
+                    <div className="mt-0.5 flex items-center gap-3 text-[13px] font-bold text-slate-200">
                         <span className="inline-flex items-center gap-1">
                             <HeartPulse className="h-4 w-4 text-rose-300" aria-hidden="true" />
                             {hp}/{companion.maxHp}
@@ -85,20 +87,20 @@ export const NyraCompanionPanel = ({
                         </span>
                     </div>
                 </div>
-                <div className="shrink-0 rounded-xl border border-rose-300/45 bg-rose-950/60 px-3 py-2 text-right">
+                <div className="shrink-0 rounded-xl border border-rose-300/45 bg-rose-950/60 px-2.5 py-1.5 text-right">
                     <div className="text-[11px] font-bold text-rose-200/80">{t('tokenResponse.currentDamage')}</div>
-                    <div className="text-3xl font-black tabular-nums text-rose-100">{activeDamageResponse.currentDamage}</div>
+                    <div className="text-2xl font-black tabular-nums text-rose-100">{activeDamageResponse.currentDamage}</div>
                 </div>
             </div>
             {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
-                <div className="mb-3 rounded-xl border border-cyan-300/35 bg-cyan-950/35 px-3 py-2.5">
-                    <div className="mb-2 flex items-center justify-between gap-3 text-[14px] font-bold text-cyan-100">
+                <div className="mb-2 rounded-xl border border-cyan-300/35 bg-cyan-950/35 px-3 py-1.5">
+                    <div className="mb-1 flex items-center justify-between gap-3 text-[14px] font-bold text-cyan-100">
                         <span>{t('companion.nyra.allocateDamage')}</span>
                         <span className="rounded-full bg-cyan-300/15 px-2.5 py-0.5 tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
                     </div>
                     <input
                         aria-label={t('companion.nyra.allocateDamage')}
-                        className="h-7 w-full accent-cyan-300"
+                        className="h-6 w-full accent-cyan-300"
                         type="range"
                         min={1}
                         max={maxAssignableDamage}
@@ -107,7 +109,7 @@ export const NyraCompanionPanel = ({
                     />
                 </div>
             )}
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-1">
                 {activeDamageResponse.canRedirectToNyra && (
                     <GameButton
                         size="sm"
@@ -132,6 +134,9 @@ export const NyraCompanionPanel = ({
                 )}
             </div>
         </div>
+    ) : null;
+    const damageResponseDockLayer = damageResponseDock ? (
+        <HudPortal>{damageResponseDock}</HudPortal>
     ) : null;
 
     return (
@@ -192,7 +197,7 @@ export const NyraCompanionPanel = ({
                     </div>
                 </div>
             </section>
-            {damageResponseDock}
+            {damageResponseDockLayer}
         </div>
     );
 };
