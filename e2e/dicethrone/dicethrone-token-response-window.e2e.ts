@@ -317,15 +317,18 @@ async function expectTokenCount(
     ).toBe(count);
 }
 
-async function injectMoonElfEvasiveResponseScene(page: Page): Promise<void> {
-    await page.evaluate((evasiveTokenId: string) => {
+async function injectMoonElfEvasiveResponseScene(
+    page: Page,
+    options: { tokens?: number; diceValues?: number[] } = {},
+): Promise<void> {
+    await page.evaluate(({ evasiveTokenId, tokenCount, diceValues }) => {
         const harness = (window as any).__BG_TEST_HARNESS__;
         const state = harness?.state?.get?.();
         if (!harness || !state) {
             throw new Error('TestHarness state not ready');
         }
 
-        harness.dice.setValues([1]);
+        harness.dice.setValues(diceValues);
 
         const nextState = structuredClone(state);
         nextState.sys = {
@@ -390,7 +393,7 @@ async function injectMoonElfEvasiveResponseScene(page: Page): Promise<void> {
                     },
                     tokens: {
                         ...((nextState.core?.players?.['0']?.tokens ?? {}) as Record<string, number>),
-                        [evasiveTokenId]: 1,
+                        [evasiveTokenId]: tokenCount,
                     },
                 },
             },
@@ -398,7 +401,11 @@ async function injectMoonElfEvasiveResponseScene(page: Page): Promise<void> {
 
         harness.state.set(nextState);
         (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
-    }, TOKEN_IDS.EVASIVE);
+    }, {
+        evasiveTokenId: TOKEN_IDS.EVASIVE,
+        tokenCount: options.tokens ?? 1,
+        diceValues: options.diceValues ?? [1],
+    });
 }
 
 async function injectMonkTaijiResponseScene(page: Page): Promise<void> {
@@ -742,6 +749,135 @@ test.describe('Token 响应窗口完整流程', () => {
             pendingBonusDiceSettlement: null,
         });
         await game.screenshot('闪避响应-确认后免伤收口回到主阶段', testInfo);
+    });
+
+    test('月精灵有多个闪避时失败后可继续消耗 1 个重试', async ({ page, game }, testInfo) => {
+        await setupTokenScene(game, { '0': 'moon_elf', '1': 'shadow_thief' }, '0');
+        await injectMoonElfEvasiveResponseScene(page, { tokens: 2, diceValues: [4, 1] });
+
+        const evasiveToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.EVASIVE}`);
+        const sharedResponsePrompt = page.getByTestId('dicethrone-response-window-hint');
+
+        await expect(sharedResponsePrompt).toBeVisible({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
+        await expect(evasiveToken).toBeVisible({ timeout: 5000 });
+        await expect(evasiveToken).toHaveAttribute('data-token-clickable', 'true');
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.EVASIVE}-available-halo`)).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => readTokenCount(game, '0', TOKEN_IDS.EVASIVE), { timeout: 5000 }).toBe(2);
+        await game.screenshot('闪避响应-两个闪避使用前Token可点', testInfo);
+
+        await evasiveToken.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const evasiveUseEvents = entries
+                .filter((entry: any) => entry.event?.type === 'TOKEN_USED' && entry.event?.payload?.tokenId === TOKEN_IDS.EVASIVE)
+                .map((entry: any) => entry.event?.payload);
+
+            return {
+                phase: state?.sys?.phase ?? null,
+                pendingDamage: state?.core?.pendingDamage
+                    ? {
+                        currentDamage: state.core.pendingDamage.currentDamage,
+                        isFullyEvaded: state.core.pendingDamage.isFullyEvaded,
+                        tokenUsage: state.core.pendingDamage.tokenUsageTotals?.[TOKEN_IDS.EVASIVE] ?? null,
+                    }
+                    : null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                evasive: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.EVASIVE] ?? null,
+                currentRollContextKind: state?.core?.currentRollContext?.kind ?? null,
+                evasionRolls: evasiveUseEvents.map((payload: any) => payload?.evasionRoll?.value ?? null),
+                evasionSuccesses: evasiveUseEvents.map((payload: any) => payload?.evasionRoll?.success ?? null),
+                consumedAmounts: evasiveUseEvents.map((payload: any) => payload?.amount ?? null),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            pendingDamage: {
+                currentDamage: 5,
+                isFullyEvaded: false,
+                tokenUsage: 1,
+            },
+            interactionKind: 'dt:token-response',
+            defenderHp: 50,
+            evasive: 1,
+            currentRollContextKind: 'evasion',
+            evasionRolls: [4],
+            evasionSuccesses: [false],
+            consumedAmounts: [1],
+        });
+
+        await expect(evasiveToken).toHaveAttribute('data-token-clickable', 'true');
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.EVASIVE}-available-halo`)).toBeVisible({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toBeVisible({ timeout: 5000 });
+        await expect(sharedResponsePrompt).toHaveAttribute('data-response-kind', 'token');
+        await expectNoLegacyTokenResponseSurfaces(page);
+        await game.screenshot('闪避响应-第一次失败后剩余闪避仍可点', testInfo);
+
+        await evasiveToken.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const evasiveUseEvents = entries
+                .filter((entry: any) => entry.event?.type === 'TOKEN_USED' && entry.event?.payload?.tokenId === TOKEN_IDS.EVASIVE)
+                .map((entry: any) => entry.event?.payload);
+
+            return {
+                pendingDamage: state?.core?.pendingDamage
+                    ? {
+                        currentDamage: state.core.pendingDamage.currentDamage,
+                        isFullyEvaded: state.core.pendingDamage.isFullyEvaded,
+                        tokenUsage: state.core.pendingDamage.tokenUsageTotals?.[TOKEN_IDS.EVASIVE] ?? null,
+                    }
+                    : null,
+                defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                evasive: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.EVASIVE] ?? null,
+                currentRollContextKind: state?.core?.currentRollContext?.kind ?? null,
+                evasionRolls: evasiveUseEvents.map((payload: any) => payload?.evasionRoll?.value ?? null),
+                evasionSuccesses: evasiveUseEvents.map((payload: any) => payload?.evasionRoll?.success ?? null),
+                consumedAmounts: evasiveUseEvents.map((payload: any) => payload?.amount ?? null),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            pendingDamage: {
+                currentDamage: 0,
+                isFullyEvaded: true,
+                tokenUsage: 2,
+            },
+            defenderHp: 50,
+            evasive: 0,
+            currentRollContextKind: 'evasion',
+            evasionRolls: [4, 1],
+            evasionSuccesses: [false, true],
+            consumedAmounts: [1, 1],
+        });
+
+        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        await expect(confirmButton).toBeVisible({ timeout: 5000 });
+        await expect(confirmButton).toHaveText(/^(确认|Confirm)$/);
+        await expect(confirmButton).toBeEnabled();
+        await game.screenshot('闪避响应-第二次成功后右侧确认免伤', testInfo);
+        await confirmButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                pendingDamage: state?.core?.pendingDamage ?? null,
+                interaction: state?.sys?.interaction?.current ?? null,
+                currentRollContextKind: state?.core?.currentRollContext?.kind ?? null,
+                defenderHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                evasive: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.EVASIVE] ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main2',
+            pendingDamage: null,
+            interaction: null,
+            currentRollContextKind: null,
+            defenderHp: 50,
+            evasive: 0,
+        });
     });
 });
 

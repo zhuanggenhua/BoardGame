@@ -409,6 +409,29 @@ describe('战术优势当前骰区重投矩阵', () => {
         )).toBe(true);
     });
 
+    it.each([
+        ['offensiveRoll', '主进攻骰确认后对手响应窗口'],
+        ['defensiveRoll', '主防御骰确认后攻击方响应窗口'],
+    ] as const)('%s：%s 不应把教皇税变成对手骰干预', (phase) => {
+        const { state, actorId } = createConfirmedMainRollInterferenceState(phase);
+        state.selectedCharacters = { ...state.selectedCharacters, [actorId]: 'paladin' };
+        state.players[actorId] = {
+            ...state.players[actorId],
+            characterId: 'paladin',
+            passiveAbilities: [PALADIN_TITHES_BASE],
+            tokens: {},
+        };
+
+        expect(isPassiveActionUsable(
+            state,
+            actorId,
+            'tithes',
+            0,
+            phase,
+            { responseWindowType: 'afterRollConfirmed' },
+        )).toBe(false);
+    });
+
     it('当前骰区禁止被动重投时，战术优势不可用', () => {
         const state = createTacticalAdvantageCurrentRollState('bonus', {
             allowPassiveReroll: false,

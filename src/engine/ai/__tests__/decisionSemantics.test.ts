@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildAiLegalActionsFromInteractionDecision,
     buildSelectPlayerDecisionActions,
     enumerateAiDecisionSelections,
+    type AiChooseOptionDecisionDescriptor,
+    type AiConfirmDecisionDescriptor,
     type AiSelectPlayerDecisionDescriptor,
 } from '../decisionSemantics';
 
@@ -102,5 +105,83 @@ describe('AI decision semantics', () => {
             type: 'SYS_INTERACTION_CANCEL',
             payload: { interactionId: 'empty', reason: 'empty-options' },
         });
+    });
+
+    it('可把 request-owned 语义候选投影成 interaction respond 动作', () => {
+        const decision: AiChooseOptionDecisionDescriptor = {
+            kind: 'choose-option',
+            interactionId: 'cardia-faction',
+            actorPlayerId: '0',
+            sourceId: 'ambusher',
+            selection: { min: 1, max: 1 },
+            candidates: [
+                { id: 'faction_swamp', label: '沼泽', value: { faction: 'swamp' } },
+                { id: 'faction_academy', label: '学院', value: { faction: 'academy' } },
+            ],
+        };
+
+        const actions = buildAiLegalActionsFromInteractionDecision(decision);
+
+        expect(actions).toHaveLength(2);
+        expect(actions[0]).toMatchObject({
+            actionId: 'interaction:cardia-faction:choose-option:faction_swamp',
+            kind: 'interaction-choice',
+            commands: [{
+                type: 'SYS_INTERACTION_RESPOND',
+                payload: {
+                    interactionId: 'cardia-faction',
+                    optionId: 'faction_swamp',
+                },
+            }],
+            metadata: {
+                interactionId: 'cardia-faction',
+                decisionKind: 'choose-option',
+                sourceId: 'ambusher',
+            },
+        });
+    });
+
+    it('语义多选会保留 optionIds 顺序', () => {
+        const decision: AiChooseOptionDecisionDescriptor = {
+            kind: 'choose-option',
+            interactionId: 'ordered',
+            actorPlayerId: '0',
+            selection: { min: 2, max: 2, ordered: true },
+            candidates: [
+                { id: 'a', label: 'A' },
+                { id: 'b', label: 'B' },
+            ],
+        };
+
+        const actions = buildAiLegalActionsFromInteractionDecision(decision);
+
+        expect(actions.map((action) => action.commands[0].payload)).toEqual([
+            { interactionId: 'ordered', optionIds: ['a', 'b'] },
+            { interactionId: 'ordered', optionIds: ['b', 'a'] },
+        ]);
+    });
+
+    it('确认类语义决策直接使用声明的命令，不从 UI 候选猜测业务动作', () => {
+        const decision: AiConfirmDecisionDescriptor = {
+            kind: 'confirm',
+            interactionId: 'confirm-current',
+            actorPlayerId: '0',
+            selection: { min: 0, max: 0 },
+            candidates: [],
+            commands: [{
+                type: 'CONFIRM_CURRENT',
+                payload: { ok: true },
+            }],
+        };
+
+        const actions = buildAiLegalActionsFromInteractionDecision(decision);
+
+        expect(actions).toEqual([expect.objectContaining({
+            kind: 'interaction-confirm',
+            commands: [{
+                type: 'CONFIRM_CURRENT',
+                payload: { ok: true },
+            }],
+        })]);
     });
 });

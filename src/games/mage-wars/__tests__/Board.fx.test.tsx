@@ -68,11 +68,13 @@ vi.mock('../../../components/common/animations/ConeBlast', () => ({
         intensity,
         quality,
         durationMs,
+        motionEasing,
         color,
     }: {
         intensity?: string;
         quality?: string;
         durationMs?: number;
+        motionEasing?: string;
         color?: string[];
     }) => (
         <div
@@ -80,6 +82,7 @@ vi.mock('../../../components/common/animations/ConeBlast', () => ({
             data-intensity={intensity ?? ''}
             data-quality={quality ?? ''}
             data-duration-ms={String(durationMs ?? '')}
+            data-motion-easing={motionEasing ?? ''}
             data-color={color?.join('|') ?? ''}
         />
     ),
@@ -708,6 +711,7 @@ describe('MageWarsBoard FX wiring', () => {
             expect(travel.getAttribute('data-target-row')).toBe('2');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-intensity')).toBe('strong');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-duration-ms')).toBe('2600');
+            expect(screen.getByTestId('mock-cone-blast').getAttribute('data-motion-easing')).toBe('linear');
             expect(screen.getByTestId('mock-cone-blast').getAttribute('data-color')).toContain('#ef4444');
             expect(screen.queryByTestId('mage-wars-fx-attack-travel-mid-burst')).toBeNull();
             expect(screen.queryByTestId('mage-wars-fx-attack-impact-burst')).not.toBeNull();

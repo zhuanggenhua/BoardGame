@@ -44,6 +44,7 @@ export const MAGE_WARS_SUMMON_FX_TUNING = {
 export const MAGE_WARS_ATTACK_FX_TUNING = {
     pathPaddingCells: 1.35,
     pathMinSizeCells: 2.25,
+    projectileMotionEasing: 'linear',
     damageNumberFontScale: 1.75,
     damageNumberColorClass: 'text-amber-50',
     damageNumberDurationSeconds: 1.35,

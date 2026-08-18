@@ -5,19 +5,22 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
+const MEDIA_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]);
 
 const usage = () => {
     console.log(`用法:
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <图片路径>
+  node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --viewer system --path <录屏/视频路径>
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --path <00-sequence-index.png> --path <01-labeled-*.png>
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --paths <00-sequence-index.png> <01-labeled-*.png> <02-labeled-*.png> ...
   node scripts/verify/open-verified-image.mjs --pass-manifest <本轮要求达标清单.json> --latest [目录]
 
 选项:
-  --path <路径>     打开指定图片；可重复传入多次，默认 PureRef 多图只接受带序号标记组
-  --paths <路径...> 依次打开多张指定图片；默认 PureRef 多图只接受带序号标记组
-  --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
-  --viewer <system|pureref>  指定查看器；默认 pureref，pureref 会一次性打开整批图片
+  --path <路径>     打开指定图片/GIF/视频；可重复传入多次，默认 PureRef 多图只接受带序号标记组
+  --paths <路径...> 依次打开多张指定图片/GIF/视频；默认 PureRef 多图只接受带序号标记组
+  --latest [目录]   递归查找目录下最后修改的一张图片/GIF/视频，默认 test-results/evidence-screenshots
+  --viewer <system|pureref>  指定查看器；默认 pureref，pureref 只用于图片/GIF，视频请用 system
   --pureref         等同于 --viewer pureref
   --pass-manifest <路径>  本轮用户要求达标清单；没有清单禁止实际开图
   --confirmed-pass  历史参数，已废弃；请使用 --pass-manifest
@@ -27,16 +30,18 @@ const usage = () => {
 };
 
 const isImageFile = (filePath) => IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+const isVideoFile = (filePath) => VIDEO_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+const isMediaFile = (filePath) => MEDIA_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 
-const collectImages = (dirPath) => {
+const collectMedia = (dirPath) => {
     const results = [];
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
-            results.push(...collectImages(fullPath));
+            results.push(...collectMedia(fullPath));
             continue;
         }
-        if (entry.isFile() && isImageFile(fullPath)) {
+        if (entry.isFile() && isMediaFile(fullPath)) {
             results.push(fullPath);
         }
     }
@@ -140,17 +145,17 @@ const parseArgs = (argv) => {
     return parsed;
 };
 
-const resolveImagePath = (imagePath) => {
-    const resolved = path.resolve(imagePath);
+const resolveMediaPath = (mediaPath) => {
+    const resolved = path.resolve(mediaPath);
     if (!existsSync(resolved)) {
-        throw new Error(`图片不存在: ${resolved}`);
+        throw new Error(`媒体文件不存在: ${resolved}`);
     }
     const stats = statSync(resolved);
     if (stats.isDirectory()) {
-        throw new Error(`给定路径是目录，不是图片: ${resolved}`);
+        throw new Error(`给定路径是目录，不是图片或视频: ${resolved}`);
     }
-    if (!isImageFile(resolved)) {
-        throw new Error(`目标文件不是支持的图片格式: ${resolved}`);
+    if (!isMediaFile(resolved)) {
+        throw new Error(`目标文件不是支持的图片或视频格式: ${resolved}`);
     }
     return resolved;
 };
@@ -173,11 +178,11 @@ const resolvePureRefPath = () => {
 
 const resolveTargetImages = ({ path: imagePath, paths, latest }) => {
     if (paths.length > 0) {
-        return paths.map(resolveImagePath);
+        return paths.map(resolveMediaPath);
     }
 
     if (imagePath) {
-        return [resolveImagePath(imagePath)];
+        return [resolveMediaPath(imagePath)];
     }
 
     const latestRoot = path.resolve(latest ?? 'test-results/evidence-screenshots');
@@ -187,15 +192,15 @@ const resolveTargetImages = ({ path: imagePath, paths, latest }) => {
 
     const stats = statSync(latestRoot);
     if (stats.isFile()) {
-        if (!isImageFile(latestRoot)) {
-            throw new Error(`目标文件不是支持的图片格式: ${latestRoot}`);
+        if (!isMediaFile(latestRoot)) {
+            throw new Error(`目标文件不是支持的图片或视频格式: ${latestRoot}`);
         }
         return [latestRoot];
     }
 
-    const images = collectImages(latestRoot);
+    const images = collectMedia(latestRoot);
     if (images.length === 0) {
-        throw new Error(`目录下未找到图片: ${latestRoot}`);
+        throw new Error(`目录下未找到图片或视频: ${latestRoot}`);
     }
 
     images.sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
@@ -203,6 +208,11 @@ const resolveTargetImages = ({ path: imagePath, paths, latest }) => {
 };
 
 const validatePureRefSequence = (imagePaths) => {
+    const videoPaths = imagePaths.filter(isVideoFile);
+    if (videoPaths.length > 0) {
+        throw new Error(`PureRef 展示只支持图片/GIF；录屏或视频请使用 --viewer system: ${videoPaths.join(', ')}`);
+    }
+
     if (imagePaths.length <= 1) {
         return;
     }
@@ -261,14 +271,15 @@ const validatePassManifest = (manifestPath, imagePaths) => {
         }
     }
 
-    if (!Array.isArray(manifest.images) || manifest.images.length === 0) {
-        throw new Error('拒绝打开：PASS 清单必须包含 images，并且 images 必须覆盖本次打开的全部图片');
+    const manifestMedia = Array.isArray(manifest.media) ? manifest.media : manifest.images;
+    if (!Array.isArray(manifestMedia) || manifestMedia.length === 0) {
+        throw new Error('拒绝打开：PASS 清单必须包含 media 或 images，并且必须覆盖本次打开的全部图片/视频');
     }
 
-    const manifestImageSet = new Set(manifest.images.map((imagePath) => normalizeForCompare(imagePath)));
+    const manifestImageSet = new Set(manifestMedia.map((mediaPath) => normalizeForCompare(mediaPath)));
     const missingImages = imagePaths.filter((imagePath) => !manifestImageSet.has(normalizeForCompare(imagePath)));
     if (missingImages.length > 0) {
-        throw new Error(`拒绝打开：本次打开图片不在 PASS 清单 images 中: ${missingImages.join(', ')}`);
+        throw new Error(`拒绝打开：本次打开的图片/视频不在 PASS 清单 media/images 中: ${missingImages.join(', ')}`);
     }
 
     console.log(`PASS_MANIFEST=${resolvedManifestPath}`);
@@ -347,7 +358,8 @@ const main = () => {
 
     const resolvedImages = resolveTargetImages(parsed);
     for (const resolvedImage of resolvedImages) {
-        console.log(`RESOLVED_IMAGE=${resolvedImage}`);
+        console.log(`RESOLVED_MEDIA=${resolvedImage}`);
+        console.log(`${isVideoFile(resolvedImage) ? 'RESOLVED_VIDEO' : 'RESOLVED_IMAGE'}=${resolvedImage}`);
     }
 
     const normalizedViewer = parsed.viewer.toLowerCase();
@@ -381,7 +393,8 @@ const main = () => {
     }
 
     for (const resolvedImage of resolvedImages) {
-        console.log(`OPENED_IMAGE=${resolvedImage}`);
+        console.log(`OPENED_MEDIA=${resolvedImage}`);
+        console.log(`${isVideoFile(resolvedImage) ? 'OPENED_VIDEO' : 'OPENED_IMAGE'}=${resolvedImage}`);
     }
 };
 

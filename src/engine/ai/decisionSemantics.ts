@@ -121,6 +121,11 @@ export type AiDecisionDescriptor =
     | AiConfirmDecisionDescriptor
     | AiOptionalSkipDecisionDescriptor;
 
+type AiInteractionRespondDecisionDescriptor = Exclude<
+    AiDecisionDescriptor,
+    AiConfirmDecisionDescriptor | AiOptionalSkipDecisionDescriptor
+>;
+
 export interface BuildAiDecisionActionsOptions<
     TCandidate extends AiDecisionCandidate,
     TDescriptor extends AiBaseDecisionDescriptor<AiDecisionKind, TCandidate>,
@@ -307,4 +312,74 @@ export function buildSelectPlayerDecisionActions(
         defaultActionKind: 'interaction-select-player',
         ...options,
     });
+}
+
+const buildInteractionRespondPayload = (
+    descriptor: AiBaseDecisionDescriptor<AiDecisionKind, AiDecisionCandidate>,
+    selection: AiDecisionCandidate[],
+): Record<string, unknown> => {
+    const selectedIds = selection.map((candidate) => candidate.id);
+    if (selectedIds.length === 1) {
+        return {
+            interactionId: descriptor.interactionId,
+            optionId: selectedIds[0],
+        };
+    }
+    return {
+        interactionId: descriptor.interactionId,
+        optionIds: selectedIds,
+    };
+};
+
+const buildDescriptorMetadata = (
+    descriptor: AiBaseDecisionDescriptor<AiDecisionKind, AiDecisionCandidate>,
+    selection: AiDecisionCandidate[],
+): AiActionMetadata => ({
+    interactionId: descriptor.interactionId,
+    decisionKind: descriptor.kind,
+    sourceId: descriptor.sourceId,
+    ...(descriptor.metadata ?? {}),
+    ...(mergeSelectionMetadata(selection) ?? {}),
+});
+
+function buildInteractionRespondDecisionActions(
+    descriptor: AiInteractionRespondDecisionDescriptor,
+): AiLegalAction[] {
+    const baseDescriptor = descriptor as AiBaseDecisionDescriptor<AiDecisionKind, AiDecisionCandidate>;
+    return buildAiLegalActionsFromDecision({
+        descriptor: baseDescriptor,
+        defaultActionKind: 'interaction-choice',
+        buildCommands: (selection, currentDescriptor) => [{
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: buildInteractionRespondPayload(currentDescriptor, selection),
+        }],
+        buildMetadata: (selection, currentDescriptor) => buildDescriptorMetadata(currentDescriptor, selection),
+    });
+}
+
+const buildCommandOnlyDecisionAction = (
+    descriptor: AiConfirmDecisionDescriptor | AiOptionalSkipDecisionDescriptor,
+): AiLegalAction[] => {
+    if (descriptor.commands.length === 0) return [];
+    return [{
+        actionId: createAiLegalActionId('interaction', descriptor.interactionId, descriptor.kind, 'command'),
+        kind: descriptor.kind === 'confirm' ? 'interaction-confirm' : 'interaction-skip',
+        label: descriptor.candidates[0]?.label ?? (descriptor.kind === 'confirm' ? '确认' : '跳过'),
+        commands: descriptor.commands,
+        metadata: {
+            interactionId: descriptor.interactionId,
+            decisionKind: descriptor.kind,
+            sourceId: descriptor.sourceId,
+            ...(descriptor.metadata ?? {}),
+        },
+    }];
+};
+
+export function buildAiLegalActionsFromInteractionDecision(
+    descriptor: AiDecisionDescriptor,
+): AiLegalAction[] {
+    if (descriptor.kind === 'confirm' || descriptor.kind === 'optional-skip') {
+        return buildCommandOnlyDecisionAction(descriptor);
+    }
+    return buildInteractionRespondDecisionActions(descriptor);
 }

@@ -91,7 +91,13 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passi
 import { getCurrentRollDice, isCurrentBonusRollSettlement, isSettledReplayOnlyRollContext } from './domain/rollContext';
 import { getAutoResponseEnabled } from './ui/responsePreferences';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
-import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray } from './ui/diceStagePolicy';
+import {
+    canInteractDiceForCurrentBoard,
+    getInteractionDiceForRightSidebar,
+    getRailDiceForCurrentBoard,
+    shouldShowRailDiceTray,
+    shouldUseReplayOnlyRollContextAsActiveSurface,
+} from './ui/diceStagePolicy';
 import {
     canInteractHandForCurrentBoard,
     canPlayHandCardsForCurrentBoard,
@@ -599,15 +605,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (!pendingDamage) return [];
         return getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
     }, [G, pendingDamage]);
-    const shouldKeepSelfBoardForNyraDamageResponse = Boolean(
-        isTokenResponseInteraction
-        && isTokenResponder
-        && player?.characterId === 'lieren'
-        && player.companion
-        && player.companion.hp > 0
-        && !G.pendingAttack?.isUltimate
-        && pendingDamage
-    );
 
     const isActivePlayer = G.activePlayerId === rootPid;
 
@@ -645,16 +642,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         isTeamDirectActor: isDirectDiceActor,
     });
 
-    const responseViewSuggestionKey = shouldKeepSelfBoardForNyraDamageResponse
-        ? null
-        : getResponseViewSuggestionKey({
-            rootPlayerId: rootPid,
-            isResponseWindowOpen,
-            currentResponderId,
-            currentResponderIndex,
-            pendingDamage,
-            isTeamDirectActor: isDirectDiceActor,
-        });
+    const responseViewSuggestionKey = getResponseViewSuggestionKey({
+        rootPlayerId: rootPid,
+        isResponseWindowOpen,
+        currentResponderId,
+        currentResponderIndex,
+        pendingDamage,
+        isTeamDirectActor: isDirectDiceActor,
+    });
     const responseAutoViewSessionRef = React.useRef<{
         suggestionKey: string;
         restoreMode: 'self' | 'opponent';
@@ -1256,6 +1251,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (!isCurrentBonusDiceContext) {
             return null;
         }
+        if (bonusDiceReplayOnlyDice && isCurrentPhaseMainRollPhase) {
+            return null;
+        }
 
         const dice = bonusDiceReplayOnlyDice ?? currentRollDice;
         if (dice.length === 0) {
@@ -1266,7 +1264,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             ...die,
             displayOnly: Boolean(bonusDiceReplayOnlyDice) || !diceMultistepInteraction || die.displayOnly === true,
         }));
-    }, [bonusDiceReplayOnlyDice, currentRollDice, diceMultistepInteraction, isCurrentBonusDiceContext]);
+    }, [bonusDiceReplayOnlyDice, currentRollDice, diceMultistepInteraction, isCurrentBonusDiceContext, isCurrentPhaseMainRollPhase]);
     const attackSnapshotInteractionDice = React.useMemo(() => {
         if (!diceMultistepInteraction || currentPhase !== 'defensiveRoll') return null;
         const data = diceMultistepInteraction.data as { allowedDieIds?: number[] } | undefined;
@@ -1297,11 +1295,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         });
     }, [G, currentPhase, diceMultistepInteraction]);
     const interactionDice = React.useMemo(() => {
-        if (bonusDiceTrayDice) return bonusDiceTrayDice;
-        const visibleRollDice = replayOnlyRollDice ?? currentRollDice;
-        if (attackSnapshotInteractionDice) return [...visibleRollDice, ...attackSnapshotInteractionDice];
-        return visibleRollDice;
-    }, [currentRollDice, replayOnlyRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice]);
+        return getInteractionDiceForRightSidebar({
+            currentRollDice,
+            replayOnlyRollDice,
+            attackSnapshotInteractionDice,
+            bonusDiceTrayDice,
+            isCurrentPhaseMainRollPhase,
+        });
+    }, [currentRollDice, replayOnlyRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice, isCurrentPhaseMainRollPhase]);
     const rightSidebarDice = React.useMemo(() => {
         if (bonusDiceTrayDice) return bonusDiceTrayDice;
         const baseDice = getRailDiceForCurrentBoard(interactionDice, G.dice);
@@ -1342,7 +1343,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
         engineMoves.rerollBonusDie(dieIndex);
     }, [canRerollBonusDiceFromRightTray, engineMoves]);
-    const isReplayOnlyRollContextActive = Boolean(replayOnlyRollDice);
+    const isReplayOnlyRollContextActive = shouldUseReplayOnlyRollContextAsActiveSurface({
+        replayOnlyRollDice,
+        isCurrentPhaseMainRollPhase,
+    });
     const canInteractRightSidebarDice = !isReplayOnlyRollContextActive
         && (
             canInteractDice
@@ -2057,6 +2061,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
                         onAutoResponseToggle={setAutoResponseEnabled}
+                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
+                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <CenterBoard
@@ -2080,9 +2086,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
-                        viewPlayer={viewPlayer}
-                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
-                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <RightSidebar

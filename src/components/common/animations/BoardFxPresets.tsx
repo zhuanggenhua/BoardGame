@@ -19,7 +19,7 @@ import {
   type FxRendererProps,
 } from '../../../engine/fx';
 import { BurstParticles, type BurstParticlesProps } from './BurstParticles';
-import { ConeBlast } from './ConeBlast';
+import { ConeBlast, type ConeBlastProps } from './ConeBlast';
 import { DamageFlash } from './DamageFlash';
 import { ImpactContainer, type ImpactEffects } from './ImpactContainer';
 import { SummonHybridEffect } from './SummonHybridEffect';
@@ -245,6 +245,7 @@ export interface BoardProjectilePathPresetProps {
   quality?: FxQuality;
   color?: string[];
   travelDurationMs?: number;
+  travelMotionEasing?: ConeBlastProps['motionEasing'];
   showSourceWake?: boolean;
   showMidBurst?: boolean;
   sourceWakeTestId?: string;
@@ -276,6 +277,7 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
   quality = 'full',
   color,
   travelDurationMs = BOARD_PROJECTILE_ATTACK_TIMING.travelDurationMs,
+  travelMotionEasing,
   showSourceWake = false,
   showMidBurst = false,
   sourceWakeTestId,
@@ -346,6 +348,7 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
           intensity={intensity}
           quality={quality}
           durationMs={travelDurationMs}
+          motionEasing={travelMotionEasing}
           color={color}
         />
         {showMidBurst ? (
@@ -535,6 +538,7 @@ export interface BoardProjectileAttackPresetProps {
   intensity?: 'normal' | 'strong';
   color?: string[];
   travelDurationMs?: number;
+  travelMotionEasing?: ConeBlastProps['motionEasing'];
   completeMs?: number;
   hostTestId?: string;
   travelTestId?: string;
@@ -577,6 +581,7 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   intensity = 'strong',
   color,
   travelDurationMs = BOARD_PROJECTILE_ATTACK_TIMING.travelDurationMs,
+  travelMotionEasing,
   completeMs,
   hostTestId = 'board-fx-projectile-attack-impact',
   travelTestId = 'board-fx-projectile-attack-travel',
@@ -637,6 +642,7 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
         quality={quality}
         color={color}
         travelDurationMs={travelDurationMs}
+        travelMotionEasing={travelMotionEasing}
         showSourceWake={showSourceWake}
         showMidBurst={showMidBurst}
         sourceWakeTestId={sourceWakeTestId}

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { buildAiDecisionContext } from '../../../engine/ai';
 import { executePipeline } from '../../../engine/pipeline';
 import { DiceThroneDomain } from '../domain';
 import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
 import { getCustomActionHandler, resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { reduce } from '../domain/reducer';
+import { diceThroneAiRuntime } from '../ai';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
@@ -66,6 +68,29 @@ const setPlayerBoardFace = (
         sourceCommandType: 'TEST',
         timestamp: 90,
     } as DiceThroneEvent]);
+};
+
+const decideWithBaselineAi = async (
+    state: MatchState<DiceThroneCore>,
+    playerId: PlayerId = '0',
+) => {
+    const baselinePolicy = diceThroneAiRuntime.localPolicies?.baseline;
+    if (!baselinePolicy) throw new Error('DiceThrone baseline AI policy is not registered.');
+    const context = buildAiDecisionContext({
+        gameId: 'dicethrone',
+        matchId: 'tianshi-ai-targeting',
+        playerId,
+        visibleState: state,
+        rulesVersion: null,
+        decisionBudgetMs: 250,
+        source: 'local',
+        seatController: { type: 'local-ai', difficulty: 'expert' },
+    });
+    const decision = await baselinePolicy.decide(context);
+    return {
+        context,
+        action: context.legalActions.find((action) => action.actionId === decision?.actionId),
+    };
 };
 
 describe('炽天使领域行为', () => {
@@ -210,7 +235,7 @@ describe('炽天使领域行为', () => {
         expect(eventTypes).not.toContain('BONUS_DIE_ROLLED');
     });
 
-    it('圣洁光辉选定后应自动进入防御阶段，并在防御结算后造成伤害', () => {
+    it('圣洁光辉选定后不应自动跳过进攻阶段，显式推进后进入防御并结算伤害', () => {
         let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
         const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
         const flightBefore = state.core.players['0'].tokens[TOKEN_IDS.FLIGHT] ?? 0;
@@ -259,9 +284,27 @@ describe('炽天使领域行为', () => {
         if (!selectRadiance.success) return;
         state = selectRadiance.state;
 
-        expect(state.sys.phase).toBe('defensiveRoll');
+        expect(state.sys.phase).toBe('offensiveRoll');
         expect(state.sys.interaction?.current).toBeUndefined();
         expect(state.sys.responseWindow?.current).toBeUndefined();
+        expect(state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-radiance',
+            isDefendable: true,
+        });
+
+        const advanceToDefense = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(advanceToDefense.success).toBe(true);
+        if (!advanceToDefense.success) return;
+        state = advanceToDefense.state;
+        expect(state.sys.phase).toBe('defensiveRoll');
         expect(state.core.pendingAttack).toMatchObject({
             attackerId: '0',
             defenderId: '1',
@@ -1175,6 +1218,38 @@ describe('炽天使领域行为', () => {
         }));
     });
 
+    it('AI 打出飞升时应把飞行给自己而不是敌人', async () => {
+        let state = createTianshiState();
+        const ascension = TIANSHI_CARDS.find(entry => entry.id === 'card-tianshi-ascension');
+        if (!ascension) throw new Error('缺少飞升卡牌定义');
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+        state.core.players['0'].hand = [ascension];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+
+        const played = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('PLAY_CARD', '0', { cardId: ascension.id }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(played.success).toBe(true);
+        if (!played.success) return;
+        state = played.state;
+
+        const prompt = getCardInteractionPrompt(state, ascension.id);
+        expect(prompt.targetPlayerIds).toEqual(['0', '1']);
+        expect(prompt.tokenGrantConfig).toEqual({ tokenId: TOKEN_IDS.FLIGHT, amount: 1 });
+
+        const { action } = await decideWithBaselineAi(state, '0');
+        expect(action?.kind).toBe('interaction-select-player');
+        expect(action?.commands[0]).toMatchObject({
+            type: 'RESOLVE_INTERACTION',
+            payload: { selectedPlayerIds: ['0'] },
+        });
+    });
+
     it('至高圣洁投出非圣洁吊坠时抽一张牌，而不是获得飞行和净化', () => {
         const state = createTianshiState();
         const card = TIANSHI_CARDS.find(entry => entry.id === 'card-tianshi-supreme-holiness');
@@ -1699,5 +1774,65 @@ describe('炽天使领域行为', () => {
                 amount: 1,
             }),
         }));
+    });
+
+    it('AI 处理神圣裁决的飞行选择时应选自己而不是敌人', async () => {
+        let state = createTianshiState();
+        const card = TIANSHI_CARDS.find(entry => entry.id === 'card-tianshi-divine-arbitration');
+        if (!card) throw new Error('缺少神圣裁决卡牌定义');
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+        state.core.players['0'].hand = [card];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+
+        const played = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('PLAY_CARD', '0', { cardId: card.id }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(played.success).toBe(true);
+        if (!played.success) return;
+        state = played.state;
+
+        const dazzlePrompt = getSimpleChoicePrompt(state, card.id);
+        const enemyDazzleOption = dazzlePrompt.options.find((option) => {
+            return option.value?.customId === 'tianshi-divine-arbitration-dazzle'
+                && option.value?.labelParams?.player === '1';
+        });
+        expect(enemyDazzleOption).toBeDefined();
+        if (!enemyDazzleOption) return;
+
+        const dazzleResolved = respondToPrompt(state, enemyDazzleOption.id, '0');
+        expect(dazzleResolved.success).toBe(true);
+        if (!dazzleResolved.success) return;
+        state = dazzleResolved.state;
+
+        const flightPrompt = getSimpleChoicePrompt(state, card.id);
+        const selfFlightOption = flightPrompt.options.find((option) => {
+            return option.value?.customId === 'tianshi-divine-arbitration-flight'
+                && option.value?.labelParams?.player === '0';
+        });
+        const enemyFlightOption = flightPrompt.options.find((option) => {
+            return option.value?.customId === 'tianshi-divine-arbitration-flight'
+                && option.value?.labelParams?.player === '1';
+        });
+        expect(selfFlightOption).toBeDefined();
+        expect(enemyFlightOption).toBeDefined();
+        if (!selfFlightOption || !enemyFlightOption) return;
+
+        const { action } = await decideWithBaselineAi(state, '0');
+        expect(action?.kind).toBe('interaction-choice');
+        const aiSelectedOptionId = action?.metadata?.optionId;
+        expect(aiSelectedOptionId).toBe(selfFlightOption.id);
+        expect(aiSelectedOptionId).not.toBe(enemyFlightOption.id);
+        if (!aiSelectedOptionId) return;
+
+        const flightResolved = respondToPrompt(state, aiSelectedOptionId, '0');
+        expect(flightResolved.success).toBe(true);
+        if (!flightResolved.success) return;
+        expect(flightResolved.state.core.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(2);
+        expect(flightResolved.state.core.players['1'].tokens[TOKEN_IDS.FLIGHT] ?? 0).toBe(0);
     });
 });

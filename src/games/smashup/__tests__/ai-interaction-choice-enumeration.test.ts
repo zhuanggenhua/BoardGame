@@ -334,6 +334,89 @@ describe('Smash Up AI 交互候选枚举', () => {
         });
     });
 
+    it('field-source-target 交互应让 AI 直接枚举携带来源和目标的 live option', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'scoreBases',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'world-champs-mummy-target-base',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'world_champs_mummy_after_scoring',
+                            targetType: 'field-source-target',
+                            options: [
+                                {
+                                    id: 'mummy-to-base-1',
+                                    label: '把木乃伊埋到神秘花园',
+                                    displayMode: 'field-source-target' as const,
+                                    value: {
+                                        fieldInteractionType: 'source-target',
+                                        fieldSourceType: 'minion',
+                                        fieldTargetType: 'base',
+                                        sourceUid: 'wc-mummy-1',
+                                        minionUid: 'wc-mummy-1',
+                                        fromBaseIndex: 0,
+                                        targetBaseIndex: 1,
+                                        baseIndex: 1,
+                                    },
+                                },
+                                {
+                                    id: 'skip',
+                                    label: '跳过',
+                                    displayMode: 'button' as const,
+                                    value: { skip: true },
+                                },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const targetAction = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.optionId === 'mummy-to-base-1',
+        );
+        const skipAction = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.optionId === 'skip',
+        );
+
+        expect(targetAction).toBeDefined();
+        expect(skipAction).toBeDefined();
+        expect((targetAction?.commands[0] as any)).toMatchObject({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: {
+                interactionId: 'world-champs-mummy-target-base',
+                optionId: 'mummy-to-base-1',
+            },
+        });
+        expect(targetAction?.metadata).toMatchObject({
+            interactionId: 'world-champs-mummy-target-base',
+            optionId: 'mummy-to-base-1',
+            displayMode: 'field-source-target',
+            optionValue: {
+                fieldInteractionType: 'source-target',
+                fieldSourceType: 'minion',
+                fieldTargetType: 'base',
+                sourceUid: 'wc-mummy-1',
+                minionUid: 'wc-mummy-1',
+                targetBaseIndex: 1,
+                baseIndex: 1,
+            },
+        });
+    });
+
     it('未知阻塞交互属于 AI 时应生成带 interactionId 的紧急取消动作', () => {
         const state = makeAiState({
             sys: {

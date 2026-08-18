@@ -35,6 +35,8 @@ export interface ConeBlastProps {
   durationScale?: number;
   /** 明确飞行时长；设置后优先于 durationScale，适合需要让命中回调和投射物到达严格对齐的游戏 */
   durationMs?: number;
+  /** 飞行进度曲线；棋盘子弹默认应可配置为 linear，避免接近目标时明显刹车 */
+  motionEasing?: 'ease-out' | 'linear';
   /** 语义颜色，复用通用投射物算法，只改变粒子和辉光色 */
   color?: string[];
   /** 保留兼容 */
@@ -114,6 +116,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
   quality = 'full',
   durationScale = 1,
   durationMs,
+  motionEasing = 'ease-out',
   color,
   onComplete,
   className = '',
@@ -128,13 +131,14 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
   const isStrong = intensity === 'strong';
   const isReduced = quality === 'reduced';
   const colorKey = color?.join('|') ?? '';
+  const colorValues = useMemo(() => (colorKey ? colorKey.split('|') : []), [colorKey]);
   const trailColors = useMemo<[number, number, number][]>(() => (
-    color && color.length > 0 ? color.map(parseColorToRgb) : TRAIL_COLORS
-  ), [colorKey]);
+    colorValues.length > 0 ? colorValues.map(parseColorToRgb) : TRAIL_COLORS
+  ), [colorValues]);
   const impactColors = useMemo<[number, number, number][]>(() => (
-    color && color.length > 0 ? [[255, 255, 255], ...color.map(parseColorToRgb)] : IMPACT_COLORS
-  ), [colorKey]);
-  const trailColorEnd = color && color.length > 0 ? color[color.length - 1] : TRAIL_PRESET.colorEnd;
+    colorValues.length > 0 ? [[255, 255, 255], ...colorValues.map(parseColorToRgb)] : IMPACT_COLORS
+  ), [colorValues]);
+  const trailColorEnd = colorValues.length > 0 ? colorValues[colorValues.length - 1] : TRAIL_PRESET.colorEnd;
   const glowPrimary = trailColors[0] ?? TRAIL_COLORS[0];
   const glowSecondary = trailColors[1] ?? trailColors[0] ?? TRAIL_COLORS[1];
 
@@ -214,6 +218,8 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
     let startTime = 0;
     let lastTime = 0;
+    // subscribeFxFrame may synchronously touch the callback in tests, so keep this mutable handle.
+    // eslint-disable-next-line prefer-const
     let unsubscribeFrame: (() => void) | undefined;
 
     const loop = (now: number) => {
@@ -226,8 +232,9 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
       if (!hitPhase) {
         const t = Math.min(1, elapsed / flightDuration);
-        // 缓动：快速启动 → 略减速到达
-        const eased = 1 - Math.pow(1 - t, 2.5);
+        const eased = motionEasing === 'linear'
+          ? t
+          : 1 - Math.pow(1 - t, 2.5);
 
         // 头部位置
         const hx = sx + dx * eased;
@@ -389,7 +396,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
 
     unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
     return () => unsubscribeFrame?.();
-  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality, durationScale, durationMs, trailColors, impactColors, trailColorEnd, glowPrimary, glowSecondary]);
+  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality, durationScale, durationMs, motionEasing, trailColors, impactColors, trailColorEnd, glowPrimary, glowSecondary]);
 
   useEffect(() => {
     const cleanupFrame = render();

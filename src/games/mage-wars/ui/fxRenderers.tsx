@@ -92,13 +92,40 @@ function AttackDiceFeedback({
 
     const resolvedTargetBox = targetBox ?? getCellPosition(target.row, target.col);
     const resolvedSourceBox = sourceBox ?? (source ? getCellPosition(source.row, source.col) : resolvedTargetBox);
-    const left = (resolvedSourceBox.left + resolvedSourceBox.width / 2 + resolvedTargetBox.left + resolvedTargetBox.width / 2) / 2;
-    const top = (resolvedSourceBox.top + resolvedSourceBox.height / 2 + resolvedTargetBox.top + resolvedTargetBox.height / 2) / 2;
+    const sourceCenter = {
+        x: resolvedSourceBox.left + resolvedSourceBox.width / 2,
+        y: resolvedSourceBox.top + resolvedSourceBox.height / 2,
+    };
+    const targetCenter = {
+        x: resolvedTargetBox.left + resolvedTargetBox.width / 2,
+        y: resolvedTargetBox.top + resolvedTargetBox.height / 2,
+    };
+    const pathCenter = {
+        x: (sourceCenter.x + targetCenter.x) / 2,
+        y: (sourceCenter.y + targetCenter.y) / 2,
+    };
+    const dx = targetCenter.x - sourceCenter.x;
+    const dy = targetCenter.y - sourceCenter.y;
+    const distance = Math.hypot(dx, dy);
+    const perpendicular = distance > 0.01
+        ? { x: -dy / distance, y: dx / distance }
+        : { x: 0, y: -1 };
+    const sideSign = Math.abs(dx) >= Math.abs(dy)
+        ? (pathCenter.y > 50 ? -1 : 1)
+        : (pathCenter.x > 50 ? -1 : 1);
+    const offset = Math.min(
+        19,
+        Math.max(13.5, Math.max(resolvedTargetBox.width, resolvedTargetBox.height) * 0.92 + 6),
+    );
+    const clampPercent = (value: number) => Math.min(94, Math.max(6, value));
+    const left = clampPercent(pathCenter.x + perpendicular.x * sideSign * offset);
+    const top = clampPercent(pathCenter.y + perpendicular.y * sideSign * offset);
 
     return (
         <motion.div
             className="absolute z-40 flex max-w-[11rem] items-center justify-center gap-1"
             data-testid="mage-wars-fx-attack-dice"
+            data-placement="path-side-avoid-target"
             style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)' }}
             initial={{ opacity: 0, scale: 0.68, y: 10 }}
             animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
@@ -508,6 +535,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 intensity={attackIntensity}
                 color={attackColors}
                 travelDurationMs={MAGE_WARS_FX_TIMING.projectileTravelMs}
+                travelMotionEasing={MAGE_WARS_ATTACK_FX_TUNING.projectileMotionEasing}
                 completeMs={
                     source && !sameCell(source, cell)
                         ? MAGE_WARS_FX_TIMING.projectileRangedCompleteMs

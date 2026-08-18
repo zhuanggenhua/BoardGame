@@ -58,6 +58,7 @@ export const ZHANSHUJIA_PASSIVE_ABILITIES: PassiveAbilityDef[] = [
                 cpCost: 0,
                 tokenCost: { tokenId: TOKEN_IDS.TACTICAL_ADVANTAGE, amount: 1 },
                 timing: 'anytime',
+                allowConfirmedRollInterference: true,
                 descriptionKey: 'passive.zhanshujiaTacticalAdvantage.reroll',
             },
             {

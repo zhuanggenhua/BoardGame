@@ -2364,6 +2364,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 e.type === 'CHOICE_RESOLVED'
                 || e.type === 'BONUS_DICE_SETTLED'
                 || e.type === 'SYS_INTERACTION_RESOLVED'
+                || e.type === 'SYS_INTERACTION_CONFIRMED'
                 || e.type === 'SYS_INTERACTION_CANCELLED'
                 || e.type === 'INTERACTION_CANCELLED'
                 || e.type === 'RESPONSE_WINDOW_CLOSED'

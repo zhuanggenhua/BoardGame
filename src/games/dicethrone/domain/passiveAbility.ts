@@ -66,6 +66,8 @@ export interface PassiveActionDef {
     requiresTokenLimitAtLeast?: { tokenId: string; limit: number };
     /** 使用时机 */
     timing: PassiveActionTiming;
+    /** 是否允许在已确认骰面的响应窗口中干预对手当前骰区 */
+    allowConfirmedRollInterference?: boolean;
     /** 描述 i18n key */
     descriptionKey: string;
     /** custom 动作 ID（type='custom' 时必填） */
@@ -234,7 +236,10 @@ export function isPassiveActionUsable(
     if (action.type === 'rerollDie') {
         const currentRollContext = resolveCurrentRollContext(state, phase);
         if (!currentRollContext) return false;
-        if (!isPlayerAllowedToPassiveRerollCurrentRoll(state, currentRollContext, playerId, context)) return false;
+        if (!isPlayerAllowedToPassiveRerollCurrentRoll(state, currentRollContext, playerId, {
+            ...context,
+            allowConfirmedRollInterference: action.allowConfirmedRollInterference === true,
+        })) return false;
         // 旧主骰兼容路径仍要求已投掷过；显式 currentRollContext（如闪避/奖励骰）以自身存在为准。
         if (!state.currentRollContext && state.rollCount === 0) return false;
         const hasUnlockedDie = currentRollContext.dice.some((d) => !d.isKept);

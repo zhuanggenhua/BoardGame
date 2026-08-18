@@ -105,6 +105,11 @@ const UNDO_ALLOWLIST = [
 
 const DT_NS = 'game-dicethrone';
 
+const isBonusDieSummaryEvent = (event: BonusDieRolledEvent): boolean => (
+    typeof event.payload.effectKey === 'string'
+    && event.payload.effectKey.includes('.result')
+);
+
 const OFFENSIVE_ROLL_END_TOKEN_EFFECT_KEYS: Partial<Record<string, string>> = {
     [TOKEN_IDS.CRIT]: 'actionLog.offensiveRollEndTokenEffect.crit',
     [TOKEN_IDS.ACCURACY]: 'actionLog.offensiveRollEndTokenEffect.accuracy',
@@ -1074,15 +1079,20 @@ function formatDiceThroneActionEntry({
         if (event.type === 'BONUS_DIE_ROLLED') {
             const bonusDieEvent = event as BonusDieRolledEvent;
             const { playerId } = bonusDieEvent.payload;
-            const bonusDieEvents = events.filter(
+            const playerBonusDieEvents = events.filter(
                 (candidate): candidate is BonusDieRolledEvent => candidate.type === 'BONUS_DIE_ROLLED'
                     && (candidate as BonusDieRolledEvent).payload.playerId === playerId,
             );
-            const firstBonusDieIndex = events.findIndex(candidate => candidate === bonusDieEvents[0]);
+            const rolledBonusDieEvents = playerBonusDieEvents.filter(candidate => !isBonusDieSummaryEvent(candidate));
+            const summaryEvent = playerBonusDieEvents.find(isBonusDieSummaryEvent);
+            const renderableBonusDieEvents = rolledBonusDieEvents.length > 0
+                ? rolledBonusDieEvents
+                : [summaryEvent ?? bonusDieEvent];
+            const firstBonusDieIndex = events.findIndex(candidate => candidate === renderableBonusDieEvents[0]);
             if (index !== firstBonusDieIndex) return;
             const diceResult = buildDiceResultSegment(
                 playerId,
-                bonusDieEvents.map(candidate => candidate.payload.value),
+                renderableBonusDieEvents.map(candidate => candidate.payload.value),
             );
             const segments: ActionLogSegment[] = [
                 i18nSeg('actionLog.bonusDiceRolled'),
@@ -1092,10 +1102,10 @@ function formatDiceThroneActionEntry({
             } else {
                 segments.push({
                     type: 'text',
-                    text: bonusDieEvents.map(candidate => candidate.payload.value).join(', '),
+                    text: renderableBonusDieEvents.map(candidate => candidate.payload.value).join(', '),
                 });
             }
-            const firstEffect = bonusDieEvents.find(candidate => candidate.payload.effectKey);
+            const firstEffect = summaryEvent ?? renderableBonusDieEvents.find(candidate => candidate.payload.effectKey);
             if (firstEffect?.payload.effectKey) {
                 segments.push({ type: 'text', text: ' ' });
                 segments.push(i18nSeg(firstEffect.payload.effectKey, firstEffect.payload.effectParams));

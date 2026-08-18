@@ -41,6 +41,35 @@ export function shouldShowRailDiceTray(params: {
     return true;
 }
 
+export function shouldUseReplayOnlyRollContextAsActiveSurface(params: {
+    replayOnlyRollDice: Die[] | null;
+    isCurrentPhaseMainRollPhase: boolean;
+}): boolean {
+    return Boolean(params.replayOnlyRollDice) && !params.isCurrentPhaseMainRollPhase;
+}
+
+export function getInteractionDiceForRightSidebar(params: {
+    currentRollDice: Die[];
+    replayOnlyRollDice: Die[] | null;
+    attackSnapshotInteractionDice?: Die[] | null;
+    bonusDiceTrayDice?: Die[] | null;
+    isCurrentPhaseMainRollPhase: boolean;
+}): Die[] {
+    if (params.bonusDiceTrayDice) return params.bonusDiceTrayDice;
+
+    const visibleRollDice = shouldUseReplayOnlyRollContextAsActiveSurface({
+        replayOnlyRollDice: params.replayOnlyRollDice,
+        isCurrentPhaseMainRollPhase: params.isCurrentPhaseMainRollPhase,
+    })
+        ? params.replayOnlyRollDice ?? []
+        : params.currentRollDice;
+
+    if (params.attackSnapshotInteractionDice) {
+        return [...visibleRollDice, ...params.attackSnapshotInteractionDice];
+    }
+    return visibleRollDice;
+}
+
 export function getReadOnlyNormalDicePool(dice: Die[]): Die[] {
     return dice.map((die, index) => ({
         ...die,

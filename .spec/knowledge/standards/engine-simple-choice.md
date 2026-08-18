@@ -1,16 +1,38 @@
 ---
 name: engine-simple-choice
-description: SimpleChoice 标准：选择弹窗、modal stack 和可点击内容边界——改选择交互时查
+description: Choice Request 旧兼容附录：simple-choice 弹窗和历史兼容边界——维护旧 simple-choice 或判断新游戏禁用时查
 metadata:
   type: doc
   status: 已交付
 ---
 
-# createSimpleChoice API 使用规范
+# Choice Request 旧兼容附录：createSimpleChoice
 
-## `createSimpleChoice` API 使用规范（强制）
+> 交互接口的总入口是 [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md)。本文只记录 `simple-choice` 作为旧弹窗 surface / legacy adapter 时必须保留的兼容合同，不再作为与 Choice Request 平级的新交互框架。
+
+## `createSimpleChoice` 兼容合同（强制）
 
 > 所有使用 `createSimpleChoice` 创建交互的代码必须遵守。
+
+## 定位：旧兼容工具，不是新交互框架
+
+**状态标签：旧兼容 / 新游戏禁用。**
+
+`createSimpleChoice` 的定位是通用选择弹窗 / 旧交互兼容工具，不再作为新游戏业务阻塞交互的权威框架。小黑屋（Betrayal）、法师战争（Mage Wars）、七大恨（Qidahen）以及后续新游戏，必须按 [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md) 先建立 `Choice Request`（选择请求），再让 UI、AI、服务端校验和自动恢复消费同一份请求。
+
+允许继续使用 `createSimpleChoice` 的场景：
+
+1. 旧游戏的历史交互兼容，尤其是 SmashUp、SummonerWars 等已经大量依赖的现有调用。
+2. 纯确认、纯按钮分支、纯数值 / 模式选择，且这一步没有场上对象、手牌、棋盘格、来源-目标、多步或响应窗口语义。
+3. 作为薄适配层渲染已经存在的 Choice Request；此时 `simple-choice` 不能重新拥有候选真相、权限真相或 AI 语义。
+
+禁止继续新增裸 `createSimpleChoice` 的场景：
+
+1. 新游戏里的玩家业务选择、AI 可控阻塞交互或线上可恢复卡点。
+2. 响应窗口、场上来源-目标选择、多步选择、隐藏 / 私有候选、棋盘格选择、手牌响应、阶段推进权选择。
+3. 需要 AI 生成合法动作但只能从 option label、UI 类型、数组下标或 `targetType` 猜语义的交互。
+
+旧游戏保持兼容，不要求一次性重构全部 `simple-choice`。但只要修改旧游戏中 AI 可见的阻塞交互，必须补 AI 支持状态、稳定候选和提交命令；如果这些信息无法自然塞进旧壳，应迁移到专用 interaction kind 或 Choice Request 适配层。
 
 ### 函数签名
 

@@ -117,7 +117,7 @@ export const PlayerStats = ({
                     <div className="absolute inset-x-0 top-0 h-[38%] bg-white/12" />
                     <div className="absolute inset-x-0 bottom-0 h-[42%] bg-black/24" />
                 </div>
-                <div className="absolute inset-0 flex items-center justify-between px-[0.72vw]">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-[0.72vw]">
                     <span className={`text-[0.78vw] font-black uppercase tracking-[0.08em] ${config.labelClassName}`}>
                         {config.label}
                     </span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { HeartPulse, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
@@ -25,15 +26,13 @@ export const NyraCompanionPanel = ({
     locale,
     onConsumeBond,
     damageResponse,
-    placement = 'sidebar',
 }: {
     player: HeroState;
     locale?: string;
     onConsumeBond?: () => void;
     damageResponse?: NyraDamageResponse;
-    placement?: 'sidebar' | 'board-overlay';
 }) => {
-    const { t } = useTranslation('game-dicethrone');
+    const { t, i18n } = useTranslation('game-dicethrone');
     const companion = player.companion;
     const maxAssignableDamage = Math.max(0, damageResponse?.maxAssignableDamage ?? 0);
     const [damageAllocation, setDamageAllocation] = React.useState(1);
@@ -48,125 +47,125 @@ export const NyraCompanionPanel = ({
     const isActive = hp > 0;
     const bondCount = player.tokens.nyras_bond ?? 0;
     const backgroundImage = buildLocalizedImageSet(ASSETS.PLAYER_BOARD('lieren'), locale);
-    const isBoardOverlay = placement === 'board-overlay';
-
-    return (
-        <section
-            className={isBoardOverlay
-                ? 'w-full rounded-[0.45vw] border border-emerald-300/45 bg-slate-950/82 px-[0.45vw] py-[0.35vw] shadow-md backdrop-blur-[1px]'
-                : 'w-full border border-emerald-300/35 bg-slate-950/80 px-2 py-1.5 shadow-md'}
-            aria-label={t('companion.nyra.label')}
-            data-testid="nyra-companion-panel"
+    const activeDamageResponse = damageResponse && isActive && damageResponse.currentDamage > 0
+        ? damageResponse
+        : undefined;
+    const showHealAction = !activeDamageResponse && Boolean(onConsumeBond) && bondCount > 0 && hp < companion.maxHp;
+    const shortHealLabel = (locale ?? i18n.resolvedLanguage ?? i18n.language).toLowerCase().startsWith('en')
+        ? 'Heal'
+        : '治疗';
+    const damageResponseDock = activeDamageResponse ? (
+        <div
+            className="pointer-events-auto fixed left-1/2 top-[10vh] z-[9999] w-[22vw] min-w-[280px] -translate-x-1/2 rounded-xl border border-emerald-300/45 bg-slate-950/92 px-3 py-2 shadow-2xl backdrop-blur-md"
+            data-testid="nyra-damage-response-dock"
         >
-            <div className={isBoardOverlay ? 'flex items-center gap-[0.35vw]' : 'flex items-center gap-2'}>
-                <div
-                    className={isBoardOverlay
-                        ? 'h-[2vw] w-[2vw] shrink-0 border border-emerald-100/40 bg-black'
-                        : 'h-10 w-10 shrink-0 border border-emerald-100/40 bg-black'}
-                    style={{ backgroundImage, backgroundRepeat: 'no-repeat', ...NYRA_CROP }}
-                    role="img"
-                    aria-label={t('companion.nyra.name')}
-                />
-                <div className="min-w-0 flex-1">
-                    <div className={isBoardOverlay
-                        ? 'flex items-center justify-between gap-[0.35vw] text-[0.52vw] leading-none'
-                        : 'flex items-center justify-between gap-2 text-xs leading-none'}>
-                        <span className="truncate font-semibold text-emerald-100">{t('companion.nyra.name')}</span>
-                        <span className={isActive ? 'text-emerald-300' : 'text-slate-500'}>
-                            {isActive ? t('companion.nyra.active') : t('companion.nyra.inactive')}
-                        </span>
+            <div className="mb-1.5 flex items-center justify-between gap-3 text-sm leading-none">
+                <span className="font-black text-emerald-100">{t('companion.nyra.takeDamage')}</span>
+                <span className="font-black tabular-nums text-rose-200">{activeDamageResponse.currentDamage}</span>
+            </div>
+            {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
+                <div className="mb-2">
+                    <div className="mb-1 flex items-center justify-between text-xs text-cyan-100">
+                        <span>{t('companion.nyra.allocateDamage')}</span>
+                        <span className="tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
                     </div>
-                    <div className={isBoardOverlay
-                        ? 'mt-[0.25vw] flex items-center justify-between gap-[0.35vw]'
-                        : 'mt-1 flex items-center justify-between gap-2'}>
-                        <div className={isBoardOverlay
-                            ? 'flex items-center gap-[0.18vw] text-[0.62vw] font-semibold tabular-nums text-rose-200'
-                            : 'flex items-center gap-1 text-sm font-semibold tabular-nums text-rose-200'}>
-                            <HeartPulse className={isBoardOverlay ? 'h-[0.62vw] w-[0.62vw] text-rose-400' : 'h-3.5 w-3.5 text-rose-400'} aria-hidden="true" />
-                            <span>{hp}/{companion.maxHp}</span>
-                        </div>
-                        <div
-                            className={bondCount > 0
-                                ? (isBoardOverlay ? 'flex items-center gap-[0.18vw] text-amber-200' : 'flex items-center gap-1 text-amber-200')
-                                : (isBoardOverlay ? 'flex items-center gap-[0.18vw] text-slate-500' : 'flex items-center gap-1 text-slate-500')}
-                            title={t('tokens.nyras_bond.name')}
-                            data-testid="nyra-bond-state"
-                        >
-                            <Link2 className={isBoardOverlay ? 'h-[0.58vw] w-[0.58vw]' : 'h-3.5 w-3.5'} aria-hidden="true" />
-                            <span className={isBoardOverlay ? 'text-[0.52vw] tabular-nums' : 'text-xs tabular-nums'}>{bondCount}/1</span>
-                        </div>
-                    </div>
+                    <input
+                        aria-label={t('companion.nyra.allocateDamage')}
+                        className="h-4 w-full accent-cyan-300"
+                        type="range"
+                        min={1}
+                        max={maxAssignableDamage}
+                        value={Math.min(damageAllocation, maxAssignableDamage)}
+                        onChange={(event) => setDamageAllocation(Number(event.target.value))}
+                    />
+                </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+                {activeDamageResponse.canRedirectToNyra && (
+                    <GameButton
+                        size="sm"
+                        variant="primary"
+                        className="h-8 w-full !px-2 !py-0 !text-xs"
+                        onClick={activeDamageResponse.onRedirectToNyra}
+                        data-testid="nyra-take-damage-button"
+                    >
+                        {t('companion.nyra.takeDamageAction')}
+                    </GameButton>
+                )}
+                {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
                     <GameButton
                         size="sm"
                         variant="secondary"
-                        className={isBoardOverlay
-                            ? 'mt-[0.28vw] h-[1.15vw] w-full !px-[0.25vw] !py-0 !text-[0.5vw]'
-                            : 'mt-1 h-6 w-full !px-1 !py-0 !text-xs'}
-                        disabled={!onConsumeBond || bondCount <= 0 || hp >= companion.maxHp}
-                        onClick={onConsumeBond}
-                        data-testid="nyra-bond-heal-button"
+                        className="h-8 w-full !px-2 !py-0 !text-xs"
+                        onClick={() => activeDamageResponse.onAllocateWithBond(Math.min(damageAllocation, maxAssignableDamage))}
+                        data-testid="nyra-allocate-damage-button"
                     >
-                        {t('companion.nyra.healAction')}
+                        {t('companion.nyra.allocateDamageAction')}
                     </GameButton>
-                    {damageResponse && isActive && damageResponse.currentDamage > 0 && (
-                        <div className={isBoardOverlay
-                            ? 'mt-[0.35vw] border-t border-emerald-300/20 pt-[0.35vw]'
-                            : 'mt-2 border-t border-emerald-300/20 pt-2'}>
-                            <div className={isBoardOverlay
-                                ? 'mb-[0.25vw] flex items-center justify-between gap-[0.3vw] text-[0.5vw] leading-none'
-                                : 'mb-1 flex items-center justify-between gap-2 text-[11px] leading-none'}>
-                                <span className="font-semibold text-emerald-100">{t('companion.nyra.takeDamage')}</span>
-                                <span className="tabular-nums text-rose-200">
-                                    {damageResponse.currentDamage}
-                                </span>
+                )}
+            </div>
+        </div>
+    ) : null;
+
+    return (
+        <>
+            <section
+                className="w-full rounded-[0.55vw] border border-emerald-300/45 bg-slate-950/88 px-2 py-1 shadow-xl backdrop-blur-[2px]"
+                aria-label={t('companion.nyra.label')}
+                data-testid="nyra-companion-panel"
+            >
+                <div className="flex items-center gap-2">
+                    <div
+                        className="h-8 w-8 shrink-0 border border-emerald-100/40 bg-black"
+                        style={{ backgroundImage, backgroundRepeat: 'no-repeat', ...NYRA_CROP }}
+                        role="img"
+                        aria-label={t('companion.nyra.name')}
+                    />
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2 text-xs leading-none">
+                            <span className="truncate font-semibold text-emerald-100">{t('companion.nyra.name')}</span>
+                            <span className={isActive ? 'text-emerald-300' : 'text-slate-500'}>
+                                {isActive ? t('companion.nyra.active') : t('companion.nyra.inactive')}
+                            </span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 text-sm font-semibold tabular-nums text-rose-200">
+                                <HeartPulse className="h-3.5 w-3.5 text-rose-400" aria-hidden="true" />
+                                <span>{hp}/{companion.maxHp}</span>
                             </div>
-                            {damageResponse.canRedirectToNyra && (
-                                <GameButton
-                                    size="sm"
-                                    variant="primary"
-                                    className={isBoardOverlay
-                                        ? 'h-[1.15vw] w-full !px-[0.25vw] !py-0 !text-[0.5vw]'
-                                        : 'h-6 w-full !px-1 !py-0 !text-xs'}
-                                    onClick={damageResponse.onRedirectToNyra}
-                                    data-testid="nyra-take-damage-button"
-                                >
-                                    {t('companion.nyra.takeDamageAction')}
-                                </GameButton>
-                            )}
-                            {damageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
-                                <div className={isBoardOverlay ? 'mt-[0.35vw]' : 'mt-2'}>
-                                    <div className={isBoardOverlay
-                                        ? 'mb-[0.2vw] flex items-center justify-between text-[0.48vw] text-cyan-100'
-                                        : 'mb-1 flex items-center justify-between text-[11px] text-cyan-100'}>
-                                        <span>{t('companion.nyra.allocateDamage')}</span>
-                                        <span className="tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
-                                    </div>
-                                    <input
-                                        aria-label={t('companion.nyra.allocateDamage')}
-                                        className={isBoardOverlay ? 'h-[0.65vw] w-full accent-cyan-300' : 'w-full accent-cyan-300'}
-                                        type="range"
-                                        min={1}
-                                        max={maxAssignableDamage}
-                                        value={Math.min(damageAllocation, maxAssignableDamage)}
-                                        onChange={(event) => setDamageAllocation(Number(event.target.value))}
-                                    />
-                                    <GameButton
-                                        size="sm"
-                                        variant="secondary"
-                                        className={isBoardOverlay
-                                            ? 'mt-[0.2vw] h-[1.15vw] w-full !px-[0.25vw] !py-0 !text-[0.5vw]'
-                                            : 'mt-1 h-6 w-full !px-1 !py-0 !text-xs'}
-                                        onClick={() => damageResponse.onAllocateWithBond(Math.min(damageAllocation, maxAssignableDamage))}
-                                        data-testid="nyra-allocate-damage-button"
-                                    >
-                                        {t('companion.nyra.allocateDamageAction')}
-                                    </GameButton>
+                            <div
+                                className={bondCount > 0 ? 'flex items-center gap-1 text-amber-200' : 'flex items-center gap-1 text-slate-500'}
+                                title={t('tokens.nyras_bond.name')}
+                                data-testid="nyra-bond-state"
+                            >
+                                <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="text-xs tabular-nums">{bondCount}/1</span>
+                            </div>
+                            {activeDamageResponse && (
+                                <div className="text-xs font-semibold tabular-nums text-orange-200">
+                                    {activeDamageResponse.currentDamage}
                                 </div>
                             )}
+                            {showHealAction && (
+                                <GameButton
+                                    size="sm"
+                                    variant="secondary"
+                                    className="h-6 min-w-[2.5rem] !min-h-0 !px-1 !py-0 !text-[10px]"
+                                    onClick={onConsumeBond}
+                                    title={t('companion.nyra.healAction')}
+                                    aria-label={t('companion.nyra.healAction')}
+                                    data-testid="nyra-bond-heal-button"
+                                >
+                                    {shortHealLabel}
+                                </GameButton>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+            {damageResponseDock && typeof document === 'undefined'
+                ? damageResponseDock
+                : damageResponseDock && createPortal(damageResponseDock, document.body)}
+        </>
     );
 };

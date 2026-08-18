@@ -30,7 +30,7 @@ metadata:
 | [`engine-action-log.md`](standards/engine-action-log.md) | 行动日志标准：事件、可见记录和反馈追踪——改 action log 或事件展示时查 |
 | [`engine-damage-pipeline.md`](standards/engine-damage-pipeline.md) | 伤害管线标准：伤害计算、结算时机和跨层消费——改伤害或生命值流程时查 |
 | [`engine-gameover.md`](standards/engine-gameover.md) | 游戏结束标准：胜负判定、终局状态和传输收口——改 gameover 流程时查 |
-| [`engine-simple-choice.md`](standards/engine-simple-choice.md) | SimpleChoice 标准：选择弹窗、modal stack 和可点击内容边界——改选择交互时查 |
+| [`engine-simple-choice.md`](standards/engine-simple-choice.md) | Choice Request 旧兼容附录：simple-choice 弹窗和历史兼容边界——维护旧 simple-choice 或判断新游戏禁用时查 |
 | [`engine-systems.md`](standards/engine-systems.md) | 引擎系统总览：共享原语、事件、FX、AI 和状态边界——改共享引擎能力时查 |
 | [`engine-transport.md`](standards/engine-transport.md) | 传输层标准：在线状态、服务端权威、恢复和反馈过滤——改联网链路时查 |
 | [`engine-visual-events.md`](standards/engine-visual-events.md) | 视觉事件标准：EventStream、特写、数值冻结和 impact 回调——改表现事件时查 |
@@ -41,7 +41,7 @@ metadata:
 | [`golden-rules.md`](standards/golden-rules.md) | 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查 |
 | [`home-v2-design.md`](standards/home-v2-design.md) | 首页设计标准：Home V2 信息架构和 UI 边界——改首页时查 |
 | [`regression-closeout.md`](standards/regression-closeout.md) | 回归收口标准：症状保真、红测、同类扩审和证据口径——修回归问题时查 |
-| [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：从规则文本推导玩家权限、响应窗口和 UI 按钮——新游戏、卡牌效果和特殊响应设计时查 |
+| [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：Choice Request、权限、响应窗口和 AI 合法动作——新游戏、卡牌效果和特殊响应设计时查 |
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |
 | [`shared-refactor-guard.md`](standards/shared-refactor-guard.md) | 共享重构护栏：共享层影响面、代表场景和防误伤验收——改公共代码时查 |
 | [`testing-audit-core-principles.md`](standards/testing-audit-core-principles.md) | 测试审计核心原则：fail-close、深审流程和交互矩阵——做深度审计时查 |

@@ -1,6 +1,6 @@
 ---
 name: rule-driven-interaction-design
-description: 规则驱动交互设计：从规则文本推导玩家权限、响应窗口和 UI 按钮——新游戏、卡牌效果和特殊响应设计时查
+description: 规则驱动交互设计：Choice Request、权限、响应窗口和 AI 合法动作——新游戏、卡牌效果和特殊响应设计时查
 metadata:
   type: doc
   status: 已交付
@@ -43,6 +43,22 @@ metadata:
 | 消费者 | UI、命令验证、resolver/reducer、AI 合法动作、自动推进 / watchdog 是否都读同一份授权真相 |
 
 输出落点可以是 `rule/`、OpenSpec design、`evidence/<gameId>/...` 或新游戏阶段 1.5 的机制矩阵；但不能只停留在对话里。
+
+## 新游戏默认使用 Choice Request
+
+小黑屋（Betrayal）、法师战争（Mage Wars）、七大恨（Qidahen）以及后续新游戏，默认不再用裸 `createSimpleChoice` 作为业务阻塞交互的权威入口。新游戏的规则选择必须先建 `Choice Request`（选择请求），再由 UI、AI、服务端校验和自动恢复共同消费。
+
+Choice Request 至少包含：
+
+1. 当前决策者：谁被规则要求做这一步选择，不能从视角玩家或焦点玩家推断。
+2. 选择语义：这是选玩家、选卡牌、选场上对象、选棋盘格、选来源、选目标、选数量、确认 / 跳过，还是响应窗口。
+3. 稳定候选：每个候选必须有当前决策内稳定的业务 ID，例如 `playerId`、`cardUid`、`minionUid`、`base stable ref`、`position` 或等价标识；禁止只用按钮文案、翻译文本、数组下标或 UI 顺序。
+4. 提交命令：每个候选最终提交到哪个正式命令、payload 形状是什么、失败时如何拒绝。
+5. 跳过与多选：是否可跳过、是否必须跳过、`min/max`、是否有顺序语义，必须显式声明。
+6. AI 支持状态：`semantic`、`adapter` 或 `unsupported`，并说明 AI 生成合法动作的来源；正常 AI 对局不得把 `unsupported` 交互分配给 AI 座位。
+7. UI 承载：UI 可以把同一份合同渲染为手牌高亮、棋盘高亮、场上对象高亮、弹窗或按钮，但 UI 展示形态不是规则真相源。
+
+旧游戏中的既有 `simple-choice` 调用按兼容口径保留，不要求大爆炸迁移。修改旧游戏时，只有触碰到 AI 可控阻塞交互、响应窗口、场上来源-目标选择、多步选择或线上复发卡点，才必须按本节补 Choice Request 或迁移到专用 interaction kind；未触碰的历史交互继续遵守 [`engine-simple-choice.md`](engine-simple-choice.md) 的兼容规则。
 
 ## 特殊卡牌效果必须单独推导
 

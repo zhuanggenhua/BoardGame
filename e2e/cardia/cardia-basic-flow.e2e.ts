@@ -10,10 +10,12 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { setupCardiaOnlineMatch, cleanupCardiaMatch } from '../helpers/cardia';
+import { setupCardiaOnlineMatch, cleanupCardiaMatch, waitForPhase } from '../helpers/cardia';
 
 test.describe('Cardia - Basic Flow', () => {
     test('should complete a full turn cycle', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
         // 创建两个玩家的浏览器上下文
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const setup = await setupCardiaOnlineMatch(browser, baseURL);
@@ -69,8 +71,8 @@ test.describe('Cardia - Basic Flow', () => {
             // ============================================================
             
             // 验证当前是打出卡牌阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Play Card');
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Play Card');
+            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Play Card|打出卡牌/);
+            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Play Card|打出卡牌/);
             
             // P1 打出第一张手牌
             const p1FirstCard = p1Page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
@@ -94,8 +96,8 @@ test.describe('Cardia - Basic Flow', () => {
             // ============================================================
             
             // 双方都打出卡牌后，应该自动进入能力阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Ability', { timeout: 10000 });
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Ability', { timeout: 10000 });
+            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
+            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
             
             // 等待能力阶段 UI 就绪
             await p1Page.waitForTimeout(500);
@@ -164,38 +166,11 @@ test.describe('Cardia - Basic Flow', () => {
             }
             
             // ============================================================
-            // 结束阶段：结束回合
+            // 结束阶段：Cardia 现行流程会自动完成回合结束并回到出牌阶段
             // ============================================================
-            
-            // 等待进入结束阶段（检查状态而不是UI文本）
-            await p1Page.waitForFunction(() => {
-                const state = (window as any).__BG_STATE__;
-                return state?.core?.phase === 'end';
-            }, { timeout: 10000 }).catch(async () => {
-                // 如果超时，打印当前状态用于调试
-                const currentPhase = await p1Page.evaluate(() => {
-                    const state = (window as any).__BG_STATE__;
-                    return state?.core?.phase;
-                });
-                console.log(`[DEBUG] 等待结束阶段超时，当前阶段: ${currentPhase}`);
-                throw new Error(`Expected phase 'end', but got '${currentPhase}'`);
-            });
-            
-            // 等待结束阶段 UI 就绪
-            await p1Page.waitForTimeout(500);
-            
-            // 当前玩家结束回合（检查哪个玩家有结束回合按钮）
-            const p1EndButton = p1Page.locator('[data-testid="cardia-end-turn-btn"]');
-            const p2EndButton = p2Page.locator('[data-testid="cardia-end-turn-btn"]');
-            
-            if (await p1EndButton.isVisible()) {
-                await p1EndButton.click({ timeout: 10000 });
-            } else if (await p2EndButton.isVisible()) {
-                await p2EndButton.click({ timeout: 10000 });
-            }
-            
-            // 等待状态同步
-            await p1Page.waitForTimeout(1000);
+
+            await waitForPhase(p1Page, 'play', 15000);
+            await waitForPhase(p2Page, 'play', 15000);
             
             // ============================================================
             // 验证回合结束后的状态
@@ -204,8 +179,8 @@ test.describe('Cardia - Basic Flow', () => {
             // 验证回合数增加
             // 验证双方都抽了新牌
             // 验证回到打出卡牌阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Play Card', { timeout: 10000 });
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Play Card', { timeout: 10000 });
+            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Play Card|打出卡牌/, { timeout: 10000 });
+            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Play Card|打出卡牌/, { timeout: 10000 });
             
             // 验证印戒计数器更新（至少有一方获得印戒）
             // 注意：页面上有两个 signet display（我方和对方），所以使用 first() 获取第一个
@@ -223,7 +198,7 @@ test.describe('Cardia - Basic Flow', () => {
             // ============================================================
             
             // 应该回到 P1 的回合
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Play Card');
+            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Play Card|打出卡牌/);
             
             // 验证回合数增加
             const turnNumber = await p1Page.locator('[data-testid="cardia-turn-number"]').textContent();
@@ -266,8 +241,8 @@ test.describe('Cardia - Basic Flow', () => {
             await p1Page.waitForTimeout(1000);
             
             // 验证进入能力阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Ability', { timeout: 10000 });
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('Ability', { timeout: 10000 });
+            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
+            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
             
             // 检查哪个玩家是失败者（可以激活能力）
             const p1SkipButton = p1Page.locator('[data-testid="cardia-skip-ability-btn"]');

@@ -91,7 +91,7 @@ export const isPlayerAllowedToPassiveRerollCurrentRoll = (
     state: DiceThroneCore,
     context: DiceThroneRollContext,
     playerId: PlayerId,
-    options: { responseWindowType?: DtResponseWindowType } = {},
+    options: { responseWindowType?: DtResponseWindowType; allowConfirmedRollInterference?: boolean } = {},
 ): boolean => {
     if (context.policy.allowPassiveReroll !== true) return false;
     if (context.policy.rerollableBy === 'none') return false;
@@ -100,6 +100,9 @@ export const isPlayerAllowedToPassiveRerollCurrentRoll = (
     }
 
     if (!isConfirmedRollInterferenceWindow(context, options.responseWindowType)) {
+        return false;
+    }
+    if (options.allowConfirmedRollInterference !== true) {
         return false;
     }
 

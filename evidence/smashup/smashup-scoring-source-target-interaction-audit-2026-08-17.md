@@ -301,6 +301,12 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
   - 共享模型行为测试覆盖 `随从 -> 基地`、`持续行动 -> 随从`、`泰坦 -> 随从` 和 `随从来源本体确认`：来源-目标类打开窗口时只给来源集合，点击来源后才给目标集合和提交 optionId；来源本体确认类打开窗口时给来源集合，点击来源直接提交 optionId。
   - `smashup_reaction_choose` 的手牌响应选项统一由 `reactionChoiceInteraction.ts` 解析；Board 不再本地定义 `ReactionChoicePromptOptionValue` / `isReactionHandPlayValue` / `getReactionChoiceBaseIndex` / `getReactionChoiceTargetMinionUid`，AI 也不再保留自己的 `SmashUpReactionChoiceValue` 解析。
 
+### AI 合法动作证据
+
+- 命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`
+- 结果：通过，10 tests。
+- 测试断言：AI 不走玩家 UI 的“两步点击来源再点击目标”DOM 路径，而是从当前 live simple-choice 直接枚举合法 option；`field-source-target` 选项必须在 metadata 中保留 `fieldInteractionType/sourceUid/minionUid/targetBaseIndex/baseIndex`，并用当前 `interactionId + optionId` 提交 `SYS_INTERACTION_RESPOND`；同一窗口里的 `skip` 也仍是合法 AI 选项。
+
 ### L1 结构门禁证据
 
 - 命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "所有 createSimpleChoice"`
@@ -658,6 +664,7 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
 - 共享根因项：之前容易把“可发动场上来源对象 -> 目标对象 / 来源本体确认”误建成按钮或直接目标选项；当前共享 helper 明确把来源、目标和来源本体确认拆成结构化字段，并用统一 `field-source-target` prompt 类型支持来源随从到目标基地、来源随从到目标随从、来源持续行动/行动到目标基地、来源持续行动到目标随从、来源泰坦到目标基地、来源泰坦到目标随从六个分支，用 `field-source-action` prompt 类型支持来源随从直接执行或确认来源后进入后续步骤。按钮另加通用职责门禁：带对象上下文时必须声明 `buttonIntent`，只能承载纯控制、跳过、模式选择、已确定对象确认或已知卡牌处理，不能携带场上对象目标字段来代理目标点击。
 - 非计分同类项：Killer Queen POD 的检索分支是纯按钮，但“给本回合打出的随从和女皇各加 1 个指示物”是场上随从直选；当前 `targetType: 'minion'` 让随从本体承接主路径，检索按钮通过直选模式的 extra option 承接，避免新增一套 `mixed` 交互类型。
 - 响应窗口收口项：`smashup_reaction_choose` 当前统一声明 `targetType: 'field-source-action'`，以允许场上可选 special 从来源本体发动；手牌响应仍由手牌区本体承接，非响应手牌置灰，窗口按钮只承载跳过、触发排序和纯控制。
+- AI 收口项：自动玩家不是去模拟 UI 两次点击；它消费同一份 live option 清单。`field-source-target` 的每个 option 同时携带稳定来源和稳定目标，因此 AI 选择该 option 就等价于完成“来源 + 目标”这一条规则交互；新增 `ai-interaction-choice-enumeration.test.ts` 用世界冠军木乃伊式选项锁定 `interactionId + optionId` payload 和 `sourceUid/targetBaseIndex` 元数据。
 - 命中 D 维度：D1 语义保真、D3 数据流闭环、D5 交互完整、D8 时序正确、D15 UI 状态同步、D34 交互选项渲染模式、D35 交互上下文快照、D36 延迟事件补发、D55 多消费者一致性、D58 可完成性。
 - 流程收口证据：九条 E2E 都断言最终交互链不会残留；复杂链回到下一玩家出牌阶段；世界冠军木乃伊链回到 AI 2 号位出牌阶段；警长链进入决斗并清空 `activeDuel`；沉船湾和墓碑链分别从来源本体点击进入目标基地选择并收口；超级佐德链从泰坦本体点击进入目标基地选择，点击基地后移动到计分基地并回到出牌阶段；垃圾处理链从持续行动本体点击进入目标随从选择并移动落地；克拉肯救随从链从泰坦本体点击进入目标随从选择，再进入后续目标基地选择并移动落地；侦察兵链从触发排序进入来源本体高亮，点击侦察兵本体回手，第二只侦察兵走“留在基地”分支，最终回到出牌阶段。
 - 同类扩审记录：
@@ -695,8 +702,8 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
 ## 共享根因与残余范围
 
 - 共享根因项：来源和目标职责曾容易混在同一按钮/目标选项里，来源本体确认也曾容易被做成按钮主路径或普通目标直选，导致玩家看不懂“是谁发动、接下来选什么”。当前共享合同把来源对象、目标对象和来源本体确认拆开；直选模式的操作按钮分流也统一到 `interactionMode.ts`，避免每个目标类型各自维护一套“跳过 / 完成 / 取消”过滤。
-- 已一并检查项：field source-target 共享 helper、field-source-action 共享 helper、三段字段、疑似手拼来源/目标 payload 形状、疑似来源本体确认 payload 形状、Board 消费路径、直选模式 extra option 共享 helper、复杂链 E2E、世界冠军木乃伊 E2E、警长 E2E、沉船湾 E2E、墓碑 E2E、超级佐德 E2E、垃圾处理 E2E、克拉肯救随从 E2E、侦察兵 E2E、侦察兵领域测试、法老来源本体确认与埋葬牌选择行为测试、六娃完整管线行为测试、巨蚁 live 来源行为测试、兵蚁 POD 同类守卫、飞天猴领域与队列运行态测试、麦克尔定向行为测试、巨齿鲨队列运行态测试、姜饼屋随从本体多选测试、移动的山玩家目标类型 smoke、骷髅指示物确认窗口测试。
-- 本轮新增守卫：`smashup_reaction_choose` 的手写夹具不得回退成按钮窗口；响应手牌不得回退成按钮模式；旧 `activate_special:minion/titan` 字符串只允许存在于禁用断言中；`field-source-target` / `field-source-action` 共享族不得再按单个 sourceId 加回逐牌白名单，必须由共享类型守卫统一覆盖；`button` targetType 不得在选项 value 或 prompt `continuationContext` 中无职责声明地携带随从、基地、持续行动、泰坦等场上对象字段来代理本体直选；按钮若只是已唯一确定对象后的确认、模式选择或已知卡牌处理，必须声明通用 `buttonIntent`，不能靠 sourceId 例外；真实目标玩家选择必须改成 `targetType: 'player'`，不能靠按钮例外放过；`generic` targetType 不得再按 sourceId 建白名单，高风险对象字段必须由 `genericIntent` 或 option 形状推导解释；Board 源码约束测试要求所有直选模式额外按钮统一调用 `getSmashUpDirectPromptExtraOptions(...)`。
+- 已一并检查项：field source-target 共享 helper、field-source-action 共享 helper、三段字段、疑似手拼来源/目标 payload 形状、疑似来源本体确认 payload 形状、Board 消费路径、AI 合法动作枚举路径、直选模式 extra option 共享 helper、复杂链 E2E、世界冠军木乃伊 E2E、警长 E2E、沉船湾 E2E、墓碑 E2E、超级佐德 E2E、垃圾处理 E2E、克拉肯救随从 E2E、侦察兵 E2E、侦察兵领域测试、法老来源本体确认与埋葬牌选择行为测试、六娃完整管线行为测试、巨蚁 live 来源行为测试、兵蚁 POD 同类守卫、飞天猴领域与队列运行态测试、麦克尔定向行为测试、巨齿鲨队列运行态测试、姜饼屋随从本体多选测试、移动的山玩家目标类型 smoke、骷髅指示物确认窗口测试。
+- 本轮新增守卫：`smashup_reaction_choose` 的手写夹具不得回退成按钮窗口；响应手牌不得回退成按钮模式；旧 `activate_special:minion/titan` 字符串只允许存在于禁用断言中；`field-source-target` / `field-source-action` 共享族不得再按单个 sourceId 加回逐牌白名单，必须由共享类型守卫统一覆盖；AI 必须能枚举携带来源和目标字段的 `field-source-target` live option；`button` targetType 不得在选项 value 或 prompt `continuationContext` 中无职责声明地携带随从、基地、持续行动、泰坦等场上对象字段来代理本体直选；按钮若只是已唯一确定对象后的确认、模式选择或已知卡牌处理，必须声明通用 `buttonIntent`，不能靠 sourceId 例外；真实目标玩家选择必须改成 `targetType: 'player'`，不能靠按钮例外放过；`generic` targetType 不得再按 sourceId 建白名单，高风险对象字段必须由 `genericIntent` 或 option 形状推导解释；Board 源码约束测试要求所有直选模式额外按钮统一调用 `getSmashUpDirectPromptExtraOptions(...)`。
 - 当前范围外：
   - 全部 102 个运行时计分调用点逐项 L2/L3/L4 深审。
   - 数据定义层 179 个计分时机标记对应的牌 / 场上 special 逐牌 L2/L3/L4 深审。

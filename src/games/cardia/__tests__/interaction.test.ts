@@ -13,6 +13,8 @@ import type { CardiaCore } from '../domain/core-types';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { Cardia } from '../game';
+import { createFactionSelectionInteraction } from '../domain/interactionHandlers';
+import { createCardiaEventSystem } from '../domain/systems';
 
 describe('Cardia - 交互系统', () => {
     let matchState: MatchState<CardiaCore>;
@@ -29,6 +31,66 @@ describe('Cardia - 交互系统', () => {
         const core = CardiaDomain.setup(playerIds, random);
         const sys = createInitialSystemState(playerIds, Cardia.systems, undefined);
         matchState = { core, sys };
+    });
+
+    describe('Choice Request 兼容投影', () => {
+        it('能力交互请求应通过 Choice Request 投影成 simple-choice，并保留旧 handler 需要的 option.value', () => {
+            const system = createCardiaEventSystem();
+            const cardiaInteraction = createFactionSelectionInteraction(
+                'faction-choice-request',
+                'ambusher',
+                '0',
+                '选择派系',
+                '选择一个派系',
+            );
+            const result = system.afterEvents?.({
+                state: matchState,
+                command: { type: 'TEST_COMMAND', playerId: '0', payload: {} },
+                events: [{
+                    type: CARDIA_EVENTS.ABILITY_INTERACTION_REQUESTED.type,
+                    timestamp: 1,
+                    payload: {
+                        abilityId: 'ambusher',
+                        cardId: 'source-card',
+                        playerId: '0',
+                        interaction: cardiaInteraction,
+                    },
+                }],
+                random,
+                playerIds: ['0', '1'],
+            });
+
+            const current = result?.state?.sys.interaction.current as any;
+
+            expect(current).toMatchObject({
+                id: 'faction-choice-request',
+                kind: 'simple-choice',
+                playerId: '0',
+                ai: { status: 'semantic' },
+            });
+            expect(current.data.options[0]).toMatchObject({
+                id: 'faction_swamp',
+                value: { faction: 'swamp' },
+            });
+            const decision = current.data.ai?.decisions?.[0];
+
+            expect(decision).toMatchObject({
+                kind: 'choose-option',
+                interactionId: 'faction-choice-request',
+                actorPlayerId: '0',
+                sourceId: 'ambusher',
+            });
+            expect(decision?.candidates).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'faction_swamp',
+                    value: { faction: 'swamp' },
+                }),
+                expect.objectContaining({
+                    id: 'faction_academy',
+                    value: { faction: 'academy' },
+                }),
+            ]));
+        });
     });
     
     describe('CHOOSE_CARD 命令验证', () => {

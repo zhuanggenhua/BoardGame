@@ -36,8 +36,8 @@ const createRunner = (random = fixedRandom) =>
         silent: true,
     });
 
-describe('技能重选防护（attack_already_initiated）', () => {
-    it('攻击发起后不能重新选择技能', () => {
+describe('攻击技能选择确认边界', () => {
+    it('进攻阶段选中攻击但未推进前，仍可改选其它当前可用技能', () => {
         // 使用队列随机数确保掷出 5 个拳头（触发 fist-technique-5）
         // 骰子面值 1 = 拳头面
         const diceValues = [1, 1, 1, 1, 1]; // 5 个拳头面
@@ -46,7 +46,7 @@ describe('技能重选防护（attack_already_initiated）', () => {
 
         // 1. 进入进攻掷骰阶段并选择技能
         const result = runner.run({
-            name: '攻击发起后不能重新选择技能',
+            name: '进攻阶段先选择一个攻击候选',
             commands: [
                 cmd('ADVANCE_PHASE', '0'), // main1 -> offensiveRoll
                 cmd('ROLL_DICE', '0'),      // 掷骰
@@ -55,25 +55,39 @@ describe('技能重选防护（attack_already_initiated）', () => {
             ],
         });
 
-        // 验证：攻击已发起
+        // 验证：攻击候选已记录，但仍停留在进攻阶段，尚未推进到防御/结算。
         expect(result.finalState.core.pendingAttack).toBeDefined();
         expect(result.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-5');
+        expect(result.finalState.sys.phase).toBe('offensiveRoll');
 
-        // 2. 尝试重新选择技能（应该被拒绝）
+        // 2. 未推进前改选同一骰面下另一个可用技能。
         const runner2 = createRunner(random);
         const reselect = runner2.run({
-            name: '尝试重新选择技能',
+            name: '未推进前改选攻击候选',
             setup: () => result.finalState,
             commands: [
-                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }), // 尝试重新选择
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-4' }),
             ],
         });
 
-        // 验证：应该被拒绝，错误码为 attack_already_initiated
-        expect(reselect.actualErrors).toHaveLength(1);
-        expect(reselect.actualErrors[0].error).toBe('attack_already_initiated');
-        // 验证：攻击未改变（仍然是原来的技能）
-        expect(reselect.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-5');
+        expect(reselect.actualErrors).toHaveLength(0);
+        expect(reselect.finalState.sys.phase).toBe('offensiveRoll');
+        expect(reselect.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-4');
+
+        // 3. 真正推进到防御阶段后，攻击方不能再用进攻 SELECT_ABILITY 换技能。
+        const advanced = createRunner(random).run({
+            name: '推进到防御后不能改选攻击',
+            setup: () => reselect.finalState,
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            ],
+        });
+
+        expect(advanced.finalState.sys.phase).toBe('defensiveRoll');
+        expect(advanced.actualErrors).toHaveLength(1);
+        expect(advanced.actualErrors[0].error).toBe('player_mismatch');
+        expect(advanced.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-4');
     });
 
     it('冲拳必须从当前骰面解析到具体变体，父技能不能进入 0 伤害攻击链', () => {

@@ -206,7 +206,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 )}
             </AnimatePresence>
 
-            {/* 游戏结束覆盖层 - 注入王权骰铸专属结算内容和重赛按钮样式 */}
+            {/* 游戏结束覆盖层 - 注入王权骰铸专属终局胜负内容和重赛按钮样式 */}
             <EndgameOverlay
                 isGameOver={props.isGameOver}
                 result={props.gameoverResult}
@@ -229,7 +229,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 renderActions={(actionsProps) => (
                     <RematchActions
                         {...actionsProps}
-                        className="mt-4 flex-wrap justify-center max-[1023px]:mt-2 max-[1023px]:gap-2"
+                        className="mt-4 flex-wrap justify-center"
                         renderButton={renderDiceThroneButton}
                     />
                 )}

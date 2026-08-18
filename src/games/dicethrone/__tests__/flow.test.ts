@@ -3161,6 +3161,20 @@ describe('王权骰铸流程测试', () => {
             expect(confirmed.finalState.core.currentRollContext?.kind).toBe('bonus');
             expect(confirmed.finalState.core.currentRollContext?.display.replayOnly).toBe(true);
             expect(confirmed.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp + 2);
+
+            runner.setState(confirmed.finalState);
+            const advanced = runner.dispatch('ADVANCE_PHASE', { playerId: attackerId });
+            expect(advanced.success).toBe(true);
+            expect(advanced.finalState.sys.phase).toBe('offensiveRoll');
+
+            runner.setState(advanced.finalState);
+            const offensiveRoll = runner.dispatch('ROLL_DICE', { playerId: attackerId });
+            expect(offensiveRoll.success).toBe(true);
+            expect(offensiveRoll.finalState.core.currentRollContext).toMatchObject({
+                kind: 'offensive',
+                ownerPlayerId: attackerId,
+            });
+            expect(offensiveRoll.finalState.core.currentRollContext?.dice).toHaveLength(5);
         });
 
         it('响应窗口：对手仅持有真正只能改自己骰子的卡时不应打开 afterRollConfirmed', () => {

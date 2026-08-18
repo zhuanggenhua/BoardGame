@@ -400,7 +400,10 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
         .map((die) => die.value)
         .filter((value): value is number => Number.isInteger(value) && value >= 1 && value <= 6);
     const attacker = state.players[attackerId];
-    const queuedAttackModifierBonusDamage = attacker?.pendingBonusDamage ?? 0;
+    const previousAttackModifierBonusDamage = state.pendingAttack?.attackerId === attackerId
+        ? state.pendingAttack.attackModifierBonusDamage ?? 0
+        : 0;
+    const queuedAttackModifierBonusDamage = previousAttackModifierBonusDamage + (attacker?.pendingBonusDamage ?? 0);
     const players = attacker?.pendingBonusDamage !== undefined
         ? {
             ...state.players,

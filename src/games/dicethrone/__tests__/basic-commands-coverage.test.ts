@@ -2374,6 +2374,7 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            cmd('ADVANCE_PHASE', '0'),
         ];
 
         for (const input of setupCommands) {
@@ -2451,6 +2452,7 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            cmd('ADVANCE_PHASE', '0'),
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('ADVANCE_PHASE', '0'),
@@ -2532,6 +2534,7 @@ describe('AI legal actions', () => {
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            cmd('ADVANCE_PHASE', '0'),
             cmd('ROLL_DICE', '0'),
             cmd('CONFIRM_ROLL', '0'),
             cmd('ADVANCE_PHASE', '0'),
@@ -3419,6 +3422,51 @@ describe('AI legal actions', () => {
         });
 
         expect(resolution).toBeNull();
+    });
+
+    it('本地 AI 在 afterRollConfirmed 响应窗口应枚举可用被动重掷', () => {
+        const state = createHeroMatchup('monk', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].hand = [];
+        state.core.players['1'].passiveAbilities = ZHANSHUJIA_PASSIVE_ABILITIES;
+        state.core.players['1'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 2, 3, 4, 5][index],
+            isKept: false,
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-tactical-advantage-passive',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(legalActions).toContainEqual(expect.objectContaining({
+            kind: 'use-passive-ability',
+            commands: [expect.objectContaining({
+                type: 'USE_PASSIVE_ABILITY',
+                payload: expect.objectContaining({
+                    passiveId: 'zhanshujia-tactical-advantage',
+                    actionIndex: 1,
+                    targetDieId: 0,
+                }),
+            })],
+        }));
     });
 
     it('本地 AI 在 afterRollConfirmed 面对高点对手骰子时，应主动打出改骰牌而不是直接 pass', async () => {

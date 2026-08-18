@@ -22,6 +22,9 @@ export {
     type AdapterConfig,
 } from './adapter';
 
+// 选择请求
+export * from './ChoiceRequest';
+
 // 系统层
 export * from './systems';
 

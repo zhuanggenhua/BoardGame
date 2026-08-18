@@ -234,6 +234,7 @@ function createTargetInteraction(
     targetPlayerIds: PlayerId[],
     resolveCustomActionId: string,
     timestamp: number,
+    grants?: Pick<PendingInteraction, 'tokenGrantConfig' | 'tokenGrantConfigs' | 'statusGrantConfig' | 'statusGrantConfigs'>,
 ): InteractionRequestedEvent | null {
     if (targetPlayerIds.length === 0) return null;
     const interaction: PendingInteraction = {
@@ -246,6 +247,7 @@ function createTargetInteraction(
         selected: [],
         targetPlayerIds,
         resolveCustomActionId,
+        ...grants,
     };
     return {
         type: 'INTERACTION_REQUESTED',
@@ -682,7 +684,12 @@ function handleDivineCommandTarget(ctx: CustomActionContext): DiceThroneEvent[] 
 
 function handleDivineProtectionCard(ctx: CustomActionContext): DiceThroneEvent[] {
     const targets = getSeatingOrder(ctx.state);
-    const interaction = createTargetInteraction(ctx.state, ctx.attackerId, ctx.sourceAbilityId, 'choices.tianshi.divineProtection.title', targets, 'tianshi-divine-protection-target', ctx.timestamp);
+    const interaction = createTargetInteraction(ctx.state, ctx.attackerId, ctx.sourceAbilityId, 'choices.tianshi.divineProtection.title', targets, 'tianshi-divine-protection-target', ctx.timestamp, {
+        tokenGrantConfigs: [
+            { tokenId: TOKEN_IDS.PURIFY, amount: 2 },
+            { tokenId: TOKEN_IDS.FLIGHT, amount: 2 },
+        ],
+    });
     if (interaction) return [interaction];
     return [
         grantTokenEvent(ctx.state, targets[0] ?? ctx.attackerId, TOKEN_IDS.PURIFY, 2, ctx.sourceAbilityId, ctx.timestamp),
@@ -747,7 +754,9 @@ function handleSupremeHolinessCard(ctx: CustomActionContext): DiceThroneEvent[] 
 
 function handleAscensionCard(ctx: CustomActionContext): DiceThroneEvent[] {
     const targets = getSeatingOrder(ctx.state);
-    const interaction = createTargetInteraction(ctx.state, ctx.attackerId, ctx.sourceAbilityId, 'choices.tianshi.ascension.title', targets, 'tianshi-ascension-target', ctx.timestamp);
+    const interaction = createTargetInteraction(ctx.state, ctx.attackerId, ctx.sourceAbilityId, 'choices.tianshi.ascension.title', targets, 'tianshi-ascension-target', ctx.timestamp, {
+        tokenGrantConfig: { tokenId: TOKEN_IDS.FLIGHT, amount: 1 },
+    });
     if (interaction) return [interaction];
     const event = grantTokenEvent(ctx.state, targets[0] ?? ctx.attackerId, TOKEN_IDS.FLIGHT, 1, ctx.sourceAbilityId, ctx.timestamp);
     return event ? [event] : [];

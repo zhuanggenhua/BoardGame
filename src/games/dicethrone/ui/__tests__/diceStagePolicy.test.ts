@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray } from '../diceStagePolicy';
+import {
+    canInteractDiceForCurrentBoard,
+    getInteractionDiceForRightSidebar,
+    getRailDiceForCurrentBoard,
+    shouldShowRailDiceTray,
+    shouldUseReplayOnlyRollContextAsActiveSurface,
+} from '../diceStagePolicy';
 import {
     canInteractHandForCurrentBoard,
     canPlayHandCardsForCurrentBoard,
@@ -90,6 +96,41 @@ describe('diceStagePolicy', () => {
             { id: 3, value: 4, isKept: false, displayOnly: true },
             { id: 4, value: 5, isKept: false, displayOnly: true },
         ]);
+    });
+
+    it('非普通掷骰阶段允许把已确认临时骰作为右侧只读回看', () => {
+        const replayDice = [{ id: 0, value: 6, isKept: false, displayOnly: true }];
+
+        expect(shouldUseReplayOnlyRollContextAsActiveSurface({
+            replayOnlyRollDice: replayDice as any,
+            isCurrentPhaseMainRollPhase: false,
+        })).toBe(true);
+        expect(getInteractionDiceForRightSidebar({
+            currentRollDice: [],
+            replayOnlyRollDice: replayDice as any,
+            isCurrentPhaseMainRollPhase: false,
+        })).toMatchObject(replayDice);
+    });
+
+    it('进入进攻/防御等普通掷骰阶段后，旧临时骰回看不得抢占当前骰盘或禁用动作', () => {
+        const replayDice = [{ id: 0, value: 6, isKept: false, displayOnly: true }];
+        const currentRollDice = [
+            { id: 0, value: 1, isKept: false },
+            { id: 1, value: 2, isKept: false },
+            { id: 2, value: 3, isKept: false },
+            { id: 3, value: 4, isKept: false },
+            { id: 4, value: 5, isKept: false },
+        ];
+
+        expect(shouldUseReplayOnlyRollContextAsActiveSurface({
+            replayOnlyRollDice: replayDice as any,
+            isCurrentPhaseMainRollPhase: true,
+        })).toBe(false);
+        expect(getInteractionDiceForRightSidebar({
+            currentRollDice: currentRollDice as any,
+            replayOnlyRollDice: replayDice as any,
+            isCurrentPhaseMainRollPhase: true,
+        })).toMatchObject(currentRollDice);
     });
 });
 

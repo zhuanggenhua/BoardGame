@@ -18,7 +18,7 @@ type DiceThroneEndgameHarnessState = {
     };
 };
 
-test.describe('DiceThrone 终局攻击锁', () => {
+test.describe('DiceThrone 终局胜负画面操作锁', () => {
     test('胜利失败画面出现后用透明点击层拦住棋盘操作，并在移动横屏保留完整按钮', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
@@ -79,6 +79,10 @@ test.describe('DiceThrone 终局攻击锁', () => {
 
         await page.setViewportSize({ width: 812, height: 375 });
         await expect(endgameTitle).toBeVisible({ timeout: 10000 });
+        const rematchActions = page.getByTestId('rematch-actions');
+        await expect(rematchActions).toBeVisible({ timeout: 10000 });
+        await expect(rematchActions).toHaveCSS('margin-top', '16px');
+        await expect(rematchActions).toHaveCSS('column-gap', '12px');
         const rematchButtonRects = await page.locator('[data-testid="rematch-actions"] button').evaluateAll((buttons) => (
             buttons.map((button) => {
                 const rect = button.getBoundingClientRect();

@@ -45,7 +45,7 @@ import {
     getPlayableCardsInResponseWindow,
     getNextPhase,
 } from './domain';
-import { DICETHRONE_COMMANDS } from './domain/ids';
+import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
@@ -243,6 +243,7 @@ type ChoiceOptionValue = {
     value?: number;
     customId?: string;
     labelKey?: string;
+    labelParams?: Record<string, string | number>;
     disabled?: boolean;
     __emergency_skip__?: boolean;
     __emergency_skip_reason__?: string;
@@ -1357,6 +1358,29 @@ const isEmergencySkipOption = (option: SimpleChoiceOption): boolean => {
         || option.value?.__emergency_skip__ === true;
 };
 
+const getChoiceLabelPlayerId = (
+    state: DiceThroneState,
+    value: ChoiceOptionValue | undefined,
+): PlayerId | null => {
+    const player = value?.labelParams?.player;
+    return typeof player === 'string' && state.core.players[player] ? player : null;
+};
+
+const getTianshiDivineArbitrationChoiceGrant = (
+    customId: string | undefined,
+): { effectId: string; effectIntent: AiEffectIntent; amount: number } | null => {
+    switch (customId) {
+        case 'tianshi-divine-arbitration-dazzle':
+            return { effectId: STATUS_IDS.DAZZLE, effectIntent: 'debuff', amount: 1 };
+        case 'tianshi-divine-arbitration-flight':
+            return { effectId: TOKEN_IDS.FLIGHT, effectIntent: 'buff', amount: 2 };
+        case 'tianshi-divine-arbitration-purify':
+            return { effectId: TOKEN_IDS.PURIFY, effectIntent: 'buff', amount: 1 };
+        default:
+            return null;
+    }
+};
+
 const buildChoiceOptionAiHints = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -1380,6 +1404,25 @@ const buildChoiceOptionAiHints = (
         hints.push(buildPlayerTargetHint(state, playerId, targetPlayerId, {
             effectIntent: 'debuff',
             tags: ['choice:select-target'],
+        }));
+    }
+
+    const divineArbitrationGrant = getTianshiDivineArbitrationChoiceGrant(customId);
+    const divineArbitrationTargetId = getChoiceLabelPlayerId(state, value);
+    if (divineArbitrationGrant && divineArbitrationTargetId) {
+        hints.push(buildPlayerTargetHint(state, playerId, divineArbitrationTargetId, {
+            effectIntent: divineArbitrationGrant.effectIntent,
+            estimatedSwing: getGrantedEffectValue(
+                state,
+                playerId,
+                divineArbitrationTargetId,
+                divineArbitrationGrant.effectId,
+                divineArbitrationGrant.amount,
+            ),
+            tags: [
+                'choice:tianshi-divine-arbitration',
+                `effect:${divineArbitrationGrant.effectId}`,
+            ],
         }));
     }
 
@@ -2168,6 +2211,7 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
                 metadata: withAiActionStrategyTags({ cardId: card.id }, buildCardStrategyTags(card, 'response-play-card')),
             });
         }
+        actions.push(...buildPassiveActions(state, playerId, phase, { rerollOnly: true }));
     }
 
     return actions;
@@ -2382,6 +2426,7 @@ const buildPassiveActions = (
                 passiveAction.type === 'rerollDie'
                 && state.core.rollConfirmed
                 && currentRollContext?.kind === 'offensive'
+                && responseWindowType !== 'afterRollConfirmed'
             ) {
                 return;
             }

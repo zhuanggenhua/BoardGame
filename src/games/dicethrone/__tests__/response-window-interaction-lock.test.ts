@@ -501,7 +501,7 @@ describe('伤害响应期间的卡牌后续交互', () => {
         expect(result1.finalState.sys.interaction.queue[0]?.kind).toBe('dt:token-response');
 
         const result2 = runner.run({
-            name: '完成来个六选骰后回到伤害响应',
+            name: '来个六改骰后仍等待确认',
             setup: () => result1.finalState,
             commands: [
                 cmd('MODIFY_DIE', '0', { dieId: 2, newValue: 6 }),
@@ -510,9 +510,23 @@ describe('伤害响应期间的卡牌后续交互', () => {
 
         expect(result2.assertionErrors).toEqual([]);
         expect(result2.finalState.core.dice[2]?.value).toBe(6);
-        expect(result2.finalState.sys.interaction.current?.kind).toBe('dt:token-response');
+        expect(result2.finalState.sys.interaction.current?.kind).toBe('multistep-choice');
         expect(result2.finalState.sys.interaction.current?.playerId).toBe('0');
+        expect((result2.finalState.sys.interaction.current?.data as any)?.completedDieIds).toContain(2);
         expect(result2.finalState.core.pendingDamage?.id).toBe('damage-test');
+
+        const result3 = runner.run({
+            name: '确认来个六选骰后回到伤害响应',
+            setup: () => result2.finalState,
+            commands: [
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
+            ],
+        });
+
+        expect(result3.assertionErrors).toEqual([]);
+        expect(result3.finalState.sys.interaction.current?.kind).toBe('dt:token-response');
+        expect(result3.finalState.sys.interaction.current?.playerId).toBe('0');
+        expect(result3.finalState.core.pendingDamage?.id).toBe('damage-test');
     });
 });
 
