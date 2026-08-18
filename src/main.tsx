@@ -5,6 +5,8 @@ import { i18nInitPromise } from './lib/i18n';
 import { SENTRY_DSN } from './config/server';
 import { isStaleChunkError, reloadForStaleChunkOnce } from './lib/staleChunkReloadGuard';
 import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
+import { notifyMobileBundleReady } from './lib/mobile/mobileLiveUpdates';
+import { createNativeMobileFeatureInitializer } from './lib/mobile/mobileStartup';
 import { isConfigReviewPath } from './config/gameConfigReviewRoutes';
 
 const STALE_CHUNK_BOOTSTRAP_WINDOW_MS = 8000;
@@ -101,25 +103,13 @@ if (import.meta.env.PROD && SENTRY_DSN) {
   });
 }
 
-const initializeNativeMobileFeatures = async () => {
-  const [
-    { notifyMobileBundleReady },
-    { hydrateInstalledNativeGamePackages },
-  ] = await Promise.all([
-    import('./lib/mobile/mobileLiveUpdates'),
-    import('./features/mobile-packages/packageManagerService'),
-  ]);
-
-  void notifyMobileBundleReady();
-  await hydrateInstalledNativeGamePackages().catch((error) => {
-    console.warn('[MobilePackages] 同步原生已安装游戏包失败', error);
-  });
-};
+const initializeNativeMobileFeatures = createNativeMobileFeatureInitializer({
+  notifyBundleReady: notifyMobileBundleReady,
+  loadPackageManager: () => import('./features/mobile-packages/packageManagerService'),
+});
 
 if (isNativeMobileRuntime()) {
-  void initializeNativeMobileFeatures().catch((error) => {
-    console.error('[MobilePackages] 加载原生启动模块失败', error);
-  });
+  void initializeNativeMobileFeatures();
 }
 
 const rootElement = document.getElementById('root');
