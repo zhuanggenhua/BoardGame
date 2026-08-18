@@ -98,22 +98,11 @@ export const LeftSidebar = ({
             <div className="w-full pt-[0.2rem] px-[1vw]" data-testid="turn-order-panel">
                 <PhaseIndicator currentPhase={currentPhase} />
             </div>
-            {viewPlayer.characterId === 'lieren' && (
-                <div
-                    className="absolute left-[0.5vw] bottom-[28vw] w-[14vw] pointer-events-auto"
-                    data-testid="nyra-player-panel-anchor"
-                    data-player-panel-slot="top-left"
-                >
-                    <NyraCompanionPanel
-                        player={viewPlayer}
-                        locale={locale}
-                        onConsumeBond={onConsumeNyraBond}
-                        damageResponse={nyraDamageResponse}
-                    />
-                </div>
-            )}
             <div className="flex-grow" />
-            <div className="w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto">
+            <div
+                className="relative w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto"
+                data-testid="self-player-panel-group"
+            >
                 {/*
                  * selfBuffRef is used as the end position for buff/status flying effects.
                  * Use a small offset above the HP container so the effect doesn't land too low.
@@ -176,6 +165,20 @@ export const LeftSidebar = ({
                 {/* 血条和自动响应开关容器 */}
                 <div className="w-full px-[1vw]" data-testid="dt-player-stats-panel" data-tutorial-id="player-stats">
                     <div className="w-full flex flex-col gap-[0.4vw]">
+                        {viewPlayer.characterId === 'lieren' && (
+                            <div
+                                className="w-full pointer-events-auto"
+                                data-testid="nyra-player-panel-anchor"
+                                data-player-panel-slot="top-left"
+                            >
+                                <NyraCompanionPanel
+                                    player={viewPlayer}
+                                    locale={locale}
+                                    onConsumeBond={onConsumeNyraBond}
+                                    damageResponse={nyraDamageResponse}
+                                />
+                            </div>
+                        )}
                         <PlayerStats
                             player={viewPlayer}
                             hpRef={selfHpRef}

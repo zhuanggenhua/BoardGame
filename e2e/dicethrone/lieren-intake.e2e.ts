@@ -75,33 +75,59 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
     const redirectButton = page.getByTestId('nyra-take-damage-button');
     const allocateButton = page.getByTestId('nyra-allocate-damage-button');
     const slider = page.getByRole('slider', { name: '消耗羁绊分配伤害' });
+    const dock = page.getByTestId('nyra-damage-response-dock');
+    const board = page.getByTestId('player-board-surface');
+    const handCards = page.locator('[data-testid="hand-area"] [data-card-id]');
 
-    const [redirectBox, allocateBox, sliderBox] = await Promise.all([
+    const [redirectBox, allocateBox, sliderBox, dockBox, boardBox] = await Promise.all([
         redirectButton.boundingBox(),
         allocateButton.boundingBox(),
         slider.boundingBox(),
+        dock.boundingBox(),
+        board.boundingBox(),
     ]);
     expect(redirectBox, '转移伤害按钮必须有可点击矩形').not.toBeNull();
     expect(allocateBox, '确认分配按钮必须有可点击矩形').not.toBeNull();
     expect(sliderBox, '羁绊分配滑杆必须有可拖动矩形').not.toBeNull();
-    expect(redirectBox!.height).toBeGreaterThanOrEqual(26);
-    expect(allocateBox!.height).toBeGreaterThanOrEqual(26);
-    expect(redirectBox!.width).toBeGreaterThanOrEqual(64);
-    expect(allocateBox!.width).toBeGreaterThanOrEqual(64);
-    expect(sliderBox!.width).toBeGreaterThanOrEqual(120);
+    expect(dockBox, '妮拉响应面板必须是玩家能读的大面板').not.toBeNull();
+    expect(boardBox, '玩家板必须有可见矩形').not.toBeNull();
+    await expect(handCards.first()).toBeVisible({ timeout: 10000 });
+    expect(dockBox!.width, '妮拉响应面板必须占用左侧玩家面板宽度，不能退回小浮条').toBeGreaterThanOrEqual(150);
+    expect(redirectBox!.height, '转移伤害按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
+    expect(allocateBox!.height, '确认分配按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
+    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(140);
+    expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(140);
+    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(135);
+    expect(boxesOverlap(dockBox!, boardBox!), '妮拉响应面板不得压住中间玩家板 / 技能牌面').toBe(false);
+    const handCardBoxes = await handCards.evaluateAll((nodes) => (
+        nodes
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            })
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+    ));
+    for (const handCardBox of handCardBoxes) {
+        expect(
+            boxesOverlap(dockBox!, handCardBox),
+            `妮拉响应面板不得压住手牌卡片本体 ${JSON.stringify({ dockBox, handCardBox })}`,
+        ).toBe(false);
+    }
 
     const fontSizes = await page.getByTestId('nyra-damage-response-dock').evaluate((panel) => {
         const buttons = Array.from(panel.querySelectorAll('button'));
         return buttons.map((button) => Number.parseFloat(window.getComputedStyle(button).fontSize));
     });
-    expect(Math.min(...fontSizes), '妮拉响应按钮字号不能低于 12px').toBeGreaterThanOrEqual(12);
+    expect(Math.min(...fontSizes), '妮拉响应按钮字号不能低于 13px').toBeGreaterThanOrEqual(13);
 };
 
 const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
     const leftSidebar = page.getByTestId('left-sidebar');
+    const selfPlayerPanel = page.getByTestId('self-player-panel-group');
     const anchor = page.getByTestId('nyra-player-panel-anchor');
     const board = page.getByTestId('player-board-surface');
     const nyraPanel = page.getByTestId('nyra-companion-panel');
+    const nyraControl = page.getByTestId('nyra-companion-control');
     const statusTokens = page.locator('[data-tutorial-id="status-tokens"]');
     const statsPanel = page.getByTestId('dt-player-stats-panel');
     const drawDeck = page.locator('[data-tutorial-id="draw-deck"]');
@@ -113,38 +139,87 @@ const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
     await expect(board.getByTestId('nyra-companion-panel')).toHaveCount(0);
     await expect(statusTokens.getByTestId('nyra-companion-panel')).toHaveCount(0);
 
-    const sidebarContainsNyra = await leftSidebar.evaluate((sidebarNode) => (
-        Boolean(sidebarNode.querySelector('[data-testid="nyra-companion-panel"]'))
-    ));
+    const [sidebarContainsNyra, panelContainsNyra, statsContainsNyra] = await Promise.all([
+        leftSidebar.evaluate((sidebarNode) => (
+            Boolean(sidebarNode.querySelector('[data-testid="nyra-companion-panel"]'))
+        )),
+        selfPlayerPanel.evaluate((panelNode) => (
+            Boolean(panelNode.querySelector('[data-testid="nyra-companion-panel"]'))
+        )),
+        statsPanel.evaluate((statsNode) => (
+            Boolean(statsNode.querySelector('[data-testid="nyra-player-panel-anchor"]'))
+        )),
+    ]);
     expect(sidebarContainsNyra, '妮拉面板必须挂在左侧自己的玩家 HUD 内部').toBe(true);
+    expect(panelContainsNyra, '妮拉面板必须挂在自己的玩家面板组内，不得跑到中间角色板').toBe(true);
+    expect(statsContainsNyra, '妮拉面板必须落在自己的玩家统计面板左上角，不得继续夹在回合顺序和状态图标之间').toBe(true);
 
     const sidebarBox = await leftSidebar.boundingBox();
     const nyraBox = await nyraPanel.boundingBox();
+    const nyraControlBox = await nyraControl.boundingBox();
     const statusBox = await statusTokens.boundingBox();
     const statsBox = await statsPanel.boundingBox();
     const deckBox = await drawDeck.boundingBox();
     const turnOrderBox = await turnOrderPanel.boundingBox();
+    const boardBox = await board.boundingBox();
     expect(sidebarBox, '左侧玩家 HUD 必须有可见矩形').not.toBeNull();
     expect(nyraBox, '妮拉面板必须有可见矩形').not.toBeNull();
+    expect(nyraControlBox, '妮拉面板控制组必须有可见矩形').not.toBeNull();
     expect(statusBox, '状态图标区必须有可见矩形').not.toBeNull();
     expect(statsBox, '生命与 CP 面板必须有可见矩形').not.toBeNull();
     expect(deckBox, '牌堆必须有可见矩形').not.toBeNull();
     expect(turnOrderBox, '回合顺序面板必须有可见矩形').not.toBeNull();
+    expect(boardBox, '中间玩家板必须有可见矩形').not.toBeNull();
 
     const epsilon = 1;
     expect(nyraBox!.x).toBeGreaterThanOrEqual(sidebarBox!.x - epsilon);
     expect(nyraBox!.y).toBeGreaterThanOrEqual(sidebarBox!.y - epsilon);
     expect(nyraBox!.x + nyraBox!.width).toBeLessThanOrEqual(sidebarBox!.x + sidebarBox!.width + epsilon);
     expect(nyraBox!.y + nyraBox!.height).toBeLessThanOrEqual(sidebarBox!.y + sidebarBox!.height + epsilon);
-    expect(nyraBox!.x - sidebarBox!.x, '妮拉面板应靠左侧玩家 HUD 的左上空白，而不是贴到中间角色板').toBeLessThan(40);
-    expect(nyraBox!.y + nyraBox!.height).toBeLessThanOrEqual(statusBox!.y + epsilon);
+    expect(nyraControlBox!.x).toBeGreaterThanOrEqual(statsBox!.x - epsilon);
+    expect(nyraControlBox!.x + nyraControlBox!.width).toBeLessThanOrEqual(statsBox!.x + statsBox!.width + epsilon);
+    expect(nyraBox!.x - statsBox!.x, '妮拉状态应靠自己的玩家统计面板左上角，而不是贴到中间角色板').toBeLessThan(16);
+    expect(nyraBox!.y - statsBox!.y, '妮拉状态应落在自己的玩家统计面板顶部，不得继续夹在回合顺序和状态图标之间').toBeLessThan(8);
+    expect(nyraBox!.width, '妮拉状态只能是左上角小徽章，不能再变成挤占整行的横条面板').toBeLessThanOrEqual(112);
+    expect(nyraBox!.height, '妮拉状态只能占空白角落，不能压成一整块大面板').toBeLessThanOrEqual(54);
     expect(boxesOverlap(nyraBox!, statusBox!), '妮拉面板不得压住或挤进状态图标区').toBe(false);
-    expect(boxesOverlap(nyraBox!, statsBox!), '妮拉面板不得压住生命 / CP 面板').toBe(false);
-    expect(boxesOverlap(nyraBox!, deckBox!), '妮拉面板不得压住牌堆').toBe(false);
+    expect(boxesOverlap(nyraControlBox!, statusBox!), '妮拉控制组不得压住或挤进状态图标区').toBe(false);
+    expect(boxesOverlap(nyraControlBox!, deckBox!), '妮拉控制组不得压住牌堆').toBe(false);
+    expect(boxesOverlap(nyraControlBox!, boardBox!), '妮拉控制组不得压住中间玩家板').toBe(false);
     expect(
         boxesOverlap(nyraBox!, turnOrderBox!),
         `妮拉面板不得压住回合顺序 ${JSON.stringify({ nyraBox, turnOrderBox, statusBox, statsBox, deckBox })}`,
     ).toBe(false);
+
+    const protectedIconBoxes = await statusTokens.locator('[data-status-id], [data-token-id]').evaluateAll((nodes) => (
+        nodes
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            })
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+    ));
+    for (const iconBox of protectedIconBoxes) {
+        expect(
+            boxesOverlap(nyraBox!, iconBox),
+            `妮拉状态不得遮挡真实状态 / Token 图标 ${JSON.stringify({ nyraBox, iconBox })}`,
+        ).toBe(false);
+    }
+
+    const resourceBoxes = await statsPanel.locator('[data-dicethrone-resource]').evaluateAll((nodes) => (
+        nodes
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            })
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+    ));
+    for (const resourceBox of resourceBoxes) {
+        expect(
+            boxesOverlap(nyraControlBox!, resourceBox),
+            `妮拉控制组不得遮挡生命 / CP 条 ${JSON.stringify({ nyraControlBox, resourceBox })}`,
+        ).toBe(false);
+    }
 };
 
 const setupLierenMatch = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
@@ -323,7 +398,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toBeVisible();
             await expectNyraInsideSelfPlayerHud(match.hostPage);
             await expectUsableNyraControl(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉留在左侧且顶部响应坞可操作');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉留在左侧玩家面板内且响应卡可操作');
 
             await match.hostPage.getByRole('button', { name: '转移伤害' }).click();
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0, { timeout: 10000 });
