@@ -255,7 +255,7 @@ const PORTRAIT_ATLASES: Record<PortraitAtlasId, PortraitAtlas> = {
 };
 
 export const CHARACTER_PORTRAIT_BINDINGS: Partial<Record<HeroState['characterId'], PortraitBinding>> = {
-    lieren: { atlasId: 'new', row: 1, col: 4 },
+    lieren: { atlasId: 'new', row: 2, col: 0 },
     gunslinger: { atlasId: 'legacy', row: 0, col: 1 },
     treant: { atlasId: 'new', row: 2, col: 1 },
     monk: { atlasId: 'legacy', row: 0, col: 3 },
