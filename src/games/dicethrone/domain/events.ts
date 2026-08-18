@@ -671,6 +671,26 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             tokenId?: string;
             /** 数值（通常为 +1；也允许为负数表示消耗） */
             value: number;
+            /** 当前选项实际作用到的玩家；仅描述交互语义，不替代 value/customId 的规则输入。 */
+            targetPlayerId?: PlayerId;
+            /** 当前选项会授予的 Token 语义；供 AI/审计消费，规则结算仍由 handler 决定。 */
+            tokenGrantConfig?: {
+                tokenId: string;
+                amount: number;
+            };
+            tokenGrantConfigs?: Array<{
+                tokenId: string;
+                amount: number;
+            }>;
+            /** 当前选项会授予的状态语义；供 AI/审计消费，规则结算仍由 handler 决定。 */
+            statusGrantConfig?: {
+                statusId: string;
+                amount: number;
+            };
+            statusGrantConfigs?: Array<{
+                statusId: string;
+                amount: number;
+            }>;
             /** 自定义选择 ID（用于非 status/token 的选择，或区分不同语义） */
             customId?: string;
             /** 选项显示文案 key（i18n）。若不提供，将根据 statusId/tokenId 自动推导 */

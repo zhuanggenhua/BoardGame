@@ -157,6 +157,8 @@ export interface PromptOption<T = unknown> {
      * labelKey 对应的插值参数。
      */
     labelParams?: Record<string, string | number>;
+    /** 可选：选项补充说明，供 UI 展示，不参与规则处理。 */
+    description?: string;
     value: T;
     disabled?: boolean;
     /**
@@ -744,6 +746,11 @@ export interface SimpleChoiceConfig {
     responseValidationMode?: SimpleChoiceResponseValidationMode;
     revalidateOnRespond?: boolean;
     /**
+     * 动态选项生成器。原本可由调用方写入 interaction.data；作为正式 config 后，
+     * request-first adapter 不需要再手工改写 data 才能保留 live 候选语义。
+     */
+    optionsGenerator?: SimpleChoiceData['optionsGenerator'];
+    /**
      * 在该 simple-choice 挂起期间允许继续执行的命令白名单。
      * 仅对当前交互所属玩家生效。
      */
@@ -813,6 +820,7 @@ export function createSimpleChoice<T>(
             autoResolveIfSingle: config.autoResolveIfSingle,
             // 将 autoRefresh 传递到 data 中（作为私有字段）
             autoRefresh: config.autoRefresh,
+            optionsGenerator: config.optionsGenerator,
             responseValidationMode: config.responseValidationMode ?? (config.revalidateOnRespond ? 'live' : undefined),
             revalidateOnRespond: config.revalidateOnRespond,
             allowedCommands: config.allowedCommands,

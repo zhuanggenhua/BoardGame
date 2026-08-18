@@ -2061,8 +2061,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
                         onAutoResponseToggle={setAutoResponseEnabled}
-                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
-                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <CenterBoard
@@ -2086,7 +2084,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
-                        leftResponseDockActive={Boolean(nyraDamageResponse)}
+                        nyraPlayer={viewPlayer.characterId === 'lieren' ? viewPlayer : undefined}
+                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
+                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <RightSidebar

@@ -6,6 +6,10 @@ import type {
     LocalAiPolicy,
 } from '../../engine/ai';
 import { createAiLegalActionId } from '../../engine/ai';
+import {
+    buildAiLegalActionsFromInteractionDecision,
+    type AiDecisionDescriptor,
+} from '../../engine/ai/decisionSemantics';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { QIDAHEN_COMMANDS, validate as validateQidahenCommand } from './domain/commands';
 import {
@@ -191,6 +195,9 @@ const buildCurrentInteractionActions = (
         playerId?: unknown;
         data?: {
             sourceId?: unknown;
+            ai?: {
+                decisions?: unknown;
+            };
             options?: Array<{
                 id?: unknown;
                 label?: unknown;
@@ -210,6 +217,21 @@ const buildCurrentInteractionActions = (
     const interactionId = typeof currentInteraction.id === 'string' ? currentInteraction.id : '';
     if (interactionId.length <= 0) {
         return [];
+    }
+
+    const semanticDecisions = Array.isArray(currentInteraction.data?.ai?.decisions)
+        ? currentInteraction.data.ai.decisions
+        : [];
+    if (semanticDecisions.length > 0) {
+        const actions: AiLegalAction[] = [];
+        for (const decision of semanticDecisions) {
+            for (const action of buildAiLegalActionsFromInteractionDecision(decision as AiDecisionDescriptor)) {
+                appendIfValid(actions, state, playerId, action);
+            }
+        }
+        if (actions.length > 0) {
+            return actions;
+        }
     }
 
     const options = Array.isArray(currentInteraction.data?.options)
@@ -804,7 +826,6 @@ export function buildQidahenAiLegalActions(args: {
     if (
         core.pendingScenarioCharacterChoices.length > 0
         || core.pendingScenarioArmamentChoices.length > 0
-        || core.currentPlayer !== args.playerId
     ) {
         return [];
     }
@@ -812,6 +833,10 @@ export function buildQidahenAiLegalActions(args: {
     const interactionActions = buildCurrentInteractionActions(state, args.playerId);
     if (interactionActions.length > 0) {
         return interactionActions;
+    }
+
+    if (core.currentPlayer !== args.playerId) {
+        return [];
     }
 
     const phaseActions = [

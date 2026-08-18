@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+    buildAiLegalActionsFromInteractionDecision,
+    type AiDecisionDescriptor,
+} from '../../../engine/ai/decisionSemantics';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
@@ -5645,6 +5649,12 @@ describe('mage-wars domain flow', () => {
                 }),
             ]),
         });
+        expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        const aiActions = buildAiLegalActionsFromInteractionDecision(
+            interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
+        );
+        expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
+            .toEqual(expect.arrayContaining(['counterstrike', 'pass']));
 
         const passed = runCommand(attacked.state, {
             type: INTERACTION_COMMANDS.RESPOND,
@@ -6270,6 +6280,12 @@ describe('mage-wars domain flow', () => {
                 }),
             ]),
         });
+        expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        const aiActions = buildAiLegalActionsFromInteractionDecision(
+            interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
+        );
+        expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
+            .toEqual(expect.arrayContaining(['defend-defense-0', 'pass']));
 
         const passed = runCommand(waitingForDefense.state, {
             type: INTERACTION_COMMANDS.RESPOND,
@@ -9867,6 +9883,12 @@ describe('mage-wars domain flow', () => {
                 ]),
             },
         });
+        expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        const aiActions = buildAiLegalActionsFromInteractionDecision(
+            interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
+        );
+        expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
+            .toEqual(expect.arrayContaining(['pay', 'destroy']));
         expect(paid.success).toBe(true);
         expect(paid.events).toEqual(expect.arrayContaining([
             expect.objectContaining({

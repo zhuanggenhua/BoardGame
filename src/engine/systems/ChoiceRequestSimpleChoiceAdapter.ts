@@ -4,14 +4,35 @@ import type {
     ChoiceRequestSelectionBounds,
 } from '../ChoiceRequest';
 import type { AiDecisionDescriptor, AiDecisionKind, AiDecisionSkipPolicy } from '../ai/decisionSemantics';
-import { createSimpleChoice, type InteractionDescriptor, type PromptMultiConfig, type PromptOption, type SimpleChoiceData, type SimpleChoiceTargetType } from './InteractionSystem';
+import {
+    createSimpleChoice,
+    type InteractionDescriptor,
+    type PromptMultiConfig,
+    type PromptOption,
+    type SimpleChoiceButtonIntent,
+    type SimpleChoiceData,
+    type SimpleChoiceGenericIntent,
+    type SimpleChoiceTargetType,
+} from './InteractionSystem';
 
-export interface CreateSimpleChoiceFromChoiceRequestOptions {
+export interface CreateSimpleChoiceFromChoiceRequestOptions<TValue = unknown> {
     title: string;
     titleKey?: string;
+    titleParams?: SimpleChoiceData['titleParams'];
+    subtitle?: string;
+    subtitleKey?: string;
+    subtitleParams?: SimpleChoiceData['subtitleParams'];
     targetType?: SimpleChoiceTargetType;
+    buttonIntent?: SimpleChoiceButtonIntent;
+    genericIntent?: SimpleChoiceGenericIntent;
+    autoResolveIfSingle?: boolean;
     autoRefresh?: SimpleChoiceData['autoRefresh'];
     responseValidationMode?: SimpleChoiceData['responseValidationMode'];
+    allowedCommands?: SimpleChoiceData['allowedCommands'];
+    optionsGenerator?: <TCore>(
+        state: { core: TCore; sys: unknown },
+        data: SimpleChoiceData<TValue>,
+    ) => ChoiceRequestCandidate<TValue>[];
 }
 
 function toPromptMultiConfig(selection: ChoiceRequestSelectionBounds): PromptMultiConfig | undefined {
@@ -67,16 +88,20 @@ function toPromptOption<TValue>(candidate: ChoiceRequestCandidate<TValue>): Prom
     return {
         id: candidate.id,
         label: candidate.label ?? candidate.id,
+        labelKey: candidate.labelKey,
+        labelParams: candidate.labelParams,
+        description: candidate.description,
         value: candidate.value as TValue,
         disabled: candidate.disabled,
         disabledReason: candidate.disabledReason,
+        displayMode: candidate.displayMode,
         _ai: candidate.aiHints?.[0],
     };
 }
 
 export function createSimpleChoiceFromChoiceRequest<TValue>(
     request: ChoiceRequest<TValue>,
-    options: CreateSimpleChoiceFromChoiceRequestOptions,
+    options: CreateSimpleChoiceFromChoiceRequestOptions<TValue>,
 ): InteractionDescriptor<SimpleChoiceData<TValue>> {
     return createSimpleChoice(
         request.requestId,
@@ -86,11 +111,24 @@ export function createSimpleChoiceFromChoiceRequest<TValue>(
         {
             sourceId: request.sourceId,
             titleKey: options.titleKey,
+            titleParams: options.titleParams,
+            subtitle: options.subtitle,
+            subtitleKey: options.subtitleKey,
+            subtitleParams: options.subtitleParams,
             multi: toPromptMultiConfig(request.selection),
             targetType: options.targetType,
+            buttonIntent: options.buttonIntent,
+            genericIntent: options.genericIntent,
+            autoResolveIfSingle: options.autoResolveIfSingle,
             autoRefresh: options.autoRefresh,
             responseValidationMode: options.responseValidationMode,
-            autoResolveIfSingle: false,
+            allowedCommands: options.allowedCommands,
+            ...(options.optionsGenerator
+                ? {
+                    optionsGenerator: <TCore>(state: { core: TCore; sys: unknown }, data: SimpleChoiceData<TValue>) =>
+                        options.optionsGenerator!(state, data).map(toPromptOption),
+                }
+                : {}),
             ai: {
                 status: 'semantic',
                 decisions: [toAiDecisionDescriptor(request)],

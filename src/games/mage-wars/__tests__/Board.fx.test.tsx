@@ -599,6 +599,12 @@ describe('MageWarsBoard FX wiring', () => {
             expect(heldTargetCard).not.toBeNull();
             expect(heldTargetCard?.getAttribute('data-object-id')).toBe(targetBefore.id);
             expect(heldTargetCard?.getAttribute('data-visual-held')).toBe('true');
+            expect(screen.queryByTestId('mage-wars-fx-attack-travel')).toBeNull();
+
+            act(() => {
+                advanceSharedFxClockDelay(32);
+            });
+            await act(async () => {});
             expect(screen.queryByTestId('mage-wars-fx-attack-travel')).not.toBeNull();
 
             act(() => {

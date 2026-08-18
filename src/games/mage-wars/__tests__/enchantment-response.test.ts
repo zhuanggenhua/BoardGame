@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+    buildAiLegalActionsFromInteractionDecision,
+    type AiDecisionDescriptor,
+} from '../../../engine/ai/decisionSemantics';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { RESPONSE_WINDOW_COMMANDS } from '../../../engine/systems/ResponseWindowSystem';
@@ -191,6 +195,13 @@ describe('mage-wars enchantment response windows', () => {
             discardSpellCardIds: [],
         });
         expect(blockedCast.state.sys.responseWindow.current?.requiredInteractionId).toBeDefined();
+        const interaction = blockedCast.state.sys.interaction.current;
+        expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        const aiActions = buildAiLegalActionsFromInteractionDecision(
+            interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
+        );
+        expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
+            .toEqual(['reveal']);
 
         const passed = runCommand(blockedCast.state, {
             type: RESPONSE_WINDOW_COMMANDS.PASS,

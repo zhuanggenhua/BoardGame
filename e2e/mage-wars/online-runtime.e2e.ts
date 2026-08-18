@@ -54,6 +54,13 @@ type MageWarsFxVideoRecording = {
     finalVideoPath?: string;
     passManifestPath?: string;
 };
+type MageWarsTargetContinuityProbeReport = {
+    sampleCount: number;
+    fxSampleCount: number;
+    missingDuringFx: Array<Record<string, unknown>>;
+    firstFxSample: Record<string, unknown> | null;
+    lastFxSample: Record<string, unknown> | null;
+};
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
@@ -157,17 +164,18 @@ async function finalizeMageWarsFxVideoRecording(
                 ],
             },
             {
-                requirement: '法师战争攻击动效已通过：间歇喷泉攻击时目标单位从投射开始、飞行中到命中飘字都持续可见，不是命中时才出现',
+                requirement: '法师战争攻击动效已通过：间歇喷泉攻击时目标单位在骰子、投射、命中和伤害飘字活跃期间逐帧持续可见，不会整张消失',
                 status: 'PASS',
                 evidence: [
                     'E2E：正式页面点击目标后产生攻击掷骰事件',
                     'E2E：目标锚点可见性断言覆盖投射开始、投射飞行中、命中和伤害飘字三段',
+                    'E2E：逐帧目标连续性监视器覆盖攻击骰、投射、命中和伤害飘字活跃帧，目标不能有任一帧消失或不可见',
                     ...attackEvidence,
                     recording.finalVideoPath,
                 ],
             },
             {
-                requirement: '法师战争攻击骰结果层已避让目标单位：骰子出现时不能遮住阿希拉牧师目标本体',
+                requirement: '法师战争攻击结果反馈已避让目标单位：骰子出现时不能遮住阿希拉牧师目标本体',
                 status: 'PASS',
                 evidence: [
                     'E2E：攻击骰结果层使用路径旁侧避让位 data-placement=path-side-avoid-target',
@@ -1843,6 +1851,155 @@ async function expectMageWarsAttackDiceAvoidsTargetAnchor(
         .toBeLessThanOrEqual(0.12);
 }
 
+async function startMageWarsTargetContinuityProbe(
+    page: Page,
+    targetObjectId: string,
+    label: string,
+) {
+    await page.evaluate(({ objectId, probeLabel }) => {
+        type ProbeSample = Record<string, unknown>;
+        type ProbeWindow = typeof window & {
+            __mageWarsTargetContinuityProbe?: {
+                samples: ProbeSample[];
+                frameId: number | null;
+                stop: () => void;
+            };
+        };
+        const probeWindow = window as ProbeWindow;
+        if (probeWindow.__mageWarsTargetContinuityProbe?.frameId != null) {
+            cancelAnimationFrame(probeWindow.__mageWarsTargetContinuityProbe.frameId);
+        }
+
+        let active = true;
+        const samples: ProbeSample[] = [];
+        const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        const isVisible = (element: HTMLElement | null) => {
+            if (!element) {
+                return {
+                    visible: false,
+                    rect: null,
+                    opacity: 0,
+                    display: null,
+                    visibility: null,
+                };
+            }
+            const rect = element.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = element;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            const style = window.getComputedStyle(element);
+            return {
+                visible: rect.width > 0
+                    && rect.height > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && effectiveOpacity > 0.55,
+                rect: {
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                },
+                opacity: Math.round(effectiveOpacity * 1_000) / 1_000,
+                display: style.display,
+                visibility: style.visibility,
+            };
+        };
+
+        const sample = () => {
+            const anchor = document.querySelector<HTMLElement>(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${escapeAttr(objectId)}"]`,
+            );
+            const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+            const travel = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-travel"]');
+            const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]');
+            const damageFloat = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
+            const anchorVisibility = isVisible(anchor);
+            const diceVisibility = isVisible(dice);
+            const travelVisibility = isVisible(travel);
+            const impactVisibility = isVisible(impact);
+            const damageFloatVisibility = isVisible(damageFloat);
+            samples.push({
+                label: probeLabel,
+                timeMs: Math.round(performance.now()),
+                hasTargetAnchor: Boolean(anchor),
+                targetVisible: anchorVisibility.visible,
+                targetRect: anchorVisibility.rect,
+                targetOpacity: anchorVisibility.opacity,
+                targetDisplay: anchorVisibility.display,
+                targetVisibility: anchorVisibility.visibility,
+                targetVisualHeld: anchor?.dataset.visualHeld ?? null,
+                diceVisible: diceVisibility.visible,
+                travelVisible: travelVisibility.visible,
+                impactVisible: impactVisibility.visible,
+                damageFloatVisible: damageFloatVisibility.visible,
+                fxActive: diceVisibility.visible || travelVisibility.visible || impactVisibility.visible || damageFloatVisibility.visible,
+            });
+            if (active) {
+                probeWindow.__mageWarsTargetContinuityProbe!.frameId = requestAnimationFrame(sample);
+            }
+        };
+
+        probeWindow.__mageWarsTargetContinuityProbe = {
+            samples,
+            frameId: requestAnimationFrame(sample),
+            stop: () => {
+                active = false;
+                const frameId = probeWindow.__mageWarsTargetContinuityProbe?.frameId;
+                if (frameId != null) cancelAnimationFrame(frameId);
+                if (probeWindow.__mageWarsTargetContinuityProbe) {
+                    probeWindow.__mageWarsTargetContinuityProbe.frameId = null;
+                }
+            },
+        };
+    }, { objectId: targetObjectId, probeLabel: label });
+}
+
+async function expectMageWarsTargetContinuityProbePassed(
+    page: Page,
+    label: string,
+) {
+    const report = await page.evaluate((): MageWarsTargetContinuityProbeReport => {
+        type ProbeWindow = typeof window & {
+            __mageWarsTargetContinuityProbe?: {
+                samples: Array<Record<string, unknown>>;
+                frameId: number | null;
+                stop: () => void;
+            };
+        };
+        const probeWindow = window as ProbeWindow;
+        const probe = probeWindow.__mageWarsTargetContinuityProbe;
+        if (!probe) {
+            return {
+                sampleCount: 0,
+                fxSampleCount: 0,
+                missingDuringFx: [{ reason: 'missing-probe' }],
+                firstFxSample: null,
+                lastFxSample: null,
+            };
+        }
+        probe.stop();
+        const fxSamples = probe.samples.filter((sample) => sample.fxActive === true);
+        return {
+            sampleCount: probe.samples.length,
+            fxSampleCount: fxSamples.length,
+            missingDuringFx: fxSamples.filter((sample) => sample.targetVisible !== true).slice(0, 12),
+            firstFxSample: fxSamples[0] ?? null,
+            lastFxSample: fxSamples.at(-1) ?? null,
+        };
+    });
+
+    expect(report.sampleCount, `${label} 目标连续性监视器没有采样：${JSON.stringify(report)}`).toBeGreaterThan(0);
+    expect(report.fxSampleCount, `${label} 目标连续性监视器没有覆盖攻击骰 / 投射 / 命中特效帧：${JSON.stringify(report)}`)
+        .toBeGreaterThan(0);
+    expect(report.missingDuringFx, `${label} 攻击 FX 活跃期间目标单位出现完全消失或不可见：${JSON.stringify(report, null, 2)}`)
+        .toEqual([]);
+}
+
 async function readAttackDamageFloatDebug(page: Page) {
     return page.evaluate(() => {
         const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
@@ -3227,6 +3384,11 @@ test.describe('Mage Wars formal online runtime', () => {
                 .first();
             await expect(attackTarget).toBeVisible({ timeout: 5_000 });
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '攻击代表态目标牌面截图前预加载');
+            await startMageWarsTargetContinuityProbe(
+                attackPage,
+                attackTargetObjectId,
+                '间歇喷泉攻击阿希拉牧师目标连续可见',
+            );
             let attackFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
             await castPreparedSpellOnFieldObject(attackPage, '间歇喷泉', attackTarget, () => {
                 attackFxAuditPromise = captureMageWarsFxProcessScreenshots(
@@ -3248,6 +3410,10 @@ test.describe('Mage Wars formal online runtime', () => {
             expect(attackFxAudit.sourceCol).toBe('0');
             expect(attackFxAudit.targetRow).toBe('2');
             expect(attackFxAudit.targetCol).toBe('1');
+            await expectMageWarsTargetContinuityProbePassed(
+                attackPage,
+                '间歇喷泉攻击阿希拉牧师目标连续可见',
+            );
 
             await expect.poll(async () => (
                 hasSpellAttackRolledEvent(

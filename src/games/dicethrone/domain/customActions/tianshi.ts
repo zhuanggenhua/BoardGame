@@ -49,6 +49,11 @@ const ACTION_GOSPEL_ARRIVAL_TARGET = 'tianshi-gospel-arrival-target';
 const ACTION_DIVINE_COMMAND_TARGET = 'tianshi-divine-command-target';
 const ACTION_TAKEOFF_TARGET = 'tianshi-takeoff-target';
 
+type ChoiceTargetGrantMetadata = Pick<
+    PendingInteraction,
+    'tokenGrantConfig' | 'tokenGrantConfigs' | 'statusGrantConfig' | 'statusGrantConfigs'
+>;
+
 function eventSource(sourceAbilityId: string, timestamp: number, type: string): Pick<DiceThroneEvent, 'sourceCommandType' | 'timestamp'> {
     return { sourceCommandType: type, timestamp };
 }
@@ -201,6 +206,7 @@ function playerChoiceEvent(
     customId: string,
     targetPlayerIds: PlayerId[],
     timestamp: number,
+    grants?: ChoiceTargetGrantMetadata,
 ): ChoiceRequestedEvent {
     return {
         type: 'CHOICE_REQUESTED',
@@ -211,6 +217,8 @@ function playerChoiceEvent(
             options: targetPlayerIds.map((targetId, value) => ({
                 value,
                 customId,
+                targetPlayerId: targetId,
+                ...grants,
                 labelKey: 'choices.tianshi.player',
                 labelParams: { player: targetId },
             })),
@@ -744,7 +752,16 @@ function handleDivineArbitrationCard(ctx: CustomActionContext): DiceThroneEvent[
     const arrival = grantTokenEvent(ctx.state, ctx.attackerId, TOKEN_IDS.DIVINE_ARRIVAL, 1, ctx.sourceAbilityId, ctx.timestamp);
     if (arrival) events.push(arrival);
     if (targets.length === 0) return events;
-    events.push(playerChoiceEvent(ctx.state, ctx.attackerId, ctx.sourceAbilityId, 'choices.tianshi.divineArbitrationDazzle.title', CHOICE_DIVINE_ARBITRATION_DAZZLE, targets, ctx.timestamp + 1));
+    events.push(playerChoiceEvent(
+        ctx.state,
+        ctx.attackerId,
+        ctx.sourceAbilityId,
+        'choices.tianshi.divineArbitrationDazzle.title',
+        CHOICE_DIVINE_ARBITRATION_DAZZLE,
+        targets,
+        ctx.timestamp + 1,
+        { statusGrantConfig: { statusId: STATUS_IDS.DAZZLE, amount: 1 } },
+    ));
     return events;
 }
 
@@ -817,7 +834,16 @@ export function registerTianshiCustomActions(): void {
         }
         const allPlayers = getSeatingOrder(state);
         if (allPlayers.length > 0) {
-            events.push(playerChoiceEvent(state, playerId, sourceAbilityId ?? 'card-tianshi-divine-arbitration', 'choices.tianshi.divineArbitrationFlight.title', CHOICE_DIVINE_ARBITRATION_FLIGHT, allPlayers, timestamp + 1));
+            events.push(playerChoiceEvent(
+                state,
+                playerId,
+                sourceAbilityId ?? 'card-tianshi-divine-arbitration',
+                'choices.tianshi.divineArbitrationFlight.title',
+                CHOICE_DIVINE_ARBITRATION_FLIGHT,
+                allPlayers,
+                timestamp + 1,
+                { tokenGrantConfig: { tokenId: TOKEN_IDS.FLIGHT, amount: 2 } },
+            ));
         }
         return events;
     });
@@ -830,7 +856,16 @@ export function registerTianshiCustomActions(): void {
         }
         const allPlayers = getSeatingOrder(state);
         if (allPlayers.length > 0) {
-            events.push(playerChoiceEvent(state, playerId, sourceAbilityId ?? 'card-tianshi-divine-arbitration', 'choices.tianshi.divineArbitrationPurify.title', CHOICE_DIVINE_ARBITRATION_PURIFY, allPlayers, timestamp + 1));
+            events.push(playerChoiceEvent(
+                state,
+                playerId,
+                sourceAbilityId ?? 'card-tianshi-divine-arbitration',
+                'choices.tianshi.divineArbitrationPurify.title',
+                CHOICE_DIVINE_ARBITRATION_PURIFY,
+                allPlayers,
+                timestamp + 1,
+                { tokenGrantConfig: { tokenId: TOKEN_IDS.PURIFY, amount: 1 } },
+            ));
         }
         return events;
     });

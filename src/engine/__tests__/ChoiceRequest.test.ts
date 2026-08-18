@@ -252,9 +252,17 @@ describe('ChoiceRequest', () => {
     });
 
     it('simple-choice adapter 只投影 Choice Request，不重新拥有候选语义', () => {
-        const interaction = createSimpleChoiceFromChoiceRequest(createTargetChoiceRequest(), {
+        const request = createTargetChoiceRequest();
+        request.candidates[0].labelKey = 'test.targetA';
+        request.candidates[0].description = '目标 A 的说明';
+
+        const interaction = createSimpleChoiceFromChoiceRequest(request, {
             title: '选择目标',
+            titleKey: 'test.chooseTarget',
+            subtitle: '补充说明',
             targetType: 'minion',
+            autoResolveIfSingle: true,
+            allowedCommands: ['TEST_COMMAND'],
         });
 
         expect(interaction).toMatchObject({
@@ -266,7 +274,20 @@ describe('ChoiceRequest', () => {
             },
         });
         expect((interaction.data.options ?? []).map((option) => option.id)).toEqual(['target-a', 'target-b']);
-        expect(interaction.data.options[0].value).toEqual({ targetId: 'a' });
+        expect(interaction.data).toMatchObject({
+            title: 'test.chooseTarget',
+            titleKey: 'test.chooseTarget',
+            subtitle: '补充说明',
+            targetType: 'minion',
+            autoResolveIfSingle: true,
+            allowedCommands: ['TEST_COMMAND'],
+        });
+        expect(interaction.data.options[0]).toMatchObject({
+            label: 'test.targetA',
+            labelKey: 'test.targetA',
+            description: '目标 A 的说明',
+            value: { targetId: 'a' },
+        });
         expect(interaction.data.ai?.decisions?.[0]).toMatchObject({
             kind: 'select-object',
             interactionId: 'choose-target',

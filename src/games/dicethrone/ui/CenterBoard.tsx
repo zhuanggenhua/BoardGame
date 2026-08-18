@@ -10,6 +10,7 @@ import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
 import type { AbilityCard } from '../types';
 import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
+import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -32,7 +33,9 @@ export interface CenterBoardProps {
     onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
-    leftResponseDockActive?: boolean;
+    nyraPlayer?: HeroState;
+    onConsumeNyraBond?: () => void;
+    nyraDamageResponse?: NyraDamageResponse;
 }
 
 export const CenterBoard = ({
@@ -56,7 +59,9 @@ export const CenterBoard = ({
     onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
-    leftResponseDockActive = false,
+    nyraPlayer,
+    onConsumeNyraBond,
+    nyraDamageResponse,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
@@ -65,12 +70,8 @@ export const CenterBoard = ({
     const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
     const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
     const hasTipBoard = hasDiceThroneTipBoard(characterId);
-    const shellTranslateX = boardUiTuning.shellTranslateX + (leftResponseDockActive ? 10 : 0);
-    const shellScale = leftResponseDockActive ? 0.88 : 1;
-    const shellTransform = [
-        shellTranslateX === 0 ? null : `translateX(${shellTranslateX}vw)`,
-        shellScale === 1 ? null : `scale(${shellScale})`,
-    ].filter(Boolean).join(' ');
+    const shellTranslateX = boardUiTuning.shellTranslateX;
+    const shellTransform = shellTranslateX === 0 ? '' : `translateX(${shellTranslateX}vw)`;
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
     const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
@@ -123,13 +124,35 @@ export const CenterBoard = ({
         onMagnifyImage(imagePath);
     }, [isLayoutEditing, onMagnifyImage]);
 
+    const renderNyraBoardBadge = () => {
+        if (nyraPlayer?.characterId !== 'lieren') {
+            return null;
+        }
+
+        return (
+            <div
+                className="absolute top-[4.1%] left-[44.15%] z-30 w-[11.25%] pointer-events-auto"
+                data-testid="nyra-player-panel-anchor"
+                data-player-panel-slot="player-board-image-top-left-blank"
+            >
+                <NyraCompanionPanel
+                    player={nyraPlayer}
+                    locale={locale}
+                    onConsumeBond={onConsumeNyraBond}
+                    damageResponse={nyraDamageResponse}
+                    variant="boardBadge"
+                />
+            </div>
+        );
+    };
+
     return (
         <>
             <div
                 className={shellFrameClassName}
                 style={shellTransform.length === 0
                     ? undefined
-                    : { transform: shellTransform, transformOrigin: 'center center' }}
+                    : { transform: shellTransform }}
             >
                 <div
                     className="relative flex items-center justify-center"
@@ -214,6 +237,7 @@ export const CenterBoard = ({
                                             playerTokens={playerTokens}
                                         />
                                     )}
+                                    {renderNyraBoardBadge()}
                                 </div>
                                 <div
                                     className="absolute inset-0 overflow-hidden rounded-[0.8vw]"
@@ -257,6 +281,7 @@ export const CenterBoard = ({
                                             playerTokens={playerTokens}
                                         />
                                     )}
+                                    {renderNyraBoardBadge()}
                                 </div>
                             </motion.div>
                         </div>
@@ -303,6 +328,7 @@ export const CenterBoard = ({
                                 onMagnifyCard={onMagnifyCard}
                                 playerTokens={playerTokens}
                             />
+                            {renderNyraBoardBadge()}
                         </motion.div>
                     )}
                     <button

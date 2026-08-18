@@ -1,0 +1,431 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "cardia",
+  "basePrefix": "official/i18n/zh-CN/cardia/",
+  "files": {
+    "board/compressed/background": {
+      "variants": {
+        "webp": {
+          "sha256": "c1d87115a39aa4914c2856e9cccd589b993cde4f15229808d191029b5b425ec3",
+          "bytes": 333653,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/common/compressed/deck1-back": {
+      "variants": {
+        "webp": {
+          "sha256": "7d8f6513429003e3cbc0cfe67dd5f7ee3a47ffd1f988a6d25e1d8a19e6492878",
+          "bytes": 135882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/deck1-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "a7858e8fb61d61a6ad05e60df290381daee09c3e656ed3f5562e34f10c42efb4",
+          "bytes": 403744,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/deck2-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "c523723c4c5a053527f0c85da04cb9e9a1e296b3f0be202ee1652bfd2be1f3b8",
+          "bytes": 403742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "af23f265af0f3c1fc9944646b984900748f27c07fad33694614c887182ec718e",
+          "bytes": 270088,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/10": {
+      "variants": {
+        "webp": {
+          "sha256": "15109981a716378aea98c99f82466446211468928a6b54b0706f112344b511de",
+          "bytes": 279860,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/11": {
+      "variants": {
+        "webp": {
+          "sha256": "9ab7899ddb741919230f8bcf15b5f04ca4ab043421166f48226e3d0859a1c382",
+          "bytes": 244996,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/12": {
+      "variants": {
+        "webp": {
+          "sha256": "99c6694c1219c6fc5d4c68f30e33537654d396770f5636f5ebd1afe40824b7bb",
+          "bytes": 319698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/13": {
+      "variants": {
+        "webp": {
+          "sha256": "c44afd9f2e089d1a2ba897deb4d5eb143350fca8d71250e6f25b37e6413f9dfc",
+          "bytes": 312682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/14": {
+      "variants": {
+        "webp": {
+          "sha256": "97ff1ad7c120040724373015765fd1b5127ec6e22060d7cb26571e47c7986308",
+          "bytes": 277190,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/15": {
+      "variants": {
+        "webp": {
+          "sha256": "ea6f42abe5aa2a0bd5f3a9e2d7292000f0a3fac59645b0af3b63aede4e15d16b",
+          "bytes": 314260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/16": {
+      "variants": {
+        "webp": {
+          "sha256": "eb3bd6f0071175b0de8dc9861bdbd849013246b2eed2285ef9a9a328ce4d560b",
+          "bytes": 371430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "5c3c27eaff945996a3695ca8c5d36b2c64489308d42c89845f8866fe2b36cff9",
+          "bytes": 295070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "c3e6369c7c9f1eac272d4248d4a8ce5e578bc87eec9c9d0edbdd97eece22ecb6",
+          "bytes": 272576,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "e8e72b0d79bb48b7bb77eeb5f45b4a49e3191adaf7f0024223608cb1a65da17b",
+          "bytes": 327694,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "504210c77c4e27eab94c7e66f1dc3e0d0945e556716c1bd2c9ba4adbe1c595dc",
+          "bytes": 292608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "7daa13a97d26d12ec44ca4321a30571187d742ccc9cc024962417f7a11ea48d4",
+          "bytes": 290266,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "6687733213206b73c643685c2e6bf98098e541f134f705f850dd289fb2014d79",
+          "bytes": 299924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "eebe3c979578ed0e97b5a2c6e004192b1de882b08e1348d4adfb3c0981d5461d",
+          "bytes": 339022,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck1/compressed/9": {
+      "variants": {
+        "webp": {
+          "sha256": "d366a7d9f204bae882365ed0d3979472dd29d7cd52c1e813bfe91bbaf929c14a",
+          "bytes": 286770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "6b0d7f7e84411e15ead8e3550ab6db8e480866fbf02e840b4a93f5f81b2188eb",
+          "bytes": 260524,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/10": {
+      "variants": {
+        "webp": {
+          "sha256": "a3d09131642ce3fc2ca00d43277a23d913921d40a2d4571334546dbe49624c2b",
+          "bytes": 279368,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/11": {
+      "variants": {
+        "webp": {
+          "sha256": "485c9bded6edd5384f0461fafc5a581915fca2f6465e4bca5d388861c1a0f4e5",
+          "bytes": 267194,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/12": {
+      "variants": {
+        "webp": {
+          "sha256": "b968553ce79b9fb95fc720572998cf681a879cb4e9c24bbd972b7c8fe4d856f0",
+          "bytes": 316260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/13": {
+      "variants": {
+        "webp": {
+          "sha256": "49bd6607b0e3a39304b47952d74c65e6a533e88db3db0571b3233abea0745411",
+          "bytes": 290806,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/14": {
+      "variants": {
+        "webp": {
+          "sha256": "aa2a9315f7df65faea4eb653993478dcf435587afd640760b11353b7dc624546",
+          "bytes": 312010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/15": {
+      "variants": {
+        "webp": {
+          "sha256": "fd8022c6233bd72174ef24c1fa65e9e41411849fd1bebbc83e7699008452a1c5",
+          "bytes": 279952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/16": {
+      "variants": {
+        "webp": {
+          "sha256": "b45a108d15e808563f36d2205ca25243a98aa24afab0bf3ae2798b62a9df2c0f",
+          "bytes": 313158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "4ac6ef21d1a8704aa71e7a3368ea799b85a3e145662687c78bd659066d94b38e",
+          "bytes": 347024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "495cb7786ace87a913dc1f8090ff856947700b5ffcdeccac5dc7ce9b3246a090",
+          "bytes": 271692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "111659d035a12fc1cfcdb9b793d0797af676447e3660e070820e8331f8ab1466",
+          "bytes": 319044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "c88fa48949e3f29d9d4ac9c716322826c383b6e2d7302723e7ac0ba11f50555d",
+          "bytes": 256634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "d92be7ebee8160f53ec858ec44f1b2638133e5d797c3456fbfdbce568860c4ec",
+          "bytes": 281518,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "bae646487ed5f2b0d2bf1ce2d63a179e002d7e7db6a2a0c82fe2845a6730442c",
+          "bytes": 266134,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "101061065e8768f30664fdbc23b1c72c8da79fba47ac277c2ada6f9ee0e9f571",
+          "bytes": 340520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/deck2/compressed/9": {
+      "variants": {
+        "webp": {
+          "sha256": "b83970b1e3fb302af9793dc0aa4fdec19f5adc60a7626144d6e2dd85bc2ea796",
+          "bytes": 308178,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "56380f9bae1a796ed53ac75424c1140bad82fa6c587b8296c8e8512cd52332ce",
+          "bytes": 349708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "3b2438937d8595e3eb73366dd2781ec512b4e6c9f7154934aff2c102205d19d7",
+          "bytes": 338250,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "72dea6cc79b0c0290280297d4cd3cef23b6546a49aed671b06da54774727912f",
+          "bytes": 326160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "5daaeba633403bfb400f4fd17a7ba82a498ebd23dc53cababecc70dc9b90d72f",
+          "bytes": 309962,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "236c827b0a14da658e40fb3b7228056a4191eff700e02bc8f79e31f2a0d4ec16",
+          "bytes": 289378,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "b3f0cc85cfd04407ccef12a6687e0750de18c4956dfb6f6d89be303e92a0b78f",
+          "bytes": 322868,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "54d8d23df0ef84fdf830853c1e74307bc49221c3090beea615aa8f9675f24ad8",
+          "bytes": 304748,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/locations/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "ef65523845edef55e665bae06f2f28126377d2be5eb5c8edef4ee5399da74924",
+          "bytes": 324498,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "help/compressed/helper1": {
+      "variants": {
+        "webp": {
+          "sha256": "693213e736f1ad6b7a9e9b718eb156fe9ce56e03897b5f2a24f3f78823c027df",
+          "bytes": 205676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "help/compressed/helper2": {
+      "variants": {
+        "webp": {
+          "sha256": "73f3ba0e9ccc29c49b49fa57899b8bec439ce3f4d7adceaa62285b4c236ed700",
+          "bytes": 189944,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/compressed/title": {
+      "variants": {
+        "webp": {
+          "sha256": "5766af27946abc70afb022cce331676d051f8d6cff1ad28ae73f2d14264e2a60",
+          "bytes": 149438,
+          "mime": "image/webp"
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ## 1. Request ledger
 
-- [x] 1.1 Inventory current blocking decision families across engine, Betrayal, Mage Wars, Qidahen, Cardia, TicTacToe, Smash Up, Summoner Wars, and DiceThrone.
+- [x] 1.1 Inventory current blocking decision families across engine, Betrayal, Mage Wars, Qidahen, old compatibility users, Smash Up, Summoner Wars, and DiceThrone.
 - [x] 1.2 Classify each family by decision kind, candidate source, UI surface, AI policy owner, skip/confirm behavior, and recovery behavior.
 - [x] 1.3 Mark first-batch direct-cut migrations and legacy adapter families.
 
@@ -16,7 +16,7 @@
   - [x] 3.1a Add an opt-in shared `AiDecisionDescriptor -> SYS_INTERACTION_RESPOND` projection helper for request-owned interaction candidates.
 - [ ] 3.2 Require game policy registration for non-generic choice kinds before an AI seat can own that request.
 - [ ] 3.3 Update AI context building so request-owned choices do not rely on UI kind names or candidate array order.
-  - [x] 3.3a Switch Cardia request-owned simple-choice AI actions to the shared semantic projection before falling back to legacy option scanning.
+  - [x] 3.3a Apply the shared semantic projection only to first-batch request-owned choices; old compatibility users keep legacy behavior until separately approved.
 
 ## 4. UI adapters
 
@@ -26,22 +26,24 @@
 
 ## 5. First-batch migrations
 
-- [ ] 5.1 Migrate Mage Wars blocking target/plan/action choices to request-first builders.
-- [ ] 5.2 Migrate Qidahen map, battle, and post-battle blocking selections to request-first builders where still simple-choice-backed.
+- [x] 5.1 Migrate Mage Wars blocking target/plan/action choices to request-first builders.
+- [x] 5.2 Migrate Qidahen map, battle, and post-battle blocking selections to request-first builders where still simple-choice-backed.
 - [ ] 5.3 Migrate Betrayal next interaction batch to request-first builders instead of new simple-choice entry points.
-- [x] 5.4 Migrate Cardia and TicTacToe simple-choice uses or explicitly remove them if the request ledger proves they are unnecessary.
-  - [x] 5.4a Migrate Cardia `CardiaInteraction -> simple-choice` wrapping to a Choice Request source with legacy simple-choice projection.
-  - [x] 5.4b Confirm TicTacToe has no business-level `createSimpleChoice(` calls; remaining simple-choice mention is test-only blocking injection / system installation.
+  - [x] 5.3a Confirm Betrayal currently has no existing business-level `createSimpleChoice(` migration point; keep the next interaction batch under request-first rules.
+- [x] 5.4 Exclude Cardia and TicTacToe from this direct migration batch; keep them as old-project compatibility users.
 - [ ] 5.5 Keep Smash Up and Summoner Wars as legacy adapter users, then nominate the first family for later direct cutover.
 
 ## 6. Verification
 
 - [x] 6.1 Add Choice Request invariant tests for impossible mandatory choices, empty optional choices, ordered selections, stale candidates, and visibility filtering.
-- [ ] 6.2 Add AI parity tests proving every human-visible first-batch Choice Request candidate maps to an AI legal action or explicit skip/pass/confirm action.
-  - [x] 6.2a Add engine semantic projection tests and Cardia request-owned interaction AI parity coverage.
+- [x] 6.2 Add AI parity tests proving every human-visible first-batch Choice Request candidate maps to an AI legal action or explicit skip/pass/confirm action.
+  - [x] 6.2a Add engine semantic projection tests for request-owned interaction AI parity.
+  - [x] 6.2b Add Mage Wars and Qidahen first-batch semantic decision parity coverage.
 - [x] 6.3 Add missing-policy tests proving AI-owned unsupported requests report diagnostics instead of returning an empty action list.
 - [ ] 6.4 Add online recovery tests proving watchdog uses Choice Request diagnostics and does not infer business targets.
 - [ ] 6.5 Run focused unit tests, relevant E2E tests for first-batch games, and `openspec validate refactor-choice-request-interface --strict --no-interactive`.
+  - [x] 6.5a Run typecheck, focused engine / Mage Wars / Qidahen unit tests, OpenSpec strict validation, and project spec lint.
+  - [ ] 6.5b Run or explicitly waive relevant E2E coverage for first-batch UI adapter surfaces.
 
 ## 7. Documentation
 

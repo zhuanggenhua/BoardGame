@@ -54,9 +54,10 @@ Simple-choice, direct field selection, right-side dice controls, hand-card highl
 
 ### Decision: Migration cuts directly where feasible
 
-New games and low-simple-choice games move directly to request-first builders. No thick compatibility layer is created for them. Existing heavy users remain stable through a thin legacy adapter, then migrate by interaction family:
+New games and in-progress low-simple-choice games move directly to request-first builders. No thick compatibility layer is created for them. Existing old games remain stable through a thin legacy adapter, then migrate only by an approved interaction family:
 
-- first batch: engine runtime, Betrayal, Mage Wars, Qidahen, Cardia, TicTacToe;
+- first batch: engine runtime, Betrayal, Mage Wars, Qidahen;
+- excluded from this direct cutover: Cardia and TicTacToe as old-project compatibility users;
 - later batches: Smash Up scoring/direct-field target families, then high-risk ability prompt families;
 - later batches: Summoner Wars simple-choice/multistep interaction families.
 

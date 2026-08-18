@@ -146,6 +146,8 @@ describe('七大恨 AI', () => {
             state,
         });
 
+        expect((state.sys.interaction?.current?.data as { ai?: { status?: string } } | undefined)?.ai?.status)
+            .toBe('semantic');
         expect(actions[0]?.commands[0]).toMatchObject({
             type: 'SYS_INTERACTION_RESPOND',
             payload: {

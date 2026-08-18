@@ -13,8 +13,8 @@ Count source: business-level `createSimpleChoice(` calls under `src/games/<gameI
 | Qidahen | 23 | First-batch request-first migration candidate. |
 | DiceThrone | 8 | Already has non-modal dice/legal-action paths for bonus dice; use as parity reference, not first migration target. |
 | Mage Wars | 5 | First-batch request-first migration candidate. |
-| Cardia | 0 remaining business calls | Wrapper source migrated to Choice Request; legacy simple-choice remains only as display/response adapter. |
-| TicTacToe | 0 business calls | No migration needed; remaining simple-choice references are system installation or test-only blocking injection. |
+| Cardia | 0 remaining business calls | Old-project compatibility user. Do not migrate in this change. |
+| TicTacToe | 0 business calls | Old/simple compatibility user. No business-level migration in this change. |
 
 ## Choice families
 
@@ -31,6 +31,7 @@ Count source: business-level `createSimpleChoice(` calls under `src/games/<gameI
 
 ## Direct-cut boundaries
 
-- New games and first-batch low-simple-choice games use `ChoiceRequest` as the business-choice source.
+- New games and first-batch in-progress games use `ChoiceRequest` as the business-choice source.
 - `simple-choice` may render a request through the adapter, but cannot own candidate truth, AI strategy, permission, or recovery.
+- Cardia and TicTacToe stay outside this direct-cut batch as old-project compatibility users.
 - Heavy legacy games are not rewritten wholesale. Each later family must list its old external contract, cut all consumers in that family to Choice Request, then remove the old owner for that family.

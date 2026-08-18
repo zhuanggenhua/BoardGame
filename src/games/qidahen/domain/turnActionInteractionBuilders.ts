@@ -1,7 +1,5 @@
 import type { MatchState } from '../../../engine/types';
-import {
-    createSimpleChoice,
-} from '../../../engine/systems/InteractionSystem';
+import { createQidahenChoiceRequestInteraction } from './choiceRequestInteractionBuilder';
 import { QIDAHEN_COMMANDS } from './commands';
 import {
     getQidahenCurrentWheelDispatchSelectionForCore,
@@ -77,22 +75,19 @@ function buildQidahenHandLimitDiscardInteraction(
             displayMode: 'card' as const,
         }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-hand-limit-discard-${selection.factionId}`,
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-hand-limit-discard-${selection.factionId}`,
         playerId,
-        `${selection.factionName}：按手牌上限弃牌`,
-        options,
-        {
-            sourceId: QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
-            targetType: 'hand',
-            autoResolveIfSingle: false,
-            multi: {
-                min: selection.requiredDiscardCount,
-                max: selection.requiredDiscardCount,
-            },
-            subtitle: `手牌 ${selection.handCount}/${selection.handLimit} · 需弃 ${selection.requiredDiscardCount} 张`,
+        title: `${selection.factionName}：按手牌上限弃牌`,
+        sourceId: QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
+        candidates: options,
+        targetType: 'hand',
+        multi: {
+            min: selection.requiredDiscardCount,
+            max: selection.requiredDiscardCount,
         },
-    ) as QidahenHandLimitDiscardInteraction;
+        subtitle: `手牌 ${selection.handCount}/${selection.handLimit} · 需弃 ${selection.requiredDiscardCount} 张`,
+    }) as QidahenHandLimitDiscardInteraction;
 
     interaction.data.qidahenHandLimitDiscardSelection = {
         ...selection,
@@ -117,20 +112,16 @@ function buildQidahenRecruitInteraction(
         displayMode: 'button' as const,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-recruit-${selection.targetRegionId ?? state.core.currentPlayer}`,
-        state.core.currentPlayer,
-        '征召军队：选择建军方式',
-        options,
-        {
-            titleKey: 'board.actions.recruit.title',
-            sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: '选择建军方式',
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
-        },
-    ) as QidahenRecruitInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-recruit-${selection.targetRegionId ?? state.core.currentPlayer}`,
+        playerId: state.core.currentPlayer,
+        title: '征召军队：选择建军方式',
+        titleKey: 'board.actions.recruit.title',
+        sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: '选择建军方式',
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE],
+    }) as QidahenRecruitInteraction;
 
     interaction.data.qidahenRecruitSelection = {
         ...selection,
@@ -156,19 +147,15 @@ function buildQidahenGrantPardonInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-grant-pardon-${selection.sourceRegionId ?? state.core.currentPlayer}`,
-        state.core.currentPlayer,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: selection.summary,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
-        },
-    ) as QidahenGrantPardonInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-grant-pardon-${selection.sourceRegionId ?? state.core.currentPlayer}`,
+        playerId: state.core.currentPlayer,
+        title: selection.title,
+        sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: selection.summary,
+        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+    }) as QidahenGrantPardonInteraction;
 
     interaction.data.qidahenGrantPardonSelection = {
         ...selection,
@@ -193,19 +180,15 @@ function buildQidahenDiplomacyInteraction(
         displayMode: 'button' as const,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-diplomacy-${selection.source}-${selection.sourceRegionId ?? state.core.currentPlayer}`,
-        state.core.currentPlayer,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: `处理外交步骤 · 还可再做 ${selection.remainingTargetCount} 次`,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-        },
-    ) as QidahenDiplomacyInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-diplomacy-${selection.source}-${selection.sourceRegionId ?? state.core.currentPlayer}`,
+        playerId: state.core.currentPlayer,
+        title: selection.title,
+        sourceId: QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: `处理外交步骤 · 还可再做 ${selection.remainingTargetCount} 次`,
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+    }) as QidahenDiplomacyInteraction;
 
     interaction.data.qidahenDiplomacySelection = {
         ...selection,
@@ -242,19 +225,15 @@ function buildQidahenWheelDispatchInteraction(
         ? state.core.factions.ming.playerId
         : state.core.factions[selection.attackerFactionId]?.playerId ?? state.core.currentPlayer;
 
-    const interaction = createSimpleChoice(
-        `qidahen-dispatch-targeting-${selection.attackerFactionId}-${selection.sourceRegionId}`,
-        interactionPlayerId,
-        selection.restriction,
-        options,
-        {
-            sourceId: QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: '进攻目标',
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-        },
-    ) as QidahenWheelDispatchInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-dispatch-targeting-${selection.attackerFactionId}-${selection.sourceRegionId}`,
+        playerId: interactionPlayerId,
+        title: selection.restriction,
+        sourceId: QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: '进攻目标',
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+    }) as QidahenWheelDispatchInteraction;
 
     interaction.data.qidahenWheelDispatchSelection = {
         ...selection,
@@ -280,19 +259,15 @@ function buildQidahenInternalDispatchInteraction(
         description: `${candidate.resolutionHint} · 耗 ${candidate.totalTravelCost}`,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-internal-dispatch-${selection.sourceRegionId}`,
-        state.core.currentPlayer,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: `选择调度目标 · 最多调 ${selection.maxTroops} 个部队`,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-        },
-    ) as QidahenInternalDispatchInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-internal-dispatch-${selection.sourceRegionId}`,
+        playerId: state.core.currentPlayer,
+        title: selection.title,
+        sourceId: QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: `选择调度目标 · 最多调 ${selection.maxTroops} 个部队`,
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+    }) as QidahenInternalDispatchInteraction;
 
     interaction.data.qidahenInternalDispatchSelection = {
         ...selection,
@@ -318,20 +293,16 @@ function buildQidahenMaShiTradeInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-ma-shi-trade-${selection.targetRegionId ?? state.core.currentPlayer}`,
-        state.core.currentPlayer,
-        '马市贸易：选择建兵数量',
-        options,
-        {
-            titleKey: 'board.actions.maShiTrade.title',
-            sourceId: QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: '选择建军数量',
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-        },
-    ) as QidahenMaShiTradeInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-ma-shi-trade-${selection.targetRegionId ?? state.core.currentPlayer}`,
+        playerId: state.core.currentPlayer,
+        title: '马市贸易：选择建兵数量',
+        titleKey: 'board.actions.maShiTrade.title',
+        sourceId: QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: '选择建军数量',
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+    }) as QidahenMaShiTradeInteraction;
 
     interaction.data.qidahenMaShiTradeSelection = {
         ...selection,
@@ -357,20 +328,16 @@ function buildQidahenKhanEdictInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-khan-edict-${selection.sourceRegionId ?? state.core.currentPlayer}`,
-        state.core.currentPlayer,
-        '大汗令箭：选择执行效果',
-        options,
-        {
-            titleKey: 'board.actions.khanEdict.title',
-            sourceId: QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: '选择执行效果',
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
-        },
-    ) as QidahenKhanEdictInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-khan-edict-${selection.sourceRegionId ?? state.core.currentPlayer}`,
+        playerId: state.core.currentPlayer,
+        title: '大汗令箭：选择执行效果',
+        titleKey: 'board.actions.khanEdict.title',
+        sourceId: QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: '选择执行效果',
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
+    }) as QidahenKhanEdictInteraction;
 
     interaction.data.qidahenKhanEdictSelection = {
         ...selection,
@@ -400,19 +367,15 @@ function buildQidahenDriveTigerConsentInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-drive-tiger-consent-${selection.targetFactionId}`,
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-drive-tiger-consent-${selection.targetFactionId}`,
         playerId,
-        '驱虎吞狼：是否接受大明指挥',
-        options,
-        {
-            titleKey: 'board.actions.driveTiger.title',
-            sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: `先问 ${selection.targetFactionName} 愿不愿听大明指挥；同意后抽 6 张牌，再由大明指挥其出兵进攻`,
-        },
-    ) as QidahenDriveTigerConsentInteraction;
+        title: '驱虎吞狼：是否接受大明指挥',
+        titleKey: 'board.actions.driveTiger.title',
+        sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: `先问 ${selection.targetFactionName} 愿不愿听大明指挥；同意后抽 6 张牌，再由大明指挥其出兵进攻`,
+    }) as QidahenDriveTigerConsentInteraction;
 
     interaction.data.qidahenDriveTigerConsentSelection = {
         ...selection,
@@ -442,19 +405,15 @@ function buildQidahenFortificationMaintenanceInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-fortification-maintenance-${state.core.currentYearIndex}`,
-        state.core.factions.ming.playerId ?? state.core.currentPlayer,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: selection.summary,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
-        },
-    ) as QidahenFortificationMaintenanceInteraction;
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-fortification-maintenance-${state.core.currentYearIndex}`,
+        playerId: state.core.factions.ming.playerId ?? state.core.currentPlayer,
+        title: selection.title,
+        sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: selection.summary,
+        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
+    }) as QidahenFortificationMaintenanceInteraction;
 
     interaction.data.qidahenFortificationMaintenanceSelection = {
         ...selection,
@@ -484,19 +443,15 @@ function buildQidahenEventCharacterTargetInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-event-character-target-${selection.eventCardId}`,
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-event-character-target-${selection.eventCardId}`,
         playerId,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: selection.summary,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET],
-        },
-    ) as QidahenEventCharacterTargetInteraction;
+        title: selection.title,
+        sourceId: QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: selection.summary,
+        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_CHARACTER_TARGET],
+    }) as QidahenEventCharacterTargetInteraction;
 
     interaction.data.qidahenEventCharacterTargetSelection = {
         ...selection,
@@ -531,19 +486,15 @@ function buildQidahenEventOpponentHandChoiceInteraction(
         description: choice.detail,
     }));
 
-    const interaction = createSimpleChoice(
-        `qidahen-event-opponent-hand-choice-${selection.eventCardId}-${selection.source}`,
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-event-opponent-hand-choice-${selection.eventCardId}-${selection.source}`,
         playerId,
-        selection.title,
-        options,
-        {
-            sourceId: QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle: selection.summary,
-            allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE],
-        },
-    ) as QidahenEventOpponentHandChoiceInteraction;
+        title: selection.title,
+        sourceId: QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle: selection.summary,
+        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_EVENT_OPPONENT_HAND_CHOICE],
+    }) as QidahenEventOpponentHandChoiceInteraction;
 
     interaction.data.qidahenEventOpponentHandChoiceSelection = {
         ...selection,
@@ -644,20 +595,16 @@ function buildQidahenOpenGateSurrenderInteraction(
             ? { min: selection.requiredJinTroopLoss, max: selection.requiredJinTroopLoss }
             : undefined;
 
-    const interaction = createSimpleChoice(
-        `qidahen-open-gate-surrender-${selection.eventCardId}-${selection.phase}`,
+    const interaction = createQidahenChoiceRequestInteraction({
+        requestId: `qidahen-open-gate-surrender-${selection.eventCardId}-${selection.phase}`,
         playerId,
-        '开门迎降',
-        options,
-        {
-            titleKey: 'board.actions.openGateSurrender.title',
-            sourceId: QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            subtitle,
-            ...(multi ? { multi } : {}),
-        },
-    ) as QidahenOpenGateSurrenderInteraction;
+        title: '开门迎降',
+        titleKey: 'board.actions.openGateSurrender.title',
+        sourceId: QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
+        candidates: options,
+        subtitle,
+        ...(multi ? { multi } : {}),
+    }) as QidahenOpenGateSurrenderInteraction;
     interaction.data.qidahenOpenGateSurrenderSelection = {
         ...selection,
         paymentCardIds: [...selection.paymentCardIds],

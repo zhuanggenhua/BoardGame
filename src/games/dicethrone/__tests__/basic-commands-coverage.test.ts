@@ -32,6 +32,7 @@ import {
     advanceTo,
     getCurrentInteractionId,
     getMultistepChoicePrompt,
+    injectSimpleChoicePrompt,
 } from './test-utils';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -984,6 +985,65 @@ describe('AI legal actions', () => {
             type: 'SYS_INTERACTION_RESPOND',
             payload: { interactionId: 'ai-choice-token', optionId: 'option-0' },
         });
+    });
+
+    it('simple-choice 的目标授予语义会让 AI 把正面 token 给自己而不是敌人', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main1';
+        injectSimpleChoicePrompt(state, {
+            id: 'ai-choice-targeted-buff',
+            playerId: '0',
+            title: 'interaction.chooseTarget',
+            sourceId: 'generic-targeted-buff',
+            options: [
+                {
+                    id: 'buff-self',
+                    label: '给自己飞行',
+                    value: {
+                        value: 0,
+                        targetPlayerId: '0',
+                        tokenGrantConfig: { tokenId: TOKEN_IDS.FLIGHT, amount: 1 },
+                    },
+                },
+                {
+                    id: 'buff-enemy',
+                    label: '给敌人飞行',
+                    value: {
+                        value: 1,
+                        targetPlayerId: '1',
+                        tokenGrantConfig: { tokenId: TOKEN_IDS.FLIGHT, amount: 1 },
+                    },
+                },
+            ],
+        });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+        const selfAction = actions.find((action) => action.metadata?.optionId === 'buff-self');
+        const enemyAction = actions.find((action) => action.metadata?.optionId === 'buff-enemy');
+
+        expect(selfAction?.aiHints?.some((hint) =>
+            (hint.effectIntent === 'buff' || hint.effectIntent === 'resource')
+            && hint.relationToActor === 'self'
+        )).toBe(true);
+        expect(enemyAction?.aiHints?.some((hint) =>
+            (hint.effectIntent === 'buff' || hint.effectIntent === 'resource')
+            && hint.relationToActor === 'enemy'
+        )).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test-targeted-buff',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.action.metadata?.optionId).toBe('buff-self');
     });
 
     it('本地 AI 在敌方单选交互中优先选择更低血量的目标', async () => {

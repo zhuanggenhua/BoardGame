@@ -3,7 +3,7 @@
  * 处理领域事件到系统状态的映射
  */
 
-import type { GameEvent, MatchState } from '../../../engine/types';
+import type { GameEvent, MatchState, PlayerId } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createSimpleChoice, createCompareRollChoice, createMultistepChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor as EngineInteractionDescriptor, SimpleChoiceData, PromptOption, MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
@@ -655,6 +655,23 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         statusId?: string;
                         tokenId?: string;
                         value: number;
+                        targetPlayerId?: PlayerId;
+                        tokenGrantConfig?: {
+                            tokenId: string;
+                            amount: number;
+                        };
+                        tokenGrantConfigs?: Array<{
+                            tokenId: string;
+                            amount: number;
+                        }>;
+                        statusGrantConfig?: {
+                            statusId: string;
+                            amount: number;
+                        };
+                        statusGrantConfigs?: Array<{
+                            statusId: string;
+                            amount: number;
+                        }>;
                         customId?: string;
                         labelKey?: string;
                         labelParams?: Record<string, string | number>;

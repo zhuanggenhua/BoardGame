@@ -1821,6 +1821,10 @@ describe('炽天使领域行为', () => {
         expect(selfFlightOption).toBeDefined();
         expect(enemyFlightOption).toBeDefined();
         if (!selfFlightOption || !enemyFlightOption) return;
+        expect(selfFlightOption.value?.targetPlayerId).toBe('0');
+        expect(selfFlightOption.value?.tokenGrantConfig).toEqual({ tokenId: TOKEN_IDS.FLIGHT, amount: 2 });
+        expect(enemyFlightOption.value?.targetPlayerId).toBe('1');
+        expect(enemyFlightOption.value?.tokenGrantConfig).toEqual({ tokenId: TOKEN_IDS.FLIGHT, amount: 2 });
 
         const { action } = await decideWithBaselineAi(state, '0');
         expect(action?.kind).toBe('interaction-choice');

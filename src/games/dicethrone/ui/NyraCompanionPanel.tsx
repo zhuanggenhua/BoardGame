@@ -25,11 +25,13 @@ export const NyraCompanionPanel = ({
     locale,
     onConsumeBond,
     damageResponse,
+    variant = 'hud',
 }: {
     player: HeroState;
     locale?: string;
     onConsumeBond?: () => void;
     damageResponse?: NyraDamageResponse;
+    variant?: 'hud' | 'boardBadge';
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const companion = player.companion;
@@ -53,9 +55,10 @@ export const NyraCompanionPanel = ({
     const shortHealLabel = (locale ?? i18n.resolvedLanguage ?? i18n.language).toLowerCase().startsWith('en')
         ? 'Heal'
         : '治疗';
+    const isBoardBadge = variant === 'boardBadge';
     const damageResponseDock = activeDamageResponse ? (
         <div
-            className="fixed left-[1.5vw] top-[1vw] w-[27.5vw] min-w-[350px] max-w-[400px] rounded-2xl border-2 border-emerald-300/65 bg-slate-950/97 px-4 py-3 shadow-2xl shadow-black/70 backdrop-blur-md"
+            className="fixed left-1/2 top-1/2 w-[32vw] min-w-[380px] max-w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-emerald-300/65 bg-slate-950/97 px-4 py-3 shadow-2xl shadow-black/70 backdrop-blur-md"
             style={{ zIndex: UI_Z_INDEX.hud + 12 }}
             data-testid="nyra-damage-response-dock"
         >
@@ -134,29 +137,34 @@ export const NyraCompanionPanel = ({
     return (
         <div className="relative w-full" data-testid="nyra-companion-control">
             <section
-                className="w-full rounded-xl border border-emerald-300/55 bg-slate-950/90 px-1.5 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]"
+                className={isBoardBadge
+                    ? 'w-full rounded-lg border border-emerald-300/60 bg-slate-950/88 px-1 py-1 shadow-xl shadow-black/45 backdrop-blur-[2px]'
+                    : 'w-full rounded-xl border border-emerald-300/55 bg-slate-950/90 px-1.5 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]'}
                 aria-label={t('companion.nyra.label')}
                 data-testid="nyra-companion-panel"
+                data-nyra-variant={variant}
             >
-                <div className="flex items-center gap-1.5">
+                <div className={isBoardBadge ? 'flex items-center gap-1' : 'flex items-center gap-1.5'}>
                     <div
-                        className="h-8 w-8 shrink-0 rounded-md border border-emerald-100/45 bg-black"
+                        className={isBoardBadge
+                            ? 'h-7 w-7 shrink-0 rounded-md border border-emerald-100/45 bg-black'
+                            : 'h-8 w-8 shrink-0 rounded-md border border-emerald-100/45 bg-black'}
                         style={{ backgroundImage, backgroundRepeat: 'no-repeat', ...NYRA_CROP }}
                         role="img"
                         aria-label={t('companion.nyra.name')}
                     />
                     <div className="min-w-0 flex-1 leading-none">
                         <div className="flex items-center justify-between gap-1">
-                            <span className="truncate text-[11px] font-black text-emerald-100">{t('companion.nyra.name')}</span>
+                            <span className={isBoardBadge ? 'truncate text-[9px] font-black text-emerald-100' : 'truncate text-[11px] font-black text-emerald-100'}>{t('companion.nyra.name')}</span>
                             {activeDamageResponse && (
                                 <span className="rounded bg-orange-500/20 px-1 text-[10px] font-black tabular-nums text-orange-100">
                                     {activeDamageResponse.currentDamage}
                                 </span>
                             )}
                         </div>
-                        <div className="mt-1 flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-0.5 text-[11px] font-black tabular-nums text-rose-200">
-                                <HeartPulse className="h-3 w-3 text-rose-400" aria-hidden="true" />
+                        <div className={isBoardBadge ? 'mt-0.5 flex items-center justify-between gap-0.5' : 'mt-1 flex items-center justify-between gap-1'}>
+                            <div className={isBoardBadge ? 'flex items-center gap-0.5 text-[9px] font-black tabular-nums text-rose-200' : 'flex items-center gap-0.5 text-[11px] font-black tabular-nums text-rose-200'}>
+                                <HeartPulse className={isBoardBadge ? 'h-2.5 w-2.5 text-rose-400' : 'h-3 w-3 text-rose-400'} aria-hidden="true" />
                                 <span>{hp}/{companion.maxHp}</span>
                             </div>
                             <div
@@ -164,10 +172,10 @@ export const NyraCompanionPanel = ({
                                 title={t('tokens.nyras_bond.name')}
                                 data-testid="nyra-bond-state"
                             >
-                                <Link2 className="h-3 w-3" aria-hidden="true" />
-                                <span className="text-[10px] font-black tabular-nums">{bondCount}/1</span>
+                                <Link2 className={isBoardBadge ? 'h-2.5 w-2.5' : 'h-3 w-3'} aria-hidden="true" />
+                                <span className={isBoardBadge ? 'text-[9px] font-black tabular-nums' : 'text-[10px] font-black tabular-nums'}>{bondCount}/1</span>
                             </div>
-                            {showHealAction && (
+                            {!isBoardBadge && showHealAction && (
                                 <GameButton
                                     size="sm"
                                     variant="secondary"

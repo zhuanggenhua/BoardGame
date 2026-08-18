@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import {
+    buildAiLegalActionsFromInteractionDecision,
+    type AiDecisionDescriptor,
+} from '../../../engine/ai/decisionSemantics';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
+import { buildQidahenAiLegalActions } from '../ai';
 import { engineConfig } from '../game';
 import { QidahenDomain } from '../domain';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
@@ -206,6 +211,25 @@ const getOptionIds = (state: MatchState<QidahenCore>): string[] => (
     ?? []
 );
 
+const getSemanticOptionIds = (state: MatchState<QidahenCore>): string[] => {
+    const decision = (state.sys.interaction?.current?.data as {
+        ai?: {
+            decisions?: AiDecisionDescriptor[];
+        };
+    } | undefined)?.ai?.decisions?.[0];
+    expect(decision).toBeDefined();
+    return buildAiLegalActionsFromInteractionDecision(decision!)
+        .map((action) => action.commands[0]?.payload as { optionId?: string; optionIds?: string[] } | undefined)
+        .flatMap((payload) => payload?.optionIds ?? (payload?.optionId ? [payload.optionId] : []));
+};
+
+const getAiOptionIds = (
+    state: MatchState<QidahenCore>,
+    playerId: string,
+): string[] => buildQidahenAiLegalActions({ playerId, state })
+    .map((action) => action.commands[0]?.payload as { optionId?: string; optionIds?: string[] } | undefined)
+    .flatMap((payload) => payload?.optionIds ?? (payload?.optionId ? [payload.optionId] : []));
+
 const respond = (
     state: MatchState<QidahenCore>,
     playerId: string,
@@ -250,6 +274,10 @@ describe('七大恨偷袭与伏击', () => {
         });
         expect(getSourceId(state)).toBe('qidahen:raid-and-ambush');
         expect(getOptionIds(state)).toEqual(['skip']);
+        expect((state.sys.interaction?.current?.data as { ai?: { status?: string } } | undefined)?.ai?.status)
+            .toBe('semantic');
+        expect(getSemanticOptionIds(state)).toEqual(['skip']);
+        expect(getAiOptionIds(state, '2')).toEqual(['skip']);
         expect(QidahenDomain.validate(state, {
             type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
             playerId: '0',
@@ -292,6 +320,8 @@ describe('七大恨偷袭与伏击', () => {
         expect(state.core.handCards.some((card) => card.id === 'jin-raid-and-ambush')).toBe(false);
         expect(state.core.raidAndAmbushSelection?.phase).toBe('select-troop-kind');
         expect(getOptionIds(state)).toEqual(['troop-kind:cavalry', 'troop-kind:infantry']);
+        expect(getSemanticOptionIds(state)).toEqual(['troop-kind:cavalry', 'troop-kind:infantry']);
+        expect(getAiOptionIds(state, '2')).toEqual(['troop-kind:cavalry', 'troop-kind:infantry']);
         expect(QidahenDomain.validate(state, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '2',
@@ -304,6 +334,8 @@ describe('七大恨偷袭与伏击', () => {
             selectedTroopKind: 'cavalry',
         });
         expect(getOptionIds(state)).toEqual(['skip-follow-up']);
+        expect(getSemanticOptionIds(state)).toEqual(['skip-follow-up']);
+        expect(getAiOptionIds(state, '2')).toEqual(['skip-follow-up']);
         expect(state.core.pendingTargetAction?.tacticModifiers).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 sourceCardDefId: 'qidahen-atlas05-1622-raid-and-ambush',

@@ -237,10 +237,33 @@ type CardInteractionData = {
     }>;
 };
 
+type TokenGrantConfig = {
+    tokenId: string;
+    amount: number;
+};
+
+type StatusGrantConfig = {
+    statusId: string;
+    amount: number;
+};
+
+type EffectGrantMetadata = {
+    tokenGrantConfig?: TokenGrantConfig;
+    tokenGrantConfigs?: TokenGrantConfig[];
+    statusGrantConfig?: StatusGrantConfig;
+    statusGrantConfigs?: StatusGrantConfig[];
+};
+
 type ChoiceOptionValue = {
     statusId?: string;
     tokenId?: string;
     value?: number;
+    targetPlayerId?: PlayerId;
+    targetPlayerIds?: PlayerId[];
+    tokenGrantConfig?: TokenGrantConfig;
+    tokenGrantConfigs?: TokenGrantConfig[];
+    statusGrantConfig?: StatusGrantConfig;
+    statusGrantConfigs?: StatusGrantConfig[];
     customId?: string;
     labelKey?: string;
     labelParams?: Record<string, string | number>;
@@ -1216,6 +1239,78 @@ const buildPlayerTargetHint = (
     });
 };
 
+const getTokenGrantConfigs = (source: EffectGrantMetadata): TokenGrantConfig[] => (
+    source.tokenGrantConfigs ?? (source.tokenGrantConfig ? [source.tokenGrantConfig] : [])
+);
+
+const getStatusGrantConfigs = (source: EffectGrantMetadata): StatusGrantConfig[] => (
+    source.statusGrantConfigs ?? (source.statusGrantConfig ? [source.statusGrantConfig] : [])
+);
+
+const hasEffectGrantMetadata = (source: EffectGrantMetadata): boolean => (
+    getTokenGrantConfigs(source).length > 0 || getStatusGrantConfigs(source).length > 0
+);
+
+const getChoiceTargetPlayerIds = (
+    state: DiceThroneState,
+    value: ChoiceOptionValue | undefined,
+): PlayerId[] => {
+    const ids = [
+        ...(typeof value?.targetPlayerId === 'string' ? [value.targetPlayerId] : []),
+        ...(Array.isArray(value?.targetPlayerIds) ? value.targetPlayerIds : []),
+    ];
+    return Array.from(new Set(ids)).filter((targetId): targetId is PlayerId => !!state.core.players[targetId]);
+};
+
+const buildEffectGrantAiHints = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    targetPlayerIds: PlayerId[],
+    source: EffectGrantMetadata,
+): AiHint[] => {
+    const hints: AiHint[] = [];
+    const tokenConfigs = getTokenGrantConfigs(source);
+    const statusConfigs = getStatusGrantConfigs(source);
+
+    for (const targetPlayerId of targetPlayerIds) {
+        for (const config of tokenConfigs) {
+            const category = getEffectCategory(state, config.tokenId);
+            const effectIntent = getEffectIntentForCategory(category, 'apply');
+            if (!effectIntent) continue;
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
+                effectIntent,
+                estimatedSwing: getGrantedEffectValue(
+                    state,
+                    actingPlayerId,
+                    targetPlayerId,
+                    config.tokenId,
+                    config.amount,
+                ),
+                tags: [`grant-token:${config.tokenId}`],
+            }));
+        }
+
+        for (const config of statusConfigs) {
+            const category = getEffectCategory(state, config.statusId);
+            const effectIntent = getEffectIntentForCategory(category, 'apply');
+            if (!effectIntent) continue;
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
+                effectIntent,
+                estimatedSwing: getGrantedEffectValue(
+                    state,
+                    actingPlayerId,
+                    targetPlayerId,
+                    config.statusId,
+                    config.amount,
+                ),
+                tags: [`grant-status:${config.statusId}`],
+            }));
+        }
+    }
+
+    return hints;
+};
+
 const buildSelectPlayerDecisionFromInteraction = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -1358,29 +1453,6 @@ const isEmergencySkipOption = (option: SimpleChoiceOption): boolean => {
         || option.value?.__emergency_skip__ === true;
 };
 
-const getChoiceLabelPlayerId = (
-    state: DiceThroneState,
-    value: ChoiceOptionValue | undefined,
-): PlayerId | null => {
-    const player = value?.labelParams?.player;
-    return typeof player === 'string' && state.core.players[player] ? player : null;
-};
-
-const getTianshiDivineArbitrationChoiceGrant = (
-    customId: string | undefined,
-): { effectId: string; effectIntent: AiEffectIntent; amount: number } | null => {
-    switch (customId) {
-        case 'tianshi-divine-arbitration-dazzle':
-            return { effectId: STATUS_IDS.DAZZLE, effectIntent: 'debuff', amount: 1 };
-        case 'tianshi-divine-arbitration-flight':
-            return { effectId: TOKEN_IDS.FLIGHT, effectIntent: 'buff', amount: 2 };
-        case 'tianshi-divine-arbitration-purify':
-            return { effectId: TOKEN_IDS.PURIFY, effectIntent: 'buff', amount: 1 };
-        default:
-            return null;
-    }
-};
-
 const buildChoiceOptionAiHints = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -1407,23 +1479,9 @@ const buildChoiceOptionAiHints = (
         }));
     }
 
-    const divineArbitrationGrant = getTianshiDivineArbitrationChoiceGrant(customId);
-    const divineArbitrationTargetId = getChoiceLabelPlayerId(state, value);
-    if (divineArbitrationGrant && divineArbitrationTargetId) {
-        hints.push(buildPlayerTargetHint(state, playerId, divineArbitrationTargetId, {
-            effectIntent: divineArbitrationGrant.effectIntent,
-            estimatedSwing: getGrantedEffectValue(
-                state,
-                playerId,
-                divineArbitrationTargetId,
-                divineArbitrationGrant.effectId,
-                divineArbitrationGrant.amount,
-            ),
-            tags: [
-                'choice:tianshi-divine-arbitration',
-                `effect:${divineArbitrationGrant.effectId}`,
-            ],
-        }));
+    const choiceTargetPlayerIds = getChoiceTargetPlayerIds(state, value);
+    if (value && choiceTargetPlayerIds.length > 0) {
+        hints.push(...buildEffectGrantAiHints(state, playerId, choiceTargetPlayerIds, value));
     }
 
     const effectId = value?.tokenId ?? value?.statusId;
@@ -1432,8 +1490,9 @@ const buildChoiceOptionAiHints = (
         ? 'remove'
         : 'apply';
     const effectIntent = getEffectIntentForCategory(category, effectMode);
-    if (effectId && effectIntent) {
-        hints.push(buildPlayerTargetHint(state, playerId, playerId, {
+    if (effectId && effectIntent && (!value || !hasEffectGrantMetadata(value))) {
+        const effectTargetPlayerId = choiceTargetPlayerIds[0] ?? playerId;
+        hints.push(buildPlayerTargetHint(state, playerId, effectTargetPlayerId, {
             effectIntent,
             tags: [
                 'choice:effect',
@@ -1453,47 +1512,11 @@ const buildSelectPlayerActionAiHints = (
     interaction: CardInteractionData,
 ): AiHint[] => {
     const hints: AiHint[] = [];
-    const tokenConfigs = interaction.tokenGrantConfigs ?? (
-        interaction.tokenGrantConfig ? [interaction.tokenGrantConfig] : []
-    );
-    const statusConfigs = interaction.statusGrantConfigs ?? (
-        interaction.statusGrantConfig ? [interaction.statusGrantConfig] : []
-    );
+    const tokenConfigs = getTokenGrantConfigs(interaction);
+    const statusConfigs = getStatusGrantConfigs(interaction);
 
     for (const targetPlayerId of selectedPlayerIds) {
-        for (const config of tokenConfigs) {
-            const category = getEffectCategory(state, config.tokenId);
-            const effectIntent = getEffectIntentForCategory(category, 'apply');
-            if (!effectIntent) continue;
-            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
-                effectIntent,
-                estimatedSwing: getGrantedEffectValue(
-                    state,
-                    actingPlayerId,
-                    targetPlayerId,
-                    config.tokenId,
-                    config.amount,
-                ),
-                tags: [`grant-token:${config.tokenId}`],
-            }));
-        }
-
-        for (const config of statusConfigs) {
-            const category = getEffectCategory(state, config.statusId);
-            const effectIntent = getEffectIntentForCategory(category, 'apply');
-            if (!effectIntent) continue;
-            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
-                effectIntent,
-                estimatedSwing: getGrantedEffectValue(
-                    state,
-                    actingPlayerId,
-                    targetPlayerId,
-                    config.statusId,
-                    config.amount,
-                ),
-                tags: [`grant-status:${config.statusId}`],
-            }));
-        }
+        hints.push(...buildEffectGrantAiHints(state, actingPlayerId, [targetPlayerId], interaction));
 
         if (tokenConfigs.length === 0 && statusConfigs.length === 0 && interaction.requiresTargetWithStatus === true) {
             const swing = scoreRemoveAllStatusesTarget(state, actingPlayerId, targetPlayerId);
@@ -3314,12 +3337,8 @@ const interactionValueScorer: LocalAiActionScorer = {
             const interaction = getCardInteractionById(state, interactionId);
 
             if (interaction) {
-                const tokenConfigs = interaction.tokenGrantConfigs ?? (
-                    interaction.tokenGrantConfig ? [interaction.tokenGrantConfig] : []
-                );
-                const statusConfigs = interaction.statusGrantConfigs ?? (
-                    interaction.statusGrantConfig ? [interaction.statusGrantConfig] : []
-                );
+                const tokenConfigs = getTokenGrantConfigs(interaction);
+                const statusConfigs = getStatusGrantConfigs(interaction);
 
                 const grantScore = selectedPlayerIds.reduce((sum, targetPlayerId) => {
                     const tokenScore = tokenConfigs.reduce((inner, config) => {

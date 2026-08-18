@@ -1,11 +1,11 @@
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
+import type { ChoiceRequest, ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
+import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
 import {
-    createSimpleChoice,
     INTERACTION_EVENTS,
     queueInteraction,
     type InteractionDescriptor,
-    type PromptOption,
 } from '../../../engine/systems/InteractionSystem';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
@@ -240,7 +240,8 @@ function createCounterstrikeChoice(event: MageWarsCounterstrikeAvailableEvent): 
             ? { counterstrikeSourceObjectId: event.payload.counterstrikeSourceObjectId }
             : {}),
     };
-    const options: PromptOption<MageWarsCounterstrikeChoiceValue>[] = [{
+    const requestId = counterstrikeInteractionId(event);
+    const candidates: ChoiceRequestCandidate<MageWarsCounterstrikeChoiceValue>[] = [{
         id: 'counterstrike',
         label: 'interaction.counterstrike.options.counterstrike',
         labelKey: 'interaction.counterstrike.options.counterstrike',
@@ -259,23 +260,29 @@ function createCounterstrikeChoice(event: MageWarsCounterstrikeAvailableEvent): 
         },
         displayMode: 'button',
     }];
+    const request: ChoiceRequest<MageWarsCounterstrikeChoiceValue> = {
+        requestId,
+        gameId: 'mage-wars',
+        playerId: event.payload.ownerId,
+        kind: 'choose-option',
+        sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.COUNTERSTRIKE_CHOICE,
+        candidates,
+        selection: { min: 1, max: 1 },
+        skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId },
+        ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+    };
 
-    return createSimpleChoice(
-        counterstrikeInteractionId(event),
-        event.payload.ownerId,
-        'interaction.counterstrike.title',
-        options,
-        {
-            titleKey: 'interaction.counterstrike.title',
-            titleParams: {
-                attackerObjectId: event.payload.attackerObjectId,
-                defenderObjectId: event.payload.defenderObjectId,
-            },
-            sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.COUNTERSTRIKE_CHOICE,
-            targetType: 'button',
-            autoResolveIfSingle: false,
+    return createSimpleChoiceFromChoiceRequest(request, {
+        title: 'interaction.counterstrike.title',
+        titleKey: 'interaction.counterstrike.title',
+        titleParams: {
+            attackerObjectId: event.payload.attackerObjectId,
+            defenderObjectId: event.payload.defenderObjectId,
         },
-    );
+        targetType: 'button',
+        autoResolveIfSingle: false,
+    });
 }
 
 function createDefenseChoice(event: MageWarsDefenseAvailableEvent): InteractionDescriptor {
@@ -292,7 +299,7 @@ function createDefenseChoice(event: MageWarsDefenseAvailableEvent): InteractionD
             : {}),
         ...(event.payload.spellCardId ? { spellCardId: event.payload.spellCardId } : {}),
     };
-    const defenseOptions: PromptOption<MageWarsDefenseChoiceValue>[] = event.payload.defenseProfileIds
+    const defenseOptions: ChoiceRequestCandidate<MageWarsDefenseChoiceValue>[] = event.payload.defenseProfileIds
         .filter((defenseProfileId) => (
             !event.payload.requiredDefenseProfileId
             || defenseProfileId === event.payload.requiredDefenseProfileId
@@ -308,7 +315,7 @@ function createDefenseChoice(event: MageWarsDefenseAvailableEvent): InteractionD
         },
         displayMode: 'button',
     }));
-    const options: PromptOption<MageWarsDefenseChoiceValue>[] = event.payload.requiredDefenseProfileId
+    const candidates: ChoiceRequestCandidate<MageWarsDefenseChoiceValue>[] = event.payload.requiredDefenseProfileId
         ? defenseOptions
         : [
             ...defenseOptions,
@@ -324,24 +331,32 @@ function createDefenseChoice(event: MageWarsDefenseAvailableEvent): InteractionD
             },
         ];
 
-    return createSimpleChoice(
-        defenseInteractionId(event),
-        event.payload.ownerId,
-        'interaction.defense.title',
-        options,
-        {
-            titleKey: 'interaction.defense.title',
-            titleParams: {
-                ...(event.payload.attackerObjectId ? { attackerObjectId: event.payload.attackerObjectId } : {}),
-                ...(event.payload.defenderObjectId ? { defenderObjectId: event.payload.defenderObjectId } : {}),
-                ...(event.payload.attackerId ? { attackerId: event.payload.attackerId } : {}),
-                ...(event.payload.defenderId ? { defenderId: event.payload.defenderId } : {}),
-            },
-            sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.DEFENSE_CHOICE,
-            targetType: 'button',
-            autoResolveIfSingle: false,
+    const requestId = defenseInteractionId(event);
+    const request: ChoiceRequest<MageWarsDefenseChoiceValue> = {
+        requestId,
+        gameId: 'mage-wars',
+        playerId: event.payload.ownerId,
+        kind: 'choose-option',
+        sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.DEFENSE_CHOICE,
+        candidates,
+        selection: { min: 1, max: 1 },
+        skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId },
+        ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+    };
+
+    return createSimpleChoiceFromChoiceRequest(request, {
+        title: 'interaction.defense.title',
+        titleKey: 'interaction.defense.title',
+        titleParams: {
+            ...(event.payload.attackerObjectId ? { attackerObjectId: event.payload.attackerObjectId } : {}),
+            ...(event.payload.defenderObjectId ? { defenderObjectId: event.payload.defenderObjectId } : {}),
+            ...(event.payload.attackerId ? { attackerId: event.payload.attackerId } : {}),
+            ...(event.payload.defenderId ? { defenderId: event.payload.defenderId } : {}),
         },
-    );
+        targetType: 'button',
+        autoResolveIfSingle: false,
+    });
 }
 
 function createUpkeepCostChoice(
@@ -357,7 +372,7 @@ function createUpkeepCostChoice(
     };
     const player = state.core.players[event.payload.playerId];
     const canPay = (player?.mana ?? 0) >= event.payload.amount;
-    const options: PromptOption<MageWarsUpkeepCostChoiceValue>[] = [
+    const candidates: ChoiceRequestCandidate<MageWarsUpkeepCostChoiceValue>[] = [
         ...(canPay ? [{
             id: 'pay',
             label: 'interaction.upkeep.options.pay',
@@ -374,22 +389,30 @@ function createUpkeepCostChoice(
         },
     ];
 
-    return createSimpleChoice(
-        upkeepCostInteractionId(event),
-        event.payload.playerId,
-        'interaction.upkeep.title',
-        options,
-        {
-            titleKey: 'interaction.upkeep.title',
-            titleParams: {
-                targetObjectId: event.payload.targetObjectId,
-                amount: event.payload.amount,
-            },
-            sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.UPKEEP_COST_CHOICE,
-            targetType: 'button',
-            autoResolveIfSingle: true,
+    const requestId = upkeepCostInteractionId(event);
+    const request: ChoiceRequest<MageWarsUpkeepCostChoiceValue> = {
+        requestId,
+        gameId: 'mage-wars',
+        playerId: event.payload.playerId,
+        kind: 'choose-option',
+        sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.UPKEEP_COST_CHOICE,
+        candidates,
+        selection: { min: 1, max: 1 },
+        skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: requestId },
+        ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+    };
+
+    return createSimpleChoiceFromChoiceRequest(request, {
+        title: 'interaction.upkeep.title',
+        titleKey: 'interaction.upkeep.title',
+        titleParams: {
+            targetObjectId: event.payload.targetObjectId,
+            amount: event.payload.amount,
         },
-    );
+        targetType: 'button',
+        autoResolveIfSingle: true,
+    });
 }
 
 function createEnchantmentResponseChoice(
@@ -403,7 +426,7 @@ function createEnchantmentResponseChoice(
         responseCardId: context.responseCardId,
     };
 
-    const revealOption: PromptOption<MageWarsEnchantmentResponseChoiceValue> = {
+    const revealCandidate: ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> = {
         id: 'reveal',
         label: 'interaction.enchantmentResponse.options.reveal',
         labelKey: 'interaction.enchantmentResponse.options.reveal',
@@ -413,7 +436,7 @@ function createEnchantmentResponseChoice(
 
     const createLiveRevealOption = (
         state: { core: MageWarsCore; sys: MatchState<MageWarsCore>['sys'] },
-    ): PromptOption<MageWarsEnchantmentResponseChoiceValue> => {
+    ): ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> => {
         const frame = getActiveResolutionFrame(state as MatchState<MageWarsCore>);
         const activeContext = readMageWarsResponseContext(frame);
         const isCurrentResponse = frame?.id === context.responseId
@@ -422,7 +445,7 @@ function createEnchantmentResponseChoice(
             && activeContext.responseCardId === context.responseCardId;
 
         return {
-            ...revealOption,
+            ...revealCandidate,
             ...(isCurrentResponse
                 ? {}
                 : {
@@ -432,30 +455,33 @@ function createEnchantmentResponseChoice(
         };
     };
 
-    const interaction = createSimpleChoice(
-        event.payload.interactionId,
-        context.responseOwnerId,
-        'interaction.enchantmentResponse.title',
-        [revealOption],
-        {
-            titleKey: 'interaction.enchantmentResponse.title',
-            titleParams: {
-                responseCardId: context.responseCardId,
-                responseObjectId: context.responseObjectId,
-            },
-            sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.ENCHANTMENT_RESPONSE_REVEAL,
-            targetType: 'button',
-            autoResolveIfSingle: false,
-            responseValidationMode: 'live',
-        },
-    );
+    const request: ChoiceRequest<MageWarsEnchantmentResponseChoiceValue> = {
+        requestId: event.payload.interactionId,
+        gameId: 'mage-wars',
+        playerId: context.responseOwnerId,
+        ownerFrameId: context.responseId,
+        kind: 'choose-option',
+        sourceId: MAGE_WARS_INTERACTION_SOURCE_IDS.ENCHANTMENT_RESPONSE_REVEAL,
+        candidates: [revealCandidate],
+        selection: { min: 1, max: 1 },
+        skipPolicy: 'forbidden',
+        resolution: { type: 'interaction-response', interactionId: event.payload.interactionId },
+        ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+    };
 
-    interaction.data = {
-        ...interaction.data,
+    return createSimpleChoiceFromChoiceRequest(request, {
+        title: 'interaction.enchantmentResponse.title',
+        titleKey: 'interaction.enchantmentResponse.title',
+        titleParams: {
+            responseCardId: context.responseCardId,
+            responseObjectId: context.responseObjectId,
+        },
+        targetType: 'button',
+        autoResolveIfSingle: false,
+        responseValidationMode: 'live',
         optionsGenerator: <TCore>(state: { core: TCore; sys: unknown }) =>
             [createLiveRevealOption(state as unknown as { core: MageWarsCore; sys: MatchState<MageWarsCore>['sys'] })],
-    };
-    return interaction;
+    });
 }
 
 function resolveAttackAfterDefenseChoice(
@@ -484,6 +510,23 @@ function resolveAttackAfterDefenseChoice(
             attackerId: value.attackerId,
             defenderId: value.defenderId,
             spellCardId: value.spellCardId,
+        });
+    }
+    if (value.attackerObjectId && value.defenderId) {
+        return resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: commandType,
+            timestamp: timestamp ?? 0,
+            random,
+            attackerObjectId: value.attackerObjectId,
+            attackProfileId: value.incomingAttackProfileId,
+            targetPlayerId: value.defenderId,
+            actionCost: 'none',
+            allowDefenseOpportunity: false,
+            allowCounterstrikeOpportunity: value.allowCounterstrikeOpportunity,
+            removeGuardAfterMelee: value.removeGuardAfterMelee,
+            counterstrikeSourceObjectId: value.counterstrikeSourceObjectId,
+            skipPreDefenseEffects: true,
         });
     }
     if (!value.attackerObjectId || !value.defenderObjectId) return [];

@@ -46,11 +46,15 @@ export interface ChoiceRequestSelectionBounds {
 export interface ChoiceRequestCandidate<TValue = unknown> {
     id: string;
     label?: string;
+    labelKey?: string;
+    labelParams?: Record<string, string | number>;
+    description?: string;
     value?: TValue;
     disabled?: boolean;
     disabledReason?: string;
     stale?: boolean;
     visibleToPlayerIds?: PlayerId[];
+    displayMode?: 'card' | 'button';
     commands?: AiCommandSpec[];
     aiHints?: AiHint[];
     metadata?: AiActionMetadata;
