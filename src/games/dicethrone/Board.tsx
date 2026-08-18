@@ -599,6 +599,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (!pendingDamage) return [];
         return getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
     }, [G, pendingDamage]);
+    const shouldKeepSelfBoardForNyraDamageResponse = Boolean(
+        isTokenResponseInteraction
+        && isTokenResponder
+        && player?.characterId === 'lieren'
+        && player.companion
+        && player.companion.hp > 0
+        && !G.pendingAttack?.isUltimate
+        && pendingDamage
+    );
 
     const isActivePlayer = G.activePlayerId === rootPid;
 
@@ -636,14 +645,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         isTeamDirectActor: isDirectDiceActor,
     });
 
-    const responseViewSuggestionKey = getResponseViewSuggestionKey({
-        rootPlayerId: rootPid,
-        isResponseWindowOpen,
-        currentResponderId,
-        currentResponderIndex,
-        pendingDamage,
-        isTeamDirectActor: isDirectDiceActor,
-    });
+    const responseViewSuggestionKey = shouldKeepSelfBoardForNyraDamageResponse
+        ? null
+        : getResponseViewSuggestionKey({
+            rootPlayerId: rootPid,
+            isResponseWindowOpen,
+            currentResponderId,
+            currentResponderIndex,
+            pendingDamage,
+            isTeamDirectActor: isDirectDiceActor,
+        });
     const responseAutoViewSessionRef = React.useRef<{
         suggestionKey: string;
         restoreMode: 'self' | 'opponent';
@@ -2046,8 +2057,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
                         onAutoResponseToggle={setAutoResponseEnabled}
-                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
-                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <CenterBoard
@@ -2071,6 +2080,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
+                        viewPlayer={viewPlayer}
+                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
+                        nyraDamageResponse={nyraDamageResponse}
                     />
 
                     <RightSidebar

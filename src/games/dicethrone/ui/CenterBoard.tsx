@@ -10,6 +10,7 @@ import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
 import type { AbilityCard } from '../types';
 import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
+import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -32,6 +33,9 @@ export interface CenterBoardProps {
     onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
+    viewPlayer?: HeroState;
+    onConsumeNyraBond?: () => void;
+    nyraDamageResponse?: NyraDamageResponse;
 }
 
 export const CenterBoard = ({
@@ -55,6 +59,9 @@ export const CenterBoard = ({
     onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
+    viewPlayer,
+    onConsumeNyraBond,
+    nyraDamageResponse,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
@@ -83,6 +90,9 @@ export const CenterBoard = ({
     } as const;
     const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
     const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
+    const nyraPanelPlayer = characterId === 'lieren' && viewPlayer?.characterId === 'lieren'
+        ? viewPlayer
+        : undefined;
 
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
@@ -295,6 +305,21 @@ export const CenterBoard = ({
                                 onMagnifyCard={onMagnifyCard}
                                 playerTokens={playerTokens}
                             />
+                            {nyraPanelPlayer && (
+                                <div
+                                    className="absolute left-[34.5%] top-[5%] z-40 w-[18%] min-w-[8.6vw] max-w-[10.8vw] pointer-events-auto"
+                                    data-testid="nyra-board-anchor"
+                                    data-board-magnify-ignore="true"
+                                >
+                                    <NyraCompanionPanel
+                                        player={nyraPanelPlayer}
+                                        locale={locale}
+                                        onConsumeBond={onConsumeNyraBond}
+                                        damageResponse={nyraDamageResponse}
+                                        placement="board-overlay"
+                                    />
+                                </div>
+                            )}
                         </motion.div>
                     )}
                     <button
