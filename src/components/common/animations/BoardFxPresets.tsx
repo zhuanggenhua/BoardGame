@@ -14,6 +14,7 @@ import {
   scheduleFxFrameCallback,
   type FxBox,
   type FxCellCoord,
+  type FxAnchorSnapshot,
   type FxQuality,
   type FxRendererProps,
 } from '../../../engine/fx';
@@ -124,6 +125,10 @@ function fxBoxStyle(box: FxBox) {
   };
 }
 
+function snapshotBox(snapshot?: FxAnchorSnapshot | null): FxBox | null {
+  return snapshot?.box ?? null;
+}
+
 function DelayedBurstParticles({
   testId,
   delayMs = 0,
@@ -162,12 +167,14 @@ function DelayedBurstParticles({
 
 export interface BoardSummonEffectPresetProps {
   cellBox: FxBox;
+  anchorSnapshot?: FxAnchorSnapshot | null;
   intensity?: SummonIntensity;
   color?: SummonColorTheme;
   quality?: FxQuality;
   scale?: number;
   originY?: number;
   durationScale?: number;
+  visualScale?: number;
   dimStrength?: number;
   hostTestId?: string;
   objectKind?: string;
@@ -179,12 +186,14 @@ export interface BoardSummonEffectPresetProps {
 
 export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = ({
   cellBox,
+  anchorSnapshot,
   intensity = 'normal',
   color = 'blue',
   quality = 'full',
   scale = 7.5,
   originY = 0.5,
   durationScale,
+  visualScale,
   dimStrength,
   hostTestId = 'board-fx-summon-preset',
   objectKind,
@@ -193,14 +202,17 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
   onImpact,
   onComplete,
 }) => {
-  const box = createFxScaledCellBox(cellBox, scale);
+  const resolvedBox = snapshotBox(anchorSnapshot) ?? cellBox;
+  const box = createFxScaledCellBox(resolvedBox, scale);
 
   return (
     <div
       className={`absolute pointer-events-none z-30 ${className}`}
       data-testid={hostTestId}
       data-object-kind={objectKind ?? ''}
-      data-object-id={objectId ?? ''}
+      data-object-id={objectId ?? anchorSnapshot?.anchorId ?? ''}
+      data-anchor-id={anchorSnapshot?.anchorId ?? objectId ?? ''}
+      data-surface-id={anchorSnapshot?.surfaceId ?? ''}
       style={box}
     >
       <SummonHybridEffect
@@ -210,6 +222,7 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
         originY={originY}
         quality={quality}
         durationScale={durationScale}
+        visualScale={visualScale}
         dimStrength={dimStrength}
         onImpact={onImpact}
         onComplete={onComplete}
@@ -222,6 +235,8 @@ export interface BoardProjectilePathPresetProps {
   source?: FxCellCoord;
   target: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  sourceSnapshot?: FxAnchorSnapshot | null;
+  targetSnapshot?: FxAnchorSnapshot | null;
   sourceBox?: FxBox | null;
   targetBox?: FxBox | null;
   sourceAnchorId?: string;
@@ -251,6 +266,8 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
   source,
   target,
   getCellPosition,
+  sourceSnapshot,
+  targetSnapshot,
   sourceBox,
   targetBox,
   sourceAnchorId,
@@ -276,8 +293,8 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
   pathMinSizeCells = 2.25,
 }) => {
   if (!source || sameCell(source, target)) return null;
-  const resolvedSourceBox = sourceBox ?? getCellPosition(source.row, source.col);
-  const resolvedTargetBox = targetBox ?? getCellPosition(target.row, target.col);
+  const resolvedSourceBox = snapshotBox(sourceSnapshot) ?? sourceBox ?? getCellPosition(source.row, source.col);
+  const resolvedTargetBox = snapshotBox(targetSnapshot) ?? targetBox ?? getCellPosition(target.row, target.col);
 
   const pathBox = createFxPathBox(
     resolvedSourceBox,
@@ -293,8 +310,10 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
         <div
           className="absolute pointer-events-none z-30 grid place-items-center"
           data-testid={sourceWakeTestId}
-          data-source-anchor-id={sourceAnchorId ?? ''}
-          style={fxBoxStyle(resolvedSourceBox)}
+        data-source-anchor-id={sourceAnchorId ?? ''}
+        data-source-snapshot-anchor-id={sourceSnapshot?.anchorId ?? ''}
+        data-source-snapshot-surface-id={sourceSnapshot?.surfaceId ?? ''}
+        style={fxBoxStyle(resolvedSourceBox)}
         >
           <div className={sourceWakeSizeClassName}>
             <DelayedBurstParticles
@@ -316,6 +335,9 @@ export const BoardProjectilePathPreset: React.FC<BoardProjectilePathPresetProps>
         data-target-col={target.col}
         data-source-anchor-id={sourceAnchorId ?? ''}
         data-target-anchor-id={targetAnchorId ?? ''}
+        data-source-snapshot-anchor-id={sourceSnapshot?.anchorId ?? ''}
+        data-target-snapshot-anchor-id={targetSnapshot?.anchorId ?? ''}
+        data-surface-id={targetSnapshot?.surfaceId ?? sourceSnapshot?.surfaceId ?? ''}
         style={pathBox.style}
       >
         <ConeBlast
@@ -446,6 +468,7 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
 export interface BoardBurstImpactPresetProps {
   cell: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  targetSnapshot?: FxAnchorSnapshot | null;
   box?: FxBox | null;
   targetAnchorId?: string;
   quality?: FxQuality;
@@ -461,6 +484,7 @@ export interface BoardBurstImpactPresetProps {
 export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
   cell,
   getCellPosition,
+  targetSnapshot,
   box,
   targetAnchorId,
   quality = 'full',
@@ -471,30 +495,37 @@ export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
   color,
   overflow = 2.6,
   sizeClassName = 'relative h-36 w-36',
-}) => (
-  <div
-    className="absolute pointer-events-none z-30 grid place-items-center"
-    data-testid={hostTestId}
-    data-target-anchor-id={targetAnchorId ?? ''}
-    style={box ? fxBoxStyle(box) : { ...cellBox(getCellPosition, cell), overflow: 'visible' }}
-  >
-    <div className={sizeClassName}>
-      <DelayedBurstParticles
-        testId={burstTestId}
-        delayMs={delayMs}
-        preset={preset}
-        color={color}
-        quality={quality}
-        overflow={overflow}
-      />
+}) => {
+  const resolvedSnapshotBox = snapshotBox(targetSnapshot);
+
+  return (
+    <div
+      className="absolute pointer-events-none z-30 grid place-items-center"
+      data-testid={hostTestId}
+      data-target-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
+      data-surface-id={targetSnapshot?.surfaceId ?? ''}
+      style={resolvedSnapshotBox ? fxBoxStyle(resolvedSnapshotBox) : box ? fxBoxStyle(box) : { ...cellBox(getCellPosition, cell), overflow: 'visible' }}
+    >
+      <div className={sizeClassName}>
+        <DelayedBurstParticles
+          testId={burstTestId}
+          delayMs={delayMs}
+          preset={preset}
+          color={color}
+          quality={quality}
+          overflow={overflow}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export interface BoardProjectileAttackPresetProps {
   source?: FxCellCoord;
   target?: FxCellCoord;
   getCellPosition: CellPositionResolver;
+  sourceSnapshot?: FxAnchorSnapshot | null;
+  targetSnapshot?: FxAnchorSnapshot | null;
   sourceBox?: FxBox | null;
   targetBox?: FxBox | null;
   sourceAnchorId?: string;
@@ -537,6 +568,8 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   getCellPosition,
   sourceBox,
   targetBox,
+  sourceSnapshot,
+  targetSnapshot,
   sourceAnchorId,
   targetAnchorId,
   damage = 1,
@@ -586,6 +619,7 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   });
 
   if (!target) return null;
+  const resolvedTargetSnapshotBox = snapshotBox(targetSnapshot);
 
   return (
     <>
@@ -593,6 +627,8 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
         source={source}
         target={target}
         getCellPosition={getCellPosition}
+        sourceSnapshot={sourceSnapshot}
+        targetSnapshot={targetSnapshot}
         sourceBox={sourceBox}
         targetBox={targetBox}
         sourceAnchorId={sourceAnchorId}
@@ -613,8 +649,9 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
       <div
         className="absolute pointer-events-none z-30 grid place-items-center"
         data-testid={hostTestId}
-        data-target-anchor-id={targetAnchorId ?? ''}
-        style={targetBox ? fxBoxStyle(targetBox) : { ...cellBox(getCellPosition, target), overflow: 'visible' }}
+        data-target-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
+        data-surface-id={targetSnapshot?.surfaceId ?? ''}
+        style={resolvedTargetSnapshotBox ? fxBoxStyle(resolvedTargetSnapshotBox) : targetBox ? fxBoxStyle(targetBox) : { ...cellBox(getCellPosition, target), overflow: 'visible' }}
       >
         <BoardDamageImpactPreset
           damage={damage}

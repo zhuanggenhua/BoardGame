@@ -86,6 +86,8 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 - 引擎层同步完成规则结算；表现层负责让玩家按动画节奏看见结算。用户体验上的“动画命中时才产生效果”，在工程上应实现为“规则状态已结算，但相关可见值 / 位置 / token / 离场结果被视觉缓冲冻结，直到 `onEffectImpact` 释放”。
 - 能力、法术和攻击事件必须先入 EventStream，再由 FX / 动画层消费；不得在按钮点击时先播来源到目标的动效，再赌命令一定验证成功。
 - 若效果有来源和目标，FX 事件应携带来源和目标坐标 / 对象引用；如果渲染器只消费目标位置而忽略来源，不能宣称已经完成来源到目标的技能表现。
+- 来源 / 目标坐标应优先使用 `FxAnchorSnapshot`：事件消费层在生成一次性 FX 时从当前 surface / anchor registry 捕获 `sourceSnapshot` 与 `targetSnapshot`，之后投射、命中、飘字和 VP 飞行都读这份不可变快照。播放期间不得再查询业务 DOM，也不得因为目标已移除或布局重排而改打格子中心、牌桌中心或替代对象。
+- 需要目标本体继续可见时，使用 held visual 或对象视觉快照承接：领域状态可以已经移除对象，但表现层应保留本体到 impact / complete，再释放或移除。若 live list 里对象仍存在，不得同时渲染第二份 held visual。
 
 ### 禁止事项
 
@@ -93,6 +95,7 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 - ❌ 禁止在 reducer/execute 层延迟事件处理来解决动画时序问题（引擎层必须同步完成）
 - ❌ 禁止用 `setTimeout` 延迟读取 core 值来"等动画播完"
 - ❌ 新游戏禁止直接读 core 数值属性渲染 HP/血条，必须经过 `useVisualStateBuffer.get()` 中转
+- ❌ 禁止一次性 FX renderer 在播放阶段临时 query 游戏 DOM 来补坐标；坐标缺失时只能显式失败或走已声明的迁移 adapter
 
 ---
 

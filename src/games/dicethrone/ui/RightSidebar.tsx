@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MousePointerClick } from 'lucide-react';
+import { HeartCrack, MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';
@@ -23,6 +23,11 @@ type SidebarDiceMeta = {
         mode?: 'set' | 'adjust' | 'copy' | 'any';
         targetValue?: number;
     };
+};
+
+type DamageSummary = {
+    currentDamage: number;
+    originalDamage?: number;
 };
 
 const getSidebarDiceMeta = (interaction?: InteractionDescriptor): SidebarDiceMeta | undefined => {
@@ -68,6 +73,7 @@ export const RightSidebar = ({
     onRerollBonusDice,
     activeModifiers,
     attackModifierBonusDamage,
+    damageSummary,
     passiveAbilityProps,
     rootPlayerId,
     teamIdByPlayerId,
@@ -107,6 +113,7 @@ export const RightSidebar = ({
     onRerollBonusDice?: (dieIndex: number) => void;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
+    damageSummary?: DamageSummary;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
@@ -124,6 +131,7 @@ export const RightSidebar = ({
     const hintBubbleClassName = 'flex max-w-[8.8vw] min-w-0 items-center gap-[0.4vw] overflow-hidden rounded-[0.5vw] border border-amber-500/50 bg-amber-950/95 px-[0.6vw] py-[0.4vw] shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-nowrap';
     const hintIconClassName = 'w-[1vw] h-[1vw] text-amber-400 shrink-0';
     const hintTextClassName = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75vw] text-amber-200 font-medium leading-snug';
+    const hasCurrentDamageSummary = typeof damageSummary?.currentDamage === 'number' && Number.isFinite(damageSummary.currentDamage);
 
     const interactionHint = useMemo(() => {
         if (!isDiceMultistep || !interaction) return null;
@@ -188,11 +196,14 @@ export const RightSidebar = ({
             <div className={`relative w-full flex flex-col items-center ${stackGapClassName}`}>
                 {showDiceTray && (
                 <div className={`relative ${diceTrayWidthClassName}`}>
-                    {(activeModifiers && activeModifiers.length > 0) || (attackModifierBonusDamage && attackModifierBonusDamage > 0) ? (
+                    {(activeModifiers && activeModifiers.length > 0) || (attackModifierBonusDamage && attackModifierBonusDamage > 0) || hasCurrentDamageSummary ? (
                         <div
                             className={modifierBadgeRowClassName}
                             style={{ zIndex: UI_Z_INDEX.hint }}
                         >
+                            {hasCurrentDamageSummary && (
+                                <CurrentTotalDamageBadge summary={damageSummary} />
+                            )}
                             {activeModifiers && activeModifiers.length > 0 && (
                                 <ActiveModifierBadge
                                     modifiers={activeModifiers}
@@ -279,6 +290,44 @@ export const RightSidebar = ({
                         showSellButton={sellButtonVisible}
                     />
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const CurrentTotalDamageBadge = ({ summary }: { summary: DamageSummary }) => {
+    const { t } = useTranslation('game-dicethrone');
+    const currentDamage = Math.max(0, summary.currentDamage);
+    const originalDamage = summary.originalDamage !== undefined
+        ? Math.max(0, summary.originalDamage)
+        : undefined;
+    const hasChanged = originalDamage !== undefined && originalDamage !== currentDamage;
+    const title = hasChanged
+        ? t('damageSummary.changed', { original: originalDamage, current: currentDamage })
+        : `${t('damageSummary.label')} ${currentDamage}`;
+
+    return (
+        <div
+            className="pointer-events-auto flex h-[1.9vw] items-center justify-center gap-[0.38vw] rounded-full border border-rose-400/55 bg-gradient-to-r from-rose-950/95 to-red-900/90 px-[0.72vw] shadow-[0_0_1vw_rgba(244,63,94,0.32)] backdrop-blur-sm"
+            data-testid="current-total-damage-badge"
+            data-current-damage={currentDamage}
+            data-original-damage={originalDamage}
+            aria-label={title}
+            title={title}
+        >
+            <HeartCrack className="h-[0.82vw] w-[0.82vw] shrink-0 text-rose-300" />
+            <div className="flex items-baseline gap-[0.28vw] whitespace-nowrap leading-none">
+                <span className="text-[0.6vw] font-semibold uppercase tracking-[0.08em] text-rose-100/85">
+                    {t('damageSummary.label')}
+                </span>
+                <span className="text-[0.82vw] font-black tracking-wide text-rose-100">
+                    {currentDamage}
+                </span>
+                {hasChanged && (
+                    <span className="text-[0.54vw] font-semibold text-rose-200/75">
+                        {t('damageSummary.changed', { original: originalDamage, current: currentDamage })}
+                    </span>
+                )}
             </div>
         </div>
     );

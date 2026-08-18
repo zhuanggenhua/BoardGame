@@ -1926,6 +1926,7 @@ function baseTheNexus(ctx: BaseAbilityContext): AbilityResult {
         {
             sourceId: 'base_the_nexus_choose',
             targetType: 'button',
+            buttonIntent: 'mode',
             titleKey: 'ui.base_the_nexus_choose_title',
         },
     );

@@ -230,6 +230,23 @@ export type SimpleChoiceTargetType =
     | 'discard_minion'
     | 'generic';
 
+export type SimpleChoiceButtonIntent =
+    | 'control'
+    | 'mode'
+    | 'confirm-known-object'
+    | 'known-card-action'
+    | 'known-card-placement';
+
+export type SimpleChoiceGenericIntent =
+    | 'card-pool'
+    | 'buried-card'
+    | 'snapshot-field-object'
+    | 'composite-context'
+    | 'mode'
+    | 'order'
+    | 'mixed-card-and-control'
+    | 'definition-choice';
+
 // ============================================================================
 // 核心类型
 // ============================================================================
@@ -278,6 +295,16 @@ export interface SimpleChoiceData<T = unknown> {
      * - undefined / 'generic': 使用通用弹窗选择
      */
     targetType?: SimpleChoiceTargetType;
+    /**
+     * 当 targetType 为 button 时，声明按钮承载的现实职责。
+     * 只用于 UI/审计/回归守卫；不能替代真实目标对象选择。
+     */
+    buttonIntent?: SimpleChoiceButtonIntent;
+    /**
+     * 当 targetType 为 generic 时，声明为什么不能收窄为 hand/base/minion/player/button。
+     * 只用于 UI/审计/回归守卫；不能替代真实目标对象选择。
+     */
+    genericIntent?: SimpleChoiceGenericIntent;
     /** 可选：按钮类/目标类交互需要同时展示的一张上下文卡牌 */
     displayCard?: {
         defId: string;
@@ -672,6 +699,10 @@ export interface SimpleChoiceConfig {
     multi?: PromptMultiConfig;
     /** 选择目标类型，决定 UI 渲染方式（'base' | 'minion' | 'hand' | 'ongoing' | 'field-source-target' | 'field-source-action' | 'player' | 'button' | 'discard_minion' | 'generic'） */
     targetType?: SimpleChoiceTargetType;
+    /** button targetType 的现实职责声明。 */
+    buttonIntent?: SimpleChoiceButtonIntent;
+    /** generic targetType 的现实职责声明。 */
+    genericIntent?: SimpleChoiceGenericIntent;
     /** 可选：按钮类/目标类交互需要同时展示的一张上下文卡牌 */
     displayCard?: {
         defId: string;
@@ -776,6 +807,8 @@ export function createSimpleChoice<T>(
             timeout: config.timeout,
             multi: config.multi,
             targetType: config.targetType,
+            buttonIntent: config.buttonIntent,
+            genericIntent: config.genericIntent,
             displayCard: config.displayCard,
             autoResolveIfSingle: config.autoResolveIfSingle,
             // 将 autoRefresh 传递到 data 中（作为私有字段）

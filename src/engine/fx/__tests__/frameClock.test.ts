@@ -69,6 +69,27 @@ describe('fx frame clock', () => {
     }));
   });
 
+  it('遇到宿主没有传入 RAF 时间戳时仍输出合法帧时间', () => {
+    const pendingFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+      pendingFrames.push(callback);
+      return pendingFrames.length;
+    }));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(performance, 'now').mockReturnValue(240);
+
+    const callback: FxFrameCallback = vi.fn();
+    subscribeFxFrame(callback);
+
+    pendingFrames.shift()!(undefined as unknown as number);
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      now: 240,
+      deltaMs: 0,
+      frame: 1,
+    }));
+  });
+
   it('按共享帧时钟触发一次性延迟回调', () => {
     const pendingFrames: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {

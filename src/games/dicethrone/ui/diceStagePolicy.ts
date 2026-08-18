@@ -41,6 +41,16 @@ export function shouldShowRailDiceTray(params: {
     return true;
 }
 
-export function getRailDiceForCurrentBoard(dice: Die[]): Die[] {
-    return dice;
+export function getReadOnlyNormalDicePool(dice: Die[]): Die[] {
+    return dice.map((die, index) => ({
+        ...die,
+        id: die.id ?? index,
+        isKept: false,
+        displayOnly: true,
+    }));
+}
+
+export function getRailDiceForCurrentBoard(dice: Die[], normalDicePool: Die[] = []): Die[] {
+    if (dice.length > 0) return dice;
+    return getReadOnlyNormalDicePool(normalDicePool);
 }

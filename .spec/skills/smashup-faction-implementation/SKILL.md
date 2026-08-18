@@ -374,12 +374,14 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
 
 #### `targetType: 'generic'` 门禁补充（强制）
 
-凡是新增或调整到 `targetType: 'generic'` 的 `sourceId`，必须同步更新：
+凡是新增或调整到 `targetType: 'generic'` 的交互，先判断能否收窄为 `hand`、`base`、`minion`、`player`、`button`、`field-source-target` 或 `field-source-action`。只有真实语义无法由这些对象本体承接时，才允许保留 `generic`。
 
-1. `src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts` 的 `REQUIRED_SOURCE_CONFIGS`
-2. 同文件 `APPROVED_GENERIC_SOURCE_REASONS`（写清保留 generic 的语义理由）
+保留 `generic` 必须满足以下之一：
 
-否则 `interactionTargetTypeAudit` 会在“所有 generic targetType 都必须登记保留原因”处直接失败。
+1. 选项形状能被审计守卫推导为通用语义，例如牌池选择、埋葬牌、离场快照对象、复合上下文、模式、排序、卡牌与控制混合或定义选择。
+2. 在 `createSimpleChoice` 配置里显式声明 `genericIntent`，且意图属于上述通用语义。
+
+禁止再给单个 `sourceId` 增加 generic 白名单或逐牌理由表。`REQUIRED_SOURCE_CONFIGS` 只用于确实需要额外锁定 targetType / autoRefresh / responseValidationMode 的非共享特殊交互；它不能用来证明 `generic` 合法。若 `generic` 带有 `baseIndex`、`minionUid`、`sourceUid` 等场上实体字段，却不能归入通用语义，必须改成对象本体入口或拆步骤。
 
 ## 多 agent 使用建议
 

@@ -126,6 +126,19 @@ metadata:
 - **FxLayer**：通用渲染层组件，查注册表获取 renderer 并渲染，自动传递 `onImpact` 回调
 - **FxRenderer**：适配器组件，将 FxEvent 参数映射为底层动画组件 props
 - **FeedbackPack**：反馈包，将音效（`FxSoundConfig`）和震动（`FxShakeConfig`）与视觉特效统一声明
+- **FxSurface**：具名本地坐标空间，例如棋盘、牌桌、玩家托盘或 UI overlay；无地图游戏也必须注册 surface，不能把 `screen` 坐标当作默认架构。
+- **FxAnchorSnapshot**：FX 生成时冻结的来源 / 目标锚点快照，包含 surface-local box、center、anchor kind 和 entity ref；一次性 FX 播放期间只读快照，不再追业务 DOM。
+
+### FX Surface / Anchor Snapshot（强制）
+
+- **游戏 UI 注册锚点**：Board / table UI 通过 `useFxAnchorRegistry(surfaceId, surfaceKind)` 注册 surface 和可见对象锚点。锚点代表真实可见对象，例如单位、法师、基地、行动卡、附件槽、token、玩家面板或计分区。
+- **生成时冻结坐标**：召唤、攻击投射、命中、移动、推拉、传送、直接伤害、力量浮字和 VP 飞行等一次性特效，默认在 `fxBus.push` 前解析 `sourceSnapshot` / `targetSnapshot`，并同时写入 `ctx` 与 `params`。renderer / preset 只消费快照和调参。
+- **禁止 renderer 查业务 DOM**：游戏侧 `fxSetup.ts` / `fxRenderers.tsx` 不得用 `querySelector`、游戏私有 `data-testid` 或业务 DOM 结构去临时寻找对象位置。需要的位置必须由 Board 注册锚点并在事件消费层解析。
+- **缺快照 fail-close**：一次性 FX 需要对象本体位置但快照缺失时，必须显式跳过、报告诊断，或使用已声明的旧 adapter。禁止静默退回整格中心、牌桌中心、最近对象或随机 screen 坐标。
+- **tracking 显式声明**：持续光环、buff、蓄力环、附着状态等确实要跟随宿主的特效，才允许使用 `tracking` 模式，并必须声明宿主消失后的完成、转移或结束策略。投射物、命中爆发、召唤光柱和飘字不得隐式切成 live tracking。
+- **旧坐标是迁移层**：`ctx.cell`、`ctx.screenPos` 和游戏内旧 `position` 只能作为兼容 adapter；新增游戏或新增主特效不得再建立游戏私有坐标系统。
+- **百游戏接入边界**：新游戏接入 FX 的默认工作量应是“注册 surface / anchor + 配 cue 参数 / tuning”，不得要求修改共享 renderer、复制其它游戏 renderer，或新建一套坐标解析框架。
+- **旧游戏迁移边界**：旧游戏接入 FX surface / anchor snapshot 时，只能按 [`shared-refactor-guard`](shared-refactor-guard.md) 做兼容迁移；未获明确授权不得重做该游戏 UI、特效语义、参数节奏或玩家流程。
 
 ### 反馈包系统（FeedbackPack）（强制）
 
@@ -189,7 +202,7 @@ fxBus.pushSequence([
 |------|---------|------|
 | SummonerWars | ✅ 已接入 | cell 空间定位，4 个 cue（召唤/充能/气浪/受伤） |
 | DiceThrone | ✅ 已接入 | screen 空间定位，6 个 cue（伤害/DoT/治疗/状态/Token/CP） |
-| SmashUp | ✅ 已接入 | screen 空间定位，4 个 cue（力量浮字/行动卡展示/VP飞行/基地占领） |
+| SmashUp | ✅ 已接入 | table anchor snapshot + screen 兼容，4 个 cue（力量浮字/行动卡展示/VP飞行/基地占领） |
 
 ---
 

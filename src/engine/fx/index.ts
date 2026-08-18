@@ -26,6 +26,14 @@ export type {
   FxCue,
   FxSpace,
   FxCellCoord,
+  FxSurfaceId,
+  FxSurfaceKind,
+  FxAnchorKind,
+  FxAnchorMode,
+  FxAnchorRef,
+  FxSurfaceBox,
+  FxAnchorSnapshot,
+  FxAnchorRegistration,
   FxContext,
   FxQuality,
   FxAreaPolicy,
@@ -42,6 +50,12 @@ export type {
   FxShakeConfig,
   FeedbackPack,
 } from './types';
+
+export {
+  useFxAnchorRegistry,
+  fxAnchorRef,
+  type FxAnchorRegistry,
+} from './anchors';
 
 export {
   resolveFxQuality,

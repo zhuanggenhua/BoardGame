@@ -46,6 +46,11 @@ function lerpFrame(a: typeof KEYFRAMES[0], b: typeof KEYFRAMES[0], t: number) {
     };
 }
 
+function clampProgress(progress: number): number {
+    if (!Number.isFinite(progress)) return 1;
+    return Math.max(0, Math.min(progress, 1));
+}
+
 // 震动容器组件 - 包裹子元素并在触发时震动
 export const ShakeContainer = ({
     children,
@@ -73,14 +78,16 @@ export const ShakeContainer = ({
         const el = elRef.current;
         if (!el) return;
 
-        if (progress >= 1) {
+        const safeProgress = clampProgress(progress);
+
+        if (safeProgress >= 1) {
             el.style.transform = '';
             return;
         }
 
         // 根据 progress 找到当前在哪两个关键帧之间
         const totalFrames = KEYFRAMES.length - 1;
-        const rawIdx = progress * totalFrames;
+        const rawIdx = safeProgress * totalFrames;
         const idx = Math.min(Math.floor(rawIdx), totalFrames - 1);
         const localT = rawIdx - idx;
 

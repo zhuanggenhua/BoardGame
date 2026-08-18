@@ -27,7 +27,6 @@ import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import type { SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
-import { getCardDef } from '../data/cards';
 import {
     SHAYU_TRIGGER_CONTRACT,
     type BaseChoice,
@@ -48,11 +47,17 @@ type SharksDestroyContext = PromptContext & {
     destroyerId?: PlayerId;
     sourceDefId?: string;
     sourceKind?: 'action' | 'nonAction';
-    fieldSource?: {
+};
+
+type SharksMegalodonBeforeScoringContext = PromptContext & {
+    source: {
         uid: string;
         defId: string;
         baseIndex: number;
     };
+    title: string;
+    targets: MinionTarget[];
+    destroyerId: PlayerId;
 };
 
 type SharksBaseThenDestroyContext = PromptContext & {
@@ -168,62 +173,26 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
     sourceId: 'sharks_destroy_prompt',
     interactionSourceIds: [
         'sharks_megalodon',
-        'sharks_megalodon_before_scoring',
         'sharks_torn_apart',
         'sharks_feeding_frenzy',
         'sharks_freakin_laser_beam',
         'sharks_great_white_destroy',
     ],
-    buildInteraction: (context) => {
-        if (context.fieldSource) {
-            const sourceName = getCardDef(context.fieldSource.defId)?.name ?? context.fieldSource.defId;
-            return createAbilityRuntimeSimpleChoice(
-                `${context.sourceId}_${context.now}`,
-                context.playerId,
-                context.title,
-                [
-                    ...(context.optional ? [createSkipOption()] : []),
-                    ...buildFieldSourceTargetOptions(
-                        {
-                            type: 'minion',
-                            uid: context.fieldSource.uid,
-                            defId: context.fieldSource.defId,
-                            baseIndex: context.fieldSource.baseIndex,
-                        },
-                        context.targets.map(target => ({
-                            type: 'minion' as const,
-                            uid: target.uid,
-                            defId: target.defId,
-                            baseIndex: target.baseIndex,
-                            label: target.label,
-                        })),
-                        { sourceLabel: sourceName },
-                    ),
-                ],
-                buildFieldSourceTargetPromptConfig({
-                    sourceId: context.sourceId,
-                    autoResolveIfSingle: false,
-                    autoRefresh: 'field',
-                    responseValidationMode: 'live',
-                }),
-            );
-        }
-        return createAbilityRuntimeSimpleChoice(
-            `${context.sourceId}_${context.now}`,
-            context.playerId,
-            context.title,
-            [
-                ...(context.optional ? [createSkipOption()] : []),
-                ...buildMinionTargetOptions(context.targets, {
-                    state: context.matchState.core,
-                    sourcePlayerId: context.playerId,
-                    sourceKind: context.sourceKind ?? 'action',
-                    effectType: 'destroy',
-                }),
-            ],
-            { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
-        );
-    },
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        [
+            ...(context.optional ? [createSkipOption()] : []),
+            ...buildMinionTargetOptions(context.targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceKind: context.sourceKind ?? 'action',
+                effectType: 'destroy',
+            }),
+        ],
+        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
+    ),
     onResolve: (args) => {
         const { context, state, playerId, value, timestamp } = args;
         const choice = resolveSharksDestroyChoice(value as SharksDestroyChoice);
@@ -344,6 +313,60 @@ const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyCo
                     sourceControllerId: context.sourceDefId ? playerId : undefined,
                     sourceKind: context.sourceKind,
                 })),
+        };
+    },
+});
+
+const sharksMegalodonBeforeScoringPromptProgram = createPromptProgram<SharksMegalodonBeforeScoringContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'sharks_megalodon_before_scoring',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `sharks_megalodon_before_scoring_${context.source.uid}_${context.now}`,
+        context.playerId,
+        context.title,
+        [
+            createSkipOption(),
+            ...buildFieldSourceTargetOptions(
+                {
+                    type: 'minion',
+                    uid: context.source.uid,
+                    defId: context.source.defId,
+                    baseIndex: context.source.baseIndex,
+                },
+                context.targets.map(target => ({
+                    type: 'minion' as const,
+                    uid: target.uid,
+                    defId: target.defId,
+                    baseIndex: target.baseIndex,
+                    label: target.label,
+                })),
+            ),
+        ],
+        buildFieldSourceTargetPromptConfig({
+            sourceId: 'sharks_megalodon_before_scoring',
+            autoResolveIfSingle: false,
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+        }),
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = resolveSharksDestroyChoice(value as SharksDestroyChoice);
+        if (choice.skip) return { events: [] };
+        if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
+        return {
+            events: destroyTarget(state, {
+                minionUid: choice.minionUid,
+                defId: choice.defId,
+                baseIndex: choice.baseIndex,
+            }, {
+                destroyerId: context.destroyerId ?? playerId,
+                reason: 'sharks_megalodon_before_scoring',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'sharks_megalodon',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.source.baseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     },
 });
@@ -727,27 +750,22 @@ function sharksMegalodonBeforeScoring(ctx: TriggerContext) {
     const source = ctx.sourceCardUid
         ? ctx.state.bases[baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid)
         : undefined;
+    if (!source) return { events: [] };
     const playerId = source?.controller ?? ctx.sourceControllerId ?? ctx.playerId;
     const targets = collectPowerTargets(ctx.state, 3, baseIndex, ctx.sourceCardUid);
     if (targets.length === 0) return { events: [] };
-    return runtimeToTriggerResult(executeAbilityProgram(sharksDestroyPromptProgram, {
+    return runtimeToTriggerResult(executeAbilityProgram(sharksMegalodonBeforeScoringPromptProgram, {
         matchState: ctx.matchState,
         playerId,
         now: ctx.now,
-        sourceId: 'sharks_megalodon_before_scoring',
         title: '巨齿鲨：基地计分前，你可以消灭这里一个力量≤3的随从',
         targets,
-        optional: true,
         destroyerId: playerId,
-        sourceDefId: 'sharks_megalodon',
-        sourceKind: 'nonAction',
-        fieldSource: source
-            ? {
-                uid: source.uid,
-                defId: source.defId,
-                baseIndex,
-            }
-            : undefined,
+        source: {
+            uid: source.uid,
+            defId: source.defId,
+            baseIndex,
+        },
     }), ctx.matchState);
 }
 

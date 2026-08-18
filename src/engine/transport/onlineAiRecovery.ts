@@ -725,11 +725,37 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
         return null;
     }
 
-    return buildForceEndTurnResolution({
+    const resolution = buildForceEndTurnResolution({
         playerId,
         suffix: buildForceEndTurnFollowUpSuffix(authoritativeState, playerId),
         commands: [{ type: advancePhaseCommandType, payload: {} }],
     });
+    const phase = typeof authoritativeState.sys?.phase === 'string'
+        ? authoritativeState.sys.phase
+        : '';
+    if (isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase({
+        state: authoritativeState,
+        phase,
+        engineConfig: args.engineConfig,
+    })) {
+        const probeCandidate: ForceEndTurnStalledAiResolution = {
+            playerId,
+            reason: 'active-turn',
+            legalActionOnly: true,
+            resolution,
+        };
+        const forceAllowed = args.engineConfig?.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+            state: authoritativeState,
+            phase,
+            previousCandidate: probeCandidate,
+            nextCandidate: probeCandidate,
+        }) === true;
+        if (!forceAllowed) {
+            return null;
+        }
+    }
+
+    return resolution;
 }
 
 export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
@@ -1005,6 +1031,28 @@ export function resolveForceEndTurnForStalledAi(args: {
         const interactionPlayerId = String(visibleCurrent.playerId);
         if (args.seatControllers[interactionPlayerId]?.type === 'human') {
             return null;
+        }
+        const responseWindow = resolveResponseWindowCurrent(args.sharedState);
+        const responderId = responseWindow?.currentResponderId;
+        if (responseWindow && responderId && args.seatControllers[responderId]?.type === 'human') {
+            const interactionId = typeof visibleCurrent.id === 'string' && visibleCurrent.id.length > 0
+                ? visibleCurrent.id
+                : 'unknown-visible-interaction';
+            const interactionData = visibleCurrent.data as { sourceId?: unknown } | undefined;
+            const sourceId = typeof interactionData?.sourceId === 'string' && interactionData.sourceId.length > 0
+                ? interactionData.sourceId
+                : 'unknown-source';
+            const forceCloseWindow = buildForceCloseHumanResponseWindowDuringAiPhase({
+                sharedState: args.sharedState,
+                seatControllers: args.seatControllers,
+                responseWindow,
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+                suffixDetail: `blocked-visible-interaction:${interactionId}:${sourceId}`,
+            });
+            if (forceCloseWindow?.playerId === interactionPlayerId) {
+                return forceCloseWindow;
+            }
         }
         const visibleInteractionRecovery = buildForceEndTurnFromInteractionState(
             args.sharedState as MatchState<unknown>,

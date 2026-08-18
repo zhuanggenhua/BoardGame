@@ -216,6 +216,8 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 totalPlayers={Object.keys(props.players).length}
                 rematchState={props.rematchState}
                 onVote={props.onRematchVote}
+                backdropClassName="bg-transparent"
+                contentWrapperClassName="max-[1023px]:max-w-[30rem]"
                 renderContent={(contentProps) => (
                     <DiceThroneEndgameContent
                         {...contentProps}
@@ -227,7 +229,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 renderActions={(actionsProps) => (
                     <RematchActions
                         {...actionsProps}
-                        className="mt-4"
+                        className="mt-4 flex-wrap justify-center max-[1023px]:mt-2 max-[1023px]:gap-2"
                         renderButton={renderDiceThroneButton}
                     />
                 )}

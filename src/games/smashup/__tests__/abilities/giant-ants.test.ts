@@ -105,8 +105,8 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerModifier: 2 }),
-                        makeMinion('m2', 'test_other', '0', 2, { powerModifier: 1 }),
+                        makeMinion('m1', 'giant_ant_worker', '0', 3, { powerCounters: 2 }),
+                        makeMinion('m2', 'test_other', '0', 2, { powerCounters: 1 }),
                     ],
                     ongoingActions: [],
                 },
@@ -297,8 +297,11 @@ describe('巨蚁派系能力', () => {
             defaultTestRandom,
         );
         const sourcePrompt = getSimpleChoicePrompt(playResult.finalState, 'giant_ant_under_pressure_choose_source');
+        expect(sourcePrompt?.targetType).toBe('field-source-action');
 
         const sourceOption = getPromptOption(sourcePrompt, o => o?.value?.minionUid === 'm1', 'source minion');
+        expect(sourceOption.value?.fieldInteractionType).toBe('source-action');
+        expect(sourceOption.value?.sourceUid).toBe('m1');
         const chooseSourceResult = respondToPrompt(
             playResult.finalState,
             sourceOption.id,
@@ -1016,7 +1019,7 @@ describe('巨蚁派系能力', () => {
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
                         makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
@@ -1060,7 +1063,7 @@ describe('巨蚁派系能力', () => {
             bases: [{
                 defId: 'base_a',
                 minions: [
-                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
+                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
                 ],
                 ongoingActions: [],
             }],
@@ -1145,7 +1148,7 @@ describe('巨蚁派系能力', () => {
                 minions: [
                     makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 }),
                     makeMinion('m2', 'cthulhu_minion', '0', 1, { powerModifier: 0 }),
-                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 1 }),
+                    makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
                 ],
                 ongoingActions: [],
             }],
@@ -1457,7 +1460,10 @@ describe('巨蚁 POD 行为', () => {
         );
 
         const prompt1 = getSimpleChoicePrompt(talentResult.finalState, 'giant_ant_soldier_pod_choose_source');
+        expect(prompt1?.targetType).toBe('field-source-action');
         const srcOpt = getPromptOption(prompt1, option => option?.value?.minionUid === 'src', 'Soldier POD source minion option');
+        expect(srcOpt.value?.fieldInteractionType).toBe('source-action');
+        expect(srcOpt.value?.sourceUid).toBe('src');
         const chooseSource = respondToPrompt(talentResult.finalState, srcOpt.id, '0', defaultTestRandom);
 
         const prompt2 = getSimpleChoicePrompt(chooseSource.finalState, 'giant_ant_soldier_pod_choose_target');
@@ -1467,6 +1473,61 @@ describe('巨蚁 POD 行为', () => {
         const base = chooseTarget.finalState.core.bases[0];
         expect(base.minions.find(m => m.uid === 'src')?.powerCounters).toBe(0);
         expect(base.minions.find(m => m.uid === 'dst')?.powerCounters).toBe(1);
+    });
+
+    it('Killer Queen（POD）：混合检索按钮和场上随从本体选择时使用随从直选交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-ant', 'giant_ant_worker_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('queen', 'giant_ant_killer_queen_pod', '0', 4, { powerCounters: 0, playedThisTurn: false }),
+                        makeMinion('played', 'giant_ant_worker_pod', '0', 1, { powerCounters: 0, playedThisTurn: true }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const talentResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'queen', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(talentResult.finalState, 'giant_ant_killer_queen_pod_choose');
+        expect(prompt?.targetType).toBe('minion');
+
+        const searchOption = getPromptOption(prompt, option => option?.value?.action === 'search_deck', 'Killer Queen POD search button');
+        expect(searchOption.displayMode).toBe('button');
+
+        const minionOption = getPromptOption(prompt, option => option?.value?.minionUid === 'played', 'Killer Queen POD played minion option');
+        expect(minionOption.displayMode).toBe('card');
+        expect(minionOption.value?.baseIndex).toBe(0);
+
+        const addCountersResult = respondToPrompt(talentResult.finalState, minionOption.id, '0', defaultTestRandom);
+        const counterEvents = addCountersResult.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
+        expect(counterEvents).toHaveLength(2);
+        expect(counterEvents.some(event => event.payload.minionUid === 'played')).toBe(true);
+        expect(counterEvents.some(event => event.payload.minionUid === 'queen')).toBe(true);
+
+        const searchTalentResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'queen', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const searchPrompt = getSimpleChoicePrompt(searchTalentResult.finalState, 'giant_ant_killer_queen_pod_choose');
+        const searchButton = getPromptOption(searchPrompt, option => option?.value?.action === 'search_deck', 'Killer Queen POD retained search button');
+        const searchResult = respondToPrompt(searchTalentResult.finalState, searchButton.id, '0', defaultTestRandom);
+
+        expect(searchResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(searchResult.finalState.core.players['0']?.hand.some(card => card.uid === 'deck-ant')).toBe(true);
     });
 
     it('Gimme the Prize（POD）：通过 prompt 链给两个己方随从分别加 2 和加 1', () => {

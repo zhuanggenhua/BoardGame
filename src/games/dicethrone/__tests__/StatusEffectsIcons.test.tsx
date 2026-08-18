@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { render, waitFor, fireEvent } from '@testing-library/react';
 
 import { DICETHRONE_STATUS_ATLAS_IDS, TOKEN_IDS } from '../domain/ids';
+import { RESOURCE_IDS } from '../domain/resources';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
 import { GUNSLINGER_SFX_BOUNTY } from '../heroes/gunslinger/abilities';
@@ -24,6 +25,7 @@ import {
     loadStatusAtlases,
     type StatusIconAtlasConfig,
 } from '../ui/statusEffects';
+import { OpponentHeader } from '../ui/OpponentHeader';
 import {
     clearGameAssetBaseOverrides,
     getAssetsBaseUrl,
@@ -471,6 +473,57 @@ describe('StatusEffectsIcons', () => {
         fireEvent.click(getByTestId(`test-token-${TOKEN_IDS.TAIJI}-hit-target`));
 
         expect(clicked).toEqual([TOKEN_IDS.EVASIVE, TOKEN_IDS.TAIJI]);
+    });
+
+    it('敌人悬浮头像条的 HP/CP 应显示为圆点加数字，不再是方块标签', () => {
+        const html = renderToStaticMarkup(
+            <OpponentHeader
+                opponent={{
+                    characterId: 'monk',
+                    resources: {
+                        [RESOURCE_IDS.HP]: 50,
+                        [RESOURCE_IDS.CP]: 0,
+                    },
+                    hand: [],
+                    tokens: {},
+                    statusEffects: {},
+                    damageShields: [],
+                } as any}
+                playerId="1"
+                opponentName="AI 2 号位"
+                viewMode="self"
+                isOpponentShaking={false}
+                shouldAutoObserve={false}
+                onToggleView={() => {}}
+                testId="dt-top-header-1"
+            />
+        );
+
+        expect(html).toContain('data-testid="dt-top-header-1-hp-dot"');
+        expect(html).toContain('data-testid="dt-top-header-1-cp-dot"');
+        expect(html).toContain('aria-label="HP 50"');
+        expect(html).toContain('aria-label="CP 0"');
+        expect(html).toContain('>50</span>');
+        expect(html).toContain('>0</span>');
+        expect(html).not.toContain('>HP</span>');
+        expect(html).not.toContain('>CP</span>');
+    });
+
+    it('tiny token 右下数量角标应保持可读字号和前景层级', () => {
+        const html = renderToStaticMarkup(
+            <TokenBadge
+                tokenId={TOKEN_IDS.EVASIVE}
+                amount={3}
+                maxAmount={5}
+                size="tiny"
+            />
+        );
+
+        expect(html).toContain('3/5');
+        expect(html).toContain('text-[0.56vw]');
+        expect(html).toContain('z-30');
+        expect(html).toContain('border-white/80');
+        expect(html).not.toContain('text-[0.4vw]');
     });
 
     it('会把 game-data 骰图路径折算成 dice-sprite 资源 key', () => {

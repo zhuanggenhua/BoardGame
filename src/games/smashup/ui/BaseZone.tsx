@@ -956,13 +956,27 @@ export const BaseZone: React.FC<{
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* 基地可选时的脉冲发光叠层 */}
+                    {/* 基地可选时的本体描边：必须能在整屏截图里被玩家一眼识别。 */}
                     {isSelectable && (
                         <motion.div
-                            className="absolute inset-0 pointer-events-none z-25 rounded-sm"
-                            animate={{ opacity: [0.1, 0.3, 0.1] }}
+                            data-testid={`su-base-target-highlight-${baseIndex}`}
+                            className="absolute pointer-events-none rounded-[0.35vw]"
+                            animate={{
+                                opacity: [0.78, 1, 0.78],
+                                boxShadow: [
+                                    '0 0 0.55vw rgba(34,197,94,0.92), 0 0 1.65vw rgba(34,197,94,0.62)',
+                                    '0 0 0.9vw rgba(74,222,128,1), 0 0 2.5vw rgba(34,197,94,0.82)',
+                                    '0 0 0.55vw rgba(34,197,94,0.92), 0 0 1.65vw rgba(34,197,94,0.62)',
+                                ],
+                            }}
                             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                            style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, transparent 70%)' }}
+                            style={{
+                                inset: '-0.38vw',
+                                zIndex: 35,
+                                border: '0.22vw solid rgba(134,239,172,0.98)',
+                                outline: '0.12vw solid rgba(22,163,74,0.88)',
+                                background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(250,204,21,0.16))',
+                            }}
                         />
                     )}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { GameTransportServer, type GameEngineConfig } from '../server';
+import { canManualForceAdvanceAfterConfirmedRoll, GameTransportServer, type GameEngineConfig } from '../server';
 import {
     buildAiProgressMarker,
     resolveCurrentPlayerId,
@@ -2131,7 +2131,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         expect(candidate?.playerId).toBe('1');
         expect(candidate?.fingerprintHint).toContain('display-only-bonus:1:main1:bounty-hunter-display-1');
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+            { type: 'CONFIRM_ROLL', payload: {} },
         ]);
     });
 
@@ -3831,7 +3831,7 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
-    it('房主点击强制结束 AI 阶段时，若 AI 回合里轮到 human 响应，应使用手动候选先关窗再推进', async () => {
+    it('房主点击强制结束 AI 阶段时，若 AI 回合里轮到 human 响应，应先关窗并进入攻击掷骰但不裸跳过攻击阶段', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const matchID = 'match-manual-force-end-ai-human-response-window';
@@ -3936,6 +3936,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         kind: 'confirm-roll',
                         label: '确认骰面',
                         commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                        metadata: { rollConfirmScope: 'main-roll' },
                     },
                 },
             })
@@ -4042,11 +4043,180 @@ describe('GameTransportServer（离座与重连）', () => {
             });
 
             expect(ack).toEqual({ accepted: true });
-            expect(executed).toEqual(['SYS_RESPONSE_WINDOW_FORCE_CLOSE', 'ADVANCE_PHASE', 'ROLL_DICE', 'CONFIRM_ROLL', 'ADVANCE_PHASE']);
+            expect(executed).toEqual(['SYS_RESPONSE_WINDOW_FORCE_CLOSE', 'ADVANCE_PHASE', 'ROLL_DICE', 'CONFIRM_ROLL']);
             expect(match.state.sys.responseWindow?.current).toBeUndefined();
-            expect(match.state.sys.phase).toBe('main2');
+            expect(match.state.sys.phase).toBe('offensiveRoll');
+            expect(match.state.core.rollConfirmed).toBe(true);
             expect(match.state.core.activePlayerId).toBe('1');
             expect(hasEvent(socket, 'error')).toBe(false);
+        } finally {
+            executeSpy.mockRestore();
+            resolutionSpy.mockRestore();
+        }
+    });
+
+    it('临时骰确认不得取得“确认后强推阶段”资格，避免攻击掷骰被连续跳过', async () => {
+        expect(canManualForceAdvanceAfterConfirmedRoll({
+            actionKind: 'confirm-roll',
+            metadata: { rollConfirmScope: 'bonus-roll' },
+        })).toBe(false);
+        expect(canManualForceAdvanceAfterConfirmedRoll({
+            actionKind: 'confirm-roll',
+            metadata: { rollConfirmScope: 'main-roll' },
+        })).toBe(true);
+        expect(canManualForceAdvanceAfterConfirmedRoll({
+            actionKind: 'confirm-roll',
+            metadata: undefined,
+        })).toBe(false);
+
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const matchID = 'match-manual-bonus-roll-confirm-no-phase-advance';
+        const metadata = createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' });
+
+        await storage.createMatch(matchID, {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'main1',
+                pendingBonusDiceSettlement: {
+                    id: 'bonus-main1',
+                    attackerId: '1',
+                    displayOnly: true,
+                    dice: [{ index: 0, value: 4 }],
+                },
+            }),
+            metadata,
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('dicethrone')],
+            onlineAiRecoveryTickMs: 0,
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (id: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai'; policyId?: string }>,
+                options?: { reuseExecutionLock?: boolean; allowManualImmediateAiContinuation?: boolean },
+            ) => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch(matchID);
+        const progressMarkerBeforeRecovery = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        const executed: string[] = [];
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch');
+        resolutionSpy
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'manual-bonus-roll-confirm',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'bonus-die:confirm',
+                        kind: 'confirm-roll',
+                        label: '确认当前奖励骰',
+                        commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                        metadata: { rollConfirmScope: 'bonus-roll', bonusDiceSettlementId: 'bonus-main1' },
+                    },
+                },
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
+            activeMatch,
+            playerID,
+            commandType,
+            payload,
+        ) => {
+            expect(playerID).toBe('1');
+            expect(payload).toEqual({});
+            executed.push(commandType);
+
+            if (commandType === 'CONFIRM_ROLL') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        pendingBonusDiceSettlement: undefined,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: { nextId: 2 },
+                    },
+                };
+                activeMatch.stateID += 1;
+                return true;
+            }
+
+            if (commandType === 'ADVANCE_PHASE') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'offensiveRoll',
+                        eventStream: { nextId: 3 },
+                    },
+                };
+                activeMatch.stateID += 1;
+                return true;
+            }
+
+            return false;
+        });
+
+        try {
+            await serverInternal.runOnlineAiRecoverySequence(
+                match,
+                {
+                    key: 'manual-bonus-roll-confirm',
+                    firstSeenAt: Date.now(),
+                    autoSubmittedAt: Date.now(),
+                    lastReportedFailureReason: null,
+                    failureCount: 0,
+                },
+                {
+                    playerId: '1',
+                    reason: 'active-turn',
+                    legalActionOnly: true,
+                    fingerprintHint: 'manual-bonus-roll-confirm',
+                    resolution: {
+                        playerId: '1',
+                        attemptKey: 'manual-bonus-roll-confirm',
+                        source: 'local-ai',
+                        action: {
+                            actionId: 'manual-bonus-roll-confirm',
+                            kind: 'manual-immediate-ai-continuation',
+                            label: '临时骰确认测试',
+                            commands: [],
+                        },
+                    },
+                },
+                progressMarkerBeforeRecovery,
+                { '1': { type: 'local-ai' } },
+                { allowManualImmediateAiContinuation: true },
+            );
+
+            expect(executed).toEqual(['CONFIRM_ROLL', 'ADVANCE_PHASE']);
+            expect(match.state.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(match.state.sys.phase).toBe('offensiveRoll');
         } finally {
             executeSpy.mockRestore();
             resolutionSpy.mockRestore();
@@ -14938,7 +15108,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(candidate?.playerId).toBe('1');
         expect(candidate?.fingerprintHint).toContain('display-only-bonus:1:main2:display-only-bonus-visible-confirm');
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+            { type: 'CONFIRM_ROLL', payload: {} },
         ]);
         expect(feedbackReporter).not.toHaveBeenCalled();
     });
@@ -23214,6 +23384,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         kind: 'confirm-roll',
                         label: '合法确认防御骰',
                         commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                        metadata: { rollConfirmScope: 'main-roll' },
                     }];
                 }
 
@@ -23427,6 +23598,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         kind: 'confirm-roll',
                         label: '合法确认选目标骰',
                         commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                        metadata: { rollConfirmScope: 'main-roll' },
                     }];
                 }
 
@@ -24736,6 +24908,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         kind: 'confirm-roll',
                         label: '确认骰面',
                         commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                        metadata: { rollConfirmScope: 'main-roll' },
                     },
                 },
             })
@@ -25254,7 +25427,7 @@ describe('GameTransportServer（离座与重连）', () => {
             commandType,
         ) => {
             expect(playerID).toBe('1');
-            expect(commandType).toBe('SKIP_BONUS_DICE_REROLL');
+            expect(commandType).toBe('CONFIRM_ROLL');
 
             activeMatch.state = {
                 ...activeMatch.state,
@@ -25277,7 +25450,7 @@ describe('GameTransportServer（离座与重连）', () => {
             await nextTick();
 
             expect(executeSpy.mock.calls.map(([, , commandType]) => commandType)).toEqual([
-                'SKIP_BONUS_DICE_REROLL',
+                'CONFIRM_ROLL',
             ]);
             expect(match.state.core.pendingBonusDiceSettlement).toBeUndefined();
             expect(match.state.sys.phase).toBe('main1');

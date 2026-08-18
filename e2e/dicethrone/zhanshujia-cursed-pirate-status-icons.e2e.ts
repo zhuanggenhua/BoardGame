@@ -90,7 +90,7 @@ const injectVisibleNewHeroStatusIcons = async (match: DTMatchSetup) => {
         ...host,
         tokens: {
             ...asRecord(host.tokens),
-            [TOKEN_IDS.TACTICAL_ADVANTAGE]: 1,
+            [TOKEN_IDS.TACTICAL_ADVANTAGE]: 3,
         },
         statusEffects: {
             ...asRecord(host.statusEffects),
@@ -221,9 +221,15 @@ test.describe('DiceThrone 战术家 / 咒缚海盗状态图标', () => {
 
             const hostSprites = await waitForIconBadges(match.hostPage, '[data-tutorial-id="status-tokens"]', 2);
             const guestSprites = await waitForIconBadges(match.guestPage, '[data-tutorial-id="status-tokens"]', 4);
+            const guestEnemyHeader = match.guestPage.locator('[data-testid="dt-top-header-1"]');
+            const guestEnemyToken = guestEnemyHeader.getByTestId(`dt-player-0-token-${TOKEN_IDS.TACTICAL_ADVANTAGE}`);
 
             expect(hostSprites).toHaveLength(2);
             expect(guestSprites).toHaveLength(4);
+            await expect(guestEnemyHeader.getByTestId('dt-top-header-1-hp-dot')).toBeVisible();
+            await expect(guestEnemyHeader.getByTestId('dt-top-header-1-cp-dot')).toBeVisible();
+            await expect(guestEnemyToken).toHaveAttribute('data-token-amount', '3');
+            await expect(guestEnemyToken).toContainText('3');
             for (const sprite of [...hostSprites, ...guestSprites]) {
                 expect(Boolean(sprite.imageSrc) || sprite.backgroundImage !== 'none').toBe(true);
                 if (!sprite.imageSrc) {
@@ -239,6 +245,9 @@ test.describe('DiceThrone 战术家 / 咒缚海盗状态图标', () => {
             });
             await match.guestPage.locator('[data-tutorial-id="status-tokens"]').screenshot({
                 path: join(statusIconEvidenceDir, 'guest-status-token-sprites.png'),
+            });
+            await guestEnemyHeader.screenshot({
+                path: join(statusIconEvidenceDir, 'guest-enemy-header-hp-cp-token-count.png'),
             });
         } finally {
             await cleanupDTMatch(match);

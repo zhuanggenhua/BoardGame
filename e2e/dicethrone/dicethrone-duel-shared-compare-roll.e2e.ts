@@ -133,6 +133,10 @@ const expectCompareRollMainResultLayer = async (page: Page, timeout = 15000): Pr
         const diceTrayNode = document.querySelector<HTMLElement>('[data-testid="dicethrone-2d-dice-tray"]');
         const panelRect = panelNode?.getBoundingClientRect();
         const diceTrayRect = diceTrayNode?.getBoundingClientRect();
+        const panelCenterX = panelRect ? panelRect.left + panelRect.width / 2 : null;
+        const panelCenterY = panelRect ? panelRect.top + panelRect.height / 2 : null;
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
         return {
             hasPanel: Boolean(panelNode),
             hasDiceTray: Boolean(diceTrayNode),
@@ -142,12 +146,20 @@ const expectCompareRollMainResultLayer = async (page: Page, timeout = 15000): Pr
                 && panelRect.bottom > diceTrayRect.top
                 && panelRect.top < diceTrayRect.bottom),
             panelInSeat: Boolean(panelNode?.closest('[data-player-seat-anchor]')),
+            centerOffsetX: panelCenterX == null ? null : Math.abs(panelCenterX - viewportCenterX),
+            centerOffsetY: panelCenterY == null ? null : Math.abs(panelCenterY - viewportCenterY),
+            centerToleranceX: Math.max(24, window.innerWidth * 0.02),
+            centerToleranceY: Math.max(24, window.innerHeight * 0.02),
         };
     });
     expect(layout.hasPanel).toBe(true);
     expect(layout.hasDiceTray).toBe(true);
     expect(layout.overlapsDiceTray).toBe(false);
     expect(layout.panelInSeat).toBe(false);
+    expect(layout.centerOffsetX).not.toBeNull();
+    expect(layout.centerOffsetY).not.toBeNull();
+    expect(layout.centerOffsetX!).toBeLessThanOrEqual(layout.centerToleranceX);
+    expect(layout.centerOffsetY!).toBeLessThanOrEqual(layout.centerToleranceY);
 };
 
 const cloneCommonCard = (cardId: string): Record<string, any> => {
@@ -635,15 +647,17 @@ test('枪手 Duel compare-roll 通过右侧骰盘改骰后应从失败翻成胜�
         });
 
         await expectCompareRollMainResultLayer(guestPage);
-        await expect(guestPage.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
-        await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
+        const duelVictoryPanel = guestPage.getByTestId('compare-roll-overlay');
+        await expect(duelVictoryPanel.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
+        await expect(duelVictoryPanel.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
+        await expect(modifiedCompareDiceTray.getByTestId('compare-roll-overlay')).toHaveCount(0);
         await expectDuelDiceVisualReady(modifiedCompareDiceTray, [
             { dieButtonId: 'die-button-0', ownerId: '1', displayValue: '6', spritePathIncludes: 'dicethrone/images/gunslinger' },
             { dieButtonId: 'die-button-1', ownerId: '0', displayValue: '5', spritePathIncludes: 'dicethrone/images/monk' },
         ]);
 
         await guestPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '05-枪手Duel确认后按六比五获得胜利结果选项', { requireChineseName: true }),
+            path: getEvidenceScreenshotPath(testInfo, '05-枪手Duel胜利后主舞台弹出选择效果窗口', { requireChineseName: true }),
             fullPage: false,
         });
         await guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();
@@ -835,10 +849,12 @@ test('枪手 Duel compare-roll 可用战术优势重投右侧骰盘里的 Duel �
         });
 
         await expectCompareRollMainResultLayer(guestPage);
-        await expect(guestPage.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
-        await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
+        const tacticalAdvantageVictoryPanel = guestPage.getByTestId('compare-roll-overlay');
+        await expect(tacticalAdvantageVictoryPanel.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
+        await expect(tacticalAdvantageVictoryPanel.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
+        await expect(compareDiceTray.getByTestId('compare-roll-overlay')).toHaveCount(0);
         await guestPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, '04-Duel战术优势重投后主舞台显示胜利结果', { requireChineseName: true }),
+            path: getEvidenceScreenshotPath(testInfo, '04-Duel战术优势重投确认后主舞台弹出胜利选择效果窗口', { requireChineseName: true }),
             fullPage: false,
         });
     } finally {

@@ -230,21 +230,30 @@ function buildOptionalCounterPrompt(
     playerId: PlayerId,
     title: string,
     titleKey: string,
-    sourceId: string,
+    sourceId: 'skeletons_graveyard_counter' | 'skeletons_grave_goods_counter',
     targetMinionUid: string,
     targetBaseIndex: number,
     matchState: any,
 ) {
-    const interaction = createSimpleChoice(
-        interactionId,
-        playerId,
-        title,
-        [
-            { id: 'apply', label: '放置指示物', labelKey: 'ui.place_counter', value: { apply: true }, displayMode: 'button' as const },
-            createSkipOption(),
-        ] as any[],
-        { sourceId, targetType: 'button', titleKey },
-    );
+    const options = [
+        { id: 'apply', label: '放置指示物', labelKey: 'ui.place_counter', value: { apply: true }, displayMode: 'button' as const },
+        createSkipOption(),
+    ] as any[];
+    const interaction = sourceId === 'skeletons_graveyard_counter'
+        ? createSimpleChoice(
+            interactionId,
+            playerId,
+            title,
+            options,
+            { sourceId: 'skeletons_graveyard_counter', targetType: 'button', buttonIntent: 'confirm-known-object', titleKey },
+        )
+        : createSimpleChoice(
+            interactionId,
+            playerId,
+            title,
+            options,
+            { sourceId: 'skeletons_grave_goods_counter', targetType: 'button', buttonIntent: 'confirm-known-object', titleKey },
+        );
     (interaction.data as any).continuationContext = { targetMinionUid, targetBaseIndex };
     return queueInteraction(matchState, interaction);
 }
@@ -370,7 +379,7 @@ function skeletonsLordOfBonesTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(`skeletons_lord_of_bones_mode_${ctx.now}`, ctx.playerId, '骸骨之王：选择埋葬手牌或挖掘这里的一张埋葬牌', [
         { id: 'bury', label: '埋葬手牌', labelKey: 'ui.skeletons_lord_of_bones_mode_bury_option', value: { mode: 'bury' }, displayMode: 'button' as const },
         { id: 'uncover', label: '挖掘这里', labelKey: 'ui.skeletons_lord_of_bones_mode_uncover_option', value: { mode: 'uncover' }, displayMode: 'button' as const },
-    ], { sourceId: 'skeletons_lord_of_bones_mode', targetType: 'button', titleKey: 'ui.skeletons_lord_of_bones_mode_title' });
+    ], { sourceId: 'skeletons_lord_of_bones_mode', targetType: 'button', buttonIntent: 'mode', titleKey: 'ui.skeletons_lord_of_bones_mode_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -432,7 +441,7 @@ function skeletonsLordOfBonesOnUncovered(ctx: TriggerContext): AbilityResult {
             { id: 'apply', label: '放置 +1 指示物', labelKey: 'ui.skeletons_place_plus_one_counter_option', value: { apply: true }, displayMode: 'button' as const },
             createSkipOption(),
         ] as any[],
-        { sourceId: 'skeletons_lord_of_bones_ongoing', targetType: 'button', titleKey: 'ui.skeletons_lord_of_bones_counter_title' },
+        { sourceId: 'skeletons_lord_of_bones_ongoing', targetType: 'button', buttonIntent: 'confirm-known-object', titleKey: 'ui.skeletons_lord_of_bones_counter_title' },
     );
     (interaction.data as any).continuationContext = { targetMinionUid: ctx.buriedCardUid, targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -450,7 +459,7 @@ function skeletonsGravestonesOnUncovered(ctx: TriggerContext): AbilityResult {
             { id: 'apply', label: '放置 +1 指示物', labelKey: 'ui.skeletons_place_plus_one_counter_option', value: { apply: true }, displayMode: 'button' as const },
             createSkipOption(),
         ] as any[],
-        { sourceId: 'skeletons_gravestones_counter', targetType: 'button', titleKey: 'ui.skeletons_gravestones_counter_title' },
+        { sourceId: 'skeletons_gravestones_counter', targetType: 'button', buttonIntent: 'confirm-known-object', titleKey: 'ui.skeletons_gravestones_counter_title' },
     );
     (interaction.data as any).continuationContext = { targetMinionUid: ctx.buriedCardUid, targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -617,7 +626,7 @@ const handleSkeletonsReturnedOneUncover: InteractionHandler = (state, playerId, 
 const handleSkeletonsPlaceEmDownBase: InteractionHandler = (state, playerId, value, _data, _random, now) => {
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_place_em_down_cards_${now}`, playerId, '往下埋：选择至多三张随从，总力量 6 或更少', buildDiscardCardOptions(getDiscardMinions(state.core, playerId)), { sourceId: 'skeletons_place_em_down_cards', targetType: 'generic', multi: { min: 0, max: Math.min(3, getDiscardMinions(state.core, playerId).length) }, titleKey: 'ui.skeletons_place_em_down_cards_title' });
+    const interaction = createSimpleChoice(`skeletons_place_em_down_cards_${now}`, playerId, '往下埋：选择至多三张随从，总力量 6 或更少', buildDiscardCardOptions(getDiscardMinions(state.core, playerId)), { sourceId: 'skeletons_place_em_down_cards', targetType: 'generic', genericIntent: 'composite-context', multi: { min: 0, max: Math.min(3, getDiscardMinions(state.core, playerId).length) }, titleKey: 'ui.skeletons_place_em_down_cards_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -703,7 +712,7 @@ const handleSkeletonsSpookyScaryBase: InteractionHandler = (state, playerId, val
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
     const discard = getDiscardMinions(state.core, playerId, 3);
-    const interaction = createSimpleChoice(`skeletons_spooky_scary_card_${now}`, playerId, '诡异。可怕。：选择一张力量 3 或以下随从', buildDiscardCardOptions(discard), { sourceId: 'skeletons_spooky_scary_card', targetType: 'generic', titleKey: 'ui.skeletons_spooky_scary_card_title' });
+    const interaction = createSimpleChoice(`skeletons_spooky_scary_card_${now}`, playerId, '诡异。可怕。：选择一张力量 3 或以下随从', buildDiscardCardOptions(discard), { sourceId: 'skeletons_spooky_scary_card', targetType: 'generic', genericIntent: 'composite-context', titleKey: 'ui.skeletons_spooky_scary_card_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -828,7 +837,7 @@ const handleSkeletonsHearseFleetTarget: InteractionHandler = (state, playerId, v
         playerId,
         '灵车队伍：选择要移动的埋葬牌',
         buried,
-        { sourceId: 'skeletons_hearse_fleet_cards', targetType: 'generic', multi: { min: 0, max: buried.length }, titleKey: 'ui.skeletons_hearse_fleet_cards_title' },
+        { sourceId: 'skeletons_hearse_fleet_cards', targetType: 'generic', genericIntent: 'buried-card', multi: { min: 0, max: buried.length }, titleKey: 'ui.skeletons_hearse_fleet_cards_title' },
     );
     (interaction.data as any).continuationContext = {
         sourceBaseIndex: continuation.sourceBaseIndex,

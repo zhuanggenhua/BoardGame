@@ -11,6 +11,46 @@ async function dismissAttackShowcaseIfVisible(
     }
 }
 
+async function dispatchHarnessCommand(
+    page: import('@playwright/test').Page,
+    type: string,
+    playerId: string,
+    payload: Record<string, unknown> = {},
+): Promise<void> {
+    await page.waitForFunction(
+        () => (window as any).__BG_TEST_HARNESS__?.command?.isRegistered?.() === true,
+        { timeout: 15000 },
+    );
+
+    await page.evaluate(async ({ commandType, commandPlayerId, commandPayload }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                command?: {
+                    dispatch?: (command: {
+                        type: string;
+                        playerId: string;
+                        payload: Record<string, unknown>;
+                    }) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        if (!harness?.command?.dispatch) {
+            throw new Error('TestHarness command dispatcher not ready');
+        }
+        await harness.command.dispatch({
+            type: commandType,
+            playerId: commandPlayerId,
+            payload: commandPayload,
+        });
+    }, {
+        commandType: type,
+        commandPlayerId: playerId,
+        commandPayload: payload,
+    });
+
+    await page.waitForTimeout(300);
+}
+
 async function setupDefenseSelectionScene(
     game: GameTestContext,
     defenderCharacter: 'shadow_thief' | 'paladin',
@@ -70,81 +110,6 @@ async function setupDefenseSelectionScene(
         defenderId: '1',
         defenseAbilityId,
         rollCount: 0,
-    });
-}
-
-async function setupGunslingerDuelDirectDefenseScene(game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone');
-
-    await game.setupScene({
-        gameId: 'dicethrone',
-        player0: {
-            resources: { CP: 2, HP: 50 },
-        },
-        player1: {
-            resources: { CP: 2, HP: 50 },
-        },
-        currentPlayer: '0',
-        phase: 'defensiveRoll',
-        sys: {
-            interaction: {
-                current: null,
-                queue: [],
-            },
-            responseWindow: {
-                current: null,
-            },
-        },
-        extra: {
-            selectedCharacters: { '0': 'gunslinger', '1': 'monk' },
-            hostStarted: true,
-            rollCount: 0,
-            rollLimit: 1,
-            rollConfirmed: false,
-            pendingDamage: null,
-            dice: [
-                { id: 0, definitionId: 'gunslinger-dice', value: 1, symbol: 'bullet', symbols: ['bullet'], isKept: false },
-                { id: 1, definitionId: 'gunslinger-dice', value: 2, symbol: 'dash', symbols: ['dash'], isKept: false },
-                { id: 2, definitionId: 'gunslinger-dice', value: 3, symbol: 'bullseye', symbols: ['bullseye'], isKept: false },
-                { id: 3, definitionId: 'gunslinger-dice', value: 4, symbol: 'bullet', symbols: ['bullet'], isKept: false },
-                { id: 4, definitionId: 'gunslinger-dice', value: 5, symbol: 'dash', symbols: ['dash'], isKept: false },
-            ],
-            pendingAttack: {
-                attackerId: '1',
-                defenderId: '0',
-                isDefendable: true,
-                damage: 8,
-                bonusDamage: 0,
-                sourceAbilityId: 'fist-technique-5',
-                defenseAbilityId: 'duel',
-            },
-            activePlayerId: '0',
-        },
-    });
-
-    await expect.poll(async () => {
-        const state = await game.getState();
-        return {
-            phase: state?.sys?.phase ?? null,
-            activePlayerId: state?.core?.activePlayerId ?? null,
-            defenderId: state?.core?.pendingAttack?.defenderId ?? null,
-            defenseAbilityId: state?.core?.pendingAttack?.defenseAbilityId ?? null,
-            rollCount: state?.core?.rollCount ?? null,
-            rollConfirmed: state?.core?.rollConfirmed ?? null,
-            interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-            responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
-            pendingDamageId: state?.core?.pendingDamage?.id ?? null,
-        };
-    }, { timeout: 10000 }).toMatchObject({
-        phase: 'defensiveRoll',
-        activePlayerId: '0',
-        defenderId: '0',
-        defenseAbilityId: 'duel',
-        rollCount: 0,
-        rollConfirmed: false,
-        interactionKind: null,
-        responseWindowId: null,
-        pendingDamageId: null,
     });
 }
 
@@ -225,8 +190,11 @@ async function setupSelfResponseAbilityScene(
     });
 }
 
-async function setupGunslingerDuelCompareRollScene(game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone', { playerID: 1 });
+async function setupGunslingerDuelCompareRollScene(
+    page: import('@playwright/test').Page,
+    game: GameTestContext,
+): Promise<void> {
+    await game.openTestGame('dicethrone', { playerID: 1, disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
@@ -238,68 +206,15 @@ async function setupGunslingerDuelCompareRollScene(game: GameTestContext): Promi
         },
         currentPlayer: '1',
         phase: 'defensiveRoll',
-        sys: {
-            interaction: {
-                current: {
-                    id: 'gunslinger-duel-compare-roll',
-                    kind: 'compare-roll-choice',
-                    playerId: '1',
-                    data: {
-                        title: 'compareRoll.gunslingerDuel.title',
-                        sourceId: 'duel',
-                        contestants: [
-                            {
-                                playerId: '1',
-                                label: 'compareRoll.gunslingerDuel.defender',
-                                labelKey: 'compareRoll.gunslingerDuel.defender',
-                                roll: 6,
-                                face: 'bullet',
-                                characterId: 'gunslinger',
-                                effectKey: 'compareRoll.rolled',
-                                effectParams: { value: 6 },
-                            },
-                            {
-                                playerId: '0',
-                                label: 'compareRoll.gunslingerDuel.attacker',
-                                labelKey: 'compareRoll.gunslingerDuel.attacker',
-                                roll: 1,
-                                face: 'fist',
-                                characterId: 'monk',
-                                effectKey: 'compareRoll.rolled',
-                                effectParams: { value: 1 },
-                            },
-                        ],
-                        resultText: 'compareRoll.gunslingerDuel.win',
-                        resultTextKey: 'compareRoll.gunslingerDuel.win',
-                        resultTone: 'success',
-                        options: [
-                            {
-                                id: 'option-0',
-                                label: 'choices.gunslingerDuel.deal3',
-                                labelKey: 'choices.gunslingerDuel.deal3',
-                                value: { value: 3, customId: 'gunslinger-duel-deal-3' },
-                            },
-                            {
-                                id: 'option-1',
-                                label: 'choices.gunslingerDuel.preventHalf',
-                                labelKey: 'choices.gunslingerDuel.preventHalf',
-                                value: { value: 50, customId: 'gunslinger-duel-prevent-half' },
-                            },
-                        ],
-                    },
-                },
-                queue: [],
-            },
-        },
         extra: {
             selectedCharacters: { '0': 'monk', '1': 'gunslinger' },
             hostStarted: true,
             activePlayerId: '1',
-            rollCount: 1,
+            rollCount: 0,
             rollLimit: 1,
-            rollConfirmed: true,
+            rollConfirmed: false,
             dice: [
-                { id: 0, definitionId: 'gunslinger-dice', value: 6, symbol: 'bullet', symbols: ['bullet'], isKept: false },
+                { id: 0, definitionId: 'gunslinger-dice', value: 1, symbol: 'bullet', symbols: ['bullet'], isKept: false },
                 { id: 1, definitionId: 'gunslinger-dice', value: 2, symbol: 'dash', symbols: ['dash'], isKept: false },
                 { id: 2, definitionId: 'gunslinger-dice', value: 3, symbol: 'bullseye', symbols: ['bullseye'], isKept: false },
                 { id: 3, definitionId: 'gunslinger-dice', value: 4, symbol: 'bullet', symbols: ['bullet'], isKept: false },
@@ -322,24 +237,82 @@ async function setupGunslingerDuelCompareRollScene(game: GameTestContext): Promi
         return {
             phase: state?.sys?.phase ?? null,
             defenseAbilityId: state?.core?.pendingAttack?.defenseAbilityId ?? null,
+            rollCount: state?.core?.rollCount ?? null,
             rollConfirmed: state?.core?.rollConfirmed ?? null,
-            dieValue: state?.core?.dice?.[0]?.value ?? null,
             interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        defenseAbilityId: 'duel',
+        rollCount: 0,
+        rollConfirmed: false,
+        interactionKind: null,
+    });
+
+    await dismissAttackShowcaseIfVisible(page);
+    await page.waitForFunction(() => Boolean((window as any).__BG_TEST_HARNESS__?.dice), { timeout: 5000 });
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice.setValues([6, 2, 2, 2, 2, 1]);
+    });
+
+    await dispatchHarnessCommand(page, 'ROLL_DICE', '1');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollCount: state?.core?.rollCount ?? null,
+            rollConfirmed: state?.core?.rollConfirmed ?? null,
+            rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+            dice: (state?.core?.currentRollContext?.dice ?? []).map((die: any) => die?.value ?? null),
         };
     }, { timeout: 5000 }).toMatchObject({
         phase: 'defensiveRoll',
-        defenseAbilityId: 'duel',
-        rollConfirmed: true,
-        dieValue: 6,
-        interactionKind: 'compare-roll-choice',
+        rollCount: 1,
+        rollConfirmed: false,
+        rollContextKind: 'defensive',
+        dice: [6, 2, 2, 2, 2, 1],
     });
+
+    await dispatchHarnessCommand(page, 'CONFIRM_ROLL', '1');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollConfirmed: state?.core?.rollConfirmed ?? null,
+            rollContextStatus: state?.core?.currentRollContext?.status ?? null,
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        rollConfirmed: true,
+        rollContextStatus: 'settling',
+    });
+
+    await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '1');
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+            rollContextOwner: state?.core?.currentRollContext?.ownerPlayerId ?? null,
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        rollContextKind: 'compare',
+        rollContextOwner: '1',
+    });
+
+    await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '1');
 }
 
-async function setupGunslingerShowdownCompareRollScene(game: GameTestContext): Promise<void> {
-    await game.openTestGame('dicethrone', { playerID: 0 });
+async function setupGunslingerShowdownCompareRollScene(
+    page: import('@playwright/test').Page,
+    game: GameTestContext,
+): Promise<void> {
+    await game.openTestGame('dicethrone', { playerID: 0, disableLocalAiAutomation: true });
 
     await game.setupScene({
         gameId: 'dicethrone',
+        randomQueue: [0.99, 0.0],
         player0: {
             resources: { CP: 2, HP: 50 },
             tokens: { loaded: 0 },
@@ -349,46 +322,6 @@ async function setupGunslingerShowdownCompareRollScene(game: GameTestContext): P
         },
         currentPlayer: '0',
         phase: 'offensiveRoll',
-        sys: {
-            interaction: {
-                current: {
-                    id: 'gunslinger-showdown-compare-roll',
-                    kind: 'compare-roll-choice',
-                    playerId: '0',
-                    data: {
-                        title: 'compareRoll.gunslingerDuel.title',
-                        sourceId: 'showdown',
-                        contestants: [
-                            {
-                                playerId: '0',
-                                label: 'compareRoll.gunslingerDuel.attacker',
-                                labelKey: 'compareRoll.gunslingerDuel.attacker',
-                                roll: 6,
-                                face: 'bullet',
-                                characterId: 'gunslinger',
-                                effectKey: 'compareRoll.rolled',
-                                effectParams: { value: 6 },
-                            },
-                            {
-                                playerId: '1',
-                                label: 'compareRoll.gunslingerDuel.defender',
-                                labelKey: 'compareRoll.gunslingerDuel.defender',
-                                roll: 1,
-                                face: 'fist',
-                                characterId: 'monk',
-                                effectKey: 'compareRoll.rolled',
-                                effectParams: { value: 1 },
-                            },
-                        ],
-                        resultText: '本次攻击伤害 +2',
-                        resultTone: 'success',
-                        confirmValue: { value: 2, customId: 'gunslinger-showdown-apply-bonus' },
-                        autoConfirmDelayMs: 400,
-                    },
-                },
-                queue: [],
-            },
-        },
         extra: {
             selectedCharacters: { '0': 'gunslinger', '1': 'monk' },
             hostStarted: true,
@@ -396,6 +329,7 @@ async function setupGunslingerShowdownCompareRollScene(game: GameTestContext): P
             rollCount: 1,
             rollLimit: 3,
             rollConfirmed: true,
+            selectedAbilityId: 'showdown',
             dice: [
                 { id: 0, definitionId: 'gunslinger-dice', value: 1, symbol: 'bullet', symbols: ['bullet'], isKept: false },
                 { id: 1, definitionId: 'gunslinger-dice', value: 2, symbol: 'dash', symbols: ['dash'], isKept: false },
@@ -410,7 +344,6 @@ async function setupGunslingerShowdownCompareRollScene(game: GameTestContext): P
                 damage: 5,
                 bonusDamage: 0,
                 sourceAbilityId: 'showdown',
-                preDefenseResolved: false,
             },
         },
     });
@@ -421,23 +354,42 @@ async function setupGunslingerShowdownCompareRollScene(game: GameTestContext): P
             phase: state?.sys?.phase ?? null,
             sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
             bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
+            selectedAbilityId: state?.core?.selectedAbilityId ?? null,
             interactionKind: state?.sys?.interaction?.current?.kind ?? null,
         };
-    }, { timeout: 5000 }).toMatchObject({
+    }, { timeout: 10000 }).toMatchObject({
         phase: 'offensiveRoll',
         sourceAbilityId: 'showdown',
         bonusDamage: 0,
-        interactionKind: 'compare-roll-choice',
+        selectedAbilityId: 'showdown',
+        interactionKind: null,
     });
+
+    await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            rollContextKind: state?.core?.currentRollContext?.kind ?? null,
+            rollContextOwner: state?.core?.currentRollContext?.ownerPlayerId ?? null,
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        phase: 'offensiveRoll',
+        rollContextKind: 'compare',
+        rollContextOwner: '0',
+    });
+
+    await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
 }
 
 test.describe('DiceThrone - 防御技能选择', () => {
     test('影贼防御选择场景应高亮可选技能', async ({ page, game }, testInfo) => {
         await setupDefenseSelectionScene(game, 'shadow_thief', null);
 
-        const highlightedSlots = page
-            .locator('[data-ability-slot]')
-            .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
+        const highlightedSlots = page.locator(
+            '[data-ability-slot][data-can-click="true"][data-should-highlight="true"]',
+        );
         await expect(highlightedSlots.first()).toBeVisible({ timeout: 5000 });
         expect(await highlightedSlots.count()).toBeGreaterThanOrEqual(2);
         await game.screenshot('shadow-thief-defense-selectable-abilities', testInfo);
@@ -463,49 +415,12 @@ test.describe('DiceThrone - 防御技能选择', () => {
         await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toBeEnabled({ timeout: 5000 });
     });
 
-    test('枪手 Duel 防御阶段应禁用手动投掷并可直接结束防御进入对掷', async ({ page, game }, testInfo) => {
-        await setupGunslingerDuelDirectDefenseScene(game);
-        await dismissAttackShowcaseIfVisible(page);
-
-        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
-        const advanceButton = page.locator('[data-tutorial-id="advance-phase-button"]');
-
-        await expect(rollButton).toBeDisabled({ timeout: 5000 });
-        await expect(advanceButton).toBeEnabled();
-        await game.screenshot('gunslinger-duel-direct-defense-before-advance', testInfo);
-
-        await advanceButton.click();
-
-        const overlay = page.getByTestId('compare-roll-overlay');
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(page.getByTestId('compare-roll-participant-0')).toBeVisible();
-        await expect(page.getByTestId('compare-roll-participant-1')).toBeVisible();
-        await game.screenshot('gunslinger-duel-direct-defense-after-advance', testInfo);
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                phase: state?.sys?.phase ?? null,
-                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
-                defenseAbilityId: state?.core?.pendingAttack?.defenseAbilityId ?? null,
-                rollCount: state?.core?.rollCount ?? null,
-            };
-        }, { timeout: 5000 }).toMatchObject({
-            phase: 'defensiveRoll',
-            interactionKind: 'compare-roll-choice',
-            sourceId: 'duel',
-            defenseAbilityId: 'duel',
-            rollCount: 0,
-        });
-    });
-
     test('自己处于响应窗口时应高亮对方可选技能', async ({ page, game }, testInfo) => {
         await setupSelfResponseAbilityScene(page, game);
 
-        const highlightedSlots = page
-            .locator('[data-ability-slot]')
-            .filter({ has: page.locator('div.animate-pulse[class*="border-"]') });
+        const highlightedSlots = page.locator(
+            '[data-ability-slot][data-can-click="true"][data-should-highlight="true"]',
+        );
 
         await expect(highlightedSlots.first()).toBeVisible({ timeout: 5000 });
         expect(await highlightedSlots.count()).toBeGreaterThan(0);
@@ -526,12 +441,12 @@ test.describe('DiceThrone - 防御技能选择', () => {
     });
 
     test('枪手 Duel 应展示双方对掷 UI，并在选择抵挡一半后结算', async ({ page, game }, testInfo) => {
-        await setupGunslingerDuelCompareRollScene(game);
+        await setupGunslingerDuelCompareRollScene(page, game);
 
         const overlay = page.getByTestId('compare-roll-overlay');
         await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(page.getByTestId('compare-roll-participant-0')).toBeVisible();
-        await expect(page.getByTestId('compare-roll-participant-1')).toBeVisible();
+        await expect(page.getByTestId('compare-roll-participant-0')).toHaveCount(0);
+        await expect(page.getByTestId('compare-roll-participant-1')).toHaveCount(0);
         await expect(page.getByTestId('compare-roll-result')).toContainText('你赢得了对决');
         await expect(page.getByRole('button', { name: /抵挡 1\/2 进攻伤害/i })).toBeVisible();
 
@@ -560,14 +475,14 @@ test.describe('DiceThrone - 防御技能选择', () => {
     });
 
     test('枪手 Showdown 应展示双方对掷 UI，并在自动确认后继续结算链路', async ({ page, game }, testInfo) => {
-        await setupGunslingerShowdownCompareRollScene(game);
+        await setupGunslingerShowdownCompareRollScene(page, game);
 
         const overlay = page.getByTestId('compare-roll-overlay');
         await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(page.getByTestId('compare-roll-participant-0')).toBeVisible();
-        await expect(page.getByTestId('compare-roll-participant-1')).toBeVisible();
+        await expect(page.getByTestId('compare-roll-participant-0')).toHaveCount(0);
+        await expect(page.getByTestId('compare-roll-participant-1')).toHaveCount(0);
         await expect(page.getByTestId('compare-roll-result')).toContainText('本次攻击伤害 +2');
-        await expect(page.getByTestId('compare-roll-autoconfirm')).toContainText('正在确认对掷结果');
+        await expect(page.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
 
         await game.screenshot('gunslinger-showdown-compare-roll-auto-confirm', testInfo);
 
@@ -581,7 +496,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
             };
         }, { timeout: 8000 }).toMatchObject({
             interactionKind: null,
-            phase: 'offensiveRoll',
+            phase: 'defensiveRoll',
             bonusDamage: 2,
             sourceAbilityId: 'showdown',
         });

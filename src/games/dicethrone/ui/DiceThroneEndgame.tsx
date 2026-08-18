@@ -1,5 +1,5 @@
 /**
- * 王权骰铸专属结算界面
+ * 王权骰铸专属终局胜负界面
  *
  * 通过 EndgameOverlay 的 renderContent / renderActions 插槽注入，
  * 展示英雄对决结果面板（肖像、HP/CP、Token 摘要）和街机立体风格按钮。
@@ -153,7 +153,7 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
 
     return (
         <motion.div
-            className="flex flex-col items-center gap-2"
+            className="flex flex-col items-center gap-2 max-[1023px]:gap-1"
             aria-label={heroAriaLabel}
             initial={ENDGAME_ANIMATION.portrait.initial}
             animate={ENDGAME_ANIMATION.portrait.animate}
@@ -164,7 +164,7 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
         >
             {/* 英雄肖像 */}
             <div
-                className={`w-20 h-28 rounded-xl border-2 overflow-hidden ${portraitBorder} ${portraitScale} transition-transform`}
+                className={`w-20 h-28 rounded-xl border-2 overflow-hidden max-[1023px]:h-20 max-[1023px]:w-14 max-[1023px]:rounded-lg ${portraitBorder} ${portraitScale} transition-transform`}
             >
                 <div
                     className="w-full h-full"
@@ -173,12 +173,12 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
             </div>
 
             {/* 角色名称 */}
-            <span className="text-white font-bold text-sm tracking-wide uppercase">
+            <span className="text-white font-bold text-sm tracking-wide uppercase max-[1023px]:text-[11px]">
                 {heroName}
             </span>
 
             {/* HP / CP 数值 */}
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-3 text-xs max-[1023px]:gap-2 max-[1023px]:text-[10px]">
                 <span className="text-red-400 font-bold">
                     HP {hp}
                 </span>
@@ -189,11 +189,11 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
 
             {/* Token 摘要（仅展示非零 Token） */}
             {tokens.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                <div className="flex flex-wrap justify-center gap-1.5 mt-1 max-[1023px]:gap-1 max-[1023px]:mt-0">
                     {tokens.map(({ id, count }) => (
                         <span
                             key={id}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 max-[1023px]:text-[9px] max-[1023px]:px-1"
                         >
                             {t(`tokens.${id}.name`)} ×{count}
                         </span>
@@ -208,7 +208,7 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
 // 主内容组件
 // ============================================================================
 
-/** 王权骰铸结算内容区域（注入 EndgameOverlay 的 renderContent 插槽） */
+/** 王权骰铸终局胜负内容区域（注入 EndgameOverlay 的 renderContent 插槽） */
 export function DiceThroneEndgameContent({
     result,
     playerID,
@@ -246,7 +246,7 @@ export function DiceThroneEndgameContent({
 
     return (
         <motion.div
-            className={`flex flex-col items-center gap-5 w-full max-w-lg p-6 pb-8 ${DT_ENDGAME_STYLES.panel}`}
+            className={`flex flex-col items-center gap-5 w-full max-w-lg p-6 pb-8 max-[1023px]:max-w-[30rem] max-[1023px]:gap-2 max-[1023px]:p-3 max-[1023px]:pb-3 ${DT_ENDGAME_STYLES.panel}`}
             initial={ENDGAME_ANIMATION.panel.initial}
             animate={ENDGAME_ANIMATION.panel.animate}
             transition={ENDGAME_ANIMATION.panel.transition}
@@ -255,7 +255,7 @@ export function DiceThroneEndgameContent({
         >
             {/* 胜负标题 */}
             <motion.h2
-                className={`text-3xl md:text-4xl font-black tracking-wider uppercase ${resultStyles.title} ${resultStyles.glow}`}
+                className={`text-3xl md:text-4xl font-black tracking-wider uppercase max-[1023px]:text-2xl ${resultStyles.title} ${resultStyles.glow}`}
                 initial={ENDGAME_ANIMATION.title.initial}
                 animate={ENDGAME_ANIMATION.title.animate}
                 transition={{
@@ -269,7 +269,7 @@ export function DiceThroneEndgameContent({
             </motion.h2>
 
             {/* 英雄对决面板 */}
-            <div className="flex items-start justify-center gap-8 w-full">
+            <div className="flex items-start justify-center gap-8 w-full max-[1023px]:gap-5">
                     {playerEntries.map(([pid, player], index) => (
                         <HeroPanel
                             key={pid}
@@ -301,7 +301,7 @@ export function renderDiceThroneButton(props: RematchButtonProps): React.ReactNo
     if (props.role === 'restarting') {
         return (
             <div
-                className={`px-5 py-2.5 rounded-lg text-sm font-bold tracking-[0.15em] uppercase text-amber-400 border border-amber-400/40 ${DT_ENDGAME_STYLES.panel} animate-pulse`}
+                className={`min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-bold tracking-[0.15em] uppercase text-amber-400 border border-amber-400/40 max-[1023px]:px-3 max-[1023px]:py-2 max-[1023px]:text-xs max-[1023px]:tracking-[0.08em] ${DT_ENDGAME_STYLES.panel} animate-pulse`}
             >
                 {props.label}
             </div>
@@ -312,7 +312,7 @@ export function renderDiceThroneButton(props: RematchButtonProps): React.ReactNo
         <button
             onClick={props.onClick}
             disabled={props.disabled}
-            className={`px-5 py-2.5 rounded-lg text-sm font-bold tracking-[0.15em] uppercase text-white transition-all ${buttonStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-bold tracking-[0.15em] uppercase text-white transition-all max-[1023px]:px-3 max-[1023px]:py-2 max-[1023px]:text-xs max-[1023px]:tracking-[0.08em] ${buttonStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
             {props.label}
         </button>

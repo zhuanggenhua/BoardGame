@@ -2894,7 +2894,24 @@ describe('reaction queue: preserves event player context', () => {
         );
         const pharaohPrompt = getInteractionsFromMS(chosen.finalState)[0] as any;
         expect(pharaohPrompt?.playerId).toBe('0');
-        expect(pharaohPrompt?.data?.sourceId).toBe('ancient_egyptians_pharaoh_before_scoring');
+        expect(pharaohPrompt?.data?.sourceId).toBe('ancient_egyptians_pharaoh_before_scoring_choose_source');
+        expect(pharaohPrompt?.data?.targetType).toBe('field-source-action');
+
+        const sourceOption = pharaohPrompt?.data?.options?.find((option: any) =>
+            option.value?.fieldInteractionType === 'source-action'
+            && option.value?.minionUid === 'pharaoh-1');
+        expect(sourceOption).toBeDefined();
+
+        const afterSource = runCommand(
+            chosen.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: sourceOption.id } } as any,
+            defaultTestRandom,
+        );
+        const buriedPrompt = getInteractionsFromMS(afterSource.finalState)[0] as any;
+        expect(buriedPrompt?.playerId).toBe('0');
+        expect(buriedPrompt?.data?.sourceId).toBe('ancient_egyptians_pharaoh_before_scoring');
+        expect(buriedPrompt?.data?.targetType).toBe('generic');
+        expect(buriedPrompt?.data?.genericIntent).toBe('buried-card');
     });
 
     it('sourceController queued beforeScoring trigger 仍应把 Sheriff 的决斗 prompt 交给 Sheriff 控制者', () => {

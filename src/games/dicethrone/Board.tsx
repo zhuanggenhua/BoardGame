@@ -102,6 +102,7 @@ import { InteractionOverlay } from './ui/InteractionOverlay';
 import { ChoiceModal } from './ui/ChoiceModal';
 import { DefenderChoiceModal } from './ui/DefenderChoiceModal';
 import { canRerollBonusDiceSettlement } from './domain/bonusDiceSettlement';
+import { getCurrentDamageSummary } from './domain/damageSummary';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 
@@ -577,6 +578,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // Token 响应状态
     const pendingDamage = G.pendingDamage;
+    const currentDamageSummary = React.useMemo(() => getCurrentDamageSummary(G), [G]);
     const isTokenResponseInteraction = sysInteraction?.kind === 'dt:token-response';
     const isTokenEvasionRollContextActive = Boolean(
         isTokenResponseInteraction
@@ -1291,9 +1293,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [currentRollDice, replayOnlyRollDice, attackSnapshotInteractionDice, bonusDiceTrayDice]);
     const rightSidebarDice = React.useMemo(() => {
         if (bonusDiceTrayDice) return bonusDiceTrayDice;
-        const baseDice = getRailDiceForCurrentBoard(interactionDice);
+        const baseDice = getRailDiceForCurrentBoard(interactionDice, G.dice);
         return baseDice;
-    }, [bonusDiceTrayDice, interactionDice]);
+    }, [G.dice, bonusDiceTrayDice, interactionDice]);
     const rightTrayBonusDiceSettlement = pendingBonusDiceRoutedToRightTray
         ? currentPendingBonusDiceSettlement
         : undefined;
@@ -2150,6 +2152,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         attackModifierBonusDamage={
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage
                         }
+                        damageSummary={currentDamageSummary}
                         passiveAbilityProps={passiveAbilityProps}
                         rootPlayerId={rootPid}
                         teamIdByPlayerId={G.teamIdByPlayerId}
@@ -2158,7 +2161,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
                 {compareRollInteraction && (
                     <div
-                        className="absolute left-1/2 top-[10.5vw] -translate-x-1/2 pointer-events-auto"
+                        className="fixed inset-0 flex items-center justify-center pointer-events-none"
                         style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                         data-testid="compare-roll-main-result-layer"
                     >

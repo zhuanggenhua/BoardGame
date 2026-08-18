@@ -49,6 +49,8 @@ export interface SummonHybridEffectProps {
   onComplete?: () => void;
   /** 动画时长倍率。默认 1；用于真实 E2E 过程帧需要更长可见窗口的棋盘召唤。 */
   durationScale?: number;
+  /** 视觉主体倍率。只放大光柱/核心辉光，不改变 FX 锚点盒，默认 1。 */
+  visualScale?: number;
   /** 全屏暗角强度。普通棋盘单位召唤应显式降低，避免小单位特效变成全场遮挡。 */
   dimStrength?: number;
   className?: string;
@@ -164,6 +166,7 @@ interface ParticleLayerProps {
   originY: number;
   quality: FxQuality;
   totalDuration: number;
+  visualScale: number;
   onImpact: () => void;
   onAllParticlesDone: () => void;
 }
@@ -171,7 +174,7 @@ interface ParticleLayerProps {
 /**
  * 粒子层组件 — 使用 function 声明确保 Vite HMR 正确识别组件边界
  */
-function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, onImpact, onAllParticlesDone }: ParticleLayerProps) {
+function ParticleLayer({ active, intensity, colors, originY, quality, totalDuration, visualScale, onImpact, onAllParticlesDone }: ParticleLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onDoneRef = useRef(onAllParticlesDone);
   const onImpactRef = useRef(onImpact);
@@ -211,7 +214,8 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
     const emberParticles: Particle[] = [];
 
     // 光柱参数（与 shader 同步）
-    const pillarBaseWidth = isStrong ? cw * 0.08 : cw * 0.06;
+    const resolvedVisualScale = Math.max(0.75, Math.min(2.25, visualScale));
+    const pillarBaseWidth = (isStrong ? cw * 0.08 : cw * 0.06) * resolvedVisualScale;
     const pillarMaxHeight = (1 - originY) * ch * 0.88;
 
     let startTime = 0;
@@ -409,7 +413,7 @@ function ParticleLayer({ active, intensity, colors, originY, quality, totalDurat
 
     unsubscribeFrame = subscribeFxFrame(({ now }) => loop(now));
     return () => unsubscribeFrame?.();
-  }, [colors, isStrong, originY, quality, totalDuration]);
+  }, [colors, isStrong, originY, quality, totalDuration, visualScale]);
 
   useEffect(() => {
     if (!active) return;
@@ -511,6 +515,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
   onImpact,
   onComplete,
   durationScale = 1,
+  visualScale = 1,
   dimStrength,
   className = '',
 }) => {
@@ -523,6 +528,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
 
   const isStrong = intensity === 'strong';
   const resolvedDurationScale = Math.max(0.75, durationScale);
+  const resolvedVisualScale = Math.max(0.75, Math.min(2.25, visualScale));
   const totalDuration = (isStrong ? 1.4 : 1.1) * resolvedDurationScale;
   // 稳定颜色引用，避免每次渲染重建导致 ParticleLayer 的 RAF 被反复清理重启
   const colors = useMemo(() => resolveColors(color, customColors), [color, customColors]);
@@ -593,6 +599,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
           dimStrength={0}
           quality={quality}
           durationScale={resolvedDurationScale}
+          visualScale={resolvedVisualScale}
           onComplete={handleShaderComplete}
         />
       </div>
@@ -604,6 +611,7 @@ export const SummonHybridEffect: React.FC<SummonHybridEffectProps> = ({
         originY={originY}
         quality={quality}
         totalDuration={totalDuration}
+        visualScale={resolvedVisualScale}
         onImpact={handleImpact}
         onAllParticlesDone={handleParticlesDone}
       />

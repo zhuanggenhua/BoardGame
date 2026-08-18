@@ -1186,8 +1186,9 @@ async function waitForSummonFxVisualAudit(
                 || !fxCenterInsideTargetObject
                 || !targetObjectCenterInsideFx
                 || targetObjectCenterDistancePx > Math.max(targetObjectRect.width, targetObjectRect.height) * 0.12
-                || targetObjectOverlapRatio < 0.5
-                || fxMaxTargetObjectRatio > 1.08
+                || targetObjectOverlapRatio < 0.82
+                || fxMaxTargetObjectRatio < 1
+                || fxMaxTargetObjectRatio > 1.16
             ) {
                 probe.last = {
                     reason: 'summon-fx-not-aligned-to-target-object',
@@ -1310,8 +1311,9 @@ async function waitForSummonFxVisualAudit(
         expect(audit.targetObjectId).toBe(audit.objectId);
         expect(audit.fxCenterInsideTargetObject).toBe(true);
         expect(audit.targetObjectCenterInsideFx).toBe(true);
-        expect(audit.targetObjectOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.5);
-        expect(audit.fxMaxTargetObjectRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1.08);
+        expect(audit.targetObjectOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.82);
+        expect(audit.fxMaxTargetObjectRatio ?? 0).toBeGreaterThanOrEqual(1);
+        expect(audit.fxMaxTargetObjectRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1.16);
         expect(audit.targetObjectCenterDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(34);
     }
     return audit;
@@ -2956,7 +2958,32 @@ test.describe('Mage Wars formal online runtime', () => {
             await advanceBothPlayersToPlanning(match);
             await planNamedSpells(match.hostPage, ['野性山猫']);
             await planNamedSpells(match.guestPage, ['阿希拉牧师']);
-            await deployBothPlayers(match, '野性山猫', '阿希拉牧师', 'a3', 'd1', diagnostics);
+
+            const hostSummon = await deployCreatureWithSummonProcessEvidence(
+                match,
+                match.hostPage,
+                '0',
+                '野性山猫',
+                ARENA_ZONE_IDS.A3,
+                testInfo,
+                '09A-兽王野性山猫',
+                diagnostics,
+            );
+            expect(hostSummon.sourceCardId).toBe(2906);
+            await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+
+            const guestSummon = await deployCreatureWithSummonProcessEvidence(
+                match,
+                match.guestPage,
+                '1',
+                '阿希拉牧师',
+                ARENA_ZONE_IDS.D1,
+                testInfo,
+                '09B-女祭司阿希拉牧师',
+                diagnostics,
+            );
+            expect(guestSummon.sourceCardId).toBe(2811);
+            await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
 
             const hostBobcatSnapshot = await readZoneFieldCardSnapshot(match.hostPage, 'a3', 2906, '野性山猫部署后');
             const guestClericSnapshot = await readZoneFieldCardSnapshot(match.guestPage, 'd1', 2811, '阿希拉牧师部署后');

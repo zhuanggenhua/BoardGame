@@ -5,6 +5,7 @@ import { waitForTestHarness } from '../helpers/common';
 import {
     dispatchDiceThroneCommand,
     ensureDebugPanelClosed,
+    maybePassResponse,
     readyAndStartGame,
     readMatchState,
     selectCharacter,
@@ -196,14 +197,24 @@ async function dismissAttackShowcaseIfVisible(page: Page): Promise<void> {
 async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
     const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(handCard).toBeVisible({ timeout: 10000 });
+    await expect(handCard).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
     const cardBox = await page.evaluate((nextCardId) => {
         const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
         if (!node) return null;
         const rect = node.getBoundingClientRect();
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        const startX = rect.x + (rect.width / 2);
+        const startY = rect.y + (rect.height * 0.78);
+        const hit = document.elementFromPoint(startX, startY) as HTMLElement | null;
+        return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            hitCardId: hit?.closest('[data-card-id]')?.getAttribute('data-card-id') ?? null,
+        };
     }, cardId);
-    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
-        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0 || cardBox.hitCardId !== cardId) {
+        throw new Error(`未能获取手牌 ${cardId} 的真实拖拽区域`);
     }
 
     const startX = cardBox.x + (cardBox.width / 2);
@@ -213,9 +224,70 @@ async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, endY, { steps: 12 });
+    const draggedCardBox = await handCard.boundingBox();
+    if (!draggedCardBox || cardBox.y - draggedCardBox.y < 150) {
+        throw new Error(`手牌 ${cardId} 没有真实拖出到打出距离`);
+    }
     await page.mouse.up();
     await page.mouse.move(2, 2);
     await page.waitForTimeout(450);
+}
+
+async function readPlayedCardAndBonusState(page: Page, cardId: string, playerId: string) {
+    return page.evaluate(({ expectedCardId, expectedPlayerId }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const player = state?.core?.players?.[expectedPlayerId] ?? {};
+        const entries = state?.sys?.eventStream?.entries ?? [];
+        const responseWindow = state?.sys?.responseWindow?.current;
+        const responderQueue = Array.isArray(responseWindow?.responderQueue)
+            ? responseWindow.responderQueue
+            : [];
+        const currentResponderIndex = Number.isInteger(responseWindow?.currentResponderIndex)
+            ? responseWindow.currentResponderIndex
+            : 0;
+        return {
+            handContains: Array.isArray(player?.hand)
+                ? player.hand.some((card: any) => card?.id === expectedCardId)
+                : null,
+            discardContains: Array.isArray(player?.discard)
+                ? player.discard.some((card: any) => card?.id === expectedCardId)
+                : null,
+            cardPlayedEvent: entries.some((entry: any) => (
+                entry?.event?.type === 'CARD_PLAYED'
+                && entry?.event?.payload?.playerId === expectedPlayerId
+                && entry?.event?.payload?.cardId === expectedCardId
+            )),
+            sourceAbilityId: state?.core?.pendingBonusDiceSettlement?.sourceAbilityId ?? null,
+            customResolutionId: state?.core?.pendingBonusDiceSettlement?.customResolutionId ?? null,
+            bonusDiceCount: Array.isArray(state?.core?.pendingBonusDiceSettlement?.dice)
+                ? state.core.pendingBonusDiceSettlement.dice.length
+                : 0,
+            windowType: responseWindow?.windowType ?? null,
+            currentResponderId: responderQueue[currentResponderIndex] ?? null,
+            recentEvents: entries.slice(-8).map((entry: any) => ({
+                type: entry?.event?.type,
+                payload: entry?.event?.payload,
+            })),
+        };
+    }, { expectedCardId: cardId, expectedPlayerId: playerId });
+}
+
+async function waitForAttackModifierBonusDiceReady(page: Page, cardId: string, playerId: string): Promise<void> {
+    await expect.poll(
+        () => readPlayedCardAndBonusState(page, cardId, playerId),
+        {
+            message: `${cardId} 必须真实打出：手牌移除、进弃牌堆、事件流记录 CARD_PLAYED，并创建右侧奖励骰骰盘`,
+            timeout: 15000,
+        },
+    ).toMatchObject({
+        handContains: false,
+        discardContains: true,
+        cardPlayedEvent: true,
+        sourceAbilityId: cardId,
+        customResolutionId: 'moon-elf-volley',
+        bonusDiceCount: 5,
+        windowType: null,
+    });
 }
 
 async function setupTwoPageDicethrone(
@@ -258,6 +330,12 @@ async function readVisibleBonusSnapshot(page: Page) {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
         const settlement = state?.core?.pendingBonusDiceSettlement;
         const windowState = state?.sys?.responseWindow?.current;
+        const damageBadge = document.querySelector<HTMLElement>('[data-testid="current-total-damage-badge"]');
+        const readNumber = (value: string | undefined): number | null => {
+            if (value === undefined || value === '') return null;
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
         return {
             phase: state?.sys?.phase ?? null,
             sourceAbilityId: settlement?.sourceAbilityId ?? null,
@@ -276,6 +354,13 @@ async function readVisibleBonusSnapshot(page: Page) {
             defenderEntangle: state?.core?.players?.['1']?.statusEffects?.entangle
                 ?? state?.core?.players?.['1']?.tokens?.entangle
                 ?? 0,
+            currentTotalDamageBadge: damageBadge
+                ? {
+                    currentDamage: readNumber(damageBadge.dataset.currentDamage),
+                    originalDamage: readNumber(damageBadge.dataset.originalDamage),
+                    text: damageBadge.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+                }
+                : null,
             interactionKind: state?.sys?.interaction?.current?.kind ?? null,
             interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
             allowedDieIds: state?.sys?.interaction?.current?.data?.allowedDieIds ?? null,
@@ -387,6 +472,15 @@ async function normalizePendingBonusDice(
                 value,
             },
         }));
+        if (settlement.customResolutionId === 'moon-elf-volley' || settlement.sourceAbilityId === 'volley') {
+            const bowCount = diceValues.filter((value) => MOON_ELF_BOW_VALUES.has(value)).length;
+            settlement.summaryEffectKey = 'bonusDie.effect.volley.result';
+            settlement.summaryEffectParams = {
+                ...(settlement.summaryEffectParams ?? {}),
+                bowCount,
+                bonusDamage: bowCount,
+            };
+        }
         if (core.currentRollContext && Array.isArray(core.currentRollContext.dice)) {
             core.currentRollContext = {
                 ...core.currentRollContext,
@@ -534,11 +628,27 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
 
             await waitForHandCardVisualReady(hostPage, 'volley');
             await expect(hostPage.getByText('该技能当前不可用', { exact: true })).toHaveCount(0, { timeout: 5000 });
+            await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: 5,
+                    originalDamage: 5,
+                },
+            });
             await screenshotStep(hostPage, testInfo, '01-万箭齐发-攻击已选且手牌可见');
+
+            const longbowResponse = await readVisibleBonusSnapshot(guestPage);
+            if (longbowResponse.currentResponderId === '1') {
+                const responsePassed = await maybePassResponse(guestPage, 5000);
+                expect(responsePassed, '长弓选定后的防御方响应窗口必须先真实让过，攻击方才可打万箭齐发').toBe(true);
+                await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
+                    currentResponderId: null,
+                });
+            }
 
             await setDiceThroneBonusDiceValues(hostPage, [1, 2, 3, 4, 5]);
             await dismissAttackShowcaseIfVisible(guestPage);
             await dragHandCardToPlay(hostPage, 'volley');
+            await waitForAttackModifierBonusDiceReady(hostPage, 'volley', '0');
             await dismissAttackShowcaseIfVisible(guestPage);
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
                 sourceAbilityId: 'volley',
@@ -578,8 +688,14 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect(selectedVolleyDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
             await expect(selectedVolleyDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
             await expect(selectedVolleyDie).toHaveAttribute('data-display-value', String(volleyChoice.beforeValue), { timeout: 5000 });
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: 5 + volleyChoice.beforeBowCount,
+                    originalDamage: 5,
+                },
+            });
             await expectNoCentralBonusDicePresentation(guestPage);
-            await screenshotStep(guestPage, testInfo, '04-万箭齐发-弹一手选择奖励骰改前');
+            await screenshotStep(guestPage, testInfo, '04-万箭齐发-弹一手选择奖励骰改前且总伤害按当前弓面显示');
 
             await dispatch(guestPage, 'MODIFY_DIE', '1', {
                 dieId: volleyChoice.dieIndex,
@@ -591,8 +707,14 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 volleyChoice.beforeValue,
                 volleyChoice.afterValue,
             ), { timeout: 5000 }).toBe(true);
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: 5 + volleyChoice.afterBowCount,
+                    originalDamage: 5,
+                },
+            });
             await expectNoCentralBonusDicePresentation(guestPage);
-            await screenshotStep(guestPage, testInfo, '05-万箭齐发-弹一手已修改奖励骰');
+            await screenshotStep(guestPage, testInfo, '05-万箭齐发-弹一手已修改奖励骰且总伤害实时变化');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
             const volleyAfterValues = volleyBeforeSnapshot.diceValues
@@ -600,6 +722,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
                 windowType: null,
                 diceValues: volleyAfterValues,
+                currentTotalDamageBadge: {
+                    currentDamage: 5 + volleyChoice.afterBowCount,
+                    originalDamage: 5,
+                },
             });
             await expect(dieButton(hostPage, volleyChoice.dieIndex))
                 .toHaveAttribute('data-display-value', String(volleyChoice.afterValue), { timeout: 5000 });
@@ -607,7 +733,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: 'volley',
             });
             await expect(hostPage.getByTestId('restore-covered-roll-button')).toHaveCount(0);
-            await screenshotStep(hostPage, testInfo, '06-万箭齐发-改后奖励骰等待攻击方确认');
+            await screenshotStep(hostPage, testInfo, '06-万箭齐发-改后奖励骰等待攻击方确认且总伤害已更新');
 
             await settleCurrentBonusDice(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'volley',
@@ -616,6 +742,10 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: null,
                 pendingAttackBonusDamage: volleyChoice.afterBowCount,
                 defenderEntangle: 1,
+                currentTotalDamageBadge: {
+                    currentDamage: 5 + volleyChoice.afterBowCount,
+                    originalDamage: 5,
+                },
             });
             await closeCardSpotlightIfVisible(hostPage);
             await hostPage.waitForTimeout(900);
@@ -699,9 +829,19 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             if (preBonusResponse.currentResponderId === '1') {
                 await dispatch(guestPage, 'RESPONSE_PASS', '1');
             }
-            await setDiceThroneBonusDiceValues(hostPage, [4, 5, 6]);
-            await dismissAttackShowcaseIfVisible(guestPage);
             await dispatch(hostPage, 'ADVANCE_PHASE', '0');
+            await dismissAttackShowcaseIfVisible(guestPage);
+
+            await setDiceThroneBonusDiceValues(guestPage, [1, 1, 1, 1, 1]);
+            await dispatch(guestPage, 'ROLL_DICE', '1');
+            await dispatch(guestPage, 'CONFIRM_ROLL', '1');
+            const defenseResponse = await readVisibleBonusSnapshot(guestPage);
+            if (defenseResponse.currentResponderId === '1') {
+                await dispatch(guestPage, 'RESPONSE_PASS', '1');
+            }
+
+            await setDiceThroneBonusDiceValues(guestPage, [4, 5, 6]);
+            await dispatch(guestPage, 'ADVANCE_PHASE', '1');
             await dismissAttackShowcaseIfVisible(guestPage);
 
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
@@ -718,6 +858,12 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             });
             const thunderBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
             const thunderChoice = chooseThunderDie(thunderBeforeSnapshot);
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: thunderChoice.beforeTotal,
+                    originalDamage: 0,
+                },
+            });
             await expectRightTrayBonusDiceInterferenceView(guestPage, () => readMatchState(guestPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'thunder-strike',
             });
@@ -735,8 +881,14 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect(selectedThunderDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
             await expect(selectedThunderDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
             await expect(selectedThunderDie).toHaveAttribute('data-display-value', String(thunderChoice.beforeValue), { timeout: 5000 });
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: thunderChoice.beforeTotal,
+                    originalDamage: 0,
+                },
+            });
             await expectNoCentralBonusDicePresentation(guestPage);
-            await screenshotStep(guestPage, testInfo, '04-雷霆万钧-弹一手选择奖励骰改前');
+            await screenshotStep(guestPage, testInfo, '04-雷霆万钧-弹一手选择奖励骰改前且总伤害按当前点数和显示');
 
             await dispatch(guestPage, 'MODIFY_DIE', '1', {
                 dieId: thunderChoice.dieIndex,
@@ -748,8 +900,14 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 thunderChoice.beforeValue,
                 thunderChoice.afterValue,
             ), { timeout: 5000 }).toBe(true);
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 5000 }).toMatchObject({
+                currentTotalDamageBadge: {
+                    currentDamage: thunderChoice.afterTotal,
+                    originalDamage: 0,
+                },
+            });
             await expectNoCentralBonusDicePresentation(guestPage);
-            await screenshotStep(guestPage, testInfo, '05-雷霆万钧-弹一手已修改奖励骰');
+            await screenshotStep(guestPage, testInfo, '05-雷霆万钧-弹一手已修改奖励骰且总伤害实时变化');
 
             await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
             const thunderAfterValues = thunderBeforeSnapshot.diceValues
@@ -757,12 +915,16 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
                 windowType: null,
                 diceValues: thunderAfterValues,
+                currentTotalDamageBadge: {
+                    currentDamage: thunderChoice.afterTotal,
+                    originalDamage: 0,
+                },
             });
             await expectRightTrayBonusDiceConfirmation(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'thunder-strike',
             });
             await expect(hostPage.getByTestId('restore-covered-roll-button')).toHaveCount(0);
-            await screenshotStep(hostPage, testInfo, '06-雷霆万钧-改后奖励骰等待攻击方确认');
+            await screenshotStep(hostPage, testInfo, '06-雷霆万钧-改后奖励骰等待攻击方确认且总伤害已更新');
 
             await settleCurrentBonusDice(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'thunder-strike',

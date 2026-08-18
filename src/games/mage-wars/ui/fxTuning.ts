@@ -34,9 +34,10 @@ export const MAGE_WARS_FX_TIMING = {
 } as const;
 
 export const MAGE_WARS_SUMMON_FX_TUNING = {
-    scale: 0.82,
-    originY: 0.62,
+    scale: 1.08,
+    originY: 0.66,
     durationScale: 2.4,
+    visualScale: 1.55,
     dimStrength: 0,
 } as const;
 

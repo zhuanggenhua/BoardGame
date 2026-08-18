@@ -106,6 +106,7 @@ export const SU_EVENTS = defineEvents({
   'su:power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
   'su:permanent_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
+  'su:timed_power_modifier_cancelled': 'silent',
   'su:temp_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:temp_base_power_modified': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
@@ -224,6 +225,7 @@ export const SU_EVENT_TYPES = {
   POWER_COUNTER_ADDED: SU_EVENTS['su:power_counter_added'].type,
   POWER_COUNTER_REMOVED: SU_EVENTS['su:power_counter_removed'].type,
   PERMANENT_POWER_ADDED: SU_EVENTS['su:permanent_power_added'].type,
+  TIMED_POWER_MODIFIER_CANCELLED: SU_EVENTS['su:timed_power_modifier_cancelled'].type,
   ONGOING_ATTACHED: SU_EVENTS['su:ongoing_attached'].type,
   ONGOING_DETACHED: SU_EVENTS['su:ongoing_detached'].type,
   ONGOING_CARD_COUNTER_CHANGED: SU_EVENTS['su:ongoing_card_counter_changed'].type,

@@ -782,6 +782,21 @@ async function expectCompareRollMainResultLayer(page: Page, timeout = 5000): Pro
     await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+    const layout = await page.evaluate(() => {
+        const panelNode = document.querySelector<HTMLElement>('[data-testid="compare-roll-overlay"]');
+        const panelRect = panelNode?.getBoundingClientRect();
+        if (!panelRect) return null;
+
+        return {
+            centerOffsetX: Math.abs(panelRect.left + panelRect.width / 2 - window.innerWidth / 2),
+            centerOffsetY: Math.abs(panelRect.top + panelRect.height / 2 - window.innerHeight / 2),
+            centerToleranceX: Math.max(24, window.innerWidth * 0.02),
+            centerToleranceY: Math.max(24, window.innerHeight * 0.02),
+        };
+    });
+    expect(layout).not.toBeNull();
+    expect(layout!.centerOffsetX).toBeLessThanOrEqual(layout!.centerToleranceX);
+    expect(layout!.centerOffsetY).toBeLessThanOrEqual(layout!.centerToleranceY);
 }
 
 async function recordDuelAuditMarker(page: Page, marker: string): Promise<void> {
@@ -1174,10 +1189,9 @@ test.describe('DiceThrone - 防御技能选择', () => {
 
         await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
 
-        const overlay = page.getByTestId('compare-roll-overlay');
         await expectCompareRollMainResultLayer(page);
-        await expect(page.getByTestId('compare-roll-participant-0')).toBeVisible();
-        await expect(page.getByTestId('compare-roll-participant-1')).toBeVisible();
+        await expect(page.getByTestId('compare-roll-participant-0')).toHaveCount(0);
+        await expect(page.getByTestId('compare-roll-participant-1')).toHaveCount(0);
         await expect(page.getByTestId('compare-roll-result')).toContainText('本次攻击伤害 +2');
         await expect(page.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
         await game.screenshot('gunslinger-showdown-compare-roll-open', testInfo);
@@ -1197,7 +1211,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
             sourceAbilityId: 'showdown',
         });
 
-        await expect(overlay).toBeHidden();
+        await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
         await game.screenshot('gunslinger-showdown-compare-roll-closed', testInfo);
     });
 });

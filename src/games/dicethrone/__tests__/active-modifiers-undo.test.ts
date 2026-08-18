@@ -243,6 +243,50 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).not.toContain('-top-[3.8vw]');
     });
 
+    it('右侧栏应显示当前总伤害，并保留原始与当前伤害数值', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: true,
+                currentPhase: 'defensiveRoll',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                damageSummary: {
+                    currentDamage: 7,
+                    originalDamage: 5,
+                },
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+            })
+        );
+
+        expect(html).toContain('data-testid="current-total-damage-badge"');
+        expect(html).toContain('data-current-damage="7"');
+        expect(html).toContain('data-original-damage="5"');
+        expect(html).toContain('damageSummary.label');
+        expect(html).toContain('damageSummary.changed:original=5,current=7');
+        expect(html).toContain('pointer-events-none absolute inset-x-0 bottom-full');
+    });
+
     it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {
         const html = renderToStaticMarkup(
             React.createElement(RightSidebar, {

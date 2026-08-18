@@ -5,6 +5,8 @@ import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAb
 import {
     addTempPower,
     buildBaseTargetOptions,
+    buildFieldSourceActionOptions,
+    buildFieldSourceActionPromptConfig,
     buildFieldSourceTargetPromptConfig,
     buildFieldSourceToBaseTargetOptions,
     buildMinionTargetOptions,
@@ -1019,6 +1021,7 @@ const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<
             {
                 sourceId: 'ancient_egyptians_pharaoh_before_scoring',
                 targetType: 'generic',
+                genericIntent: 'buried-card',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
                 titleKey: 'ui.ancient_egyptians_pharaoh_before_scoring_title',
@@ -1046,15 +1049,91 @@ const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<
     },
 });
 
+const ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram = createPromptProgram<
+    AncientEgyptiansPromptContext & {
+        baseIndex: number;
+        sourceBaseIndex: number;
+        sourceDefId: string;
+        sourceMinionUid: string;
+    },
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'ancient_egyptians_pharaoh_before_scoring_choose_source',
+    buildInteraction: (context) => {
+        const source = findMinionOnBases(context.matchState.core, context.sourceMinionUid);
+        const sourceOptions = source && source.minion.controller === context.playerId
+            ? buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: source.minion.uid,
+                defId: source.minion.defId,
+                baseIndex: source.baseIndex,
+                label: getCardDef(source.minion.defId)?.name ?? source.minion.defId,
+            })
+            : [];
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `ancient_egyptians_pharaoh_before_scoring_source_${context.now}`,
+            context.playerId,
+            '法老：点击法老发动计分前翻开埋葬牌',
+            [createSkipOption(), ...sourceOptions] as any[],
+            buildFieldSourceActionPromptConfig({
+                sourceId: 'ancient_egyptians_pharaoh_before_scoring_choose_source',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_pharaoh_before_scoring_choose_source_title',
+            }),
+        );
+        interaction.data.optionsGenerator = (state) => {
+            const liveSource = findMinionOnBases(state.core as SmashUpCore, context.sourceMinionUid);
+            const liveOptions = liveSource && liveSource.minion.controller === context.playerId
+                ? buildFieldSourceActionOptions({
+                    type: 'minion',
+                    uid: liveSource.minion.uid,
+                    defId: liveSource.minion.defId,
+                    baseIndex: liveSource.baseIndex,
+                    label: getCardDef(liveSource.minion.defId)?.name ?? liveSource.minion.defId,
+                })
+                : [];
+            return [createSkipOption(), ...liveOptions] as any[];
+        };
+        return interaction;
+    },
+    onResolve: ({ state, context, value, playerId, timestamp }) => {
+        const selected = value as { skip?: true; sourceUid?: string; minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected || selected.skip) return { events: [] };
+        const sourceUid = selected.sourceUid ?? selected.minionUid;
+        if (sourceUid !== context.sourceMinionUid) return { events: [] };
+        const source = findMinionOnBases(state.core, sourceUid);
+        if (!source || source.minion.controller !== playerId) return { events: [] };
+        const liveBase = state.core.bases[context.baseIndex];
+        const options = buildBuriedCardOptions(state.core, playerId, liveBase?.buriedCards ?? [], true);
+        if (!liveBase || options.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, playerId, timestamp, { baseIndex: context.baseIndex }),
+            nextProgram: ancientEgyptiansPharaohBeforeScoringPromptProgram,
+        };
+    },
+});
+
 const ancientEgyptiansPharaohBeforeScoringProgram = createEffectProgram<any, SmashUpCore, SmashUpEvent>((ctx) => {
-    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceControllerId) return { events: [] };
+    const sourceCardUid = ctx.sourceCardUid as string | undefined;
+    const sourceControllerId = ctx.sourceControllerId as PlayerId | undefined;
+    if (!ctx.matchState || ctx.baseIndex === undefined || !sourceCardUid || sourceControllerId === undefined) return { events: [] };
+    const source = findMinionOnBases(ctx.state, sourceCardUid);
+    if (!source || source.minion.controller !== sourceControllerId) return { events: [] };
     const base = ctx.state.bases[ctx.baseIndex];
-    const options = buildBuriedCardOptions(ctx.state, ctx.sourceControllerId, base?.buriedCards ?? [], true);
+    const options = buildBuriedCardOptions(ctx.state, sourceControllerId, base?.buriedCards ?? [], true);
     if (!base || options.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, { baseIndex: ctx.baseIndex }),
-        nextProgram: ancientEgyptiansPharaohBeforeScoringPromptProgram,
+        context: createPromptContext(ctx.matchState, sourceControllerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            sourceBaseIndex: source.baseIndex,
+            sourceDefId: source.minion.defId,
+            sourceMinionUid: source.minion.uid,
+        }),
+        nextProgram: ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram,
     };
 });
 

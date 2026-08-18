@@ -60,7 +60,6 @@ describe('mage-wars foundation', () => {
         expect(manifest.mobileLayoutPreset).toBe('board-shell');
         expect(manifest.mobileBoardShellLayout).toEqual({
             designWidth: 1920,
-            designHeight: 1080,
         });
         expect(manifest.ai).toMatchObject({
             capture: true,

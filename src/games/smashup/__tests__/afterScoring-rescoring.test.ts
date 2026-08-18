@@ -215,14 +215,17 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
 
         const sourceChoice = getCurrentChoice(runner.getState());
         expect(sourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const sourceTargetType = sourceChoice?.targetType ?? (sourceChoice as any)?.data?.targetType;
+        expect(sourceTargetType).toBe('field-source-action');
+        const sourceOption = getPromptOptions(sourceChoice!).find(
+            option => option.value?.minionUid === 'm1',
+        );
+        expect(sourceOption?.value?.fieldInteractionType).toBe('source-action');
+        expect(sourceOption?.value?.sourceUid).toBe('m1');
         const chooseSource = runner.resolveInteraction(
             '0',
             {
-                optionId: findOptionId(
-                    sourceChoice!,
-                    option => option.value?.minionUid === 'm1',
-                    '找不到力量来源随从',
-                ),
+                optionId: sourceOption?.id ?? 'missing-source-option',
             },
         );
         expect(chooseSource.success).toBe(true);

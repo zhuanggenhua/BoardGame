@@ -5,6 +5,7 @@ import {
     readAndroidLiveUpdateActivityState,
     readAndroidLiveUpdateConfig,
     requestAndroidLiveUpdateCheck,
+    startAndroidLiveUpdateBackgroundCheck,
     subscribeAndroidLiveUpdateActivityState,
 } from '../mobile/androidLiveUpdates';
 import {
@@ -654,7 +655,7 @@ describe('androidLiveUpdates', () => {
         })).toThrow('所有 OTA 已强制更新，禁止使用 --no-force-update。');
     });
 
-    it('即时 OTA 请求一发出就会同步切换到 checking 活动态', () => {
+    it('即时 OTA 请求没有订阅管理器时也必须自跑并退出 checking 活动态', async () => {
         const states: string[] = [];
         const unsubscribe = subscribeAndroidLiveUpdateActivityState((state) => {
             states.push(`${state.active}:${state.phase}`);
@@ -665,25 +666,39 @@ describe('androidLiveUpdates', () => {
             applyMode: 'immediate',
         });
 
+        await waitFor(() => {
+            expect(readAndroidLiveUpdateActivityState()).toMatchObject({
+                active: false,
+                phase: 'idle',
+            });
+        });
+
         unsubscribe();
 
-        expect(readAndroidLiveUpdateActivityState()).toMatchObject({
-            active: true,
-            phase: 'checking',
-        });
         expect(states).toContain('true:checking');
     });
 
-    it('已知存在 OTA 新版本时可直接把首帧切到 downloading 活动态', () => {
-        requestAndroidLiveUpdateCheck({
-            interactive: true,
-            applyMode: 'immediate',
-            initialImmediatePhase: 'downloading',
+    it('真正开始即时 OTA 检查时可直接把首帧切到 downloading 活动态', async () => {
+        const states: string[] = [];
+        const unsubscribe = subscribeAndroidLiveUpdateActivityState((state) => {
+            states.push(`${state.active}:${state.phase}`);
         });
 
+        await startAndroidLiveUpdateBackgroundCheck({
+            applyMode: 'immediate',
+            initialImmediatePhase: 'downloading',
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'false',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+            },
+        });
+
+        unsubscribe();
+
+        expect(states).toContain('true:downloading');
         expect(readAndroidLiveUpdateActivityState()).toMatchObject({
-            active: true,
-            phase: 'downloading',
+            active: false,
+            phase: 'idle',
         });
     });
 

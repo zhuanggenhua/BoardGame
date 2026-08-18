@@ -873,6 +873,10 @@
   "attackBonus": {
     "label": "+{{damage}} Damage"
   },
+  "damageSummary": {
+    "label": "Total Damage",
+    "changed": "Base {{original}} → Current {{current}}"
+  },
   "dice": {
     "waitingOpponent": "Opponent is thinking...",
     "locked": "Locked",

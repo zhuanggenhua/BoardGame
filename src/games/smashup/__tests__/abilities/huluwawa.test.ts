@@ -532,6 +532,49 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         expect(core.bases[0].minions[0].powerModifier).toBe(0);
     });
 
+    it('六娃计分前取消天赋必须从六娃本体入口发动', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('liuwa', 'huluwawa_liu_wa', '0', 4, { powerModifier: -4 }),
+            ])],
+            baseDeck: [],
+            turnNumber: 2,
+            nextUid: 100,
+            timedPowerModifiers: [{ minionUid: 'liuwa', amount: -4, expiresOnTurnNumber: 4, reason: 'huluwawa_liu_wa_talent' }],
+        });
+
+        const triggered = fireTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            now: 1000,
+        });
+
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'huluwawa_liu_wa_before_scoring');
+        expect(prompt.targetType).toBe('field-source-action');
+
+        const cancelOption = getPromptOption(
+            prompt,
+            option =>
+                option.value?.fieldInteractionType === 'source-action'
+                && option.value?.fieldSourceType === 'minion'
+                && option.value?.sourceUid === 'liuwa'
+                && option.value?.minionUid === 'liuwa'
+                && option.value?.cancel === true,
+            'Liu Wa field-source-action cancel option',
+        );
+        expect(cancelOption.displayMode).toBe('card');
+
+        const resolved = respondToPrompt(triggered.matchState!, cancelOption.id);
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.timedPowerModifiers).toBeUndefined();
+        expect(resolved.finalState.core.bases[0].minions[0].powerModifier).toBe(0);
+    });
+
     it('六娃发动天赋后不应成为毛茸茸女王的控制目标', () => {
         const queenUsed = runCommand(makeMatchState({
             players: { '0': makePlayer('0'), '1': makePlayer('1') },

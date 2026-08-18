@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
     BoardBurstImpactPreset,
@@ -11,6 +11,7 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import {
     resolveFxQuality,
     scheduleFxFrameCallback,
+    type FxAnchorSnapshot,
     type FxCellCoord,
     type FxBox,
     type FxQuality,
@@ -192,74 +193,21 @@ function stringifyAnchorId(value: unknown): string | undefined {
     return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
-function escapeCssAttributeValue(value: string): string {
-    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-function sameFxBox(a: FxBox | null, b: FxBox | null): boolean {
-    if (a === b) return true;
-    if (!a || !b) return false;
-    return Math.abs(a.left - b.left) < 0.01
-        && Math.abs(a.top - b.top) < 0.01
-        && Math.abs(a.width - b.width) < 0.01
-        && Math.abs(a.height - b.height) < 0.01;
-}
-
-function readRelativeFxBox(element: HTMLElement | null): FxBox | null {
-    if (typeof document === 'undefined' || !element) return null;
-    const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
-    if (!layer) return null;
-    const layerRect = layer.getBoundingClientRect();
-    const rect = element.getBoundingClientRect();
-    if (layerRect.width <= 0 || layerRect.height <= 0 || rect.width <= 0 || rect.height <= 0) return null;
-    return {
-        left: ((rect.left - layerRect.left) / layerRect.width) * 100,
-        top: ((rect.top - layerRect.top) / layerRect.height) * 100,
-        width: (rect.width / layerRect.width) * 100,
-        height: (rect.height / layerRect.height) * 100,
-    };
-}
-
-function readMageWarsAnchorBox(anchorId: string | undefined): FxBox | null {
-    if (typeof document === 'undefined' || !anchorId) return null;
-    const escaped = escapeCssAttributeValue(anchorId);
-    const objectElement = document.querySelector<HTMLElement>(
-        `[data-testid="mage-wars-zone-field-card"][data-object-id="${escaped}"]`,
-    );
-    if (objectElement) return readRelativeFxBox(objectElement);
-    const attachmentElement = document.querySelector<HTMLElement>(
-        `[data-testid="mage-wars-attached-card"][data-object-id="${escaped}"]`,
-    );
-    if (attachmentElement) return readRelativeFxBox(attachmentElement);
-    const mageElement = document.querySelector<HTMLElement>(
-        `[data-testid="mage-wars-zone-mage-entity"][data-player-id="${escaped}"]`,
-    );
-    return readRelativeFxBox(mageElement);
-}
-
-function useMageWarsAnchorBox(anchorId: string | undefined): FxBox | null {
-    const [box, setBox] = useState<FxBox | null>(() => readMageWarsAnchorBox(anchorId));
-
-    useLayoutEffect(() => {
-        if (!anchorId) {
-            setBox(null);
-            return undefined;
-        }
-
-        const update = () => {
-            const next = readMageWarsAnchorBox(anchorId);
-            setBox((current) => (sameFxBox(current, next) ? current : next));
-        };
-        update();
-        const cancelFrame = scheduleFxFrameCallback(0, update);
-        window.addEventListener('resize', update);
-        return () => {
-            cancelFrame();
-            window.removeEventListener('resize', update);
-        };
-    }, [anchorId]);
-
-    return box;
+function readFxAnchorSnapshot(value: unknown): FxAnchorSnapshot | null {
+    if (!value || typeof value !== 'object') return null;
+    const candidate = value as Partial<FxAnchorSnapshot>;
+    if (
+        typeof candidate.surfaceId !== 'string'
+        || typeof candidate.anchorId !== 'string'
+        || !candidate.box
+        || typeof candidate.box.left !== 'number'
+        || typeof candidate.box.top !== 'number'
+        || typeof candidate.box.width !== 'number'
+        || typeof candidate.box.height !== 'number'
+    ) {
+        return null;
+    }
+    return candidate as FxAnchorSnapshot;
 }
 
 export const SummonRenderer: React.FC<FxRendererProps> = ({
@@ -270,7 +218,7 @@ export const SummonRenderer: React.FC<FxRendererProps> = ({
 }) => {
     const cell = event.ctx.cell;
     const objectId = stringifyAnchorId(event.params?.objectId);
-    const objectBox = useMageWarsAnchorBox(objectId);
+    const objectSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     const stableComplete = useStableComplete(onComplete);
 
     useEffect(() => {
@@ -285,13 +233,15 @@ export const SummonRenderer: React.FC<FxRendererProps> = ({
 
     return (
         <BoardSummonEffectPreset
-            cellBox={objectBox ?? pos}
+            cellBox={pos}
+            anchorSnapshot={objectSnapshot}
             intensity={event.ctx.intensity ?? 'normal'}
             color={color}
             quality={quality}
             scale={MAGE_WARS_SUMMON_FX_TUNING.scale}
             originY={MAGE_WARS_SUMMON_FX_TUNING.originY}
             durationScale={MAGE_WARS_SUMMON_FX_TUNING.durationScale}
+            visualScale={MAGE_WARS_SUMMON_FX_TUNING.visualScale}
             dimStrength={MAGE_WARS_SUMMON_FX_TUNING.dimStrength}
             hostTestId="mage-wars-fx-summon"
             objectKind={String(event.params?.objectKind ?? '')}
@@ -305,6 +255,8 @@ export const SummonRenderer: React.FC<FxRendererProps> = ({
 function MageWarsTravelPath({
     source,
     target,
+    sourceSnapshot,
+    targetSnapshot,
     sourceBox,
     targetBox,
     sourceAnchorId,
@@ -316,6 +268,8 @@ function MageWarsTravelPath({
 }: {
     source?: FxCellCoord;
     target: FxCellCoord;
+    sourceSnapshot?: FxAnchorSnapshot | null;
+    targetSnapshot?: FxAnchorSnapshot | null;
     sourceBox?: FxBox | null;
     targetBox?: FxBox | null;
     sourceAnchorId?: string;
@@ -337,6 +291,8 @@ function MageWarsTravelPath({
             source={source}
             target={target}
             getCellPosition={getCellPosition}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
             sourceBox={sourceBox}
             targetBox={targetBox}
             sourceAnchorId={sourceAnchorId}
@@ -366,6 +322,7 @@ function MageWarsTravelPath({
 
 function MageWarsTargetBurst({
     cell,
+    targetSnapshot,
     targetBox,
     targetAnchorId,
     getCellPosition,
@@ -375,6 +332,7 @@ function MageWarsTargetBurst({
     quality,
 }: {
     cell: FxCellCoord;
+    targetSnapshot?: FxAnchorSnapshot | null;
     targetBox?: FxBox | null;
     targetAnchorId?: string;
     getCellPosition: FxRendererProps['getCellPosition'];
@@ -393,6 +351,7 @@ function MageWarsTargetBurst({
         <BoardBurstImpactPreset
             cell={cell}
             getCellPosition={getCellPosition}
+            targetSnapshot={targetSnapshot}
             box={targetBox}
             targetAnchorId={targetAnchorId}
             quality={quality}
@@ -416,7 +375,8 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     const cell = event.ctx.cell;
     const source = event.params?.source as FxCellCoord | undefined;
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId);
-    const targetBox = useMageWarsAnchorBox(targetAnchorId);
+    const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
     useTimedImpactAndComplete(
         cell,
@@ -435,7 +395,8 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
             <MageWarsTravelPath
                 source={source}
                 target={cell}
-                targetBox={targetBox}
+                sourceSnapshot={sourceSnapshot}
+                targetSnapshot={targetSnapshot}
                 targetAnchorId={targetAnchorId}
                 getCellPosition={getCellPosition}
                 kind="teleport"
@@ -444,7 +405,7 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
             />
             <MageWarsTargetBurst
                 cell={cell}
-                targetBox={targetBox}
+                targetSnapshot={targetSnapshot}
                 targetAnchorId={targetAnchorId}
                 getCellPosition={getCellPosition}
                 kind="teleport"
@@ -465,7 +426,8 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
     const cell = event.ctx.cell;
     const source = event.params?.source as FxCellCoord | undefined;
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId);
-    const targetBox = useMageWarsAnchorBox(targetAnchorId);
+    const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
     useTimedImpactAndComplete(
         cell,
@@ -484,7 +446,8 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
             <MageWarsTravelPath
                 source={source}
                 target={cell}
-                targetBox={targetBox}
+                sourceSnapshot={sourceSnapshot}
+                targetSnapshot={targetSnapshot}
                 targetAnchorId={targetAnchorId}
                 getCellPosition={getCellPosition}
                 kind="push"
@@ -493,7 +456,7 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
             />
             <MageWarsTargetBurst
                 cell={cell}
-                targetBox={targetBox}
+                targetSnapshot={targetSnapshot}
                 targetAnchorId={targetAnchorId}
                 getCellPosition={getCellPosition}
                 kind="push"
@@ -515,8 +478,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const source = event.params?.source as FxCellCoord | undefined;
     const sourceAnchorId = stringifyAnchorId(event.params?.sourceObjectId ?? event.params?.attackerId);
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId ?? event.params?.defenderId);
-    const sourceBox = useMageWarsAnchorBox(sourceAnchorId);
-    const targetBox = useMageWarsAnchorBox(targetAnchorId);
+    const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
 
     if (!cell) return null;
     const damage = (event.params?.damageAmount as number | undefined) ?? 1;
@@ -536,8 +499,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 source={source}
                 target={cell}
                 getCellPosition={getCellPosition}
-                sourceBox={sourceBox}
-                targetBox={targetBox}
+                sourceSnapshot={sourceSnapshot}
+                targetSnapshot={targetSnapshot}
                 sourceAnchorId={sourceAnchorId}
                 targetAnchorId={targetAnchorId}
                 damage={damage}
@@ -573,8 +536,8 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
             <AttackDiceFeedback
                 source={source}
                 target={cell}
-                sourceBox={sourceBox}
-                targetBox={targetBox}
+                sourceBox={sourceSnapshot?.box ?? null}
+                targetBox={targetSnapshot?.box ?? null}
                 diceResults={diceResults}
                 effectDieResult={effectDieResult}
                 getCellPosition={getCellPosition}
@@ -591,7 +554,7 @@ export const DamageImpactRenderer: React.FC<FxRendererProps> = ({
 }) => {
     const cell = event.ctx.cell;
     const targetAnchorId = stringifyAnchorId(event.params?.targetId);
-    const targetBox = useMageWarsAnchorBox(targetAnchorId);
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     useTimedImpactAndComplete(cell, onImpact, onComplete, 0, MAGE_WARS_FX_TIMING.directDamageCompleteMs);
 
     if (!cell) return null;
@@ -601,8 +564,9 @@ export const DamageImpactRenderer: React.FC<FxRendererProps> = ({
         <div
             className="absolute pointer-events-none z-30 flex items-center justify-center"
             data-testid="mage-wars-fx-damage-impact"
-            data-target-anchor-id={targetAnchorId ?? ''}
-            style={{ ...(targetBox ? fxBoxStyle(targetBox) : cellBox(getCellPosition, cell)), overflow: 'visible' }}
+            data-target-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
+            data-surface-id={targetSnapshot?.surfaceId ?? ''}
+            style={{ ...(targetSnapshot ? fxBoxStyle(targetSnapshot.box) : cellBox(getCellPosition, cell)), overflow: 'visible' }}
         >
             <BoardDamageImpactPreset
                 damage={damage}

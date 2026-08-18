@@ -3377,7 +3377,44 @@ test.describe('Smash Up 牌库检索交互', () => {
 
             await hostPage.screenshot({ path: testInfo.outputPath('mummy-after-scoring-prompt.png'), fullPage: true });
             await saveStableScreenshot(hostPage, testInfo, 'smashup-world-champs-mummy-after-scoring-prompt-2026-04-26');
+            const mummyCard = hostPage.locator('[data-minion-uid="mummy-live"]').first();
+            const mummyFrame = hostPage.getByTestId('su-minion-frame-mummy-live');
+            const sourceBase = hostPage.getByTestId('base-zone-0');
+            const targetBase = hostPage.getByTestId('base-zone-1');
+
+            await expect(mummyCard).toHaveAttribute('data-highlighted', 'true');
+            await expect(mummyFrame).toHaveAttribute('data-highlighted', 'true');
+            await expect(sourceBase).toHaveAttribute('data-selectable', 'false');
+            await expect(targetBase).toHaveAttribute('data-selectable', 'false');
+
+            await clickMinionOnBoard(hostPage, 'mummy-live', 10000);
+            await expect(mummyCard).toHaveAttribute('data-selected', 'true');
+            await expect(mummyFrame).toHaveAttribute('data-selected', 'true');
+            await expect(sourceBase).toHaveAttribute('data-selectable', 'false');
+            await expect(targetBase).toHaveAttribute('data-selectable', 'true');
+            await expect(targetBase).toHaveAttribute('data-deploy-mode', 'true');
+            await hostPage.screenshot({ path: testInfo.outputPath('mummy-after-scoring-target-base-highlight.png'), fullPage: true });
             await clickBaseOnBoard(hostPage, 1, 10000);
+
+            for (let step = 0; step < 8; step += 1) {
+                const [hostState, guestState] = await Promise.all([
+                    readAuthoritativeState(hostPage),
+                    readAuthoritativeState(guestPage),
+                ]);
+                const hostCurrent = getCurrentInteraction(hostState);
+                const guestCurrent = getCurrentInteraction(guestState);
+                const hostWindow = getCurrentResponseWindow(hostState);
+                const guestWindow = getCurrentResponseWindow(guestState);
+
+                if (!hostCurrent && !guestCurrent && !hostWindow && !guestWindow) {
+                    break;
+                }
+
+                if (await tryClickVisiblePassButton(hostPage)) continue;
+                if (await tryClickVisiblePassButton(guestPage)) continue;
+                await hostPage.waitForTimeout(300);
+            }
+
             await waitForNoInteraction(hostPage, 10000);
 
             await hostPage.waitForFunction(() => {

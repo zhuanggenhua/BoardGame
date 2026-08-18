@@ -42,6 +42,8 @@ export interface SummonShaderEffectProps {
   quality?: FxQuality;
   onComplete?: () => void;
   durationScale?: number;
+  /** 视觉宽度倍率。用于不同游戏在同一锚点尺寸下调节光柱主体强度，默认 1。 */
+  visualScale?: number;
   className?: string;
 }
 
@@ -105,6 +107,7 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
   quality = 'full',
   onComplete,
   durationScale = 1,
+  visualScale = 1,
   className = '',
 }) => {
   if (!active) return null;
@@ -112,6 +115,7 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
   const isStrong = intensity === 'strong';
   const c = resolveColors(color, customColors);
   const dur = (isStrong ? 1.4 : 1.1) * Math.max(0.75, durationScale);
+  const resolvedVisualScale = Math.max(0.75, Math.min(2.25, visualScale));
 
   // originY：SummonEffect 使用 "从顶部算起" 约定（0.78 = 靠近底部）
   // shader vUv：y=0 底部，y=1 顶部 → 需要翻转
@@ -129,7 +133,7 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
         uOriginY: shaderOriginY,
         uIntensity: isStrong ? 1.3 : 1.0,
         uDimStrength: dimStrength,
-        uPillarWidth: isStrong ? 0.04 : 0.03,
+        uPillarWidth: (isStrong ? 0.04 : 0.03) * resolvedVisualScale,
       }}
       duration={dur}
       onComplete={onComplete}

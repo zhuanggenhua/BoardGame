@@ -70,6 +70,27 @@ async function expectNoLegacyTokenResponseSurfaces(page: Page): Promise<void> {
     await expect(page.getByTestId('bonus-dice-confirm-button')).toHaveCount(0);
 }
 
+async function readCurrentDamageBadge(page: Page): Promise<{
+    currentDamage: number | null;
+    originalDamage: number | null;
+    text: string;
+} | null> {
+    return page.evaluate(() => {
+        const badge = document.querySelector<HTMLElement>('[data-testid="current-total-damage-badge"]');
+        if (!badge) return null;
+        const readNumber = (value: string | undefined): number | null => {
+            if (value === undefined || value === '') return null;
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+        return {
+            currentDamage: readNumber(badge.dataset.currentDamage),
+            originalDamage: readNumber(badge.dataset.originalDamage),
+            text: badge.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+        };
+    });
+}
+
 async function expectSharedResponsePromptInFixedHandLiftSlot(page: Page): Promise<void> {
     const prompt = page.getByTestId('dicethrone-response-window-hint');
     await expect(prompt).toBeVisible({ timeout: 5000 });
@@ -519,7 +540,11 @@ test.describe('Token 响应窗口完整流程', () => {
         await expectClickableTokenHighlight(page, `dt-player-0-token-${TOKEN_IDS.TAIJI}`);
         await expectNoLegacyTokenResponseSurfaces(page);
         await expectSharedResponsePromptInFixedHandLiftSlot(page);
-        await game.screenshot('太极响应-使用前共享提示贴近手牌且Token可点', testInfo);
+        await expect.poll(() => readCurrentDamageBadge(page), { timeout: 5000 }).toMatchObject({
+            currentDamage: 5,
+            originalDamage: 5,
+        });
+        await game.screenshot('太极响应-使用前总伤害五且Token可点', testInfo);
 
         await taijiToken.click();
 
@@ -551,9 +576,13 @@ test.describe('Token 响应窗口完整流程', () => {
 
         await expectNoLegacyTokenResponseSurfaces(page);
         await expectSharedResponsePromptInFixedHandLiftSlot(page);
+        await expect.poll(() => readCurrentDamageBadge(page), { timeout: 5000 }).toMatchObject({
+            currentDamage: 4,
+            originalDamage: 5,
+        });
         const passButton = page.getByTestId('dicethrone-response-pass-button');
         await expect(passButton).toHaveText(/^(跳过|Skip)$/);
-        await game.screenshot('太极响应-减伤后仍由共享提示跳过收口', testInfo);
+        await game.screenshot('太极响应-减伤后总伤害四且共享提示可跳过', testInfo);
 
         await passButton.click();
 

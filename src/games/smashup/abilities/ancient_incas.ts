@@ -438,6 +438,7 @@ function llama(ctx: AbilityContext): AbilityResult {
         {
             sourceId: 'ancient_incas_llama',
             targetType: 'generic',
+            genericIntent: 'composite-context',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },

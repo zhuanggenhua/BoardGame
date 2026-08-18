@@ -469,7 +469,7 @@ function helpingHandsAfterScoring(ctx: TriggerContext): SmashUpEvent[] | { event
             { id: 'take', label: '获得 1 VP', labelKey: 'ui.munchkin_elves_helping_hands_vp_take_option', value: { take: true }, displayMode: 'button' },
             skipOption('不获得'),
         ],
-        { sourceId: HELPING_CHOOSE_VP, targetType: 'button', titleKey: 'ui.munchkin_elves_helping_hands_vp_title', autoResolveIfSingle: false, displayCard: { defId: HELPING_HANDS, cardUid: entry.cardUid } },
+        { sourceId: HELPING_CHOOSE_VP, targetType: 'button', buttonIntent: 'mode', titleKey: 'ui.munchkin_elves_helping_hands_vp_title', autoResolveIfSingle: false, displayCard: { defId: HELPING_HANDS, cardUid: entry.cardUid } },
     );
     return { events, matchState: queueSimpleChoice(ctx.matchState, { ...interaction, data: { ...interaction.data, targetPlayerId } }) };
 }

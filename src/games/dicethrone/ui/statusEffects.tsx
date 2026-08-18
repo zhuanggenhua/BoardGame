@@ -745,7 +745,7 @@ export const StatusEffectBadge = ({
     };
     const [isHovered, setIsHovered] = React.useState(false);
     const sizeClass = size === 'tiny' ? 'w-[1.5vw] h-[1.5vw] text-[0.6vw]' : size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'tiny' ? 'text-[0.4vw] min-w-[0.6vw] h-[0.6vw]' : size === 'small' ? 'text-[0.5vw] min-w-[0.8vw] h-[0.8vw]' : 'text-[0.6vw] min-w-[1vw] h-[1vw]';
+    const stackSizeClass = size === 'tiny' ? 'text-[0.56vw] min-w-[0.86vw] h-[0.8vw] px-[0.14vw]' : size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
 
     const isClickable = clickable && onClick;
 
@@ -772,7 +772,7 @@ export const StatusEffectBadge = ({
                 {getStatusEffectIconNode(info, locale, size, atlas)}
             </div>
             {stacks > 1 && (
-                <div className={`absolute -bottom-[0.2vw] -right-[0.2vw] ${stackSizeClass} bg-black/80 text-white font-bold rounded-full flex items-center justify-center border border-white/50`}>
+                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
                     {stacks}
                 </div>
             )}
@@ -911,7 +911,7 @@ export const TokenBadge = ({
     };
     const [isHovered, setIsHovered] = React.useState(false);
     const sizeClass = size === 'tiny' ? 'w-[1.5vw] h-[1.5vw] text-[0.6vw]' : size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'tiny' ? 'text-[0.4vw] min-w-[0.6vw] h-[0.6vw]' : size === 'small' ? 'text-[0.5vw] min-w-[0.8vw] h-[0.8vw]' : 'text-[0.6vw] min-w-[1vw] h-[1vw]';
+    const stackSizeClass = size === 'tiny' ? 'text-[0.56vw] min-w-[0.86vw] h-[0.8vw] px-[0.14vw]' : size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
 
     const isClickable = clickable && onClick;
 
@@ -966,11 +966,11 @@ export const TokenBadge = ({
             </div>
             {/* 有上限(>1)时始终显示 数量/上限；否则仅 amount>1 时显示数量 */}
             {(maxAmount != null && maxAmount > 1) ? (
-                <div className={`absolute -bottom-[0.2vw] -right-[0.2vw] ${stackSizeClass} bg-black/80 text-white font-bold rounded-full flex items-center justify-center border border-white/50 px-[0.15vw]`}>
+                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
                     {amount}/{maxAmount}
                 </div>
             ) : amount > 1 ? (
-                <div className={`absolute -bottom-[0.2vw] -right-[0.2vw] ${stackSizeClass} bg-black/80 text-white font-bold rounded-full flex items-center justify-center border border-white/50`}>
+                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
                     {amount}
                 </div>
             ) : null}
@@ -1115,7 +1115,7 @@ export const SelectableStatusBadge = ({
     };
     const [isHovered, setIsHovered] = React.useState(false);
     const sizeClass = size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'small' ? 'text-[0.5vw] min-w-[0.8vw] h-[0.8vw]' : 'text-[0.6vw] min-w-[1vw] h-[1vw]';
+    const stackSizeClass = size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
 
     const clickable = Boolean(onSelect);
 
@@ -1143,7 +1143,7 @@ export const SelectableStatusBadge = ({
                 {getStatusEffectIconNode(info, locale, size === 'small' ? 'small' : 'normal', atlas)}
             </div>
             {stacks > 1 && (
-                <div className={`absolute -bottom-[0.2vw] -right-[0.2vw] ${stackSizeClass} bg-black/80 text-white font-bold rounded-full flex items-center justify-center border border-white/50`}>
+                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
                     {stacks}
                 </div>
             )}

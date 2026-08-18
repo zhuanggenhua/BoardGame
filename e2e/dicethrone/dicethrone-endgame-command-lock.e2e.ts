@@ -19,7 +19,7 @@ type DiceThroneEndgameHarnessState = {
 };
 
 test.describe('DiceThrone 终局攻击锁', () => {
-    test('胜利弹窗出现后既拦住棋盘点击，也拒绝继续掷攻击骰', async ({ page, game }, testInfo) => {
+    test('胜利失败画面出现后用透明点击层拦住棋盘操作，并在移动横屏保留完整按钮', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await game.openTestGame('dicethrone', { playerID: '0' }, OPEN_TIMEOUT_MS);
@@ -47,9 +47,25 @@ test.describe('DiceThrone 终局攻击锁', () => {
         });
 
         const endgameTitle = page.getByTestId('dt-endgame-title');
+        const endgameOverlay = page.getByTestId('endgame-overlay');
         const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
         await expect(endgameTitle).toBeVisible({ timeout: 10000 });
         await expect(rollButton).toBeVisible({ timeout: 10000 });
+
+        const overlayPaint = await endgameOverlay.evaluate((overlay) => {
+            const style = window.getComputedStyle(overlay);
+            const webkitStyle = style as CSSStyleDeclaration & { webkitBackdropFilter?: string };
+            return {
+                backgroundColor: style.backgroundColor,
+                backdropFilter: style.backdropFilter || webkitStyle.webkitBackdropFilter || 'none',
+                pointerEvents: style.pointerEvents,
+            };
+        });
+        expect(overlayPaint).toEqual({
+            backgroundColor: 'rgba(0, 0, 0, 0)',
+            backdropFilter: 'none',
+            pointerEvents: 'auto',
+        });
 
         const topmostAtRollButton = await rollButton.evaluate((button) => {
             const rect = button.getBoundingClientRect();
@@ -60,6 +76,31 @@ test.describe('DiceThrone 终局攻击锁', () => {
             return topmost?.closest('[data-testid="endgame-overlay"]')?.getAttribute('data-testid') ?? null;
         });
         expect(topmostAtRollButton).toBe('endgame-overlay');
+
+        await page.setViewportSize({ width: 812, height: 375 });
+        await expect(endgameTitle).toBeVisible({ timeout: 10000 });
+        const rematchButtonRects = await page.locator('[data-testid="rematch-actions"] button').evaluateAll((buttons) => (
+            buttons.map((button) => {
+                const rect = button.getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            })
+        ));
+        expect(rematchButtonRects.length).toBeGreaterThan(0);
+        for (const rect of rematchButtonRects) {
+            expect(rect.width).toBeGreaterThan(0);
+            expect(rect.height).toBeGreaterThanOrEqual(44);
+            expect(rect.left).toBeGreaterThanOrEqual(0);
+            expect(rect.top).toBeGreaterThanOrEqual(0);
+            expect(rect.right).toBeLessThanOrEqual(812);
+            expect(rect.bottom).toBeLessThanOrEqual(375);
+        }
 
         await dispatchDiceThroneCommand(page, { type: 'ROLL_DICE', playerId: '0' });
         await expect(page.getByText('对局已结束', { exact: true })).toBeVisible();
@@ -81,6 +122,6 @@ test.describe('DiceThrone 终局攻击锁', () => {
             hasRolledEvent: false,
         });
 
-        await game.screenshot('胜利弹窗出现后攻击骰无法再掷出', testInfo);
+        await game.screenshot('胜利失败画面透明拦截且移动横屏按钮完整', testInfo);
     });
 });

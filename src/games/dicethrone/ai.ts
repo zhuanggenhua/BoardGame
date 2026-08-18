@@ -2260,7 +2260,10 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
             kind: 'confirm-roll',
             label: '确认当前奖励骰',
             commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
-            metadata: withAiActionStrategyTags({}, ['dice-setup']),
+            metadata: withAiActionStrategyTags({
+                rollConfirmScope: 'bonus-roll',
+                bonusDiceSettlementId: settlement.id,
+            }, ['dice-setup']),
         });
         return actions;
     }
@@ -2283,7 +2286,10 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
         kind: 'confirm-roll',
         label: '确认当前奖励骰',
         commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
-        metadata: withAiActionStrategyTags({}, ['dice-setup']),
+        metadata: withAiActionStrategyTags({
+            rollConfirmScope: 'bonus-roll',
+            bonusDiceSettlementId: settlement.id,
+        }, ['dice-setup']),
     });
 
     return actions;
@@ -2488,7 +2494,10 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
                 kind: 'confirm-roll',
                 label: '确认目标骰面',
                 commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
-                metadata: withAiActionStrategyTags({}, ['dice-setup']),
+                metadata: withAiActionStrategyTags({
+                    rollConfirmScope: 'main-roll',
+                    rollConfirmPhase: phase,
+                }, ['dice-setup']),
             });
         }
     }
@@ -2579,7 +2588,10 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
                 kind: 'confirm-roll',
                 label: '确认骰面',
                 commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
-                metadata: withAiActionStrategyTags({}, ['dice-setup']),
+                metadata: withAiActionStrategyTags({
+                    rollConfirmScope: 'main-roll',
+                    rollConfirmPhase: phase,
+                }, ['dice-setup']),
             });
         }
     }

@@ -76,7 +76,14 @@ async function openFourPlayerTestGame(game: {
     let lastError: unknown;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
-            await game.openTestGame('smashup', { numPlayers: 4, skipInitialization: true });
+            await game.openTestGame('smashup', {
+                numPlayers: 4,
+                skipInitialization: true,
+                seat0: 'human',
+                seat1: 'human',
+                seat2: 'human',
+                seat3: 'human',
+            });
             return;
         } catch (error) {
             lastError = error;

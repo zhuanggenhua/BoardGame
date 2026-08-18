@@ -655,7 +655,7 @@
 - 修复文件：`src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts`
   - 在 `REQUIRED_SOURCE_CONFIGS` 补登记：
     - `cthulhu_corruption: { targetType: 'generic', autoRefresh: 'field', responseValidationMode: 'live' }`
-  - 在 `APPROVED_GENERIC_SOURCE_REASONS` 补登记：
+  - 在当时的旧 generic 原因表补登记：
     - `cthulhu_corruption` 的 generic 保留理由（候选由 `buildActionMinionTargetOptions` 生成，存在复合语义）。
 - 复跑结果：
   1. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --maxWorkers 1`
@@ -676,7 +676,7 @@
 - 上面这条“`cthulhu_corruption` 需要保留 `targetType: 'generic'` 原因登记”的审计补记，现已被后续验证推翻。
 - 当前正确口径：
   - `cthulhu_corruption: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' }`
-  - 不再属于 `APPROVED_GENERIC_SOURCE_REASONS`
+  - 不再属于当时的旧 generic 原因表；该表后续已废弃，当前统一按 `genericIntent` 或选项形状推导解释 generic。
 - 修订原因：
   - 2026-04-26 真实页面 E2E 已证明 `腐化` 可以稳定走“手牌真实打出 -> 场上随从高亮 -> 直接点击随从 -> 目标消灭 -> 返回常规出牌态”这条链路。
   - 旧补记里把 `buildActionMinionTargetOptions` 误判成“可能混合随从与持续行动卡”的复合语义，这与当前 helper 实际返回的 `minion` 候选不一致。

@@ -5,14 +5,33 @@ import {
   CONFIG_REVIEW_GAME_IDS,
   getGameConfigReviewPath,
 } from '../config/gameConfigReviewRoutes';
-
-const CONFIG_REVIEW_PAGE_BY_GAME_ID = {
-  summonerwars: React.lazy(() => import('./SummonerWarsConfigReview')),
-  dicethrone: React.lazy(() => import('./DiceThroneConfigReview')),
-  betrayal: React.lazy(() => import('./BetrayalConfigReview')),
-} as const;
+import { requireLazyModuleExport } from '../lib/lazyModuleExport';
 
 type ConfigReviewPageComponent = React.ComponentType;
+
+export function loadConfigReviewPageModule(
+  loader: () => Promise<{ default?: ConfigReviewPageComponent | null } | null | undefined>,
+  moduleId: string,
+): Promise<{ default: ConfigReviewPageComponent }> {
+  return loader().then((module) => ({
+    default: requireLazyModuleExport(module, 'default', moduleId),
+  }));
+}
+
+const CONFIG_REVIEW_PAGE_BY_GAME_ID = {
+  summonerwars: React.lazy(() => loadConfigReviewPageModule(
+    () => import('./SummonerWarsConfigReview'),
+    './pages/SummonerWarsConfigReview',
+  )),
+  dicethrone: React.lazy(() => loadConfigReviewPageModule(
+    () => import('./DiceThroneConfigReview'),
+    './pages/DiceThroneConfigReview',
+  )),
+  betrayal: React.lazy(() => loadConfigReviewPageModule(
+    () => import('./BetrayalConfigReview'),
+    './pages/BetrayalConfigReview',
+  )),
+} as const;
 
 export const CONFIG_REVIEW_PAGE_ROUTES = CONFIG_REVIEW_GAME_IDS.map((gameId) => ({
   gameId,

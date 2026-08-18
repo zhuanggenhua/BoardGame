@@ -46,7 +46,6 @@ type CardChoice = {
 };
 type MinionChoice = { minionUid?: string; defId?: string; minionDefId?: string; baseIndex?: number; skip?: boolean };
 type BaseChoice = { baseIndex?: number; skip?: boolean };
-type PairChoice = { minionUids?: [string, string]; minionDefIds?: [string, string]; baseIndex?: number; skip?: boolean };
 type WoodsmanChoice = {
     mode?: 'destroyAction' | 'destroyWolf';
     actionUid?: string;
@@ -728,36 +727,40 @@ function gingerbreadHouse(ctx: BaseAbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base || !ctx.matchState) return { events: [] };
     const own = base.minions.filter(minion => minion.controller === ctx.playerId);
-    const options: Array<{
-        id: string;
-        label: string;
-        value: PairChoice;
-        displayMode: 'button';
-    }> = [];
+    const eligibleUids = new Set<string>();
     for (let i = 0; i < own.length; i += 1) {
         for (let j = i + 1; j < own.length; j += 1) {
             if (getMinionPower(ctx.state, own[i], ctx.baseIndex) !== getMinionPower(ctx.state, own[j], ctx.baseIndex)) continue;
-            options.push({
-                id: `pair-${own[i].uid}-${own[j].uid}`,
-                label: `${cardLabel(own[i].defId)} + ${cardLabel(own[j].defId)}`,
-                value: {
-                    minionUids: [own[i].uid, own[j].uid],
-                    minionDefIds: [own[i].defId, own[j].defId],
-                    baseIndex: ctx.baseIndex,
-                },
-                displayMode: 'button',
-            });
+            eligibleUids.add(own[i].uid);
+            eligibleUids.add(own[j].uid);
         }
     }
-    if (options.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<PairChoice>(
+    const options = buildMinionTargetOptions(
+        own
+            .filter(minion => eligibleUids.has(minion.uid))
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: ctx.baseIndex,
+                label: cardLabel(minion.defId),
+            })),
+        {
+            state: ctx.state,
+            sourcePlayerId: ctx.playerId,
+            sourceDefId: 'base_gingerbread_house',
+            effectType: 'buff',
+        },
+    );
+    if (options.length < 2) return { events: [] };
+    const interaction = createSimpleChoice<MinionChoice>(
         `base_gingerbread_house_${ctx.playerId}_${ctx.now}`,
         ctx.playerId,
         '姜饼屋：选择两个同力量随从直到回合结束各 +2',
         [createSkipOption('不加力量', 'ui.grimms_fairy_tales_skip_power_option'), ...options],
         {
             sourceId: 'base_gingerbread_house',
-            targetType: 'button',
+            targetType: 'minion',
+            multi: { min: 2, max: 2 },
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },
@@ -1148,21 +1151,21 @@ export function registerGrimmsFairyTalesInteractionHandlers(): void {
     });
 
     registerInteractionHandler('base_gingerbread_house', (state, playerId, value, _data, _random, timestamp) => {
-        const selected = value as PairChoice | undefined;
-        if (selected?.skip || !selected?.minionUids || selected.baseIndex === undefined) return { state, events: [] };
-        const base = state.core.bases[selected.baseIndex];
-        const pair = selected.minionUids
-            .map(uid => base?.minions.find(minion => minion.uid === uid && minion.controller === playerId))
-            .filter((minion): minion is MinionOnBase => Boolean(minion));
-        if (pair.length !== 2) return { state, events: [] };
-        if (getMinionPower(state.core, pair[0], selected.baseIndex) !== getMinionPower(state.core, pair[1], selected.baseIndex)) {
+        const choices = (Array.isArray(value) ? value : [value]) as MinionChoice[];
+        if (choices.some(choice => choice?.skip)) return { state, events: [] };
+        const selected = findSelectedMinions(state.core, choices);
+        if (selected.length !== 2) return { state, events: [] };
+        const [first, second] = selected;
+        if (first.baseIndex !== second.baseIndex) return { state, events: [] };
+        if (first.minion.controller !== playerId || second.minion.controller !== playerId) return { state, events: [] };
+        if (getMinionPower(state.core, first.minion, first.baseIndex) !== getMinionPower(state.core, second.minion, second.baseIndex)) {
             return { state, events: [] };
         }
         return {
             state,
-            events: pair.map(minion => addTempPower(
+            events: selected.map(({ minion, baseIndex }) => addTempPower(
                 minion.uid,
-                selected.baseIndex!,
+                baseIndex,
                 2,
                 'base_gingerbread_house',
                 timestamp,
@@ -1170,7 +1173,7 @@ export function registerGrimmsFairyTalesInteractionHandlers(): void {
                     sourcePlayerId: playerId,
                     sourceDefId: 'base_gingerbread_house',
                     sourceControllerId: playerId,
-                    sourceBaseIndex: selected.baseIndex,
+                    sourceBaseIndex: baseIndex,
                 },
             )),
         };

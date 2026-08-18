@@ -127,6 +127,21 @@ const expectCompareRollMainResultLayer = async (page: Page, timeout = 8000): Pro
     await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
     await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
     await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
+    const layout = await page.evaluate(() => {
+        const panelNode = document.querySelector<HTMLElement>('[data-testid="compare-roll-overlay"]');
+        const panelRect = panelNode?.getBoundingClientRect();
+        if (!panelRect) return null;
+
+        return {
+            centerOffsetX: Math.abs(panelRect.left + panelRect.width / 2 - window.innerWidth / 2),
+            centerOffsetY: Math.abs(panelRect.top + panelRect.height / 2 - window.innerHeight / 2),
+            centerToleranceX: Math.max(24, window.innerWidth * 0.02),
+            centerToleranceY: Math.max(24, window.innerHeight * 0.02),
+        };
+    });
+    expect(layout).not.toBeNull();
+    expect(layout!.centerOffsetX).toBeLessThanOrEqual(layout!.centerToleranceX);
+    expect(layout!.centerOffsetY).toBeLessThanOrEqual(layout!.centerToleranceY);
 };
 
 const getRightDiceRail = (page: Page) => {
@@ -415,10 +430,10 @@ test.describe('DiceThrone Showdown 双端右侧对掷面板', () => {
             await expectCompareRollMainResultLayer(guestPage);
             await expect(hostPage.getByText('枪战决斗')).toBeVisible();
             await expect(guestPage.getByText('枪战决斗')).toBeVisible();
-            await expect(hostPage.getByTestId('compare-roll-participant-0')).toBeVisible();
-            await expect(hostPage.getByTestId('compare-roll-participant-1')).toBeVisible();
-            await expect(guestPage.getByTestId('compare-roll-participant-0')).toBeVisible();
-            await expect(guestPage.getByTestId('compare-roll-participant-1')).toBeVisible();
+            await expect(hostPage.getByTestId('compare-roll-participant-0')).toHaveCount(0);
+            await expect(hostPage.getByTestId('compare-roll-participant-1')).toHaveCount(0);
+            await expect(guestPage.getByTestId('compare-roll-participant-0')).toHaveCount(0);
+            await expect(guestPage.getByTestId('compare-roll-participant-1')).toHaveCount(0);
             await expect(hostPage.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
             await expect(guestPage.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
 

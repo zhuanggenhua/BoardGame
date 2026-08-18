@@ -98,9 +98,10 @@ export type FieldSourceTargetTarget = {
 };
 
 /**
- * 构建“点击场上来源对象本体即可执行”的共享交互选项。
+ * 构建“点击场上来源对象本体提交当前来源动作”的共享交互选项。
  *
- * 规则语义：来源对象本体是第一入口且没有第二目标；跳过/不发动等分支仍用按钮承载。
+ * 规则语义：来源对象本体是第一入口，当前 prompt 没有并列的目标对象。
+ * 点击来源后可以直接结算，也可以进入后续目标、数量或排序步骤；跳过/不发动等分支仍用按钮承载。
  */
 export function buildFieldSourceActionOptions<TExtra extends Record<string, unknown> = Record<string, never>>(
     source: FieldSourceTargetSource & { label: string; labelKey?: string },

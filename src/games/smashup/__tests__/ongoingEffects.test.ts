@@ -10,6 +10,7 @@ import {
     registerRestriction,
     registerTrigger,
     registerBaseScoringSuppression,
+    registerCardAbilitySuppression,
     registerPodOngoingAliases,
     collectTriggers,
     clearOngoingEffectRegistry,
@@ -18,6 +19,7 @@ import {
     isMinionProtected,
     isOperationRestricted,
     isBaseScoringSuppressed,
+    isCardSuppressed,
     getConsumableProtectionSource,
     fireTriggers,
     fireTriggerForSource,
@@ -156,6 +158,28 @@ describe('持续效果拦截框架', () => {
 
             const ids = getRegisteredOngoingEffectIds();
             expect(ids.protectionIds.has('time_travelers_stasis_field_pod')).toBe(true);
+        });
+
+        test('同一状态连续查询卡牌压制时复用已计算结果', () => {
+            let calls = 0;
+            registerCardAbilitySuppression('test_suppressor', () => {
+                calls += 1;
+                return ['target-1'];
+            });
+
+            const state = makeState([
+                makeBase({
+                    minions: [
+                        makeMinion({ uid: 'source-1', defId: 'test_suppressor' }),
+                        makeMinion({ uid: 'target-1', defId: 'test_target' }),
+                    ],
+                }),
+            ]);
+
+            expect(isCardSuppressed(state, 'target-1')).toBe(true);
+            expect(isCardSuppressed(state, 'target-1')).toBe(true);
+            expect(isCardSuppressed(state, 'source-1')).toBe(false);
+            expect(calls).toBe(1);
         });
 
         test('POD alias 若继承 consumable protection，仍应保留 consumable 语义', () => {

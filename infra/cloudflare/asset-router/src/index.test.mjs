@@ -153,18 +153,51 @@ test('Range 分片请求不启用边缘媒体缓存', async () => {
 });
 
 test('源站 404 不再回退对象存储', async () => {
+    const requestedOriginUrls = [];
     const router = createAssetRouter({
-        fetchImpl: async () => new Response('missing', { status: 404 }),
+        fetchImpl: async (request) => {
+            requestedOriginUrls.push(request.url);
+            return new Response('missing', { status: 404 });
+        },
     });
 
     const response = await router(
         new Request('https://assets.example.test/official/common/missing.webp'),
-        createEnv(),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
     );
 
+    assert.deepEqual(requestedOriginUrls, ['https://origin.example.test/official/common/missing.webp']);
     assert.equal(response.status, 404);
     assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'tunnel');
     assert.equal(await response.text(), 'missing');
+});
+
+test('源站 5xx 时回退到 IP 主源', async () => {
+    const requestedOriginUrls = [];
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOriginUrls.push(request.url);
+            if (request.url.startsWith('https://origin.example.test/')) {
+                return new Response('bad gateway', { status: 502 });
+            }
+            return new Response('fallback-manifest', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    );
+
+    assert.deepEqual(requestedOriginUrls, [
+        'https://origin.example.test/official/app-updates/android/stable/latest.json',
+        'http://203.0.113.10/official/app-updates/android/stable/latest.json',
+    ]);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'fallback-ip');
+    assert.equal(await response.text(), 'fallback-manifest');
 });
 
 test('源站 5xx 标识 server-error 且不回退对象存储', async () => {
@@ -196,6 +229,33 @@ test('源站离线返回 server-error，不读取任何对象存储兜底', asyn
     assert.equal(response.status, 502);
     assert.equal(response.headers.get('X-Asset-Source'), 'server-error');
     assert.equal(await response.text(), 'Asset origin unavailable');
+});
+
+test('源站离线时回退到 IP 主源', async () => {
+    const requestedOriginUrls = [];
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOriginUrls.push(request.url);
+            if (request.url.startsWith('https://origin.example.test/')) {
+                throw new Error('origin offline');
+            }
+            return new Response('fallback-body', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/native-app-updates/android/stable/latest.json'),
+        createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
+    );
+
+    assert.deepEqual(requestedOriginUrls, [
+        'https://origin.example.test/official/native-app-updates/android/stable/latest.json',
+        'http://203.0.113.10/official/native-app-updates/android/stable/latest.json',
+    ]);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'fallback-ip');
+    assert.equal(await response.text(), 'fallback-body');
 });
 
 test('HEAD 请求不返回响应体', async () => {

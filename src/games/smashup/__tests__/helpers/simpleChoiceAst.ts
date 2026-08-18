@@ -3,11 +3,15 @@ import * as ts from 'typescript';
 export interface SimpleChoiceConfigInfo {
     sourceId: string;
     targetType?: string;
+    buttonIntent?: string;
+    genericIntent?: string;
     autoRefresh?: string;
     responseValidationMode?: string;
     revalidateOnRespond?: boolean;
     hasMulti: boolean;
     hasTargetType: boolean;
+    hasButtonIntent: boolean;
+    hasGenericIntent: boolean;
     hasAutoRefresh: boolean;
     hasResponseValidationMode: boolean;
     hasRevalidateOnRespond: boolean;
@@ -134,17 +138,21 @@ function collectPushedOptions(
     const callIndex = statements.indexOf(callStatement);
     if (declIndex === -1 || callIndex === -1 || declIndex >= callIndex) return;
 
-    for (let i = declIndex + 1; i < callIndex; i++) {
-        const statement = statements[i];
-        if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression)) continue;
-        const expr = statement.expression.expression;
-        if (!ts.isPropertyAccessExpression(expr)) continue;
-        if (!ts.isIdentifier(expr.expression) || expr.expression.text !== variableName) continue;
-        if (expr.name.text !== 'push') continue;
-
-        for (const arg of statement.expression.arguments) {
-            collectOptionObjectLiterals(sourceFile, arg, callNode, seen, results);
+    const collectPushCalls = (node: ts.Node): void => {
+        if (ts.isFunctionLike(node)) return;
+        if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+            const expr = node.expression;
+            if (ts.isIdentifier(expr.expression) && expr.expression.text === variableName && expr.name.text === 'push') {
+                for (const arg of node.arguments) {
+                    collectOptionObjectLiterals(sourceFile, arg, callNode, seen, results);
+                }
+            }
         }
+        ts.forEachChild(node, collectPushCalls);
+    };
+
+    for (let i = declIndex + 1; i < callIndex; i++) {
+        collectPushCalls(statements[i]);
     }
 }
 
@@ -161,6 +169,8 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
             sourceId: 'unknown',
             hasMulti: false,
             hasTargetType: false,
+            hasButtonIntent: false,
+            hasGenericIntent: false,
             hasAutoRefresh: false,
             hasResponseValidationMode: false,
             hasRevalidateOnRespond: false,
@@ -173,6 +183,8 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
             sourceId: stringSourceId,
             hasMulti: false,
             hasTargetType: false,
+            hasButtonIntent: false,
+            hasGenericIntent: false,
             hasAutoRefresh: false,
             hasResponseValidationMode: false,
             hasRevalidateOnRespond: false,
@@ -199,6 +211,8 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
             sourceId: 'unknown',
             targetType: forcedTargetType,
             hasTargetType: false,
+            hasButtonIntent: false,
+            hasGenericIntent: false,
             hasAutoRefresh: false,
             hasResponseValidationMode: false,
             hasRevalidateOnRespond: false,
@@ -207,6 +221,8 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
 
     let sourceId = 'unknown';
     let targetType: string | undefined = forcedTargetType;
+    let buttonIntent: string | undefined;
+    let genericIntent: string | undefined;
     let autoRefresh: string | undefined;
     let responseValidationMode: string | undefined;
     let revalidateOnRespond: boolean | undefined;
@@ -216,6 +232,8 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
         const name = getPropertyName(prop.name);
         if (name === 'sourceId') sourceId = extractStringLiteral(prop.initializer) ?? sourceId;
         if (name === 'targetType') targetType = extractStringLiteral(prop.initializer);
+        if (name === 'buttonIntent') buttonIntent = extractStringLiteral(prop.initializer);
+        if (name === 'genericIntent') genericIntent = extractStringLiteral(prop.initializer);
         if (name === 'autoRefresh') autoRefresh = extractStringLiteral(prop.initializer);
         if (name === 'responseValidationMode') responseValidationMode = extractStringLiteral(prop.initializer);
         if (name === 'revalidateOnRespond') revalidateOnRespond = extractBooleanLiteral(prop.initializer);
@@ -225,11 +243,15 @@ export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoice
     return {
         sourceId,
         targetType,
+        buttonIntent,
+        genericIntent,
         autoRefresh,
         responseValidationMode,
         revalidateOnRespond,
         hasMulti,
         hasTargetType: !!targetType,
+        hasButtonIntent: !!buttonIntent,
+        hasGenericIntent: !!genericIntent,
         hasAutoRefresh: !!autoRefresh,
         hasResponseValidationMode: !!responseValidationMode,
         hasRevalidateOnRespond: revalidateOnRespond !== undefined,

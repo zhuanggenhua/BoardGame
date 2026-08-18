@@ -357,6 +357,17 @@ const baseScoringSuppressionRegistry: BaseScoringSuppressionEntry[] = [];
 const baseVpModifierRegistry: BaseVpModifierEntry[] = [];
 const cardAbilitySuppressionRegistry: CardAbilitySuppressionEntry[] = [];
 
+type CardSuppressionCacheEntry = {
+    suppressedUids: ReadonlySet<string>;
+    filteredStateBySourceDefId: Map<string, SmashUpCore>;
+};
+
+let cardSuppressionCacheByState = new WeakMap<SmashUpCore, CardSuppressionCacheEntry>();
+
+function resetCardSuppressionCache(): void {
+    cardSuppressionCacheByState = new WeakMap();
+}
+
 function shouldExposePodOngoingAlias(defId: string): boolean {
     const podCard = getCardDef(`${defId}_pod`);
     if (podCard) {
@@ -1003,6 +1014,7 @@ export function registerCardAbilitySuppression(
 ): void {
     if (cardAbilitySuppressionRegistry.some(e => e.sourceDefId === sourceDefId)) return;
     cardAbilitySuppressionRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
+    resetCardSuppressionCache();
 }
 
 export function registerBaseVpModifier(
@@ -1024,6 +1036,7 @@ export function clearOngoingEffectRegistry(): void {
     baseScoringSuppressionRegistry.length = 0;
     baseVpModifierRegistry.length = 0;
     cardAbilitySuppressionRegistry.length = 0;
+    resetCardSuppressionCache();
 }
 
 export function hasRegisteredTrigger(sourceDefId: string, timing: TriggerTiming): boolean {
@@ -1316,6 +1329,9 @@ export function registerPodOngoingAliases(): void {
     }
 
     cardAbilitySuppressionRegistry.push(...cardSuppressionsToAdd);
+    if (cardSuppressionsToAdd.length > 0) {
+        resetCardSuppressionCache();
+    }
 
 
 }
@@ -1469,13 +1485,13 @@ function getTurnScopedSuppressedCardUids(state: SmashUpCore): ReadonlySet<string
     ]);
 }
 
-function getSuppressedCardUids(state: SmashUpCore): Set<string> {
-    const suppressedUids = new Set(getTurnScopedSuppressedCardUids(state));
+function computeSuppressedCardUids(state: SmashUpCore): ReadonlySet<string> {
+    const turnScopedSuppressedCardUids = getTurnScopedSuppressedCardUids(state);
+    const suppressedUids = new Set(turnScopedSuppressedCardUids);
     if (cardAbilitySuppressionRegistry.length === 0) {
         return suppressedUids;
     }
 
-    const turnScopedSuppressedCardUids = getTurnScopedSuppressedCardUids(state);
     for (const entry of cardAbilitySuppressionRegistry) {
         const filteredState = getStateFilteredBySuppressedUids(state, entry.sourceDefId, turnScopedSuppressedCardUids);
         const additionalSuppressedUids = entry.checker(filteredState, turnScopedSuppressedCardUids);
@@ -1484,6 +1500,22 @@ function getSuppressedCardUids(state: SmashUpCore): Set<string> {
         }
     }
     return suppressedUids;
+}
+
+function getCardSuppressionCacheEntry(state: SmashUpCore): CardSuppressionCacheEntry {
+    const existing = cardSuppressionCacheByState.get(state);
+    if (existing) return existing;
+
+    const entry: CardSuppressionCacheEntry = {
+        suppressedUids: computeSuppressedCardUids(state),
+        filteredStateBySourceDefId: new Map(),
+    };
+    cardSuppressionCacheByState.set(state, entry);
+    return entry;
+}
+
+function getSuppressedCardUids(state: SmashUpCore): ReadonlySet<string> {
+    return getCardSuppressionCacheEntry(state).suppressedUids;
 }
 
 export function isCardSuppressed(
@@ -1497,11 +1529,17 @@ export function getSuppressionFilteredStateForSource(
     state: SmashUpCore,
     sourceDefId: string,
 ): SmashUpCore {
-    const suppressedUids = getSuppressedCardUids(state);
+    const cacheEntry = getCardSuppressionCacheEntry(state);
+    const suppressedUids = cacheEntry.suppressedUids;
     if (suppressedUids.size === 0) {
         return state;
     }
-    return getStateFilteredBySuppressedUids(state, sourceDefId, suppressedUids);
+    const cached = cacheEntry.filteredStateBySourceDefId.get(sourceDefId);
+    if (cached) return cached;
+
+    const filteredState = getStateFilteredBySuppressedUids(state, sourceDefId, suppressedUids);
+    cacheEntry.filteredStateBySourceDefId.set(sourceDefId, filteredState);
+    return filteredState;
 }
 
 function getStateFilteredBySuppressedUids(

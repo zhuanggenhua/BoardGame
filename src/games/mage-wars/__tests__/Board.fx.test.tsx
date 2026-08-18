@@ -93,6 +93,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
         originY,
         quality,
         durationScale,
+        visualScale,
         dimStrength,
         onImpact,
     }: {
@@ -102,6 +103,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
         originY?: number;
         quality?: string;
         durationScale?: number;
+        visualScale?: number;
         dimStrength?: number;
         onImpact?: () => void;
     }) => (
@@ -114,6 +116,7 @@ vi.mock('../../../components/common/animations/SummonHybridEffect', () => ({
             data-origin-y={String(originY ?? '')}
             data-quality={quality ?? ''}
             data-duration-scale={String(durationScale ?? '')}
+            data-visual-scale={String(visualScale ?? '')}
             data-dim-strength={String(dimStrength ?? '')}
             data-has-impact={String(Boolean(onImpact))}
             onClick={onImpact}
@@ -632,9 +635,10 @@ describe('MageWarsBoard FX wiring', () => {
         expect(summonEffect.getAttribute('data-active')).toBe('true');
         expect(summonEffect.getAttribute('data-intensity')).toBe('strong');
         expect(summonEffect.getAttribute('data-color')).toBe('blue');
-        expect(summonEffect.getAttribute('data-origin-y')).toBe('0.62');
+        expect(summonEffect.getAttribute('data-origin-y')).toBe('0.66');
         expect(summonEffect.getAttribute('data-quality')).toBe('reduced');
         expect(summonEffect.getAttribute('data-duration-scale')).toBe('2.4');
+        expect(summonEffect.getAttribute('data-visual-scale')).toBe('1.55');
         expect(summonEffect.getAttribute('data-dim-strength')).toBe('0');
         expect(summonEffect.getAttribute('data-has-impact')).toBe('true');
         expect(onImpact).not.toHaveBeenCalled();

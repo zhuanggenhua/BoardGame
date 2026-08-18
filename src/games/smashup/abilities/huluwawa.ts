@@ -36,6 +36,7 @@ import {
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { registerBaseAbility } from '../domain/baseAbilities';
+import { buildFieldSourceActionOptions, buildFieldSourceActionPromptConfig } from '../domain/fieldInteractionOptions';
 import { registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
 import type {
     ProtectionCheckContext,
@@ -783,15 +784,26 @@ function huluwawaLiuWaBeforeScoring(ctx: TriggerContext): TriggerResult | SmashU
         modifier.minionUid === ctx.sourceCardUid && modifier.reason === 'huluwawa_liu_wa_talent',
     );
     if (!hasEffect) return [];
+    const sourceDef = getMinionDef(source.minion.defId);
     const interaction = createSimpleChoice(
         `huluwawa_liu_wa_before_scoring_${ctx.sourceCardUid}_${ctx.now}`,
         ctx.sourceControllerId ?? ctx.playerId,
         '六娃：你可以取消自己的天赋效果',
         [
-            { id: 'cancel', label: '取消效果', labelKey: 'ui.huluwawa_liu_wa_cancel_option', value: { cancel: true }, displayMode: 'button' as const },
+            ...buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: ctx.sourceCardUid,
+                defId: source.minion.defId,
+                baseIndex: source.baseIndex,
+                label: sourceDef?.name ?? '六娃',
+                labelKey: 'ui.huluwawa_liu_wa_cancel_option',
+            }, { cancel: true }),
             createSkipOption('保留效果', 'ui.huluwawa_liu_wa_keep_option'),
         ],
-        { sourceId: 'huluwawa_liu_wa_before_scoring', targetType: 'button', titleKey: 'ui.huluwawa_liu_wa_before_scoring_title' },
+        buildFieldSourceActionPromptConfig({
+            sourceId: 'huluwawa_liu_wa_before_scoring',
+            titleKey: 'ui.huluwawa_liu_wa_before_scoring_title',
+        }),
     );
     return {
         events: [],
@@ -1900,10 +1912,10 @@ export function registerHuluwawaAbilities(): void {
     });
 
     registerInteractionHandler('huluwawa_liu_wa_before_scoring', (state, _playerId, value, data, _random, timestamp) => {
-        const selected = value as { cancel?: boolean; skip?: boolean } | undefined;
+        const selected = value as { cancel?: boolean; skip?: boolean; sourceUid?: string; minionUid?: string } | undefined;
         if (selected?.skip || !selected?.cancel) return { state, events: [] };
         const continuation = (data as { continuationContext?: { minionUid?: string } } | undefined)?.continuationContext;
-        const minionUid = continuation?.minionUid;
+        const minionUid = selected.minionUid ?? selected.sourceUid ?? continuation?.minionUid;
         if (!minionUid) return { state, events: [] };
         const found = findMinionOnBases(state.core, minionUid);
         if (!found) return { state, events: [] };
@@ -1912,22 +1924,19 @@ export function registerHuluwawaAbilities(): void {
             modifier.minionUid === minionUid && modifier.reason === 'huluwawa_liu_wa_talent',
         );
         if (cancelled.length === 0) return { state, events: [] };
-        const remaining = modifiers.filter(modifier =>
-            !(modifier.minionUid === minionUid && modifier.reason === 'huluwawa_liu_wa_talent'),
-        );
         const revertAmount = -cancelled.reduce((sum, modifier) => sum + modifier.amount, 0);
-        const nextState: MatchState<SmashUpCore> = {
-            ...state,
-            core: {
-                ...state.core,
-                timedPowerModifiers: remaining.length > 0 ? remaining : undefined,
-            },
-        };
         return {
-            state: nextState,
-            events: revertAmount === 0
-                ? []
-                : [addPermanentPower(minionUid, found.baseIndex, revertAmount, 'huluwawa_liu_wa_cancel_talent', timestamp)],
+            state,
+            events: [
+                {
+                    type: SU_EVENTS.TIMED_POWER_MODIFIER_CANCELLED,
+                    payload: { minionUid, reason: 'huluwawa_liu_wa_talent' },
+                    timestamp,
+                } as SmashUpEvent,
+                ...(revertAmount === 0
+                    ? []
+                    : [addPermanentPower(minionUid, found.baseIndex, revertAmount, 'huluwawa_liu_wa_cancel_talent', timestamp)]),
+            ],
         };
     });
 

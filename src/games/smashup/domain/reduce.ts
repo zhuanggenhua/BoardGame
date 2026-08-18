@@ -65,6 +65,7 @@ import type {
     ExtraTurnQueuedEvent,
     TempPowerAddedEvent,
     PermanentPowerAddedEvent,
+    TimedPowerModifierCancelledEvent,
     LimitModifiedEvent,
     CardSuppressedEvent,
     CardsSuppressedUntilTurnEndEvent,
@@ -1607,6 +1608,22 @@ export function reducePermanentPowerAddedEvent(
         bases: newBases,
         ...(basePowerDecreasedPlayersThisTurn ? { basePowerDecreasedPlayersThisTurn } : {}),
         ...(timedPowerModifiers ? { timedPowerModifiers } : {}),
+    };
+}
+
+export function reduceTimedPowerModifierCancelledEvent(
+    state: SmashUpCore,
+    event: TimedPowerModifierCancelledEvent,
+): SmashUpCore {
+    const { minionUid, reason } = event.payload;
+    const existing = state.timedPowerModifiers ?? [];
+    const remaining = existing.filter(modifier =>
+        !(modifier.minionUid === minionUid && modifier.reason === reason)
+    );
+    if (remaining.length === existing.length) return state;
+    return {
+        ...state,
+        timedPowerModifiers: remaining.length > 0 ? remaining : undefined,
     };
 }
 
@@ -5182,6 +5199,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         // 永久力量修正（非指示物，不可移动/转移）
         case SU_EVENTS.PERMANENT_POWER_ADDED:
             return reducePermanentPowerAddedEvent(state, event as PermanentPowerAddedEvent);
+
+        case SU_EVENTS.TIMED_POWER_MODIFIER_CANCELLED:
+            return reduceTimedPowerModifierCancelledEvent(state, event as TimedPowerModifierCancelledEvent);
 
         // 临界点临时修正（回合结束自动清零）
         case SU_EVENTS.BREAKPOINT_MODIFIED: {

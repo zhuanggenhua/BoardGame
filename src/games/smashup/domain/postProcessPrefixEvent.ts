@@ -39,6 +39,7 @@ import type {
     OngoingAttachedEvent,
     OngoingDetachedEvent,
     PermanentPowerAddedEvent,
+    TimedPowerModifierCancelledEvent,
     BreakpointModifiedEvent,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
@@ -108,6 +109,7 @@ import {
     reduceOngoingAttachedEvent,
     reduceOngoingDetachedEvent,
     reducePermanentPowerAddedEvent,
+    reduceTimedPowerModifierCancelledEvent,
     reducePowerCounterAddedEvent,
     reducePowerCounterRemovedEvent,
     reduceScoringEligibleBasesLockedEvent,
@@ -289,6 +291,8 @@ export function applyPostProcessPrefixEvent(core: SmashUpCore, event: SmashUpEve
             return reduceTempPowerAddedEvent(core, event as TempPowerAddedEvent);
         case SU_EVENTS.PERMANENT_POWER_ADDED:
             return reducePermanentPowerAddedEvent(core, event as PermanentPowerAddedEvent);
+        case SU_EVENTS.TIMED_POWER_MODIFIER_CANCELLED:
+            return reduceTimedPowerModifierCancelledEvent(core, event as TimedPowerModifierCancelledEvent);
         case SU_EVENTS.TEMP_BASE_POWER_MODIFIED:
             return reduceTempBasePowerModifiedEvent(core, event as TempBasePowerModifiedEvent);
         case SU_EVENTS.BREAKPOINT_MODIFIED: {

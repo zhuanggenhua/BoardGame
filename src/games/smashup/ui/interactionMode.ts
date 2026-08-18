@@ -11,6 +11,16 @@ type PromptOptionLike = {
     value?: unknown;
 };
 
+export type SmashUpDirectPromptTargetKind =
+    | 'base'
+    | 'minion'
+    | 'hand'
+    | 'ongoing'
+    | 'board'
+    | 'buried'
+    | 'field-source-target'
+    | 'field-source-action';
+
 type HandCardLike = {
     uid?: unknown;
 };
@@ -65,13 +75,52 @@ export function getSmashUpSelectableBaseIndices(options: ReadonlyArray<PromptOpt
 
     for (const option of options) {
         if (option?.disabled) continue;
-        const value = option?.value as { baseIndex?: unknown } | undefined;
-        if (typeof value?.baseIndex === 'number' && value.baseIndex >= 0) {
+        if (isSmashUpDirectPromptTargetOption(option, 'base')) {
+            const value = option.value as { baseIndex: number };
             indices.add(value.baseIndex);
         }
     }
 
     return indices;
+}
+
+export function isSmashUpDirectPromptTargetOption(
+    option: PromptOptionLike | null | undefined,
+    targetKind: SmashUpDirectPromptTargetKind,
+): boolean {
+    const value = option?.value as Record<string, unknown> | undefined;
+    if (!value) return false;
+
+    switch (targetKind) {
+        case 'base':
+            return typeof value.baseIndex === 'number' && value.baseIndex >= 0;
+        case 'minion':
+            return typeof value.minionUid === 'string';
+        case 'hand':
+            return typeof value.cardUid === 'string' || typeof value.titanUid === 'string';
+        case 'ongoing':
+            return typeof value.cardUid === 'string';
+        case 'board':
+            return typeof value.minionUid === 'string' || typeof value.cardUid === 'string';
+        case 'buried':
+            return typeof value.cardUid === 'string'
+                && typeof value.baseIndex === 'number'
+                && value.baseIndex >= 0;
+        case 'field-source-target':
+            return value.fieldInteractionType === 'source-target';
+        case 'field-source-action':
+            return value.fieldInteractionType === 'source-action';
+        default:
+            return false;
+    }
+}
+
+export function getSmashUpDirectPromptExtraOptions<TOption extends PromptOptionLike>(
+    options: ReadonlyArray<TOption> | null | undefined,
+    targetKind: SmashUpDirectPromptTargetKind,
+): TOption[] {
+    if (!Array.isArray(options)) return [];
+    return options.filter(option => !isSmashUpDirectPromptTargetOption(option, targetKind));
 }
 
 function hasEnabledCardOptionOutsideHand(

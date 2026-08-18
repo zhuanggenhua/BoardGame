@@ -445,7 +445,12 @@ type OnlineAiLegalActionReportedAction = {
     playerId: string;
     actionKind: string;
     actionId: string;
+    metadata?: Record<string, unknown>;
 };
+export const canManualForceAdvanceAfterConfirmedRoll = (
+    reportedAction: Pick<OnlineAiLegalActionReportedAction, 'actionKind' | 'metadata'> | null | undefined,
+): boolean => reportedAction?.actionKind === 'confirm-roll'
+    && reportedAction.metadata?.rollConfirmScope === 'main-roll';
 type OnlineAiLegalActionRecoveryResult =
     | {
         applied: true;
@@ -3070,12 +3075,12 @@ export class GameTransportServer {
         };
         const buildManualForceAdvanceAfterConfirmedRollCandidate = (
             expectedPlayerId: string,
-            previousActionKind: string | null | undefined,
+            previousAction: OnlineAiLegalActionReportedAction | null | undefined,
         ): ForceEndTurnStalledAiResolution | null => {
             if (options?.allowManualImmediateAiContinuation !== true) {
                 return null;
             }
-            if (previousActionKind !== 'confirm-roll') {
+            if (!canManualForceAdvanceAfterConfirmedRoll(previousAction)) {
                 return null;
             }
             if (!expectedPlayerId || seatControllers[expectedPlayerId]?.type === 'human') {
@@ -3771,7 +3776,7 @@ export class GameTransportServer {
                 if (!nextCandidate || nextCandidate.playerId !== candidate.playerId) {
                     const manualForceAdvanceCandidate = buildManualForceAdvanceAfterConfirmedRollCandidate(
                         candidate.playerId,
-                        actionRecovery.reportedAction?.actionKind,
+                        actionRecovery.reportedAction,
                     );
                     if (manualForceAdvanceCandidate) {
                         currentCandidate = manualForceAdvanceCandidate;
@@ -3900,7 +3905,7 @@ export class GameTransportServer {
                 );
                 const manualForceAdvanceCandidate = buildManualForceAdvanceAfterConfirmedRollCandidate(
                     candidate.playerId,
-                    actionRecovery.reportedAction?.actionKind,
+                    actionRecovery.reportedAction,
                 );
                 if (manualForceAdvanceCandidate) {
                     currentCandidate = manualForceAdvanceCandidate;
@@ -5604,6 +5609,7 @@ export class GameTransportServer {
                         playerId: resolution.playerId,
                         actionKind: resolution.action.kind,
                         actionId: resolution.action.actionId,
+                        metadata: resolution.action.metadata,
                     },
                 };
             }
@@ -5770,6 +5776,7 @@ export class GameTransportServer {
                 playerId: resolution.playerId,
                 actionKind: resolution.action.kind,
                 actionId: resolution.action.actionId,
+                metadata: resolution.action.metadata,
             },
         };
     }

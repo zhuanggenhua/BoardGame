@@ -9,6 +9,9 @@ import {
     applyEvents,
     expectRegisteredAbilityContract,
     expectRegisteredInteractionHandlerContract,
+    getPromptMulti,
+    getPromptOptions,
+    getPromptTargetType,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -481,7 +484,19 @@ describe('格林童话代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 60,
         });
-        const resolved = respondToPromptOption(result.matchState!, option => option.value?.minionUids?.includes('left'), 'choose same-power pair', '0', FIXED_RANDOM);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_gingerbread_house');
+        expect(getPromptTargetType(prompt)).toBe('minion');
+        expect(getPromptMulti(prompt)).toEqual({ min: 2, max: 2 });
+        const promptOptions = getPromptOptions(prompt);
+        expect(promptOptions.find(option => option.value?.minionUids)).toBeUndefined();
+        expect(promptOptions.find(option => option.id === 'skip')?.displayMode).toBe('button');
+        const selectedIds = promptOptions
+            .filter(option => ['left', 'right'].includes(option.value?.minionUid))
+            .map(option => option.id);
+        expect(selectedIds).toHaveLength(2);
+        expect(promptOptions.some(option => option.value?.minionUid === 'enemy')).toBe(false);
+
+        const resolved = respondToPromptOptions(result.matchState!, selectedIds, '0', FIXED_RANDOM);
 
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'left')?.tempPowerModifier).toBe(2);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'right')?.tempPowerModifier).toBe(2);

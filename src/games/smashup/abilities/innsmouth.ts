@@ -366,6 +366,7 @@ const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<Innsm
             {
                 sourceId: 'innsmouth_return_to_the_sea_choose_name',
                 targetType: 'generic',
+                genericIntent: 'definition-choice',
                 titleKey: 'ui.innsmouth_return_to_the_sea_choose_name_title',
             },
         );

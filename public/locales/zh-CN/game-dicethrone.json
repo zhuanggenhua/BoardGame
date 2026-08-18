@@ -950,6 +950,10 @@
   "attackBonus": {
     "label": "+{{damage}} 伤害"
   },
+  "damageSummary": {
+    "label": "总伤害",
+    "changed": "原始 {{original}} → 当前 {{current}}"
+  },
   "dice": {
     "waitingOpponent": "对方正在思考中…",
     "locked": "已锁定",

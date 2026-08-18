@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { useVisualStateBuffer, type UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
-import type { FxBus } from '../../../engine/fx';
+import type { FxAnchorRef, FxAnchorSnapshot, FxBus } from '../../../engine/fx';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import type { MatchState } from '../../../engine/types';
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from '../domain';
@@ -11,6 +11,7 @@ import { mapMageWarsEventToFx } from './eventFxMapper';
 interface UseMageWarsGameEventsParams {
     G: MatchState<MageWarsCore>;
     fxBus: FxBus;
+    resolveFxAnchorSnapshot?: (anchor: FxAnchorRef | string | undefined | null) => FxAnchorSnapshot | null;
 }
 
 interface UseMageWarsGameEventsResult {
@@ -190,7 +191,49 @@ function getHeldObjectIdsForEvent(
     return [];
 }
 
-export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams): UseMageWarsGameEventsResult {
+export const MAGE_WARS_ARENA_FX_SURFACE_ID = 'mage-wars:arena';
+
+function anchorRef(anchorId: unknown, anchorKind: FxAnchorRef['anchorKind']): FxAnchorRef | null {
+    return typeof anchorId === 'string' && anchorId.length > 0
+        ? { surfaceId: MAGE_WARS_ARENA_FX_SURFACE_ID, anchorId, anchorKind }
+        : null;
+}
+
+function resolveInstructionSnapshots(
+    instruction: ReturnType<typeof mapMageWarsEventToFx>,
+    resolveFxAnchorSnapshot?: UseMageWarsGameEventsParams['resolveFxAnchorSnapshot'],
+): ReturnType<typeof mapMageWarsEventToFx> {
+    if (!instruction || !resolveFxAnchorSnapshot) return instruction;
+    const params = instruction.params ?? {};
+    const sourceAnchor = anchorRef(
+        params.sourceObjectId ?? params.attackerId ?? params.playerId,
+        params.sourceObjectId ? 'entity' : 'player',
+    );
+    const targetAnchor = anchorRef(
+        params.objectId ?? params.targetObjectId ?? params.targetPlayerId ?? params.defenderId ?? params.targetId,
+        params.objectId || params.targetObjectId || params.targetId ? 'entity' : 'player',
+    );
+    const sourceSnapshot = sourceAnchor ? resolveFxAnchorSnapshot(sourceAnchor) : null;
+    const targetSnapshot = targetAnchor ? resolveFxAnchorSnapshot(targetAnchor) : null;
+
+    return {
+        ...instruction,
+        ctx: {
+            ...instruction.ctx,
+            space: 'board',
+            surfaceId: MAGE_WARS_ARENA_FX_SURFACE_ID,
+            ...(sourceSnapshot ? { sourceSnapshot } : {}),
+            ...(targetSnapshot ? { targetSnapshot } : {}),
+        },
+        params: {
+            ...params,
+            ...(sourceSnapshot ? { sourceSnapshot } : {}),
+            ...(targetSnapshot ? { targetSnapshot } : {}),
+        },
+    };
+}
+
+export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: UseMageWarsGameEventsParams): UseMageWarsGameEventsResult {
     const fxBusRef = useRef(fxBus);
     const fxImpactMapRef = useRef(new Map<string, string[]>());
     const fxHeldObjectMapRef = useRef(new Map<string, string[]>());
@@ -262,7 +305,10 @@ export function useMageWarsGameEvents({ G, fxBus }: UseMageWarsGameEventsParams)
             if (event.type === 'DAMAGE_DEALT' && drivenDamageTargetIds.has(event.payload.targetId)) {
                 continue;
             }
-            const instruction = mapMageWarsEventToFx(entry, G.core);
+            const instruction = resolveInstructionSnapshots(
+                mapMageWarsEventToFx(entry, G.core),
+                resolveFxAnchorSnapshot,
+            );
             if (!instruction) continue;
             fxCues.push(instruction.cue);
             const fxId = fxBusRef.current.push(instruction.cue, instruction.ctx, instruction.params);

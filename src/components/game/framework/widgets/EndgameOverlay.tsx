@@ -16,6 +16,7 @@ import { useGameMode } from '../../../../contexts/GameModeContext';
 import { VictoryParticles } from '../../../common/animations';
 import { RematchActions, type RematchActionsProps } from './RematchActions';
 import { UI_Z_INDEX } from '../../../../core';
+import { cn } from '../../../../lib/utils';
 
 export interface GameOverResult {
     winner?: string;
@@ -69,6 +70,10 @@ export interface EndgameOverlayProps {
     renderContent?: (props: ContentSlotProps) => React.ReactNode;
     /** 自定义按钮区域（可选） */
     renderActions?: (props: ActionsSlotProps) => React.ReactNode;
+    /** 视觉背景样式；不影响结束画面对底层棋盘的点击拦截 */
+    backdropClassName?: string;
+    /** 内容容器附加样式，用于游戏专属移动端压缩 */
+    contentWrapperClassName?: string;
 }
 
 /**
@@ -152,6 +157,8 @@ export function EndgameOverlay({
     onVote,
     renderContent,
     renderActions,
+    backdropClassName = 'bg-black/60 backdrop-blur-sm',
+    contentWrapperClassName,
 }: EndgameOverlayProps): React.ReactElement | null {
     const [shouldShow, setShouldShow] = useState(false);
     const [frozenResult, setFrozenResult] = useState<GameOverResult | undefined>(undefined);
@@ -208,31 +215,41 @@ export function EndgameOverlay({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: OVERLAY_FADE_MS / 1000 }}
-                    className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+                    className={cn(
+                        'fixed inset-0 pointer-events-auto overflow-y-auto overscroll-contain',
+                        backdropClassName,
+                    )}
                     style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 >
-                    <VictoryParticles active={showVictoryParticles} className="z-0" />
+                    <VictoryParticles active={showVictoryParticles} className="fixed z-0" />
 
-                    <motion.div
-                        data-testid="endgame-overlay-content"
-                        initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                        animate={{ scale: 1, y: 0, opacity: 1 }}
-                        exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        className="relative z-10 flex flex-col items-center w-full max-w-md mx-4 pointer-events-auto"
+                    <div
+                        className="relative z-10 flex min-h-full w-full items-center justify-center px-4 py-[max(1rem,var(--safe-area-top,0px))] pb-[max(1rem,var(--safe-area-bottom,0px))]"
                     >
-                        {/* 内容区域（可自定义） */}
-                        {contentReady && (renderContent
-                            ? renderContent(contentProps)
-                            : <DefaultContent {...contentProps} />
-                        )}
+                        <motion.div
+                            data-testid="endgame-overlay-content"
+                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                            className={cn(
+                                'relative flex max-h-[var(--runtime-modal-max-height,calc(100dvh-2rem))] w-full max-w-md flex-col items-center overflow-y-auto overscroll-contain pointer-events-auto',
+                                contentWrapperClassName,
+                            )}
+                        >
+                            {/* 内容区域（可自定义） */}
+                            {contentReady && (renderContent
+                                ? renderContent(contentProps)
+                                : <DefaultContent {...contentProps} />
+                            )}
 
-                        {/* 按钮区域（可自定义） */}
-                        {contentReady && (renderActions
-                            ? renderActions(actionsProps)
-                            : <RematchActions {...actionsProps} />
-                        )}
-                    </motion.div>
+                            {/* 按钮区域（可自定义） */}
+                            {contentReady && (renderActions
+                                ? renderActions(actionsProps)
+                                : <RematchActions {...actionsProps} />
+                            )}
+                        </motion.div>
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>

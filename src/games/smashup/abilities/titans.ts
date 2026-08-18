@@ -840,6 +840,7 @@ function explorersVeryLargeBoulderOnMinionMoved(ctx: TriggerContext): TriggerRes
         {
             sourceId: 'titan_explorers_very_large_boulder_move',
             targetType: 'button',
+            buttonIntent: 'confirm-known-object',
             titleKey: 'ui.titan_very_large_boulder_move_title',
             titleParams: {
                 name: 'cards.explorers_very_large_boulder.name',
@@ -1106,6 +1107,7 @@ function ignoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): Trigge
         {
             sourceId: 'titan_ignobles_the_hill_that_strolls_counter',
             targetType: 'button',
+            buttonIntent: 'confirm-known-object',
             titleKey: 'ui.titan_hill_that_strolls_counter_title',
         },
     );
@@ -3461,6 +3463,7 @@ function piratesTheKrakenAfterScoring(ctx: {
             {
                 sourceId: 'titan_pirates_the_kraken_play_replacement',
                 targetType: 'button',
+                buttonIntent: 'confirm-known-object',
                 titleKey: 'ui.titan_kraken_play_replacement_title',
             },
         );
@@ -6547,7 +6550,7 @@ export function registerTitanInteractionHandlers(): void {
             opponentOptions,
             {
                 sourceId: 'titan_ignobles_the_hill_that_strolls_choose_player',
-                targetType: 'button',
+                targetType: 'player',
                 titleKey: 'ui.titan_hill_that_strolls_choose_player_title',
             },
         );
@@ -7366,6 +7369,7 @@ export function registerTitanInteractionHandlers(): void {
             {
                 sourceId: 'titan_super_spies_moon_zero_three_resolve',
                 targetType: 'button',
+                buttonIntent: 'known-card-placement',
                 displayCard: { defId: peek.card.defId },
                 titleKey: 'ui.titan_moon_zero_three_resolve_title',
                 titleParams: {

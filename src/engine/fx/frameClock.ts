@@ -32,6 +32,10 @@ function getNow(): number {
   return Date.now();
 }
 
+function normalizeFrameNow(now: number): number {
+  return Number.isFinite(now) ? now : getNow();
+}
+
 function requestNextFrame(callback: (now: number) => void): number | ReturnType<typeof setTimeout> {
   if (typeof requestAnimationFrame === 'function') {
     return requestAnimationFrame(callback);
@@ -61,15 +65,16 @@ function scheduleFrame() {
 }
 
 function runFrame(now: number) {
+  const frameNow = normalizeFrameNow(now);
   frameHandle = null;
 
-  const rawDeltaMs = lastFrameNow > 0 ? now - lastFrameNow : 0;
+  const rawDeltaMs = lastFrameNow > 0 ? frameNow - lastFrameNow : 0;
   const deltaMs = Math.max(0, Math.min(rawDeltaMs, MAX_DELTA_MS));
-  lastFrameNow = now;
+  lastFrameNow = frameNow;
   frameIndex += 1;
 
   const frame: FxFrame = {
-    now,
+    now: frameNow,
     deltaMs,
     deltaSec: deltaMs / 1000,
     frame: frameIndex,

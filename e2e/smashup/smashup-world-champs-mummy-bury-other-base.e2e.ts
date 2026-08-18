@@ -123,6 +123,9 @@ test.describe('SmashUp 世界冠军木乃伊埋葬流程', () => {
         const sourceBase = page.getByTestId('base-zone-0');
         const targetBase = page.getByTestId('base-zone-1');
         const otherTargetBase = page.getByTestId('base-zone-2');
+        const sourceBaseHighlight = page.getByTestId('su-base-target-highlight-0');
+        const targetBaseHighlight = page.getByTestId('su-base-target-highlight-1');
+        const otherTargetBaseHighlight = page.getByTestId('su-base-target-highlight-2');
 
         await expect(mummyCard).toHaveAttribute('data-highlighted', 'true');
         await expect(mummyFrame).toHaveAttribute('data-highlighted', 'true');
@@ -130,6 +133,9 @@ test.describe('SmashUp 世界冠军木乃伊埋葬流程', () => {
         await expect(targetBase).toHaveAttribute('data-selectable', 'false');
         await expect(otherTargetBase).toHaveAttribute('data-selectable', 'false');
         await expect(targetBase).toHaveAttribute('data-deploy-mode', 'false');
+        await expect(sourceBaseHighlight).toHaveCount(0);
+        await expect(targetBaseHighlight).toHaveCount(0);
+        await expect(otherTargetBaseHighlight).toHaveCount(0);
         await game.screenshot('world-champs-mummy-02-source-highlight', testInfo);
 
         await mummyCard.click({ force: true });
@@ -141,6 +147,11 @@ test.describe('SmashUp 世界冠军木乃伊埋葬流程', () => {
         await expect(targetBase).toHaveAttribute('data-dimmed', 'false');
         await expect(otherTargetBase).toHaveAttribute('data-selectable', 'true');
         await expect(otherTargetBase).toHaveAttribute('data-deploy-mode', 'true');
+        await expect(sourceBaseHighlight).toHaveCount(0);
+        await expect(targetBaseHighlight).toBeVisible();
+        await expect(otherTargetBaseHighlight).toBeVisible();
+        await expect(targetBaseHighlight).toHaveCSS('border-top-color', 'rgba(134, 239, 172, 0.98)');
+        await expect(otherTargetBaseHighlight).toHaveCSS('border-top-color', 'rgba(134, 239, 172, 0.98)');
         await game.screenshot('world-champs-mummy-03-target-base-highlight', testInfo);
 
         await targetBase.click({ force: true });

@@ -34,8 +34,12 @@ import './cursor';
 import { HandArea, type HandAreaDragPreview, type HandAreaDropTarget } from './ui/HandArea';
 
 const END_TURN_THROTTLE_MS = 800;
-import { useGameEvents } from './ui/useGameEvents';
-import { useFxBus, FxLayer } from '../../engine/fx';
+import {
+    SMASH_UP_TABLE_FX_SURFACE_ID,
+    smashUpBaseAnchorId,
+    useGameEvents,
+} from './ui/useGameEvents';
+import { useFxBus, FxLayer, useFxAnchorRegistry } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { smashUpFxRegistry } from './ui/fxSetup';
 import { FactionSelection } from './ui/FactionSelection';
@@ -90,6 +94,7 @@ import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 import {
     getSmashUpDirectHandPromptCardState,
+    getSmashUpDirectPromptExtraOptions,
     isSmashUpPromptOwnedByPlayer,
     resolveSmashUpHandInteractionMode,
     resolveSmashUpHandPromptUiMode,
@@ -623,8 +628,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const selectedFieldSourceTargetEntry = fieldSourceTargetSelection.selectedEntry;
     const fieldSourceTargetExtraOptions = useMemo(() => {
         if (!fieldSourceTargetPrompt || !currentPrompt) return [];
-        return currentPrompt.options
-            .filter(opt => !isFieldSourceTargetValue(opt.value))
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'field-source-target')
             .map(opt => ({
                 ...opt,
                 label: resolvePromptOptionLabel(opt),
@@ -632,8 +636,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [currentPrompt, fieldSourceTargetPrompt, resolvePromptOptionLabel]);
     const fieldSourceActionExtraOptions = useMemo(() => {
         if (!fieldSourceActionPrompt || !currentPrompt) return [];
-        return currentPrompt.options
-            .filter(opt => !isFieldSourceActionValue(opt.value))
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'field-source-action')
             .map(opt => ({
                 ...opt,
                 label: resolvePromptOptionLabel(opt),
@@ -848,12 +851,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return false;
-            // 非手牌选项：没有 cardUid 字段的选项（如 skip/done/confirm）
-            return !val.cardUid && !val.titanUid;
-        }).map(opt => ({
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'hand').map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -887,14 +885,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 基地选择中的非基地选项（如"完成"/"跳过"），需要作为浮动按钮显示
     const baseSelectExtraOptions = useMemo(() => {
         if (!isBaseSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return true;
-            // 有效基地选项：baseIndex >= 0
-            if (typeof val.baseIndex === 'number' && val.baseIndex >= 0) return false;
-            // 其余都是非基地操作选项（skip / done / cancel 等）
-            return true;
-        }).map(opt => ({
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'base').map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -950,11 +941,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const buriedSelectExtraOptions = useMemo(() => {
         if (!isBuriedSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as BuriedPromptOptionValue | undefined;
-            if (!val) return true;
-            return !(typeof val.cardUid === 'string' && typeof val.baseIndex === 'number' && val.baseIndex >= 0);
-        }).map(opt => ({
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'buried').map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -1063,14 +1050,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 随从选择中的非随从选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const minionSelectExtraOptions = useMemo(() => {
         if (!isMinionSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return true;
-            // 包含 minionUid 的是随从选项，不在此显示
-            if (typeof val.minionUid === 'string') return false;
-            // 其余都是非随从操作选项（skip / done / cancel 等）
-            return true;
-        }).map(opt => ({
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'minion').map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -1220,25 +1200,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 持续行动卡选择中的非行动卡选项（如"跳过"），需要作为浮动按钮显示
     const ongoingSelectExtraOptions = useMemo(() => {
         if (!isOngoingSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return true;
-            // 包含 cardUid 的是行动卡目标选项，不在此显示
-            if (typeof val.cardUid === 'string') return false;
-            // 其余都是非行动卡操作选项（skip / done / cancel 等）
-            return true;
-        });
-    }, [isOngoingSelectPrompt, currentPrompt]);
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'ongoing').map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt),
+        }));
+    }, [isOngoingSelectPrompt, currentPrompt, resolvePromptOptionLabel]);
 
     const boardSelectExtraOptions = useMemo(() => {
         if (!isBoardSelectPrompt || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => {
-            const val = opt.value as Record<string, unknown> | undefined;
-            if (!val) return true;
-            if (typeof val.minionUid === 'string') return false;
-            if (typeof val.cardUid === 'string') return false;
-            return true;
-        }).map(opt => ({
+        return getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'board').map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
@@ -2065,6 +2035,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         maxDpr: renderPipelineSettings.maxDpr,
         reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
     });
+    const fxAnchors = useFxAnchorRegistry(SMASH_UP_TABLE_FX_SURFACE_ID, 'table');
 
     // 事件流消费 → FX 特效驱动
     const myPid = playerID || '0';
@@ -2073,6 +2044,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         myPlayerId: myPid,
         fxBus,
         baseRefs: baseRefsMap,
+        resolveFxAnchorSnapshot: fxAnchors.resolveSnapshot,
         playerNames,
     });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
@@ -3480,7 +3452,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     return (
         <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
-            <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none"
+            <div
+                ref={fxAnchors.registerSurface}
+                className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none"
+                data-fx-surface-id={SMASH_UP_TABLE_FX_SURFACE_ID}
             >
 
                 {/* Table Texture Layer */}
@@ -4461,6 +4436,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     tokenRef={(el) => {
                                         if (el) baseRefsMap.current.set(idx, el);
                                         else baseRefsMap.current.delete(idx);
+                                        const anchorId = smashUpBaseAnchorId(idx);
+                                        fxAnchors.registerAnchor({
+                                            anchorId,
+                                            anchorKind: 'base',
+                                            entityRef: anchorId,
+                                        })(el);
                                     }}
                                 />
 
@@ -4712,6 +4693,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
                     // 阻塞性交互优先于瞬时视觉反馈，避免 VP/卡牌飞行动画盖住可操作按钮。
                     className={isCurrentPromptForPlayer && currentPrompt ? 'invisible' : undefined}
+                    data-testid="smashup-fx-layer"
                 />
 
                 {/* 回合切换提示 */}

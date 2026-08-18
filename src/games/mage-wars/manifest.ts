@@ -27,7 +27,6 @@ const entry: GameManifestEntry = {
     mobileLayoutPreset: 'board-shell',
     mobileBoardShellLayout: {
         designWidth: 1920,
-        designHeight: 1080,
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {

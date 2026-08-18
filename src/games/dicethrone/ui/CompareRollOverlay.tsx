@@ -40,7 +40,6 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
 
     const options = compareRoll?.options ?? [];
     const hasOptions = options.length > 0;
-    const contestants = compareRoll?.contestants ?? [];
     const compareRollId = compareRoll?.id ?? null;
     const autoConfirmDelayMs = compareRoll?.autoConfirmDelayMs ?? 3000;
 
@@ -53,7 +52,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
         return () => window.clearTimeout(timer);
     }, [autoConfirmDelayMs, canResolve, compareRollId, hasOptions, isVisible]);
 
-    if (!isVisible || !compareRoll || contestants.length !== 2) {
+    if (!isVisible || !compareRoll) {
         return null;
     }
 
@@ -74,26 +73,6 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                 {hasTranslation(compareRoll.title)
                     ? t(compareRoll.title)
                     : compareRoll.title}
-            </div>
-
-            <div className="mt-[0.6vw] grid grid-cols-2 gap-[0.55vw]">
-                {contestants.map((contestant, index) => {
-                    const label = hasTranslation(contestant.labelKey)
-                        ? t(contestant.labelKey, contestant.labelParams)
-                        : contestant.label;
-
-                    return (
-                        <div
-                            key={`${compareRoll.id}-${contestant.playerId ?? index}`}
-                            className="min-w-0 rounded-[0.55vw] border border-white/10 bg-white/10 px-[0.55vw] py-[0.45vw]"
-                            data-testid={`compare-roll-participant-${index}`}
-                        >
-                            <div className="truncate text-[0.7vw] font-bold uppercase leading-tight tracking-wide text-white/75">
-                                {label}
-                            </div>
-                        </div>
-                    );
-                })}
             </div>
 
             {resultText ? (

@@ -1140,7 +1140,6 @@ test.describe('亡灵交互技能', () => {
       const sacrificeSelector = `[data-testid="sw-unit-${prepared.sacrificePosition.row}-${prepared.sacrificePosition.col}"][data-owner="0"]`;
       await expect(hostPage.locator(sacrificeSelector).first()).toBeVisible({ timeout: 5000 });
       await clickBoardElementViaHelper(hostPage, sacrificeSelector);
-      await expect(prompt).toBeHidden({ timeout: 8000 });
 
       const summonMatch = summonTargetId.match(/sw-cell-(\d+)-(\d+)/);
       if (!summonMatch) {
@@ -1159,7 +1158,17 @@ test.describe('亡灵交互技能', () => {
         summonCellEmpty: true,
         summonedUnitName: '伊路特-巴尔',
       });
-      await expect(hostPage.getByTestId('sw-ability-prompt')).toHaveCount(0, { timeout: 5000 });
+      await expect.poll(async () => {
+        const latestState = await getMatchState(match.matchId, hostPage) as { sys?: { interaction?: { current?: { data?: { sw?: { type?: string } } } } } };
+        const type = latestState.sys?.interaction?.current?.data?.sw?.type ?? null;
+        return type === 'fire_sacrifice_summon' ? type : 'fire_sacrifice_resolved';
+      }, { timeout: 8000 }).toBe('fire_sacrifice_resolved');
+      await expect.poll(async () => {
+        const promptText = await readVisibleAbilityPromptText(hostPage);
+        return /火祀召唤|火祭召唤|Fire Sacrifice/i.test(promptText)
+          ? 'fire_sacrifice_prompt_visible'
+          : 'fire_sacrifice_prompt_cleared';
+      }, { timeout: 8000 }).toBe('fire_sacrifice_prompt_cleared');
       await hostPage.waitForTimeout(1200);
 
       await hostPage.screenshot({

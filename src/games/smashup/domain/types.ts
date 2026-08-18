@@ -1859,6 +1859,7 @@ export type SmashUpEvent =
     | TempPowerAddedEvent
     | TempBasePowerModifiedEvent
     | PermanentPowerAddedEvent
+    | TimedPowerModifierCancelledEvent
     | BreakpointModifiedEvent
     | BaseDeckShuffledEvent
     | SpecialLimitUsedEvent
@@ -2575,6 +2576,14 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+    };
+}
+
+/** 取消未来回退的永久力量修正记录，不直接修改当前力量 */
+export interface TimedPowerModifierCancelledEvent extends GameEvent<typeof SU_EVENTS.TIMED_POWER_MODIFIER_CANCELLED> {
+    payload: {
+        minionUid: string;
+        reason: string;
     };
 }
 

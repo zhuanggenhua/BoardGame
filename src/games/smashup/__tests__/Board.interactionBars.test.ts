@@ -7,6 +7,7 @@ import {
     buildFieldSourceTargetPromptModel,
     resolveFieldSourceTargetSelectionState,
 } from '../ui/fieldSourceTargetInteraction';
+import { getSmashUpDirectPromptExtraOptions } from '../ui/interactionMode';
 import {
     getSmashUpReactionChoiceBaseIndex,
     getSmashUpReactionChoiceTargetMinionUid,
@@ -22,6 +23,10 @@ function readBoardSource(): string {
 
 function readFieldSourceTargetSource(): string {
     return readFileSync(resolve(__dirname, '..', 'ui', 'fieldSourceTargetInteraction.ts'), 'utf-8');
+}
+
+function readBaseZoneSource(): string {
+    return readFileSync(resolve(__dirname, '..', 'ui', 'BaseZone.tsx'), 'utf-8');
 }
 
 describe('SmashUp 交互浮动操作栏源码约束', () => {
@@ -146,6 +151,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
     it('场上可发动效果必须先点来源本体，再点目标对象，不能退化成响应按钮', () => {
         const source = readBoardSource();
         const fieldSourceTargetSource = readFieldSourceTargetSource();
+        const baseZoneSource = readBaseZoneSource();
         expect(source).toContain('isFieldSourceTargetValue');
         expect(source).not.toContain('fieldSourceTargetType');
         expect(source).toContain('buildFieldSourceTargetPromptModel');
@@ -163,7 +169,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('const fieldSourceTargetSelectableOngoingUids = fieldSourceTargetSelection.selectableOngoingUids');
         expect(source).toContain('const fieldSourceTargetSelectableTitanUids = fieldSourceTargetSelection.selectableTitanUids');
         expect(source).toContain('const fieldSourceTargetExtraOptions = useMemo');
-        expect(source).toContain('filter(opt => !isFieldSourceTargetValue(opt.value))');
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'field-source-target')");
         expect(source).toContain('fieldSourceTargetPrompt && fieldSourceTargetExtraOptions.length > 0');
         expect(source).toContain('setSelectedFieldPromptSourceUid(null);');
         expect(source).toContain('sourceOngoingUids');
@@ -191,6 +197,9 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('onTitanSelect={handleFieldSourceTitanSelect}');
         expect(source).toContain('isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)');
         expect(source).toContain('isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && !fieldSourceTargetOptionIdsByBaseIndex.has(idx)');
+        expect(baseZoneSource).toContain('data-testid={`su-base-target-highlight-${baseIndex}`}');
+        expect(baseZoneSource).toContain('border: \'0.22vw solid rgba(134,239,172,0.98)\'');
+        expect(baseZoneSource).toContain('outline: \'0.12vw solid rgba(22,163,74,0.88)\'');
     });
 
     it('场上来源对象自身可选执行必须点来源本体，跳过/不发动才走按钮', () => {
@@ -206,7 +215,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
 
         expect(source).toContain('const fieldSourceActionPrompt = useMemo');
         expect(source).toContain('const fieldSourceActionExtraOptions = useMemo');
-        expect(source).toContain('filter(opt => !isFieldSourceActionValue(opt.value))');
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'field-source-action')");
         expect(source).toContain('const fieldSourceActionOptionIdsBySourceUid = fieldSourceActionPrompt?.sourceOptionIdsByUid');
         expect(source).toContain('const fieldSourceActionSelectableMinionUids = fieldSourceActionPrompt?.sourceMinionUids');
         expect(source).toContain('const fieldSourceActionSelectableOngoingUids = fieldSourceActionPrompt?.sourceOngoingUids');
@@ -224,6 +233,60 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('fieldSourceActionSelectableTitanUids');
         expect(source).toContain('&& !fieldSourceActionPrompt');
         expect(source).toContain('selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids}');
+    });
+
+    it('直选模式的额外按钮统一由 interactionMode helper 分流', () => {
+        const source = readBoardSource();
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'hand')");
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'base')");
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'minion')");
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'buried')");
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'ongoing')");
+        expect(source).toContain("getSmashUpDirectPromptExtraOptions(currentPrompt.options, 'board')");
+
+        const options = [
+            { id: 'base-1', label: '基地', value: { baseIndex: 1 } },
+            { id: 'minion-1', label: '随从', value: { minionUid: 'm1' } },
+            { id: 'card-1', label: '卡牌', value: { cardUid: 'c1', baseIndex: 0 } },
+            { id: 'source-target', label: '来源目标', value: { fieldInteractionType: 'source-target' } },
+            { id: 'source-action', label: '来源确认', value: { fieldInteractionType: 'source-action' } },
+            { id: 'skip', label: '跳过', value: { skip: true } },
+        ];
+
+        expect(getSmashUpDirectPromptExtraOptions(options, 'base').map(option => option.id)).toEqual([
+            'minion-1',
+            'source-target',
+            'source-action',
+            'skip',
+        ]);
+        expect(getSmashUpDirectPromptExtraOptions(options, 'minion').map(option => option.id)).toEqual([
+            'base-1',
+            'card-1',
+            'source-target',
+            'source-action',
+            'skip',
+        ]);
+        expect(getSmashUpDirectPromptExtraOptions(options, 'buried').map(option => option.id)).toEqual([
+            'base-1',
+            'minion-1',
+            'source-target',
+            'source-action',
+            'skip',
+        ]);
+        expect(getSmashUpDirectPromptExtraOptions(options, 'field-source-target').map(option => option.id)).toEqual([
+            'base-1',
+            'minion-1',
+            'card-1',
+            'source-action',
+            'skip',
+        ]);
+        expect(getSmashUpDirectPromptExtraOptions(options, 'field-source-action').map(option => option.id)).toEqual([
+            'base-1',
+            'minion-1',
+            'card-1',
+            'source-target',
+            'skip',
+        ]);
     });
 
     it('field-source-target 共享模型统一生成来源高亮和目标提交映射', () => {

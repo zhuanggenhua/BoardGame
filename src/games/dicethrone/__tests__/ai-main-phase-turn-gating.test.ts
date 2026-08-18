@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { executePipeline } from '../../../engine/pipeline';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { resolveForceAdvancePhaseAfterRecovery } from '../../../engine/transport/onlineAiRecovery';
+import type { MatchState } from '../../../engine/types';
 import {
     injectRawBlockingInteraction,
     injectSimpleChoiceBlockingInteraction,
@@ -7,11 +10,30 @@ import {
 
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions } from '../ai';
+import { engineConfig } from '../game';
 import { canAdvancePhase, checkPlayCard } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
-import { cmd, createHeroMatchup, createRunner, createSetupWithHand, fixedRandom, getCardById } from './test-utils';
+import type { DiceThroneCommand, DiceThroneCore } from '../domain/types';
+import { cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
 
 describe('DiceThrone AI 主阶段候选门禁', () => {
+    const dispatch = (
+        state: MatchState<DiceThroneCore>,
+        type: string,
+        payload: Record<string, unknown> = {},
+        random = fixedRandom,
+    ): MatchState<DiceThroneCore> => {
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            { type, playerId: '0', payload, timestamp: 0 } as DiceThroneCommand,
+            random,
+            ['0', '1'],
+        );
+        expect(result.success).toBe(true);
+        return result.state as MatchState<DiceThroneCore>;
+    };
+
     it('非当前回合玩家不应生成主阶段出牌或卖牌候选', () => {
         const state = createSetupWithHand(
             ['card-palm-strike', 'card-thrust-punch-2'],
@@ -182,6 +204,9 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         expect(actions).toContainEqual(expect.objectContaining({
             kind: 'confirm-roll',
             commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+            metadata: expect.objectContaining({
+                rollConfirmScope: 'bonus-roll',
+            }),
         }));
 
         const result = createRunner(fixedRandom, false).run({
@@ -392,6 +417,71 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         expect(actions).toContainEqual(expect.objectContaining({
             kind: 'advance-phase',
             commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+        }));
+    });
+
+    it('主阶段临时骰确认后，watchdog 不得把攻击掷骰阶段裸推进掉', () => {
+        let state = createSetupWithHand(['card-enlightenment'], { cp: 0 })(['0', '1'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+
+        state = dispatch(state, 'PLAY_CARD', { cardId: 'card-enlightenment' }, createQueuedRandom([1]));
+        expect(state.core.pendingBonusDiceSettlement).toBeDefined();
+        expect(state.sys.phase).toBe('main1');
+
+        const bonusConfirmAction = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .find((action) => action.kind === 'confirm-roll');
+        expect(bonusConfirmAction).toEqual(expect.objectContaining({
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+            metadata: expect.objectContaining({
+                rollConfirmScope: 'bonus-roll',
+            }),
+        }));
+
+        state = dispatch(state, 'CONFIRM_ROLL');
+        expect(state.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(state.sys.phase).toBe('main1');
+
+        const seatControllers = {
+            '0': { type: 'local-ai', policyId: 'baseline' },
+            '1': { type: 'human' },
+        } as const;
+        const mainPhaseAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers,
+            playerId: '0',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(mainPhaseAdvance?.action.commands).toEqual([{ type: 'ADVANCE_PHASE', payload: {} }]);
+
+        state = dispatch(state, 'ADVANCE_PHASE');
+        expect(state.sys.phase).toBe('offensiveRoll');
+
+        const offensiveRollForcedAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers,
+            playerId: '0',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(offensiveRollForcedAdvance).toBeNull();
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '0', state });
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'roll-dice',
+            commands: [{ type: 'ROLL_DICE', payload: {} }],
+        }));
+
+        state = dispatch(state, 'ROLL_DICE', {}, createQueuedRandom([1, 2, 3, 4, 5]));
+        const mainRollConfirmAction = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .find((action) => action.kind === 'confirm-roll');
+        expect(mainRollConfirmAction).toEqual(expect.objectContaining({
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+            metadata: expect.objectContaining({
+                rollConfirmScope: 'main-roll',
+                rollConfirmPhase: 'offensiveRoll',
+            }),
         }));
     });
 });

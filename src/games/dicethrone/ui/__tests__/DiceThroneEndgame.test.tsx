@@ -2,7 +2,7 @@
  * DiceThroneEndgameContent 单元测试
  *
  * 覆盖正确性属性：
- * - Property 1: 结算面板内容完整性
+ * - Property 1: 终局胜负画面内容完整性
  * - Property 2: 胜负视觉区分
  * - Property 3: 标题颜色匹配结果类型
  */
@@ -84,11 +84,11 @@ function createTestHero(overrides: Partial<HeroState> = {}): HeroState {
 }
 
 // ============================================================================
-// Property 1: 结算面板内容完整性
+// Property 1: 终局胜负画面内容完整性
 // ============================================================================
 
-// Feature: dicethrone-game-over-screen, Property 1: 结算面板内容完整性
-describe('Property 1: 结算面板内容完整性', () => {
+// Feature: dicethrone-game-over-screen, Property 1: 终局胜负画面内容完整性
+describe('Property 1: 终局胜负画面内容完整性', () => {
     it('对任意游戏结束状态，面板应包含双方英雄肖像、名称、HP、CP 和非零 Token', () => {
         fc.assert(
             fc.property(

@@ -11,6 +11,8 @@ import {
     buildActionCancelRollbackEvents,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildFieldSourceActionOptions,
+    buildFieldSourceActionPromptConfig,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildMinionTargetOptions,
@@ -883,14 +885,19 @@ const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<
             `giant_ant_under_pressure_choose_source_${context.now}`,
             context.playerId,
             '选择计分基地上要转出力量指示物的随从',
-            buildMinionTargetOptions(sources, { state: context.matchState.core, sourcePlayerId: context.playerId }),
-            {
+            sources.flatMap(source => buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: source.uid,
+                defId: source.defId,
+                baseIndex: source.baseIndex,
+                label: source.label,
+            })),
+            buildFieldSourceActionPromptConfig({
                 sourceId: 'giant_ant_under_pressure_choose_source',
-                targetType: 'minion',
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
                 titleKey: 'ui.giant_ant_under_pressure_choose_source_title',
-            },
+            }),
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1055,26 +1062,19 @@ const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<
         '我们乃最强：选择转出力量指示物的随从',
         (context.matchState.core.bases[context.scoringBaseIndex]?.minions ?? [])
             .filter(minion => minion.controller === context.playerId && minion.powerCounters > 0)
-            .map((minion, index) => ({
-                id: `minion-${index}`,
+            .flatMap(minion => buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.scoringBaseIndex,
                 label: `${getCardDef(minion.defId)?.name ?? minion.defId}（力量指示物 ${minion.powerCounters}）`,
-                value: {
-                    minionUid: minion.uid,
-                    minionDefId: minion.defId,
-                    baseIndex: context.scoringBaseIndex,
-                    defId: minion.defId,
-                    counterAmount: minion.powerCounters,
-                },
-                _source: 'field' as const,
-                displayMode: 'card' as const,
-            })),
-        {
+            }, { counterAmount: minion.powerCounters })),
+        buildFieldSourceActionPromptConfig({
             sourceId: 'giant_ant_we_are_the_champions_choose_source',
-            targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.giant_ant_we_are_the_champions_choose_source_title',
-        },
+        }),
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { minionUid?: string; baseIndex?: number; defId?: string; counterAmount?: number };
@@ -1526,17 +1526,20 @@ const giantAntSoldierPodChooseSourcePromptProgram = createPromptProgram<
         `giant_ant_soldier_pod_choose_source_${context.now}`,
         context.playerId,
         '兵蚁 POD：选择要移出力量指示物的随从',
-        buildMinionTargetOptions(
-            collectOwnMinionsWithCounters(context.matchState.core, context.playerId),
-            { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'affect' },
-        ),
-        {
+        collectOwnMinionsWithCounters(context.matchState.core, context.playerId)
+            .flatMap(source => buildFieldSourceActionOptions({
+                type: 'minion',
+                uid: source.uid,
+                defId: source.defId,
+                baseIndex: source.baseIndex,
+                label: source.label,
+            })),
+        buildFieldSourceActionPromptConfig({
             sourceId: 'giant_ant_soldier_pod_choose_source',
-            targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.giant_ant_soldier_pod_choose_source_title',
-        },
+        }),
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { minionUid?: string; baseIndex?: number };
@@ -1608,7 +1611,7 @@ const giantAntKillerQueenPodPromptProgram = createPromptProgram<
             ],
             {
                 sourceId: 'giant_ant_killer_queen_pod_choose',
-                targetType: 'button',
+                targetType: 'minion',
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
                 titleKey: 'ui.giant_ant_killer_queen_pod_title',

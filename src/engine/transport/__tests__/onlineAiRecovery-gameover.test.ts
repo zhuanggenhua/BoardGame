@@ -1926,6 +1926,45 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
         expect(result).toBeNull();
     });
 
+    it('合法动作专属阶段不得在交互收口后补发裸阶段推进命令', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'offensiveRoll',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState,
+            seatControllers,
+            playerId: '1',
+            engineConfig: {
+                gameId: 'test-legal-action-only-game',
+                onlineAiRecovery: {
+                    activeTurnLegalActionOnlyPhases: ['offensiveRoll'],
+                },
+            },
+        });
+
+        expect(result).toBeNull();
+    });
+
     it('自定义游戏交互收口后应按 engineConfig 使用 TEST_END_PHASE 推进阶段', () => {
         const authoritativeState: MatchState<unknown> = {
             core: {
@@ -2577,6 +2616,60 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         });
 
         expect(result).toBeNull();
+    });
+
+    it('AI 当前阶段里若 AI 可见交互被 human 响应窗口挡住，自动 watchdog 应先强制关闭窗口', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: {
+                        id: 'dt-interaction-card-transfer-status-1',
+                        playerId: '1',
+                        kind: 'dt:card-interaction',
+                        data: { sourceId: 'card-transfer-status' },
+                    },
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'rw-human-response-with-ai-interaction',
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'card-transfer-status',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result).toMatchObject({
+            playerId: '1',
+            reason: 'response-window',
+            resolution: {
+                action: {
+                    commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
+                },
+            },
+        });
+        expect(result?.resolution.action.commands).not.toContainEqual({
+            type: 'RESPONSE_PASS',
+            payload: {},
+        });
     });
 
     it('AI 当前阶段里若 human 正在响应，手动强制结束应强制关闭窗口而不是返回空', () => {

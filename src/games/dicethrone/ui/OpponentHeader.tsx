@@ -134,10 +134,10 @@ export const OpponentHeader = ({
         ? 'px-[0.24vw] py-[0.08vw] text-[0.48vw]'
         : 'px-[0.3vw] py-[0.1vw] text-[0.55vw]';
     const statClassName = compact ? 'text-[0.66vw]' : 'text-[0.75vw]';
-    const statBoxClassName = compact
-        ? 'min-w-[2.25vw] h-[1.08vw] px-[0.24vw] border-[0.12vw] text-[0.56vw]'
-        : 'min-w-[2.75vw] h-[1.28vw] px-[0.3vw] border-[0.14vw] text-[0.62vw]';
-    const statLabelClassName = compact ? 'text-[0.42vw]' : 'text-[0.48vw]';
+    const resourceStatClassName = compact
+        ? 'relative flex h-[1.08vw] min-w-[1.45vw] items-center justify-center gap-[0.16vw] px-[0.08vw] text-[0.68vw] drop-shadow-[0_1px_0.35vw_rgba(0,0,0,0.9)]'
+        : 'relative flex h-[1.24vw] min-w-[1.72vw] items-center justify-center gap-[0.2vw] px-[0.1vw] text-[0.78vw] drop-shadow-[0_1px_0.35vw_rgba(0,0,0,0.9)]';
+    const resourceDotClassName = compact ? 'h-[0.36vw] w-[0.36vw]' : 'h-[0.44vw] w-[0.44vw]';
     const handIconClassName = compact ? 'w-[0.62vw] h-[0.62vw]' : 'w-[0.7vw] h-[0.7vw]';
     const shieldClassName = compact ? 'w-[0.95vw] h-[0.95vw]' : 'w-[1.1vw] h-[1.1vw]';
     const shieldTextClassName = compact ? 'text-[0.42vw]' : 'text-[0.5vw]';
@@ -151,6 +151,8 @@ export const OpponentHeader = ({
         : selected
             ? accent.selected
             : accent.idle;
+    const hpValue = overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0);
+    const cpValue = opponent.resources[RESOURCE_IDS.CP] ?? 0;
 
     return (
         <div
@@ -209,15 +211,21 @@ export const OpponentHeader = ({
                                                 className="w-full"
                                             >
                                                 <div
-                                                    className={`${statBoxClassName} relative box-border flex items-center justify-between gap-[0.18vw] bg-red-950/70 border-red-500/90 text-red-100 shadow-[0_0_8px_rgba(239,68,68,0.22)]`}
+                                                    className={`${resourceStatClassName} text-red-100`}
                                                     data-testid={testId ? `${testId}-hp` : undefined}
+                                                    aria-label={`HP ${hpValue}`}
+                                                    title={`HP ${hpValue}`}
                                                 >
-                                                    <span className={`${statLabelClassName} font-black tracking-[0.08em] text-red-200/80`}>HP</span>
                                                     <span
-                                                        className="font-black"
+                                                        className={`${resourceDotClassName} rounded-full bg-red-400 shadow-[0_0_0.45vw_rgba(248,113,113,0.72)]`}
+                                                        aria-hidden="true"
+                                                        data-testid={testId ? `${testId}-hp-dot` : undefined}
+                                                    />
+                                                    <span
+                                                        className="font-black leading-none tabular-nums tracking-wide"
                                                         data-testid={testId ? `${testId}-hp-value` : undefined}
                                                     >
-                                                        {overrideHp ?? (opponent.resources[RESOURCE_IDS.HP] ?? 0)}
+                                                        {hpValue}
                                                     </span>
                                                     <DamageFlash
                                                         active={!!damageFlashActive}
@@ -231,9 +239,23 @@ export const OpponentHeader = ({
                                     </div>
                                     <div ref={opponentCpRef}>
                                         <ShakeContainer isShaking={!!isOpponentCpShaking}>
-                                            <div className={`${statBoxClassName} box-border flex items-center justify-between gap-[0.18vw] bg-amber-950/70 border-amber-400/90 text-amber-100 shadow-[0_0_8px_rgba(245,158,11,0.2)]`}>
-                                                <span className={`${statLabelClassName} font-black tracking-[0.08em] text-amber-200/80`}>CP</span>
-                                                <span className="font-black">{opponent.resources[RESOURCE_IDS.CP] ?? 0}</span>
+                                            <div
+                                                className={`${resourceStatClassName} text-amber-100`}
+                                                data-testid={testId ? `${testId}-cp` : undefined}
+                                                aria-label={`CP ${cpValue}`}
+                                                title={`CP ${cpValue}`}
+                                            >
+                                                <span
+                                                    className={`${resourceDotClassName} rounded-full bg-amber-300 shadow-[0_0_0.45vw_rgba(252,211,77,0.72)]`}
+                                                    aria-hidden="true"
+                                                    data-testid={testId ? `${testId}-cp-dot` : undefined}
+                                                />
+                                                <span
+                                                    className="font-black leading-none tabular-nums tracking-wide"
+                                                    data-testid={testId ? `${testId}-cp-value` : undefined}
+                                                >
+                                                    {cpValue}
+                                                </span>
                                             </div>
                                         </ShakeContainer>
                                     </div>

@@ -73,6 +73,24 @@ describe('diceStagePolicy', () => {
         ];
         expect(getRailDiceForCurrentBoard(dice as any)).toMatchObject(dice);
     });
+
+    it('确认临时骰子后当前骰区为空时，应回到当前玩家常态骰子池而不是空白', () => {
+        const normalDicePool = [
+            { id: 0, value: 1, isKept: false },
+            { id: 1, value: 2, isKept: true },
+            { id: 2, value: 3, isKept: false },
+            { id: 3, value: 4, isKept: false },
+            { id: 4, value: 5, isKept: false },
+        ];
+
+        expect(getRailDiceForCurrentBoard([], normalDicePool as any)).toMatchObject([
+            { id: 0, value: 1, isKept: false, displayOnly: true },
+            { id: 1, value: 2, isKept: false, displayOnly: true },
+            { id: 2, value: 3, isKept: false, displayOnly: true },
+            { id: 3, value: 4, isKept: false, displayOnly: true },
+            { id: 4, value: 5, isKept: false, displayOnly: true },
+        ]);
+    });
 });
 
 describe('handPlayPolicy', () => {

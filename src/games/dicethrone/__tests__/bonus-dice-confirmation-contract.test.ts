@@ -7,6 +7,7 @@ import { reduce } from '../domain/reducer';
 import type { DiceThroneCore, DiceThroneEvent, PendingBonusDiceSettlement } from '../domain/types';
 import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
 import { COMMON_CARDS } from '../domain/commonCards';
+import { RESOURCE_IDS } from '../domain/resources';
 
 const bonusSettlement = (): PendingBonusDiceSettlement => ({
     id: 'ordinary-confirm-required',
@@ -127,5 +128,85 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
             kind: 'dt:bonus-dice',
             playerId: '0',
         });
+    });
+
+    it('攻击型奖励骰普通确认后必须把同批后续加伤一起带入攻击续跑', () => {
+        const state = createHeroMatchup('gunslinger', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'offensiveRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.turnPhase = 'offensiveRoll';
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'revolver-3',
+            isDefendable: false,
+            damage: 0,
+            bonusDamage: 0,
+            settlementStage: 'preDamage',
+            offensiveRollEndTokenResolved: true,
+        } as DiceThroneCore['pendingAttack'];
+
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'loaded-wild-west-confirm',
+            sourceAbilityId: 'revolver-3',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 6, face: 'bullet', effectParams: { value: 6 } }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            resolutionMode: 'attackBonus',
+            attackBonusScale: 'halfUp',
+            postSettleBonusDamageAdds: [{ amount: 1, sourceCardId: 'card-wild-west' }],
+            allowDiceModification: true,
+            continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: false },
+        };
+        const requested = {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            sourceCommandType: 'TEST_BONUS_DICE',
+            timestamp: 100,
+        } as DiceThroneEvent;
+        const openedCore = reduce(state.core, requested);
+        const opened = runBonusDiceSystem({ ...state, core: openedCore }, [requested])?.state;
+        if (!opened) throw new Error('奖励骰交互未成功打开');
+
+        const confirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            opened,
+            {
+                type: 'CONFIRM_ROLL',
+                playerId: '0',
+                payload: {},
+                timestamp: 101,
+            } as any,
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+
+        expect(confirmed.success).toBe(true);
+        expect(confirmed.events).toContainEqual(expect.objectContaining({
+            type: 'BONUS_DICE_SETTLED',
+        }));
+        expect(confirmed.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'BONUS_DAMAGE_ADDED',
+                payload: expect.objectContaining({ amount: 3 }),
+            }),
+            expect.objectContaining({
+                type: 'BONUS_DAMAGE_ADDED',
+                payload: expect.objectContaining({ amount: 1, sourceCardId: 'card-wild-west' }),
+            }),
+        ]));
+        expect(confirmed.state.core.pendingAttack).toBeNull();
+        // 左轮基础伤害 3 + Loaded 奖励骰 6 => +3 + Wild West 后续 +1。
+        expect(confirmed.state.core.lastResolvedAttackDamage).toBe(7);
+        expect(confirmed.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
     });
 });

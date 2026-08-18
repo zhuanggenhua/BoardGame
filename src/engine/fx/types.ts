@@ -32,7 +32,7 @@ export type FxCue = string;
 // ============================================================================
 
 /** 特效坐标空间 */
-export type FxSpace = 'cell' | 'screen' | 'ui';
+export type FxSpace = 'cell' | 'board' | 'table' | 'screen' | 'ui';
 
 /** 特效质量档：full 保留完整表现，reduced 保留主体表现但降低移动端重绘成本 */
 export type FxQuality = 'full' | 'reduced';
@@ -69,6 +69,60 @@ export interface FxCellCoord {
   col: number;
 }
 
+/** FX surface 标识。一个 surface 是一个可测量的本地坐标空间，例如棋盘、牌桌或 UI 层。 */
+export type FxSurfaceId = string;
+
+/** FX surface 类型，用于声明坐标语义，不用于渲染分支猜测。 */
+export type FxSurfaceKind = 'board' | 'table' | 'screen' | 'ui';
+
+/** FX anchor 类型，用于说明锚点代表的现实对象。 */
+export type FxAnchorKind =
+  | 'entity'
+  | 'card'
+  | 'base'
+  | 'token'
+  | 'attachment-slot'
+  | 'zone'
+  | 'player'
+  | 'ui';
+
+/** FX anchor 播放模式：一次性快照或显式跟随。 */
+export type FxAnchorMode = 'spawn-snapshot' | 'tracking';
+
+/** 对一个可见对象锚点的稳定引用。 */
+export interface FxAnchorRef {
+  surfaceId: FxSurfaceId;
+  anchorId: string;
+  anchorKind?: FxAnchorKind;
+  entityRef?: string;
+}
+
+/** 百分比盒子，坐标相对所属 FX surface。 */
+export interface FxSurfaceBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** FX 生成时冻结的锚点快照。 */
+export interface FxAnchorSnapshot {
+  surfaceId: FxSurfaceId;
+  anchorId: string;
+  anchorKind: FxAnchorKind;
+  entityRef?: string;
+  box: FxSurfaceBox;
+  center: { xPct: number; yPct: number };
+  size: { widthPct: number; heightPct: number };
+  capturedAt: number;
+  mode: FxAnchorMode;
+}
+
+/** 锚点注册信息，由游戏 Board / table UI 提供。 */
+export interface FxAnchorRegistration extends FxAnchorRef {
+  anchorKind: FxAnchorKind;
+}
+
 /**
  * FX 通用上下文 — 所有特效共享的定位与元信息
  *
@@ -81,6 +135,12 @@ export interface FxContext {
   cell?: FxCellCoord;
   /** 屏幕百分比坐标（space='screen' 时使用） */
   screenPos?: { xPct: number; yPct: number };
+  /** 当前事件所属的 surface；board/table/ui 特效应显式声明。 */
+  surfaceId?: FxSurfaceId;
+  /** 来源锚点快照。一次性 FX 生成后只消费该快照。 */
+  sourceSnapshot?: FxAnchorSnapshot;
+  /** 目标锚点快照。一次性 FX 生成后只消费该快照。 */
+  targetSnapshot?: FxAnchorSnapshot;
   /** 强度 */
   intensity?: 'normal' | 'strong';
   /** 特效质量档；通常由设置或调度层注入 */

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ShieldCheck } from 'lucide-react';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
-import { FxLayer, useFxBus, type FxBus } from '../../engine/fx';
+import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import {
@@ -38,6 +38,7 @@ import {
     mageWarsObjectDamageKey,
     mageWarsPlayerDamageKey,
     useMageWarsGameEvents,
+    MAGE_WARS_ARENA_FX_SURFACE_ID,
 } from './ui/useGameEvents';
 import {
     canMageWarsObjectUsePostMoveQuickAction,
@@ -655,6 +656,7 @@ function ZoneFieldCard({
     onClick,
     visualDamage = object?.damage,
     visualHeld = false,
+    fxAnchorRef,
 }: {
     cardId: number;
     object?: MageWarsArenaObjectState;
@@ -664,6 +666,7 @@ function ZoneFieldCard({
     onClick?: () => void;
     visualDamage?: number;
     visualHeld?: boolean;
+    fxAnchorRef?: (element: HTMLButtonElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const previewRef = getMageWarsSpellCardPreviewRef(cardId);
@@ -746,6 +749,7 @@ function ZoneFieldCard({
                 role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
                 !onClick && 'pointer-events-none',
             )}
+            ref={fxAnchorRef}
             style={cardSizeStyle}
             disabled={!onClick}
             onClick={(event) => {
@@ -772,12 +776,14 @@ function ArenaAttachmentCard({
     density = 'solo',
     ownerSide,
     onClick,
+    fxAnchorRef,
 }: {
     object: MageWarsArenaObjectState;
     role?: FieldCardRole;
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
     onClick?: () => void;
+    fxAnchorRef?: (element: HTMLElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const previewRef = getMageWarsSpellCardPreviewRef(object.sourceSpellCardId);
@@ -842,6 +848,7 @@ function ArenaAttachmentCard({
             <button
                 type="button"
                 className={className}
+                ref={fxAnchorRef as (element: HTMLButtonElement | null) => void}
                 onClick={(event) => {
                     event.stopPropagation();
                     onClick();
@@ -858,6 +865,7 @@ function ArenaAttachmentCard({
     return (
         <div
             className={className}
+            ref={fxAnchorRef as (element: HTMLDivElement | null) => void}
             aria-label={title}
             style={cardSizeStyle}
             {...dataProps}
@@ -874,6 +882,7 @@ function ArenaAttachmentStrip({
     ownerSide,
     getRole,
     getOnClick,
+    getFxAnchorRef,
 }: {
     objects: MageWarsArenaObjectState[];
     density?: ZoneEntityDensity;
@@ -881,6 +890,7 @@ function ArenaAttachmentStrip({
     ownerSide?: SeatOwnerSide;
     getRole: (object: MageWarsArenaObjectState) => FieldCardRole | undefined;
     getOnClick: (object: MageWarsArenaObjectState) => (() => void) | undefined;
+    getFxAnchorRef?: (object: MageWarsArenaObjectState) => (element: HTMLElement | null) => void;
 }) {
     if (objects.length === 0) return null;
 
@@ -902,6 +912,7 @@ function ArenaAttachmentStrip({
                     role={getRole(object)}
                     ownerSide={ownerSide}
                     onClick={getOnClick(object)}
+                    fxAnchorRef={getFxAnchorRef?.(object)}
                 />
             ))}
         </div>
@@ -1217,6 +1228,7 @@ function ZoneOccupant({
     density = 'solo',
     onClick,
     visualDamage = player.damage,
+    fxAnchorRef,
 }: {
     player: MageWarsPlayerState;
     role?: 'source' | 'target';
@@ -1224,6 +1236,7 @@ function ZoneOccupant({
     density?: ZoneEntityDensity;
     onClick?: () => void;
     visualDamage?: number;
+    fxAnchorRef?: (element: HTMLDivElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const mageLabel = getMageDisplayLabel(player);
@@ -1246,6 +1259,7 @@ function ZoneOccupant({
                 'pointer-events-auto',
                 onClick && 'cursor-pointer outline outline-2 outline-cyan-200/70',
             )}
+            ref={fxAnchorRef}
             role={onClick ? 'button' : undefined}
             tabIndex={onClick ? 0 : undefined}
             onClick={(event) => {
@@ -1323,6 +1337,7 @@ function ArenaStage({
     fxBus,
     onFxImpact,
     onFxComplete,
+    fxAnchors,
     getVisualObjectDamage,
     getVisualPlayerDamage,
     visualHeldObjects = [],
@@ -1346,6 +1361,7 @@ function ArenaStage({
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
+    fxAnchors: FxAnchorRegistry;
     getVisualObjectDamage: (object: MageWarsArenaObjectState) => number;
     getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
     visualHeldObjects?: MageWarsArenaObjectState[];
@@ -1451,6 +1467,7 @@ function ArenaStage({
                 desktopFrame ? 'top-[2.75%] h-[74%]' : 'top-0 h-full lg:top-[2.75%] lg:h-[74%]',
             )}
             data-testid="mage-wars-arena-stage"
+            ref={fxAnchors.registerSurface}
             style={{ left: '50%', transform: 'translateX(-50%)' }}
         >
             <OptimizedImage
@@ -1579,6 +1596,11 @@ function ArenaStage({
                                         : canSelectObjectActor
                                             ? () => onActorObjectSelect?.(object.id)
                                             : undefined}
+                                fxAnchorRef={fxAnchors.registerAnchor({
+                                    anchorId: object.id,
+                                    anchorKind: 'entity',
+                                    entityRef: object.id,
+                                })}
                             />
                             <ArenaAttachmentStrip
                                 objects={objectAttachments}
@@ -1587,6 +1609,11 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
+                                getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
+                                    anchorId: attachment.id,
+                                    anchorKind: 'attachment-slot',
+                                    entityRef: attachment.id,
+                                })}
                             />
                         </div>
                     );
@@ -1614,6 +1641,11 @@ function ArenaStage({
                                 crowded={hasFieldCards || mageAttachments.length > 0}
                                 density={density}
                                 visualDamage={getVisualPlayerDamage(occupant)}
+                                fxAnchorRef={fxAnchors.registerAnchor({
+                                    anchorId: occupant.id,
+                                    anchorKind: 'player',
+                                    entityRef: occupant.id,
+                                })}
                                 onClick={occupant.id === legalAttackTargetId || (selectedSpell && spellNeedsObjectTarget)
                                     ? () => onPlayerSelect?.(occupant.id)
                                     : canSelectMageActor
@@ -1627,6 +1659,11 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, occupant.id)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
+                                getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
+                                    anchorId: attachment.id,
+                                    anchorKind: 'attachment-slot',
+                                    entityRef: attachment.id,
+                                })}
                             />
                         </div>
                     );
@@ -1717,6 +1754,11 @@ function ArenaStage({
                             ownerSide="neutral"
                             getRole={resolveAttachmentRole}
                             getOnClick={resolveAttachmentClick}
+                            getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
+                                anchorId: attachment.id,
+                                anchorKind: 'attachment-slot',
+                                entityRef: attachment.id,
+                            })}
                         />
                     </div>
                 );
@@ -2034,7 +2076,12 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         maxDpr: renderPipelineSettings.maxDpr,
         reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
     });
-    const mageWarsEvents = useMageWarsGameEvents({ G, fxBus });
+    const fxAnchors = useFxAnchorRegistry(MAGE_WARS_ARENA_FX_SURFACE_ID, 'board');
+    const mageWarsEvents = useMageWarsGameEvents({
+        G,
+        fxBus,
+        resolveFxAnchorSnapshot: fxAnchors.resolveSnapshot,
+    });
     const getVisualPlayerDamage = (player: MageWarsPlayerState) => (
         mageWarsEvents.damageBuffer.get(mageWarsPlayerDamageKey(player.id), player.damage)
     );
@@ -2085,6 +2132,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                 fxBus={fxBus}
                 onFxImpact={mageWarsEvents.onEffectImpact}
                 onFxComplete={mageWarsEvents.onEffectComplete}
+                fxAnchors={fxAnchors}
                 getVisualObjectDamage={getVisualObjectDamage}
                 getVisualPlayerDamage={getVisualPlayerDamage}
                 visualHeldObjects={mageWarsEvents.heldObjects}

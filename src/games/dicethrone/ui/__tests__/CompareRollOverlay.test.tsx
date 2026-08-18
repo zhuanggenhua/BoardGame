@@ -123,8 +123,8 @@ describe('CompareRollOverlay', () => {
 
         expect(screen.getByTestId('compare-roll-overlay')).toBeTruthy();
         expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'main-result-layer');
-        expect(screen.getByTestId('compare-roll-participant-0')).toBeTruthy();
-        expect(screen.getByTestId('compare-roll-participant-1')).toBeTruthy();
+        expect(screen.queryByTestId('compare-roll-participant-0')).toBeNull();
+        expect(screen.queryByTestId('compare-roll-participant-1')).toBeNull();
         expect(screen.queryByTestId('spotlight-container')).toBeNull();
         expect(screen.queryByTestId('roll-spotlight-dice-content')).toBeNull();
         expect(screen.queryByTestId('dice-2d')).toBeNull();

@@ -284,7 +284,8 @@ test.describe('DiceThrone - 选择骰子重投', () => {
                 pendingAttack: {
                     attackerId: '0',
                     defenderId: '1',
-                    isDefendable: true,
+                    // 本用例只验证 Loaded/Wild West 奖励骰确认链路；防御和太极减伤由独立用例覆盖。
+                    isDefendable: false,
                     sourceAbilityId: 'revolver-3',
                 },
             },
@@ -383,6 +384,14 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             const state = await game.getState();
             return state?.core?.pendingBonusDiceSettlement?.dice?.[0]?.value ?? null;
         }, { timeout: 5000 }).toBe(6);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                postSettleAdds: state?.core?.pendingBonusDiceSettlement?.postSettleBonusDamageAdds ?? [],
+            };
+        }, { timeout: 5000 }).toMatchObject({
+            postSettleAdds: [expect.objectContaining({ amount: 1, sourceCardId: 'card-wild-west' })],
+        });
 
         // 断言：已完成一次重掷后，应进入重掷上限态，而不是“没装填可重掷”的误导状态。
         await expect(bonusDie).toHaveAttribute('data-clickable', 'false', { timeout: 5000 });
@@ -422,10 +431,12 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             pendingAttack: null,
             currentRollContext: null,
         });
-        await expect(page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible [data-testid="dice-2d"]')).toHaveCount(0);
-        await game.screenshot('gunslinger-wild-west-bonus-die-confirmed-attack-resolved', testInfo);
+        // 临时骰确认后应恢复当前玩家的常态骰子池；不能把右侧骰盘留成空白。
+        const settledDicePool = page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible [data-testid="dice-2d"]');
+        await expect(settledDicePool).toHaveCount(5);
+        await game.screenshot('gunslinger-wild-west-bonus-die-confirmed-normal-dice-pool', testInfo);
 
-        // 断言：右侧骰盘普通确认后，Loaded 半值加伤（6 -> +3）与 Wild West +1 已落到最终血量。
+        // 断言：右侧骰盘普通确认后，左轮基础 3 + Loaded 半值加伤（6 -> +3）+ Wild West +1 已落到最终血量。
         const modifierBadge = page.locator('[data-testid="active-modifier-badge"]').first();
         await expect.poll(async () => {
             const state = await game.getState();
@@ -438,8 +449,8 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             };
         }, { timeout: 10000 }).toMatchObject({
             pendingAttack: null,
-            defenderHp: 46,
-            lastResolvedAttackDamage: 4,
+            defenderHp: 43,
+            lastResolvedAttackDamage: 7,
         });
         await expect(modifierBadge).toHaveCount(0);
         await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);

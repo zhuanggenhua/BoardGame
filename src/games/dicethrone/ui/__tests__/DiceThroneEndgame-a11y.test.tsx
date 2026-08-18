@@ -3,7 +3,7 @@
  *
  * Feature: dicethrone-game-over-screen, Property 6: 无障碍标注正确性
  *
- * 对任意游戏结果（胜利/失败/平局），结算面板应包含语义正确的
+ * 对任意游戏结果（胜利/失败/平局），终局胜负面板应包含语义正确的
  * aria-label 属性，准确描述当前结果。
  */
 import { render, screen } from '@testing-library/react';

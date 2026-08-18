@@ -7532,6 +7532,7 @@ describe('smashup', () => {
             FIXED_RANDOM,
         ).finalState;
         const choosePlayerPrompt = getSimpleChoicePrompt(choosePlayerPromptState, 'titan_ignobles_the_hill_that_strolls_choose_player');
+        expect(choosePlayerPrompt.targetType).toBe('player');
         expect(getPromptOption(choosePlayerPrompt, entry => entry.value?.targetPlayerId === '1')).toBeDefined();
 
         const staleCore: SmashUpCore = {
