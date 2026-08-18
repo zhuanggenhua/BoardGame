@@ -32,6 +32,7 @@ export interface CenterBoardProps {
     onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
+    leftResponseDockActive?: boolean;
 }
 
 export const CenterBoard = ({
@@ -55,6 +56,7 @@ export const CenterBoard = ({
     onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
+    leftResponseDockActive = false,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
@@ -63,6 +65,7 @@ export const CenterBoard = ({
     const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
     const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
     const hasTipBoard = hasDiceThroneTipBoard(characterId);
+    const shellTranslateX = boardUiTuning.shellTranslateX + (leftResponseDockActive ? 5 : 0);
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
     const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
@@ -119,9 +122,9 @@ export const CenterBoard = ({
         <>
             <div
                 className={shellFrameClassName}
-                style={boardUiTuning.shellTranslateX === 0
+                style={shellTranslateX === 0
                     ? undefined
-                    : { transform: `translateX(${boardUiTuning.shellTranslateX}vw)` }}
+                    : { transform: `translateX(${shellTranslateX}vw)` }}
             >
                 <div
                     className="relative flex items-center justify-center"

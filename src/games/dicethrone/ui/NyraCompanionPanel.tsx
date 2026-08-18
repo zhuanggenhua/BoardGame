@@ -3,7 +3,7 @@ import { HeartPulse, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
 import { ASSETS } from './assets';
-import { buildLocalizedImageSet } from '../../../core';
+import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { GameButton } from './components/GameButton';
 
 const NYRA_CROP = {
@@ -55,30 +55,31 @@ export const NyraCompanionPanel = ({
         : '治疗';
     const damageResponseDock = activeDamageResponse ? (
         <div
-            className="mt-2 w-full rounded-xl border-2 border-emerald-300/55 bg-slate-950/96 px-2.5 py-2.5 shadow-2xl shadow-black/60 backdrop-blur-md"
+            className="fixed left-[1.5vw] bottom-[31vw] w-[18.5vw] min-w-[248px] max-w-[260px] rounded-2xl border-2 border-emerald-300/60 bg-slate-950/96 px-3 py-2.5 shadow-2xl shadow-black/60 backdrop-blur-md"
+            style={{ zIndex: UI_Z_INDEX.hud + 12 }}
             data-testid="nyra-damage-response-dock"
         >
-            <div className="mb-2 flex items-start justify-between gap-2 leading-none">
+            <div className="mb-2 flex items-start justify-between gap-3 leading-none">
                 <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300/80">
+                    <div className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300/80">
                         {t('companion.nyra.name')}
                     </div>
-                    <div className="mt-1 text-[15px] font-black text-emerald-50">{t('companion.nyra.takeDamage')}</div>
+                    <div className="mt-1 text-[16px] font-black text-emerald-50">{t('companion.nyra.takeDamage')}</div>
                 </div>
-                <div className="shrink-0 rounded-lg border border-rose-300/45 bg-rose-950/55 px-2.5 py-1.5 text-right">
-                    <div className="text-[10px] font-bold text-rose-200/80">{t('tokenResponse.currentDamage')}</div>
-                    <div className="text-xl font-black tabular-nums text-rose-100">{activeDamageResponse.currentDamage}</div>
+                <div className="shrink-0 rounded-xl border border-rose-300/45 bg-rose-950/55 px-2.5 py-1.5 text-right">
+                    <div className="text-[11px] font-bold text-rose-200/80">{t('tokenResponse.currentDamage')}</div>
+                    <div className="text-2xl font-black tabular-nums text-rose-100">{activeDamageResponse.currentDamage}</div>
                 </div>
             </div>
             {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
-                <div className="mb-2 rounded-lg border border-cyan-300/30 bg-cyan-950/30 px-1 py-2">
-                    <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px] font-bold text-cyan-100">
+                <div className="mb-2 rounded-xl border border-cyan-300/30 bg-cyan-950/30 px-2.5 py-2">
+                    <div className="mb-1.5 flex items-center justify-between gap-3 text-[13px] font-bold text-cyan-100">
                         <span>{t('companion.nyra.allocateDamage')}</span>
-                        <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
+                        <span className="rounded-full bg-cyan-300/15 px-2.5 py-0.5 tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
                     </div>
                     <input
                         aria-label={t('companion.nyra.allocateDamage')}
-                        className="h-5 w-full accent-cyan-300"
+                        className="h-6 w-full accent-cyan-300"
                         type="range"
                         min={1}
                         max={maxAssignableDamage}
@@ -87,12 +88,12 @@ export const NyraCompanionPanel = ({
                     />
                 </div>
             )}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
                 {activeDamageResponse.canRedirectToNyra && (
                     <GameButton
                         size="sm"
                         variant="primary"
-                        className="h-10 w-full !px-3 !py-0 !text-[13px]"
+                        className="h-10 w-full !px-4 !py-0 !text-[13px]"
                         onClick={activeDamageResponse.onRedirectToNyra}
                         data-testid="nyra-take-damage-button"
                     >
@@ -103,7 +104,7 @@ export const NyraCompanionPanel = ({
                     <GameButton
                         size="sm"
                         variant="secondary"
-                        className="h-10 w-full !px-3 !py-0 !text-[13px]"
+                        className="h-10 w-full !px-4 !py-0 !text-[13px]"
                         onClick={() => activeDamageResponse.onAllocateWithBond(Math.min(damageAllocation, maxAssignableDamage))}
                         data-testid="nyra-allocate-damage-button"
                     >
@@ -115,9 +116,9 @@ export const NyraCompanionPanel = ({
     ) : null;
 
     return (
-        <div className="w-full" data-testid="nyra-companion-control">
+        <div className="relative w-full" data-testid="nyra-companion-control">
             <section
-                className="w-[7.6vw] min-w-[96px] max-w-[124px] rounded-xl border border-emerald-300/55 bg-slate-950/90 px-1.5 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]"
+                className="w-full rounded-xl border border-emerald-300/55 bg-slate-950/90 px-1.5 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]"
                 aria-label={t('companion.nyra.label')}
                 data-testid="nyra-companion-panel"
             >

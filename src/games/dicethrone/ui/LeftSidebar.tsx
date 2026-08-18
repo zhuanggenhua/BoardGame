@@ -90,7 +90,7 @@ export const LeftSidebar = ({
 }) => {
     return (
         <div
-            className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-none"
+            className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[16vw] flex flex-col items-center pointer-events-none"
             style={{ zIndex: UI_Z_INDEX.hud }}
             data-testid="left-sidebar"
         >
@@ -165,24 +165,24 @@ export const LeftSidebar = ({
                 {/* 血条和自动响应开关容器 */}
                 <div className="w-full px-[1vw]" data-testid="dt-player-stats-panel" data-tutorial-id="player-stats">
                     <div className="w-full flex flex-col gap-[0.4vw]">
-                        {viewPlayer.characterId === 'lieren' && (
-                            <div
-                                className="w-full pointer-events-auto"
-                                data-testid="nyra-player-panel-anchor"
-                                data-player-panel-slot="top-left"
-                            >
-                                <NyraCompanionPanel
-                                    player={viewPlayer}
-                                    locale={locale}
-                                    onConsumeBond={onConsumeNyraBond}
-                                    damageResponse={nyraDamageResponse}
-                                />
-                            </div>
-                        )}
                         <PlayerStats
                             player={viewPlayer}
                             hpRef={selfHpRef}
                             cpRef={selfCpRef}
+                            healthLeadingSlot={viewPlayer.characterId === 'lieren' ? (
+                                <div
+                                    className="pointer-events-auto"
+                                    data-testid="nyra-player-panel-anchor"
+                                    data-player-panel-slot="top-left"
+                                >
+                                    <NyraCompanionPanel
+                                        player={viewPlayer}
+                                        locale={locale}
+                                        onConsumeBond={onConsumeNyraBond}
+                                        damageResponse={nyraDamageResponse}
+                                    />
+                                </div>
+                            ) : undefined}
                             hitStopActive={hitStopActive}
                             hitStopConfig={hitStopConfig}
                             isHpShaking={isSelfShaking}

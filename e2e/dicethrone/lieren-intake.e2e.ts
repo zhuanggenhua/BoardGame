@@ -77,28 +77,65 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
     const slider = page.getByRole('slider', { name: '消耗羁绊分配伤害' });
     const dock = page.getByTestId('nyra-damage-response-dock');
     const board = page.getByTestId('player-board-surface');
+    const leftSidebar = page.getByTestId('left-sidebar');
+    const statusTokens = page.locator('[data-tutorial-id="status-tokens"]');
+    const statsPanel = page.getByTestId('dt-player-stats-panel');
+    const drawDeck = page.locator('[data-tutorial-id="draw-deck"]');
     const handCards = page.locator('[data-testid="hand-area"] [data-card-id]');
 
-    const [redirectBox, allocateBox, sliderBox, dockBox, boardBox] = await Promise.all([
+    const [redirectBox, allocateBox, sliderBox, dockBox, boardBox, sidebarBox, statusBox, deckBox] = await Promise.all([
         redirectButton.boundingBox(),
         allocateButton.boundingBox(),
         slider.boundingBox(),
         dock.boundingBox(),
         board.boundingBox(),
+        leftSidebar.boundingBox(),
+        statusTokens.boundingBox(),
+        drawDeck.boundingBox(),
     ]);
     expect(redirectBox, '转移伤害按钮必须有可点击矩形').not.toBeNull();
     expect(allocateBox, '确认分配按钮必须有可点击矩形').not.toBeNull();
     expect(sliderBox, '羁绊分配滑杆必须有可拖动矩形').not.toBeNull();
     expect(dockBox, '妮拉响应面板必须是玩家能读的大面板').not.toBeNull();
     expect(boardBox, '玩家板必须有可见矩形').not.toBeNull();
+    expect(sidebarBox, '左侧玩家 HUD 必须有可见矩形').not.toBeNull();
+    expect(statusBox, '状态图标区必须有可见矩形').not.toBeNull();
+    expect(deckBox, '牌堆必须有可见矩形').not.toBeNull();
     await expect(handCards.first()).toBeVisible({ timeout: 10000 });
-    expect(dockBox!.width, '妮拉响应面板必须占用左侧玩家面板宽度，不能退回小浮条').toBeGreaterThanOrEqual(150);
+    expect(dockBox!.width, '妮拉响应面板必须是可读大面板，不能退回左栏小窄条').toBeGreaterThanOrEqual(230);
     expect(redirectBox!.height, '转移伤害按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
     expect(allocateBox!.height, '确认分配按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
-    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(140);
-    expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(140);
-    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(135);
+    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(200);
+    expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(200);
+    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(190);
+    expect(dockBox!.x, '妮拉响应面板应贴近左侧自己的玩家面板').toBeGreaterThanOrEqual(sidebarBox!.x - 2);
+    expect(
+        dockBox!.x + dockBox!.width,
+        `妮拉响应面板不得进入中间玩家板区域 ${JSON.stringify({ dockBox, boardBox })}`,
+    ).toBeLessThanOrEqual(boardBox!.x - 2);
     expect(boxesOverlap(dockBox!, boardBox!), '妮拉响应面板不得压住中间玩家板 / 技能牌面').toBe(false);
+    expect(
+        boxesOverlap(dockBox!, statusBox!),
+        `妮拉响应面板不得压住状态 / Token 图标区 ${JSON.stringify({ dockBox, statusBox })}`,
+    ).toBe(false);
+    expect(
+        boxesOverlap(dockBox!, deckBox!),
+        `妮拉响应面板不得压住牌堆 ${JSON.stringify({ dockBox, deckBox })}`,
+    ).toBe(false);
+    const resourceBoxes = await statsPanel.locator('[data-dicethrone-resource]').evaluateAll((nodes) => (
+        nodes
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            })
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+    ));
+    for (const resourceBox of resourceBoxes) {
+        expect(
+            boxesOverlap(dockBox!, resourceBox),
+            `妮拉响应面板不得压住生命 / CP 条 ${JSON.stringify({ dockBox, resourceBox })}`,
+        ).toBe(false);
+    }
     const handCardBoxes = await handCards.evaluateAll((nodes) => (
         nodes
             .map((node) => {
@@ -398,7 +435,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toBeVisible();
             await expectNyraInsideSelfPlayerHud(match.hostPage);
             await expectUsableNyraControl(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉留在左侧玩家面板内且响应卡可操作');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉左侧大面板可读可操作');
 
             await match.hostPage.getByRole('button', { name: '转移伤害' }).click();
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0, { timeout: 10000 });

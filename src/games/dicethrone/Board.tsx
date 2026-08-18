@@ -2086,6 +2086,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
+                        leftResponseDockActive={Boolean(nyraDamageResponse)}
                     />
 
                     <RightSidebar
