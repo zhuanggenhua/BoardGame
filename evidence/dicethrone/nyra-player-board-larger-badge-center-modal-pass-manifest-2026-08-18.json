@@ -1,6 +1,8 @@
 {
-  "verdict": "PASS",
+  "verdict": "REVISE",
   "scope": "current-user-request",
+  "supersededBy": "evidence/dicethrone/nyra-single-allocation-control-pass-manifest-2026-08-18.json",
+  "supersededReason": "用户指出妮拉伤害响应不应同时保留“转移伤害”和“确认分配”两个近义按钮；本清单对应旧两按钮流程，只能作为历史证据，不得再用于最终开图。",
   "requirements": [
     {
       "requirement": "妮拉状态必须放在中间女猎手玩家板图片左上空白带，并充分利用该空白，不能再缩成过小角标。",

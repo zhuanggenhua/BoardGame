@@ -16,8 +16,7 @@ export interface NyraDamageResponse {
     maxAssignableDamage: number;
     canRedirectToNyra: boolean;
     canAllocateWithBond: boolean;
-    onRedirectToNyra: () => void;
-    onAllocateWithBond: (amount: number) => void;
+    onConfirmDamageAllocation: (amount: number) => void;
 }
 
 export const NyraCompanionPanel = ({
@@ -36,11 +35,11 @@ export const NyraCompanionPanel = ({
     const { t, i18n } = useTranslation('game-dicethrone');
     const companion = player.companion;
     const maxAssignableDamage = Math.max(0, damageResponse?.maxAssignableDamage ?? 0);
-    const [damageAllocation, setDamageAllocation] = React.useState(1);
+    const [damageAllocation, setDamageAllocation] = React.useState(0);
 
     React.useEffect(() => {
-        setDamageAllocation(Math.max(1, maxAssignableDamage));
-    }, [maxAssignableDamage]);
+        setDamageAllocation(0);
+    }, [damageResponse?.currentDamage]);
 
     if (player.characterId !== 'lieren' || !companion) return null;
 
@@ -56,6 +55,26 @@ export const NyraCompanionPanel = ({
         ? 'Heal'
         : '治疗';
     const isBoardBadge = variant === 'boardBadge';
+    const currentDamage = activeDamageResponse?.currentDamage ?? 0;
+    const selectedDamage = Math.max(0, Math.min(damageAllocation, currentDamage));
+    const heroDamage = Math.max(0, currentDamage - selectedDamage);
+    const usesBond = selectedDamage > 0 && selectedDamage < currentDamage;
+    const canConfirmSelection = Boolean(activeDamageResponse) && (
+        selectedDamage === 0
+        || (selectedDamage === currentDamage && activeDamageResponse?.canRedirectToNyra)
+        || (
+            usesBond
+            && activeDamageResponse?.canAllocateWithBond
+            && selectedDamage <= maxAssignableDamage
+        )
+    );
+    const allocationSummary = selectedDamage === 0
+        ? t('companion.nyra.damageAllocationSkip', { damage: currentDamage })
+        : selectedDamage === currentDamage
+            ? t('companion.nyra.damageAllocationRedirect', { damage: currentDamage })
+            : canConfirmSelection
+                ? t('companion.nyra.damageAllocationBond', { nyraDamage: selectedDamage, heroDamage })
+                : t('companion.nyra.damageAllocationInvalid', { max: maxAssignableDamage });
     const damageResponseDock = activeDamageResponse ? (
         <div
             className="fixed left-1/2 top-1/2 w-[32vw] min-w-[380px] max-w-[430px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-emerald-300/65 bg-slate-950/97 px-3.5 py-2 shadow-2xl shadow-black/70 backdrop-blur-md"
@@ -75,7 +94,7 @@ export const NyraCompanionPanel = ({
                     <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300/80">
                         {t('companion.nyra.name')} · <span className="text-amber-200">{t('tokens.nyras_bond.name')}</span>
                     </div>
-                    <div className="mt-0.5 text-[18px] font-black text-emerald-50">{t('companion.nyra.takeDamage')}</div>
+                    <div className="mt-0.5 text-[18px] font-black text-emerald-50">{t('companion.nyra.damageAllocationTitle')}</div>
                     <div className="mt-0.5 flex items-center gap-3 text-[13px] font-bold text-slate-200">
                         <span className="inline-flex items-center gap-1">
                             <HeartPulse className="h-4 w-4 text-rose-300" aria-hidden="true" />
@@ -92,46 +111,35 @@ export const NyraCompanionPanel = ({
                     <div className="text-2xl font-black tabular-nums text-rose-100">{activeDamageResponse.currentDamage}</div>
                 </div>
             </div>
-            {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
-                <div className="mb-2 rounded-xl border border-cyan-300/35 bg-cyan-950/35 px-3 py-1.5">
-                    <div className="mb-1 flex items-center justify-between gap-3 text-[14px] font-bold text-cyan-100">
-                        <span>{t('companion.nyra.allocateDamage')}</span>
-                        <span className="rounded-full bg-cyan-300/15 px-2.5 py-0.5 tabular-nums">{Math.min(damageAllocation, maxAssignableDamage)}/{maxAssignableDamage}</span>
-                    </div>
-                    <input
-                        aria-label={t('companion.nyra.allocateDamage')}
-                        className="h-6 w-full accent-cyan-300"
-                        type="range"
-                        min={1}
-                        max={maxAssignableDamage}
-                        value={Math.min(damageAllocation, maxAssignableDamage)}
-                        onChange={(event) => setDamageAllocation(Number(event.target.value))}
-                    />
+            <div className="mb-2 rounded-xl border border-cyan-300/35 bg-cyan-950/35 px-3 py-1.5">
+                <div className="mb-1 flex items-center justify-between gap-3 text-[14px] font-bold text-cyan-100">
+                    <span>{t('companion.nyra.damageAllocationSlider')}</span>
+                    <span className="rounded-full bg-cyan-300/15 px-2.5 py-0.5 tabular-nums">{selectedDamage}/{currentDamage}</span>
                 </div>
-            )}
+                <input
+                    aria-label={t('companion.nyra.damageAllocationSlider')}
+                    className="h-6 w-full accent-cyan-300"
+                    type="range"
+                    min={0}
+                    max={currentDamage}
+                    value={selectedDamage}
+                    onChange={(event) => setDamageAllocation(Number(event.target.value))}
+                />
+                <div className={canConfirmSelection ? 'mt-1 text-[12px] font-semibold text-cyan-50/85' : 'mt-1 text-[12px] font-semibold text-amber-200'}>
+                    {allocationSummary}
+                </div>
+            </div>
             <div className="grid grid-cols-1 gap-1">
-                {activeDamageResponse.canRedirectToNyra && (
-                    <GameButton
-                        size="sm"
-                        variant="primary"
-                        className="h-12 w-full !px-5 !py-0 !text-[15px]"
-                        onClick={activeDamageResponse.onRedirectToNyra}
-                        data-testid="nyra-take-damage-button"
-                    >
-                        {t('companion.nyra.takeDamageAction')}
-                    </GameButton>
-                )}
-                {activeDamageResponse.canAllocateWithBond && maxAssignableDamage > 0 && (
-                    <GameButton
-                        size="sm"
-                        variant="secondary"
-                        className="h-12 w-full !px-5 !py-0 !text-[15px]"
-                        onClick={() => activeDamageResponse.onAllocateWithBond(Math.min(damageAllocation, maxAssignableDamage))}
-                        data-testid="nyra-allocate-damage-button"
-                    >
-                        {t('companion.nyra.allocateDamageAction')}
-                    </GameButton>
-                )}
+                <GameButton
+                    size="sm"
+                    variant="primary"
+                    className="h-12 w-full !px-5 !py-0 !text-[15px]"
+                    disabled={!canConfirmSelection}
+                    onClick={() => activeDamageResponse.onConfirmDamageAllocation(selectedDamage)}
+                    data-testid="nyra-allocate-damage-button"
+                >
+                    {t('companion.nyra.allocateDamageAction')}
+                </GameButton>
             </div>
         </div>
     ) : null;

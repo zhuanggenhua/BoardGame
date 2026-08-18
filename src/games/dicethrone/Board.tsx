@@ -890,14 +890,23 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return undefined;
         }
 
-        const maxAssignableDamage = Math.min(currentDamage, companion.hp);
+        const maxAssignableDamage = Math.min(Math.max(0, currentDamage - 1), companion.hp);
         return {
             currentDamage,
             maxAssignableDamage,
             canRedirectToNyra: true,
             canAllocateWithBond: (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) > 0 && maxAssignableDamage > 0,
-            onRedirectToNyra: () => engineMoves.useToken(TOKEN_IDS.NYRA_REDIRECT, currentDamage),
-            onAllocateWithBond: (amount: number) => engineMoves.useToken(TOKEN_IDS.NYRAS_BOND, amount),
+            onConfirmDamageAllocation: (amount: number) => {
+                if (amount <= 0) {
+                    engineMoves.skipTokenResponse();
+                    return;
+                }
+                if (amount >= currentDamage) {
+                    engineMoves.useToken(TOKEN_IDS.NYRA_REDIRECT, currentDamage);
+                    return;
+                }
+                engineMoves.useToken(TOKEN_IDS.NYRAS_BOND, amount);
+            },
         };
     }, [
         G.pendingAttack?.isUltimate,

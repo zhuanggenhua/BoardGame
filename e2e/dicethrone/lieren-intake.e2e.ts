@@ -23,6 +23,7 @@ import {
 } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 
 type JsonRecord = Record<string, unknown>;
 type MatchSetup = NonNullable<Awaited<ReturnType<typeof setupOnlineMatch>>>;
@@ -50,6 +51,11 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     return path;
 };
 
+const waitForDamageFxToSettle = async (page: Page): Promise<void> => {
+    await expect(page.getByTestId('flying-effect-damage')).toHaveCount(0, { timeout: 5000 });
+    await page.waitForTimeout(2500);
+};
+
 const waitForImage = async (page: Page, testId: string): Promise<void> => {
     const image = page.getByTestId(testId);
     await expect(image).toBeVisible({ timeout: 15000 });
@@ -71,10 +77,38 @@ const boxesOverlap = (
     && first.y + first.height > second.y
 );
 
+const NYRA_DAMAGE_SLIDER_NAME = '妮拉承伤';
+
+const setNyraDamageAllocation = async (page: Page, amount: number): Promise<void> => {
+    const slider = page.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME });
+    await slider.evaluate((node, nextValue) => {
+        const input = node as HTMLInputElement;
+        const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        valueSetter?.call(input, String(nextValue));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, amount);
+    await expect(slider).toHaveValue(String(amount));
+};
+
+const getHostPlayer = async (matchId: string, page: Page): Promise<JsonRecord> => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const core = asRecord(root.core);
+    const players = asRecord(core.players);
+    return asRecord(players['0']);
+};
+
+const expectHostHp = async (matchId: string, page: Page, expectedHp: number): Promise<void> => {
+    await expect.poll(async () => {
+        const host = await getHostPlayer(matchId, page);
+        return Number(asRecord(host.resources)[RESOURCE_IDS.HP] ?? Number.NaN);
+    }, { timeout: 10000 }).toBe(expectedHp);
+};
+
 const expectUsableNyraControl = async (page: Page): Promise<void> => {
-    const redirectButton = page.getByTestId('nyra-take-damage-button');
     const allocateButton = page.getByTestId('nyra-allocate-damage-button');
-    const slider = page.getByRole('slider', { name: '消耗羁绊分配伤害' });
+    const slider = page.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME });
     const dock = page.getByTestId('nyra-damage-response-dock');
     const leftSidebar = page.getByTestId('left-sidebar');
     const statusTokens = page.locator('[data-tutorial-id="status-tokens"]');
@@ -82,8 +116,8 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
     const drawDeck = page.locator('[data-tutorial-id="draw-deck"]');
     const handCards = page.locator('[data-testid="hand-area"] [data-card-id]');
 
-    const [redirectBox, allocateBox, sliderBox, dockBox, sidebarBox, statusBox, deckBox] = await Promise.all([
-        redirectButton.boundingBox(),
+    await expect(page.getByTestId('nyra-take-damage-button')).toHaveCount(0);
+    const [allocateBox, sliderBox, dockBox, sidebarBox, statusBox, deckBox] = await Promise.all([
         allocateButton.boundingBox(),
         slider.boundingBox(),
         dock.boundingBox(),
@@ -91,20 +125,17 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
         statusTokens.boundingBox(),
         drawDeck.boundingBox(),
     ]);
-    expect(redirectBox, '转移伤害按钮必须有可点击矩形').not.toBeNull();
     expect(allocateBox, '确认分配按钮必须有可点击矩形').not.toBeNull();
-    expect(sliderBox, '羁绊分配滑杆必须有可拖动矩形').not.toBeNull();
+    expect(sliderBox, '妮拉承伤滑杆必须有可拖动矩形').not.toBeNull();
     expect(dockBox, '妮拉响应弹窗必须是玩家能读的居中大弹窗').not.toBeNull();
     expect(sidebarBox, '左侧玩家 HUD 必须有可见矩形').not.toBeNull();
     expect(statusBox, '状态图标区必须有可见矩形').not.toBeNull();
     expect(deckBox, '牌堆必须有可见矩形').not.toBeNull();
     await expect(handCards.first()).toBeVisible({ timeout: 10000 });
     expect(dockBox!.width, '妮拉响应弹窗必须是正式可读大弹窗，不能退回左栏小窄条').toBeGreaterThanOrEqual(360);
-    expect(redirectBox!.height, '转移伤害按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(48);
     expect(allocateBox!.height, '确认分配按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(48);
-    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(280);
     expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(280);
-    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(280);
+    expect(sliderBox!.width, '妮拉承伤滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(280);
     const viewport = page.viewportSize();
     expect(viewport, 'E2E 必须有固定视口以验证弹窗居中').not.toBeNull();
     const dockCenterX = dockBox!.x + dockBox!.width / 2;
@@ -449,33 +480,54 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.hostPage.getByTestId('token-response-modal')).toHaveCount(0);
             await expect(nyraPanel).toBeVisible({ timeout: 10000 });
             await expect(nyraPanel).toContainText('4');
-            await expect(match.hostPage.getByRole('slider', { name: '消耗羁绊分配伤害' })).toBeVisible();
+            await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveValue('0');
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible();
-            await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toBeVisible();
+            await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0);
+            await expect(match.hostPage.getByText('不分派：女猎手承受 4 点伤害。')).toBeVisible();
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await expectUsableNyraControl(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉居中承伤与羁绊分配弹窗');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-默认0不分派-单确认弹窗');
 
-            await match.hostPage.getByRole('button', { name: '转移伤害' }).click();
-            await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0, { timeout: 10000 });
+            await match.hostPage.getByRole('button', { name: '确认分配' }).click();
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toHaveCount(0);
-            await expect(nyraPanel).toContainText('1/7', { timeout: 10000 });
+            await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1');
+            await expectHostHp(match.matchId, match.hostPage, 46);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-转移伤害后-妮拉直接承伤收口');
+            await waitForDamageFxToSettle(match.hostPage);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-默认0确认后-女猎手承受全部伤害');
 
             await injectNyraDamageResponse(match.matchId, match.hostPage);
             await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible({ timeout: 10000 });
+            await setNyraDamageAllocation(match.hostPage, 4);
+            await expect(match.hostPage.getByText('全转移：妮拉承受 4 点伤害，不消耗羁绊。')).toBeVisible();
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
-            await expect(match.hostPage.getByRole('slider', { name: '消耗羁绊分配伤害' })).toHaveCount(0, { timeout: 10000 });
+            await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
             await expect(nyraPanel).toContainText('1/7', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('0/1');
+            await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1');
+            await expectHostHp(match.matchId, match.hostPage, 46);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-确认羁绊分配后-妮拉承伤收口');
+            await waitForDamageFxToSettle(match.hostPage);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-拉满确认后-妮拉承受全部伤害不耗羁绊');
+
+            await injectNyraDamageResponse(match.matchId, match.hostPage);
+            await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
+            await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible({ timeout: 10000 });
+            await setNyraDamageAllocation(match.hostPage, 2);
+            await expect(match.hostPage.getByText('消耗 1 个羁绊：妮拉承受 2 点，女猎手承受 2 点。')).toBeVisible();
+            await match.hostPage.getByRole('button', { name: '确认分配' }).click();
+            await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
+            await expect(nyraPanel).toContainText('3/7', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('0/1');
+            await expectHostHp(match.matchId, match.hostPage, 44);
+            await expectNyraInsidePlayerBoardImage(match.hostPage);
+            await waitForDamageFxToSettle(match.hostPage);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-中间值2点确认后-消耗羁绊并分配伤害');
 
             await expect(match.guestPage.getByTestId('player-board-surface'))
                 .toHaveAttribute('data-character-id', 'monk', { timeout: 10000 });
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '06-牌桌-对手视角已进入');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '07-牌桌-对手视角已进入');
         } finally {
             await cleanupDTMatch(match);
         }

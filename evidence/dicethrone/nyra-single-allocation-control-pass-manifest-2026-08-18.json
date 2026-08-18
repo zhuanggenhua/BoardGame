@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "requirements": [
+    {
+      "requirement": "妮拉承伤与羁绊分配只保留一个确认动作，不能再同时出现“转移伤害”和“确认分配”两个按钮。",
+      "status": "PASS",
+      "evidence": [
+        "03 原始截图显示响应弹窗只有“妮拉承伤”滑杆和一个“确认分配”按钮。",
+        "E2E 断言确认旧 nyra-take-damage-button 不存在，且页面没有名为“转移伤害”的按钮。"
+      ]
+    },
+    {
+      "requirement": "滑杆默认 0 表示不分派；确认后女猎手承受全部伤害，妮拉生命和妮拉之系不变。",
+      "status": "PASS",
+      "evidence": [
+        "03 原始截图显示滑杆默认 0/4，摘要写明“不分派：女猎手承受 4 点伤害”。",
+        "04 原始截图显示确认后妮拉仍为 5/7、妮拉之系仍为 1/1、女猎手生命为 46；E2E 同步断言女猎手 HP 为 46。"
+      ]
+    },
+    {
+      "requirement": "滑杆拉满表示全转移；确认后妮拉承受全部伤害，且不消耗妮拉之系。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 将滑杆设置为 4 并确认；05 原始截图显示妮拉为 1/7、妮拉之系仍为 1/1。",
+        "E2E 同步断言女猎手 HP 仍为 46，证明拉满分支没有让女猎手再承受这段伤害。"
+      ]
+    },
+    {
+      "requirement": "滑杆中间值表示消耗 1 个妮拉之系分配伤害。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 将滑杆设置为 2 并确认；06 原始截图显示妮拉为 3/7、妮拉之系为 0/1。",
+        "E2E 同步断言女猎手 HP 为 44，证明妮拉承受 2 点、女猎手承受剩余 2 点。"
+      ]
+    },
+    {
+      "requirement": "弹窗仍必须居中、可读、可点，并且不遮挡持续信息。",
+      "status": "PASS",
+      "evidence": [
+        "03 原始截图显示弹窗位于 1280x720 画面中轴，滑杆、摘要、确认按钮均可读。",
+        "E2E 断言弹窗水平和垂直居中偏差不超过 12px，并且不遮挡状态图标区、牌堆、生命 / CP 条或底部手牌主体。"
+      ]
+    },
+    {
+      "requirement": "最终用户验收图组只能在当前 PASS 后用 PureRef 一次性打开。",
+      "status": "PASS",
+      "evidence": [
+        "本清单只包含本轮单确认控件后的 02-06 五张修后截图标记副本和序号索引。",
+        "scripts/verify/open-verified-image.mjs 会校验 PASS 清单、媒体列表和重复开图指纹；旧两按钮清单已由本清单取代。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/00-sequence-index.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/01-labeled-02-牌桌-妮拉在玩家板图片左上空白.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/02-labeled-03-伤害响应-默认0不分派-单确认弹窗.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/03-labeled-04-默认0确认后-女猎手承受全部伤害.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/04-labeled-05-拉满确认后-妮拉承受全部伤害不耗羁绊.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/05-labeled-06-中间值2点确认后-消耗羁绊并分配伤害.png"
+  ],
+  "images": [
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/00-sequence-index.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/01-labeled-02-牌桌-妮拉在玩家板图片左上空白.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/02-labeled-03-伤害响应-默认0不分派-单确认弹窗.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/03-labeled-04-默认0确认后-女猎手承受全部伤害.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/04-labeled-05-拉满确认后-妮拉承受全部伤害不耗羁绊.png",
+    "test-results/evidence-screenshots/dicethrone/lieren-intake.e2e/真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标/_labeled-for-pureref-nyra-single-allocation-control-20260818/05-labeled-06-中间值2点确认后-消耗羁绊并分配伤害.png"
+  ]
+}

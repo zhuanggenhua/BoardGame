@@ -2,6 +2,8 @@
 
 日期：2026-08-18
 
+> 2026-08-18 15:36 更新：本文对应上一版“转移伤害 + 确认分配”两按钮流程，已被 `dicethrone-lieren-nyra-single-allocation-control-e2e-2026-08-18.md` 和 `nyra-single-allocation-control-pass-manifest-2026-08-18.json` 取代。旧图只保留为历史证据，不再作为当前最终开图依据。
+
 验收状态：PASS。上一版“左侧玩家面板内部左上 / 左上正式响应面板”的 PASS 口径已废弃；上一轮“小徽章”PASS 在用户指出“左上空间没这么小”后也已降级为历史证据，不能作为当前收口证据。
 
 ## 本轮要求
