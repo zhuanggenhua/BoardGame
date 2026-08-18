@@ -2,11 +2,12 @@
 - [x] 1.1 Review and approve this OpenSpec proposal before implementation.
 - [x] 1.2 Confirm this is a DomainCore boundary cleanup, not a new generic value framework.
 
-## 2. Open-Source Alignment
+## 2. Reference Alignment
 - [x] 2.1 Record the relevant boardgame.io pattern: moves mutate game state; playerView only tailors state for a player.
 - [x] 2.2 Record the relevant Colyseus pattern: clients request changes; server/room mutates authoritative state; clients listen.
 - [x] 2.3 Record the relevant OpenRA pattern: orders drive deterministic world state; render/local visual state is separate from synced gameplay state.
 - [x] 2.4 Translate the references into BoardGame terms: command/event/reducer writes; playerView/UI selector reads; AI hint and animation state stay non-authoritative.
+- [x] 2.5 Record the relevant duolafashi1 pattern: data objects own HP/final damage; damage entry computes and writes formal values; UI syncs or reads results without writing back.
 
 ## 3. DiceThrone Boundary Audit
 - [ ] 3.1 Enumerate every reader and writer of displayed damage, pending attack damage, pending damage response values, bonus dice results, direct damage, prevention, evasion, and final HP loss.

@@ -18,6 +18,16 @@ DiceThrone 当前暴露的症状是“显示伤害”和“最终扣血”不一
 
 这些参考都没有要求“每个数值都建一个通用生命周期对象”。它们共同强调的是：规则状态的写入口要少且明确，视图/客户端/渲染/AI 不能抢规则真相。
 
+## Legacy Project Reference Alignment
+`C:\Gamedev\Godot\Temp\dulafashi\duolafashi1` 的角色数值链路提供了更贴近本项目的朴素参考：
+
+- 正式血量、最终伤害和受击伤害由角色数据对象持有，伤害入口集中到 `takeDamageOnServer(...)`，再交给 `CharacterStatsTemplate.handleDamageAndBuff(...)` 计算与扣血。
+- `finalDamage` / `beFinalDamage` 在旧项目文档中明确只在“伤害产生后”有意义；它们可以被 Buff 链路读取，但不能被提前当成显示预估或规则输入。
+- 头顶血条、PVP 血条和怪物血条只消费数据对象同步出来的 `curHP / maxHP` 或直接读取 `stats.hp / maxHP` 展示比例，不反向写入 HP。
+- 属性修正使用 `ModifierValue` 这类数据层容器统一重算；UI 不维护同名数值，也不通过显示结果回推规则状态。
+
+本提案吸收的是这条职责模式，不复制旧项目实现，也不把它升级成跨游戏重型框架。落到 BoardGame 里就是：每个核心数值先说明它的规则拥有者和唯一写入口，UI / playerView / animation / AI 只能读取、过滤、预览或估算，不能成为正式结算输入。
+
 ## Goals / Non-Goals
 - Goals:
   - 沿用现有 DomainCore：命令 / 事件 / reducer 是规则状态写入主路径。
@@ -31,7 +41,7 @@ DiceThrone 当前暴露的症状是“显示伤害”和“最终扣血”不一
   - 不要求所有游戏同轮迁移。
   - 不把 DiceThrone 伤害结构当成其他游戏固定模板。
 
-## Responsibility Ledger
+## Responsibility Map
 本次迁移必须保留或明确替换以下旧合同：
 
 | 现实能力 | 旧 Interface | 消费者 | 迁移后承载 |
