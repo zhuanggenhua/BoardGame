@@ -131,7 +131,7 @@ export const CenterBoard = ({
 
         return (
             <div
-                className="absolute top-[3.4%] left-[2.8%] z-30 w-[10.8%] pointer-events-auto"
+                className="absolute top-[1.7%] left-[1.6%] z-30 w-[31.4%] pointer-events-auto"
                 data-testid="nyra-player-panel-anchor"
                 data-player-panel-slot="player-board-image-top-left-blank"
             >

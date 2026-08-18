@@ -217,10 +217,22 @@ const expectNyraInsidePlayerBoardImage = async (page: Page): Promise<void> => {
     expect(nyraBox!.y).toBeGreaterThanOrEqual(boardBox!.y - epsilon);
     expect(nyraBox!.x + nyraBox!.width).toBeLessThanOrEqual(boardBox!.x + boardBox!.width + epsilon);
     expect(nyraBox!.y + nyraBox!.height).toBeLessThanOrEqual(boardBox!.y + boardBox!.height + epsilon);
-    expect(nyraBox!.x - boardBox!.x, '妮拉状态应贴在玩家板图片左上角空白带内，不得漂到中央虎图或左侧 HUD').toBeLessThan(boardBox!.width * 0.18);
+    expect(nyraBox!.x - boardBox!.x, '妮拉状态应贴在玩家板图片左上角空白带内，不得漂到中央虎图或左侧 HUD').toBeLessThan(boardBox!.width * 0.20);
     expect(nyraBox!.y - boardBox!.y, '妮拉状态应落在玩家板图片顶部空白，不得跑到 Buff / 血条区').toBeLessThan(boardBox!.height * 0.12);
-    expect(nyraBox!.width, '妮拉状态在玩家板图片内只能是小徽章，不能压住技能牌').toBeLessThanOrEqual(boardBox!.width * 0.14);
-    expect(nyraBox!.height, '妮拉状态在玩家板图片内只能占小角标高度').toBeLessThanOrEqual(boardBox!.height * 0.13);
+    expect(nyraBox!.width, '妮拉状态必须充分利用玩家板左上空白带，不能再缩成过小角标').toBeGreaterThanOrEqual(boardBox!.width * 0.29);
+    expect(nyraBox!.width, '妮拉状态仍必须保持在左上空白带内，不能压住技能牌或虎头主体').toBeLessThanOrEqual(boardBox!.width * 0.34);
+    expect(nyraBox!.height, '妮拉状态必须清楚可读，不能再缩成过小角标').toBeGreaterThanOrEqual(boardBox!.height * 0.14);
+    expect(nyraBox!.height, '妮拉状态仍必须停留在顶部空白带内，不能压住技能牌').toBeLessThanOrEqual(boardBox!.height * 0.19);
+
+    const topLeftAbilitySlotBoxes = abilitySlotBoxes
+        .filter((slotBox) => slotBox.x < boardBox!.x + boardBox!.width * 0.36)
+        .sort((a, b) => a.y - b.y);
+    expect(topLeftAbilitySlotBoxes.length, '女猎手左上技能牌槽必须可用于衡量玩家板左上空白带').toBeGreaterThan(0);
+    const topLeftBlankBottom = Math.min(...topLeftAbilitySlotBoxes.map((slotBox) => slotBox.y));
+    expect(
+        nyraBox!.y + nyraBox!.height,
+        '妮拉状态必须利用技能牌上方空白带，但底部不得压到左上技能牌槽',
+    ).toBeLessThanOrEqual(topLeftBlankBottom - 4);
     for (const slotBox of abilitySlotBoxes) {
         expect(
             boxesOverlap(nyraBox!, slotBox),

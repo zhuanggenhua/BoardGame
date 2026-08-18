@@ -143,16 +143,16 @@ export const NyraCompanionPanel = ({
         <div className="relative w-full" data-testid="nyra-companion-control">
             <section
                 className={isBoardBadge
-                    ? 'w-full rounded-lg border border-emerald-300/60 bg-slate-950/88 px-1 py-1 shadow-xl shadow-black/45 backdrop-blur-[2px]'
+                    ? 'w-full rounded-xl border border-emerald-300/64 bg-slate-950/88 px-2 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]'
                     : 'w-full rounded-xl border border-emerald-300/55 bg-slate-950/90 px-1.5 py-1.5 shadow-xl shadow-black/45 backdrop-blur-[2px]'}
                 aria-label={t('companion.nyra.label')}
                 data-testid="nyra-companion-panel"
                 data-nyra-variant={variant}
             >
-                <div className={isBoardBadge ? 'flex items-center gap-1' : 'flex items-center gap-1.5'}>
+                <div className={isBoardBadge ? 'flex items-center gap-1.5' : 'flex items-center gap-1.5'}>
                     <div
                         className={isBoardBadge
-                            ? 'h-7 w-7 shrink-0 rounded-md border border-emerald-100/45 bg-black'
+                            ? 'h-12 w-12 shrink-0 rounded-lg border border-emerald-100/45 bg-black'
                             : 'h-8 w-8 shrink-0 rounded-md border border-emerald-100/45 bg-black'}
                         style={{ backgroundImage, backgroundRepeat: 'no-repeat', ...NYRA_CROP }}
                         role="img"
@@ -160,16 +160,16 @@ export const NyraCompanionPanel = ({
                     />
                     <div className="min-w-0 flex-1 leading-none">
                         <div className="flex items-center justify-between gap-1">
-                            <span className={isBoardBadge ? 'truncate text-[9px] font-black text-emerald-100' : 'truncate text-[11px] font-black text-emerald-100'}>{t('companion.nyra.name')}</span>
+                            <span className={isBoardBadge ? 'truncate text-[12px] font-black text-emerald-100' : 'truncate text-[11px] font-black text-emerald-100'}>{t('companion.nyra.name')}</span>
                             {activeDamageResponse && (
-                                <span className="rounded bg-orange-500/20 px-1 text-[10px] font-black tabular-nums text-orange-100">
+                                <span className="rounded bg-orange-500/20 px-1 text-[11px] font-black tabular-nums text-orange-100">
                                     {activeDamageResponse.currentDamage}
                                 </span>
                             )}
                         </div>
-                        <div className={isBoardBadge ? 'mt-0.5 flex items-center justify-between gap-0.5' : 'mt-1 flex items-center justify-between gap-1'}>
-                            <div className={isBoardBadge ? 'flex items-center gap-0.5 text-[9px] font-black tabular-nums text-rose-200' : 'flex items-center gap-0.5 text-[11px] font-black tabular-nums text-rose-200'}>
-                                <HeartPulse className={isBoardBadge ? 'h-2.5 w-2.5 text-rose-400' : 'h-3 w-3 text-rose-400'} aria-hidden="true" />
+                        <div className={isBoardBadge ? 'mt-1 flex items-center justify-between gap-1' : 'mt-1 flex items-center justify-between gap-1'}>
+                            <div className={isBoardBadge ? 'flex items-center gap-1 text-[11px] font-black tabular-nums text-rose-200' : 'flex items-center gap-0.5 text-[11px] font-black tabular-nums text-rose-200'}>
+                                <HeartPulse className={isBoardBadge ? 'h-3 w-3 text-rose-400' : 'h-3 w-3 text-rose-400'} aria-hidden="true" />
                                 <span>{hp}/{companion.maxHp}</span>
                             </div>
                             <div
@@ -177,8 +177,8 @@ export const NyraCompanionPanel = ({
                                 title={t('tokens.nyras_bond.name')}
                                 data-testid="nyra-bond-state"
                             >
-                                <Link2 className={isBoardBadge ? 'h-2.5 w-2.5' : 'h-3 w-3'} aria-hidden="true" />
-                                <span className={isBoardBadge ? 'text-[9px] font-black tabular-nums' : 'text-[10px] font-black tabular-nums'}>{bondCount}/1</span>
+                                <Link2 className={isBoardBadge ? 'h-3 w-3' : 'h-3 w-3'} aria-hidden="true" />
+                                <span className={isBoardBadge ? 'text-[10px] font-black tabular-nums' : 'text-[10px] font-black tabular-nums'}>{bondCount}/1</span>
                             </div>
                             {!isBoardBadge && showHealAction && (
                                 <GameButton

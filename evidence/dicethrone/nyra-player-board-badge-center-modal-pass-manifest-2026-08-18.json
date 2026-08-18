@@ -1,12 +1,14 @@
 {
-  "verdict": "PASS",
+  "verdict": "REVISE",
   "scope": "current-user-request",
+  "supersededBy": "evidence/dicethrone/nyra-player-board-larger-badge-center-modal-pass-manifest-2026-08-18.json",
+  "supersededReason": "用户指出“左上空间没这么小”后，本清单对应的旧小徽章比例不再满足当前验收口径；只能作为历史证据，不得再用于最终开图。",
   "requirements": [
     {
       "requirement": "妮拉状态必须放在中间女猎手玩家板图片本身左上角空白带，不能挤压 Buff 或资源条。",
-      "status": "PASS",
+      "status": "REVISE",
       "evidence": [
-        "02 原始截图显示妮拉徽章在女猎手玩家板图片内部左上空白带，左侧 Buff / 状态图标、生命 / CP 条、牌堆和回合顺序没有被妮拉占位或挤压。",
+        "02 原始截图显示妮拉徽章在女猎手玩家板图片内部左上空白带，但用户随后指出“左上空间没这么小”，旧小徽章比例不足以满足当前验收口径。",
         "E2E 断言确认妮拉面板挂在 player-board-surface 内，不在 left-sidebar、status-tokens 或生命 / CP 统计行内。"
       ]
     },
