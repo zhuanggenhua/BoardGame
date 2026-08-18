@@ -65,7 +65,12 @@ export const CenterBoard = ({
     const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
     const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
     const hasTipBoard = hasDiceThroneTipBoard(characterId);
-    const shellTranslateX = boardUiTuning.shellTranslateX + (leftResponseDockActive ? 5 : 0);
+    const shellTranslateX = boardUiTuning.shellTranslateX + (leftResponseDockActive ? 10 : 0);
+    const shellScale = leftResponseDockActive ? 0.88 : 1;
+    const shellTransform = [
+        shellTranslateX === 0 ? null : `translateX(${shellTranslateX}vw)`,
+        shellScale === 1 ? null : `scale(${shellScale})`,
+    ].filter(Boolean).join(' ');
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
     const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
@@ -122,9 +127,9 @@ export const CenterBoard = ({
         <>
             <div
                 className={shellFrameClassName}
-                style={shellTranslateX === 0
+                style={shellTransform.length === 0
                     ? undefined
-                    : { transform: `translateX(${shellTranslateX}vw)` }}
+                    : { transform: shellTransform, transformOrigin: 'center center' }}
             >
                 <div
                     className="relative flex items-center justify-center"

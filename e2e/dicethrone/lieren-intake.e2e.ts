@@ -102,12 +102,12 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
     expect(statusBox, '状态图标区必须有可见矩形').not.toBeNull();
     expect(deckBox, '牌堆必须有可见矩形').not.toBeNull();
     await expect(handCards.first()).toBeVisible({ timeout: 10000 });
-    expect(dockBox!.width, '妮拉响应面板必须是可读大面板，不能退回左栏小窄条').toBeGreaterThanOrEqual(230);
-    expect(redirectBox!.height, '转移伤害按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
-    expect(allocateBox!.height, '确认分配按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(40);
-    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(200);
-    expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(200);
-    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(190);
+    expect(dockBox!.width, '妮拉响应面板必须是正式可读大面板，不能退回左栏小窄条').toBeGreaterThanOrEqual(320);
+    expect(redirectBox!.height, '转移伤害按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(48);
+    expect(allocateBox!.height, '确认分配按钮必须足够高，不能小到难点').toBeGreaterThanOrEqual(48);
+    expect(redirectBox!.width, '转移伤害按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(280);
+    expect(allocateBox!.width, '确认分配按钮必须足够宽，不能小到难读').toBeGreaterThanOrEqual(280);
+    expect(sliderBox!.width, '羁绊分配滑杆必须足够宽，不能小到难拖').toBeGreaterThanOrEqual(280);
     expect(dockBox!.x, '妮拉响应面板应贴近左侧自己的玩家面板').toBeGreaterThanOrEqual(sidebarBox!.x - 2);
     expect(
         dockBox!.x + dockBox!.width,
@@ -155,7 +155,7 @@ const expectUsableNyraControl = async (page: Page): Promise<void> => {
         const buttons = Array.from(panel.querySelectorAll('button'));
         return buttons.map((button) => Number.parseFloat(window.getComputedStyle(button).fontSize));
     });
-    expect(Math.min(...fontSizes), '妮拉响应按钮字号不能低于 13px').toBeGreaterThanOrEqual(13);
+    expect(Math.min(...fontSizes), '妮拉响应按钮字号不能低于 15px').toBeGreaterThanOrEqual(15);
 };
 
 const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
@@ -189,9 +189,10 @@ const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
     ]);
     expect(sidebarContainsNyra, '妮拉面板必须挂在左侧自己的玩家 HUD 内部').toBe(true);
     expect(panelContainsNyra, '妮拉面板必须挂在自己的玩家面板组内，不得跑到中间角色板').toBe(true);
-    expect(statsContainsNyra, '妮拉面板必须落在自己的玩家统计面板左上角，不得继续夹在回合顺序和状态图标之间').toBe(true);
+    expect(statsContainsNyra, '妮拉面板不得再挂进生命 / CP 统计行，否则会挤压资源条').toBe(false);
 
     const sidebarBox = await leftSidebar.boundingBox();
+    const selfPanelBox = await selfPlayerPanel.boundingBox();
     const nyraBox = await nyraPanel.boundingBox();
     const nyraControlBox = await nyraControl.boundingBox();
     const statusBox = await statusTokens.boundingBox();
@@ -200,6 +201,7 @@ const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
     const turnOrderBox = await turnOrderPanel.boundingBox();
     const boardBox = await board.boundingBox();
     expect(sidebarBox, '左侧玩家 HUD 必须有可见矩形').not.toBeNull();
+    expect(selfPanelBox, '自己的玩家面板组必须有可见矩形').not.toBeNull();
     expect(nyraBox, '妮拉面板必须有可见矩形').not.toBeNull();
     expect(nyraControlBox, '妮拉面板控制组必须有可见矩形').not.toBeNull();
     expect(statusBox, '状态图标区必须有可见矩形').not.toBeNull();
@@ -213,12 +215,13 @@ const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
     expect(nyraBox!.y).toBeGreaterThanOrEqual(sidebarBox!.y - epsilon);
     expect(nyraBox!.x + nyraBox!.width).toBeLessThanOrEqual(sidebarBox!.x + sidebarBox!.width + epsilon);
     expect(nyraBox!.y + nyraBox!.height).toBeLessThanOrEqual(sidebarBox!.y + sidebarBox!.height + epsilon);
-    expect(nyraControlBox!.x).toBeGreaterThanOrEqual(statsBox!.x - epsilon);
-    expect(nyraControlBox!.x + nyraControlBox!.width).toBeLessThanOrEqual(statsBox!.x + statsBox!.width + epsilon);
-    expect(nyraBox!.x - statsBox!.x, '妮拉状态应靠自己的玩家统计面板左上角，而不是贴到中间角色板').toBeLessThan(16);
-    expect(nyraBox!.y - statsBox!.y, '妮拉状态应落在自己的玩家统计面板顶部，不得继续夹在回合顺序和状态图标之间').toBeLessThan(8);
-    expect(nyraBox!.width, '妮拉状态只能是左上角小徽章，不能再变成挤占整行的横条面板').toBeLessThanOrEqual(112);
-    expect(nyraBox!.height, '妮拉状态只能占空白角落，不能压成一整块大面板').toBeLessThanOrEqual(54);
+    expect(nyraBox!.x).toBeGreaterThanOrEqual(selfPanelBox!.x - epsilon);
+    expect(nyraBox!.y).toBeGreaterThanOrEqual(selfPanelBox!.y - epsilon);
+    expect(nyraBox!.x - selfPanelBox!.x, '妮拉状态应靠自己的玩家面板内部左上角，而不是贴到中间角色板').toBeLessThan(18);
+    expect(nyraBox!.y - selfPanelBox!.y, '妮拉状态应落在玩家面板内部顶部空白，不得继续夹进状态图标或生命条行').toBeLessThan(8);
+    expect(nyraBox!.y + nyraBox!.height, '妮拉状态必须在状态 / Buff 图标上方的空白里，不得挤压或覆盖图标').toBeLessThanOrEqual(statusBox!.y + epsilon);
+    expect(nyraBox!.width, '妮拉状态只能是左上角小徽章，不能再变成挤占整行的横条面板').toBeLessThanOrEqual(116);
+    expect(nyraBox!.height, '妮拉状态只能占空白角落，不能压成一整块大面板').toBeLessThanOrEqual(58);
     expect(boxesOverlap(nyraBox!, statusBox!), '妮拉面板不得压住或挤进状态图标区').toBe(false);
     expect(boxesOverlap(nyraControlBox!, statusBox!), '妮拉控制组不得压住或挤进状态图标区').toBe(false);
     expect(boxesOverlap(nyraControlBox!, deckBox!), '妮拉控制组不得压住牌堆').toBe(false);
@@ -252,6 +255,7 @@ const expectNyraInsideSelfPlayerHud = async (page: Page): Promise<void> => {
             .filter((rect) => rect.width > 0 && rect.height > 0)
     ));
     for (const resourceBox of resourceBoxes) {
+        expect(resourceBox.width, '生命 / CP 条必须保持完整宽度，妮拉不得再占用资源条行宽').toBeGreaterThanOrEqual(160);
         expect(
             boxesOverlap(nyraControlBox!, resourceBox),
             `妮拉控制组不得遮挡生命 / CP 条 ${JSON.stringify({ nyraControlBox, resourceBox })}`,
@@ -425,7 +429,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(statusTokens.locator(`[data-status-id="${STATUS_IDS.BLEED}"]`)).toBeVisible({ timeout: 10000 });
             await expectNyraInsideSelfPlayerHud(match.hostPage);
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-妮拉在左侧玩家面板左上空白');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-妮拉在玩家面板内部左上空白');
             await injectNyraDamageResponse(match.matchId, match.hostPage);
             await expect(match.hostPage.getByTestId('token-response-modal')).toHaveCount(0);
             await expect(nyraPanel).toBeVisible({ timeout: 10000 });
@@ -435,7 +439,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toBeVisible();
             await expectNyraInsideSelfPlayerHud(match.hostPage);
             await expectUsableNyraControl(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉左侧大面板可读可操作');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-妮拉正式承伤与羁绊分配面板');
 
             await match.hostPage.getByRole('button', { name: '转移伤害' }).click();
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0, { timeout: 10000 });

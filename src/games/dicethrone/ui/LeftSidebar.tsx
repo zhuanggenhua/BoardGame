@@ -88,6 +88,8 @@ export const LeftSidebar = ({
     /** 当前伤害响应中妮拉可承接的伤害操作 */
     nyraDamageResponse?: NyraDamageResponse;
 }) => {
+    const isLieren = viewPlayer.characterId === 'lieren';
+
     return (
         <div
             className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[16vw] flex flex-col items-center pointer-events-none"
@@ -100,9 +102,26 @@ export const LeftSidebar = ({
             </div>
             <div className="flex-grow" />
             <div
-                className="relative w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto"
+                className={[
+                    'relative w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto',
+                    isLieren ? 'pt-[4.5vw]' : '',
+                ].join(' ')}
                 data-testid="self-player-panel-group"
             >
+                {isLieren && (
+                    <div
+                        className="absolute left-[1vw] top-0 w-[6.9vw] min-w-[96px] max-w-[112px] pointer-events-auto"
+                        data-testid="nyra-player-panel-anchor"
+                        data-player-panel-slot="top-left"
+                    >
+                        <NyraCompanionPanel
+                            player={viewPlayer}
+                            locale={locale}
+                            onConsumeBond={onConsumeNyraBond}
+                            damageResponse={nyraDamageResponse}
+                        />
+                    </div>
+                )}
                 {/*
                  * selfBuffRef is used as the end position for buff/status flying effects.
                  * Use a small offset above the HP container so the effect doesn't land too low.
@@ -169,20 +188,6 @@ export const LeftSidebar = ({
                             player={viewPlayer}
                             hpRef={selfHpRef}
                             cpRef={selfCpRef}
-                            healthLeadingSlot={viewPlayer.characterId === 'lieren' ? (
-                                <div
-                                    className="pointer-events-auto"
-                                    data-testid="nyra-player-panel-anchor"
-                                    data-player-panel-slot="top-left"
-                                >
-                                    <NyraCompanionPanel
-                                        player={viewPlayer}
-                                        locale={locale}
-                                        onConsumeBond={onConsumeNyraBond}
-                                        damageResponse={nyraDamageResponse}
-                                    />
-                                </div>
-                            ) : undefined}
                             hitStopActive={hitStopActive}
                             hitStopConfig={hitStopConfig}
                             isHpShaking={isSelfShaking}

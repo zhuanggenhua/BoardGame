@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import type { HeroState } from '../types';
 import { useTranslation } from 'react-i18next';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import { RESOURCE_IDS } from '../domain/resources';
 import { PlayerPanelSkeleton } from '../../../components/game/framework';
 import type { PlayerPanelData } from '../../../core/ui';
@@ -32,7 +32,6 @@ export const PlayerStats = ({
     player,
     hpRef,
     cpRef,
-    healthLeadingSlot,
     hitStopActive,
     hitStopConfig,
     isHpShaking,
@@ -44,8 +43,6 @@ export const PlayerStats = ({
     player: HeroState;
     hpRef?: RefObject<HTMLDivElement | null>;
     cpRef?: RefObject<HTMLDivElement | null>;
-    /** 放在生命条左侧的玩家面板内部槽位，例如伙伴状态徽章。 */
-    healthLeadingSlot?: ReactNode;
     hitStopActive?: boolean;
     hitStopConfig?: HitStopConfig;
     /** HP 条是否正在震动（受击） */
@@ -138,11 +135,6 @@ export const PlayerStats = ({
                 if (key === 'health') {
                     return (
                         <div className="flex w-full items-center gap-[0.5vw]">
-                            {healthLeadingSlot && (
-                                <div className="w-[6.6vw] min-w-[84px] max-w-[102px] shrink-0">
-                                    {healthLeadingSlot}
-                                </div>
-                            )}
                             <div ref={hpRef} className="min-w-0 flex-1">
                                 <ShakeContainer isShaking={!!isHpShaking} className="w-full">
                                     <HitStopContainer
