@@ -1017,9 +1017,25 @@ export const requestAndroidLiveUpdateCheck = (request: {
     applyMode?: AndroidLiveUpdateApplyMode;
     initialImmediatePhase?: Extract<AndroidLiveUpdateActivityPhase, 'checking' | 'downloading'>;
 } = {}) => {
-    if ((request.applyMode ?? 'immediate') === 'immediate') {
-        setImmediateActivityPhase(request.initialImmediatePhase ?? 'checking');
+    if (liveUpdateRequestListeners.size === 0) {
+        const applyMode = request.applyMode ?? 'immediate';
+        emitCriticalOtaLog('manual-check-without-request-listener', {
+            interactive: request.interactive === true,
+            applyMode,
+            initialImmediatePhase: request.initialImmediatePhase,
+        });
+        void startAndroidLiveUpdateBackgroundCheck({
+            force: true,
+            applyMode,
+            initialImmediatePhase: request.initialImmediatePhase,
+        }).then((result) => {
+            if (result.status === 'error') {
+                console.warn('[OTA] 手动检查失败', result.reason);
+            }
+        });
+        return;
     }
+
     for (const listener of liveUpdateRequestListeners) {
         listener(request);
     }
