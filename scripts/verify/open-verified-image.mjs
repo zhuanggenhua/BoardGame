@@ -9,6 +9,9 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bm
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.mkv']);
 const MEDIA_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]);
 const OPEN_STATE_PATH = path.resolve('test-results/evidence-screenshots/.open-verified-image-state.json');
+const OPEN_HISTORY_LIMIT = 50;
+const FINAL_DISPLAY_PURPOSE = 'final-user-visible-delivery';
+const VALID_DISPLAY_TRIGGERS = new Set(['user-requested-open', 'task-final-delivery']);
 
 const usage = () => {
     console.log(`用法:
@@ -239,7 +242,7 @@ const validatePureRefSequence = (imagePaths) => {
 
 const normalizeForCompare = (targetPath) => path.resolve(targetPath).toLowerCase();
 
-const validatePassManifest = (manifestPath, imagePaths) => {
+const validatePassManifest = (manifestPath, imagePaths, viewer) => {
     if (!manifestPath) {
         throw new Error('拒绝打开：缺少 --pass-manifest。本脚本只接受“本轮用户要求逐项达标”的清单，不接受口头确认或泛化 UI PASS。');
     }
@@ -262,6 +265,18 @@ const validatePassManifest = (manifestPath, imagePaths) => {
     }
     if (manifest?.scope !== 'current-user-request') {
         throw new Error('拒绝打开：PASS 清单 scope 必须是 "current-user-request"，不能用整页 UI 或其它范围替代本轮要求');
+    }
+    if (manifest?.display?.purpose !== FINAL_DISPLAY_PURPOSE) {
+        throw new Error(`拒绝打开：PASS 清单 display.purpose 必须是 "${FINAL_DISPLAY_PURPOSE}"，用于声明这不是过程核图，而是最终用户展示`);
+    }
+    if (!VALID_DISPLAY_TRIGGERS.has(manifest?.display?.trigger)) {
+        throw new Error(`拒绝打开：PASS 清单 display.trigger 必须是 ${Array.from(VALID_DISPLAY_TRIGGERS).join(' 或 ')}，不能省略用户展示触发来源`);
+    }
+    if (manifest?.display?.viewer !== viewer) {
+        throw new Error(`拒绝打开：PASS 清单 display.viewer 必须与本次 viewer 一致: ${viewer}`);
+    }
+    if (manifest?.display?.finalPassBeforeOpen !== true) {
+        throw new Error('拒绝打开：PASS 清单必须显式声明 display.finalPassBeforeOpen=true，表示最终 PASS 已先于开图完成');
     }
     if (!Array.isArray(manifest.requirements) || manifest.requirements.length === 0) {
         throw new Error('拒绝打开：PASS 清单必须包含非空 requirements');
@@ -320,6 +335,14 @@ const hashJson = (value) => (
     createHash('sha256').update(JSON.stringify(value)).digest('hex')
 );
 
+const buildMediaFingerprint = ({ imagePaths, viewer }) => (
+    hashJson({
+        version: 1,
+        viewer,
+        media: imagePaths.map(fileSignature),
+    })
+);
+
 const readOpenState = () => {
     if (!existsSync(OPEN_STATE_PATH)) {
         return null;
@@ -332,29 +355,53 @@ const readOpenState = () => {
     }
 };
 
+const getOpenHistory = (state) => {
+    const history = Array.isArray(state?.openHistory) ? state.openHistory : [];
+    const entries = [...history];
+    if (state?.lastOpen && !entries.some((entry) => entry?.fingerprint === state.lastOpen.fingerprint)) {
+        entries.unshift(state.lastOpen);
+    }
+    return entries;
+};
+
 const assertNotDuplicateOpen = ({ passManifest, imagePaths, viewer, forceReopen }) => {
     const payload = buildOpenFingerprintPayload({ passManifest, imagePaths, viewer });
     const fingerprint = hashJson(payload);
+    const mediaFingerprint = buildMediaFingerprint({ imagePaths, viewer });
     const state = readOpenState();
+    const history = getOpenHistory(state);
+    const duplicate = history.find((entry) => (
+        entry?.fingerprint === fingerprint
+        || entry?.mediaFingerprint === mediaFingerprint
+        || (!entry?.mediaFingerprint && entry?.media && hashJson({ version: 1, viewer: entry.viewer, media: entry.media }) === mediaFingerprint)
+    ));
 
-    if (!forceReopen && state?.lastOpen?.fingerprint === fingerprint) {
-        const openedAt = state.lastOpen.openedAt ?? '未知时间';
+    if (!forceReopen && duplicate) {
+        const openedAt = duplicate.openedAt ?? '未知时间';
         throw new Error(`拒绝重复打开：同一 PASS 清单和同一组媒体已在 ${openedAt} 打开过。若用户明确说没看到、打开错图或要求重开，请追加 --force-reopen。状态文件: ${OPEN_STATE_PATH}`);
     }
 
-    return { fingerprint, payload };
+    return { fingerprint, mediaFingerprint, payload };
 };
 
-const recordSuccessfulOpen = ({ fingerprint, payload }) => {
+const recordSuccessfulOpen = ({ fingerprint, mediaFingerprint, payload }) => {
     mkdirSync(path.dirname(OPEN_STATE_PATH), { recursive: true });
+    const state = readOpenState();
+    const openedAt = new Date().toISOString();
+    const entry = {
+        fingerprint,
+        mediaFingerprint,
+        openedAt,
+        ...payload,
+    };
+    const previousHistory = getOpenHistory(state)
+        .filter((item) => item?.fingerprint !== fingerprint && item?.mediaFingerprint !== mediaFingerprint);
+    const openHistory = [entry, ...previousHistory].slice(0, OPEN_HISTORY_LIMIT);
     writeFileSync(
         OPEN_STATE_PATH,
         JSON.stringify({
-            lastOpen: {
-                fingerprint,
-                openedAt: new Date().toISOString(),
-                ...payload,
-            },
+            lastOpen: entry,
+            openHistory,
         }, null, 2),
         'utf8',
     );
@@ -451,9 +498,9 @@ const main = () => {
     }
 
     if (parsed.passManifest) {
-        validatePassManifest(parsed.passManifest, resolvedImages);
+        validatePassManifest(parsed.passManifest, resolvedImages, normalizedViewer);
     } else if (!parsed.dryRun) {
-        validatePassManifest(parsed.passManifest, resolvedImages);
+        validatePassManifest(parsed.passManifest, resolvedImages, normalizedViewer);
     }
 
     if (parsed.dryRun) {

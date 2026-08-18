@@ -1,6 +1,12 @@
 {
   "verdict": "PASS",
   "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
   "requirements": [
     {
       "requirement": "妮拉承伤与羁绊分配只保留一个确认动作，不能再同时出现“转移伤害”和“确认分配”两个按钮。",

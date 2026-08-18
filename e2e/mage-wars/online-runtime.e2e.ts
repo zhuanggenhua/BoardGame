@@ -153,6 +153,12 @@ async function finalizeMageWarsFxVideoRecording(
         verdict: 'PASS',
         scope: 'current-user-request',
         generatedAt: new Date().toISOString(),
+        display: {
+            purpose: 'final-user-visible-delivery',
+            trigger: 'task-final-delivery',
+            viewer: 'system',
+            finalPassBeforeOpen: true,
+        },
         requirements: [
             {
                 requirement: '法师战争两个派系基础流程里的召唤动效已通过：兽王野性山猫与女祭司阿希拉牧师都有召唤光柱过程帧和落场完成证据',
