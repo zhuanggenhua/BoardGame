@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useVisualEntityBuffer } from '../../../components/game/framework/hooks/useVisualEntityBuffer';
 import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { useVisualStateBuffer, type UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import { scheduleFxFrameCallback, type FxAnchorRef, type FxAnchorSnapshot, type FxBus, type FxFrameSubscription } from '../../../engine/fx';
@@ -261,11 +262,10 @@ function resolveInstructionSnapshots(
 export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: UseMageWarsGameEventsParams): UseMageWarsGameEventsResult {
     const fxBusRef = useRef(fxBus);
     const fxImpactMapRef = useRef(new Map<string, string[]>());
-    const fxHeldObjectMapRef = useRef(new Map<string, string[]>());
     const scheduledHeldFxRef = useRef(new Set<FxFrameSubscription>());
     const previousCoreRef = useRef(G.core);
     const damageBuffer = useVisualStateBuffer();
-    const [heldObjectMap, setHeldObjectMap] = useState<Map<string, MageWarsArenaObjectState>>(() => new Map());
+    const visualEntityBuffer = useVisualEntityBuffer<MageWarsArenaObjectState>();
     const [debug, setDebug] = useState<UseMageWarsGameEventsResult['debug']>(() => ({
         eventCount: 0,
         latestEntryId: 0,
@@ -303,9 +303,8 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             }
             scheduledHeldFxRef.current.clear();
             fxImpactMapRef.current.clear();
-            fxHeldObjectMapRef.current.clear();
             damageBuffer.clear();
-            setHeldObjectMap(new Map());
+            visualEntityBuffer.clear();
         }
         if (newEntries.length === 0) {
             previousCoreRef.current = G.core;
@@ -334,28 +333,32 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         const drivenDamageTargetIds = collectDrivenDamageTargetIds(events);
         const damageTargets = collectDamageFreezeEntries(events, G.core, previousCore);
         const heldObjectCandidates = collectDefeatedObjectHoldCandidates(events, G.core, previousCore);
-        const linkedHeldObjectIds = new Set<string>();
         const visualCore = addHeldObjectCandidatesToCore(G.core, heldObjectCandidates);
         damageBuffer.freezeBatch(damageTargets.entries);
 
         const pushFxInstruction = (
             instruction: ReturnType<typeof mapMageWarsEventToFx>,
             releaseKeys: string[],
-            heldObjectIds: string[],
+            holdOwnerId?: string,
         ) => {
             const resolvedInstruction = resolveInstructionSnapshots(
                 instruction,
                 resolveFxAnchorSnapshot,
             );
-            if (!resolvedInstruction) return;
+            if (!resolvedInstruction) {
+                if (holdOwnerId) visualEntityBuffer.releaseOwner(holdOwnerId);
+                return;
+            }
             const fxId = fxBusRef.current.push(resolvedInstruction.cue, resolvedInstruction.ctx, resolvedInstruction.params);
-            if (!fxId) return;
+            if (!fxId) {
+                if (holdOwnerId) visualEntityBuffer.releaseOwner(holdOwnerId);
+                return;
+            }
             if (releaseKeys.length > 0) {
                 fxImpactMapRef.current.set(fxId, releaseKeys);
             }
-            if (heldObjectIds.length > 0) {
-                fxHeldObjectMapRef.current.set(fxId, heldObjectIds);
-                heldObjectIds.forEach((objectId) => linkedHeldObjectIds.add(objectId));
+            if (holdOwnerId) {
+                visualEntityBuffer.transferOwner(holdOwnerId, fxId);
             }
         };
 
@@ -370,25 +373,24 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             const releaseKeys = getDamageReleaseKeysForEvent(event, damageTargets.targetKeys, drivenDamageTargetIds);
             const heldObjectIds = getHeldObjectIdsForEvent(event, heldObjectCandidates);
             if (heldObjectIds.length > 0) {
-                heldObjectIds.forEach((objectId) => linkedHeldObjectIds.add(objectId));
+                const holdOwnerId = `mage-wars:pending-fx:${entry.id}:${event.type}`;
+                visualEntityBuffer.hold(
+                    holdOwnerId,
+                    heldObjectIds
+                        .map((objectId) => {
+                            const snapshot = heldObjectCandidates.get(objectId);
+                            return snapshot ? { id: objectId, snapshot } : null;
+                        })
+                        .filter((item): item is { id: string; snapshot: MageWarsArenaObjectState } => item != null),
+                );
                 const cancel = scheduleFxFrameCallback(32, () => {
                     scheduledHeldFxRef.current.delete(cancel);
-                    pushFxInstruction(instruction, releaseKeys, heldObjectIds);
+                    pushFxInstruction(instruction, releaseKeys, holdOwnerId);
                 });
                 scheduledHeldFxRef.current.add(cancel);
             } else {
-                pushFxInstruction(instruction, releaseKeys, heldObjectIds);
+                pushFxInstruction(instruction, releaseKeys);
             }
-        }
-        if (linkedHeldObjectIds.size > 0) {
-            setHeldObjectMap((current) => {
-                const next = new Map(current);
-                for (const objectId of linkedHeldObjectIds) {
-                    const object = heldObjectCandidates.get(objectId);
-                    if (object && !G.core.objects[objectId]) next.set(objectId, object);
-                }
-                return next;
-            });
         }
         const nextDebug = {
             eventCount: entries.length,
@@ -408,7 +410,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         ));
         previousCoreRef.current = G.core;
 
-    }, [G.core, damageBuffer, entries.length, latestEntryId, consumeNew, getCursor, entries, resolveFxAnchorSnapshot]);
+    }, [G.core, damageBuffer, visualEntityBuffer, entries.length, latestEntryId, consumeNew, getCursor, entries, resolveFxAnchorSnapshot]);
 
     const onEffectImpact = useCallback((id: string) => {
         const releaseKeys = fxImpactMapRef.current.get(id);
@@ -419,22 +421,12 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
 
     const onEffectComplete = useCallback((id: string) => {
         fxImpactMapRef.current.delete(id);
-        const completedHeldObjectIds = fxHeldObjectMapRef.current.get(id) ?? [];
-        fxHeldObjectMapRef.current.delete(id);
-        if (completedHeldObjectIds.length === 0) return;
-        const stillHeldObjectIds = new Set(Array.from(fxHeldObjectMapRef.current.values()).flat());
-        setHeldObjectMap((current) => {
-            const next = new Map(current);
-            for (const objectId of completedHeldObjectIds) {
-                if (!stillHeldObjectIds.has(objectId)) next.delete(objectId);
-            }
-            return next;
-        });
-    }, []);
+        visualEntityBuffer.releaseOwner(id);
+    }, [visualEntityBuffer]);
 
     return {
         damageBuffer,
-        heldObjects: Array.from(heldObjectMap.values()),
+        heldObjects: visualEntityBuffer.heldSnapshots,
         onEffectImpact,
         onEffectComplete,
         debug,

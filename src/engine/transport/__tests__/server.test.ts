@@ -3450,6 +3450,57 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(persisted.state?._stateID).toBe(1);
     });
 
+    it('human 单条命令 expectedStateID 落后于服务端权威 stateID 时，应拒绝为 stale_state 且不执行旧命令', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const executeSpy = vi.fn(() => []);
+        const baseEngineConfig = createEngineConfig();
+
+        await storage.createMatch('match-human-command-stale-state', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...baseEngineConfig,
+                domain: {
+                    ...baseEngineConfig.domain,
+                    execute: executeSpy,
+                },
+            }],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-human-command-stale-state');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-human-command-stale-state', '0', 'cred-0');
+        await socket.clientEmit('command', 'match-human-command-stale-state', 'TEST_CMD', { foo: 'fresh' }, 'cred-0');
+        expect(executeSpy).toHaveBeenCalledTimes(1);
+
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'command',
+            'match-human-command-stale-state',
+            'TEST_CMD',
+            { foo: 'stale' },
+            'cred-0',
+            { expectedStateID: 0 },
+        );
+
+        expect(hasEvent(socket, 'error', (args) => args[1] === 'stale_state')).toBe(true);
+        expect(executeSpy).toHaveBeenCalledTimes(1);
+
+        const persisted = await storage.fetch('match-human-command-stale-state', { state: true });
+        expect(persisted.state?._stateID).toBe(1);
+    });
+
     it('旧浏览器 AI seat 连接不得提交正式命令，服务端应在领域管线前拒绝', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

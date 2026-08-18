@@ -1,6 +1,6 @@
 ---
 name: engine-visual-events
-description: 视觉事件标准：EventStream、特写、数值冻结和 impact 回调——改表现事件时查
+description: 视觉事件标准：EventStream、特写、数值冻结、实体保留和 impact 回调——改表现事件时查
 metadata:
   type: doc
   status: 已交付
@@ -19,11 +19,12 @@ metadata:
 
 ### 框架基础设施
 
-引擎提供两个互补的框架 Hook，所有游戏统一使用：
+引擎提供三个互补的框架 Hook，所有游戏统一使用：
 
 | Hook | 职责 | 核心 API |
 |------|------|---------|
 | `useVisualStateBuffer` | 数值属性的视觉冻结/双缓冲 | `freeze`/`freezeBatch`/`release`/`clear`/`get`/`snapshot`/`isBuffering` |
+| `useVisualEntityBuffer` | 已离场实体本体的视觉保留 / owner scoped 释放 | `hold`/`transferOwner`/`releaseOwner`/`clear`/`getHeldSnapshots`/`getSnapshot` |
 | `useVisualSequenceGate` | 交互事件的延迟调度（动画期间不弹交互框） | `beginSequence`/`endSequence`/`scheduleInteraction`/`isVisualBusy`/`reset` |
 
 #### useVisualStateBuffer（视觉状态缓冲）
@@ -34,6 +35,18 @@ metadata:
 2. **读取**（`get`）：UI 组件优先读快照值，无快照时回退到 core 真实值
 3. **释放**（`release`）：动画 impact 瞬间删除指定 key，UI 回退到 core 真实值
 4. **清空**（`clear`）：动画序列结束时清空所有快照
+
+#### useVisualEntityBuffer（视觉实体保留）
+
+在规则状态已经移除对象、但玩家画面还必须继续看到该对象本体时使用。它不是第二套动画系统，也不是规则状态副本；它只保存实体本体快照和当前持有它的表现 owner：
+
+1. **持有**（`hold`）：事件消费层在 push FX 前用 pending owner 持有实体快照，保证下一帧先能渲染目标本体。
+2. **转移**（`transferOwner`）：FX 成功 push 后，将 pending owner 转成真实 `fxId` owner。
+3. **释放**（`releaseOwner`）：`FxLayer.onEffectComplete(fxId)` 只释放该 `fxId` 持有的实体。
+4. **多 owner**：同一实体被 projectile、impact、death-exit 等多个 owner 同时持有时，任一 owner 完成只能释放自己；最后一个 owner 释放后实体才离场。
+5. **避免重影**：live list 中仍存在的对象不得再渲染 held visual；渲染层必须用 live entity id 过滤 held snapshots。
+
+`useVisualStateBuffer` 只解决 HP / damage / 资源等数值何时显示变化；它不能替代 `useVisualEntityBuffer`。棋盘单位、卡牌、token、附件或基地本体在规则离场后仍需参与命中、飘字、碎裂或离场动画时，必须使用实体视觉保留。
 
 #### 释放时机：FxLayer onEffectImpact
 
@@ -56,9 +69,10 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 
 #### 两个 Hook 的协作
 
-- `gate.beginSequence()` + `buffer.freeze()` — 动画开始（冻结数值 + 挂起交互）
-- `buffer.release()` — impact 瞬间（数值变化可见）
-- `buffer.clear()` + `gate.endSequence()` — 动画结束（交互队列排空）
+- `gate.beginSequence()` + `stateBuffer.freeze()` + `entityBuffer.hold()` — 动画开始（冻结数值 + 保留必要实体 + 挂起交互）
+- `stateBuffer.release()` — impact 瞬间（数值变化可见）
+- `entityBuffer.releaseOwner(fxId)` — 该 FX 完成时释放自己持有的实体；其它 owner 不受影响
+- `stateBuffer.clear()` + `entityBuffer.clear()` + `gate.endSequence()` — 序列取消、Undo 或完整清理时按消费者语义清空
 
 ### 已接入的游戏
 
@@ -66,12 +80,16 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 |------|---------|---------|---------|
 | SummonerWars | 棋盘单位 damage（key=`"row-col"`） | `UNIT_ATTACKED` + `UNIT_DAMAGED` 事件 | 近战 `onAttackHit` / 远程 `onEffectImpact(COMBAT_SHOCKWAVE)` |
 | DiceThrone | 玩家 HP（key=`"hp-{playerId}"`） | `DAMAGE_DEALT` / `HEAL_APPLIED` 事件 | `onEffectImpact(DAMAGE/HEAL)` |
+| MageWars | 棋盘对象 damage + 被击败对象本体 | 攻击 / 伤害 / 击败事件批次 | 数值在 `onEffectImpact` 释放；实体本体在对应 `fxId` complete 后按 owner 释放 |
+
+SummonerWars 仍保留历史 `dyingEntities` 私有实现作为 legacy adapter；未经明确迁移授权，不因为共享 hook 存在而改旧游戏表现合同。新增游戏或新链路不得复制私有 `dyingEntities` / `heldObjects`，必须接入共享实体视觉保留入口；共享入口不够时扩共享入口。
 
 ### 适用场景
 
 - 棋盘单位 damage / HP / 护甲等数值属性
 - 玩家 HP、资源值（金币/魔法值等）
 - 任何 UI 展示的数值属性，且该数值有对应的飞行动画/特效
+- 棋盘单位、卡牌、token、附件、基地等本体已从权威状态移除但仍需参与命中、飘字、碎裂、离场或视觉审计的场景
 
 ### 新游戏接入（强制）
 
@@ -81,17 +99,27 @@ if (fxId) fxImpactMap.set(fxId, `hp-${targetId}`);
 3. 在 `FxLayer.onEffectImpact` 回调中 `release` 对应 key
 4. UI 组件通过 `buffer.get(key, coreValue)` 读取视觉值
 
+新游戏有对象离场 / 击败 / 拿走 / 转移承接动画时，必须使用 `useVisualEntityBuffer` 管理实体本体时序，禁止在游戏私有 hook 中自建平行 held map。典型接入流程：
+1. 事件消费层从事件批次和 previous core 识别需要保留的实体快照。
+2. 在 push FX 前用 pending owner `hold` 实体，必要时等下一 FX 帧再 push，保证 UI 先挂回本体。
+3. FX 成功 push 后把 pending owner `transferOwner` 到真实 `fxId`。
+4. `FxLayer.onEffectComplete` 调用 `releaseOwner(fxId)`；如果该实体还有其它 owner，继续保留。
+5. 渲染层合并 live entities 和 held snapshots 时必须过滤 live id，避免重影。
+
 ### 可见结算时机（强制）
 
-- 引擎层同步完成规则结算；表现层负责让玩家按动画节奏看见结算。用户体验上的“动画命中时才产生效果”，在工程上应实现为“规则状态已结算，但相关可见值 / 位置 / token / 离场结果被视觉缓冲冻结，直到 `onEffectImpact` 释放”。
+- 引擎层同步完成规则结算；表现层负责让玩家按动画节奏看见结算。用户体验上的“动画命中时才产生效果”，在工程上应实现为“规则状态已结算，但相关可见值由 `useVisualStateBuffer` 延后显示，相关实体本体由 `useVisualEntityBuffer` 按 owner 保留，直到对应 impact / complete 释放”。
 - 能力、法术和攻击事件必须先入 EventStream，再由 FX / 动画层消费；不得在按钮点击时先播来源到目标的动效，再赌命令一定验证成功。
 - 若效果有来源和目标，FX 事件应携带来源和目标坐标 / 对象引用；如果渲染器只消费目标位置而忽略来源，不能宣称已经完成来源到目标的技能表现。
 - 来源 / 目标坐标应优先使用 `FxAnchorSnapshot`：事件消费层在生成一次性 FX 时从当前 surface / anchor registry 捕获 `sourceSnapshot` 与 `targetSnapshot`，之后投射、命中、飘字和 VP 飞行都读这份不可变快照。播放期间不得再查询业务 DOM，也不得因为目标已移除或布局重排而改打格子中心、牌桌中心或替代对象。
-- 需要目标本体继续可见时，使用 held visual 或对象视觉快照承接：领域状态可以已经移除对象，但表现层应保留本体到 impact / complete，再释放或移除。若 live list 里对象仍存在，不得同时渲染第二份 held visual。
+- 需要目标本体继续可见时，使用 `useVisualEntityBuffer` 或等价共享入口承接：领域状态可以已经移除对象，但表现层应保留本体到该 FX owner 的 impact / complete，再释放或移除。若 live list 里对象仍存在，不得同时渲染第二份 held visual。
 
 ### 禁止事项
 
 - ❌ 禁止在 UI 组件中用 `useState<Map>` 自行实现快照逻辑，必须使用 `useVisualStateBuffer`
+- ❌ 禁止把 `useVisualStateBuffer` 当成实体离场承接；数值缓冲不能证明对象本体没有消失
+- ❌ 禁止新游戏或新链路在游戏私有 hook 中复制 `dyingEntities` / `heldObjects` 平行实现；应使用或扩展 `useVisualEntityBuffer`
+- ❌ 禁止一个 FX 完成后全局释放同一实体的所有视觉持有；只能释放该 `fxId` / owner 自己的持有权
 - ❌ 禁止在 reducer/execute 层延迟事件处理来解决动画时序问题（引擎层必须同步完成）
 - ❌ 禁止用 `setTimeout` 延迟读取 core 值来"等动画播完"
 - ❌ 新游戏禁止直接读 core 数值属性渲染 HP/血条，必须经过 `useVisualStateBuffer.get()` 中转

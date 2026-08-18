@@ -1070,7 +1070,6 @@ describe('王权骰铸流程测试', () => {
                 ...advanceTo('offensiveRoll', '0'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
             ]) {
                 const command = {
                     type: input.type,
@@ -1205,7 +1204,6 @@ describe('王权骰铸流程测试', () => {
                 ...advanceTo('offensiveRoll', '0'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
             ]) {
                 const command = {
                     type: input.type,

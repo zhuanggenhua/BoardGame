@@ -230,7 +230,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'dice-confirm-button',
             position: 'left',
             requireAction: true,
-            allowedCommands: ['CONFIRM_ROLL', 'SYS_INTERACTION_RESPOND'],
+            allowedCommands: ['CONFIRM_ROLL', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
             advanceOnEvents: [{ type: 'ROLL_CONFIRMED' }],
         },
         {
@@ -292,7 +292,7 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'dice-confirm-button',
             position: 'left',
             requireAction: true,
-            allowedCommands: ['CONFIRM_ROLL'],
+            allowedCommands: ['CONFIRM_ROLL', 'SKIP_BONUS_DICE_REROLL'],
             advanceOnEvents: [
                 { type: 'BONUS_DICE_SETTLED' },
             ],

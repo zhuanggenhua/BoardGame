@@ -56,10 +56,12 @@ Simple-choice, direct field selection, right-side dice controls, hand-card highl
 
 New games and in-progress low-simple-choice games move directly to request-first builders. No thick compatibility layer is created for them. Existing old games remain stable through a thin legacy adapter, then migrate only by an approved interaction family:
 
-- first batch: engine runtime, Betrayal, Mage Wars, Qidahen;
+- first batch: engine runtime, Betrayal, Mage Wars, Qidahen, plus the low-risk DiceThrone / 王权骰铸 generic `CHOICE_REQUESTED` bridge;
 - excluded from this direct cutover: Cardia and TicTacToe as old-project compatibility users;
 - later batches: Smash Up scoring/direct-field target families, then high-risk ability prompt families;
 - later batches: Summoner Wars simple-choice/multistep interaction families.
+
+The DiceThrone bridge is intentionally narrow: it converts the existing domain `CHOICE_REQUESTED` event into a request-owned simple-choice projection while preserving the existing option payload, slider passthrough, and DiceThrone AI option scorer. It does not rewrite bonus dice confirmation, response windows, defender selection, or hero-specific UI.
 
 Thin legacy adapter means only translating an existing simple-choice into a Choice Request projection or vice versa for display. It cannot own strategy, permission, recovery, or a second lifecycle.
 

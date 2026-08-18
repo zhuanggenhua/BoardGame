@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { MatchState } from '../../../engine/types';
+import { buildDiceThroneAiLegalActions } from '../ai';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import { reduce } from '../domain/reducer';
 import { createDiceThroneEventSystem } from '../domain/systems';
 import { TOKEN_IDS } from '../domain/ids';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { createHeroMatchup, createQueuedRandom, respondToPrompt } from './test-utils';
 
 const extractNextEvents = (
     state: { core: DiceThroneCore; sys: Record<string, unknown> },
@@ -77,6 +79,89 @@ describe('DiceThrone choice handler anchor contract', () => {
         expect(queue).toHaveLength(1);
         expect(queue[0]?.data?.sourceId).toBe('second-choice');
         expect(afterEvents.state.core.currentChoiceSourceAbilityId).toBe('first-choice');
+    });
+
+    it('CHOICE_REQUESTED 应通过 Choice Request 语义投影给真人 UI 和 AI 选择', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        const events: DiceThroneEvent[] = [{
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'choice-request-bridge',
+                titleKey: 'choices.bridge',
+                options: [{
+                    value: 1,
+                    customId: 'grant-taiji-self',
+                    targetPlayerId: '0',
+                    tokenGrantConfig: { tokenId: TOKEN_IDS.TAIJI, amount: 1 },
+                    labelKey: 'choices.grantTaiji',
+                    labelParams: { amount: 1 },
+                }],
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: 102,
+        } as DiceThroneEvent];
+
+        const reducedCore = events.reduce((core, event) => reduce(core, event), state.core);
+        const afterEvents = runAfterEvents({ ...state, core: reducedCore }, events);
+        const matchState = afterEvents.state as MatchState<DiceThroneCore>;
+        const current = matchState.sys.interaction.current as {
+            id: string;
+            kind?: string;
+            data?: {
+                ai?: { status?: string; decisions?: Array<Record<string, unknown>> };
+                options?: Array<{
+                    id?: string;
+                    labelKey?: string;
+                    labelParams?: Record<string, string | number>;
+                    value?: Record<string, unknown>;
+                }>;
+            };
+        } | undefined;
+
+        expect(current?.kind).toBe('simple-choice');
+        expect(current?.data?.ai?.status).toBe('semantic');
+        expect(current?.data?.options?.[0]).toMatchObject({
+            id: 'option-0',
+            labelKey: 'choices.grantTaiji',
+            labelParams: { amount: 1 },
+            value: {
+                value: 1,
+                customId: 'grant-taiji-self',
+                targetPlayerId: '0',
+                tokenGrantConfig: { tokenId: TOKEN_IDS.TAIJI, amount: 1 },
+            },
+        });
+        expect(current?.data?.ai?.decisions?.[0]).toMatchObject({
+            kind: 'choose-option',
+            interactionId: current?.id,
+            actorPlayerId: '0',
+            sourceId: 'choice-request-bridge',
+            candidates: [
+                expect.objectContaining({
+                    id: 'option-0',
+                    value: expect.objectContaining({
+                        customId: 'grant-taiji-self',
+                        tokenGrantConfig: { tokenId: TOKEN_IDS.TAIJI, amount: 1 },
+                    }),
+                }),
+            ],
+        });
+
+        const aiActions = buildDiceThroneAiLegalActions({ playerId: '0', state: matchState as MatchState<unknown> });
+        expect(aiActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'interaction-choice',
+                commands: [expect.objectContaining({
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: { interactionId: current?.id, optionId: 'option-0' },
+                })],
+            }),
+        ]));
+
+        const resolved = respondToPrompt(matchState, 'option-0', '0', createQueuedRandom([1]));
+        expect(resolved.success).toBe(true);
+        expect((resolved.events as DiceThroneEvent[]).some((event) => event.type === 'CHOICE_RESOLVED')).toBe(true);
     });
 
     it('select-target choice effect 应拒绝 source 正确但没有当前 choice 锚点的 CHOICE_RESOLVED', () => {

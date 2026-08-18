@@ -269,7 +269,9 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
     return {
         id: SYSTEM_IDS.TUTORIAL,
         name: '教程系统',
-        priority: 9,
+        // 教程步骤推进必须在 FlowSystem 完成真实阶段/发牌副作用之后执行。
+        // 否则 HOST_STARTED 会先生成教程步骤事件，阻止同轮自动进入 main1。
+        priority: 70,
 
         setup: (): Partial<{ tutorial: TutorialState }> => {
             return {

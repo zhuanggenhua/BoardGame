@@ -98,6 +98,43 @@ const settleBonusDiceThroughPipeline = (
     return result;
 };
 
+const passCurrentResponseWindow = (
+    state: MatchState<DiceThroneCore>,
+    random = fixedRandom,
+    playerIds = Object.keys(state.core.players) as PlayerId[],
+) => {
+    const current = state.sys.responseWindow?.current as {
+        responderQueue?: PlayerId[];
+        currentResponderIndex?: number;
+        currentResponderId?: PlayerId;
+    } | undefined;
+    if (!current) {
+        return {
+            success: true,
+            state,
+            events: [] as DiceThroneEvent[],
+        };
+    }
+
+    const responderId = current.responderQueue?.[current.currentResponderIndex ?? 0]
+        ?? current.currentResponderId;
+    if (!responderId) {
+        throw new Error('响应窗口缺少当前响应者');
+    }
+
+    const result = executePipeline(
+        { domain: DiceThroneDomain, systems: testSystems },
+        state,
+        command('RESPONSE_PASS', responderId),
+        random,
+        playerIds,
+    );
+    if (!result.success) {
+        throw new Error(`响应窗口让过失败: ${result.error}`);
+    }
+    return result;
+};
+
 const eventsOfType = <T extends DiceThroneEvent['type']>(events: DiceThroneEvent[], type: T) =>
     events.filter((event): event is Extract<DiceThroneEvent, { type: T }> => event.type === type);
 
@@ -1103,6 +1140,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             target: { playerId: '1' },
             state: state.core,
             damageScope: 'attack',
+            attackDamageContext: { attackerId: '0', defenderId: '1' },
             timestamp: 100,
         }).resolve();
         expect(attackDamage.finalDamage).toBe(4);
@@ -1993,10 +2031,13 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             ['0', '1'],
         );
         expect(defenseConfirmed.success).toBe(true);
+        expect(defenseConfirmed.state.sys.responseWindow?.current).toBeDefined();
+
+        const postDefenseResponse = passCurrentResponseWindow(defenseConfirmed.state);
 
         const resolved = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            defenseConfirmed.state,
+            postDefenseResponse.state,
             command('ADVANCE_PHASE', '1'),
             fixedRandom,
             ['0', '1'],
@@ -2106,10 +2147,13 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             ['0', '1'],
         );
         expect(defenseConfirmed.success).toBe(true);
+        expect(defenseConfirmed.state.sys.responseWindow?.current).toBeDefined();
+
+        const postDefenseResponse = passCurrentResponseWindow(defenseConfirmed.state);
 
         const resolved = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            defenseConfirmed.state,
+            postDefenseResponse.state,
             command('ADVANCE_PHASE', '1'),
             fixedRandom,
             ['0', '1'],
@@ -2625,6 +2669,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             value: number;
             customId?: string;
             labelParams?: { targets?: string };
+            targetPlayerIds?: string[];
+            statusGrantConfig?: { statusId?: string; amount?: number };
         });
 
         expect(prompt.title).toBe('choices.mercilessCursePowderKeg.title');
@@ -2632,6 +2678,10 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(values.every(option => option.customId === 'cursed-pirate-merciless-curse-powder-keg')).toBe(true);
         expect(values.some(option => option.labelParams?.targets === 'P2, P4')).toBe(true);
         expect(values.some(option => option.labelParams?.targets?.includes('P3'))).toBe(false);
+        expect(values.find(option => option.value === 3)).toMatchObject({
+            targetPlayerIds: ['1', '3'],
+            statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
+        });
 
         const bothOpponents = prompt.options.find(option => (
             option.value as { value?: number }
@@ -3407,10 +3457,16 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const values = prompt.options.map(option => option.value as {
             value: number;
             labelParams?: { targets?: string };
+            targetPlayerIds?: string[];
+            statusGrantConfig?: { statusId?: string; amount?: number };
         });
         expect(values.map(option => option.value).sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
         expect(values.some(option => option.labelParams?.targets === 'P2, P4')).toBe(true);
         expect(values.some(option => option.labelParams?.targets?.includes('P3'))).toBe(false);
+        expect(values.find(option => option.value === 3)).toMatchObject({
+            targetPlayerIds: ['1', '3'],
+            statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
+        });
 
         const bothOpponents = prompt.options.find(option => (
             option.value as { value?: number }
@@ -3490,12 +3546,14 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         viewState.core.players['1'].hand = [getCardById('card-flick'), getCardById('card-surprise')];
         const viewPlay = playCardWithPipeline(viewState, '0', 'card-cursed-pirate-crows-nest', createQueuedRandom([1]));
         expect(viewPlay.success).toBe(true);
-        const viewPrompt = getSimpleChoicePrompt(viewPlay.state, 'card-cursed-pirate-crows-nest');
+        expect(viewPlay.state.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+        const viewSettled = settleBonusDiceThroughPipeline(viewPlay.state, '0');
+        const viewPrompt = getSimpleChoicePrompt(viewSettled.state, 'card-cursed-pirate-crows-nest');
         expect(viewPrompt.title).toBe('choices.cursedPirateCrowsNestView.title');
         expect(viewPrompt.playerId).toBe('0');
         expect((viewPrompt.options[0]?.value as { labelParams?: { cards?: string } }).labelParams?.cards)
             .toContain('card-flick');
-        const viewConfirm = respondToPrompt(viewPlay.state, viewPrompt.options[0]!.id, '0');
+        const viewConfirm = respondToPrompt(viewSettled.state, viewPrompt.options[0]!.id, '0');
         expect(viewConfirm.success).toBe(true);
         expect(viewConfirm.state.core.players['1'].hand.map(card => card.id)).toEqual([
             'card-flick',
@@ -3507,13 +3565,15 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         lootState.core.players['1'].hand = [getCardById('card-flick')];
         const lootPlay = playCardWithPipeline(lootState, '0', 'card-cursed-pirate-crows-nest', createQueuedRandom([4]));
         expect(lootPlay.success).toBe(true);
-        const discardPrompt = getCardInteractionPrompt(lootPlay.state, 'card-cursed-pirate-crows-nest');
+        expect(lootPlay.state.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+        const lootSettled = settleBonusDiceThroughPipeline(lootPlay.state, '0');
+        const discardPrompt = getCardInteractionPrompt(lootSettled.state, 'card-cursed-pirate-crows-nest');
         expect(discardPrompt.type).toBe('selectHandCard');
         expect(discardPrompt.playerId).toBe('1');
-        const discardEvents = execute(lootPlay.state, command('RESOLVE_INTERACTION', '1', {
+        const discardEvents = execute(lootSettled.state, command('RESOLVE_INTERACTION', '1', {
             selectedCardIds: ['card-flick'],
         }), fixedRandom);
-        const afterDiscard = applyEvents(lootPlay.state.core, discardEvents);
+        const afterDiscard = applyEvents(lootSettled.state.core, discardEvents);
         expect(afterDiscard.players['1'].hand).toHaveLength(0);
         expect(afterDiscard.players['1'].discard.map(card => card.id)).toContain('card-flick');
 
@@ -4528,9 +4588,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         );
         expect(confirmed.success).toBe(true);
 
+        const postRollResponse = passCurrentResponseWindow(confirmed.state, targetingRandom, playerIds);
+
         const advanced = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            confirmed.state,
+            postRollResponse.state,
             command('ADVANCE_PHASE', '0'),
             targetingRandom,
             playerIds,
@@ -4837,6 +4899,22 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             option.value as { statusId?: string; value?: number }
         ).statusId === STATUS_IDS.CURSED_COIN);
         expect(accept).toBeDefined();
+        expect(accept!.value).toMatchObject({
+            statusGrantConfigs: [
+                { statusId: STATUS_IDS.CURSED_COIN, amount: 2, targetPlayerId: '0' },
+                { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: '1' },
+                { statusId: STATUS_IDS.POWDER_KEG, amount: 1, targetPlayerId: '1' },
+            ],
+        });
+        const decline = prompt.options.find(option => (
+            option.value as { statusId?: string }
+        ).statusId !== STATUS_IDS.CURSED_COIN);
+        expect(decline!.value).toMatchObject({
+            statusGrantConfigs: [
+                { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: '1' },
+                { statusId: STATUS_IDS.POWDER_KEG, amount: 1, targetPlayerId: '1' },
+            ],
+        });
 
         const resolved = respondToPrompt(advanced.state, accept!.id, '0');
         expect(resolved.success).toBe(true);

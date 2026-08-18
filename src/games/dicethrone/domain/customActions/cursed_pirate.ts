@@ -785,11 +785,16 @@ function requestHumanVerdictCommand({
                     value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 1),
                     customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.accept',
+                    statusGrantConfigs: [
+                        { statusId: STATUS_IDS.CURSED_COIN, amount: 1, targetPlayerId: attackerId },
+                        { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: resolvedTargetId },
+                    ],
                 },
                 {
                     value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 0),
                     customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.decline',
+                    statusGrantConfig: { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: resolvedTargetId },
                 },
             ],
         },
@@ -824,11 +829,20 @@ function requestHumanMercilessPlunder({
                     value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 2),
                     customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.accept',
+                    statusGrantConfigs: [
+                        { statusId: STATUS_IDS.CURSED_COIN, amount: 2, targetPlayerId: attackerId },
+                        { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: resolvedTargetId },
+                        { statusId: STATUS_IDS.POWDER_KEG, amount: 1, targetPlayerId: resolvedTargetId },
+                    ],
                 },
                 {
                     value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 0),
                     customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.decline',
+                    statusGrantConfigs: [
+                        { statusId: STATUS_IDS.PARLEY, amount: 1, targetPlayerId: resolvedTargetId },
+                        { statusId: STATUS_IDS.POWDER_KEG, amount: 1, targetPlayerId: resolvedTargetId },
+                    ],
                 },
             ],
         },
@@ -1056,6 +1070,8 @@ function requestMercilessCursePowderKegTargets({
                         customId: MERCILESS_CURSE_POWDER_KEG_CHOICE_ID,
                         labelKey: 'choices.mercilessCursePowderKeg.apply',
                         labelParams: { targets: formatPlayerList(selectedTargetIds) },
+                        targetPlayerIds: selectedTargetIds,
+                        statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
                     };
             }),
         },
@@ -1100,6 +1116,8 @@ function requestGoFishPowderKegTargets({
                         customId: GO_FISH_POWDER_KEG_CHOICE_ID,
                         labelKey: 'choices.cursedPirateGoFish.apply',
                         labelParams: { targets: formatPlayerList(selectedTargetIds) },
+                        targetPlayerIds: selectedTargetIds,
+                        statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
                     };
             }),
         },

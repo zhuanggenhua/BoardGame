@@ -186,6 +186,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         s = exec(s, 'MODIFY_DIE', '0', { dieId: 0, newValue: 6 }, 'B: modify-die-to-6');
         expect(s.sys.tutorial.step?.id).toBe('dice-confirm');
 
+        s = exec(s, 'SYS_INTERACTION_CONFIRM', '0', {}, 'B: confirm-play-six');
         s = exec(s, 'CONFIRM_ROLL', '0', {}, 'B: confirm');
         expect(s.sys.tutorial.step?.id).toBe('abilities');
 

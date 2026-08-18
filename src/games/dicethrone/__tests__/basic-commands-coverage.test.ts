@@ -987,6 +987,182 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('semantic simple-choice 的 skip option 仍会生成 optional-skip hint', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main2';
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'semantic-choice-skip',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    title: 'interaction.choose',
+                    sourceId: 'semantic-skip-source',
+                    options: [
+                        {
+                            id: 'take-token',
+                            label: '获得气',
+                            value: {
+                                value: 1,
+                                targetPlayerId: '0',
+                                tokenGrantConfig: { tokenId: TOKEN_IDS.CHI, amount: 1 },
+                            },
+                        },
+                        {
+                            id: 'skip',
+                            label: '跳过',
+                            value: { value: 0, customId: 'skip' },
+                        },
+                    ],
+                    ai: {
+                        status: 'semantic',
+                        decisions: [{
+                            kind: 'choose-option',
+                            interactionId: 'semantic-choice-skip',
+                            actorPlayerId: '0',
+                            sourceId: 'semantic-skip-source',
+                            selection: { min: 1, max: 1 },
+                            skipPolicy: 'forbidden',
+                            candidates: [
+                                { id: 'take-token', label: '获得气' },
+                                { id: 'skip', label: '跳过' },
+                            ],
+                        }],
+                    },
+                },
+            } as any,
+        };
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '0', state });
+        const skipAction = actions.find((action) => action.metadata?.optionId === 'skip');
+
+        expect(skipAction?.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'semantic-choice-skip', optionId: 'skip' },
+        });
+        expect(skipAction?.aiHints?.some((hint) => hint.effectIntent === 'optional-skip')).toBe(true);
+    });
+
+    it('semantic simple-choice 多选应生成 optionIds payload 并保留被选项 metadata', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main2';
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'semantic-choice-multi',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    title: 'interaction.chooseMany',
+                    sourceId: 'semantic-multi-source',
+                    options: [
+                        { id: 'opt-a', label: 'A', value: { value: 1, customId: 'a' } },
+                        { id: 'opt-b', label: 'B', value: { value: 2, customId: 'b' } },
+                        { id: 'opt-c', label: 'C', value: { value: 3, customId: 'c' } },
+                    ],
+                    multi: { min: 2, max: 2 },
+                    ai: {
+                        status: 'semantic',
+                        decisions: [{
+                            kind: 'choose-option',
+                            interactionId: 'semantic-choice-multi',
+                            actorPlayerId: '0',
+                            sourceId: 'semantic-multi-source',
+                            selection: { min: 2, max: 2 },
+                            skipPolicy: 'forbidden',
+                            candidates: [
+                                { id: 'opt-a', label: 'A' },
+                                { id: 'opt-b', label: 'B' },
+                                { id: 'opt-c', label: 'C' },
+                            ],
+                        }],
+                    },
+                },
+            } as any,
+        };
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '0', state });
+        const payloads = actions
+            .filter((action) => action.kind === 'interaction-choice')
+            .map((action) => ({
+                payload: action.commands[0]?.payload,
+                metadata: action.metadata,
+            }));
+
+        expect(payloads).toEqual(expect.arrayContaining([
+            {
+                payload: { interactionId: 'semantic-choice-multi', optionIds: ['opt-a', 'opt-b'] },
+                metadata: expect.objectContaining({
+                    interactionId: 'semantic-choice-multi',
+                    optionIds: ['opt-a', 'opt-b'],
+                    sourceId: 'semantic-multi-source',
+                }),
+            },
+            {
+                payload: { interactionId: 'semantic-choice-multi', optionIds: ['opt-a', 'opt-c'] },
+                metadata: expect.objectContaining({
+                    interactionId: 'semantic-choice-multi',
+                    optionIds: ['opt-a', 'opt-c'],
+                    sourceId: 'semantic-multi-source',
+                }),
+            },
+            {
+                payload: { interactionId: 'semantic-choice-multi', optionIds: ['opt-b', 'opt-c'] },
+                metadata: expect.objectContaining({
+                    interactionId: 'semantic-choice-multi',
+                    optionIds: ['opt-b', 'opt-c'],
+                    sourceId: 'semantic-multi-source',
+                }),
+            },
+        ]));
+    });
+
+    it('semantic simple-choice 缺少当前 AI actor 决策时应取消交互而不是返回空动作', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main2';
+        state.sys.interaction = {
+            ...state.sys.interaction,
+            current: {
+                id: 'semantic-choice-wrong-actor',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    title: 'interaction.choose',
+                    sourceId: 'semantic-wrong-actor-source',
+                    options: [
+                        { id: 'opt-a', label: 'A', value: { value: 1, customId: 'a' } },
+                    ],
+                    ai: {
+                        status: 'semantic',
+                        decisions: [{
+                            kind: 'choose-option',
+                            interactionId: 'semantic-choice-wrong-actor',
+                            actorPlayerId: '1',
+                            sourceId: 'semantic-wrong-actor-source',
+                            selection: { min: 1, max: 1 },
+                            skipPolicy: 'forbidden',
+                            candidates: [{ id: 'opt-a', label: 'A' }],
+                        }],
+                    },
+                },
+            } as any,
+        };
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '0', state });
+
+        expect(actions).toEqual([expect.objectContaining({
+            kind: 'interaction-cancel',
+            commands: [{
+                type: 'SYS_INTERACTION_CANCEL',
+                payload: { interactionId: 'semantic-choice-wrong-actor', reason: 'missing-actions' },
+            }],
+        })]);
+    });
+
     it('simple-choice 的目标授予语义会让 AI 把正面 token 给自己而不是敌人', async () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.activePlayerId = '0';
@@ -1044,6 +1220,69 @@ describe('AI legal actions', () => {
         });
 
         expect(resolution?.action.metadata?.optionId).toBe('buff-self');
+    });
+
+    it('simple-choice 支持 grant 自带目标，AI 不需要从 label/customId 猜状态作用对象', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main1';
+        injectSimpleChoicePrompt(state, {
+            id: 'ai-choice-config-targeted-debuff',
+            playerId: '0',
+            title: 'interaction.chooseEffect',
+            sourceId: 'generic-config-targeted-debuff',
+            options: [
+                {
+                    id: 'apply-enemy',
+                    label: '让目标获得火药桶',
+                    value: {
+                        value: 1,
+                        statusGrantConfig: {
+                            statusId: STATUS_IDS.POWDER_KEG,
+                            amount: 1,
+                            targetPlayerId: '1',
+                        },
+                    },
+                },
+                {
+                    id: 'apply-self',
+                    label: '让自己获得火药桶',
+                    value: {
+                        value: 0,
+                        statusGrantConfig: {
+                            statusId: STATUS_IDS.POWDER_KEG,
+                            amount: 1,
+                            targetPlayerId: '0',
+                        },
+                    },
+                },
+            ],
+        });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+        const enemyAction = actions.find((action) => action.metadata?.optionId === 'apply-enemy');
+        const selfAction = actions.find((action) => action.metadata?.optionId === 'apply-self');
+
+        expect(enemyAction?.aiHints?.some((hint) =>
+            hint.effectIntent === 'debuff' && hint.relationToActor === 'enemy'
+        )).toBe(true);
+        expect(selfAction?.aiHints?.some((hint) =>
+            hint.effectIntent === 'debuff' && hint.relationToActor === 'self'
+        )).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test-config-targeted-debuff',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.action.metadata?.optionId).toBe('apply-enemy');
     });
 
     it('本地 AI 在敌方单选交互中优先选择更低血量的目标', async () => {
@@ -4218,6 +4457,110 @@ describe('AI legal actions', () => {
         expect(rerollAttempt.success).toBe(true);
         expect(rerollAttempt.finalState.core.rollCount).toBe(2);
         expect(rerollAttempt.finalState.core.rollConfirmed).toBe(false);
+    });
+
+    it('afterRollConfirmed 响应者改骰后，骰主重新确认不应再次打开同类响应窗口', () => {
+        const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 6]), true);
+
+        const afterModify = runner.run({
+            name: 'afterRollConfirmed 响应者改骰后等待骰主重新确认',
+            setup: createSetupWithHand(['card-surprise', 'card-flick'], {
+                playerId: '1',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
+                cmd('MODIFY_DIE', '1', { dieId: 4, newValue: 5 }),
+                cmd('SYS_INTERACTION_CONFIRM', '1'),
+            ],
+        });
+
+        expect(afterModify.assertionErrors).toEqual([]);
+        expect(afterModify.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(afterModify.finalState.core.dice[4]?.value).toBe(5);
+        expect(afterModify.finalState.core.rollConfirmed).toBe(false);
+
+        runner.setState(afterModify.finalState);
+        const confirmAgain = runner.dispatch('CONFIRM_ROLL', { playerId: '0' });
+
+        expect(confirmAgain.success).toBe(true);
+        expect(confirmAgain.events.map((event) => event.type)).toEqual(['ROLL_CONFIRMED']);
+        expect(confirmAgain.finalState.core.rollConfirmed).toBe(true);
+        expect(confirmAgain.finalState.sys.responseWindow?.current).toBeUndefined();
+
+        runner.setState(confirmAgain.finalState);
+        const declareAttack = runner.dispatch('SELECT_ABILITY', { playerId: '0', abilityId: 'fist-technique-4' });
+
+        expect(declareAttack.success).toBe(true);
+        expect(declareAttack.events.map((event) => event.type)).toEqual([
+            'ABILITY_ACTIVATED',
+            'ATTACK_INITIATED',
+            'RESPONSE_WINDOW_OPENED',
+        ]);
+        expect(declareAttack.finalState.core.pendingAttack?.sourceAbilityId).toBe('fist-technique-4');
+        expect(declareAttack.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+        });
+    });
+
+    it('defensiveRoll 响应者改骰后，防御方重新确认应再次打开攻击方响应窗口', () => {
+        const runner = createRunner(createQueuedRandom([
+            1, 1, 1, 4, 5,
+            1, 1, 1,
+        ]), true);
+
+        const afterModify = runner.run({
+            name: '防御骰被攻击方改动后等待防御方重新确认',
+            setup: createSetupWithHand(['card-surprise', 'card-flick'], {
+                playerId: '0',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].deck = [];
+                    core.players['1'].hand = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-surprise' }),
+                cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 2 }),
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
+            ],
+        });
+
+        expect(afterModify.assertionErrors).toEqual([]);
+        expect(afterModify.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(afterModify.finalState.core.rollConfirmed).toBe(false);
+        expect(afterModify.finalState.core.dice[0]?.value).toBe(2);
+
+        runner.setState(afterModify.finalState);
+        const confirmAgain = runner.dispatch('CONFIRM_ROLL', { playerId: '1' });
+
+        expect(confirmAgain.success).toBe(true);
+        expect(confirmAgain.events.map((event) => event.type)).toEqual([
+            'ROLL_CONFIRMED',
+            'RESPONSE_WINDOW_OPENED',
+        ]);
+        expect(confirmAgain.finalState.core.rollConfirmed).toBe(true);
+        expect(confirmAgain.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['0'],
+        });
     });
 
     it('不同难度会影响搜索行为，专家玩法噪声保持为 0', async () => {

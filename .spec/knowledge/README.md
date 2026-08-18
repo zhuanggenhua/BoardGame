@@ -33,7 +33,7 @@ metadata:
 | [`engine-simple-choice.md`](standards/engine-simple-choice.md) | Choice Request 旧兼容附录：simple-choice 弹窗和历史兼容边界——维护旧 simple-choice 或判断新游戏禁用时查 |
 | [`engine-systems.md`](standards/engine-systems.md) | 引擎系统总览：共享原语、事件、FX、AI 和状态边界——改共享引擎能力时查 |
 | [`engine-transport.md`](standards/engine-transport.md) | 传输层标准：在线状态、服务端权威、恢复和反馈过滤——改联网链路时查 |
-| [`engine-visual-events.md`](standards/engine-visual-events.md) | 视觉事件标准：EventStream、特写、数值冻结和 impact 回调——改表现事件时查 |
+| [`engine-visual-events.md`](standards/engine-visual-events.md) | 视觉事件标准：EventStream、特写、数值冻结、实体保留和 impact 回调——改表现事件时查 |
 | [`feedback-system.md`](standards/feedback-system.md) | 反馈系统标准：提交、状态、去重、恢复和回写边界——改用户反馈链路时查 |
 | [`game-config-package.md`](standards/game-config-package.md) | 游戏配置包标准：manifest、配置源和包体发布边界——改游戏配置包时查 |
 | [`generated-design-implementation.md`](standards/generated-design-implementation.md) | 生成设计落地标准：设计稿到前端实现的可复刻边界——按视觉稿实现 UI 时查 |

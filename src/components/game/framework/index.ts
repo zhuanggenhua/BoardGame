@@ -58,6 +58,7 @@ export {
     useDragCard,
     useAutoSkipPhase,
     useVisualSequenceGate,
+    useVisualEntityBuffer,
     useVisualEventStream,
     useCardSpotlightQueue,
 } from './hooks';
@@ -69,6 +70,9 @@ export type {
     UseResourceTrayConfig,
     UseAutoSkipPhaseConfig,
     UseVisualSequenceGateReturn,
+    UseVisualEntityBufferReturn,
+    VisualEntityHoldEntry,
+    VisualEntityHoldInput,
     UseVisualEventStreamConfig,
     UseVisualEventStreamReturn,
     VisualEventConsumptionStrategy,

@@ -36,3 +36,11 @@
 - [x] 7.1 更新 `.spec/knowledge/standards/animation-effects.md`：spawn snapshot vs tracking anchor。
 - [x] 7.2 更新 `.spec/knowledge/standards/engine-visual-events.md`：同步结算 + 表现层坐标快照 / held visual。
 - [x] 7.3 在最终回执中列明哪些游戏链路完成迁移，哪些仍走 legacy adapter。
+
+## 8. Visual Entity Lifecycle Follow-Up
+- [x] 8.1 更新 proposal / design，明确实体视觉生命周期不是第二套特效动画方案，而是现有 FX 系统内的对象本体保留能力。
+- [x] 8.2 更新 spec，明确数值缓冲不能替代实体本体保留，多 owner 持有同一实体时按最后 owner 释放。
+- [x] 8.3 新增共享 `useVisualEntityBuffer`，用 owner scoped hold / transfer / release 管理实体快照。
+- [x] 8.4 将 Mage Wars 被击败目标的私有 held object map 迁到共享 visual entity buffer。
+- [x] 8.5 增加共享 hook 单测和 Mage Wars 回归，覆盖多个 FX 同时持有同一死亡目标时不会提前消失。
+- [x] 8.6 运行 OpenSpec 校验、项目 spec lint、相关 Vitest，并记录旧游戏只做兼容不迁移。

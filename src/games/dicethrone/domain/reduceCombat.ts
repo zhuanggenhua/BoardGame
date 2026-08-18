@@ -418,6 +418,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
         ...state,
         players,
         suppressNextBonusDiceReplaySourceAbilityId: undefined,
+        afterRollResponseWindowRequiresAttackDeclaration: undefined,
         pendingAttack: {
             attackerId,
             defenderId,

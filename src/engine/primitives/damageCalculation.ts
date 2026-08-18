@@ -240,9 +240,8 @@ export class DamageCalculation {
     if (scope === 'opponentAttackDamage') {
       if (this.config.damageScope === 'direct') return false;
 
-      const attackContext = this.config.attackDamageContext;
       const matchingAttackContext = this.getMatchingAttackDamageContext();
-      if (attackContext && !matchingAttackContext) return false;
+      if (!matchingAttackContext) return false;
 
       return this.config.source.playerId !== this.config.target.playerId;
     }
@@ -367,8 +366,7 @@ export class DamageCalculation {
 
       const scope = def.passiveTrigger.damageTriggerScope ?? 'anyDamage';
       if (scope === 'opponentAttackDamage') {
-        const attackContext = this.config.attackDamageContext;
-        if (attackContext && !this.getMatchingAttackDamageContext()) {
+        if (!this.getMatchingAttackDamageContext()) {
           continue;
         }
       }
@@ -767,6 +765,7 @@ export class DamageCalculation {
           sourceName: m.sourceName,
         })),
         breakdown: result.breakdown,
+        ...(this.config.damageScope ? { damageScope: this.config.damageScope } : {}),
       },
       sourceCommandType: 'ABILITY_EFFECT',
       timestamp: this.config.timestamp || Date.now(),

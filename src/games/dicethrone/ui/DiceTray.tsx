@@ -32,6 +32,7 @@ interface DtDiceSelectMeta {
 type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
 
 const DICE_TRAY_WIDTH_CLASS_NAME = 'w-[5.8vw]';
+const INTERACTION_CONFIRM_CLICK_SUPPRESS_MS = 350;
 
 const DESKTOP_DICE_TRAY_TOKENS = {
     diceSize: '4vw',
@@ -388,6 +389,7 @@ export const DiceActions = ({
     const rollStartTimeRef = useRef<number>(0);
     const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevRollCountRef = useRef(rollCount);
+    const suppressPlainConfirmUntilRef = useRef(0);
 
     useEffect(() => {
         if (rollCount !== prevRollCountRef.current) {
@@ -433,7 +435,11 @@ export const DiceActions = ({
 
     const handleConfirmClick = () => {
         if (isInteractionMode && multistepInteraction) {
+            suppressPlainConfirmUntilRef.current = Date.now() + INTERACTION_CONFIRM_CLICK_SUPPRESS_MS;
             multistepInteraction.confirm();
+            return;
+        }
+        if (Date.now() < suppressPlainConfirmUntilRef.current) {
             return;
         }
         onConfirm();

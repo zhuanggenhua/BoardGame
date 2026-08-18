@@ -32,6 +32,7 @@
   - [x] 5.3a Confirm Betrayal currently has no existing business-level `createSimpleChoice(` migration point; keep the next interaction batch under request-first rules.
 - [x] 5.4 Exclude Cardia and TicTacToe from this direct migration batch; keep them as old-project compatibility users.
 - [ ] 5.5 Keep Smash Up and Summoner Wars as legacy adapter users, then nominate the first family for later direct cutover.
+- [x] 5.6 Migrate the low-risk DiceThrone / 王权骰铸 generic `CHOICE_REQUESTED` bridge to request-owned simple-choice projection without touching bonus dice, response windows, defender selection, or Cardia.
 
 ## 6. Verification
 
@@ -39,6 +40,7 @@
 - [x] 6.2 Add AI parity tests proving every human-visible first-batch Choice Request candidate maps to an AI legal action or explicit skip/pass/confirm action.
   - [x] 6.2a Add engine semantic projection tests for request-owned interaction AI parity.
   - [x] 6.2b Add Mage Wars and Qidahen first-batch semantic decision parity coverage.
+  - [x] 6.2c Add DiceThrone bridge coverage proving projected options preserve value semantics and still produce an executable AI interaction response.
 - [x] 6.3 Add missing-policy tests proving AI-owned unsupported requests report diagnostics instead of returning an empty action list.
 - [ ] 6.4 Add online recovery tests proving watchdog uses Choice Request diagnostics and does not infer business targets.
 - [ ] 6.5 Run focused unit tests, relevant E2E tests for first-batch games, and `openspec validate refactor-choice-request-interface --strict --no-interactive`.

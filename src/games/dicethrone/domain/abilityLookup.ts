@@ -160,10 +160,11 @@ function effectNeedsSingleOpponentTarget(action: EffectAction): boolean {
 }
 
 /**
- * 计算技能的预期基础伤害（用于暴击门控判断）
+ * 计算技能的正式基础伤害
  * 只计算显式 damage action 的 value，不包括 rollDie/custom action 的动态伤害
  * 
- * 注意：这是一个保守估计，实际伤害可能更高（如 rollDie 的 bonusDamage）
+ * 注意：该值可用于玩家可见当前伤害摘要的 fallback；不得读取 custom action
+ * 的 estimateDamage，否则 AI/规则门槛估算会冒充已经落地的正式伤害。
  */
 export function getPlayerAbilityBaseDamage(
     state: DiceThroneCore,
@@ -179,7 +180,27 @@ export function getPlayerAbilityBaseDamage(
         if (effect.action.type === 'damage' && typeof effect.action.value === 'number') {
             totalDamage += effect.action.value;
         }
-        // custom action：通过 estimateDamage 回调估算
+    }
+
+    return totalDamage;
+}
+
+/**
+ * 计算技能的规则门槛/AI 专用伤害估算。
+ *
+ * 这个 helper 可以读取 custom action 注册的 estimateDamage，用于暴击 Token
+ * 门槛、AI 评分等明确允许估算的场景；不能用于玩家正式伤害摘要或最终 HP 结算。
+ */
+export function getPlayerAbilityRuleDamageEstimate(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    abilityId: string
+): number {
+    const effects = getPlayerAbilityEffects(state, playerId, abilityId);
+    let totalDamage = getPlayerAbilityBaseDamage(state, playerId, abilityId);
+
+    for (const effect of effects) {
+        if (!effect.action) continue;
         if (effect.action.type === 'custom' && effect.action.customActionId) {
             const meta = getCustomActionMeta(effect.action.customActionId);
             if (meta?.estimateDamage) {

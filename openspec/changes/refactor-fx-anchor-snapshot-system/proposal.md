@@ -17,6 +17,11 @@
   - 只有显式声明为 `tracking` / `attached` 的持续特效才允许运行期跟随锚点。
 - 迁移共享 preset，使攻击、召唤、命中、飞行、飘字、VP 飞行等都能消费同一类 anchor snapshot。
 - 以 Mage Wars 作为棋盘 / 格子型接入样例，以 Smash Up 作为无地图 / 牌桌型接入样例。
+- 在现有 FX 表现系统内补齐实体视觉生命周期能力：
+  - 新增通用 visual entity hold/buffer 入口，只负责“规则对象已离场但画面本体仍需保留”的 owner 生命周期。
+  - 多个 FX / 动画任务同时持有同一实体时，必须等最后一个 owner 释放后才退场。
+  - 该能力不播放粒子、不重建第二套动画方案、不写规则状态；它只服务同一套 `FxBus` / `FxLayer` / shared animation pipeline。
+- 将 Mage Wars 私有 `heldObjects` 迁为通用 visual entity buffer 的首个接入方；旧游戏保持兼容，不做无授权迁移。
 - 更新项目动效规范，明确“spawn snapshot vs tracking anchor”作为引擎级默认模型。
 
 ## Impact
@@ -24,6 +29,7 @@
   - `fx-rendering-system`
 - Affected code:
   - `src/engine/fx/`
+  - `src/components/game/framework/hooks/useVisualEntityBuffer.ts`
   - `src/components/common/animations/BoardFxPresets.tsx`
   - `src/components/common/animations/` 中消费坐标的共享组件 / preset
   - `src/games/mage-wars/ui/fxRenderers.tsx`
@@ -39,4 +45,6 @@
 - 不重做 Mage Wars 或 Smash Up 的 UI 布局。
 - 不重写所有游戏的 FX，一次只迁移能证明模型成立的代表链路。
 - 不把规则结算延迟到动画结束；领域状态仍同步结算，表现层用快照和视觉生命周期承接。
+- 不建立第二套特效动画方案；视觉实体生命周期是现有 FX 表现系统的旁路生命周期能力，不替代 `FxBus`、`FxLayer`、FeedbackPack 或共享动画组件。
+- 不把 HP / damage 数值缓冲误当成实体保留；数值显示和实体本体离场是两个不同通道。
 - 不把所有 card spotlight / modal / toast 都纳入 FX；本 change 只处理视觉特效、飞行、命中、附着反馈等表现链路。

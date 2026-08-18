@@ -1,6 +1,7 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
     buildDeterministicAiNoise,
+    buildAiLegalActionsFromInteractionDecision,
     buildSelectPlayerDecisionActions,
     createAiLegalActionId,
     createProfileAwareActionScorer,
@@ -20,6 +21,7 @@ import {
 } from '../../engine/ai/semantics';
 import type {
     AiDecisionContext,
+    AiDecisionDescriptor,
     AiLegalAction,
     AiStrategyProfile,
     AiEffectIntent,
@@ -45,9 +47,9 @@ import {
     getPlayableCardsInResponseWindow,
     getNextPhase,
 } from './domain';
-import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
+import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
-import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from './domain/abilityLookup';
+import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
@@ -222,29 +224,41 @@ type CardInteractionData = {
     tokenGrantConfig?: {
         tokenId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     };
     tokenGrantConfigs?: Array<{
         tokenId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     }>;
     statusGrantConfig?: {
         statusId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     };
     statusGrantConfigs?: Array<{
         statusId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     }>;
 };
 
 type TokenGrantConfig = {
     tokenId: string;
     amount: number;
+    targetPlayerId?: PlayerId;
+    targetPlayerIds?: PlayerId[];
 };
 
 type StatusGrantConfig = {
     statusId: string;
     amount: number;
+    targetPlayerId?: PlayerId;
+    targetPlayerIds?: PlayerId[];
 };
 
 type EffectGrantMetadata = {
@@ -606,7 +620,7 @@ const getAbilityStrategicScore = (
     const match = findPlayerAbility(state.core, playerId, abilityId);
     if (!match) return 0;
 
-    const baseDamage = getPlayerAbilityBaseDamage(state.core, playerId, abilityId);
+    const baseDamage = getPlayerAbilityRuleDamageEstimate(state.core, playerId, abilityId);
     const incomingDamage = state.core.pendingDamage?.targetPlayerId === playerId
         ? state.core.pendingDamage.currentDamage
         : 0;
@@ -1262,6 +1276,22 @@ const getChoiceTargetPlayerIds = (
     return Array.from(new Set(ids)).filter((targetId): targetId is PlayerId => !!state.core.players[targetId]);
 };
 
+const getGrantConfigTargetPlayerIds = (
+    state: DiceThroneState,
+    fallbackTargetPlayerIds: PlayerId[],
+    config: {
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
+    },
+): PlayerId[] => {
+    const explicitIds = [
+        ...(typeof config.targetPlayerId === 'string' ? [config.targetPlayerId] : []),
+        ...(Array.isArray(config.targetPlayerIds) ? config.targetPlayerIds : []),
+    ];
+    const ids = explicitIds.length > 0 ? explicitIds : fallbackTargetPlayerIds;
+    return Array.from(new Set(ids)).filter((targetId): targetId is PlayerId => !!state.core.players[targetId]);
+};
+
 const buildEffectGrantAiHints = (
     state: DiceThroneState,
     actingPlayerId: PlayerId,
@@ -1272,8 +1302,8 @@ const buildEffectGrantAiHints = (
     const tokenConfigs = getTokenGrantConfigs(source);
     const statusConfigs = getStatusGrantConfigs(source);
 
-    for (const targetPlayerId of targetPlayerIds) {
-        for (const config of tokenConfigs) {
+    for (const config of tokenConfigs) {
+        for (const targetPlayerId of getGrantConfigTargetPlayerIds(state, targetPlayerIds, config)) {
             const category = getEffectCategory(state, config.tokenId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
@@ -1289,8 +1319,10 @@ const buildEffectGrantAiHints = (
                 tags: [`grant-token:${config.tokenId}`],
             }));
         }
+    }
 
-        for (const config of statusConfigs) {
+    for (const config of statusConfigs) {
+        for (const targetPlayerId of getGrantConfigTargetPlayerIds(state, targetPlayerIds, config)) {
             const category = getEffectCategory(state, config.statusId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
@@ -1480,7 +1512,7 @@ const buildChoiceOptionAiHints = (
     }
 
     const choiceTargetPlayerIds = getChoiceTargetPlayerIds(state, value);
-    if (value && choiceTargetPlayerIds.length > 0) {
+    if (value && (choiceTargetPlayerIds.length > 0 || hasEffectGrantMetadata(value))) {
         hints.push(...buildEffectGrantAiHints(state, playerId, choiceTargetPlayerIds, value));
     }
 
@@ -1503,6 +1535,91 @@ const buildChoiceOptionAiHints = (
     }
 
     return hints;
+};
+
+const getSemanticChoiceDecisions = (
+    data: { ai?: { status?: unknown; decisions?: unknown } },
+): AiDecisionDescriptor[] | null => {
+    if (data.ai?.status !== 'semantic') return null;
+    return Array.isArray(data.ai.decisions)
+        ? data.ai.decisions as AiDecisionDescriptor[]
+        : [];
+};
+
+const extractSemanticChoiceOptionIds = (action: AiLegalAction): string[] => {
+    const optionIds: string[] = [];
+
+    for (const command of action.commands) {
+        if (command.type !== 'SYS_INTERACTION_RESPOND') continue;
+        const payload = command.payload as { optionId?: unknown; optionIds?: unknown } | undefined;
+        if (typeof payload?.optionId === 'string') {
+            optionIds.push(payload.optionId);
+        }
+        if (Array.isArray(payload?.optionIds)) {
+            optionIds.push(...payload.optionIds.filter((optionId): optionId is string => typeof optionId === 'string'));
+        }
+    }
+
+    return Array.from(new Set(optionIds));
+};
+
+const enrichSemanticChoiceAction = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+    data: { options?: SimpleChoiceOption[]; sourceId?: string },
+    action: AiLegalAction,
+): AiLegalAction => {
+    const optionsById = new Map(
+        (data.options ?? [])
+            .filter((option): option is SimpleChoiceOption & { id: string } => typeof option?.id === 'string')
+            .map((option) => [option.id, option]),
+    );
+    const optionIds = extractSemanticChoiceOptionIds(action);
+    const valueHints = optionIds
+        .map((optionId) => optionsById.get(optionId))
+        .filter((option): option is SimpleChoiceOption & { id: string } => !!option)
+        .flatMap((option) => buildChoiceOptionAiHints(state, playerId, option));
+    const aiHints = [...(action.aiHints ?? []), ...valueHints];
+    const sourceId = typeof action.metadata?.sourceId === 'string'
+        ? action.metadata.sourceId
+        : data.sourceId;
+
+    return {
+        ...action,
+        ...(aiHints.length > 0 ? { aiHints } : {}),
+        metadata: {
+            ...(action.metadata ?? {}),
+            interactionId: current.id,
+            ...(sourceId ? { sourceId } : {}),
+            ...(optionIds.length === 1 ? { optionId: optionIds[0] } : {}),
+            ...(optionIds.length !== 1 ? { optionIds } : {}),
+        },
+    };
+};
+
+const buildSemanticSimpleChoiceActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+    data: {
+        options?: SimpleChoiceOption[];
+        sourceId?: string;
+        ai?: { status?: unknown; decisions?: unknown };
+    },
+): AiLegalAction[] | null => {
+    const decisions = getSemanticChoiceDecisions(data);
+    if (decisions === null) return null;
+
+    const actions = decisions.flatMap((decision) => {
+        if (decision.actorPlayerId !== playerId) return [];
+        return buildAiLegalActionsFromInteractionDecision(decision)
+            .map((action) => enrichSemanticChoiceAction(state, playerId, current, data, action));
+    });
+
+    return actions.length > 0
+        ? actions
+        : [buildEmergencyInteractionCancelAction(current.id, 'missing-actions')];
 };
 
 const buildSelectPlayerActionAiHints = (
@@ -1638,7 +1755,14 @@ const buildInteractionActions = (
         const data = current.data as {
             options?: SimpleChoiceOption[];
             multi?: PromptMultiConfig;
+            sourceId?: string;
+            ai?: { status?: unknown; decisions?: unknown };
         };
+        const semanticActions = buildSemanticSimpleChoiceActions(state, playerId, current, data);
+        if (semanticActions) {
+            return semanticActions;
+        }
+
         const availableOptions = (data.options ?? []).filter((option): option is SimpleChoiceOption & { id: string } => {
             return typeof option?.id === 'string' && option.disabled !== true;
         });
@@ -3057,7 +3181,7 @@ const abilityValueScorer: LocalAiActionScorer = {
         if (!match) return null;
 
         const phase = getContextPhase(context);
-        const baseDamage = getPlayerAbilityBaseDamage(state.core, context.playerId, abilityId);
+        const baseDamage = getPlayerAbilityRuleDamageEstimate(state.core, context.playerId, abilityId);
         const effectValue = estimateEffectsStrategicValue(
             state,
             context.playerId,
@@ -4909,7 +5033,7 @@ const projectDiceThroneAction = (args: {
             const hp = state.core.players[opponentId]?.resources[RESOURCE_IDS.HP] ?? 999;
             return Math.min(best, hp);
         }, 999);
-        const baseDamage = getPlayerAbilityBaseDamage(state.core, args.context.playerId, abilityId);
+        const baseDamage = getPlayerAbilityRuleDamageEstimate(state.core, args.context.playerId, abilityId);
         if (baseDamage <= 0) return null;
 
         return {

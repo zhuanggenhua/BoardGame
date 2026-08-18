@@ -301,6 +301,8 @@ else if (modifiers && modifiers.length > 0) {
 4. **攻击上下文由游戏层投影**：`DamageCalculation` 只能消费 `attackDamageContext`，不能直接认识某个游戏的 `pendingAttack`、攻击阶段或卡牌专属加伤账本。
 5. **伤害不会为负数**：`resolve()` 会自动将负数伤害钳制为 0。
 6. **向后兼容**：旧的手动 `modifiers` 格式仍可正常工作，ActionLog 会降级渲染。
+7. **玩家摘要不是规则真相**：当前伤害摘要、ActionLog 展示、hover 文案和动画数值只能从已经写入的规则状态或提交事件读取。若 `pendingAttack.damage`、`pendingDamage.currentDamage`、奖励骰结算或 `DAMAGE_DEALT` 尚未给出正式值，摘要不得从 AI 估算、custom action `estimateDamage`、技能定义或动画骰面补算一个正式伤害。
+8. **动态估算必须限定用途**：DiceThrone 这类 custom action 动态伤害可以保留规则门槛 / AI 专用估算 helper，例如暴击 Token 门槛或 AI 选招评分；该 helper 不得被最终 HP 结算、玩家正式当前伤害摘要或响应窗口当前伤害账本消费。
 
 ### 迁移指南
 

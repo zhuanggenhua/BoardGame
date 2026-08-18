@@ -98,6 +98,19 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor 
     );
 };
 
+// 用不可见字符占位，保证宽度稳定，避免点数变化导致布局抖动。
+const ThinkingDot: React.FC<{ delayMs: number }> = ({ delayMs }) => (
+    <span
+        className="inline-block w-[0.6em] text-amber-300/80"
+        style={{
+            animation: `dicethrone-thinking-dot 1.1s ${delayMs}ms infinite ease-in-out`,
+        }}
+        aria-hidden="true"
+    >
+        ·
+    </span>
+);
+
 /**
  * 对手思考中提示（画面正中央）
  *
@@ -107,19 +120,6 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor 
  */
 const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName }) => {
     const { t } = useTranslation('game-dicethrone');
-
-    // 用不可见字符占位，保证宽度稳定，避免点数变化导致布局抖动。
-    const Dot: React.FC<{ delayMs: number }> = ({ delayMs }) => (
-        <span
-            className="inline-block w-[0.6em] text-amber-300/80"
-            style={{
-                animation: `dicethrone-thinking-dot 1.1s ${delayMs}ms infinite ease-in-out`,
-            }}
-            aria-hidden="true"
-        >
-            ·
-        </span>
-    );
 
     return (
         <div
@@ -134,9 +134,9 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
                 <div className="text-amber-300/80 text-[1.2vw] font-medium mt-[0.3vw] drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
                     <span>{t('waiting.thinkingMessage')}</span>
                     <span className="inline-flex items-baseline">
-                        <Dot delayMs={0} />
-                        <Dot delayMs={160} />
-                        <Dot delayMs={320} />
+                        <ThinkingDot delayMs={0} />
+                        <ThinkingDot delayMs={160} />
+                        <ThinkingDot delayMs={320} />
                     </span>
                 </div>
 
@@ -164,22 +164,10 @@ const ResponseWindowHint: React.FC<{
     passLabel?: string;
 }> = ({ onResponsePass, kind, passLabel }) => {
     const { t } = useTranslation('game-dicethrone');
-    const pointerPassHandledRef = React.useRef(false);
 
-    const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-        if (event.button !== 0) return;
-        if (!onResponsePass) return;
-        pointerPassHandledRef.current = true;
-        event.stopPropagation();
-        onResponsePass();
-    }, [onResponsePass]);
     const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         if (!onResponsePass) return;
-        if (pointerPassHandledRef.current) {
-            pointerPassHandledRef.current = false;
-            return;
-        }
         onResponsePass();
     }, [onResponsePass]);
 
@@ -243,7 +231,6 @@ const ResponseWindowHint: React.FC<{
                         <button
                             type="button"
                             data-testid="dicethrone-response-pass-button"
-                            onPointerDown={handlePointerDown}
                             onClick={handleClick}
                             className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
                             style={{

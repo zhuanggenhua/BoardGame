@@ -991,7 +991,7 @@ const handleResponseWindowOpened: EventHandler<Extract<DiceThroneEvent, { type: 
     // 但需要记录各业务源对应的序号，避免 CLOSED 后在同一业务源上立即 reopen
     if (event.payload.windowType === 'afterRollConfirmed') {
         const rollSequence = state.rollConfirmedSequence ?? 0;
-        const rollSignature = buildAfterRollConfirmedSignature(state);
+        const rollSignature = event.payload.sourceId ?? buildAfterRollConfirmedSignature(state);
         if (rollSequence <= 0 || state.afterRollResponseWindowSequence === rollSequence) {
             if (state.afterRollResponseWindowSignature === rollSignature) {
                 return state;
@@ -1174,11 +1174,11 @@ const rebuildBonusSettlementSummary = (
             const branchCount = countBonusFaces(dice, 'branch');
             const leafCount = countBonusFaces(dice, 'leaf');
             const spiritCount = countBonusFaces(dice, 'spirit');
-            return { summaryEffectParams: { branchCount, leafCount, spiritCount } };
+            return { summaryEffectParams: { branchCount, leafCount, spiritCount, bonusDamage: branchCount } };
         }
         case 'bonusDie.effect.treantTrample.result': {
             const branchCount = countBonusFaces(dice, 'branch');
-            return { summaryEffectParams: { branchCount } };
+            return { summaryEffectParams: { branchCount, bonusDamage: branchCount } };
         }
         case 'bonusDie.effect.treantSoulfire.result': {
             const branchCount = countBonusFaces(dice, 'branch');

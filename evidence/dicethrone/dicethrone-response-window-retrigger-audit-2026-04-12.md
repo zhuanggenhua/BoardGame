@@ -116,6 +116,4 @@ DiceThrone 的响应窗口来源（领域事件）主要有：
 2) DiceThrone AI 行为收敛（rollConfirmed=true 后不再产出重掷被动动作）：
 - 旧验证仍在 `src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`，本次未复跑该专项。
 
----
-
 **当前阅读说明**：本文只能作为“response-window 重触发/重复提示/音效循环”的历史专项审计，不能外推为当前所有 response-window 重开、watchdog 误触发或 DiceThrone 当前整体审计都已收口。

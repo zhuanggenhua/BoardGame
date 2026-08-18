@@ -71,11 +71,23 @@ function dealDamage(
     timestamp: number
 ): DamageDealtEvent {
     // 浣跨敤鏂颁激瀹宠绠楃绾?
+    const damageScope = ctx.ctx.isDefensiveContext ? 'direct' : 'attack';
+    const attackDamageContext = damageScope === 'attack'
+        && ctx.state.pendingAttack?.attackerId === ctx.attackerId
+        && ctx.state.pendingAttack?.defenderId === targetId
+        ? {
+            attackerId: ctx.attackerId,
+            defenderId: targetId,
+            isUltimate: ctx.state.pendingAttack.isUltimate,
+        }
+        : undefined;
     const damageCalc = createDamageCalculation({
         source: { playerId: ctx.attackerId, abilityId: sourceAbilityId, phase: ctx.damagePhase },
         target: { playerId: targetId },
         baseDamage: amount,
         state: ctx.state,
+        damageScope,
+        attackDamageContext,
         timestamp,
         autoCollectTokens: false,
         autoCollectStatus: true,  // 鍚敤鐘舵€佷慨姝ｆ敹闆嗭紙閿佸畾绛?debuff锛?

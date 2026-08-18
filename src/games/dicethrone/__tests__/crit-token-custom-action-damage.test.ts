@@ -8,8 +8,8 @@
  * 根因：getPlayerAbilityBaseDamage 只计算显式 damage action 的值，
  * 对 custom action 伤害（如 CP 系伤害）返回 0，导致暴击门控（≥5）失败。
  *
- * 修复：CustomActionMeta 新增 estimateDamage 回调，
- * getPlayerAbilityBaseDamage 对有 estimateDamage 的 custom action 调用回调估算伤害。
+ * 修复：CustomActionMeta 新增规则门槛专用伤害估算，
+ * 暴击门槛可读该估算，但玩家可见当前伤害摘要不能用它冒充已落地伤害。
  * 暗影贼的 CP 系伤害 custom action 注册时提供了基于当前 CP 的估算函数。
  */
 
@@ -28,7 +28,7 @@ import { TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { initializeCustomActions } from '../domain/customActions';
 import { getPendingAttackExpectedDamage } from '../domain/utils';
-import { getPlayerAbilityBaseDamage } from '../domain/abilityLookup';
+import { getPlayerAbilityBaseDamage, getPlayerAbilityRuleDamageEstimate } from '../domain/abilityLookup';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from '../domain/types';
 import type { DiceThroneExpectation } from './test-utils';
 
@@ -38,21 +38,23 @@ beforeAll(() => {
 
 describe('暴击 Token 与 custom action 伤害技能', () => {
 
-    it('getPlayerAbilityBaseDamage 通过 estimateDamage 回调估算 CP 系伤害', () => {
+    it('规则门槛伤害估算可读取 CP 系动态伤害，但基础伤害不包含估算', () => {
         const setup = createHeroMatchup('shadow_thief', 'paladin', (core) => {
             core.players['0'].resources[RESOURCE_IDS.CP] = 10;
         });
         const random = createQueuedRandom([]);
         const state = setup(['0', '1'], random);
 
-        // kidney-shot: damage-full-cp → estimateDamage 返回当前 CP = 10
-        expect(getPlayerAbilityBaseDamage(state.core, '0', 'kidney-shot')).toBe(10);
+        // kidney-shot: damage-full-cp → 规则门槛估算返回当前 CP = 10
+        expect(getPlayerAbilityBaseDamage(state.core, '0', 'kidney-shot')).toBe(0);
+        expect(getPlayerAbilityRuleDamageEstimate(state.core, '0', 'kidney-shot')).toBe(10);
 
-        // pickpocket: damage-half-cp → estimateDamage 返回 ceil(10/2) = 5
-        expect(getPlayerAbilityBaseDamage(state.core, '0', 'pickpocket')).toBe(5);
+        // pickpocket: damage-half-cp → 规则门槛估算返回 ceil(10/2) = 5
+        expect(getPlayerAbilityBaseDamage(state.core, '0', 'pickpocket')).toBe(0);
+        expect(getPlayerAbilityRuleDamageEstimate(state.core, '0', 'pickpocket')).toBe(5);
     });
 
-    it('getPendingAttackExpectedDamage 对 custom action 伤害技能返回正确预估', () => {
+    it('getPendingAttackExpectedDamage 不使用 custom action 动态估算冒充当前攻击伤害', () => {
         const setup = createHeroMatchup('shadow_thief', 'paladin', (core) => {
             core.players['0'].resources[RESOURCE_IDS.CP] = 8;
         });
@@ -65,15 +67,16 @@ describe('暴击 Token 与 custom action 伤害技能', () => {
             sourceAbilityId: 'kidney-shot',
             isDefendable: true, bonusDamage: 0,
         };
-        expect(getPendingAttackExpectedDamage(state.core, pendingKidney as any)).toBe(8);
+        expect(getPendingAttackExpectedDamage(state.core, pendingKidney as any)).toBe(0);
 
-        // shadow-shank: CP + 5 = 13
+        // shadow-shank: CP + 5 只能作为规则门槛估算，不能作为当前攻击伤害摘要
         const pendingShank = {
             attackerId: '0', defenderId: '1',
             sourceAbilityId: 'shadow-shank',
             isDefendable: true, bonusDamage: 0,
         };
-        expect(getPendingAttackExpectedDamage(state.core, pendingShank as any)).toBe(13);
+        expect(getPendingAttackExpectedDamage(state.core, pendingShank as any)).toBe(0);
+        expect(getPlayerAbilityRuleDamageEstimate(state.core, '0', 'shadow-shank')).toBe(13);
     });
 
     it('暗影贼用 kidney-shot 攻击时，持有暴击应弹出选择', () => {
@@ -185,7 +188,7 @@ describe('暴击 Token 与 custom action 伤害技能', () => {
         const random = createQueuedRandom([]);
         const state = setup(['0', '1'], random);
 
-        // CP=0 时 kidney-shot 预估伤害为 0，不应通过暴击门控
-        expect(getPlayerAbilityBaseDamage(state.core, '0', 'kidney-shot')).toBe(0);
+        // CP=0 时 kidney-shot 规则门槛估算伤害为 0，不应通过暴击门控
+        expect(getPlayerAbilityRuleDamageEstimate(state.core, '0', 'kidney-shot')).toBe(0);
     });
 });

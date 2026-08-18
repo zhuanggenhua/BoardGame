@@ -673,23 +673,35 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             value: number;
             /** 当前选项实际作用到的玩家；仅描述交互语义，不替代 value/customId 的规则输入。 */
             targetPlayerId?: PlayerId;
+            /** 当前选项实际作用到的多个玩家；仅描述交互语义，不替代 value/customId 的规则输入。 */
+            targetPlayerIds?: PlayerId[];
             /** 当前选项会授予的 Token 语义；供 AI/审计消费，规则结算仍由 handler 决定。 */
             tokenGrantConfig?: {
                 tokenId: string;
                 amount: number;
+                /** 授予这个 Token 的实际目标；缺省时使用选项级 targetPlayerId(s)。 */
+                targetPlayerId?: PlayerId;
+                targetPlayerIds?: PlayerId[];
             };
             tokenGrantConfigs?: Array<{
                 tokenId: string;
                 amount: number;
+                targetPlayerId?: PlayerId;
+                targetPlayerIds?: PlayerId[];
             }>;
             /** 当前选项会授予的状态语义；供 AI/审计消费，规则结算仍由 handler 决定。 */
             statusGrantConfig?: {
                 statusId: string;
                 amount: number;
+                /** 授予这个状态的实际目标；缺省时使用选项级 targetPlayerId(s)。 */
+                targetPlayerId?: PlayerId;
+                targetPlayerIds?: PlayerId[];
             };
             statusGrantConfigs?: Array<{
                 statusId: string;
                 amount: number;
+                targetPlayerId?: PlayerId;
+                targetPlayerIds?: PlayerId[];
             }>;
             /** 自定义选择 ID（用于非 status/token 的选择，或区分不同语义） */
             customId?: string;

@@ -988,6 +988,11 @@ describe('红热 + 陨石伤害计算', () => {
             target: { playerId: '1' },
             baseDamage: 2,
             state: state as any,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 2,
+            },
             timestamp: Date.now(),
         });
 
@@ -1054,6 +1059,11 @@ describe('红热 + 陨石伤害计算', () => {
             target: { playerId: '1' },
             baseDamage: 2,
             state: state as any,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 0,
+            },
             timestamp: Date.now(),
         });
 

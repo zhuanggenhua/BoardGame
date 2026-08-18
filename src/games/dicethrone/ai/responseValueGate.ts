@@ -1,5 +1,5 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
-import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from '../domain/abilityLookup';
+import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from '../domain/abilityLookup';
 import { getCustomActionMeta } from '../domain/effects';
 import { RESOURCE_IDS } from '../domain/resources';
 import { getRollerId } from '../domain/rules';
@@ -106,7 +106,7 @@ export const evaluateDiceThroneAbilityThreat = (
     if (!match) return { ...EMPTY_THREAT, abilityId };
 
     const defenderHp = state.core.players[defenderId]?.resources[RESOURCE_IDS.HP] ?? 0;
-    const damage = getPlayerAbilityBaseDamage(state.core, abilityOwnerId, abilityId);
+    const damage = getPlayerAbilityRuleDamageEstimate(state.core, abilityOwnerId, abilityId);
     const effect = addEffectValue(state, abilityOwnerId, abilityId);
     const ultimate = Boolean(match.ability.tags?.includes('ultimate') || match.variant?.tags?.includes('ultimate'));
     const lethal = defenderHp > 0 && damage >= defenderHp;

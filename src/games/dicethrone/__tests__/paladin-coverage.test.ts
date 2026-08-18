@@ -454,7 +454,6 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer-2-main' }),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer-2-main' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }),
                     cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
@@ -469,7 +468,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 },
             });
             expect(result.assertionErrors).toEqual([]);
-            expect(result.actualErrors.map((entry) => entry.error)).toContain('attack_already_initiated');
+            expect(result.actualErrors).toEqual([]);
         });
     });
 

@@ -62,7 +62,7 @@ import type { ResponseWindowOpenedEvent } from './events';
 import { createDamageCalculation } from '../../../engine/primitives';
 import { CP_MAX } from './types';
 import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
-import { getPlayerAbilityBaseDamage, getPlayerAbilityEffects, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
+import { getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
@@ -330,7 +330,7 @@ function createOffensiveRollEndTokenChoiceEvent(
     // 暴击的 FAQ 门槛只看攻击初始伤害，不把攻击修正（bonusDamage）计入 5 点判断。
     const expectedInitialDamage = core.pendingAttack.damage
         ?? (core.pendingAttack.sourceAbilityId
-            ? getPlayerAbilityBaseDamage(core, core.pendingAttack.attackerId, core.pendingAttack.sourceAbilityId)
+            ? getPlayerAbilityRuleDamageEstimate(core, core.pendingAttack.attackerId, core.pendingAttack.sourceAbilityId)
             : 0);
     const offensiveRollEndTokens = getUsableTokensForOffensiveRollEnd(core, attackerId, expectedInitialDamage);
     if (offensiveRollEndTokens.length === 0) {

@@ -310,10 +310,16 @@ async function waitForPhase(page: Page, phase: string, timeout = 15000): Promise
 }
 
 async function waitForState(page: Page, predicate: (state: MutableRecord) => unknown, timeout = 15000) {
-    await expect.poll(async () => {
-        const state = await page.evaluate(() => (window as Window).__BG_TEST_HARNESS__?.state?.get?.() ?? null);
-        return state ? predicate(state) : null;
-    }, { timeout }).toBeTruthy();
+    let latestState: MutableRecord | null = null;
+    try {
+        await expect.poll(async () => {
+            latestState = await page.evaluate(() => (window as Window).__BG_TEST_HARNESS__?.state?.get?.() ?? null);
+            return latestState ? predicate(latestState) : null;
+        }, { timeout }).toBeTruthy();
+    } catch (error) {
+        const summary = await readStateSummary(page).catch(() => null);
+        throw new Error(`等待 DiceThrone 页面状态超时；最新摘要=${JSON.stringify(summary, null, 2)}；原始错误=${error instanceof Error ? error.message : String(error)}`);
+    }
 }
 
 async function readStateSummary(page: Page): Promise<MutableRecord | null> {
@@ -340,6 +346,7 @@ async function readStateSummary(page: Page): Promise<MutableRecord | null> {
             ? state.sys.eventStream.entries.slice(-12).map((entry: MutableRecord) => ({
                 type: entry?.event?.type ?? entry?.type,
                 payload: entry?.event?.payload ?? entry?.payload,
+                sourceCommandType: entry?.event?.sourceCommandType ?? entry?.sourceCommandType,
             }))
             : [];
         return {
@@ -452,6 +459,7 @@ function summarizeServerState(state: MutableRecord): MutableRecord {
         eventTail: entries.slice(-12).map((entry: MutableRecord) => ({
             type: entry?.event?.type ?? entry?.type,
             payload: entry?.event?.payload ?? entry?.payload,
+            sourceCommandType: entry?.event?.sourceCommandType ?? entry?.sourceCommandType,
         })),
     };
 }
@@ -720,6 +728,29 @@ async function changeVisibleDieByOne(page: Page, dieIndex: number, direction: 'i
     await expect(adjustButton).toBeVisible({ timeout: 10000 });
     await adjustButton.click();
     await confirmDiceInteraction(page);
+}
+
+async function passVisibleResponseWindows(pages: Page[], timeout = 8000): Promise<boolean> {
+    const deadline = Date.now() + timeout;
+    let passedAny = false;
+
+    while (Date.now() < deadline) {
+        for (const page of pages) {
+            if (await maybePassResponse(page, 500)) {
+                passedAny = true;
+                await page.waitForTimeout(350);
+                break;
+            }
+        }
+
+        const current = await pages[0].evaluate(() => (
+            (window as Window).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.responseWindow?.current ?? null
+        ));
+        if (!current) return passedAny;
+        await pages[0].waitForTimeout(200);
+    }
+
+    return passedAny;
 }
 
 async function sellHandCardToDiscardPile(page: Page, cardId: string, playerId: string): Promise<void> {
@@ -1126,6 +1157,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(guestPage, (state) => state.sys?.interaction?.current?.data?.meta?.dtType === 'modifyDie');
             await screenshotStep(guestPage, testInfo, '08-防御方打出惊不惊喜-选择修改进攻骰');
             await changeVisibleDieByOne(guestPage, 4, 'decrement');
+            await passVisibleResponseWindows([guestPage, hostPage]);
             await waitForState(hostPage, (state) => (
                 !state.sys?.interaction?.current
                 && !state.sys?.responseWindow?.current
@@ -1273,6 +1305,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(hostPage, (state) => state.sys?.interaction?.current?.data?.meta?.dtType === 'modifyDie');
             await screenshotStep(hostPage, testInfo, '22-攻击方响应防御骰-准备修改对方防御骰');
             await changeVisibleDieByOne(hostPage, 0, 'increment');
+            await passVisibleResponseWindows([hostPage, guestPage]);
             await waitForState(guestPage, (state) => (
                 !state.sys?.interaction?.current
                 && !state.sys?.responseWindow?.current

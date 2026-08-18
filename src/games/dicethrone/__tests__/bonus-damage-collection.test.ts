@@ -1,7 +1,7 @@
 /**
- * bonusDamage 自动收集测试
+ * 攻击上下文 bonusDamage 自动收集测试
  * 
- * 验证伤害计算管线能够自动收集 pendingAttack.bonusDamage
+ * 验证伤害计算管线能够自动收集 attackDamageContext.bonusDamage
  * 并将其记录到 breakdown 中，使 ActionLog 能够正确显示攻击修正卡的效果。
  */
 
@@ -10,8 +10,8 @@ import { createDamageCalculation } from '../../../engine/primitives/damageCalcul
 import type { DiceThroneCore } from '../domain/types';
 import { TOKEN_IDS } from '../domain/ids';
 
-describe('bonusDamage 自动收集测试', () => {
-    it('应该自动收集 pendingAttack.bonusDamage 并记录到 breakdown', () => {
+describe('攻击上下文 bonusDamage 自动收集测试', () => {
+    it('应该自动收集 attackDamageContext.bonusDamage 并记录到 breakdown', () => {
         // 模拟"红热"卡牌场景：基础伤害 2，bonusDamage +2（来自 2 个火焰精通）
         const state = {
             core: {
@@ -44,6 +44,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'meteor' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 2,
+            },
             timestamp: Date.now(),
         });
 
@@ -89,6 +94,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'meteor' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 0,
+            },
             timestamp: Date.now(),
         });
 
@@ -115,6 +125,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'meteor' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '1',
+                defenderId: '0',
+                bonusDamage: 3,
+            },
             timestamp: Date.now(),
         });
 
@@ -148,6 +163,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'meteor' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '1',
+                defenderId: '0',
+                bonusDamage: 3,
+            },
             timestamp: Date.now(),
         });
 
@@ -193,6 +213,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'meteor' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 2,
+            },
             timestamp: Date.now(),
         });
 
@@ -237,6 +262,11 @@ describe('bonusDamage 自动收集测试', () => {
             source: { playerId: '0', abilityId: 'holy-strike-2-small' },
             target: { playerId: '1' },
             state,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: 4,
+            },
             timestamp: Date.now(),
             autoCollectBonusDamage: false,
             additionalModifiers: [{

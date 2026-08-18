@@ -71,7 +71,7 @@ Game-specific FX renderers SHALL map cue params to shared presets and SHALL NOT 
 - **AND** the FX renderer MUST remain reusable across games
 
 ### Requirement: Visual lifecycle SHALL preserve destroyed-object presentation when needed
-The FX rendering system SHALL provide or coordinate a visual lifecycle path for objects whose visual body must remain available until a spawned effect reaches impact or completion.
+The FX rendering system SHALL provide a visual entity lifecycle path for objects whose visual body must remain available until spawned effects reach their owned impact or completion points. This lifecycle MUST be part of the existing FX presentation system and MUST NOT create a second animation pipeline.
 
 #### Scenario: Destroyed target remains available for hit presentation
 - **GIVEN** a target object is destroyed by the event that spawned an attack or damage FX
@@ -79,10 +79,28 @@ The FX rendering system SHALL provide or coordinate a visual lifecycle path for 
 - **THEN** the visual layer MUST preserve an object snapshot or held visual until the relevant effect lifecycle point
 - **AND** the real domain state MUST remain already resolved
 
+#### Scenario: Multiple effects hold the same destroyed target
+- **GIVEN** a destroyed target is still needed by two active presentation owners
+- **WHEN** one owner completes or releases its hold
+- **THEN** the target body MUST remain visible while the other owner is still active
+- **AND** the target body MUST leave only after the last owner releases it
+
 #### Scenario: Held visual does not duplicate live object
 - **GIVEN** an object still exists in the real rendered list
 - **WHEN** a held visual is considered for the same object id
 - **THEN** the visual layer MUST NOT render a duplicate held object for that id
+
+#### Scenario: Numeric display buffer does not replace entity hold
+- **GIVEN** a game delays visible HP or damage changes until impact
+- **WHEN** a board entity itself has already left authoritative state but must still be seen
+- **THEN** the game MUST use visual entity lifecycle / held visual for the entity body
+- **AND** it MUST NOT treat numeric state buffering as sufficient proof that the entity body is preserved
+
+#### Scenario: Visual entity lifecycle stays inside the FX system
+- **GIVEN** a game needs to preserve a destroyed or moved entity body for an active effect
+- **WHEN** it implements the visual hold
+- **THEN** it MUST use the shared visual entity lifecycle entry or extend that shared entry
+- **AND** it MUST NOT create a parallel game-specific animation bus, particle renderer, or ad hoc held-object framework
 
 ### Requirement: Cross-game verification SHALL cover both grid and non-grid FX anchors
 The FX rendering system SHALL include tests proving that anchor snapshots work for both grid-based boards and non-grid table layouts.

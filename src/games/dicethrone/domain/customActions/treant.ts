@@ -92,6 +92,15 @@ const TEND_CARE_2_CULTIVATE_SOURCE_IDS = ['tend-care-2-cultivate'] as const;
 const NATURE_TOUCH_CULTIVATE_AMOUNT = 2;
 const FOREST_AWAKENS_CULTIVATE_AMOUNT = 5;
 
+const buildWildGrowth2SummaryParams = (
+    dice: Array<{ face?: string }>,
+): Record<string, number> => {
+    const branchCount = dice.filter(die => die.face === TREANT_DICE_FACE_IDS.BRANCH).length;
+    const leafCount = dice.filter(die => die.face === TREANT_DICE_FACE_IDS.LEAF).length;
+    const spiritCount = dice.filter(die => die.face === TREANT_DICE_FACE_IDS.SPIRIT).length;
+    return { branchCount, leafCount, spiritCount, bonusDamage: branchCount };
+};
+
 type WildGrowthChoice = {
     seedling: number;
     sapling: number;
@@ -1053,6 +1062,7 @@ function handleWildGrowth2Main(ctx: CustomActionContext): DiceThroneEvent[] {
 
     events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, ctx.targetId, rollDice, timestamp + 5, {
         summaryEffectKey: 'bonusDie.effect.treantWildGrowth2.result',
+        summaryEffectParams: buildWildGrowth2SummaryParams(rollDice),
         customResolutionId: TREANT_WILD_GROWTH_2_SETTLEMENT_ID,
         continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: false },
     }));
@@ -2348,7 +2358,6 @@ export function registerTreantCustomActions(): void {
         categories: ['dice', 'damage', 'token', 'choice'],
         requiresInteraction: true,
         requiresSelectedDefender: true,
-        estimateDamage: () => 8,
     });
     registerCustomActionHandler('treant-wild-growth-choice', handleWildGrowthChoice, {
         categories: ['choice', 'token'],

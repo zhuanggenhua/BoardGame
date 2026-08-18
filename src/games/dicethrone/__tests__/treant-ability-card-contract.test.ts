@@ -8,6 +8,7 @@ import { resolveAttack, resolveOffensivePreDefenseEffects } from '../domain/atta
 import { resolveEffectsToEvents } from '../domain/effects';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { getChoiceEffectHandler } from '../domain/choiceEffects';
+import { getCurrentDamageSummary } from '../domain/damageSummary';
 import { getAvailableAbilityIds } from '../domain/rules';
 import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
 import { TREANT_CARDS } from '../heroes/treant/cards';
@@ -894,6 +895,57 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const next = applyEvents(state.core, attackEvents);
         expect(next.players['1'].tokens[TOKEN_IDS.THORN]).toBe(1);
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(46);
+    });
+
+    it('Wild Roar II 大顺子伤害摘要应按 8 基伤 + 奖励骰树枝加伤显示，并最终扣血', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        const treant = state.core.players['0'];
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-roar');
+        treant.abilities[abilityIndex] = WILD_ROAR_2;
+        treant.abilityLevels['wild-roar'] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.LIFE_SAP] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'wild-roar-2-main',
+            isDefendable: true,
+        };
+
+        expect(getCurrentDamageSummary(state.core)).toEqual({
+            currentDamage: 8,
+            originalDamage: 8,
+        });
+
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1, 2, 3, 4, 5]), 100);
+        let next = applyEvents(state.core, preDefenseEvents);
+        expect(next.pendingBonusDiceSettlement?.summaryEffectParams).toMatchObject({
+            branchCount: 3,
+            leafCount: 2,
+            spiritCount: 0,
+            bonusDamage: 3,
+        });
+        expect(getCurrentDamageSummary(next)).toEqual({
+            currentDamage: 11,
+            originalDamage: 8,
+        });
+
+        const settlementEvents = settleBonusDice(next);
+        next = applyEvents(next, settlementEvents);
+        expect(next.pendingAttack?.bonusDamage ?? 0).toBe(3);
+        expect(getCurrentDamageSummary(next)).toEqual({
+            currentDamage: 11,
+            originalDamage: 8,
+        });
+
+        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
+        const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
+        expect((damageEvent as any).payload.amount).toBe(11);
+        next = applyEvents(next, attackEvents);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(39);
     });
 
     it('Wild Growth II 主路线应在奖励骰只有 1 个树灵时自动完成 1 次养成', () => {

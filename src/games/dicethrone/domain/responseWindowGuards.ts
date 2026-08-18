@@ -52,13 +52,23 @@ export const buildAfterRollConfirmedSignature = (core: DiceThroneCore, phase?: T
             .concat(`|turn:${turnNumber}|player:${activePlayerId}`);
     }
 
+    const pendingAttack = core.pendingAttack;
+    const attackSignature = pendingAttack?.sourceAbilityId
+        ? `|attack:${pendingAttack.sourceAbilityId}`
+        : '';
+    const defenseSignature = pendingAttack?.defenseAbilityId
+        ? `|defense:${pendingAttack.defenseAbilityId}`
+        : '';
+
     return dice
         .map((die) => {
             const symbol = typeof die.symbol === 'string' ? die.symbol : '';
             return `${die.id}:${die.value}:${symbol}`;
         })
         .join('|')
-        .concat(`|turn:${turnNumber}|player:${activePlayerId}`);
+        .concat(`|turn:${turnNumber}|player:${activePlayerId}`)
+        .concat(attackSignature)
+        .concat(defenseSignature);
 };
 
 export const hasAfterRollConfirmedWindowBeenHandled = (
@@ -68,6 +78,9 @@ export const hasAfterRollConfirmedWindowBeenHandled = (
     const sequence = core.rollConfirmedSequence ?? 0;
     const isBonusDiceSignature = rollSignature?.startsWith('bonus:') === true;
     if (!isBonusDiceSignature && sequence > 0 && core.afterRollResponseWindowSequence === sequence) {
+        if (rollSignature && typeof core.afterRollResponseWindowSignature === 'string') {
+            return core.afterRollResponseWindowSignature === rollSignature;
+        }
         return true;
     }
     if (rollSignature && typeof core.afterRollResponseWindowSignature === 'string') {

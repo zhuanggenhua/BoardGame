@@ -11,7 +11,7 @@ Count source: business-level `createSimpleChoice(` calls under `src/games/<gameI
 | Smash Up | 655 | Heavy legacy user. Keep legacy adapter, then cut over one interaction family at a time. |
 | Summoner Wars | 127 | Heavy legacy user. Keep legacy adapter, then cut over simple-choice / multistep families later. |
 | Qidahen | 23 | First-batch request-first migration candidate. |
-| DiceThrone | 8 | Already has non-modal dice/legal-action paths for bonus dice; use as parity reference, not first migration target. |
+| DiceThrone | 1 generic choice bridge | Low-risk `CHOICE_REQUESTED` bridge migrated for DiceThrone / 王权骰铸; bonus dice, response windows, and defender selection remain dedicated paths. |
 | Mage Wars | 5 | First-batch request-first migration candidate. |
 | Cardia | 0 remaining business calls | Old-project compatibility user. Do not migrate in this change. |
 | TicTacToe | 0 business calls | Old/simple compatibility user. No business-level migration in this change. |
@@ -21,6 +21,7 @@ Count source: business-level `createSimpleChoice(` calls under `src/games/<gameI
 | Family | Current surface | First-batch owner | Candidate source | AI policy owner | Skip / confirm behavior | Migration action |
 | --- | --- | --- | --- | --- | --- | --- |
 | Generic modal option choice | `simple-choice` | Engine adapter | `ChoiceRequest.candidates` projected to prompt options | shared policy when branch choice is non-strategic; game policy otherwise | explicit `recoveryAction` for skip/pass/cancel | Implemented thin adapter in this slice. |
+| DiceThrone / 王权骰铸 generic choice event | `CHOICE_REQUESTED` -> `simple-choice` bridge | DiceThrone narrow bridge | existing event options projected as `ChoiceRequest.candidates` | existing DiceThrone option scorer over the same projected options | current mandatory option selection; no new watchdog target guessing | Migrated to request-owned simple-choice projection without changing dice / response / defender paths. |
 | Direct board / field target choice | board highlights, source-target prompt, simple-choice fallback | Engine + game adapter | `ChoiceRequest.candidates` with stable object IDs | game policy for strategic targets | skip/pass only when request declares it | Next UI adapter slice; Smash Up stays legacy until family cutover. |
 | Dice confirm / reroll | DiceThrone right-side dice controls and AI legal actions | DiceThrone reference | dice state / pending settlement | DiceThrone policy | confirm-current or reroll actions | Use as reference for Choice Request confirm-current shape; no immediate rewrite. |
 | Mage Wars target / plan / action choice | `simple-choice` in `domain/systems.ts` | Mage Wars | spell/action/target candidates | Mage Wars policy for targets; shared policy for confirm/pass | phase-specific | First game migration after engine slice. |

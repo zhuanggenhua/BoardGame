@@ -952,7 +952,7 @@ export interface GameEngineConfig<
 }
 
 /** Type-erased engine config used by registries/providers that only pass configs through. */
-export type AnyGameEngineConfig = GameEngineConfig<any, any, any>;
+export type AnyGameEngineConfig = GameEngineConfig<unknown, Command, GameEvent>;
 
 // ============================================================================
 // 内部类型
@@ -6705,6 +6705,32 @@ export class GameTransportServer {
                 clientTransport: options?.clientTransport ?? null,
                 circuitFailureCount: circuitSnapshot.failureCount,
                 circuitTripped: circuitSnapshot.tripped,
+            });
+
+            const nsp = this.io.of('/game');
+            const sockets = match.connections.get(playerID);
+            if (sockets) {
+                for (const sid of sockets) {
+                    nsp.to(sid).emit('error', match.matchID, 'stale_state');
+                }
+            }
+            return false;
+        }
+
+        if (
+            onlineAiSeatControllerType === 'human'
+            && typeof options?.expectedStateID === 'number'
+            && options.expectedStateID !== stateIdBefore
+        ) {
+            match.lastCommandFailureReason = 'stale_state';
+            logger.warn('[GameTransport] human command rejected due to stale state precondition', {
+                matchID: match.matchID,
+                gameId: engineConfig.gameId,
+                playerID,
+                commandType: effectiveCommandType,
+                commandPayload: cloneDiagnosticValue(effectivePayload),
+                expectedStateID: options.expectedStateID,
+                actualStateID: stateIdBefore,
             });
 
             const nsp = this.io.of('/game');

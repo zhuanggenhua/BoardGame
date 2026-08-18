@@ -851,8 +851,8 @@ const getAttackModifierPlayFailureReason = (
 };
 
 /**
- * 开放的当前骰区可以代替主骰的“已投掷 / 已确认”前提。
- * 普通攻击、防御与目标骰仍必须遵守自身的确认时机；已结算只读回看不能越权放行。
+ * 开放的临时/效果骰区可以代替主骰的“已投掷 / 已确认”前提。
+ * 普通攻击、防御与目标骰仍必须遵守自身的投掷和确认时机；已结算只读回看不能越权放行。
  */
 const hasCurrentDiceTargetForCard = (
     state: DiceThroneCore,
@@ -869,6 +869,9 @@ const hasCurrentDiceTargetForCard = (
     const currentRollContext = resolveCurrentRollContext(state, phase);
     return Boolean(
         currentRollContext
+        && currentRollContext.kind !== 'offensive'
+        && currentRollContext.kind !== 'defensive'
+        && currentRollContext.kind !== 'targeting'
         && currentRollContext.policy.allowDiceCardTargeting === true
         && currentRollContext.display.replayOnly !== true
         && currentRollContext.dice.length > 0,
@@ -1217,13 +1220,6 @@ const checkResponseWindowCardPlay = (
             }
             const diceEffectTarget = getDiceEffectTarget(card);
             if (diceEffectTarget !== 'opponent' && diceEffectTarget !== 'any') {
-                return failResponseWindow();
-            }
-            if (
-                phase === 'offensiveRoll'
-                && card.id === 'card-flick'
-                && !state.pendingAttack?.sourceAbilityId
-            ) {
                 return failResponseWindow();
             }
             if (playerId === getRollerId(state, phase)) {

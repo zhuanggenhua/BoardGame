@@ -199,7 +199,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
         });
 
         expect(result.assertionErrors).toEqual([]);
-        expect(result.actualErrors.map((entry) => entry.error)).toContain('attack_already_initiated');
+        expect(result.actualErrors).toEqual([]);
         expectPaladinResources(result, INITIAL_CP + 4);
     });
 

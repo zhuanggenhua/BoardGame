@@ -132,7 +132,7 @@ describe('终极技能发动前响应时机', () => {
         expect(validation).toEqual({ valid: false, error: 'not_current_responder' });
     });
 
-    it('选中终极技能后仍应让对手进入掷骰确认响应窗口', () => {
+    it('已有攻击候选的确认骰响应窗口仍应把对手列为响应者', () => {
         const state = createUltimatePreActivationState();
 
         expect(getResponderQueue(
@@ -178,7 +178,6 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });
@@ -223,7 +222,6 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
             ],
         });
@@ -253,7 +251,6 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -327,7 +324,6 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 cmd('RESPONSE_PASS', '0'),
                 cmd('RESPONSE_PASS', '1'),
                 cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
-                cmd('RESPONSE_PASS', '1'),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
@@ -386,7 +382,6 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
                 cmd('RESPONSE_PASS', '0'),
                 cmd('RESPONSE_PASS', '1'),
                 cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
-                cmd('RESPONSE_PASS', '1'),
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
@@ -636,7 +631,6 @@ describe('modifyDie 严格超限回归', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -679,7 +673,6 @@ describe('modifyDie 严格超限回归', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-unexpected' }),
             ],
         });
@@ -717,7 +710,6 @@ describe('响应窗口交互锁定：骰子重掷类（selectDie）', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
             ],
         });
@@ -749,7 +741,6 @@ describe('响应窗口交互锁定：取消交互', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });
@@ -784,7 +775,6 @@ describe('响应窗口交互锁定：取消交互', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
             ],
         });
@@ -933,7 +923,6 @@ describe('AI 私有状态选择的唯一执行入口', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
             ],
         });
 

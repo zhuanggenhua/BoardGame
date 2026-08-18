@@ -88,10 +88,26 @@
 理由：
 - snapshot 能解决“命中位置”稳定问题，但销毁 / 离场动画仍需要在画面上保留对象影子或 held object。
 - 该能力不应是 Mage Wars 私有补丁。
+- 该能力也不能变成第二套特效动画方案；FX 仍由 `FxBus` / `FxLayer` / renderer / shared preset 播放，视觉保留只提供实体本体在规则离场后的显示租约。
 
 方向：
-- 将“对象离场前快照 / held visual”作为视觉生命周期能力登记到 FX / visual events 边界。
-- 一次性 FX 可只依赖坐标 snapshot；需要对象本体参与碎裂 / 摧毁 / 震动时，使用 held visual。
+- 将“对象离场前快照 / held visual”作为视觉生命周期能力登记到 FX / visual events 边界，并提供通用 `useVisualEntityBuffer`。
+- `useVisualEntityBuffer` 只管理 `ownerId -> entity snapshot` 的持有与释放；它不播放特效、不写规则状态、不负责 HP / damage 数值显示。
+- 一次性 FX 可只依赖坐标 snapshot；需要对象本体参与碎裂 / 摧毁 / 震动 / 飘字遮挡检查时，使用 held visual。
+- 同一实体可被多个 owner 持有，例如 projectile、impact、death-exit；任意一个 FX 完成只能释放自己的 owner，不能让其它仍在播放的任务一起结束。
+- live list 中仍存在的实体不得再渲染 held visual，避免同帧重影。
+
+### Decision: Visual entity lifecycle is a channel inside the existing FX system
+理由：
+- 用户明确要求不要建立“两套特效动画方案”。实体生命周期只解决“可见本体何时保留 / 释放”，不是新的粒子、renderer 或动画总线。
+- HP / damage 延后显示与实体离场承接是不同问题：Dice Throne 玩家面板可以只缓冲 HP，Summoner Wars / Mage Wars 棋盘单位死亡则需要本体保留。
+
+方向：
+- 规则状态仍由领域 pipeline 同步结算。
+- FX 事件仍从 EventStream 消费并进入现有 `FxBus`。
+- 视觉实体保留由事件消费层在 push FX 前建立 pending owner；FX 成功 push 后把 pending owner 转移到真实 `fxId`。
+- `FxLayer.onEffectComplete(fxId)` 只释放该 `fxId` 持有的实体；如果同一实体还有其它 owner，继续保留。
+- 旧游戏已有私有做法保持 legacy adapter，不在本 change 无授权迁移；新游戏和新链路不得再复制私有 `dyingEntities` / `heldObjects` 机制，通用层不够时扩通用层。
 
 ## Compatibility
 - Mage Wars / Summoner Wars：surface 是棋盘或竞技场，entity anchor 可以落到单位、法师、附件槽或区域。

@@ -407,18 +407,26 @@ export interface InteractionDescriptor {
     tokenGrantConfig?: {
         tokenId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     };
     tokenGrantConfigs?: Array<{
         tokenId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     }>;
     statusGrantConfig?: {
         statusId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     };
     statusGrantConfigs?: Array<{
         statusId: string;
         amount: number;
+        targetPlayerId?: PlayerId;
+        targetPlayerIds?: PlayerId[];
     }>;
     /** 选定玩家后继续执行的 custom action（用于 2v2 下的定向卡牌效果） */
     resolveCustomActionId?: string;
@@ -885,6 +893,11 @@ export interface DiceThroneCore {
      * 当确认骰面反复进入相同骰面时，用于防止重复打开响应窗口。
      */
     afterRollResponseWindowSignature?: string;
+    /**
+     * 进攻骰在响应窗口中被对手改动后，骰主重新确认不会立刻重开同类窗口；
+     * 下一步宣告攻击时仍需要给对手一次针对“已宣告攻击”的响应/跳过机会。
+     */
+    afterRollResponseWindowRequiresAttackDeclaration?: boolean;
     /**
      * 打牌序号（自增）
      * 用于 afterCardPlayed 响应窗口源头级去重，避免 CLOSED 后在同一打牌源上立刻 reopen。

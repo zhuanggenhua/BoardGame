@@ -3,9 +3,11 @@
  * 处理领域事件到系统状态的映射
  */
 
-import type { GameEvent, MatchState, PlayerId } from '../../../engine/types';
+import type { GameEvent, MatchState } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
-import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createSimpleChoice, createCompareRollChoice, createMultistepChoice } from '../../../engine/systems/InteractionSystem';
+import type { ChoiceRequest, ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
+import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
+import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createCompareRollChoice, createMultistepChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor as EngineInteractionDescriptor, SimpleChoiceData, PromptOption, MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
 import type {
     DiceThroneCore,
@@ -27,6 +29,7 @@ import {
 } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
 import { updatePendingAttackSettlementStage } from './utils';
+import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -39,6 +42,8 @@ type EmergencySkipContext = {
     sourceId?: string;
     interactionData?: unknown;
 };
+
+type DiceThroneChoiceOptionValue = ChoiceRequestedEvent['payload']['options'][number];
 
 const sanitizeInteractionIdPart = (value: unknown, fallback: string): string => {
     if (typeof value !== 'string' || value.length === 0) return fallback;
@@ -130,6 +135,42 @@ function shouldQueueBonusDiceAfterResponseWindow(
     const settlement = state.core.pendingBonusDiceSettlement;
     return Boolean(settlement)
         && state.core.afterRollResponseWindowSignature?.includes(`|settlement:${settlement.id}`) === true;
+}
+
+function shouldCarryForwardAfterRollResponseWindowSequence(
+    state: MatchState<DiceThroneCore>,
+    event: DiceThroneEvent,
+): boolean {
+    if (event.type !== 'DIE_MODIFIED' && event.type !== 'DIE_REROLLED') return false;
+    if (state.sys.responseWindow?.current?.windowType !== 'afterRollConfirmed') return false;
+    if (state.sys.phase !== 'offensiveRoll') return false;
+
+    const rollSequence = state.core.rollConfirmedSequence ?? 0;
+    if (rollSequence <= 0 || state.core.afterRollResponseWindowSequence !== rollSequence) {
+        return false;
+    }
+
+    const { ownerId, playerId, target } = event.payload;
+    const targetsCurrentRollDice = target === undefined || target === 'activeDie';
+    return targetsCurrentRollDice
+        && typeof ownerId === 'string'
+        && ownerId !== playerId;
+}
+
+function carryForwardAfterRollResponseWindowSequence(
+    state: MatchState<DiceThroneCore>,
+): MatchState<DiceThroneCore> {
+    const rollSequence = state.core.rollConfirmedSequence ?? 0;
+    const rollSignature = buildAfterRollConfirmedSignature(state.core, state.sys.phase as TurnPhase | undefined);
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            afterRollResponseWindowSequence: rollSequence + 1,
+            afterRollResponseWindowSignature: rollSignature,
+            afterRollResponseWindowRequiresAttackDeclaration: true,
+        },
+    };
 }
 
 function queueDiceThroneInteraction(
@@ -596,6 +637,10 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
             for (const event of events) {
                 const dtEvent = event as DiceThroneEvent;
+
+                if (shouldCarryForwardAfterRollResponseWindowSequence(newState, dtEvent)) {
+                    newState = carryForwardAfterRollResponseWindowSequence(newState);
+                }
                 
                 // 处理 CHOICE_REQUESTED 事件 -> 创建 Prompt
                 if (dtEvent.type === 'CHOICE_REQUESTED') {
@@ -650,33 +695,13 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         continue;
                     }
 
-                    // 将 DiceThrone 的选择选项转换为 simple-choice
-                    const promptOptions: PromptOption<{
-                        statusId?: string;
-                        tokenId?: string;
-                        value: number;
-                        targetPlayerId?: PlayerId;
-                        tokenGrantConfig?: {
-                            tokenId: string;
-                            amount: number;
-                        };
-                        tokenGrantConfigs?: Array<{
-                            tokenId: string;
-                            amount: number;
-                        }>;
-                        statusGrantConfig?: {
-                            statusId: string;
-                            amount: number;
-                        };
-                        statusGrantConfigs?: Array<{
-                            statusId: string;
-                            amount: number;
-                        }>;
-                        customId?: string;
-                        labelKey?: string;
-                        labelParams?: Record<string, string | number>;
-                        disabled?: boolean;
-                    }>[] = payload.options.map((opt, index) => {
+                    const choiceInteractionId = buildChoiceInteractionId(
+                        newState,
+                        'choice',
+                        payload.sourceAbilityId,
+                        payload.playerId,
+                    );
+                    const candidates: ChoiceRequestCandidate<DiceThroneChoiceOptionValue>[] = payload.options.map((opt, index) => {
                         const label = opt.labelKey
                             ?? (opt.tokenId ? `tokens.${opt.tokenId}.name`
                                 : opt.statusId ? `statusEffects.${opt.statusId}.name`
@@ -691,16 +716,30 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         };
                     });
 
-                    const interaction = createSimpleChoice(
-                        buildChoiceInteractionId(newState, 'choice', payload.sourceAbilityId, payload.playerId),
-                        payload.playerId,
-                        payload.titleKey,
-                        promptOptions,
-                        {
-                            sourceId: payload.sourceAbilityId,
-                            allowedCommands: payload.allowedCommands,
-                        }
-                    );
+                    const request: ChoiceRequest<DiceThroneChoiceOptionValue> = {
+                        requestId: choiceInteractionId,
+                        gameId: 'dicethrone',
+                        playerId: payload.playerId,
+                        kind: payload.slider ? 'modify-value' : 'choose-option',
+                        sourceId: payload.sourceAbilityId,
+                        candidates,
+                        selection: { min: 1, max: 1 },
+                        skipPolicy: 'forbidden',
+                        resolution: {
+                            type: 'interaction-response',
+                            interactionId: choiceInteractionId,
+                        },
+                        ai: {
+                            status: 'shared-policy',
+                            policyId: 'dicethrone-choice-options',
+                        },
+                    };
+
+                    const interaction = createSimpleChoiceFromChoiceRequest(request, {
+                        title: payload.titleKey,
+                        titleKey: payload.titleKey,
+                        allowedCommands: payload.allowedCommands,
+                    });
                     // 透传 slider 配置到 interaction data
                     if (payload.slider) {
                         (interaction.data as SimpleChoiceData & { slider?: unknown }).slider = payload.slider;
@@ -1027,7 +1066,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         interactionId: string;
                         playerId: string;
                         sourceId?: string;
-                        interactionData?: any;
+                        interactionData?: unknown;
                         reason?: unknown;
                     };
 
@@ -1053,7 +1092,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     let cpCost = 0;
                     if (sourceCardId) {
                         const player = newState.core.players[payload.playerId];
-                        const card = player?.discard.find((c: any) => c.id === sourceCardId);
+                        const card = player?.discard.find((card) => card.id === sourceCardId);
                         cpCost = card?.cpCost ?? 0;
                     }
 
@@ -1087,7 +1126,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     let cpCost = 0;
                     if (sourceCardId) {
                         const player = newState.core.players[payload.playerId];
-                        const card = player?.discard.find((c: any) => c.id === sourceCardId);
+                        const card = player?.discard.find((card) => card.id === sourceCardId);
                         cpCost = card?.cpCost ?? 0;
                     }
 
@@ -1193,7 +1232,11 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
             // 注意：每个命令是独立的 pipeline 调用，不能靠单次 afterEvents 的事件数量判断。
             const current = newState.sys.interaction.current;
             if (current?.kind === 'multistep-choice') {
-                const data = current.data as MultistepChoiceData & { completedSteps?: number; completedDieIds?: number[] };
+                const data = current.data as MultistepChoiceData & {
+                    completedSteps?: number;
+                    completedDieIds?: number[];
+                    sourceId?: unknown;
+                };
                 const meta = data.meta as { dtType?: string } | undefined;
                 const isDiceInteraction = meta?.dtType === 'modifyDie' || meta?.dtType === 'selectDie';
                 const touchedDieIds = isDiceInteraction
@@ -1229,7 +1272,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             payload: {
                                 interactionId: current.id,
                                 playerId: current.playerId,
-                                sourceId: (current.data as any)?.sourceId,
+                                sourceId: typeof data.sourceId === 'string' ? data.sourceId : undefined,
                             },
                             timestamp: events[events.length - 1]?.timestamp ?? 0,
                         });

@@ -113,7 +113,7 @@ export function getCurrentDamageSummary(state: DiceThroneCore): CurrentDamageSum
     }
 
     const shouldShowDamage = Boolean(
-        pendingAttack.sourceAbilityId
+        currentAttackDamage > 0
         || pendingAttack.damage !== undefined
         || confirmedBonusDamage > 0
     );

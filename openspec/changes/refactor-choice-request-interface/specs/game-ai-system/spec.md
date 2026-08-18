@@ -55,7 +55,7 @@ The game AI system SHALL ensure that an AI-owned Choice Request either resolves 
 Migrated games SHALL prove that human-visible Choice Request candidates and AI legal actions remain aligned for every AI-controllable blocking choice.
 
 #### Scenario: First-batch game migrates a choice family
-- **GIVEN** Mage Wars, Qidahen, Betrayal, or a new in-progress game migrates a blocking choice family
+- **GIVEN** Mage Wars, Qidahen, Betrayal, the DiceThrone / 王权骰铸 generic choice bridge, or a new in-progress game migrates a blocking choice family
 - **WHEN** tests build a visible Choice Request for a human seat and an AI seat under equivalent visible information
 - **THEN** every enabled human candidate MUST map to an AI legal action or explicit skip/pass/confirm action
 - **AND** any intentional human-only decision MUST be declared unsupported before it can block an AI seat

@@ -22,6 +22,13 @@ export type { UseVisualSequenceGateReturn } from './useVisualSequenceGate';
 export { useVisualStateBuffer } from './useVisualStateBuffer';
 export type { UseVisualStateBufferReturn } from './useVisualStateBuffer';
 
+export { useVisualEntityBuffer } from './useVisualEntityBuffer';
+export type {
+    UseVisualEntityBufferReturn,
+    VisualEntityHoldEntry,
+    VisualEntityHoldInput,
+} from './useVisualEntityBuffer';
+
 export { useVisualEventStream } from './useVisualEventStream';
 export type {
     UseVisualEventStreamConfig,

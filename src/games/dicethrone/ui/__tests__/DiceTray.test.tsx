@@ -96,13 +96,14 @@ function createSelectInteraction(): InteractionDescriptor<MultistepChoiceData<un
 function createMultistepState(
     result: DiceModifyResult | DiceSelectResult,
     step = vi.fn(),
+    confirm = vi.fn(),
 ): MultistepInteractionState<DiceModifyResult | DiceSelectResult> {
     return {
         result,
         stepCount: 0,
         canConfirm: true,
         step,
-        confirm: vi.fn(),
+        confirm,
         cancel: vi.fn(),
     };
 }
@@ -328,5 +329,49 @@ describe('DiceActions', () => {
 
         expect(screen.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
         expect(screen.queryByTestId('dice-confirm-button')).toBeNull();
+    });
+
+    it('改骰交互确认后，同一次残留点击不能立刻触发普通骰面确认', () => {
+        const interactionConfirm = vi.fn();
+        const rollConfirm = vi.fn();
+        const { rerender } = render(
+            <DiceActions
+                rollCount={1}
+                rollLimit={3}
+                rollConfirmed={false}
+                onRoll={vi.fn()}
+                onConfirm={rollConfirm}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+                interaction={createModifyInteraction('any')}
+                multistepInteraction={createMultistepState(
+                    { modifications: { 0: 6 }, modCount: 1, totalAdjustment: 0 },
+                    vi.fn(),
+                    interactionConfirm,
+                )}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('dice-interaction-confirm-button'));
+        expect(interactionConfirm).toHaveBeenCalledTimes(1);
+
+        rerender(
+            <DiceActions
+                rollCount={1}
+                rollLimit={3}
+                rollConfirmed={false}
+                onRoll={vi.fn()}
+                onConfirm={rollConfirm}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                setIsRolling={vi.fn()}
+            />,
+        );
+
+        fireEvent.click(screen.getByText('dice.confirm').closest('button')!);
+        expect(rollConfirm).not.toHaveBeenCalled();
     });
 });

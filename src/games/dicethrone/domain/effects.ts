@@ -517,7 +517,8 @@ function resolveEffectAction(
 
     switch (action.type) {
         case 'damage': {
-            const isAttackDamage = (action.damageScope ?? 'attack') === 'attack';
+            const resolvedDamageScope = ctx.isDefensiveContext ? 'direct' : action.damageScope ?? 'attack';
+            const isAttackDamage = resolvedDamageScope === 'attack';
             const parleyStacks = state.players[attackerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
             if (isAttackDamage && parleyStacks > 0) {
                 break;
@@ -539,7 +540,7 @@ function resolveEffectAction(
 
                 // 统一使用 createDamageCalculation 引擎原语计算伤害
                 // bonusDamage 作为 additionalModifier 传入，确保在 breakdown 中显示
-                const isCurrentAttackDamage = (action.damageScope ?? 'attack') === 'attack'
+                const isCurrentAttackDamage = resolvedDamageScope === 'attack'
                     && !ctx.isDefensiveContext
                     && state.pendingAttack?.attackerId === attackerId
                     && state.pendingAttack?.defenderId === dmgTargetId;
@@ -576,7 +577,7 @@ function resolveEffectAction(
                     source: { playerId: attackerId, abilityId: sourceAbilityId },
                     target: { playerId: dmgTargetId },
                     state,
-                    damageScope: action.damageScope ?? 'attack',
+                    damageScope: resolvedDamageScope,
                     attackDamageContext,
                     autoCollectTokens: true,
                     autoCollectStatus: true,
@@ -617,7 +618,7 @@ function resolveEffectAction(
                         sourceAbilityId,
                         timestamp,
                         isDefensiveContext: ctx.isDefensiveContext,
-                        allowAttackerBoost: (action.damageScope ?? 'attack') === 'attack',
+                        allowAttackerBoost: resolvedDamageScope === 'attack',
                         damageEvent: {
                             type: 'DAMAGE_DEALT',
                             payload: {
@@ -625,7 +626,7 @@ function resolveEffectAction(
                                 amount: finalDamage,
                                 actualDamage: finalDamage,
                                 sourceAbilityId,
-                                damageScope: action.damageScope ?? 'attack',
+                                damageScope: resolvedDamageScope,
                                 ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
                                 ...(action.unblockable ? { unblockable: true } : {}),
                             },
@@ -652,7 +653,7 @@ function resolveEffectAction(
                         amount: finalDamage,
                         actualDamage,
                         sourceAbilityId,
-                        damageScope: action.damageScope ?? 'attack',
+                        damageScope: resolvedDamageScope,
                         ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
                         breakdown: result.breakdown,
                         ...(action.unblockable ? { unblockable: true } : {}),
@@ -876,7 +877,9 @@ function resolveEffectAction(
                     const handledEvent = handledEvents[i];
                     if (handledEvent.type === 'DAMAGE_DEALT') {
                         const dmgPayload = (handledEvent as DamageDealtEvent).payload;
-                        const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+                        const damageScope = dmgPayload.damageScope ?? (
+                            ctx.isDefensiveContext ? 'direct' : state.pendingAttack ? 'attack' : 'direct'
+                        );
                         const isCurrentAttackDamage = damageScope === 'attack'
                             && !ctx.isDefensiveContext
                             && state.pendingAttack?.attackerId === attackerId
@@ -905,7 +908,7 @@ function resolveEffectAction(
                             sourceAbilityId,
                             timestamp,
                             isDefensiveContext: ctx.isDefensiveContext,
-                            allowAttackerBoost: damageScope === 'attack',
+                            allowAttackerBoost: !ctx.isDefensiveContext && damageScope === 'attack',
                             damageEvent: handledEvent as DamageDealtEvent,
                         });
                         if (tokenResponseEvent) {

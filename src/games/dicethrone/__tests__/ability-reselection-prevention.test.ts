@@ -145,7 +145,7 @@ describe('攻击技能选择确认边界', () => {
         expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBeLessThan(50);
     });
 
-    it('制胜高地选中后必须先保留攻击并开放发动前改骰响应窗口', () => {
+    it('制胜高地确认骰后开放改骰响应，选中攻击候选不应重新打开窗口', () => {
         const playerIds = ['0', '1'];
         const random = createQueuedRandom([6, 6, 6, 6, 6]);
         const run = (state: ReturnType<ReturnType<typeof createHeroMatchup>>, command: ReturnType<typeof cmd>) => (
@@ -159,16 +159,6 @@ describe('攻击技能选择确认边界', () => {
         );
 
         let state = createHeroMatchup('zhanshujia', 'cursed_pirate')(playerIds, random);
-        for (const command of [
-            cmd('ADVANCE_PHASE', '0'),
-            cmd('ROLL_DICE', '0'),
-            cmd('CONFIRM_ROLL', '0'),
-        ]) {
-            const result = run(state, command);
-            expect(result.success, `${command.type} 必须成功：${result.error ?? ''}`).toBe(true);
-            state = result.state;
-        }
-
         state = {
             ...state,
             core: {
@@ -187,11 +177,29 @@ describe('攻击技能选择确认边界', () => {
             },
         };
 
+        for (const command of [
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+        ]) {
+            const result = run(state, command);
+            expect(result.success, `${command.type} 必须成功：${result.error ?? ''}`).toBe(true);
+            state = result.state;
+        }
+
         expect(state.core.dice.map((die) => die.value)).toEqual([6, 6, 6, 6, 6]);
         expect(state.core.dice.every((die) => die.symbol === ZHANSHUJIA_DICE_FACE_IDS.MEDAL)).toBe(true);
         expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).toContain('high-ground');
+        expect(state.sys.responseWindow.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+        });
 
-        const selected = run(state, cmd('SELECT_ABILITY', '0', { abilityId: 'high-ground' }));
+        const passed = run(state, cmd('RESPONSE_PASS', '1'));
+        expect(passed.success, passed.error ?? '').toBe(true);
+        expect(passed.state.sys.responseWindow.current).toBeUndefined();
+
+        const selected = run(passed.state, cmd('SELECT_ABILITY', '0', { abilityId: 'high-ground' }));
         expect(selected.success, selected.error ?? '').toBe(true);
         expect(selected.state.core.pendingAttack).toMatchObject({
             attackerId: '0',
@@ -199,10 +207,7 @@ describe('攻击技能选择确认边界', () => {
             sourceAbilityId: 'high-ground',
             isUltimate: true,
         });
-        expect(selected.state.sys.responseWindow.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-        });
+        expect(selected.state.sys.responseWindow.current).toBeUndefined();
         expect(selected.state.core.rollConfirmed).toBe(true);
     });
 });

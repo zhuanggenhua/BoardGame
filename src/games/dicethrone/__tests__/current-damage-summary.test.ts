@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, PendingBonusDiceSettlement } from '../domain/types';
 import { getCurrentDamageSummary } from '../domain/damageSummary';
+import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { RESOURCE_IDS } from '../domain/resources';
 
 const baseCore = (patch: Partial<DiceThroneCore> = {}): DiceThroneCore => ({
     pendingAttack: {
@@ -173,5 +175,18 @@ describe('DiceThrone 当前总伤害摘要', () => {
             currentDamage: 5,
             originalDamage: 5,
         });
+    });
+
+    it('自定义动作的动态伤害估算不得作为玩家可见当前伤害摘要', () => {
+        const state = createHeroMatchup('shadow_thief', 'paladin')(['0', '1'], createQueuedRandom([]));
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'kidney-shot',
+            isDefendable: true,
+        };
+
+        expect(getCurrentDamageSummary(state.core)).toBeUndefined();
     });
 });

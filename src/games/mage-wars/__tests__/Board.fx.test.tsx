@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
-import { resetFxFrameClockForTests, type FxEvent } from '../../../engine/fx';
+import { resetFxFrameClockForTests, type FxBus, type FxEvent } from '../../../engine/fx';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { RandomFn, SystemState } from '../../../engine/types';
@@ -18,6 +18,8 @@ import {
     SpellTeleportRenderer,
     SummonRenderer,
 } from '../ui/fxRenderers';
+import { mageWarsFxRegistry } from '../ui/fxSetup';
+import { useMageWarsGameEvents } from '../ui/useGameEvents';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -240,6 +242,33 @@ function advanceSharedFxClockDelay(delayMs: number) {
     for (let elapsed = 0; elapsed < totalMs; elapsed += 16) {
         vi.advanceTimersByTime(16);
     }
+}
+
+function createRecordingFxBus(ids: string[]): FxBus {
+    const idQueue = [...ids];
+    const pushed: FxEvent[] = [];
+    return {
+        push: vi.fn((cue, ctx, params) => {
+            const id = idQueue.shift() ?? null;
+            if (id) {
+                pushed.push({ id, cue, ctx, params });
+            }
+            return id;
+        }),
+        pushEvent: vi.fn((input) => {
+            const id = idQueue.shift() ?? null;
+            if (id) {
+                pushed.push({ id, ...input });
+            }
+            return id;
+        }),
+        pushSequence: vi.fn(() => null),
+        cancelSequence: vi.fn(),
+        activeEffects: pushed,
+        removeEffect: vi.fn(),
+        registry: mageWarsFxRegistry,
+        fireImpact: vi.fn(),
+    };
 }
 
 describe('MageWarsBoard FX wiring', () => {
@@ -613,6 +642,143 @@ describe('MageWarsBoard FX wiring', () => {
             await act(async () => {});
 
             expect(screen.queryByText('击败目标')).toBeNull();
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps a defeated target held until every linked FX owner completes', async () => {
+        vi.useFakeTimers();
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const attacker = creatureObject('mwobj-left-multi-owner', '0', 2906, '多段来源', ARENA_ZONE_IDS.A2);
+        const targetBefore = creatureObject('mwobj-right-multi-held', '1', 2909, '多段目标', ARENA_ZONE_IDS.B2);
+        const beforeCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [attacker.id]: attacker,
+                [targetBefore.id]: targetBefore,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [attacker.id] }
+                    : zone.id === ARENA_ZONE_IDS.B2
+                        ? { ...zone, objectIds: [targetBefore.id] }
+                        : zone
+            )),
+        };
+        const afterCore: MageWarsCore = {
+            ...beforeCore,
+            objects: {
+                [attacker.id]: attacker,
+            },
+            arena: beforeCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.B2
+                    ? { ...zone, objectIds: [] }
+                    : zone
+            )),
+        };
+        const sysWithTwoLinkedFx = {
+            eventStream: {
+                entries: [
+                    {
+                        id: 1,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
+                            payload: {
+                                ownerId: '0',
+                                attackerObjectId: attacker.id,
+                                attackProfileId: 'bite',
+                                targetObjectId: targetBefore.id,
+                                targetZoneId: ARENA_ZONE_IDS.B2,
+                                diceResults: [3],
+                                baseDamage: 4,
+                            },
+                            timestamp: 1,
+                        },
+                    },
+                    {
+                        id: 2,
+                        event: {
+                            type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+                            payload: {
+                                playerId: '0',
+                                spellCardId: 3322,
+                                sourceAbilityId: 'test.second-hit',
+                                targetObjectId: targetBefore.id,
+                                targetZoneId: ARENA_ZONE_IDS.B2,
+                                diceResults: [4],
+                                baseDamage: 4,
+                            },
+                            timestamp: 2,
+                        },
+                    },
+                    {
+                        id: 3,
+                        event: {
+                            type: 'DAMAGE_DEALT',
+                            payload: {
+                                targetId: targetBefore.id,
+                                amount: 4,
+                                actualDamage: 4,
+                                sourceAbilityId: 'test.attack',
+                            },
+                            timestamp: 3,
+                        },
+                    },
+                    {
+                        id: 4,
+                        event: {
+                            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                            payload: {
+                                objectId: targetBefore.id,
+                                ownerId: targetBefore.ownerId,
+                                sourceAbilityId: 'test.attack',
+                            },
+                            timestamp: 4,
+                        },
+                    },
+                ],
+                maxEntries: 200,
+                nextId: 5,
+            },
+        };
+
+        try {
+            const fxBus = createRecordingFxBus(['fx-owner-a', 'fx-owner-b']);
+            const beforeG = boardProps(beforeCore).G;
+            const afterG = boardProps(afterCore, '0', sysWithTwoLinkedFx).G;
+            const { result, rerender } = renderHook(
+                ({ currentG }) => useMageWarsGameEvents({ G: currentG, fxBus }),
+                { initialProps: { currentG: beforeG } },
+            );
+
+            act(() => {
+                rerender({ currentG: afterG });
+            });
+
+            expect(result.current.heldObjects.map((object) => object.id)).toEqual([targetBefore.id]);
+            expect(fxBus.push).not.toHaveBeenCalled();
+
+            act(() => {
+                advanceSharedFxClockDelay(32);
+            });
+            await act(async () => {});
+
+            expect(fxBus.push).toHaveBeenCalledTimes(2);
+            expect(result.current.heldObjects.map((object) => object.id)).toEqual([targetBefore.id]);
+
+            act(() => {
+                result.current.onEffectComplete('fx-owner-a');
+            });
+
+            expect(result.current.heldObjects.map((object) => object.id)).toEqual([targetBefore.id]);
+
+            act(() => {
+                result.current.onEffectComplete('fx-owner-b');
+            });
+
+            expect(result.current.heldObjects).toEqual([]);
         } finally {
             resetFxFrameClockForTests();
             vi.useRealTimers();

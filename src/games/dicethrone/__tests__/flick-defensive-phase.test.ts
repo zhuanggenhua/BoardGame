@@ -75,9 +75,12 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
         expect(played.finalState.sys.interaction.current?.playerId).toBe('1');
 
         const rerolled = runner.run({
-            name: '完成抬一手选骰后回到防守方的伤害令牌响应',
+            name: '完成抬一手选骰并确认后回到防守方的伤害令牌响应',
             setup: () => played.finalState,
-            commands: [cmd('REROLL_DIE', '1', { dieId: 0 })],
+            commands: [
+                cmd('REROLL_DIE', '1', { dieId: 0 }),
+                cmd('SYS_INTERACTION_CONFIRM', '1'),
+            ],
         });
 
         expect(rerolled.assertionErrors).toEqual([]);
@@ -313,6 +316,7 @@ describe('抬一手（card-give-hand）响应窗口触发', () => {
             setup: () => result3.finalState,
             commands: [
                 cmd('REROLL_DIE', '0', { dieId: 0 }),
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
             ],
         });
 

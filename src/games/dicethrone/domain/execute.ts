@@ -571,17 +571,23 @@ export function execute(
                 };
                 events.push(attackEvent);
 
-                const stateAfterAttack = applyEvents(state, events as DiceThroneEvent[], reduce);
-                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
-                    stateAfterAttack,
-                    state.activePlayerId,
-                    phase,
-                    timestamp,
-                    command.type,
-                );
-                if (responseWindowEvent) {
-                    events.push(responseWindowEvent);
-                    return events; // 等待攻击选定后的改骰响应窗口关闭
+                const shouldOpenAttackDeclarationResponseWindow =
+                    state.afterRollResponseWindowRequiresAttackDeclaration === true;
+                const stateAfterAttackDeclaration = applyEvents(state, events, reduce);
+                if (
+                    shouldOpenAttackDeclarationResponseWindow
+                    && stateAfterAttackDeclaration.pendingAttack?.defenderId !== undefined
+                ) {
+                    const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                        stateAfterAttackDeclaration,
+                        state.activePlayerId,
+                        phase,
+                        timestamp,
+                        command.type,
+                    );
+                    if (responseWindowEvent) {
+                        events.push(responseWindowEvent);
+                    }
                 }
             }
             break;

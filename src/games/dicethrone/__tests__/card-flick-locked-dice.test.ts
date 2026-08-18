@@ -6,7 +6,7 @@
  * 修复: 当 `targetOpponentDice=true` 时，忽略锁定状态
  */
 import { describe, it, expect } from 'vitest';
-import { createRunner, createQueuedRandom, cmd, createSetupWithHand, advanceTo, fistAttackAbilityId } from './test-utils';
+import { createRunner, createQueuedRandom, cmd, createSetupWithHand, advanceTo } from './test-utils';
 import { RESOURCE_IDS } from '../domain/resources';
 
 describe('弹一手修改对手锁定骰子', () => {
@@ -35,8 +35,6 @@ describe('弹一手修改对手锁定骰子', () => {
                 cmd('TOGGLE_DIE_LOCK', '0', { dieId: 2 }),
                 // 玩家0确认骰面
                 cmd('CONFIRM_ROLL', '0'),
-                // 玩家0选定攻击后，玩家1才进入改骰响应时机
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 // 玩家1（对手）在响应窗口中打出"弹一手"
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
                 // 玩家1选择修改骰子0（已锁定）的值，增加1
@@ -71,7 +69,6 @@ describe('弹一手修改对手锁定骰子', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
                 cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 2 }),
                 cmd('SYS_INTERACTION_CONFIRM', '1'),
@@ -85,12 +82,12 @@ describe('弹一手修改对手锁定骰子', () => {
         expect(die0?.isKept).toBe(false);
     });
 
-    it('进攻投掷确认骰面但未选定攻击时，对手不能打出"弹一手"改骰', () => {
+    it('进攻投掷确认骰面后，即使未选定攻击，对手也能在确认骰窗口打出"弹一手"改骰', () => {
         const random = createQueuedRandom([3, 3, 3, 3, 3]);
         const runner = createRunner(random, false);
 
         const result = runner.run({
-            name: '弹一手必须等攻击选定后才能响应',
+            name: '弹一手在确认骰后即可响应',
             setup: createSetupWithHand(['card-flick'], {
                 playerId: '1',
                 cp: 10,
@@ -108,9 +105,9 @@ describe('弹一手修改对手锁定骰子', () => {
             ],
         });
 
-        expect(result.finalState.sys.interaction?.current).toBeUndefined();
-        expect(result.finalState.core.players['1'].hand.map(card => card.id)).toContain('card-flick');
-        expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(10);
+        expect(result.finalState.sys.interaction?.current).toBeDefined();
+        expect(result.finalState.core.players['1'].hand.map(card => card.id)).not.toContain('card-flick');
+        expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(9);
         expect(result.finalState.core.dice.map(die => die.value)).toEqual([3, 3, 3, 3, 3]);
     });
 

@@ -879,6 +879,10 @@ describe('锁定 (Targeted) 伤害修正', () => {
             target: { playerId: '1' },
             state: state.core,
             damageScope: 'attack',
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+            },
             timestamp: 100,
         }).resolve();
 
