@@ -5341,13 +5341,15 @@ describe('王权骰铸流程测试', () => {
             expect(afterPlay.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
             expect(afterPlay.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(false);
             expect(afterPlay.core.players['0'].discard.some(card => card.id === 'card-worthy-of-me')).toBe(true);
-            expect(afterPlay.sys.interaction.current?.kind).toBe('multistep-choice');
+            const refundPrompt = getMultistepChoicePrompt(afterPlay);
+            expect(refundPrompt.playerId).toBe('0');
 
-            const cancelled = runner.dispatch('SYS_INTERACTION_CANCEL', { playerId: '0' });
+            const cancelCommand = cancelPromptCommand(afterPlay, '0');
+            const cancelled = runner.dispatch(cancelCommand.type, { playerId: cancelCommand.playerId, ...cancelCommand.payload });
             expect(cancelled.success).toBe(true);
 
             const finalState = runner.getState();
-            expect(finalState.sys.interaction.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(finalState).kind).toBeUndefined();
             expect(finalState.core.dice.map(die => die.value)).toEqual([1, 2, 3, 4, 5]);
             expect(finalState.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(10);
             expect(finalState.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(true);
