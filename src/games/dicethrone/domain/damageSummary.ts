@@ -6,6 +6,21 @@ export interface CurrentDamageSummary {
     originalDamage?: number;
 }
 
+export type DamageSummaryCaptureMode = 'snapshot' | 'live';
+export type DamageSummaryAuthority = 'formal-rule-state' | 'rule-preview';
+export type DamageSummarySource = 'pendingDamage' | 'pendingAttack' | 'pendingBonusDiceSettlement';
+
+export interface DamageSummaryValueContract {
+    mode: DamageSummaryCaptureMode;
+    authority: DamageSummaryAuthority;
+    source: DamageSummarySource;
+}
+
+export interface CurrentDamageSummaryDetails extends CurrentDamageSummary {
+    current: DamageSummaryValueContract;
+    original?: DamageSummaryValueContract;
+}
+
 type BonusSettlementDamagePreview =
     | { mode: 'add'; amount: number }
     | { mode: 'replace'; amount: number };
@@ -49,6 +64,24 @@ const sumDiceEffectParam = (
     return found ? total : undefined;
 };
 
+const formalLive = (source: DamageSummarySource): DamageSummaryValueContract => ({
+    mode: 'live',
+    authority: 'formal-rule-state',
+    source,
+});
+
+const formalSnapshot = (source: DamageSummarySource): DamageSummaryValueContract => ({
+    mode: 'snapshot',
+    authority: 'formal-rule-state',
+    source,
+});
+
+const previewLive = (source: DamageSummarySource): DamageSummaryValueContract => ({
+    mode: 'live',
+    authority: 'rule-preview',
+    source,
+});
+
 export function getPendingBonusDiceSettlementDamagePreview(
     state: DiceThroneCore,
 ): BonusSettlementDamagePreview | undefined {
@@ -88,13 +121,15 @@ export function getPendingBonusDiceSettlementDamagePreview(
     return undefined;
 }
 
-export function getCurrentDamageSummary(state: DiceThroneCore): CurrentDamageSummary | undefined {
+export function getCurrentDamageSummaryDetails(state: DiceThroneCore): CurrentDamageSummaryDetails | undefined {
     const pendingDamage = state.pendingDamage;
     if (pendingDamage) {
         const currentDamage = toDamageValue(pendingDamage.currentDamage) ?? 0;
         return {
             currentDamage,
             originalDamage: toDamageValue(pendingDamage.originalDamage) ?? currentDamage,
+            current: formalLive('pendingDamage'),
+            original: formalSnapshot('pendingDamage'),
         };
     }
 
@@ -108,8 +143,18 @@ export function getCurrentDamageSummary(state: DiceThroneCore): CurrentDamageSum
 
     if (bonusDicePreview) {
         return bonusDicePreview.mode === 'replace'
-            ? { currentDamage: bonusDicePreview.amount, originalDamage: currentAttackDamage }
-            : { currentDamage: currentAttackDamage + bonusDicePreview.amount, originalDamage };
+            ? {
+                currentDamage: bonusDicePreview.amount,
+                originalDamage: currentAttackDamage,
+                current: previewLive('pendingBonusDiceSettlement'),
+                original: formalLive('pendingAttack'),
+            }
+            : {
+                currentDamage: currentAttackDamage + bonusDicePreview.amount,
+                originalDamage: originalDamage,
+                current: previewLive('pendingBonusDiceSettlement'),
+                original: formalLive('pendingAttack'),
+            };
     }
 
     const shouldShowDamage = Boolean(
@@ -119,6 +164,20 @@ export function getCurrentDamageSummary(state: DiceThroneCore): CurrentDamageSum
     );
 
     return shouldShowDamage
-        ? { currentDamage: currentAttackDamage, originalDamage }
+        ? {
+            currentDamage: currentAttackDamage,
+            originalDamage,
+            current: formalLive('pendingAttack'),
+            original: formalLive('pendingAttack'),
+        }
         : undefined;
+}
+
+export function getCurrentDamageSummary(state: DiceThroneCore): CurrentDamageSummary | undefined {
+    const details = getCurrentDamageSummaryDetails(state);
+    if (!details) return undefined;
+    return {
+        currentDamage: details.currentDamage,
+        originalDamage: details.originalDamage,
+    };
 }

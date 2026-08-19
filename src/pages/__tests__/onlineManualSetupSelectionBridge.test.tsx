@@ -135,7 +135,7 @@ afterEach(() => {
 });
 
 describe('OnlineManualSetupSelectionBridge', () => {
-    it('SummonerWars 前置阵营由真人房主页面代选时，应保留房主身份并立即请求 AI 座位选择', () => {
+    it('SummonerWars 前置阵营由真人房主页面代选时，应先保留草稿，点准备后才请求 AI 座位选择', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
@@ -145,16 +145,20 @@ describe('OnlineManualSetupSelectionBridge', () => {
 
         fireEvent.click(screen.getByTestId('select-faction'));
 
+        expect(requestManualSetupSelection).not.toHaveBeenCalled();
+        expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
+
+        fireEvent.click(screen.getByTestId('ready-sw'));
+
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
         expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
             targetPlayerId: '1',
             actionKind: 'setup-select-faction',
             selectionId: 'trickster',
         });
-        expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
     });
 
-    it('DiceThrone 前置角色由真人房主页面代选时，应走同一套通用手动准备请求', () => {
+    it('DiceThrone 前置角色由真人房主页面代选时，应先保留草稿，点准备后才走通用手动准备请求', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
@@ -163,13 +167,17 @@ describe('OnlineManualSetupSelectionBridge', () => {
 
         fireEvent.click(screen.getByTestId('select-character'));
 
+        expect(requestManualSetupSelection).not.toHaveBeenCalled();
+        expect(screen.getByTestId('ai-character').textContent).toBe('gunslinger');
+
+        fireEvent.click(screen.getByTestId('ready-dt'));
+
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
         expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
             targetPlayerId: '1',
             actionKind: 'setup-select-character',
             selectionId: 'gunslinger',
         });
-        expect(screen.getByTestId('ai-character').textContent).toBe('gunslinger');
     });
 
     it('未勾选玩家代选时，不应拦截真人选派系或请求服务端替 AI 选择', () => {
@@ -228,19 +236,31 @@ describe('OnlineManualSetupSelectionBridge', () => {
 
         fireEvent.click(screen.getByTestId('select-faction'));
         expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
+        expect(requestManualSetupSelection).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByTestId('ready-sw'));
+        expect(requestManualSetupSelection).toHaveBeenLastCalledWith({
+            targetPlayerId: '1',
+            actionKind: 'setup-select-faction',
+            selectionId: 'trickster',
+        }, expect.any(Function));
 
         rerenderWithState(confirmedFirstAiState);
         expect(screen.getByTestId('player-id').textContent).toBe('0');
         expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
 
         fireEvent.click(screen.getByTestId('select-second-faction'));
+        expect(screen.getByTestId('ai2-faction').textContent).toBe('necromancer');
+        expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
+
+        fireEvent.click(screen.getByTestId('ready-sw'));
 
         expect(requestManualSetupSelection).toHaveBeenLastCalledWith({
             targetPlayerId: '2',
             actionKind: 'setup-select-faction',
             selectionId: 'necromancer',
         }, expect.any(Function));
-        expect(screen.getByTestId('ai2-faction').textContent).toBe('necromancer');
+        expect(requestManualSetupSelection).toHaveBeenCalledTimes(2);
     });
 
     it('SmashUp 已有确认按钮的 select-faction 仍由确认动作立即提交', () => {

@@ -101,6 +101,8 @@ export const TRICKSTER_ACTIONS: ActionCardDef[] = [
         nameEn: 'Block the Path',
         faction: 'tricksters',        abilityTags: ['ongoing'],
         count: 1,
+        ongoingTarget: 'base',
+        playNeedsBase: true,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 33 },
     },
     {

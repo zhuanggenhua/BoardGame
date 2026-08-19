@@ -92,6 +92,19 @@ function isDefenderChoiceInteractionData(interactionData: unknown): boolean {
         && Array.isArray(data.options);
 }
 
+function hasCommittedMultistepEffect(interactionData: unknown): boolean {
+    if (!interactionData || typeof interactionData !== 'object') return false;
+    const data = interactionData as {
+        completedSteps?: unknown;
+        completedDieIds?: unknown;
+    };
+    if (typeof data.completedSteps === 'number' && data.completedSteps > 0) {
+        return true;
+    }
+    return Array.isArray(data.completedDieIds)
+        && data.completedDieIds.some((dieId) => typeof dieId === 'number');
+}
+
 function isOffensiveRollEndTokenChoice(customIds: string[], sourceId?: string): boolean {
     if (sourceId === 'offensive-roll-end-token') return true;
     if (customIds.length === 0) return false;
@@ -579,10 +592,11 @@ export function diceSelectReducer(
     current: DiceSelectResult,
     step: DiceSelectStep,
     maxSelectCount?: number,
+    allowRepeatedDieSelection = false,
 ): DiceSelectResult {
     if (step.action === 'toggle') {
         const idx = current.selectedDiceIds.indexOf(step.dieId);
-        if (idx >= 0) {
+        if (idx >= 0 && !allowRepeatedDieSelection) {
             return { selectedDiceIds: current.selectedDiceIds.filter(id => id !== step.dieId) };
         }
         if (typeof maxSelectCount === 'number' && maxSelectCount > 0 && current.selectedDiceIds.length >= maxSelectCount) {
@@ -835,33 +849,44 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     // 骰子选择（重掷）类交互 → multistep-choice
                     if (pendingInteraction.type === 'selectDie') {
                         const selectCount = pendingInteraction.selectCount ?? 1;
+                        const allowRepeatedDieSelection = pendingInteraction.allowRepeatedDieSelection === true;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
                             ? Array.from(new Set(pendingInteraction.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
                             : getActiveDice(newState.core, currentPhase).map(die => die.id);
                         const completedDieIds = Array.isArray(pendingInteraction.completedDieIds)
-                            ? Array.from(new Set(pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
+                            ? (
+                                allowRepeatedDieSelection
+                                    ? pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+                                    : Array.from(new Set(pendingInteraction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
+                            )
                             : [];
 
                         const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> & {
                             allowedDieIds?: number[];
                             completedDieIds?: number[];
+                            completedSteps?: number;
+                            allowRepeatedDieSelection?: boolean;
                         } = {
                             title: pendingInteraction.titleKey,
                             sourceId: pendingInteraction.sourceCardId,
-                            maxSteps: undefined,
+                            maxSteps: selectCount,
                             minSteps: pendingInteraction.minSelectCount ?? 1,
+                            confirmationMode: 'submitBatch',
                             initialResult: { selectedDiceIds: [] },
-                            localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
+                            localReducer: (current, step) => diceSelectReducer(current, step, selectCount, allowRepeatedDieSelection),
                             toCommands: (result) => diceSelectToCommands(result, selectCount),
                             getCompletedSteps: (result) => result.selectedDiceIds.length,
                             allowedDieIds,
                             completedDieIds,
+                            completedSteps: pendingInteraction.completedSteps,
+                            allowRepeatedDieSelection,
                             meta: {
                                 dtType: 'selectDie',
                                 selectCount,
                                 diceOwnerId: pendingInteraction.diceOwnerId,
                                 targetOpponentDice: pendingInteraction.targetOpponentDice ?? false,
                                 skipAbilityReselection: pendingInteraction.skipAbilityReselection ?? false,
+                                allowRepeatedDieSelection,
                             },
                         };
 
@@ -1088,7 +1113,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
 
                     // InteractionSystem 已从 current.data.sourceId 提取到 payload.sourceId，
                     // 直接使用，无需再挖 interactionData（兼容 dt:card-interaction 和 multistep-choice）
-                    const sourceCardId = payload.sourceId ?? '';
+                    const hasCommittedEffect = hasCommittedMultistepEffect(payload.interactionData);
+                    const sourceCardId = hasCommittedEffect ? '' : (payload.sourceId ?? '');
                     let cpCost = 0;
                     if (sourceCardId) {
                         const player = newState.core.players[payload.playerId];
@@ -1235,34 +1261,54 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 const data = current.data as MultistepChoiceData & {
                     completedSteps?: number;
                     completedDieIds?: number[];
+                    allowRepeatedDieSelection?: boolean;
                     sourceId?: unknown;
                 };
                 const meta = data.meta as { dtType?: string } | undefined;
                 const isDiceInteraction = meta?.dtType === 'modifyDie' || meta?.dtType === 'selectDie';
-                const touchedDieIds = isDiceInteraction
-                    ? Array.from(new Set(
-                        events
-                            .filter(e => e.type === 'DIE_MODIFIED' || e.type === 'DIE_REROLLED')
-                            .map(e => {
-                                const dieId = (e.payload as { dieId?: unknown } | undefined)?.dieId;
-                                return typeof dieId === 'number' ? dieId : null;
-                            })
-                            .filter((dieId): dieId is number => dieId !== null)
-                    ))
+                const allowRepeatedDieSelection = data.allowRepeatedDieSelection === true
+                    && meta?.dtType === 'selectDie';
+                const touchedDieIdsRaw = isDiceInteraction
+                    ? events
+                        .filter(e => e.type === 'DIE_MODIFIED' || e.type === 'DIE_REROLLED')
+                        .map(e => {
+                            const dieId = (e.payload as { dieId?: unknown } | undefined)?.dieId;
+                            return typeof dieId === 'number' ? dieId : null;
+                        })
+                        .filter((dieId): dieId is number => dieId !== null)
                     : [];
+                const touchedDieIds = allowRepeatedDieSelection
+                    ? touchedDieIdsRaw
+                    : Array.from(new Set(touchedDieIdsRaw));
                 const previousCompletedDieIds = isDiceInteraction
-                    ? Array.from(new Set((data.completedDieIds ?? []).filter(dieId => typeof dieId === 'number')))
+                    ? (
+                        allowRepeatedDieSelection
+                            ? (data.completedDieIds ?? []).filter((dieId): dieId is number => typeof dieId === 'number')
+                            : Array.from(new Set((data.completedDieIds ?? []).filter(dieId => typeof dieId === 'number')))
+                    )
                     : [];
                 const completedDieIds = isDiceInteraction
-                    ? Array.from(new Set([...previousCompletedDieIds, ...touchedDieIds]))
+                    ? (
+                        allowRepeatedDieSelection
+                            ? [...previousCompletedDieIds, ...touchedDieIds]
+                            : Array.from(new Set([...previousCompletedDieIds, ...touchedDieIds]))
+                    )
                     : previousCompletedDieIds;
                 const newSteps = isDiceInteraction
-                    ? completedDieIds.length - previousCompletedDieIds.length
+                    ? (
+                        allowRepeatedDieSelection
+                            ? touchedDieIds.length
+                            : completedDieIds.length - previousCompletedDieIds.length
+                    )
                     : events.filter(e => e.type === 'DIE_MODIFIED' || e.type === 'DIE_REROLLED').length;
 
                 if (newSteps > 0) {
                     const completedSteps = isDiceInteraction
-                        ? completedDieIds.length
+                        ? (
+                            allowRepeatedDieSelection
+                                ? (typeof data.completedSteps === 'number' ? data.completedSteps : previousCompletedDieIds.length) + newSteps
+                                : completedDieIds.length
+                        )
                         : (data.completedSteps ?? 0) + newSteps;
                     if (data.maxSteps !== undefined && completedSteps >= data.maxSteps) {
                         // 达到最大步骤数，自动 resolve

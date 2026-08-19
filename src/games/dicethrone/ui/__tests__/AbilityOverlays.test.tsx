@@ -340,7 +340,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'gunslinger',
-                slotId: 'sky',
+                slotId: 'combo',
                 baseAbilityId: 'showdown',
                 resolvedAbilityId: 'showdown',
                 abilityLevels: { showdown: 2 },
@@ -349,7 +349,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'gunslinger',
-                slotId: 'sky',
+                slotId: 'combo',
                 baseAbilityId: 'showdown',
                 resolvedAbilityId: 'showdown',
                 abilityLevels: { showdown: 3 },
@@ -359,7 +359,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'gunslinger',
-                slotId: 'combo',
+                slotId: 'calm',
                 baseAbilityId: 'fan-the-hammer',
                 resolvedAbilityId: 'fan-the-hammer',
                 abilityLevels: { 'fan-the-hammer': 2 },
@@ -368,7 +368,7 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'gunslinger',
-                slotId: 'calm',
+                slotId: 'lotus',
                 baseAbilityId: 'take-cover',
                 resolvedAbilityId: 'take-cover',
                 abilityLevels: { 'take-cover': 2 },
@@ -395,12 +395,13 @@ describe('AbilityOverlays', () => {
             },
             {
                 characterId: 'gunslinger',
-                slotId: 'lotus',
+                slotId: 'sky',
                 baseAbilityId: 'quick-draw',
                 resolvedAbilityId: 'quick-draw',
                 abilityLevels: { 'quick-draw': 2 },
                 upgradeCardId: 'upgrade-quick-draw',
                 previewIndex: 26,
+                canClick: false,
             },
             {
                 characterId: 'paladin',
@@ -579,6 +580,25 @@ describe('AbilityOverlays', () => {
         expect(getAbilitySlotIdForCharacter('cursed_pirate', 'soul-command', 'cursed')).toBe('lightning');
     });
 
+    it('枪手 v2 玩家板 9 个物理槽位应逐格匹配原图标题', () => {
+        const cases = [
+            { slotId: 'fist', abilityId: 'revolver' },
+            { slotId: 'chi', abilityId: 'bounty-hunter' },
+            { slotId: 'sky', abilityId: 'quick-draw' },
+            { slotId: 'lotus', abilityId: 'take-cover' },
+            { slotId: 'combo', abilityId: 'showdown' },
+            { slotId: 'lightning', abilityId: 'deadeye' },
+            { slotId: 'calm', abilityId: 'fan-the-hammer' },
+            { slotId: 'meditate', abilityId: 'duel' },
+            { slotId: 'ultimate', abilityId: 'fill-em-with-lead' },
+        ];
+
+        for (const entry of cases) {
+            expect(getSlotAbilityId('gunslinger', entry.slotId)).toBe(entry.abilityId);
+            expect(getAbilitySlotIdForCharacter('gunslinger', entry.abilityId)).toBe(entry.slotId);
+        }
+    });
+
     it('旧英雄和新英雄槽位查找应与面板覆盖层使用同一物理槽位', () => {
         const cases = [
             { characterId: 'monk', abilityId: 'fist-technique', slotId: 'fist' },
@@ -600,9 +620,11 @@ describe('AbilityOverlays', () => {
             { characterId: 'shadow_thief', abilityId: 'dagger-strike', slotId: 'fist' },
             { characterId: 'shadow_thief', abilityId: 'steal', slotId: 'sky' },
             { characterId: 'shadow_thief', abilityId: 'shadow-defense', slotId: 'lightning' },
+            { characterId: 'gunslinger', abilityId: 'quick-draw', slotId: 'sky' },
+            { characterId: 'gunslinger', abilityId: 'showdown', slotId: 'combo' },
             { characterId: 'gunslinger', abilityId: 'deadeye', slotId: 'lightning' },
-            { characterId: 'gunslinger', abilityId: 'take-cover', slotId: 'calm' },
-            { characterId: 'gunslinger', abilityId: 'fan-the-hammer', slotId: 'combo' },
+            { characterId: 'gunslinger', abilityId: 'take-cover', slotId: 'lotus' },
+            { characterId: 'gunslinger', abilityId: 'fan-the-hammer', slotId: 'calm' },
             { characterId: 'paladin', abilityId: 'tithes', slotId: 'fist' },
             { characterId: 'paladin', abilityId: 'holy-light', slotId: 'calm' },
             { characterId: 'paladin', abilityId: 'holy-defense', slotId: 'meditate' },

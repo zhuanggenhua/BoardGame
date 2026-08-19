@@ -9,7 +9,7 @@ import { reduce } from '../domain/reducer';
 import { LIEREN_DICE_FACE_IDS as FACE, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { AbilityEffect, EffectTiming } from '../domain/combat';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
-import { LIEREN_ABILITIES } from '../heroes/lieren/abilities';
+import { KINDRED_BOND_3, LIEREN_ABILITIES } from '../heroes/lieren/abilities';
 import { LIEREN_CARDS } from '../heroes/lieren/cards';
 import { createHeroMatchup, createQueuedRandom, fixedRandom } from './test-utils';
 
@@ -197,6 +197,35 @@ describe('DiceThrone 女猎手规则矩阵', () => {
         }
     });
 
+    it.each([
+        { value: 1, face: FACE.SPEAR, expectedDamage: 1, expectedBond: 0, expectedBleed: 0, effectKey: 'bonusDie.effect.lieren.savageForce.spear' },
+        { value: 3, face: FACE.CLAW, expectedDamage: 2, expectedBond: 0, expectedBleed: 0, effectKey: 'bonusDie.effect.lieren.savageForce.claw' },
+        { value: 5, face: FACE.NYRAS_BOND, expectedDamage: 0, expectedBond: 1, expectedBleed: 0, effectKey: 'bonusDie.effect.lieren.savageForce.nyrasBond' },
+        { value: 6, face: FACE.SABERTOOTH, expectedDamage: 0, expectedBond: 0, expectedBleed: 1, effectKey: 'bonusDie.effect.lieren.savageForce.sabertooth' },
+    ])('蛮荒之力奖励骰 $face 分支按女猎手骰面结算', ({ value, face, expectedDamage, expectedBond, expectedBleed, effectKey }) => {
+        const state = createLierenState();
+        const ability = LIEREN_ABILITIES.find(entry => entry.id === 'savage-force');
+        expect(ability).toBeDefined();
+
+        const { events, next } = resolveAndSettleBonusDice(state, 'savage-force', ability!.effects ?? [], 'postDamage', [value]);
+
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'BONUS_DIE_ROLLED',
+            payload: expect.objectContaining({ value, face, effectKey }),
+        }));
+        const bonusDamage = events.find(event => event.type === 'BONUS_DAMAGE_ADDED');
+        if (expectedDamage > 0) {
+            expect(bonusDamage?.payload).toMatchObject({
+                playerId: '0',
+                amount: expectedDamage,
+            });
+        } else {
+            expect(bonusDamage).toBeUndefined();
+        }
+        expect(next.players['0'].tokens[TOKEN_IDS.NYRAS_BOND] ?? 0).toBe(expectedBond);
+        expect(next.players['1'].statusEffects[STATUS_IDS.BLEED] ?? 0).toBe(expectedBleed);
+    });
+
     it('突袭五颗奖励骰累计长矛加伤并按利爪施加流血', () => {
         const state = createLierenState();
         const card = getCard('card-lieren-pounce');
@@ -292,6 +321,72 @@ describe('DiceThrone 女猎手规则矩阵', () => {
             payload: expect.objectContaining({ playerId: '0', companionId: 'nyra', delta: 1 }),
         }));
         expect(applyEvents(healingState.core, healingEvents).players['0'].companion?.hp).toBe(5);
+    });
+
+    it('情同骨肉按防御骰面造成反击并治疗妮拉，III 额外计入剑齿虎', () => {
+        const setKindredBondDice = (core: DiceThroneCore) => {
+            core.players['0'].companion!.hp = 3;
+            core.dice = [
+                { id: 0, value: 1, symbol: FACE.SPEAR, symbols: [FACE.SPEAR], definitionId: 'lieren-dice', isKept: false, ownerId: '0' },
+                { id: 1, value: 3, symbol: FACE.CLAW, symbols: [FACE.CLAW], definitionId: 'lieren-dice', isKept: false, ownerId: '0' },
+                { id: 2, value: 5, symbol: FACE.NYRAS_BOND, symbols: [FACE.NYRAS_BOND], definitionId: 'lieren-dice', isKept: false, ownerId: '0' },
+                { id: 3, value: 6, symbol: FACE.SABERTOOTH, symbols: [FACE.SABERTOOTH], definitionId: 'lieren-dice', isKept: false, ownerId: '0' },
+            ];
+            core.rollDiceCount = 4;
+            core.rollCount = 1;
+            core.rollConfirmed = true;
+            core.pendingAttack = {
+                attackerId: '1',
+                defenderId: '0',
+                abilityId: 'test-hit',
+                defenseAbilityId: 'kindred-bond',
+                bonusDamage: 0,
+            } as DiceThroneCore['pendingAttack'];
+        };
+
+        const baseState = createLierenState();
+        setKindredBondDice(baseState.core);
+        const baseAbility = LIEREN_ABILITIES.find(entry => entry.id === 'kindred-bond');
+        expect(baseAbility).toBeDefined();
+        const baseHpBefore = baseState.core.players['1'].resources.hp;
+        const baseEvents = resolve(baseState, 'kindred-bond', baseAbility!.effects ?? [], 'withDamage', []);
+        const baseNext = applyEvents(baseState.core, baseEvents);
+
+        expect(baseEvents).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                targetId: '1',
+                amount: 3,
+                actualDamage: 3,
+                damageScope: 'direct',
+                sourceAbilityId: 'kindred-bond',
+            }),
+        }));
+        expect(baseEvents).toContainEqual(expect.objectContaining({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                companionId: 'nyra',
+                delta: 1,
+                sourceAbilityId: 'kindred-bond',
+            }),
+        }));
+        expect(baseNext.players['1'].resources.hp).toBe(baseHpBefore - 3);
+        expect(baseNext.players['0'].companion?.hp).toBe(4);
+
+        const upgradedState = createLierenState();
+        setKindredBondDice(upgradedState.core);
+        const upgradedEvents = resolve(upgradedState, 'kindred-bond-3', KINDRED_BOND_3.effects ?? [], 'withDamage', []);
+        expect(upgradedEvents).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                targetId: '1',
+                amount: 4,
+                actualDamage: 4,
+                damageScope: 'direct',
+                sourceAbilityId: 'kindred-bond-3',
+            }),
+        }));
     });
 
     it('原始咆哮与血脉相承按奖励骰面治疗妮拉', () => {

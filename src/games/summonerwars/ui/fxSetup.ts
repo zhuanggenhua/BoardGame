@@ -22,7 +22,7 @@ import {
   type FeedbackPack,
   type FxQuality,
 } from '../../../engine/fx';
-import { BoardSummonEffectPreset } from '../../../components/common/animations/BoardFxPresets';
+import { SummonEffect } from '../../../components/common/animations/SummonEffect';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
 import { DamageFlash } from '../../../components/common/animations/DamageFlash';
@@ -90,20 +90,27 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   if (!cell) { stableComplete(); return null; }
 
   const pos = getCellPosition(cell.row, cell.col);
-  // 召唤光柱统一蓝色，与传送门视觉一致
-  const color = (event.params?.color as 'blue' | 'gold') ?? 'blue';
+  const isStrong = event.ctx.intensity === 'strong';
+  const color = (event.params?.color as 'blue' | 'gold') ?? (isStrong ? 'gold' : 'blue');
   const quality = resolveEventQuality(event);
 
-  return React.createElement(BoardSummonEffectPreset, {
-    cellBox: pos,
-    intensity: event.ctx.intensity ?? 'normal',
-    color,
-    originY: 0.5,
-    quality,
-    scale: 7.5,
-    onImpact,
-    onComplete: stableComplete,
-  });
+  const scale = 7.5;
+  const box = createFxScaledCellBox(pos, scale);
+
+  return React.createElement('div', {
+    className: 'absolute pointer-events-none z-30',
+    style: box,
+  },
+    React.createElement(SummonEffect, {
+      active: true,
+      intensity: event.ctx.intensity ?? 'normal',
+      color,
+      originY: 0.5,
+      quality,
+      onImpact,
+      onComplete: stableComplete,
+    }),
+  );
 };
 
 // ============================================================================

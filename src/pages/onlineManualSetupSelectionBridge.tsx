@@ -7,6 +7,7 @@ import {
     resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
+    shouldStageManualSetupSelectionBeforeReady,
     shouldReleaseManualSetupAttemptFromSharedState,
 } from './matchManualSetup';
 
@@ -222,6 +223,9 @@ export const OnlineManualSetupSelectionBridge = ({
                     payload,
                 };
                 setDraftManualSetupSelection(nextDraft);
+                if (shouldStageManualSetupSelectionBeforeReady(actionKind)) {
+                    return;
+                }
                 setPendingManualSetupSelection({
                     playerId: latestManualSetupPlayerId,
                     actionKind,

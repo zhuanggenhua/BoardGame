@@ -878,6 +878,12 @@ export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
     /** 最小步骤数（未达到时禁止确认，默认 0） */
     minSteps?: number;
     /**
+     * 确认按钮语义：
+     * - resolve：提交命令后关闭整段交互（默认）。
+     * - submitBatch：有本批次结果时只提交本批次命令；是否关闭由 shouldResolveOnConfirm 决定。
+     */
+    confirmationMode?: 'resolve' | 'submitBatch';
+    /**
      * 本地 reducer：处理中间步骤
      * 纯客户端执行，不经过 pipeline，不发网络请求。
      * 返回更新后的累积结果。
@@ -900,6 +906,12 @@ export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
      * 但只有修改了不同骰子才算"完成一步"。
      */
     getCompletedSteps?: (result: TResult) => number;
+    /**
+     * submitBatch 模式下，当前确认是否应关闭整段交互。
+     * 例如“重掷至多 5 颗”中，选中骰子后确认只执行本批次；
+     * 本地无新选择且服务端已完成至少一步时，再确认才表示结束该卡牌交互。
+     */
+    shouldResolveOnConfirm?: (result: TResult) => boolean;
     /** 附加元数据（透传给 UI 层，如骰子模式配置） */
     meta?: Record<string, unknown>;
 }

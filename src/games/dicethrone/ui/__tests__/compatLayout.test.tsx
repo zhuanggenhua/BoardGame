@@ -43,9 +43,15 @@ describe('DiceThrone compatibility sizing', () => {
 
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.hideHand');
-        expect(toggle.className).toContain('left-[calc(100%+0.35vw)] bottom-0');
+        expect(toggle.className).toContain('left-[calc(100%+0.55vw)] bottom-[0.15vw]');
+        expect(toggle.className).toContain('h-[2.65vw] min-h-[44px] w-[2.65vw] min-w-[44px]');
+        expect(toggle.className).toContain('border-2');
+        expect(toggle.className).toContain('bg-cyan-200');
+        expect(toggle.className).toContain('text-slate-950');
         expect(toggle.className).not.toContain('-translate-x-[34%]');
         expect(toggle.className).not.toContain('-translate-y-[34%]');
+        expect(toggle.className).not.toContain('bg-slate-950/88');
+        expect(toggle.className).not.toContain('text-cyan-100');
         expect(toggle.querySelector('.lucide-chevron-down')).not.toBeNull();
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
@@ -60,6 +66,8 @@ describe('DiceThrone compatibility sizing', () => {
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.showHand');
         expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        expect(toggle.className).toContain('bg-amber-200');
+        expect(toggle.className).toContain('text-slate-950');
         expect(toggle.querySelector('.lucide-chevron-up')).not.toBeNull();
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
@@ -116,5 +124,65 @@ describe('DiceThrone compatibility sizing', () => {
         expect(handCard?.style.width).toBe('12vw');
         expect(handCard?.style.height).toContain('calc(');
         expect(handCard?.style.height).toContain('vw');
+    });
+
+    it('隐藏手牌时只隐藏 UI，不卸载手牌区导致重新发牌', () => {
+        vi.useFakeTimers();
+
+        const topCard: AbilityCard = {
+            id: 'c1',
+            name: 'Card',
+            cpCost: 1,
+            previewRef: { type: 'image', src: 'x' },
+            effects: [],
+        };
+
+        const { rerender } = render(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+            />,
+        );
+
+        act(() => {
+            vi.runAllTimers();
+        });
+
+        const firstHandArea = screen.getByTestId('hand-area');
+        const firstHandCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        const firstCardKey = firstHandCard?.getAttribute('data-card-key');
+
+        expect(firstHandArea.style.display).toBe('');
+        expect(firstCardKey).toBeTruthy();
+
+        rerender(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+                isHidden
+            />,
+        );
+
+        const hiddenHandArea = screen.getByTestId('hand-area');
+        const hiddenHandCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(hiddenHandArea).toHaveAttribute('data-hand-hidden', 'true');
+        expect(hiddenHandArea.style.display).toBe('none');
+        expect(hiddenHandCard?.getAttribute('data-card-key')).toBe(firstCardKey);
+
+        rerender(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+            />,
+        );
+
+        const restoredHandArea = screen.getByTestId('hand-area');
+        const restoredHandCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(restoredHandArea).toHaveAttribute('data-hand-hidden', 'false');
+        expect(restoredHandArea.style.display).toBe('');
+        expect(restoredHandCard?.getAttribute('data-card-key')).toBe(firstCardKey);
     });
 });

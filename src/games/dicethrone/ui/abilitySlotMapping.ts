@@ -84,15 +84,16 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         ultimate: ['unyielding-faith'],
     },
     // Gunslinger v2 玩家面板与旧共享槽位语义不同。
-    // 必须按图面物理位置绑定升级卡覆盖层：死亡之眼在右上 lightning，执法者只是死亡之眼 II 的同卡分支，不是独立升级槽。
+    // 必须按图面物理位置绑定升级卡覆盖层：左下是快速拔枪被动，右上左格是枪战决斗小顺，右下左格是左轮速射大顺。
+    // 死亡之眼在右上 lightning，执法者只是死亡之眼 II 的同卡分支，不是独立升级槽。
     gunslinger: {
         fist: ['revolver'],
         chi: ['bounty-hunter'],
-        sky: ['showdown'],
-        lotus: ['quick-draw'],
-        combo: ['fan-the-hammer'],
+        sky: ['quick-draw'],
+        lotus: ['take-cover'],
+        combo: ['showdown'],
         lightning: ['deadeye'],
-        calm: ['take-cover'],
+        calm: ['fan-the-hammer'],
         meditate: ['duel'],
         ultimate: ['fill-em-with-lead'],
     },

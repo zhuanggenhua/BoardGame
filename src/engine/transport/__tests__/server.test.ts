@@ -361,6 +361,7 @@ const createOnlineAiRecoveryMetadata = (overrides?: {
         policyId?: string;
         fallbackPolicyId?: string;
         manualSetupSelection?: boolean;
+        minimumActionDelayMs?: number;
     }>;
 }): MatchMetadata => ({
     gameName: overrides?.gameName ?? 'test-game',
@@ -1510,6 +1511,13 @@ describe('resolveLocalAiActionVisibility（可见步骤分类）', () => {
             kind: 'toggle-die-lock',
             label: '锁骰',
             commands: [{ type: 'TOGGLE_DIE_LOCK', payload: {} }],
+        }, runtime)).toBe('hidden');
+
+        expect(resolveLocalAiActionVisibility({
+            actionId: 'phase-hidden-by-runtime-whitelist',
+            kind: 'advance-phase',
+            label: '推进阶段',
+            commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
         }, runtime)).toBe('hidden');
     });
 
@@ -22712,6 +22720,276 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(match.state.core.activePlayerId).toBe('0');
     });
 
+    it('Summoner Wars 即时服务端 AI 可见动作应等待 minimumActionDelayMs 后再执行', async () => {
+        vi.useFakeTimers();
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-summonerwars-visible-ai-delay', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'draw',
+            }),
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'summonerwars',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', minimumActionDelayMs: 1000 } as any,
+                },
+            }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch')
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: {
+                    playerId: '1',
+                    action: {
+                        actionId: 'summonerwars:advance-phase:draw',
+                        kind: 'advance-phase',
+                        label: '结束抽牌阶段',
+                        commands: [{
+                            type: 'ADVANCE_PHASE',
+                            payload: {},
+                        }],
+                        metadata: {
+                            phase: 'draw',
+                            visibleStepDelayPolicy: 'visible',
+                        },
+                    },
+                    attemptKey: 'summonerwars-visible-delay',
+                    source: 'local-ai',
+                },
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('summonerwars')],
+            onlineAiRecoveryTickMs: 0,
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiImmediateExecution: (match: any, trigger: 'command-succeeded' | 'sync') => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: unknown,
+            ) => Promise<boolean>;
+        };
+        const match = await serverInternal.loadMatch('match-summonerwars-visible-ai-delay');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
+            activeMatch,
+            playerID,
+            commandType,
+            payload,
+        ) => {
+            expect(playerID).toBe('1');
+            expect(commandType).toBe('ADVANCE_PHASE');
+            expect(payload).toEqual({});
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    activePlayerId: '0',
+                    currentPlayerIndex: 0,
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    phase: 'main1',
+                    eventStream: { nextId: 2 },
+                },
+            };
+            activeMatch.stateID += 1;
+            return true;
+        });
+
+        try {
+            const runPromise = serverInternal.runOnlineAiImmediateExecution(match, 'sync');
+            await Promise.resolve();
+            await Promise.resolve();
+
+            await vi.advanceTimersByTimeAsync(999);
+            expect(executeSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(1);
+            await runPromise;
+
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+            expect(match.state.core.activePlayerId).toBe('0');
+            expect(match.executing).toBe(false);
+        } finally {
+            executeSpy.mockRestore();
+            resolutionSpy.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
+    it('Summoner Wars 即时服务端 AI 同一自动片段里的连续可见动作应按上次可见完成时间重新等待', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-08-19T00:00:00.000Z'));
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const delayTracePayloads: Array<Record<string, unknown>> = [];
+
+        await storage.createMatch('match-summonerwars-visible-action-interval', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'main1',
+            }),
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'summonerwars',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', minimumActionDelayMs: 1000 } as any,
+                },
+            }),
+        });
+
+        const makeVisibleAction = (suffix: string, commandType: string): aiModule.AiResolution => ({
+            playerId: '1',
+            action: {
+                actionId: `summonerwars:summon-unit:${suffix}`,
+                kind: 'summon-unit',
+                label: `召唤单位 ${suffix}`,
+                commands: [{ type: commandType, payload: { suffix } }],
+            },
+            attemptKey: `summonerwars-visible-action-interval:${suffix}`,
+            source: 'local-ai',
+        });
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch')
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: makeVisibleAction('one', 'VISIBLE_ONE'),
+            })
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: makeVisibleAction('two', 'VISIBLE_TWO'),
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation((marker?: unknown, payload?: unknown) => {
+            if (
+                marker === '[ONLINE_AI_BATCH_TRACE]'
+                && payload
+                && typeof payload === 'object'
+            ) {
+                delayTracePayloads.push(payload as Record<string, unknown>);
+            }
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('summonerwars')],
+            onlineAiRecoveryTickMs: 0,
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiImmediateExecution: (match: any, trigger: 'command-succeeded' | 'sync') => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: unknown,
+            ) => Promise<boolean>;
+        };
+        const match = await serverInternal.loadMatch('match-summonerwars-visible-action-interval');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
+            activeMatch,
+            playerID,
+            commandType,
+        ) => {
+            expect(playerID).toBe('1');
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    activePlayerId: '1',
+                    currentPlayerIndex: 1,
+                    lastVisibleCommandType: commandType,
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    eventStream: { nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 0) + 1 },
+                },
+            };
+            activeMatch.stateID += 1;
+            return true;
+        });
+
+        const waitForDelayPlanCount = async (count: number) => {
+            for (let attempt = 0; attempt < 10; attempt += 1) {
+                const plans = delayTracePayloads.filter((payload) => (
+                    payload.stage === 'online-ai-delay-started'
+                    || payload.stage === 'online-ai-delay-skipped'
+                ));
+                if (plans.length >= count) {
+                    return plans;
+                }
+                await Promise.resolve();
+                await vi.advanceTimersByTimeAsync(0);
+            }
+            return delayTracePayloads.filter((payload) => (
+                payload.stage === 'online-ai-delay-started'
+                || payload.stage === 'online-ai-delay-skipped'
+            ));
+        };
+
+        try {
+            const runPromise = serverInternal.runOnlineAiImmediateExecution(match, 'sync');
+            await Promise.resolve();
+            await Promise.resolve();
+
+            await vi.advanceTimersByTimeAsync(999);
+            expect(executeSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(1);
+            await Promise.resolve();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+
+            const delayPlans = await waitForDelayPlanCount(2);
+            expect(delayPlans).toHaveLength(2);
+            expect(delayPlans[0]).toMatchObject({
+                stage: 'online-ai-delay-started',
+                actionKind: 'summon-unit',
+                remainingDelayMs: 1000,
+                lastVisibleActionAt: null,
+            });
+            expect(delayPlans[1]).toMatchObject({
+                stage: 'online-ai-delay-started',
+                actionKind: 'summon-unit',
+                remainingDelayMs: 1000,
+                visibleStepElapsedMs: 0,
+            });
+            expect(delayPlans[1].lastVisibleActionAt).toEqual(expect.any(Number));
+
+            await vi.advanceTimersByTimeAsync(999);
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(1);
+            await runPromise;
+            expect(executeSpy).toHaveBeenCalledTimes(2);
+
+            expect(match.state.core.lastVisibleCommandType).toBe('VISIBLE_TWO');
+        } finally {
+            executeSpy.mockRestore();
+            consoleSpy.mockRestore();
+            resolutionSpy.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
     it('即时服务端 AI 在 SmashUp 公开选阵营阶段应走正常 AI 动作，不写恢复反馈', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -22882,7 +23160,13 @@ describe('GameTransportServer（离座与重连）', () => {
                 activePlayerId: '1',
                 phase: 'playCards',
             }),
-            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'smashup',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                },
+            }),
         });
 
         const server = new GameTransportServer({

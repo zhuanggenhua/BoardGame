@@ -21,6 +21,7 @@ BoardGame 是多桌游 Web / 移动平台。`.spec/` 是 AI 规范唯一真相�
 - 主 loop 负责理解目标、选择 skill、执行或调度、验证和收口；子 Agent 只执行被派发的审查职责。
 - 改代码、配置、规则数据、测试、正式文档或交付前，用 [`before-you-code`](skills/before-you-code/SKILL.md) 判断读取深度。
 - 规则 bug、UI、资源录入、发布、反馈、合并、看图等专项工作，从 `knowledge/README.md` 找标准，再读对应 `skills/<name>/SKILL.md`。
+- 用户要求接入或排查操作日志、撤回、音效等游戏支撑能力时，用 [`support-capability-integration`](skills/support-capability-integration/SKILL.md) 作为项目 workflow，再回到底层标准执行。
 - 任务路由只由本文件和 `knowledge/README.md` 承担中心职责；workflow / skill 不维护平行规范清单。新增或迁移标准时，默认只登记到 `knowledge/README.md`；只有具体执行分卷直接消费该标准时，才保留一条指向主源的链接。
 - 修改 `.spec/` 结构、规则落点、skill、知识文档或文档去噪时，用 [`spec-steward`](skills/spec-steward/SKILL.md)。
 

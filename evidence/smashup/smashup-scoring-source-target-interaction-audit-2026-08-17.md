@@ -12,14 +12,16 @@
 
 - 用户原始症状：计分响应里大副、托尔图加等场上计分时可选效果不应由按钮代替主路径；应先点来源本体，点击来源前不高亮该来源的目标，点击来源后才高亮合法目标。全速航行作为计分响应打出后也必须实际移动到当前计分基地。
 - 本轮定位：大副和托尔图加的触发队列能找到真实场上来源，但它们被注册成强制触发，UI 的响应窗口只把“可选触发”映射成场上来源本体，结果二者留在响应按钮里。大副进入下一层来源-目标 prompt 后，Board 的通用交互切换重置又清掉了刚点的大副来源选中态，导致目标基地没有亮。
-- 本轮修复：`pirate_first_mate` 与 `base_tortuga` 改为可选触发；响应窗口不再把它们作为主路径按钮展示。Board 的来源-目标 prompt 切换保留来源选中态，保证“点大副 -> 目标基地亮起”不断链。全速航行计分响应保留“点手牌 -> 选己方随从 -> 直接移动到当前计分基地”的实现。
+- 本轮修复：`pirate_first_mate` 与 `base_tortuga` 改为可选触发；响应窗口不再把它们作为主路径按钮展示。Board 的来源-目标 prompt 切换保留来源选中态，保证“点大副 -> 目标基地亮起”不断链。全速航行计分响应保留“点手牌 -> 选己方随从 -> 点目标基地”的实现，最终用随从实际移动到目标基地验证。
 - AI 口径：AI 仍从真实响应选项和 interaction options 枚举合法动作；UI 是否把真人主路径渲染成按钮或本体高亮，不是 AI 合法动作的真相源。本轮 `aiReactionChoiceValidation` 继续通过，说明合法响应枚举没有被 UI 重构改坏。
 - 验证命令：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pirate_full_sail"`：4 passed。
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/Board.interactionBars.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：12 passed。
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/aiReactionChoiceValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：4 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/giant-ants.test.ts`：33 passed。
   - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts "复杂链路里海盗王可发动时应先点本体再高亮计分基地"`：1 passed。
-  - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：5 passed。
+  - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts "最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源"`：1 passed。
+  - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：6 passed。
 - 当前关键截图：
   - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开/02-after-scoring-reaction-open.jpg`：afterScoring 窗口打开后，手牌响应从手牌本体高亮，非响应手牌置灰，不再以“我们乃最强”按钮作为主路径。
   - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-07-first-mate-reaction-source-highlight-before-trigger.jpg`：大副作为可发动来源本体高亮；同屏托尔图加基地也作为另一个来源亮起，非大副目标基地未提前高亮。
@@ -27,13 +29,35 @@
   - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-09-tortuga-reaction-source-base-highlight-before-trigger.jpg`：托尔图加第一层为基地本体高亮，旧代理按钮不存在。
   - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-10-tortuga-minion-choice-after-source-click.jpg`：点击托尔图加基地后进入亚军随从选择。
   - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-11-scoring-chain-complete.jpg`：计分链收口后无响应窗口、无残留交互。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-05a-full-sail-hand-card-highlight-before-click.jpg`：全速航行在计分响应窗口里从手牌本体高亮，非响应手牌置灰，不存在“全速航行”按钮主路径。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-05b-full-sail-minion-target-highlight-after-hand-click.jpg`：点全速航行手牌后进入己方随从本体选择，目标随从肉眼可见高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-05c-full-sail-target-base-highlight-before-move.jpg`：选中随从后目标基地本体高亮；E2E 最终状态断言 `stress-full-sail-move` 移动到基地 2。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-06a-under-pressure-hand-card-highlight-before-click.jpg`：承受压力在同一计分窗口里从巨蚁响应手牌本体高亮，非响应手牌置灰。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-06b-under-pressure-source-minion-highlight-before-click.jpg`：承受压力点手牌和计分基地后，先选择来源随从本体；目标随从未提前高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-06c-under-pressure-target-minion-highlight-after-source-click.jpg`：承受压力点来源后目标随从本体高亮，后续数量滑杆确认转移。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-08-shipwreck-cove-target-base-highlight-after-source-click.jpg`：点击沉船湾持续行动本体后，合法目标基地高亮；点击来源前目标基地未提前亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-10-gravestones-target-base-highlight-after-source-click.jpg`：点击墓碑持续行动本体后，目标基地高亮并由基地本体承接选择。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-12-kraken-target-minion-highlight-after-source-click.jpg`：点击克拉肯泰坦本体后，目标随从高亮；后续 `stress-12b` 再进入目标基地选择。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-14-first-mate-target-base-highlight-after-source-click.jpg`：点击大副本体后，大副保持选中态，合法目标基地高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-16-tortuga-runnerup-minion-highlight-after-source-click.jpg`：点击托尔图加基地来源后，亚军在其它基地上的随从高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-16a-champions-hand-card-highlight-before-click.jpg`：我们乃最强在计分后响应窗口里从巨蚁响应手牌本体高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-16c-champions-source-minion-highlight-before-click.jpg`：我们乃最强先选择拥有力量指示物的来源随从；离场快照分支保留 generic，不把离场对象伪装成场上本体。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-16d-champions-target-minion-highlight-after-source-click.jpg`：我们乃最强点来源后目标随从本体高亮，数量滑杆确认第二次转移。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源/stress-20-final-no-residual-after-all-interleaved-effects.jpg`：手牌响应、全速航行、巨蚁两张响应牌、海盗王、沉船湾、墓碑、克拉肯、大副、托尔图加和后续多基地计分全部收口后，无响应窗口和残留交互。
 - 2026-08-19 终验补充：
-  - 重新运行 `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：5 passed，截图时间戳刷新到 2026-08-19 01:15。
-  - 重新运行三条低层回归：`pirate_full_sail` 4 passed；`Board.interactionBars.test.ts` 12 passed；`aiReactionChoiceValidation.test.ts` 4 passed。
+  - 重新运行 `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：6 passed，截图时间戳刷新到 2026-08-19 12:33。
+  - 重新运行四条低层回归：`pirate_full_sail special` 4 passed；`giant-ants.test.ts` 33 passed；`Board.interactionBars.test.ts` 12 passed；`aiReactionChoiceValidation.test.ts` 4 passed。
   - 运行 `npm run spec:lint`：OK。
-  - 最终用户验收标注图组：`test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/_final-scoring-source-target-labeled-2026-08-19/`，包含 00 顺序索引和 01-10 中文编号图。
-  - 开图前非展示型图面检查：10 张原始截图均为 1920x1080、非空、文件大小非零；截图组覆盖手牌响应、海盗王、大副、托尔图加和最终链路收口。
-- 本轮范围结论：已完成手牌响应、海盗王、大副、托尔图加、全速航行和现有复杂黄金链的代表验证；这仍不等于“全部计分时效果逐牌审计完成”。逐牌全审必须继续使用本文的对象全集矩阵逐行闭合。
+  - 2026-08-19 15:54 当前工作树复核：`node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts` 重新通过，6 passed；`ui-interaction-manual.test.ts` 25 passed；`Board.interactionBars.test.ts` 12 passed；`aiReactionChoiceValidation.test.ts` 4 passed；`pirates-ongoing.test.ts -t "pirate_full_sail"` 4 passed；`giant-ants.test.ts` 33 passed；`audit:evidence:selfcheck` OK；`spec:lint` OK。
+  - 2026-08-19 17:31-17:55 撤回专属/增强高亮后的复核：`ui-interaction-manual.test.ts` 25 passed；`Board.interactionBars.test.ts` 12 passed；`aiReactionChoiceValidation.test.ts` 4 passed；`node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts` 重新通过，6 passed；`audit:evidence:selfcheck` OK；`spec:lint` OK。
+  - 旧终验标注图组 `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19/` 被用户指出“07 看不出泰坦高亮、滚动列表高亮像被裁断”，降级为过期候选图，不再作为 PASS 图组。
+  - r2 标注图组 `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r2/` 曾通过专属覆盖层强化高亮；用户明确要求“不要增强高亮，所有对象保持同一个高亮模式”后，r2 降级为失败/过期候选，不再作为 PASS 图组，也不得开给用户验收。
+  - r3 最终用户验收标注图组：`test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3/`，包含 00 顺序索引和 01-22 中文编号图。
+  - r3 修复点：删除 `su-base-titan-source-highlight-*`、`su-hand-card-visible-highlight-*`、`su-minion-selection-highlight-*` 专属覆盖层；泰坦、手牌和随从都复用对象本体上的统一 `ring/shadow` 高亮模式；滚动列表只保留内边距和滚动缓冲，避免统一外环被容器裁切。
+  - r3 E2E 断言：`expectStandardObjectHighlight(...)` 直接检查真实对象本体可见、复用统一 `ring/shadow` 高亮类、且没有被滚动/裁切祖先截断；覆盖全速航行随从、承受压力来源/目标、克拉肯泰坦来源/选中/目标随从、我们乃最强来源/目标。
+  - r3 07 号图固定为克拉肯泰坦来源高亮：`07-labeled-stress-11-kraken-titan-source-highlight-before-minion-target.png`；图面文案为“克拉肯泰坦：来源本体使用统一高亮模式”，不再写增强高亮。
+  - 2026-08-19 r3 图组入选 22 张，覆盖全速航行真实打出和移动、承受压力、我们乃最强、海盗王、沉船湾、墓碑、克拉肯、大副、托尔图加、后续多基地选择和最终无残留。
+- 本轮范围结论：已完成手牌响应、全速航行、巨蚁承受压力、巨蚁我们乃最强、海盗王、大副、托尔图加、沉船湾、墓碑、克拉肯和现有复杂黄金链的代表验证；这仍不等于“全部计分时效果逐牌审计完成”。逐牌全审必须继续使用本文的对象全集矩阵逐行闭合。
 
 ## 审计范围
 
@@ -679,6 +703,21 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
 - 开图结果：`OPENED_WITH_PUREREF=C:\Program Files\PureRef\PureRef.exe`；已按 00-29 顺序一次性打开 30 张编号图。
 - 2026-08-18 修后 07 核图：旧 07 标注图被用户指出“目标基地也没亮”；当前重跑后的 07 图面可见神秘花园和中央大脑两个目标基地均有绿色描边，满足“点击来源后目标对象本体必须肉眼可见高亮”的口径。
 
+### 2026-08-19 r3 最终用户开图组（统一高亮）
+
+- 用户指出的问题：旧 `_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19/` 里 07 号图无法让玩家肉眼看出克拉肯泰坦高亮，且滚动列表里的随从高亮像被裁切。
+- 旧图组裁定：该旧图组只作为过期候选图和失败对照，不再作为当前 PASS 图组，也不得再次用于用户验收开图。
+- r2 图组裁定：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r2\` 使用了泰坦、手牌和随从专属覆盖层来强化高亮；这违反用户“都保持同一个高亮模式”的要求，因此降级为失败/过期候选，不再作为当前 PASS 图组。
+- r3 图组目录：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\`
+- r3 顺序索引：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\00-sequence-index.png`
+- r3 07 号图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\07-labeled-stress-11-kraken-titan-source-highlight-before-minion-target.png`
+- r3 PASS 清单：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\pass-manifest.json`
+- r3 标注源：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\label-source-manifest.json`
+- r3 图面核验：07 号图是克拉肯泰坦来源高亮帧，泰坦卡面本体复用统一绿色 `ring/shadow` 高亮，目标随从未提前高亮；同一 E2E 直接检查真实对象本体的统一 `ring/shadow` 高亮和裁切祖先，确认没有通过新增专属覆盖层解决可见性问题。
+- r3 开图校验命令：`node scripts\verify\open-verified-image.mjs --pass-manifest <r3 pass-manifest.json> --viewer pureref --dry-run --paths <00-sequence-index.png> <01-labeled-*.png> ... <22-labeled-*.png>`。
+- r3 开图结果：`OPENED_WITH_PUREREF=C:\Program Files\PureRef\PureRef.exe`；已按 00-22 顺序一次性打开 23 张编号图。
+- r3 覆盖范围：同一复杂计分 E2E 链覆盖海盗王、全速航行、承受压力、沉船湾、墓碑、克拉肯、大副、托尔图加、我们乃最强和最终无残留；它仍是代表链和点名对象收口，不是全牌库逐牌审计完成。
+
 ### 继续审计截图对账
 
 - 对账命令：`node` 脚本解析本文所有原始 E2E 图片路径，并与 `label-source-manifest.json` / `pass-manifest.json` 对比。
@@ -718,13 +757,31 @@ P0 非共享族入口清单如下。这里的“P0”表示最先审，不表示
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-scoring-e2e-open-20260817\07-labeled-world-champs-mummy-03-target-base-highlight.png`
 - 新结论：当前重跑图达标；但因标准素材补齐入口返回 HTTP 530，本条只证明本地页面交互与目标基地高亮，不证明素材服务器同步链路。
 
+- 旧图路径：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19\`
+- 旧结论：该旧终验图组曾作为 2026-08-19 复杂计分压力链最终用户验收图组。
+- 失效原因：用户指出 07 号图无法让玩家肉眼看出克拉肯泰坦来源高亮，且滚动列表里的高亮有被裁切的视觉风险；这不满足“目标对象 / 来源对象高亮必须在本体内肉眼可见，不能只靠内部状态或弱描边”的当前验收口径。
+- 替代证据：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\07-labeled-stress-11-kraken-titan-source-highlight-before-minion-target.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\pass-manifest.json`
+- 新结论：r3 图组取代旧图组作为当前用户可见验收图组；旧图组只能作为失败对照或历史候选，不得继续开给用户当 PASS。
+
+- 旧图路径：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r2\`
+- 旧结论：r2 图组曾被登记为“当前用户可见验收图组”。
+- 失效原因：r2 通过泰坦、手牌和随从专属覆盖层强化高亮，违反用户“不要增强高亮，所有对象保持同一个高亮模式”的当前要求；这属于错误交付口径，而不是可接受的视觉增强。
+- 替代证据：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\07-labeled-stress-11-kraken-titan-source-highlight-before-minion-target.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-complex-multi-base-scoring.e2e\_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19-r3\pass-manifest.json`
+- 新结论：r2 图组只能作为失败对照或过期候选，不得继续开给用户当 PASS；当前用户可见验收图组是 r3。
+
 ## 禁止假阳性检查
 
 - 没有把“按钮能点”当成交互正确；关键截图证明来源本体和目标对象分步出现。
 - 没有把“按钮存在”扩大成合法主路径；计分按钮只有在选项值不携带场上对象目标字段、且已登记为纯控制/跳过/模式选择时才允许保留。
 - 没有把“prompt 出现”当成最终状态；E2E 断言最终阶段推进、交互清空、响应窗口清空。
 - 没有把十四个来源-目标 sourceId 加五个计分来源本体确认 sourceId 外推为所有计分时效果；本文明确保留全牌库逐牌深审为当前范围外。
-- 没有用旧标注图替代当前截图；旧 2026-08-16 图组已降级。
+- 没有用旧标注图替代当前截图；旧 2026-08-16 图组、旧 `_final-scoring-pressure-chain-fullsail-giantants-labeled-2026-08-19/` 图组和 r2 图组均已降级。
 
 ## 共享根因与残余范围
 

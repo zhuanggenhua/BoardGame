@@ -10,14 +10,18 @@ import { SmashUpDomain } from '../domain';
 import { postProcessSystemEvents } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems, createInitialSystemState } from '../../../engine';
-import { resolveNextLocalAiAction } from '../../../engine/ai';
+import { buildAiDecisionContext, resolveNextLocalAiAction } from '../../../engine/ai';
 import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import { resolveAiDifficultyProfile } from '../../../engine/ai/difficulty';
 import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { executePipeline } from '../../../engine/pipeline';
 import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent, SmashUpReactionSession } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS, TEAM_VP_TO_WIN_2V2, getCurrentPlayerId } from '../domain/types';
-import { isSmashUpFactionImplementationInProgress, SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    isSmashUpFactionImplementationInProgress,
+    isSmashUpFactionSelectionIdentityImplementationInProgress,
+    SMASHUP_FACTION_IDS,
+} from '../domain/ids';
 import { getBaseDef, getCardDef, getFactionCards, getTitanDef } from '../data/cards';
 import { TITAN_CARD_DEFS } from '../data/titans';
 import { getPlayerEffectivePowerOnBase, getRegisteredModifierIds, getTitanPowerContribution } from '../domain/ongoingModifiers';
@@ -2685,15 +2689,24 @@ describe('smashup', () => {
         const runner = createRunner(['0', '1', '2', '3']);
         const result = runner.run({ name: '四人 setup', commands: [] });
 
-        const factionIds = buildSmashUpAiLegalActions({
+        const context = buildAiDecisionContext({
+            gameId: 'smashup',
+            matchId: 'smashup:setup-option-status',
             playerId: '0',
-            state: result.finalState,
-        })
+            visibleState: result.finalState,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai' },
+        });
+
+        const factionIds = context.legalActions
             .filter((action) => action.kind === 'select-faction')
             .map((action) => String(action.metadata?.factionId ?? ''));
 
         expect(factionIds.length).toBeGreaterThan(0);
         expect(factionIds.filter((factionId) => isSmashUpFactionImplementationInProgress(factionId))).toEqual([]);
+        expect(factionIds.filter((factionId) => isSmashUpFactionSelectionIdentityImplementationInProgress(factionId))).toEqual([]);
         expect(factionIds.every((factionId) => getFactionCards(factionId as any).length > 0)).toBe(true);
     });
 

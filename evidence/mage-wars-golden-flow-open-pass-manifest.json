@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "展示 Mage Wars 当前范围黄金链完整流程图组",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-golden-flow-display-sequence-manifest.json",
+        "evidence/mage-wars-golden-flow-e2e-test.md",
+        "docs/games/mage-wars/runtime-gameplay-closeout-self-audit.md"
+      ]
+    },
+    {
+      "requirement": "图组按真实流程顺序覆盖召唤、部署、附件、攻击、结算和回到下一轮计划",
+      "status": "PASS",
+      "evidence": [
+        "00-sequence-index.png 列出 13 张流程图顺序。",
+        "01-13 编号图分别覆盖兽王召唤、女祭司召唤、双方部署、附件结算、间歇喷泉攻击过程帧、魔物 / 攻击结算和黄金链收口。"
+      ]
+    },
+    {
+      "requirement": "图组关键牌面和棋盘素材已真实渲染",
+      "status": "PASS",
+      "evidence": [
+        "黄金链截图中兽王、女祭司、法术书卡牌、附件、弃牌和正式竞技场棋盘均有真实画面内容，不是空白壳层或纯色占位。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/01-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/02-labeled-09A-兽王野性山猫-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/03-labeled-09A-兽王野性山猫-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/04-labeled-09B-女祭司阿希拉牧师-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/05-labeled-09B-女祭司阿希拉牧师-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/06-labeled-09B-女祭司阿希拉牧师-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/07-labeled-09-两派系生物部署后-兽王女祭司各有场上生物.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/08-labeled-10-装备和结界作为附件结算后-两派系附着关系可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/09-labeled-11A-间歇喷泉攻击法术-来源到目标投射过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/10-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/11-labeled-11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/12-labeled-11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/13-labeled-12-黄金链收口-回到下一轮计划阶段.png"
+  ]
+}

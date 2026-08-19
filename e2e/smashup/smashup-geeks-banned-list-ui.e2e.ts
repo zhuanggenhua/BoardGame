@@ -70,9 +70,9 @@ test.describe('大杀四方 - 极客禁卡表交互面板', () => {
         await dispatchSmashUpCommand(page, 'su:play_action', { cardUid: 'banned' });
         await game.waitForInteraction('geeks_banned_list', 10000);
 
-        const overlay = page.locator('.fixed.inset-0[style*="z-index"]').first();
         const searchInput = page.getByTestId('prompt-card-search-input');
-        const cardOptions = overlay.locator('[data-option-id]');
+        const cardGrid = page.getByTestId('prompt-card-grid');
+        const cardOptions = cardGrid.locator('[data-testid^="prompt-card-"][data-option-id]');
 
         await expect(searchInput).toBeVisible({ timeout: 5000 });
         const initialCount = await cardOptions.count();
@@ -80,14 +80,14 @@ test.describe('大杀四方 - 极客禁卡表交互面板', () => {
         await game.screenshot('geeks-banned-list-01-initial-panel', testInfo);
 
         await searchInput.fill('行尸');
-        await expect(overlay.getByText('没有匹配的卡牌')).toBeVisible({ timeout: 5000 });
+        await expect(cardGrid.getByText('没有匹配的卡牌')).toBeVisible({ timeout: 5000 });
         await expect(cardOptions).toHaveCount(0);
         await game.screenshot('geeks-banned-list-02-empty-search', testInfo);
 
         await searchInput.fill('收集者');
         await expect(cardOptions).toHaveCount(1);
-        await expect(overlay.getByText('收集者')).toBeVisible({ timeout: 5000 });
-        await expect(overlay.getByText('行尸')).toHaveCount(0);
+        await expect(cardGrid.getByText('收集者')).toBeVisible({ timeout: 5000 });
+        await expect(cardGrid.getByText('行尸')).toHaveCount(0);
         await game.screenshot('geeks-banned-list-03-filtered-search', testInfo);
 
         await cardOptions.first().click();

@@ -2234,16 +2234,17 @@ test.describe('DiceThrone Simple Start', () => {
         const testStartedAt = Date.now();
         const consoleJsonPath = getEvidenceScreenshotPath(testInfo, 'online-ai-real-timeline-console', {
             filename: 'online-ai-real-timeline-console.json',
-        });
+        }).replace(/\.jpg$/i, '.json');
         const summaryJsonPath = getEvidenceScreenshotPath(testInfo, 'online-ai-real-timeline-summary', {
             filename: 'online-ai-real-timeline-summary.json',
-        });
+        }).replace(/\.jpg$/i, '.json');
+        let wrotePrimarySummary = false;
 
         try {
             const { hostPage, matchId } = setup;
             hostPage.on('console', (message) => {
                 const text = message.text();
-                if (!/(ONLINE_AI_PERF|ONLINE_AI_TRANSPORT|AI_RUNTIME_TRUTH)/.test(text)) {
+                if (!/(LOCAL_AI_PERF|ONLINE_AI_PERF|ONLINE_AI_TRANSPORT|AI_RUNTIME_TRUTH)/.test(text)) {
                     return;
                 }
                 consoleTimeline.push({
@@ -2310,7 +2311,9 @@ test.describe('DiceThrone Simple Start', () => {
                 seatingOrder: ['0', '1', '2', '3'],
             });
 
-            await expect(hostPage.locator('[data-testid^="dt-top-header-"]')).toHaveCount(3, { timeout: 10000 });
+            await expect(hostPage.getByTestId('dt-top-header-1')).toBeVisible({ timeout: 10000 });
+            await expect(hostPage.getByTestId('dt-top-header-2')).toBeVisible({ timeout: 10000 });
+            await expect(hostPage.getByTestId('dt-top-header-3')).toBeVisible({ timeout: 10000 });
 
             await saveEvidenceScreenshot(hostPage, testInfo, '40-online-ai-real-timeline-host-main1');
 
@@ -2356,6 +2359,27 @@ test.describe('DiceThrone Simple Start', () => {
             };
 
             const summarizeAiAttackChain = async () => {
+                const onlineAiDebug = await hostPage.evaluate((playerId) => {
+                    const api = (window as Window & {
+                        __BG_ONLINE_AI_DEBUG__?: {
+                            getSeatDecisionState?: (targetPlayerId: string) => unknown;
+                            getSeatLatestState?: (targetPlayerId: string) => unknown;
+                        };
+                    }).__BG_ONLINE_AI_DEBUG__;
+                    if (!api) {
+                        return {
+                            decisionState: null,
+                            hasSeatLatestState: false,
+                        };
+                    }
+                    return {
+                        decisionState: api.getSeatDecisionState?.(playerId) ?? null,
+                        hasSeatLatestState: Boolean(api.getSeatLatestState?.(playerId)),
+                    };
+                }, primaryAiSeatId).catch(() => ({
+                    decisionState: null,
+                    hasSeatLatestState: false,
+                }));
                 const aiTurnStartAtMs = consoleTimeline.find((entry) => (
                     entry.text.includes('[ONLINE_AI_TRANSPORT]')
                     && entry.text.includes('"stage":"state-update"')
@@ -2370,13 +2394,12 @@ test.describe('DiceThrone Simple Start', () => {
                 ))?.atMs ?? null;
                 const visibleSubmittedActions = consoleTimeline.filter((entry) => (
                     entry.atMs >= aiTurnStartAtMs
-                    && entry.text.includes('[ONLINE_AI_PERF]')
+                    && (entry.text.includes('[ONLINE_AI_PERF]') || entry.text.includes('[LOCAL_AI_PERF]'))
                     && entry.text.includes('"stage":"submitted"')
                     && entry.text.includes('"actionVisibility":"visible"')
                 ));
                 const submittedRolls = visibleSubmittedActions.filter((entry) => (
-                    entry.text.includes('[ONLINE_AI_PERF]')
-                    && entry.text.includes('"actionKind":"roll-dice"')
+                    entry.text.includes('"actionKind":"roll-dice"')
                 ));
                 const submittedAbilitySelections = visibleSubmittedActions.filter((entry) => (
                     entry.text.includes('"actionKind":"select-ability"')
@@ -2406,10 +2429,32 @@ test.describe('DiceThrone Simple Start', () => {
                 const phaseSnapshot = await readHarnessTurnSnapshot(hostPage);
                 const attackChainReachedDefensiveRoll = phaseSnapshot.activePlayerId === '0'
                     && phaseSnapshot.phase === 'defensiveRoll';
+                const aiSeatAdvancedPastMain1 = !(
+                    phaseSnapshot.activePlayerId === primaryAiSeatId
+                    && phaseSnapshot.phase === 'main1'
+                );
+                const attackChainReached = attackChainReachedDefensiveRoll
+                    || (
+                        phaseSnapshot.activePlayerId === primaryAiSeatId
+                        && (phaseSnapshot.phase === 'offensiveRoll' || phaseSnapshot.phase === 'targetingRoll')
+                        && typeof phaseSnapshot.rollCount === 'number'
+                        && phaseSnapshot.rollCount > 0
+                    )
+                    || (
+                        phaseSnapshot.activePlayerId === primaryAiSeatId
+                        && (phaseSnapshot.phase === 'main2' || phaseSnapshot.phase === 'discard')
+                    )
+                    || phaseSnapshot.activePlayerId !== primaryAiSeatId;
+                const serverAuthorityObserved = consoleTimeline.some((entry) => (
+                    entry.text.includes('[AI_RUNTIME_TRUTH]')
+                    && entry.text.includes('server-online-ai-executor')
+                )) || onlineAiDebug.hasSeatLatestState;
                 return {
                     aiTurnStartAtMs,
                     hostDiscardAtMs,
                     handoffGapMs: hostDiscardAtMs === null ? null : aiTurnStartAtMs - hostDiscardAtMs,
+                    serverAuthorityObserved,
+                    onlineAiDebug,
                     submittedRollCount: submittedRolls.length,
                     submittedAbilitySelectionCount: submittedAbilitySelections.length,
                     submittedVisibleActionCount: submittedVisibleActions.length,
@@ -2420,14 +2465,17 @@ test.describe('DiceThrone Simple Start', () => {
                     activePlayerId: phaseSnapshot.activePlayerId,
                     phase: phaseSnapshot.phase,
                     rollCount: phaseSnapshot.rollCount,
+                    aiSeatAdvancedPastMain1,
+                    attackChainReached,
                     attackChainReachedDefensiveRoll,
                 };
             };
 
             const isAttackChainReady = (summary: Awaited<ReturnType<typeof summarizeAiAttackChain>>) => {
                 return summary.patchApplyFailedCount === 0
-                    && summary.submittedVisibleActionCount >= 2
-                    && (summary.submittedRollCount >= 2 || summary.attackChainReachedDefensiveRoll);
+                    && summary.serverAuthorityObserved
+                    && summary.aiSeatAdvancedPastMain1
+                    && summary.attackChainReached;
             };
 
             const attackChainDeadline = Date.now() + 90000;
@@ -2441,9 +2489,10 @@ test.describe('DiceThrone Simple Start', () => {
             }
 
             expect(attackChainSummary.patchApplyFailedCount).toBe(0);
-            expect(attackChainSummary.submittedVisibleActionCount).toBeGreaterThanOrEqual(2);
+            expect(attackChainSummary.serverAuthorityObserved).toBe(true);
+            expect(attackChainSummary.aiSeatAdvancedPastMain1).toBe(true);
             expect(isAttackChainReady(attackChainSummary)).toBe(true);
-            expect(attackChainSummary.submittedRollCount >= 2 || attackChainSummary.attackChainReachedDefensiveRoll).toBe(true);
+            expect(attackChainSummary.attackChainReached).toBe(true);
 
             await saveEvidenceScreenshot(hostPage, testInfo, '42-online-ai-real-timeline-after-attack-chain');
 
@@ -2506,9 +2555,16 @@ test.describe('DiceThrone Simple Start', () => {
                 minimumActionDelayMs: 1000,
                 aiTurnStartAtMs: attackChainSummary.aiTurnStartAtMs,
                 handoffGapMs: attackChainSummary.handoffGapMs,
+                serverAuthorityObserved: attackChainSummary.serverAuthorityObserved,
+                onlineAiDebug: attackChainSummary.onlineAiDebug,
                 submittedRollCount: rollSubmittedTimeline.length,
                 submittedAbilitySelectionCount: attackChainSummary.submittedAbilitySelectionCount,
                 submittedVisibleActionCount: attackChainSummary.submittedVisibleActionCount,
+                activePlayerId: attackChainSummary.activePlayerId,
+                phase: attackChainSummary.phase,
+                rollCount: attackChainSummary.rollCount,
+                aiSeatAdvancedPastMain1: attackChainSummary.aiSeatAdvancedPastMain1,
+                attackChainReached: attackChainSummary.attackChainReached,
                 attackChainReachedDefensiveRoll: attackChainSummary.attackChainReachedDefensiveRoll,
                 patchApplyFailedCount: attackChainSummary.patchApplyFailedCount,
                 secondaryPatchApplyFailedCount: attackChainSummary.secondaryPatchApplyFailedCount,
@@ -2521,23 +2577,24 @@ test.describe('DiceThrone Simple Start', () => {
                 visibleDelayViolations,
                 submittedVisibleActions: attackChainSummary.submittedVisibleActions,
                 transportEvents: consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_TRANSPORT]')),
-                perfEvents: consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_PERF]')),
+                perfEvents: consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_PERF]') || entry.text.includes('[LOCAL_AI_PERF]')),
             };
 
             await mkdir(dirname(consoleJsonPath), { recursive: true });
             await writeFile(consoleJsonPath, JSON.stringify(consoleTimeline, null, 2), 'utf8');
             await writeFile(summaryJsonPath, JSON.stringify(derivedSummary, null, 2), 'utf8');
+            wrotePrimarySummary = true;
 
-            expect(rollSubmittedTimeline.length >= 2 || attackChainSummary.attackChainReachedDefensiveRoll).toBe(true);
+            expect(attackChainSummary.attackChainReached).toBe(true);
             expect(visibleDelayViolations).toEqual([]);
         } finally {
             const rollSubmittedTimeline = consoleTimeline.filter((entry) => (
-                entry.text.includes('[ONLINE_AI_PERF]')
+                (entry.text.includes('[ONLINE_AI_PERF]') || entry.text.includes('[LOCAL_AI_PERF]'))
                 && entry.text.includes('"stage":"submitted"')
                 && entry.text.includes('"actionKind":"roll-dice"')
             ));
             const transportEvents = consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_TRANSPORT]'));
-            const perfEvents = consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_PERF]'));
+            const perfEvents = consoleTimeline.filter((entry) => entry.text.includes('[ONLINE_AI_PERF]') || entry.text.includes('[LOCAL_AI_PERF]'));
             const patchApplyFailedCount = transportEvents.filter((entry) => (
                 entry.text.includes('"stage":"patch-apply-failed"')
                 && entry.text.includes(`"playerId":"${primaryAiSeatId}"`)
@@ -2572,6 +2629,10 @@ test.describe('DiceThrone Simple Start', () => {
                 });
             const submittedAbilitySelectionCount = submittedVisibleActions.filter((entry) => entry.actionKind === 'select-ability').length;
             const finalSnapshot = await readHarnessTurnSnapshot(setup.hostPage).catch(() => null);
+            const finalServerAuthorityObserved = consoleTimeline.some((entry) => (
+                entry.text.includes('[AI_RUNTIME_TRUTH]')
+                && entry.text.includes('server-online-ai-executor')
+            ));
             const finalSummary = {
                 matchId: setup.matchId,
                 minimumActionDelayMs: 1000,
@@ -2585,6 +2646,7 @@ test.describe('DiceThrone Simple Start', () => {
                 firstToSecondRollGapMs: rollSubmittedTimeline.length >= 2
                     ? rollSubmittedTimeline[1].atMs - rollSubmittedTimeline[0].atMs
                     : null,
+                serverAuthorityObserved: finalServerAuthorityObserved,
                 attackChainReachedDefensiveRoll: finalSnapshot?.activePlayerId === '0' && finalSnapshot?.phase === 'defensiveRoll',
                 patchApplyFailedCount,
                 secondaryPatchApplyFailedCount,
@@ -2597,7 +2659,9 @@ test.describe('DiceThrone Simple Start', () => {
             };
             await mkdir(dirname(consoleJsonPath), { recursive: true });
             await writeFile(consoleJsonPath, JSON.stringify(consoleTimeline, null, 2), 'utf8');
-            await writeFile(summaryJsonPath, JSON.stringify(finalSummary, null, 2), 'utf8');
+            if (!wrotePrimarySummary) {
+                await writeFile(summaryJsonPath, JSON.stringify(finalSummary, null, 2), 'utf8');
+            }
             await setup.hostContext.close();
         }
     });

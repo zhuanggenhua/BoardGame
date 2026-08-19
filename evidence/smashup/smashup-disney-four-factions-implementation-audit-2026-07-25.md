@@ -1,28 +1,44 @@
 # 大杀四方迪士尼四派系实施审计（本地 closeout + 资源版本差异）
 
+## 2026-08-19 状态回写：冰雪奇缘实施中
+
+- 当前状态：`实施中` / `旧结论失效` / `仍有残余范围`。
+- 回写理由：后续本地反馈已直接推翻“冰雪奇缘 passed / 本地玩法 closeout 无 blocker”的旧口径；当前 `disney-four-factions.test.ts` 只补到冰宫、冻结的港口、安娜、阿伦黛尔、棉花糖、真爱的行为等局部链路，不能证明冰雪全 15 张卡 + 2 个基地都完成对象级审计。
+- 当前 UI 状态：`src/games/smashup/domain/ids.ts` 已将 `frozen` 标记为 `in_progress`，表示派系选择页应显示“实施中”，且默认自动选派 / 默认参与池不应把它当作已完成派系。
+- 冰雪仍缺对象级验证的已知对象：`frozen_olaf`、`frozen_sven`、`frozen_elsa`、`frozen_big_summer_blowout`、`frozen_do_you_want_to_build_a_snowman`、`frozen_hans_westergaard`、`frozen_let_it_go`、`frozen_lock_the_gates`、`frozen_reindeers_are_better_than_people`。
+- 未自动外推：超能陆战队、狮子王、花木兰目前只标记为旧四派系 closeout 口径存在代表链风险；本次没有逐对象重审三者，因此不在 UI 状态中盲降级。
+
+### 失效原因、替代证据与同类扩审范围
+
+- 旧结论：第 24-25 行曾把冰雪奇缘写成机制、审计、E2E 全部 `passed`；第 152 行曾写“本地玩法 closeout：passed”。
+- 失效原因：用户本地反馈连续命中冰雪对象，证明旧“冰雪整派系 passed”至少把代表链证据外推到了未逐对象验证的卡牌和基地。
+- 替代证据 / 新增回归：当前替代入口是 `src/games/smashup/domain/ids.ts` 的 `SMASHUP_FACTION_IMPLEMENTATION_STATUS[frozen]='in_progress'`，新增回归集中在 `src/games/smashup/__tests__/abilities/disney-four-factions.test.ts` 的冰雪局部用例；这些测试覆盖最终状态断言，例如手牌打出、有效力量、保护判断、VP 奖励和 `sys.interaction.current` 清空边界，但只证明对应对象，不替代全对象审计。
+- 旧测试失效检查 / 测试语义对账：旧测试可以继续作为“代表性局部证据”，但不能再作为“冰雪全对象 passed”的证据；当前失效点不是测试全错，而是测试断言过窄、证据停在代表对象和局部最终状态，没有覆盖冰雪所有对象的规则子句、选择/可选分支、抽弃牌、移动限制和真实入口。
+- 同类扩审记录：本轮横向搜索范围限定在 Disney 四派系旧 closeout、`frozen.ts` 对象全集、`disney-four-factions.test.ts` 和 `disneyFourFactionsIntake.test.ts`；命中项是冰雪 17 个对象中至少 9 个缺对象级验证。残余扩审范围是先补冰雪全对象 L2 / 必要 L3-L4，再决定是否扩到超能陆战队、狮子王、花木兰；未完成前不能宣称 Disney 四派系全面审计完成。
+
 ## 全面审计自检表
 
 | 项目 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
 | 对象全集 | `passed` | 已接入 4 个派系：超能陆战队、冰雪奇缘、狮子王、花木兰；每派系 15 张卡，合计 60 张卡；每派系 2 个基地，合计 8 个基地。 |
 | L0/L1 静态接入 | `passed` | faction id、atlas、card/base data、locale、faction metadata、critical image preload、game/root manifest 均已接入。 |
-| 规则子句表 | `passed` | intake 产物、静态数据与 abilityTags 已覆盖 60 张卡 + 8 个基地；本 closeout 以派系级发布闭环核销。 |
-| 完整技能流程矩阵 | `passed` | L2 行为测试覆盖注册、真实出牌管线、力量指示物、抽牌、保护、持续修正、基地触发；E2E 覆盖真实入口和最终权威状态。 |
-| L2 行为验证 | `passed` | `disney-four-factions.test.ts` 覆盖四派系能力入口、超能陆战队、冰雪奇缘、狮子王、花木兰核心玩法链。 |
-| L3/L4 真实入口 | `passed` | 已覆盖超能陆战队“升级”真实打牌入口、Disney 选择 prompt、力量指示物、弃牌、抽牌、额外行动额度与 interaction 清空。 |
+| 规则子句表 | `representative_only` | intake 产物、静态数据与 abilityTags 覆盖 60 张卡 + 8 个基地，但本文没有按当前审计模板逐对象列出完整规则子句 / 原子语义 / 消费点 / 最终权威结果。 |
+| 完整技能流程矩阵 | `representative_only` | L2 行为测试覆盖注册、真实出牌管线、力量指示物、抽牌、保护、持续修正、基地触发等代表链；冰雪至少 9 个对象没有对象级验证，不能再写完整 passed。 |
+| L2 行为验证 | `representative_only` | `disney-four-factions.test.ts` 覆盖四派系能力入口和部分核心玩法链；冰雪反馈后新增局部回归，但仍不是冰雪全对象审计。 |
+| L3/L4 真实入口 | `representative_only` | 已覆盖超能陆战队“升级”真实打牌入口；冰雪没有逐对象真实入口链，不能外推为冰雪全派系 L3/L4 passed。 |
 | 框架消费合同矩阵 | `passed` | 覆盖 simple choice、额外出牌额度、力量指示物、保护/限制、持续修正、基地触发、真实出牌管线。 |
-| L4 共享链判等矩阵 | `passed` | 本批次未引入独立新 UI 壳；共享链路以 `disney_four_factions_prompt`、ability program、ongoing modifier 和 base trigger 为消费合同。 |
-| 旧 evidence / 旧结论对账 | `passed` | 本批次此前只有预审批证据，未发现旧“已完成”结论需要回写。 |
+| L4 共享链判等矩阵 | `representative_only` | 本批次未引入独立新 UI 壳，但本文没有证明冰雪剩余对象与代表链“仅配置不同”。 |
+| 旧 evidence / 旧结论对账 | `passed` | 2026-08-19 已原地回写：旧“冰雪奇缘 passed / 本地玩法 closeout”口径失效，当前冰雪标记实施中。 |
 | 真实入口截图核验 | `passed` | 已人工核图：微型机器群显示 `+2`，手牌只剩迷你雪人，右侧弃牌堆显示升级，prompt 已关闭。 |
 | 服务器资源主源 | `blocked_resource_sync` | 2026-08-06 公开 URL 可访问，但返回字节数仍是 PR 旧资源，和主线 #122 当前本地资源不一致。 |
-| 残余范围声明 | `blocked_resource_sync` | 本地玩法 closeout 无未解除 blocker；资源发布同步仍需用主线当前资源重新上传并按字节数/哈希回查。 |
+| 残余范围声明 | `scoped_debt` | 冰雪对象级审计仍有残余范围；旧“本地玩法 closeout 无未解除 blocker”失效。资源发布同步仍需用主线当前资源重新上传并按字节数/哈希回查。 |
 
 ## 批次矩阵
 
 | 对象 | 数据录入 | 本地资源链 | 机制实现 | 审计 | E2E | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 超能陆战队 | `passed` | `blocked_remote_old_resource` | `passed` | `passed` | `passed` | `blocked_resource_sync` |
-| 冰雪奇缘 | `passed` | `blocked_remote_old_resource` | `passed` | `passed` | `passed` | `blocked_resource_sync` |
+| 冰雪奇缘 | `passed` | `blocked_remote_old_resource` | `scoped_debt` | `scoped_debt` | `representative_only` | `in_progress` |
 | 狮子王 | `passed` | `blocked_remote_old_resource` | `passed` | `passed` | `passed` | `blocked_resource_sync` |
 | 花木兰 | `passed` | `blocked_remote_old_resource` | `passed` | `passed` | `passed` | `blocked_resource_sync` |
 
@@ -85,7 +101,7 @@
 - 四派系代表性主动能力入口已注册。
 - 超能陆战队：微型机器群、新来的学生、升级、团队的努力按指示物 / 额外出牌结算。
 - 超能陆战队：升级从真实出牌管线打开选择后，离开手牌并进入弃牌堆。
-- 冰雪奇缘：棉花糖只压制同基地敌方角色；真爱的行为先抽牌再给所选角色临时保护。
+- 冰雪奇缘：旧证据只覆盖棉花糖只压制同基地敌方角色、真爱的行为先抽牌再给所选角色临时保护；2026-08-19 追加覆盖冻结的港口、冰宫、安娜、阿伦黛尔，但仍不是全对象审计。
 - 狮子王：木法沙在弃牌堆时触发弃牌条件，并让荣耀石给玩家额外力量。
 - 狮子王：刀疤按目标所在基地计算有效力量，跨基地持续修正不会漏算。
 - 花木兰：集体训练给己方全场角色放指示物，金宝保护己方角色不受敌方影响。
@@ -149,7 +165,7 @@ node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/smashu
 
 ## Push / PR handoff 口径
 
-- 本地玩法 closeout：passed。
+- 本地玩法 closeout：冰雪奇缘已降级为实施中；旧 `passed` 只保留为历史代表链证据。
 - 资源服务器同步：blocked_resource_sync，需要重新发布主线当前资源。
 - 建议提交信息：
 

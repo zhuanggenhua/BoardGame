@@ -9,7 +9,58 @@ import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCore } from './game';
 
 export const BETRAYAL_ACTION_LOG_ALLOWLIST = Object.values(BETRAYAL_COMMANDS);
-export const BETRAYAL_UNDO_ALLOWLIST = BETRAYAL_ACTION_LOG_ALLOWLIST;
+export const BETRAYAL_UNDO_ALLOWLIST = [
+    BETRAYAL_COMMANDS.SELECT_EXPLORER,
+    BETRAYAL_COMMANDS.CONFIRM_EXPLORER,
+    BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD,
+    BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+    BETRAYAL_COMMANDS.START_SCENARIO,
+    BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    BETRAYAL_COMMANDS.USE_POSSESSION,
+    BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+    BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM,
+    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+    BETRAYAL_COMMANDS.USE_ROOM_EFFECT,
+    BETRAYAL_COMMANDS.TRADE_POSSESSION,
+    BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT,
+    BETRAYAL_COMMANDS.LOOT_CORPSE,
+    BETRAYAL_COMMANDS.END_TURN,
+    BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+    BETRAYAL_COMMANDS.HAUNT_ATTACK,
+    BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE,
+    BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+    BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+    BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+    BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+    BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN,
+    BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+    BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
+    BETRAYAL_COMMANDS.GIVE_MIRROR_HINT,
+    BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+    BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND,
+    BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK,
+    BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN,
+    BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
+    BETRAYAL_COMMANDS.STUDY_EXORCISM,
+    BETRAYAL_COMMANDS.EXORCISE_JACK,
+    BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
+    BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
+    BETRAYAL_COMMANDS.BANISH_MUMMY,
+    BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL,
+    BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY,
+    BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY,
+    BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD,
+    BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+    BETRAYAL_COMMANDS.CURE_THE_DUST,
+    BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
+    BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE,
+    BETRAYAL_COMMANDS.TAKE_PHOTO,
+    BETRAYAL_COMMANDS.SMASH_MAGIC_CAMERA,
+    BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK,
+    BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+    BETRAYAL_COMMANDS.COMPLETE_SCENARIO,
+] as const;
 
 const NS = 'game-betrayal';
 
@@ -103,6 +154,12 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.useRollRerollItem', { player: actor })]);
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE:
             return entry(command, state, [i18nSeg('actionLog.resolveEventChoice', { player: actor })]);
+        case BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL:
+            return entry(command, state, [i18nSeg('actionLog.finalizeEventRoll', { player: actor })]);
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION:
+            return entry(command, state, [i18nSeg('actionLog.acknowledgeCardResolution', { player: actor })]);
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL:
+            return entry(command, state, [i18nSeg('actionLog.acknowledgeRecentRoll', { player: actor })]);
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
             const room = roomNameOf(core, core.currentExplorer.roomId);
             return entry(command, state, [i18nSeg(
@@ -188,6 +245,13 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.learnMummyBanishment', { player: actor })]);
         case BETRAYAL_COMMANDS.BANISH_MUMMY:
             return entry(command, state, [i18nSeg('actionLog.banishMummy', { player: actor })]);
+        case BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD:
+            return entry(command, state, [i18nSeg(
+                payload.choice === 'steal'
+                    ? 'actionLog.resolveMummyAttackRewardSteal'
+                    : 'actionLog.resolveMummyAttackRewardDamage',
+                { player: actor },
+            )]);
         case BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL:
             return entry(command, state, [i18nSeg('actionLog.pickUpMummyGirl', { player: actor })]);
         case BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY:
@@ -213,6 +277,12 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.smashMagicCamera', { player: actor })]);
         case BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK:
             return entry(command, state, [i18nSeg('actionLog.phantomPhotographerAttack', { player: actor })]);
+        case BETRAYAL_COMMANDS.GIVE_MIRROR_HINT:
+            return entry(command, state, [i18nSeg('actionLog.giveMirrorHint', { player: actor })]);
+        case BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE:
+            return entry(command, state, [i18nSeg('actionLog.breakMirrorCurse', { player: actor })]);
+        case BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY:
+            return entry(command, state, [i18nSeg('actionLog.confirmHauntSetupEntry', { player: actor })]);
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
             return entry(command, state, [i18nSeg('actionLog.completeScenario', { player: actor })]);
         default:

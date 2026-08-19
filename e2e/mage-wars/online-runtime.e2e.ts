@@ -64,6 +64,7 @@ type MageWarsTargetContinuityProbeReport = {
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
+const MAGE_WARS_GOLDEN_TEST_NAME = 'Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划';
 type EvidenceScreenshotAnimationMode = 'allow' | 'disabled';
 const TRUTHY_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
@@ -3092,6 +3093,45 @@ async function advanceToNextPlanningPhase(
     ].join('\n'));
 }
 
+async function advanceUntilBothPlayersReachPlanningPhase(
+    match: MageWarsOnlineMatch,
+    diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
+) {
+    const board = match.hostPage.getByTestId('mage-wars-board');
+
+    for (let index = 0; index < 180; index += 1) {
+        const hostPhase = await readPhase(match.hostPage);
+        const guestPhase = await readPhase(match.guestPage);
+        if (hostPhase === 'planning' && guestPhase === 'planning') return;
+
+        const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
+        const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
+        const standbyPage = phaseActorId === '1' ? match.hostPage : match.guestPage;
+        const isSimultaneousPhase = SIMULTANEOUS_PHASES.has(hostPhase ?? '');
+        const candidates = isSimultaneousPhase
+            ? [match.hostPage, match.guestPage]
+            : [actorPage, standbyPage];
+        let advanced = false;
+        for (const page of candidates) {
+            if (await clickPlanningOrTurnEndIfEnabled(page)) {
+                advanced = true;
+                if (!isSimultaneousPhase) break;
+            }
+        }
+        if (!advanced) await match.hostPage.waitForTimeout(250);
+    }
+
+    const failureEvidence = await collectFailureEvidence(match.hostPage, {
+        match,
+        playerId: '0',
+        diagnostics,
+    });
+    throw new Error([
+        '正式联机黄金链未能收口到双方计划阶段',
+        `failureEvidence=${JSON.stringify(failureEvidence, null, 2)}`,
+    ].join('\n'));
+}
+
 test.describe('Mage Wars formal online runtime', () => {
     test('正式联机入口从双方计划到部署并保持对手计划隐藏', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
@@ -3452,7 +3492,7 @@ test.describe('Mage Wars formal online runtime', () => {
         await finalizeMageWarsFxVideoRecording(testInfo, recording, recordedHostVideo);
     });
 
-    test('正式联机入口覆盖两派系法术类型代表链', async ({ browser, baseURL }, testInfo) => {
+    test(MAGE_WARS_GOLDEN_TEST_NAME, async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(420_000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const match = await setupOnlineMageWars(browser, baseURL);
@@ -3632,6 +3672,10 @@ test.describe('Mage Wars formal online runtime', () => {
                 await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见');
+            await advanceUntilBothPlayersReachPlanningPhase(match, diagnostics);
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toBeVisible({ timeout: 5_000 });
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toBeVisible({ timeout: 5_000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '12-黄金链收口-回到下一轮计划阶段');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }

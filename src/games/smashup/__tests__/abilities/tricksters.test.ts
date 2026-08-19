@@ -1163,6 +1163,24 @@ describe('诡术师 ongoing 能力', () => {
     });
 
     describe('trickster_block_the_path: 封路', () => {
+        it('即使该派系当前不在场上或手牌中，也能声明本局已选择的派系', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.ROBOTS] as [string, string],
+                        hand: [makeCard('bp-card', 'trickster_block_the_path', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase()],
+            });
+
+            const played = execPlayAction(state, '0', 'bp-card', 0);
+            const prompt = getSimpleChoicePrompt(played.matchState, 'trickster_block_the_path');
+
+            expect(getPromptOptions(prompt).map(option => option.value?.factionId)).toContain(SMASHUP_FACTION_IDS.ROBOTS);
+        });
+
         it('对手不能打出被封派系随从到封路基地', () => {
             const state = makeState({
                 bases: [makeBase({

@@ -207,7 +207,7 @@
 | 封舱 | 弃剩余手牌后抽 4 | `cursed-pirate-batten-down` | 机制测试；真实入口截图 48-49 证明打牌前手牌可见，打牌后其余手牌进入弃牌堆并重抽 4 张新手牌；当前剩余已收敛为与其它手牌即时链的合法复用登记，而不是对象本体仍缺真实入口 | L2 / 对象级 L3 | passed |
 | 诱饵 | 攻击伤害 +2 | `cards.ts` damage | 真实入口截图 97-99 已证明 Guest 会先通过真实 `soul-stab-3` 攻击入口建立攻击链，再从真实手牌打出 `诱饵`；该卡在仍处于 `offensiveRoll` 时直接把 `Host HP 50 -> 48`，并同步完成 `CP 5 -> 4` 与源卡弃牌收口，不走 `pendingAttack.bonusDamage / attackModifierBonusDamage` 写入；当前剩余已收敛为与其它攻击修正牌的更高层 seam 判等，而不是对象本体仍缺 L3 | L2 / 对象级 L3 | passed |
 | 抽筋剥皮 | 投 5 骰；每弯刀 +1；至少 +3 施加火药桶 | `cursed-pirate-flay-roll` | 机制测试；真实入口截图 31-32 证明奖励骰覆盖层可见，关闭后能按实际弯刀数收口 bonus damage，并在弯刀数 >= 3 时施加火药桶；当前剩余已收敛为与其它奖励骰/状态写入对象的 `L4` 复用登记，而不是对象本体缺真实奖励骰链 | L2 / 对象级 L3 | passed |
-| 赎金 | 出牌者选骰；目标支付 2CP 或重掷 | `cursed-pirate-ransom-die-choice`、resolve choice | 机制测试；真实入口截图 36-38 证明 Guest 先选骰、Host 后支付 2CP，且收口到 CP 转移与弃牌落点；当前剩余已收敛为与其它跨玩家双步选择链的 `L4` 复用登记，而不是对象本体缺真实交互 | L2 / 对象级 L3 | passed |
+| 赎金 | 出牌者只能在当前投骰者是对手时，选择当前唯一投骰结果中的骰子；目标支付 2CP 或重掷 | `cursed-pirate-ransom-die-choice`、resolve choice、`checkPlayCard(requireIsNotRoller)` | 机制测试已补“投骰者自己不能打赎金”的负向断言；真实入口截图 36-38 已更新为 Host 正在投骰、Guest 打赎金选择 Host 骰、Host 支付 2CP，并收口到 CP 转移与弃牌落点。旧 2026-06-01 截图只证明跨玩家付款收口，未证明排除自己骰，已降级为历史证据 | L2 / 对象级 L3 | passed |
 | 虚张声势 | 投 1 骰三分支 | `cards.ts` rollDie | 真实入口截图 95-96 已证明 Guest 从真实手牌打出后会进入 `bonus-die-overlay`，命中弯刀面时收口到 `Host HP 50 -> 48` 且源卡进入弃牌堆；截图 149-150 已证明战利品面会让 Guest 抽到 2 张真实牌库卡且 Host HP 保持 `50`；截图 151-152 已进一步证明骷髅面会对 Host 写入 `火药桶 1` 且不造成额外抽牌/伤害。最新机制回归也已显式锁定三分支各自只落到 `damage / draw / powder_keg`，不会串写到其它 downstream consumer。当前三条分支都已拿到真实入口奖励骰覆盖层、机制层与最终收口证据 | L2/L3 | passed |
 | 坏血病 | 自伤 1；对手凋零 | `cards.ts` damage/grantStatus | 真实入口截图 `153-154` 已证明 Guest 从真实手牌打出 `坏血病！` 后，自己 HP `50 -> 49`、Host 获得 `凋零 1`，且源卡进入弃牌堆 | L2/L3 | passed |
 | 劫掠 | 偷 1CP | `cursed-pirate-steal-one-cp` | 真实入口截图 `155-156` 已证明 Guest 从真实手牌打出 `强取豪夺！` 后，完成 `Guest CP 5 -> 6 / Host CP 5 -> 4` 的偷取链，且源卡进入弃牌堆 | L2/L3 | passed |
@@ -290,7 +290,8 @@
 | `npx eslint src/games/dicethrone/ui/InteractionOverlay.tsx e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 14:07） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 12:00） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 12:00） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算赎金的跨玩家双步选择链"` | 1 passed（2026-06-01 12:00，截图 36-38 覆盖 Guest 选骰、Host 支付 2CP、收口状态） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算赎金的跨玩家双步选择链"` | 1 passed（2026-06-01 12:00；旧场景为 Guest 自己投骰后选骰，只证明付款收口，不能证明“对手骰子”合法性，2026-08-19 已降级为历史证据） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算赎金在对手投骰窗口的跨玩家双步选择链"` | 1 passed（2026-08-19；截图 36-38 覆盖 Host 投骰、Guest 选择 Host 骰、Host 支付 2CP、Guest/Host CP 收口和源卡弃牌） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 12:10） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 12:10） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算啜呼的目标选择与奖励骰分支"` | 1 passed（2026-06-01 12:10，截图 39-41 覆盖 Host 目标选择、奖励骰覆盖层与收口状态） |

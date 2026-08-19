@@ -34,12 +34,8 @@ import './cursor';
 import { HandArea, type HandAreaDragPreview, type HandAreaDropTarget } from './ui/HandArea';
 
 const END_TURN_THROTTLE_MS = 800;
-import {
-    SMASH_UP_TABLE_FX_SURFACE_ID,
-    smashUpBaseAnchorId,
-    useGameEvents,
-} from './ui/useGameEvents';
-import { useFxBus, FxLayer, useFxAnchorRegistry } from '../../engine/fx';
+import { useGameEvents } from './ui/useGameEvents';
+import { useFxBus, FxLayer } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { smashUpFxRegistry } from './ui/fxSetup';
 import { FactionSelection } from './ui/FactionSelection';
@@ -2171,8 +2167,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         maxDpr: renderPipelineSettings.maxDpr,
         reducedMaxDpr: renderPipelineSettings.reducedMaxDpr,
     });
-    const fxAnchors = useFxAnchorRegistry(SMASH_UP_TABLE_FX_SURFACE_ID, 'table');
-
     // 事件流消费 → FX 特效驱动
     const myPid = playerID || '0';
     const gameEvents = useGameEvents({
@@ -2180,7 +2174,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         myPlayerId: myPid,
         fxBus,
         baseRefs: baseRefsMap,
-        resolveFxAnchorSnapshot: fxAnchors.resolveSnapshot,
         playerNames,
     });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
@@ -2366,15 +2359,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        // 二次防御：行动额度检查（正常流程在 handleCardClick 已拦截）
-        if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
-            playDeniedSound();
-            toast(t('ui.action_limit_reached'));
+        if (respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex })) {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
         }
-        if (respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex })) {
+        // 二次防御：行动额度检查（正常流程在 handleCardClick 已拦截）
+        if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
+            playDeniedSound();
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
@@ -2397,15 +2390,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        // 二次防御：行动额度检查
-        if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
-            playDeniedSound();
-            toast(t('ui.action_limit_reached'));
+        if (respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex, targetMinionUid: minionUid })) {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
         }
-        if (respondReactionPlayOption({ kind: 'play_action', cardUid, baseIndex, targetMinionUid: minionUid })) {
+        // 二次防御：行动额度检查
+        if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
+            playDeniedSound();
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
@@ -3633,11 +3626,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     return (
         <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
-            <div
-                ref={fxAnchors.registerSurface}
-                className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none"
-                data-fx-surface-id={SMASH_UP_TABLE_FX_SURFACE_ID}
-            >
+            <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none">
 
                 {/* Table Texture Layer */}
                 <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply">
@@ -4578,7 +4567,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx)) || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
                                         || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && !fieldSourceTargetOptionIdsByBaseIndex.has(idx))
@@ -4622,12 +4611,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     tokenRef={(el) => {
                                         if (el) baseRefsMap.current.set(idx, el);
                                         else baseRefsMap.current.delete(idx);
-                                        const anchorId = smashUpBaseAnchorId(idx);
-                                        fxAnchors.registerAnchor({
-                                            anchorId,
-                                            anchorKind: 'base',
-                                            entityRef: anchorId,
-                                        })(el);
                                     }}
                                 />
 
@@ -4879,7 +4862,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
                     // 阻塞性交互优先于瞬时视觉反馈，避免 VP/卡牌飞行动画盖住可操作按钮。
                     className={isCurrentPromptForPlayer && currentPrompt ? 'invisible' : undefined}
-                    data-testid="smashup-fx-layer"
                 />
 
                 {/* 回合切换提示 */}

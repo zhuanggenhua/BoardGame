@@ -143,6 +143,8 @@ const isCommandType = <TType extends DiceThroneCommand['type']>(
 type ValidationInteractionDescriptor = InteractionDescriptor & {
     allowedDieIds?: number[];
     completedDieIds?: number[];
+    completedSteps?: number;
+    allowRepeatedDieSelection?: boolean;
 };
 
 const getValidationInteraction = (
@@ -185,8 +187,11 @@ const getRemainingDieInteractionSlots = (
     if (typeof selectCount !== 'number' || !Number.isFinite(selectCount)) {
         return undefined;
     }
-    const completedDieIds = Array.from(new Set((interaction.completedDieIds ?? []).filter(id => typeof id === 'number')));
-    return Math.max(0, selectCount - completedDieIds.length);
+    const completedDieIds = (interaction.completedDieIds ?? []).filter((id): id is number => typeof id === 'number');
+    const completedCount = interaction.allowRepeatedDieSelection === true
+        ? (typeof interaction.completedSteps === 'number' ? interaction.completedSteps : completedDieIds.length)
+        : Array.from(new Set(completedDieIds)).length;
+    return Math.max(0, selectCount - completedCount);
 };
 
 const validateInteractionOwnership = (
@@ -266,13 +271,17 @@ const validateDieInteraction = (
         return fail('invalid_die_selection');
     }
 
-    const completedDieIds = Array.from(new Set((interaction.completedDieIds ?? []).filter(id => typeof id === 'number')));
-    if (completedDieIds.includes(dieId)) {
+    const completedDieIds = (interaction.completedDieIds ?? []).filter((id): id is number => typeof id === 'number');
+    const allowRepeatedDieSelection = mode === 'reroll' && interaction.allowRepeatedDieSelection === true;
+    if (!allowRepeatedDieSelection && completedDieIds.includes(dieId)) {
         return fail('die_already_completed');
     }
 
     const selectCount = interaction.selectCount ?? allowedDieIds.length;
-    if (completedDieIds.length >= selectCount) {
+    const completedCount = allowRepeatedDieSelection
+        ? (typeof interaction.completedSteps === 'number' ? interaction.completedSteps : completedDieIds.length)
+        : Array.from(new Set(completedDieIds)).length;
+    if (completedCount >= selectCount) {
         return fail(limitError);
     }
 

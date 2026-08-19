@@ -20,7 +20,7 @@ import { SU_EVENTS } from '../domain/types';
 import type { AbilityFeedbackEvent } from '../domain/types';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import { useEventStreamCursor } from '../../../engine/hooks';
-import type { FxAnchorRef, FxAnchorSnapshot, FxBus, FxContext } from '../../../engine/fx';
+import type { FxBus } from '../../../engine/fx';
 import { SU_FX } from './fxSetup';
 import { getRegisteredOngoingEffectIds } from '../domain/ongoingEffects';
 
@@ -46,10 +46,8 @@ interface UseGameEventsParams {
   myPlayerId: string;
   /** FX 事件总线 */
   fxBus: FxBus;
-  /** 基地 DOM 引用（旧 screen 坐标兼容，用于迁移期兜底） */
+  /** 基地 DOM 引用（用于定位力量浮字） */
   baseRefs: React.RefObject<Map<number, HTMLElement>>;
-  /** 牌桌 FX 锚点快照解析器。新链路优先使用它，旧 screen 坐标只作为兜底。 */
-  resolveFxAnchorSnapshot?: (anchor: FxAnchorRef | string | undefined | null) => FxAnchorSnapshot | null;
   /** 玩家展示名，用于让 VP 获得动画明确显示归属 */
   playerNames?: Record<string, string>;
 }
@@ -59,39 +57,6 @@ type ScreenPoint = { left: number; top: number };
 type TriggeredFxPayload = {
   fromBaseIndex?: number;
   baseIndex?: number;
-}
-
-export const SMASH_UP_TABLE_FX_SURFACE_ID = 'smashup:table';
-
-export function smashUpBaseAnchorId(baseIndex: number): string {
-  return `base:${baseIndex}`;
-}
-
-function baseAnchorRef(baseIndex: number): FxAnchorRef {
-  const anchorId = smashUpBaseAnchorId(baseIndex);
-  return {
-    surfaceId: SMASH_UP_TABLE_FX_SURFACE_ID,
-    anchorId,
-    anchorKind: 'base',
-    entityRef: anchorId,
-  };
-}
-
-function resolveBaseSnapshot(
-  baseIndex: number | undefined,
-  resolveFxAnchorSnapshot?: UseGameEventsParams['resolveFxAnchorSnapshot'],
-): FxAnchorSnapshot | null {
-  return baseIndex === undefined ? null : resolveFxAnchorSnapshot?.(baseAnchorRef(baseIndex)) ?? null;
-}
-
-function resolveBaseFxContext(targetSnapshot: FxAnchorSnapshot | null): FxContext {
-  return targetSnapshot
-    ? {
-        space: 'table',
-        surfaceId: SMASH_UP_TABLE_FX_SURFACE_ID,
-        targetSnapshot,
-      }
-    : { space: 'screen' };
 }
 
 function resolveTriggeredFxPosition(
@@ -151,11 +116,6 @@ function resolveTriggeredFxTargetDefId(
   return undefined;
 }
 
-function resolveTriggeredFxBaseIndex(event: { payload?: unknown }): number | undefined {
-  const payload = (event.payload ?? {}) as TriggeredFxPayload;
-  return payload.fromBaseIndex ?? payload.baseIndex;
-}
-
 function isImmediateExtraPromptFamilyActive(
   G: MatchState<SmashUpCore>,
   playerId: string,
@@ -178,7 +138,6 @@ export function useGameEvents({
   myPlayerId,
   fxBus,
   baseRefs,
-  resolveFxAnchorSnapshot,
   playerNames,
 }: UseGameEventsParams) {
   const entries = getEventStreamEntries(G);
@@ -238,14 +197,12 @@ export function useGameEvents({
         const reason = (event.payload as { reason?: string })?.reason;
         if (reason && triggerDefIds.has(reason) && !triggeredThisBatch.has(reason)) {
           triggeredThisBatch.add(reason);
-          const targetSnapshot = resolveBaseSnapshot(resolveTriggeredFxBaseIndex(event), resolveFxAnchorSnapshot);
           const position = resolveTriggeredFxPosition(event, baseRefs);
           const actionKind = resolveTriggeredFxActionKind(event.type);
           const targetDefId = resolveTriggeredFxTargetDefId(G, event);
-          fxBus.push(SU_FX.ABILITY_TRIGGERED, resolveBaseFxContext(targetSnapshot), {
+          fxBus.push(SU_FX.ABILITY_TRIGGERED, { space: 'screen' }, {
             sourceDefId: reason,
             position,
-            ...(targetSnapshot ? { targetSnapshot } : {}),
             targetDefId,
             actionKind,
             effectLabel: actionKind === 'destroy' ? '消灭' : undefined,
@@ -261,18 +218,12 @@ export function useGameEvents({
             baseIndex: number; power: number;
           };
           // 力量变化浮字 → FX
-          const targetSnapshot = resolveBaseSnapshot(p.baseIndex, resolveFxAnchorSnapshot);
           const baseEl = baseRefs.current?.get(p.baseIndex);
-          if (targetSnapshot || baseEl) {
-            let position: ScreenPoint | undefined;
-            if (baseEl) {
-              const rect = baseEl.getBoundingClientRect();
-              position = { left: rect.right + 8, top: rect.top - 10 };
-            }
-            fxBus.push(SU_FX.POWER_CHANGE, resolveBaseFxContext(targetSnapshot), {
+          if (baseEl) {
+            const rect = baseEl.getBoundingClientRect();
+            fxBus.push(SU_FX.POWER_CHANGE, { space: 'screen' }, {
               delta: p.power,
-              ...(targetSnapshot ? { targetSnapshot } : {}),
-              ...(position ? { position } : {}),
+              position: { left: rect.right + 8, top: rect.top - 10 },
             });
           }
           break;
@@ -293,10 +244,7 @@ export function useGameEvents({
           };
           // VP 飞行 → FX
           // 正常播放（阶段切换检测会在独立 effect 中处理）
-          const targetSnapshot = resolveBaseSnapshot(p.baseIndex, resolveFxAnchorSnapshot);
-          fxBus.push(SU_FX.BASE_SCORED, resolveBaseFxContext(targetSnapshot), {
-            baseIndex: p.baseIndex,
-            ...(targetSnapshot ? { targetSnapshot } : {}),
+          fxBus.push(SU_FX.BASE_SCORED, { space: 'screen' }, {
             rankings: p.rankings.map(ranking => ({
               ...ranking,
               playerName: resolvePlayerName(ranking.playerId),
@@ -369,7 +317,7 @@ export function useGameEvents({
         }
       }
     }
-  }, [G, consumeNew, myPlayerId, fxBus, baseRefs, resolveFxAnchorSnapshot, triggerDefIds, TRIGGER_CARRIER_EVENTS, resolvePlayerName]);
+  }, [G, consumeNew, myPlayerId, fxBus, baseRefs, triggerDefIds, TRIGGER_CARRIER_EVENTS, resolvePlayerName]);
 
   // 清除已完成的反馈
   const removeFeedback = useCallback((id: string) => {

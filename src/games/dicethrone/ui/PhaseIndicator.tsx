@@ -24,19 +24,19 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
 
     return (
         <div
-            className="flex flex-col gap-[0.4vw] pointer-events-auto opacity-100 w-full"
+            className="flex flex-col gap-[clamp(5px,0.4vw,8px)] pointer-events-auto opacity-100 w-full"
             style={{ zIndex: UI_Z_INDEX.hud }}
             data-testid="dt-phase-indicator"
             data-tutorial-id="phase-indicator"
         >
-            <h3 className="text-[1.0vw] font-black text-slate-300/80 mb-[0.4vw] ml-[0.3vw] tracking-[0.2em] uppercase truncate drop-shadow-md">
+            <h3 className="text-[clamp(13px,1vw,17px)] font-black text-slate-300/80 mb-[clamp(5px,0.4vw,8px)] ml-[clamp(4px,0.3vw,6px)] tracking-[0.2em] uppercase truncate drop-shadow-md">
                 {t('phase.title')}
             </h3>
             <PhaseIndicatorSkeleton
                 phases={phases}
                 currentPhaseId={currentPhase}
                 orientation="vertical"
-                className="flex flex-col gap-[0.4vw]"
+                className="flex flex-col gap-[clamp(5px,0.4vw,8px)]"
                 renderPhaseItem={(phase, isActive) => {
                     const phaseWithDesc = phase as PhaseInfo & { desc: string[] };
                     const isHovered = hoveredPhaseId === phase.id;
@@ -49,9 +49,9 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
                             <div
                                 data-testid={isActive ? 'dt-active-phase-indicator' : undefined}
                                 className={`
-                                    relative z-10 px-[0.8vw] py-[0.5vw] text-[0.75vw] font-bold rounded-r-[0.6vw] transition-[all] duration-300 border-l-[0.3vw] truncate cursor-help
+                                    relative z-10 px-[clamp(10px,0.8vw,14px)] py-[clamp(6px,0.5vw,9px)] text-[clamp(12px,0.9vw,15px)] font-bold rounded-r-[clamp(7px,0.6vw,10px)] transition-[all] duration-300 border-l-[clamp(3px,0.3vw,5px)] truncate cursor-help
                                     ${isActive
-                                        ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white border-amber-400 translate-x-[0.5vw] shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                                        ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white border-amber-400 translate-x-[clamp(5px,0.5vw,8px)] shadow-[0_0_15px_rgba(245,158,11,0.4)]'
                                         : 'bg-slate-900/60 text-slate-400 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 hover:text-slate-200 hover:border-slate-500'}
                                 `}
                             >

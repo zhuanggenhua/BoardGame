@@ -29,7 +29,7 @@ const REQUIRED_AUDIT_SECTIONS = [
   },
   {
     name: '共享根因与残余范围',
-    patterns: [/##\s+.*共享根因/, /##\s+.*共享影响/, /##\s+.*残余范围/, /残余范围[:：]/, /代表链依据/],
+    patterns: [/##\s+.*共享根因/, /##\s+.*共享影响/, /##\s+.*共享流程/, /##\s+.*残余范围/, /残余范围[:：]/, /代表链依据/, /sharedFlowId/i],
   },
   {
     name: '修订或失效记录',
@@ -219,6 +219,28 @@ const VISIBLE_INTERACTION_EVIDENCE = [
   /PromptOverlay/,
 ];
 
+const SHARED_FLOW_REFERENCE_TERMS = [
+  /sharedFlowId/i,
+  /共享流程审计/,
+  /共享流程引用/,
+  /流程复用/,
+  /同样流程/,
+  /相同流程/,
+  /代表链复用/,
+];
+
+const SHARED_FLOW_REQUIRED_EVIDENCE = [
+  { name: 'sharedFlowId 或共享流程 ID', patterns: [/sharedFlowId/i, /共享流程\s*ID/, /共享链路\s*ID/] },
+  { name: '一致性核对', patterns: [/一致性核对/, /判等依据/, /逐项一致/, /逐项判等/] },
+  { name: '触发时机', patterns: [/触发时机/, /触发入口/] },
+  { name: '候选生成', patterns: [/候选生成/, /候选过滤/, /候选集合/] },
+  { name: '权限判断', patterns: [/权限判断/, /合法动作/, /合法性/] },
+  { name: 'payload / command 结构', patterns: [/payload/i, /command/i, /命令载荷/, /载荷结构/] },
+  { name: '执行入口', patterns: [/执行入口/, /handler|resolver|reducer|validator|command/i] },
+  { name: '最终权威状态', patterns: [/最终权威状态/, /最终状态/, /finalState/i] },
+  { name: '清理语义', patterns: [/清理语义/, /无残留/, /pending|interaction|deferred|triggerQueue/i] },
+];
+
 const TEST_COVERAGE_CLAIM_TERMS = [
   /可玩\s*handler\s*\+\s*测试/i,
   /定向测试覆盖/,
@@ -339,7 +361,7 @@ const SELF_CHECK_REQUIRED_ITEMS = [
   },
   {
     name: '共享影响与代表链依据',
-    patterns: [/共享影响/, /代表链依据/, /同类扩审/, /扩审范围/, /横向搜索/, /搜索范围/, /根因关键词/, /共享.*调用点/],
+    patterns: [/共享影响/, /共享流程/, /sharedFlowId/i, /代表链依据/, /同类扩审/, /扩审范围/, /横向搜索/, /搜索范围/, /根因关键词/, /共享.*调用点/],
   },
   {
     name: '残余范围声明',
@@ -622,6 +644,14 @@ function checkCompletionClaimDoc(file, content) {
 
   if (/代表链/.test(content) && !/判等依据|仅配置不同|共享链路 ID|代表对象/.test(content)) {
     errors.push(`${file}: 使用代表链口径，但没有写清代表对象、判等依据或仅配置差异。`);
+  }
+
+  if (hasAny(content, SHARED_FLOW_REFERENCE_TERMS)) {
+    for (const item of SHARED_FLOW_REQUIRED_EVIDENCE) {
+      if (!hasAny(content, item.patterns)) {
+        errors.push(`${file}: 使用共享流程/同样流程复用口径，但没有写清“${item.name}”；不能因为相似就引用。`);
+      }
+    }
   }
 
   const unresolvedMarker = UNRESOLVED_COMPLETION_MARKERS.find(pattern => pattern.test(content));

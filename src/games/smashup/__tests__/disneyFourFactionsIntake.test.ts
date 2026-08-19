@@ -192,12 +192,14 @@ describe('SmashUp Disney 四派系 intake 静态合同', () => {
         }
     });
 
-    it('四个 Disney 派系已进入可见派系列表，且未标记实施中', () => {
+    it('四个 Disney 派系已进入可见派系列表，且冰雪因对象级审计未完整保持实施中', () => {
         const visibleIds = new Set(getVisibleFactionMetadata('zh-CN').map(meta => meta.id));
 
         for (const fixture of DISNEY_FACTIONS) {
             expect(visibleIds.has(fixture.factionId), `${fixture.factionId} 应在 zh-CN 可见`).toBe(true);
-            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(false);
+            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(
+                fixture.factionId === SMASHUP_FACTION_IDS.FROZEN,
+            );
         }
     });
 

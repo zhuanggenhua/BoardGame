@@ -33,7 +33,6 @@ import type {
 } from './trainingData';
 import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
-import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import * as aiModule from '../ai';
 import {
     applyPlayerViewToState,
@@ -104,6 +103,25 @@ import {
     resolveOnlineAiWatchdogAdvancePhaseCommandType,
     shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn,
 } from './onlineAiWatchdogGameSemantics';
+import {
+    createOnlineAiActionDelayContext,
+    markOnlineAiVisibleActionCompleted,
+    waitForOnlineAiActionDelay,
+    type OnlineAiActionDelayContext,
+} from './onlineAiActionDelay';
+import {
+    executeOnlineAiCommandSequence,
+    tryExecuteOnlineAiImmediateAction,
+} from './onlineAiExecutor';
+import {
+    buildOnlineAiWatchdogSeatControllers,
+    extractTrustedSetupSeatControllers,
+    normalizeOnlineAiWatchdogSeatControllerType,
+    resolveRawOnlineAiWatchdogSeatControllers,
+    resolveSeatControllerTypeForTraining,
+    type OnlineAiSeatControllerType,
+} from './onlineAiSeatControllers';
+import { isOnlineAiRecoveryStillOwnedByAi } from './onlineAiRecoveryOwnership';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令。
 // null 表示该交互不允许离线代裁决，必须保留给真实玩家入口继续处理。
@@ -136,106 +154,6 @@ const ALLOWED_INJECT_STATE_ENVS = new Set(['test', 'development']);
 
 const canInjectStateInCurrentEnv = (nodeEnv: string | undefined): boolean =>
     typeof nodeEnv === 'string' && ALLOWED_INJECT_STATE_ENVS.has(nodeEnv);
-
-const extractSetupSeatControllers = (setupData: unknown): Record<string, { type?: unknown } | undefined> | undefined => {
-    if (!setupData || typeof setupData !== 'object' || Array.isArray(setupData)) {
-        return undefined;
-    }
-
-    const rawSeatControllers = (setupData as { seatControllers?: unknown }).seatControllers;
-    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
-        return undefined;
-    }
-
-    return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
-};
-
-const isOnlineAiExplicitlyDisabled = (setupData: unknown): boolean => (
-    Boolean(
-        setupData
-        && typeof setupData === 'object'
-        && !Array.isArray(setupData)
-        && (setupData as { enableAi?: unknown }).enableAi === false,
-    )
-);
-
-const extractTrustedSetupSeatControllers = (setupData: unknown): Record<string, { type?: unknown } | undefined> | undefined => (
-    isOnlineAiExplicitlyDisabled(setupData) ? undefined : extractSetupSeatControllers(setupData)
-);
-
-const extractStateSeatControllers = (
-    state: MatchState<unknown> | undefined,
-): Record<string, { type?: unknown } | undefined> | undefined => {
-    const core = state?.core;
-    if (!core || typeof core !== 'object' || Array.isArray(core)) {
-        return undefined;
-    }
-
-    const rawSeatControllers = (core as { seatControllers?: unknown }).seatControllers;
-    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
-        return undefined;
-    }
-
-    return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
-};
-
-const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): boolean => {
-    if (isOnlineAiExplicitlyDisabled(setupData)) {
-        return false;
-    }
-
-    if (!setupData || typeof setupData !== 'object' || Array.isArray(setupData)) {
-        return false;
-    }
-
-    const rawSeatControllers = (setupData as { seatControllers?: unknown }).seatControllers;
-    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
-        return false;
-    }
-
-    return Object.values(rawSeatControllers as Record<string, { type?: unknown } | undefined>).some(
-        (controller) => controller?.type === 'local-ai' || controller?.type === 'remote-ai',
-    );
-};
-
-const resolveRawOnlineAiWatchdogSeatControllers = (
-    state: MatchState<unknown> | undefined,
-    setupData: unknown,
-): Record<string, { type?: unknown } | undefined> | undefined => {
-    if (isOnlineAiExplicitlyDisabled(setupData)) {
-        return undefined;
-    }
-
-    const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(setupData)
-        ? extractSetupSeatControllers(setupData)
-        : undefined;
-    const stateSeatControllers = extractStateSeatControllers(state);
-    if (!setupSeatControllers && !stateSeatControllers) {
-        return undefined;
-    }
-
-    return {
-        ...(setupSeatControllers ?? {}),
-        ...(stateSeatControllers ?? {}),
-    };
-};
-
-type GameManifestIndex = Record<string, Pick<GameManifestEntry, 'ai'> | undefined>;
-
-const normalizeOnlineAiWatchdogSeatControllerType = (
-    gameId: string,
-    controller: { type?: unknown } | undefined,
-    gameManifests: GameManifestIndex,
-): 'human' | 'local-ai' | 'remote-ai' => {
-    const manifestAi = gameManifests[gameId]?.ai;
-    if (controller?.type === 'local-ai') {
-        return manifestAi?.localAi === false ? 'human' : 'local-ai';
-    }
-    if (controller?.type === 'remote-ai') {
-        return manifestAi?.remoteAi === false ? 'human' : 'remote-ai';
-    }
-    return 'human';
-};
 
 type OnlineAiWatchdogSeatController = aiModule.AiSeatController;
 
@@ -340,14 +258,6 @@ const DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS = 60_000;
 const DEFAULT_ONLINE_AI_CIRCUIT_WINDOW_MS = 30_000;
 const DEFAULT_ONLINE_AI_CIRCUIT_FAILURE_BUDGET = 6;
 const MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS = 8;
-
-function resolveSeatControllerTypeForTraining(
-    seatControllers: Record<string, { type?: unknown } | undefined> | undefined,
-    playerId: string,
-): 'human' | 'local-ai' | 'remote-ai' {
-    const type = seatControllers?.[playerId]?.type;
-    return type === 'local-ai' || type === 'remote-ai' ? type : 'human';
-}
 
 type OnlineAiRecoveryTracker = AiAutoRecoveryAttemptTracker & {
     key: string;
@@ -1012,14 +922,6 @@ type ExecuteCommandInternalOptions = {
     onlineAiCircuitSource?: OnlineAiCircuitSource;
     onlineAiAttemptKey?: string | null;
     clientTransport?: OnlineAiClientTransportDiagnostics | null;
-};
-
-type OnlineAiCommandSequenceResult = {
-    success: boolean;
-    executedCommandTypes: string[];
-    failedCommandType?: string;
-    failureReason?: string | null;
-    stateChanged: boolean;
 };
 
 const GENERIC_COMMAND_FAILURE_REASON = 'command_failed';
@@ -1823,7 +1725,7 @@ export class GameTransportServer {
     private resolveOnlineAiSeatControllerType(
         match: ActiveMatch,
         playerId: string,
-    ): 'human' | 'local-ai' | 'remote-ai' {
+    ): OnlineAiSeatControllerType {
         const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(
             match.state,
             match.metadata.setupData,
@@ -1836,29 +1738,13 @@ export class GameTransportServer {
     }
 
     private buildOnlineAiSeatControllers(match: ActiveMatch): Record<string, OnlineAiWatchdogSeatController> {
-        const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(
-            match.state,
-            match.metadata.setupData,
-        );
-        return Object.fromEntries(
-            Object.keys(match.metadata.players).map((playerId) => {
-                const controller = rawSeatControllers?.[playerId];
-                const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(
-                    match.gameId,
-                    controller,
-                    this.gameManifests,
-                );
-                return [
-                    playerId,
-                    normalizedType === 'human'
-                        ? { type: 'human' as const }
-                        : {
-                            ...(controller as { policyId?: string; fallbackPolicyId?: string }),
-                            type: normalizedType,
-                        },
-                ];
-            }),
-        ) as Record<string, OnlineAiWatchdogSeatController>;
+        return buildOnlineAiWatchdogSeatControllers({
+            state: match.state,
+            setupData: match.metadata.setupData,
+            gameId: match.gameId,
+            playerIds: Object.keys(match.metadata.players),
+            gameManifests: this.gameManifests,
+        }) as Record<string, OnlineAiWatchdogSeatController>;
     }
 
     /**
@@ -2534,6 +2420,7 @@ export class GameTransportServer {
         this.onlineAiRecoveryInFlight.add(match.matchID);
         try {
             const seenStepKeys = new Set<string>();
+            const delayContext = createOnlineAiActionDelayContext();
             const aiSeatCount = Object.values(seatControllers)
                 .filter((controller) => controller.type !== 'human')
                 .length;
@@ -2548,7 +2435,37 @@ export class GameTransportServer {
 
                 const stepStateIdBefore = match.stateID;
                 const stepStartedAt = Date.now();
-                const immediateAction = await this.tryExecuteOnlineAiImmediateAction(match, seatControllers);
+                const immediateAction = await tryExecuteOnlineAiImmediateAction({
+                    match,
+                    seatControllers,
+                    delayContext,
+                    executor: {
+                        applyPlayerView: (playerId) => this.applyPlayerView(match, playerId) as MatchState<unknown>,
+                        getSeatControllers: () => this.buildOnlineAiSeatControllers(match),
+                        executeCommandSequence: (playerId, commands, options) => executeOnlineAiCommandSequence({
+                            match,
+                            playerId,
+                            commands,
+                            options,
+                            createTrackedRandom,
+                            persistState: (storedState) => this.storage.setState(match.matchID, storedState),
+                            broadcastState: () => this.broadcastState(match),
+                            executeCommand: (command, commandOptions) => this.executeCommandInternal(
+                                match,
+                                playerId,
+                                command.type,
+                                command.payload,
+                                commandOptions,
+                            ),
+                        }),
+                        clearRecoveryState: () => {
+                            this.onlineAiRecoveryTrackers.delete(match.matchID);
+                            this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(match.matchID);
+                        },
+                        broadcastState: () => this.broadcastState(match),
+                        emitTrace: emitOnlineAiBatchTrace,
+                    },
+                });
                 if (immediateAction.applied) {
                     this.logOnlineAiExecutionTrace({
                         matchId: match.matchID,
@@ -2614,6 +2531,7 @@ export class GameTransportServer {
                     candidate,
                     tracker,
                     seatControllers,
+                    delayContext,
                 );
                 if (!actionRecovery.applied) {
                     const shouldRunForcedRecovery = this.shouldRunImmediateForcedRecoveryAfterLegalActionMiss({
@@ -2675,171 +2593,6 @@ export class GameTransportServer {
             }
             match.executing = false;
         }
-    }
-
-    private async tryExecuteOnlineAiImmediateAction(
-        match: ActiveMatch,
-        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
-    ): Promise<{
-        applied: boolean;
-        playerId: string;
-        actionKind: string | null;
-        executedCommandTypes: string[];
-        decisionMs: number;
-        commandFailureReason: string | null;
-    }> {
-        const decisionStartedAt = Date.now();
-        const aiDispatchResult = await aiModule.resolveNextAiDispatch({
-            engineConfig: match.engineConfig,
-            state: match.state,
-            matchId: match.matchID,
-            seatControllers,
-            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
-                runtime: getGameAiRuntime(match.gameId) ?? null,
-                sharedState: match.state,
-                privateOverlay: this.applyPlayerView(match, playerId) as MatchState<unknown>,
-                playerId,
-            }),
-        });
-        const decisionMs = Date.now() - decisionStartedAt;
-        if (aiDispatchResult.kind !== 'action') {
-            return {
-                applied: false,
-                playerId: aiDispatchResult.kind === 'blocked' ? aiDispatchResult.playerId : '',
-                actionKind: null,
-                executedCommandTypes: [],
-                decisionMs,
-                commandFailureReason: null,
-            };
-        }
-
-        const resolution = aiDispatchResult.resolution;
-        if (
-            seatControllers[resolution.playerId]?.type === 'human'
-            || resolution.action.commands.length === 0
-        ) {
-            return {
-                applied: false,
-                playerId: resolution.playerId,
-                actionKind: resolution.action.kind,
-                executedCommandTypes: [],
-                decisionMs,
-                commandFailureReason: null,
-            };
-        }
-
-        const sequence = await this.executeOnlineAiCommandSequence(
-            match,
-            resolution.playerId,
-            resolution.action.commands,
-            {
-                reportFailureFeedback: false,
-                feedbackSource: 'online-ai-watchdog',
-                onlineAiAttemptKey: resolution.attemptKey,
-            },
-        );
-        if (!sequence.success) {
-            return {
-                applied: false,
-                playerId: resolution.playerId,
-                actionKind: resolution.action.kind,
-                executedCommandTypes: sequence.executedCommandTypes,
-                decisionMs,
-                commandFailureReason: sequence.failureReason ?? null,
-            };
-        }
-
-        if (!sequence.stateChanged) {
-            return {
-                applied: false,
-                playerId: resolution.playerId,
-                actionKind: resolution.action.kind,
-                executedCommandTypes: [],
-                decisionMs,
-                commandFailureReason: null,
-            };
-        }
-
-        this.onlineAiRecoveryTrackers.delete(match.matchID);
-        this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(match.matchID);
-        this.broadcastState(match);
-        return {
-            applied: true,
-            playerId: resolution.playerId,
-            actionKind: resolution.action.kind,
-            executedCommandTypes: sequence.executedCommandTypes,
-            decisionMs,
-            commandFailureReason: null,
-        };
-    }
-
-    private async executeOnlineAiCommandSequence(
-        match: ActiveMatch,
-        playerId: string,
-        commands: Array<{ type: string; payload: unknown }>,
-        options: {
-            reportFailureFeedback: boolean;
-            feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
-            onlineAiAttemptKey?: string | null;
-        },
-    ): Promise<OnlineAiCommandSequenceResult> {
-        const snapshotState = match.state;
-        const snapshotStateID = match.stateID;
-        const snapshotRandomCursor = match.getRandomCursor();
-        const snapshotLastCommandPlayerId = match.lastCommandPlayerId;
-        const executedCommandTypes: string[] = [];
-
-        const restoreSnapshot = async (): Promise<void> => {
-            const trackedRandom = createTrackedRandom(match.randomSeed, snapshotRandomCursor);
-            match.state = snapshotState;
-            match.stateID = snapshotStateID;
-            match.random = trackedRandom.random;
-            match.getRandomCursor = trackedRandom.getCursor;
-            match.lastCommandPlayerId = snapshotLastCommandPlayerId;
-            match.lastBroadcastedViews.clear();
-            await this.storage.setState(match.matchID, {
-                G: snapshotState,
-                _stateID: snapshotStateID,
-                randomSeed: match.randomSeed,
-                randomCursor: snapshotRandomCursor,
-            });
-            this.broadcastState(match);
-        };
-
-        for (const command of commands) {
-            const success = await this.executeCommandInternal(
-                match,
-                playerId,
-                command.type,
-                command.payload,
-                {
-                    suppressBroadcast: true,
-                    reportFailureFeedback: options.reportFailureFeedback,
-                    feedbackSource: options.feedbackSource,
-                    onlineAiCircuitSource: 'watchdog',
-                    onlineAiAttemptKey: options.onlineAiAttemptKey,
-                },
-            );
-            if (!success) {
-                const failureReason = match.lastCommandFailureReason;
-                await restoreSnapshot();
-                match.lastCommandFailureReason = failureReason;
-                return {
-                    success: false,
-                    executedCommandTypes,
-                    failedCommandType: command.type,
-                    failureReason,
-                    stateChanged: false,
-                };
-            }
-            executedCommandTypes.push(command.type);
-        }
-
-        return {
-            success: true,
-            executedCommandTypes,
-            stateChanged: match.stateID !== snapshotStateID,
-        };
     }
 
     private async runOnlineAiRecoveryTick(): Promise<void> {
@@ -3501,6 +3254,7 @@ export class GameTransportServer {
                 return progressMarker;
             };
             const seenStepKeys = new Set<string>();
+            const delayContext = createOnlineAiActionDelayContext();
             let recoverySteps = 0;
             let allowNaturalAiContinuation = false;
             let lastUnreportedLegalActionRecovery: {
@@ -3545,6 +3299,7 @@ export class GameTransportServer {
                     currentCandidate,
                     tracker,
                     seatControllers,
+                    delayContext,
                 );
                 this.logOnlineAiExecutionTrace({
                     matchId: match.matchID,
@@ -5419,6 +5174,7 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
         tracker: OnlineAiRecoveryTracker,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
+        delayContext?: OnlineAiActionDelayContext,
     ): Promise<OnlineAiLegalActionRecoveryResult> {
         const seatController = seatControllers[candidate.playerId];
         if (!seatController || seatController.type === 'human') {
@@ -5519,6 +5275,24 @@ export class GameTransportServer {
             return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 
+        const stateIDBeforeDelay = match.stateID;
+        const delayResult = await waitForOnlineAiActionDelay({
+            matchId: match.matchID,
+            gameId: match.gameId,
+            playerId: resolution.playerId,
+            action: resolution.action,
+            controller: seatController,
+            delayContext,
+            emitTrace: emitOnlineAiBatchTrace,
+        });
+        if (match.unloaded || match.stateID !== stateIDBeforeDelay) {
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
+        }
+        const latestSeatController = this.buildOnlineAiSeatControllers(match)[resolution.playerId];
+        if (!latestSeatController || latestSeatController.type === 'human') {
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
+        }
+
         const markerBefore = buildAiProgressMarker(match.state, {
             engineConfig: match.engineConfig,
             gameId: match.gameId,
@@ -5526,55 +5300,16 @@ export class GameTransportServer {
         const recoveryFingerprintBefore = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerBefore);
         const executedCommandTypes: string[] = [];
         const isStillOwnedByRecoveredAi = (playerId: string): boolean => {
-            if (!playerId || seatControllers[playerId]?.type === 'human') {
-                return false;
-            }
-
-            const interactionState = match.state.sys?.interaction as {
-                current?: { playerId?: unknown } | null;
-                isBlocked?: unknown;
-            } | undefined;
-            const sharedInteractionPlayerId = typeof interactionState?.current?.playerId === 'string'
-                ? interactionState.current.playerId
-                : null;
-            if (sharedInteractionPlayerId) {
-                return sharedInteractionPlayerId === playerId;
-            }
-
-            if (interactionState?.current == null && interactionState?.isBlocked === true) {
-                const seatView = this.applyPlayerView(match, playerId) as MatchState<unknown>;
-                const seatInteraction = seatView.sys?.interaction as {
-                    current?: { playerId?: unknown } | null;
-                } | undefined;
-                const seatInteractionPlayerId = typeof seatInteraction?.current?.playerId === 'string'
-                    ? seatInteraction.current.playerId
-                    : null;
-                return seatInteractionPlayerId === playerId;
-            }
-
-            const responseWindow = match.state.sys?.responseWindow as {
-                current?: {
-                    responderQueue?: unknown;
-                    currentResponderIndex?: unknown;
-                };
-            } | undefined;
-            const responderQueue = Array.isArray(responseWindow?.current?.responderQueue)
-                ? responseWindow.current.responderQueue
-                : [];
-            const responderIndex = typeof responseWindow?.current?.currentResponderIndex === 'number'
-                ? responseWindow.current.currentResponderIndex
-                : 0;
-            const responderId = typeof responderQueue[responderIndex] === 'string'
-                ? responderQueue[responderIndex]
-                : null;
-            if (responderId) {
-                return responderId === playerId && seatControllers[responderId]?.type !== 'human';
-            }
-
-            return resolveOnlineAiCurrentPlayerId(match.state, {
-                engineConfig: match.engineConfig,
-                gameId: match.gameId,
-            }) === playerId;
+            return isOnlineAiRecoveryStillOwnedByAi({
+                playerId,
+                sharedState: match.state,
+                seatControllers,
+                resolveSeatState: (seatPlayerId) => this.applyPlayerView(match, seatPlayerId) as MatchState<unknown>,
+                resolveCurrentPlayerId: () => resolveOnlineAiCurrentPlayerId(match.state, {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                }),
+            });
         };
         for (const command of resolution.action.commands) {
             if (executedCommandTypes.length > 0 && !isStillOwnedByRecoveredAi(resolution.playerId)) {
@@ -5598,6 +5333,7 @@ export class GameTransportServer {
                     resolved,
                 });
 
+                markOnlineAiVisibleActionCompleted(delayContext, delayResult);
                 return {
                     applied: true,
                     resolved,
@@ -5765,6 +5501,7 @@ export class GameTransportServer {
             resolved,
         });
 
+        markOnlineAiVisibleActionCompleted(delayContext, delayResult);
         return {
             applied: true,
             resolved,

@@ -25,7 +25,7 @@
  */
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { scheduleFxFrameCallback, type FxFrameSubscription, type FxQuality } from '../../../engine/fx';
+import type { FxQuality } from '../../../engine/fx';
 import { RiftSlash, getRiftPresetByDamage } from './RiftSlash';
 import { RedPulse } from './RedPulse';
 import { DamageNumber } from './DamageNumber';
@@ -115,17 +115,17 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   useEffect(() => {
     if (!active) return;
 
-    const cancelScheduledCallbacks: FxFrameSubscription[] = [];
+    const timers: number[] = [];
 
     const triggerEffects = () => {
       if (showSlash) {
         setSlashActive(true);
-        cancelScheduledCallbacks.push(scheduleFxFrameCallback(slashActiveMs, () => setSlashActive(false)));
+        timers.push(window.setTimeout(() => setSlashActive(false), slashActiveMs));
       }
 
       if (showRedPulse) {
         setPulseActive(true);
-        cancelScheduledCallbacks.push(scheduleFxFrameCallback(pulseActiveMs ?? (isStrong ? 500 : 350), () => setPulseActive(false)));
+        timers.push(window.setTimeout(() => setPulseActive(false), pulseActiveMs ?? (isStrong ? 500 : 350)));
       }
 
       if (showNumber) {
@@ -134,15 +134,15 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
     };
 
     if (startDelayMs > 0) {
-      cancelScheduledCallbacks.push(scheduleFxFrameCallback(startDelayMs, triggerEffects));
+      timers.push(window.setTimeout(triggerEffects, startDelayMs));
     } else {
       triggerEffects();
     }
 
     // 完成回调：等最长的效果结束
-    cancelScheduledCallbacks.push(scheduleFxFrameCallback(startDelayMs + completeMs, () => onCompleteRef.current?.()));
+    timers.push(window.setTimeout(() => onCompleteRef.current?.(), startDelayMs + completeMs));
 
-    return () => cancelScheduledCallbacks.forEach(cancel => cancel());
+    return () => timers.forEach(timer => window.clearTimeout(timer));
   }, [active, showSlash, showRedPulse, showNumber, isStrong, slashActiveMs, pulseActiveMs, startDelayMs, completeMs]);
 
   if (!active) return null;
@@ -152,7 +152,6 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
       className={`absolute inset-0 pointer-events-none ${className}`}
       style={{ overflow: 'visible' }}
     >
-      {/* 斜切 */}
       {showSlash && (
         <RiftSlash
           isActive={slashActive}
@@ -163,7 +162,6 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
         />
       )}
 
-      {/* 红色脉冲 */}
       {showRedPulse && (
         <RedPulse
           active={pulseActive}
@@ -173,7 +171,6 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
         />
       )}
 
-      {/* 伤害数字 */}
       {showNumber && (
         <DamageNumber
           triggerKey={dmgKey}

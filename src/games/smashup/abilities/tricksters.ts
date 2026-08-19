@@ -203,6 +203,15 @@ function collectDisenchantTargets(state: AbilityContext['state']): Array<{ uid: 
 
 function collectBlockThePathFactions(state: AbilityContext['state']): string[] {
     const factionSet = new Set<string>();
+    // Block the Path lets the player name a faction, not only one currently
+    // visible on the table. Prefer the factions selected for this match, then
+    // fall back to card zones for fixtures that omit the selection metadata.
+    for (const pid of state.turnOrder) {
+        const player = state.players[pid];
+        for (const faction of player.factions ?? []) {
+            factionSet.add(faction);
+        }
+    }
     for (const base of state.bases) {
         for (const minion of base.minions) {
             const def = getCardDef(minion.defId);
@@ -212,6 +221,10 @@ function collectBlockThePathFactions(state: AbilityContext['state']): string[] {
     for (const pid of state.turnOrder) {
         const player = state.players[pid];
         for (const card of player.hand) {
+            const def = getCardDef(card.defId);
+            if (def?.faction) factionSet.add(def.faction);
+        }
+        for (const card of [...player.deck, ...player.discard, ...(player.storedCards ?? [])]) {
             const def = getCardDef(card.defId);
             if (def?.faction) factionSet.add(def.faction);
         }

@@ -1,7 +1,7 @@
 /**
- * ShakeContainer — 震动容器（共享 FX 帧时钟驱动）
+ * ShakeContainer — 震动容器（本地 rAF 驱动）
  *
- * 通过统一 FX 帧时钟驱动 transform 实现震动，
+ * 通过组件本地 requestAnimationFrame 驱动 transform 实现震动，
  * 支持 paused prop 冻结在当前偏移位置（用于钝帧卡肉）。
  *
  * framer-motion variant 方案无法实现"冻在当前位置"——
@@ -9,7 +9,6 @@
  */
 
 import React, { useRef, useEffect, useCallback } from 'react';
-import { scheduleFxFrameCallback, subscribeFxFrame, type FxFrameSubscription } from '../../../engine/fx';
 
 interface ShakeContainerProps {
     children: React.ReactNode;
@@ -46,11 +45,6 @@ function lerpFrame(a: typeof KEYFRAMES[0], b: typeof KEYFRAMES[0], t: number) {
     };
 }
 
-function clampProgress(progress: number): number {
-    if (!Number.isFinite(progress)) return 1;
-    return Math.max(0, Math.min(progress, 1));
-}
-
 // 震动容器组件 - 包裹子元素并在触发时震动
 export const ShakeContainer = ({
     children,
@@ -61,7 +55,7 @@ export const ShakeContainer = ({
     onClick,
 }: ShakeContainerProps) => {
     const elRef = useRef<HTMLDivElement>(null);
-    const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
+    const rafRef = useRef<number | undefined>(undefined);
     // 震动进度（0~1），用于暂停/恢复
     const progressRef = useRef(0);
     const startTimeRef = useRef(0);
@@ -70,24 +64,24 @@ export const ShakeContainer = ({
     const DURATION = 500; // ms，与原 shakeVariants 一致
 
     const stopTick = useCallback(() => {
-        unsubscribeRef.current?.();
-        unsubscribeRef.current = undefined;
+        if (rafRef.current !== undefined) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = undefined;
+        }
     }, []);
 
     const applyTransform = useCallback((progress: number) => {
         const el = elRef.current;
         if (!el) return;
 
-        const safeProgress = clampProgress(progress);
-
-        if (safeProgress >= 1) {
+        if (progress >= 1) {
             el.style.transform = '';
             return;
         }
 
         // 根据 progress 找到当前在哪两个关键帧之间
         const totalFrames = KEYFRAMES.length - 1;
-        const rawIdx = safeProgress * totalFrames;
+        const rawIdx = progress * totalFrames;
         const idx = Math.min(Math.floor(rawIdx), totalFrames - 1);
         const localT = rawIdx - idx;
 
@@ -113,21 +107,23 @@ export const ShakeContainer = ({
         pausedRef.current = false;
         startTimeRef.current = performance.now();
 
-        const tick = (now: number) => {
+        const tick = () => {
             if (pausedRef.current) return;
 
-            const elapsed = now - startTimeRef.current;
+            const elapsed = performance.now() - startTimeRef.current;
             const p = Math.min(elapsed / DURATION, 1);
             progressRef.current = p;
             applyTransform(p);
 
-            if (p >= 1) {
-                stopTick();
+            if (p < 1) {
+                rafRef.current = requestAnimationFrame(tick);
+            } else {
+                rafRef.current = undefined;
             }
         };
 
         stopTick();
-        unsubscribeRef.current = subscribeFxFrame(({ now }) => tick(now));
+        rafRef.current = requestAnimationFrame(tick);
 
         return stopTick;
     }, [isShaking, applyTransform, stopTick]);
@@ -137,7 +133,7 @@ export const ShakeContainer = ({
         if (!isShaking) return;
 
         if (paused && !pausedRef.current) {
-            // 暂停：停止帧订阅，transform 保持当前值
+            // 暂停：停止本地 rAF，transform 保持当前值
             pausedRef.current = true;
             stopTick();
         } else if (!paused && pausedRef.current) {
@@ -148,21 +144,23 @@ export const ShakeContainer = ({
 
             startTimeRef.current = performance.now();
 
-            const tick = (now: number) => {
+            const tick = () => {
                 if (pausedRef.current) return;
 
-                const elapsed = now - startTimeRef.current;
+                const elapsed = performance.now() - startTimeRef.current;
                 const p = Math.min(fromP + elapsed / DURATION, 1);
                 progressRef.current = p;
                 applyTransform(p);
 
-                if (p >= 1) {
-                    stopTick();
+                if (p < 1) {
+                    rafRef.current = requestAnimationFrame(tick);
+                } else {
+                    rafRef.current = undefined;
                 }
             };
 
             stopTick();
-            unsubscribeRef.current = subscribeFxFrame(({ now }) => tick(now));
+            rafRef.current = requestAnimationFrame(tick);
         }
     }, [paused, isShaking, applyTransform, stopTick]);
 
@@ -181,20 +179,24 @@ export const ShakeContainer = ({
 // Hook：管理震动状态
 export const useShake = (duration = 500) => {
     const [isShaking, setIsShaking] = React.useState(false);
-    const cancelResetRef = React.useRef<FxFrameSubscription | undefined>(undefined);
+    const resetTimerRef = React.useRef<number | undefined>(undefined);
 
     React.useEffect(() => () => {
-        cancelResetRef.current?.();
-        cancelResetRef.current = undefined;
+        if (resetTimerRef.current !== undefined) {
+            window.clearTimeout(resetTimerRef.current);
+            resetTimerRef.current = undefined;
+        }
     }, []);
 
     const triggerShake = React.useCallback(() => {
-        cancelResetRef.current?.();
+        if (resetTimerRef.current !== undefined) {
+            window.clearTimeout(resetTimerRef.current);
+        }
         setIsShaking(true);
-        cancelResetRef.current = scheduleFxFrameCallback(duration, () => {
+        resetTimerRef.current = window.setTimeout(() => {
             setIsShaking(false);
-            cancelResetRef.current = undefined;
-        });
+            resetTimerRef.current = undefined;
+        }, duration);
     }, [duration]);
 
     return { isShaking, triggerShake };

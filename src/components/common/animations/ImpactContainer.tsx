@@ -17,7 +17,6 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 import { HitStopContainer, getHitStopPresetByDamage, type HitStopConfig } from './HitStopContainer';
 import { ShakeContainer } from './ShakeContainer';
 
@@ -50,13 +49,11 @@ export interface ImpactContainerProps extends ImpactConfig {
   onClick?: () => void;
 }
 
-/** 默认效果开关 */
 const DEFAULT_EFFECTS: ImpactEffects = {
   shake: true,
   hitStop: false,
 };
 
-/** 打击感容器 */
 export const ImpactContainer: React.FC<ImpactContainerProps> = ({
   children,
   isActive,
@@ -73,21 +70,17 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [isHitStopping, setIsHitStopping] = useState(false);
 
-  // 用 ref 持有 onComplete，避免父组件传内联函数导致 useEffect 重跑
   const onCompleteRef = React.useRef(onComplete);
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!isActive) return;
 
-    const cancelScheduledCallbacks: FxFrameSubscription[] = [];
+    const timers: number[] = [];
     const preset = hitStopConfig ?? getHitStopPresetByDamage(damage);
     const hitStopDur = preset.duration ?? 80;
     const doShake = !!effects.shake;
     const doHitStop = !!effects.hitStop;
-
-    // 时序编排：震动开始 → 延迟后钝帧插入（paused 冻住） → 钝帧结束（恢复震动） → 震动结束
-    // 钝帧在震动进行约 80ms 时插入，模拟"卡肉"手感
     const hitStopDelay = doShake ? 80 : 0;
 
     if (doShake) {
@@ -96,32 +89,29 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
     }
 
     if (doHitStop) {
-      // 延迟插入钝帧：暂停震动（冻在当前偏移位置）
-      cancelScheduledCallbacks.push(scheduleFxFrameCallback(hitStopDelay, () => {
+      timers.push(window.setTimeout(() => {
         setIsPaused(true);
         setIsHitStopping(true);
 
-        // 钝帧结束后解冻
-        cancelScheduledCallbacks.push(scheduleFxFrameCallback(hitStopDur, () => {
+        timers.push(window.setTimeout(() => {
           setIsPaused(false);
           setIsHitStopping(false);
-        }));
-      }));
+        }, hitStopDur));
+      }, hitStopDelay));
     }
 
-    // 总时长 = 震动时长 + 钝帧冻结时长（冻结期间震动暂停，所以要加上）
     const totalDuration = doShake
       ? shakeDuration + (doHitStop ? hitStopDur : 0)
       : (doHitStop ? hitStopDelay + hitStopDur + 100 : 300);
 
-    cancelScheduledCallbacks.push(scheduleFxFrameCallback(totalDuration, () => {
+    timers.push(window.setTimeout(() => {
       setIsShaking(false);
       setIsPaused(false);
       setIsHitStopping(false);
       onCompleteRef.current?.();
-    }));
+    }, totalDuration));
 
-    return () => cancelScheduledCallbacks.forEach(cancel => cancel());
+    return () => timers.forEach(timer => window.clearTimeout(timer));
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finalHitStopConfig = hitStopConfig ?? getHitStopPresetByDamage(damage);
@@ -145,23 +135,34 @@ export const ImpactContainer: React.FC<ImpactContainerProps> = ({
   );
 };
 
-/** Hook：统一管理打击感状态 */
 export const useImpact = () => {
   const [isActive, setIsActive] = useState(false);
   const [config, setConfig] = useState<ImpactConfig>({});
+  const resetTimerRef = React.useRef<number | undefined>(undefined);
+
+  React.useEffect(() => () => {
+    if (resetTimerRef.current !== undefined) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = undefined;
+    }
+  }, []);
 
   const triggerImpact = useCallback((overrideConfig?: ImpactConfig) => {
     const finalConfig = { ...config, ...overrideConfig };
     setConfig(finalConfig);
     setIsActive(true);
-    const cancel = scheduleFxFrameCallback(50, () => setIsActive(false));
-    return cancel;
+    if (resetTimerRef.current !== undefined) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+    resetTimerRef.current = window.setTimeout(() => {
+      setIsActive(false);
+      resetTimerRef.current = undefined;
+    }, 50);
   }, [config]);
 
   return { isActive, config, triggerImpact };
 };
 
-/** 预设：根据伤害值获取完整配置 */
 export const getImpactPresetByDamage = (damage: number): ImpactConfig => ({
   damage,
   hitStopConfig: getHitStopPresetByDamage(damage),

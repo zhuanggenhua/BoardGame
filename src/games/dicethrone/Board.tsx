@@ -533,6 +533,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             const isManualConfirmMode = config?.mode === 'any' || config?.mode === 'adjust';
             const originalData = sysInteraction.data as Record<string, unknown>;
             const selectCount = Number(meta.selectCount) || 1;
+            const completedDieIds = Array.isArray(originalData.completedDieIds)
+                ? originalData.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+                : [];
+            const completedSteps = typeof originalData.completedSteps === 'number' && Number.isFinite(originalData.completedSteps)
+                ? Math.max(0, Math.floor(originalData.completedSteps))
+                : undefined;
+            const completedCount = completedSteps ?? Array.from(new Set(completedDieIds)).length;
+            const remainingSelectCount = Math.max(0, selectCount - completedCount);
             return {
                 ...sysInteraction,
                 data: {
@@ -540,14 +548,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     initialResult: (originalData.initialResult as DiceModifyResult | undefined)
                         ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
                     localReducer: (current: unknown, step: unknown) =>
-                        diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, selectCount),
-                    toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, selectCount),
-                    getCompletedSteps: (result: DiceModifyResult) => result.modCount,
+                        diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, remainingSelectCount),
+                    toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, remainingSelectCount),
+                    getCompletedSteps: (result: DiceModifyResult) => completedCount + result.modCount,
                     // any/adjust 模式：手动确认，禁用 auto-confirm
                     maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
                     minSteps: isManualConfirmMode
                         ? (Number(originalData.minSteps) || 1)
                         : (originalData.minSteps ?? originalData.maxSteps),
+                    completedDieIds,
+                    completedSteps,
                 },
             };
         }
@@ -555,19 +565,36 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (meta.dtType === 'selectDie') {
             const originalData = sysInteraction.data as Record<string, unknown>;
             const selectCount = Number(meta.selectCount) || 1;
+            const allowRepeatedDieSelection = meta.allowRepeatedDieSelection === true;
+            const completedDieIds = Array.isArray(originalData.completedDieIds)
+                ? originalData.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+                : [];
+            const completedSteps = typeof originalData.completedSteps === 'number' && Number.isFinite(originalData.completedSteps)
+                ? Math.max(0, Math.floor(originalData.completedSteps))
+                : undefined;
+            const completedCount = allowRepeatedDieSelection
+                ? (completedSteps ?? completedDieIds.length)
+                : Array.from(new Set(completedDieIds)).length;
+            const remainingSelectCount = Math.max(0, selectCount - completedCount);
             return {
                 ...sysInteraction,
                 data: {
                     ...sysInteraction.data,
                     initialResult: { selectedDiceIds: [] } as DiceSelectResult,
                     localReducer: (current: unknown, step: unknown) =>
-                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, selectCount),
-                    toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, selectCount),
-                    getCompletedSteps: (result: DiceSelectResult) => result.selectedDiceIds.length,
-                    maxSteps: undefined,
+                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, remainingSelectCount, allowRepeatedDieSelection),
+                    toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, remainingSelectCount),
+                    getCompletedSteps: (result: DiceSelectResult) => completedCount + result.selectedDiceIds.length,
+                    maxSteps: typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
+                        ? originalData.maxSteps
+                        : selectCount,
                     minSteps: originalData.minSteps ?? 1,
+                    confirmationMode: 'submitBatch',
+                    shouldResolveOnConfirm: (result: DiceSelectResult) => result.selectedDiceIds.length === 0,
                     allowedDieIds: originalData.allowedDieIds,
-                    completedDieIds: originalData.completedDieIds,
+                    completedDieIds,
+                    completedSteps,
+                    allowRepeatedDieSelection,
                 },
             };
         }
@@ -2262,68 +2289,67 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 currentPhase={currentPhase}
                                 isPassiveRerollSelecting={!!rerollSelectingAction}
                             />
-                            {!isHandHidden && (
-                                <HandArea
-                                    hand={handOwner.hand}
-                                    locale={locale}
-                                    currentPhase={currentPhase}
-                                    playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
-                                    onPlayCard={(card) => {
-                                        const targetAbilityId = card.type === 'upgrade'
-                                            ? getUpgradeTargetAbilityId(card)
-                                            : null;
-                                        if (targetAbilityId) {
-                                            dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
-                                            return true;
-                                        }
-
-                                        const cardCheck = checkPlayCard(
-                                            G,
-                                            rootPid,
-                                            card,
-                                            currentPhase,
-                                            currentResponseWindow?.windowType,
-                                        );
-                                        if (!cardCheck.ok) {
-                                            playDeniedSound();
-                                            toast.warning(t(`error.${cardCheck.reason}`), undefined, {
-                                                dedupeKey: `dicethrone.play-card.${cardCheck.reason}`,
-                                            });
-                                            return false;
-                                        }
-
-                                        engineMoves.playCard(card.id);
+                            <HandArea
+                                hand={handOwner.hand}
+                                locale={locale}
+                                currentPhase={currentPhase}
+                                playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
+                                onPlayCard={(card) => {
+                                    const targetAbilityId = card.type === 'upgrade'
+                                        ? getUpgradeTargetAbilityId(card)
+                                        : null;
+                                    if (targetAbilityId) {
+                                        dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
                                         return true;
-                                    }}
-                                    onSellCard={(cardId) => {
-                                        const blocked = shouldBlockTutorialAction('discard-pile');
-                                        if (blocked) return;
-                                        engineMoves.sellCard(cardId);
-                                        advanceTutorialIfNeeded('discard-pile');
-                                    }}
-                                    onError={(msg) => { playDeniedSound(); toast.warning(msg, undefined, { dedupeKey: 'dicethrone.handArea.error' }); }}
-                                    canInteract={canInteractHand}
-                                    canPlayCards={canPlayHandCards}
-                                    canSellCards={canSellHandCards}
-                                    drawDeckRef={drawDeckRef}
-                                    discardPileRef={discardPileRef}
-                                    undoCardId={lastUndoCardId}
-                                    onSellHintChange={setDiscardHighlighted}
-                                    onPlayHintChange={setCoreAreaHighlighted}
-                                    onSellButtonChange={setSellButtonVisible}
-                                    isDiscardMode={isDiscardMode}
-                                    onDiscardCard={(cardId) => {
-                                        if (shouldBlockTutorialAction('discard-pile')) return;
-                                        engineMoves.discardCard(cardId);
-                                        advanceTutorialIfNeeded('discard-pile');
-                                    }}
-                                    onMagnifyCard={(card) => setMagnifiedCard(card)}
-                                    respondableCardIds={respondableCardIds}
-                                    characterId={handOwner.characterId}
-                                    playerBoardFace={handOwner.playerBoardFace}
-                                    disableCardPointerEvents={Boolean(diceMultistepInteraction)}
-                                />
-                            )}
+                                    }
+
+                                    const cardCheck = checkPlayCard(
+                                        G,
+                                        rootPid,
+                                        card,
+                                        currentPhase,
+                                        currentResponseWindow?.windowType,
+                                    );
+                                    if (!cardCheck.ok) {
+                                        playDeniedSound();
+                                        toast.warning(t(`error.${cardCheck.reason}`), undefined, {
+                                            dedupeKey: `dicethrone.play-card.${cardCheck.reason}`,
+                                        });
+                                        return false;
+                                    }
+
+                                    engineMoves.playCard(card.id);
+                                    return true;
+                                }}
+                                onSellCard={(cardId) => {
+                                    const blocked = shouldBlockTutorialAction('discard-pile');
+                                    if (blocked) return;
+                                    engineMoves.sellCard(cardId);
+                                    advanceTutorialIfNeeded('discard-pile');
+                                }}
+                                onError={(msg) => { playDeniedSound(); toast.warning(msg, undefined, { dedupeKey: 'dicethrone.handArea.error' }); }}
+                                canInteract={canInteractHand}
+                                canPlayCards={canPlayHandCards}
+                                canSellCards={canSellHandCards}
+                                drawDeckRef={drawDeckRef}
+                                discardPileRef={discardPileRef}
+                                undoCardId={lastUndoCardId}
+                                onSellHintChange={setDiscardHighlighted}
+                                onPlayHintChange={setCoreAreaHighlighted}
+                                onSellButtonChange={setSellButtonVisible}
+                                isDiscardMode={isDiscardMode}
+                                onDiscardCard={(cardId) => {
+                                    if (shouldBlockTutorialAction('discard-pile')) return;
+                                    engineMoves.discardCard(cardId);
+                                    advanceTutorialIfNeeded('discard-pile');
+                                }}
+                                onMagnifyCard={(card) => setMagnifiedCard(card)}
+                                respondableCardIds={respondableCardIds}
+                                characterId={handOwner.characterId}
+                                playerBoardFace={handOwner.playerBoardFace}
+                                disableCardPointerEvents={Boolean(diceMultistepInteraction) || isHandHidden}
+                                isHidden={isHandHidden}
+                            />
                         </>
                     );
                 })()}

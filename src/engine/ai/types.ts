@@ -133,7 +133,22 @@ export interface AiActionStrategyMetadata {
     followUpDelayPolicy?: 'skip' | 'delay';
 }
 
-export type AiActionMetadata = Record<string, unknown> & AiActionStrategyMetadata;
+export type AiSetupOptionStatus = 'available' | 'in_progress' | 'disabled';
+
+export interface AiSetupOptionActionMetadata {
+    /** 开局选项可玩状态：共享 AI 层默认据此过滤自动选择。 */
+    setupOptionStatus?: AiSetupOptionStatus;
+    setupOptionStatusReason?: string;
+}
+
+export interface AiSetupOptionStatusResolution {
+    status: AiSetupOptionStatus;
+    reason?: string;
+}
+
+export type AiActionMetadata = Record<string, unknown>
+    & AiActionStrategyMetadata
+    & AiSetupOptionActionMetadata;
 
 export interface AiLegalAction {
     actionId: string;
@@ -242,6 +257,15 @@ export interface GameAiRuntime {
     gameId: string;
     buildLegalActions(args: BuildGameAiLegalActionsArgs): AiLegalAction[];
     buildFeatureSnapshot?(args: BuildGameAiFeatureSnapshotArgs): Record<string, unknown> | null | undefined;
+    /**
+     * 统一开局选项可玩状态：共享 AI 层据此过滤自动选择。
+     * 游戏只负责把自己的配置真相源翻译到这里，不能让 UI 元数据成为 AI 真相源。
+     */
+    resolveSetupOptionStatus?(args: {
+        playerId: PlayerId;
+        state: MatchState<unknown>;
+        action: AiLegalAction;
+    }): AiSetupOptionStatus | AiSetupOptionStatusResolution | null | undefined;
     refineAiAction?(args: {
         context: AiDecisionContext;
         proposedAction: AiLegalAction;

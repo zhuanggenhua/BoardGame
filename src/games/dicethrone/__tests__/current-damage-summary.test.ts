@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, PendingBonusDiceSettlement } from '../domain/types';
-import { getCurrentDamageSummary } from '../domain/damageSummary';
+import { getCurrentDamageSummary, getCurrentDamageSummaryDetails } from '../domain/damageSummary';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 import { RESOURCE_IDS } from '../domain/resources';
 
@@ -57,6 +57,33 @@ describe('DiceThrone 当前总伤害摘要', () => {
         });
     });
 
+    it('Token 响应伤害摘要声明当前值实时读正式伤害账本，原始值使用创建时快照', () => {
+        expect(getCurrentDamageSummaryDetails(baseCore({
+            pendingDamage: {
+                source: { playerId: '0', abilityId: 'test-attack' },
+                target: { playerId: '1' },
+                originalDamage: 5,
+                currentDamage: 4,
+                timing: 'beforeDamageDealt',
+                resolved: false,
+                usedTokens: [],
+            } as DiceThroneCore['pendingDamage'],
+        }))).toEqual({
+            currentDamage: 4,
+            originalDamage: 5,
+            current: {
+                mode: 'live',
+                authority: 'formal-rule-state',
+                source: 'pendingDamage',
+            },
+            original: {
+                mode: 'snapshot',
+                authority: 'formal-rule-state',
+                source: 'pendingDamage',
+            },
+        });
+    });
+
     it('攻击加伤奖励骰改骰后按最终骰面实时改变总伤害', () => {
         const withSix = getCurrentDamageSummary(baseCore({
             pendingBonusDiceSettlement: attackSettlement({
@@ -75,6 +102,29 @@ describe('DiceThrone 当前总伤害摘要', () => {
 
         expect(withSix).toEqual({ currentDamage: 8, originalDamage: 5 });
         expect(withFour).toEqual({ currentDamage: 7, originalDamage: 5 });
+    });
+
+    it('奖励骰总伤害声明为实时预览，不冒充最终结算账本', () => {
+        expect(getCurrentDamageSummaryDetails(baseCore({
+            pendingBonusDiceSettlement: attackSettlement({
+                dice: [{ index: 0, value: 6, face: 'bullet', effectParams: { value: 6, bonusDamage: 3 } }],
+                resolutionMode: 'attackBonus',
+                attackBonusScale: 'halfUp',
+            }),
+        }))).toEqual({
+            currentDamage: 8,
+            originalDamage: 5,
+            current: {
+                mode: 'live',
+                authority: 'rule-preview',
+                source: 'pendingBonusDiceSettlement',
+            },
+            original: {
+                mode: 'live',
+                authority: 'formal-rule-state',
+                source: 'pendingAttack',
+            },
+        });
     });
 
     it('summary 型奖励骰按 summaryEffectParams 实时计入当前攻击总伤害', () => {

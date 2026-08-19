@@ -51,10 +51,29 @@ const findAvailableExplorerId = (state: MatchState<BetrayalCore>) => {
 };
 
 describe('小黑屋操作日志与撤回', () => {
-    it('全部正式命令共用同一日志和撤回白名单', () => {
+    it('全部正式命令有日志白名单，撤回白名单独立排除纯确认命令', () => {
         const commands = Object.values(BETRAYAL_COMMANDS);
         expect(BETRAYAL_ACTION_LOG_ALLOWLIST).toEqual(commands);
-        expect(BETRAYAL_UNDO_ALLOWLIST).toEqual(commands);
+        expect(BETRAYAL_UNDO_ALLOWLIST).not.toBe(BETRAYAL_ACTION_LOG_ALLOWLIST);
+        for (const command of BETRAYAL_UNDO_ALLOWLIST) {
+            expect(commands).toContain(command);
+        }
+        expect(BETRAYAL_UNDO_ALLOWLIST).toEqual(expect.arrayContaining([
+            BETRAYAL_COMMANDS.SELECT_EXPLORER,
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD,
+            BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
+        ]));
+        for (const confirmationCommand of [
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+            BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY,
+        ]) {
+            expect(BETRAYAL_UNDO_ALLOWLIST).not.toContain(confirmationCommand);
+        }
         expect(engineConfig.disableUndo).not.toBe(true);
         expect(engineConfig.systems.map((system) => system.id)).toEqual(
             expect.arrayContaining(['actionLog', 'undo', 'cheat']),

@@ -556,25 +556,52 @@ function acknowledgeSingleEventEffectResolution(
     cardName: string,
     expectedTextFragment: string,
 ): BetrayalCore {
-    expect(core.pendingCardResolutionQueue).toHaveLength(1);
-    expect(core.pendingCardResolutionQueue[0]).toMatchObject({
-        deckKind: 'event',
-        cardName,
-        stepKind: 'event-effect',
-        text: expect.stringContaining(expectedTextFragment),
-        index: 1,
-        total: 1,
-    });
-    expect(BetrayalDomain.validate(
-        { core, sys: {} as never },
-        createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, core.currentPlayer, {}),
-    )).toMatchObject({
-        valid: false,
-        error: '请先确认当前翻牌结算。',
-    });
-    const nextCore = acknowledgePendingCardResolutions(core);
-    expect(nextCore.pendingCardResolutionQueue).toEqual([]);
-    return nextCore;
+    expect(core.latestDiscovery?.title).toBe(cardName);
+    expect(core.latestDiscovery?.resolutionSteps?.some((step) =>
+        step.kind === 'event-effect' &&
+        step.text.includes(expectedTextFragment),
+    )).toBe(true);
+
+    if (core.pendingCardResolutionQueue.length > 0) {
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName,
+            stepKind: 'event-effect',
+            text: expect.stringContaining(expectedTextFragment),
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, core.currentPlayer, {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        const nextCore = acknowledgePendingCardResolutions(core);
+        expect(nextCore.pendingCardResolutionQueue).toEqual([]);
+        return nextCore;
+    }
+
+    if (core.pendingEventRollResolution) {
+        expect(core.pendingEventRollResolution.sourceTitle).toBe(cardName);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, core.currentPlayer, {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认事件骰的最终结果。',
+        });
+        const nextCore = acknowledgePendingEventRollResolution(core);
+        expect(nextCore.pendingEventRollResolution).toBeNull();
+        expect(nextCore.pendingCardResolutionQueue).toEqual([]);
+        return nextCore;
+    }
+
+    expect(core.pendingCardResolutionQueue).toEqual([]);
+    expect(core.pendingEventRollResolution).toBeNull();
+    return core;
 }
 
 function acknowledgeAnyPendingCardResolutions(core: BetrayalCore): BetrayalCore {
@@ -3945,7 +3972,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.speed).toBe(3);
     });
 
-    it('即时事件效果进入全员确认队列，所有玩家确认前不放行行动', () => {
+    it('投骰事件使用同一个全员确认窗口，最后一票直接放行结算', () => {
         let core = createStartedFirstScenarioCore(['0', '1']);
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -3962,6 +3989,7 @@ describe('Betrayal first scenario runtime', () => {
             { roomId: 'ground-north' },
             100,
             createBetrayalScriptedRandom(3, 3, 3),
+            false,
         );
 
         expect(core.latestDiscovery?.title).toBe('外星几何');
@@ -3972,13 +4000,10 @@ describe('Betrayal first scenario runtime', () => {
             { kind: 'event-effect', text: '事件效果：知识检定 6：获得 1 点知识；知识 +1' },
         ]);
         const requiredPlayerIds = [...core.playerIds];
-        expect(core.pendingCardResolutionQueue).toHaveLength(1);
-        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
-            deckKind: 'event',
-            cardName: '外星几何',
-            stepKind: 'event-effect',
-            index: 1,
-            total: 1,
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            rollId: core.recentRoll?.id,
+            sourceTitle: '外星几何',
             requiredPlayerIds,
             acknowledgedPlayerIds: [],
         });
@@ -3987,15 +4012,15 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认当前翻牌结算。',
+            error: '请先确认事件骰的最终结果。',
         });
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
-            resolutionId: core.pendingCardResolutionQueue[0]!.id,
-        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '0', {
+            rollId: core.pendingEventRollResolution!.rollId,
+        }, 100, BETRAYAL_FIXED_RANDOM, false);
 
-        expect(core.pendingCardResolutionQueue).toHaveLength(1);
-        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(core.pendingEventRollResolution).toMatchObject({
             requiredPlayerIds,
             acknowledgedPlayerIds: ['0'],
         });
@@ -4004,15 +4029,16 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认当前翻牌结算。',
+            error: '请先确认事件骰的最终结果。',
         });
 
         for (const playerId of requiredPlayerIds.slice(1)) {
-            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, playerId, {
-                resolutionId: core.pendingCardResolutionQueue[0]!.id,
-            });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, playerId, {
+                rollId: core.pendingEventRollResolution!.rollId,
+            }, 100, BETRAYAL_FIXED_RANDOM, false);
         }
 
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },

@@ -27,6 +27,7 @@ interface DtDiceSelectMeta {
     selectCount: number;
     diceOwnerId?: PlayerId;
     targetOpponentDice: boolean;
+    allowRepeatedDieSelection?: boolean;
 }
 
 type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
@@ -64,6 +65,20 @@ function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined 
     const meta = (interaction.data as { meta?: DtDiceMeta } | undefined)?.meta;
     if (!meta?.dtType) return undefined;
     return meta;
+}
+
+function getCompletedDiceStepCount(interaction?: InteractionDescriptor, meta?: DtDiceMeta): number {
+    if (!interaction || interaction.kind !== 'multistep-choice') return 0;
+    const data = interaction.data as { completedSteps?: unknown; completedDieIds?: unknown } | undefined;
+    if (typeof data?.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {
+        return Math.max(0, Math.floor(data.completedSteps));
+    }
+    if (!Array.isArray(data?.completedDieIds)) return 0;
+    const completedDieIds = data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number');
+    if (meta?.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true) {
+        return completedDieIds.length;
+    }
+    return Array.from(new Set(completedDieIds)).length;
 }
 
 export const DiceTray = ({
@@ -120,6 +135,7 @@ export const DiceTray = ({
     const isModifyMode = dtMeta?.dtType === 'modifyDie';
     const isSelectMode = dtMeta?.dtType === 'selectDie';
     const dieModifyConfig = isModifyMode ? dtMeta.dieModifyConfig : undefined;
+    const allowRepeatedDieSelection = isSelectMode && dtMeta?.allowRepeatedDieSelection === true;
     const diceOwnerId = dtMeta?.diceOwnerId;
     const isAnyMode = dieModifyConfig?.mode === 'any';
     const isAdjustMode = dieModifyConfig?.mode === 'adjust';
@@ -145,9 +161,10 @@ export const DiceTray = ({
     }, [isModifyMode, isSelectMode, modifyResult?.modifications, selectResult?.selectedDiceIds]);
 
     const maxSelectCount = dtMeta?.selectCount ?? 1;
+    const completedInteractionCount = getCompletedDiceStepCount(interaction, dtMeta);
     const currentSelectCount = isSelectMode
-        ? (selectResult?.selectedDiceIds.length ?? 0)
-        : (modifyResult?.modCount ?? 0);
+        ? completedInteractionCount + (selectResult?.selectedDiceIds.length ?? 0)
+        : completedInteractionCount + (modifyResult?.modCount ?? 0);
     const canSelectMore = currentSelectCount < maxSelectCount;
     const canToggleDieLock = canInteract && rollCount > 0;
     const diceTrayStyle = isInteractionMode
@@ -250,10 +267,17 @@ export const DiceTray = ({
                     const isReadOnlyDisplayDie = !isInteractionMode
                         && Boolean(die.displayOnly)
                         && !isBonusRerollMode;
+                    const canClickInteractionDie = isAnyMode
+                        ? false
+                        : !isInactiveDie && (
+                            allowRepeatedDieSelection
+                                ? canSelectMore
+                                : (canSelectMore || selected)
+                        );
                     const clickable = isReadOnlyDisplayDie
                         ? false
                         : isInteractionMode
-                        ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
+                        ? canClickInteractionDie
                         : (isPassiveRerollMode
                             ? canInteract
                             : isBonusRerollMode

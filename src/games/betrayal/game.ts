@@ -20491,15 +20491,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 applyDustEventEffectDeathIfNeeded(core);
             }
             core.pendingEventRollResolution = null;
+            core.pendingCardResolutionQueue = [];
             const eventTriggerPlayerId = event.payload.triggerPlayerId || event.payload.playerId;
-            core.pendingCardResolutionQueue = createPendingCardResolutionQueue({
-                playerId: eventTriggerPlayerId,
-                requiredPlayerIds: core.playerIds,
-                roomId: core.currentExplorer.roomId,
-                timestamp: event.timestamp,
-                deckKind: 'event',
-                discovery: core.latestDiscovery,
-            });
             const synced = syncCurrentExplorerProjection(core);
             let nextCore = {
                 ...synced,
@@ -23142,6 +23135,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ...core,
                 phase: 'endgame',
                 recommendedAction: 'endTurn',
+                pendingEventRollResolution: null,
+                pendingCardResolutionQueue: [],
                 endgameResult: {
                     ...event.payload.result,
                     winners: [...event.payload.result.winners],

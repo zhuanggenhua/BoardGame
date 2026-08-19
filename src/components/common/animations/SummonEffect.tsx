@@ -40,6 +40,8 @@ export interface SummonEffectProps {
   originY?: number;
   /** 特效质量档：reduced 降低 DPR 和持续粒子密度 */
   quality?: FxQuality;
+  /** 爆发瞬间回调，用于 FX 反馈包触发音效/震动 */
+  onImpact?: () => void;
   onComplete?: () => void;
   className?: string;
 }
@@ -206,14 +208,17 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
   customColors,
   originY = 0.78,
   quality = 'full',
+  onImpact,
   onComplete,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onImpactRef = useRef(onImpact);
   const onCompleteRef = useRef(onComplete);
   useLayoutEffect(() => {
+    onImpactRef.current = onImpact;
     onCompleteRef.current = onComplete;
-  }, [onComplete]);
+  }, [onImpact, onComplete]);
 
   const isStrong = intensity === 'strong';
 
@@ -257,6 +262,7 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
     // 冲击波环
     const rings: { t0: number; dur: number; maxR: number }[] = [];
     let ringsSpawned = false;
+    let impactFired = false;
     const ringMaxR = Math.min(cw, ch) * 0.4;
 
     let startTime = 0;
@@ -269,6 +275,11 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
       lastTime = now;
       const elapsed = (now - startTime) / 1000;
       const t = Math.min(1, elapsed / totalDuration);
+
+      if (!impactFired && t >= 0.12) {
+        impactFired = true;
+        onImpactRef.current?.();
+      }
 
       ctx.clearRect(0, 0, cw, ch);
       ctx.globalCompositeOperation = 'lighter';

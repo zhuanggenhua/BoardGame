@@ -10,6 +10,15 @@ import {
     updatePlayer,
 } from './utils';
 import { resolveMageWarsObjectEffectiveLife } from './spellRules';
+import {
+    applyMovementTemporaryTraits,
+    applyObjectAbilityTemporaryGrants,
+    applyTemporaryTraitGain,
+    clearPostMoveAttackTraits,
+    clearTemporaryTraits,
+    hasExpiredRoundScopedTemporaryTraits,
+} from './temporaryTraits';
+import { recordObjectAbilityUseInRound } from './objectAbilityUsage';
 
 function removePreparedSpell(preparedSpellCardIds: number[], spellCardId: number): number[] {
     let removed = false;
@@ -147,74 +156,6 @@ function recordDamageBarrierTrigger(
     });
 }
 
-function clearTemporaryTraits(
-    object: MageWarsArenaObjectState,
-    traitIds?: readonly string[],
-): MageWarsArenaObjectState {
-    if (!object.temporaryTraits) return object;
-    if (!traitIds?.length) {
-        const { temporaryTraits: _temporaryTraits, ...nextObject } = object;
-        return nextObject;
-    }
-
-    const nextTraits = { ...object.temporaryTraits };
-    for (const traitId of traitIds) {
-        switch (traitId) {
-            case 'swift':
-                delete nextTraits.swift;
-                break;
-            case 'teleportMovement':
-                delete nextTraits.teleportMovement;
-                break;
-            case 'swiftFreeMove':
-                delete nextTraits.freeMoveUsedThisAction;
-                break;
-            case 'movedThisAction':
-                delete nextTraits.movedThisAction;
-                break;
-            case 'quickActionAfterMove':
-                delete nextTraits.quickActionAfterMoveAvailable;
-                break;
-            case 'charge':
-                delete nextTraits.chargeDiceModifier;
-                break;
-            case 'meleeDice':
-                delete nextTraits.meleeDiceModifier;
-                delete nextTraits.meleeDiceModifierUntilRoundNumber;
-                break;
-            case 'vampiric':
-                delete nextTraits.vampiricNextMelee;
-                break;
-            case 'pierce':
-                delete nextTraits.nextMeleePierceModifier;
-                break;
-            default:
-                break;
-        }
-    }
-
-    return {
-        ...object,
-        temporaryTraits: Object.keys(nextTraits).length > 0 ? nextTraits : undefined,
-    };
-}
-
-function clearPostMoveAttackTraits(object: MageWarsArenaObjectState): MageWarsArenaObjectState {
-    if (!object.temporaryTraits?.movedThisAction && !object.temporaryTraits?.quickActionAfterMoveAvailable) {
-        return object;
-    }
-
-    const {
-        movedThisAction: _movedThisAction,
-        quickActionAfterMoveAvailable: _quickActionAfterMoveAvailable,
-        ...remainingTraits
-    } = object.temporaryTraits;
-    return {
-        ...object,
-        temporaryTraits: Object.keys(remainingTraits).length > 0 ? remainingTraits : undefined,
-    };
-}
-
 function applyArenaObjectAttackActionCost(
     core: MageWarsCore,
     attackerObjectId: string,
@@ -260,8 +201,7 @@ function clearExpiredRoundScopedTemporaryTraits(
     roundNumber: number,
 ): MageWarsCore {
     return Object.values(core.objects).reduce((nextCore, object) => (
-        object.temporaryTraits?.meleeDiceModifierUntilRoundNumber !== undefined
-        && object.temporaryTraits.meleeDiceModifierUntilRoundNumber < roundNumber
+        hasExpiredRoundScopedTemporaryTraits(object, roundNumber)
             ? updateArenaObject(nextCore, object.id, (current) => clearTemporaryTraits(current, ['meleeDice']))
             : nextCore
     ), core);
@@ -439,27 +379,19 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 ...player,
                 mana: Math.max(0, player.mana - event.payload.manaCost),
             }));
-            const resolved = updateArenaObject(paid, event.payload.objectId, (object) => ({
-                ...object,
-                abilityUseRoundNumbers: event.payload.roundNumber === undefined
-                    ? object.abilityUseRoundNumbers
-                    : {
-                        ...object.abilityUseRoundNumbers,
-                        [event.payload.abilityId]: event.payload.roundNumber,
-                    },
-                actionReady: event.payload.actionCost === 'normal' ? false : object.actionReady,
-                boundSpellCardId: event.payload.boundSpellCardId === undefined
-                    ? object.boundSpellCardId
-                    : event.payload.boundSpellCardId,
-                temporaryTraits: event.payload.grants?.length
-                    ? {
-                        ...object.temporaryTraits,
-                        swift: event.payload.grants.includes('swift') ? true : object.temporaryTraits?.swift,
-                        teleportMovement: event.payload.grants.includes('teleportMovement') ? true : object.temporaryTraits?.teleportMovement,
-                        freeMoveUsedThisAction: false,
-                    }
-                    : object.temporaryTraits,
-            }));
+            const resolved = updateArenaObject(paid, event.payload.objectId, (object) => (
+                applyObjectAbilityTemporaryGrants({
+                    ...recordObjectAbilityUseInRound(
+                        object,
+                        event.payload.abilityId,
+                        event.payload.roundNumber,
+                    ),
+                    actionReady: event.payload.actionCost === 'normal' ? false : object.actionReady,
+                    boundSpellCardId: event.payload.boundSpellCardId === undefined
+                        ? object.boundSpellCardId
+                        : event.payload.boundSpellCardId,
+                }, event.payload.grants)
+            ));
             if (!event.payload.actionTrack) return resolved;
             return updatePlayer(resolved, event.payload.ownerId, (player) => ({
                 ...player,
@@ -470,46 +402,9 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
         }
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_GAINED:
-            return updateArenaObject(core, event.payload.objectId, (object) => {
-                const temporaryTraits = { ...object.temporaryTraits };
-                if (event.payload.grants?.includes('swift')) {
-                    temporaryTraits.swift = true;
-                }
-                if ((event.payload.chargeDiceModifier ?? 0) > 0) {
-                    temporaryTraits.chargeDiceModifier = Math.max(
-                        object.temporaryTraits?.chargeDiceModifier ?? 0,
-                        event.payload.chargeDiceModifier ?? 0,
-                    );
-                }
-                if ((event.payload.meleeDiceModifier ?? 0) > 0) {
-                    temporaryTraits.meleeDiceModifier = Math.max(
-                        object.temporaryTraits?.meleeDiceModifier ?? 0,
-                        event.payload.meleeDiceModifier ?? 0,
-                    );
-                    if (event.payload.meleeDiceModifierUntilRoundNumber !== undefined) {
-                        temporaryTraits.meleeDiceModifierUntilRoundNumber = Math.max(
-                            object.temporaryTraits?.meleeDiceModifierUntilRoundNumber ?? 0,
-                            event.payload.meleeDiceModifierUntilRoundNumber,
-                        );
-                    }
-                }
-                if (event.payload.vampiricNextMelee === true) {
-                    temporaryTraits.vampiricNextMelee = true;
-                }
-                if ((event.payload.nextMeleePierceModifier ?? 0) > 0) {
-                    temporaryTraits.nextMeleePierceModifier = Math.max(
-                        object.temporaryTraits?.nextMeleePierceModifier ?? 0,
-                        event.payload.nextMeleePierceModifier ?? 0,
-                    );
-                }
-
-                return {
-                    ...object,
-                    temporaryTraits: Object.keys(temporaryTraits).length > 0
-                        ? temporaryTraits
-                        : undefined,
-                };
-            });
+            return updateArenaObject(core, event.payload.objectId, (object) => (
+                applyTemporaryTraitGain(object, event.payload)
+            ));
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED:
             return addArenaObject(core, event.payload.object);
@@ -563,19 +458,16 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
                 event.payload.toZoneId,
             );
             const isTeleportMove = event.payload.movementMode === 'teleport';
-            return updateArenaObject(moved, event.payload.objectId, (object) => ({
-                ...object,
-                actionReady: event.payload.actionCost === 'none' ? object.actionReady : false,
-                guarding: false,
-                temporaryTraits: {
-                    ...object.temporaryTraits,
-                    ...(event.payload.actionCost === 'none' ? { freeMoveUsedThisAction: true } : {}),
-                    ...(!isTeleportMove ? { movedThisAction: true } : {}),
-                    ...(event.payload.actionCost !== 'none' && !isTeleportMove
-                        ? { quickActionAfterMoveAvailable: true }
-                        : {}),
-                },
-            }));
+            return updateArenaObject(moved, event.payload.objectId, (object) => (
+                applyMovementTemporaryTraits({
+                    ...object,
+                    actionReady: event.payload.actionCost === 'none' ? object.actionReady : false,
+                    guarding: false,
+                }, {
+                    actionCost: event.payload.actionCost,
+                    isTeleportMove,
+                })
+            ));
         }
 
         case MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED:

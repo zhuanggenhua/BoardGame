@@ -194,6 +194,7 @@ export const HandArea = ({
     characterId,
     playerBoardFace,
     disableCardPointerEvents = false,
+    isHidden = false,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -221,6 +222,7 @@ export const HandArea = ({
     characterId?: string;
     playerBoardFace?: HeroState['playerBoardFace'];
     disableCardPointerEvents?: boolean;
+    isHidden?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const isCoarsePointer = useCoarsePointer();
@@ -825,8 +827,13 @@ export const HandArea = ({
         <div
             ref={handAreaRef}
             data-testid="hand-area"
+            data-hand-hidden={isHidden}
+            aria-hidden={isHidden}
             className="absolute bottom-0 left-0 right-0 flex justify-center items-end pb-0 h-[22vw] pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.hud }}
+            style={{
+                zIndex: UI_Z_INDEX.hud,
+                display: isHidden ? 'none' : undefined,
+            }}
         >
             {/* 教程高亮目标：仅覆盖实际卡牌区域 */}
             <div

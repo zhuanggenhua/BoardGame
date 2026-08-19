@@ -2381,14 +2381,14 @@ const setupRansomScenario = async (
         root.core = {
             ...core,
             players,
-            activePlayerId: '1',
+            activePlayerId: '0',
             phase: 'offensiveRoll',
-            dice: buildDiceForValues('cursed_pirate-dice', [6, 4, 5, 1, 2], {
-                1: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
-                2: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
-                4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
-                5: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
-                6: CURSED_PIRATE_DICE_FACE_IDS.SKULL,
+            dice: buildDiceForValues('zhanshujia-dice', [6, 4, 5, 1, 2], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                4: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                5: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
             }),
             rollCount: 1,
             rollLimit: 3,
@@ -2401,7 +2401,7 @@ const setupRansomScenario = async (
         root.sys = {
             ...sys,
             phase: 'offensiveRoll',
-            currentPlayerIndex: 1,
+            currentPlayerIndex: 0,
             interaction: { current: undefined, queue: [] },
             responseWindow: { current: undefined },
         };
@@ -9198,7 +9198,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
-    test('真实入口应展示并结算赎金的跨玩家双步选择链', async ({ browser }, testInfo) => {
+    test('真实入口应展示并结算赎金在对手投骰窗口的跨玩家双步选择链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupNewHeroMatch(browser, baseURL);
@@ -9225,11 +9225,11 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await guestModal.getByRole('button', { name: /骰子 1|Die 1/i }).click();
 
             const hostModal = match.hostPage.locator('#modal-root');
-            await expect(hostModal).toContainText('赎金：是否支付 2CP？', { timeout: 10000 });
-            await expect(hostModal.getByRole('button', { name: /支付 2CP|Pay 2 CP/i })).toBeVisible({ timeout: 10000 });
+            await expect(hostModal).toContainText(/赎金：是否支付 2\s*CP？/, { timeout: 10000 });
+            await expect(hostModal.getByRole('button', { name: /支付 2\s*CP|Pay 2 CP/i })).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '37-host-ransom-pay-or-reroll');
 
-            await hostModal.getByRole('button', { name: /支付 2CP|Pay 2 CP/i }).click();
+            await hostModal.getByRole('button', { name: /支付 2\s*CP|Pay 2 CP/i }).click();
             await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.CP, 6);
             await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.CP, 3);
             await waitForDiscardContains(match.matchId, match.guestPage, '1', RANSOM_CARD_ID);

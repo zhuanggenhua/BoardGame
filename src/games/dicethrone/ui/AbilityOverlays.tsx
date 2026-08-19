@@ -37,6 +37,12 @@ const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId?: string }[]> =
             slotId: 'sky',
         },
     ],
+    gunslinger: [
+        {
+            slotId: 'sky',
+            cardId: 'upgrade-quick-draw',
+        },
+    ],
 };
 
 /** 从升级卡定义中提取目标技能 ID */

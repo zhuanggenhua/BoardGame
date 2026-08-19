@@ -375,4 +375,99 @@ describe('AI 手动选派系', () => {
 
         expect(resolution).toBeNull();
     });
+
+    it('开局选项状态为实施中时，共享 AI 决策层应在策略前过滤该选项', async () => {
+        const gameId = '__test_setup_option_status_in_progress_filter__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [
+                    {
+                        actionId: 'setup-select-faction-in-progress',
+                        kind: 'setup-select-faction',
+                        label: '选择阵营 in-progress',
+                        commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'in-progress' } }],
+                        metadata: {
+                            factionId: 'in-progress',
+                            setupOptionStatus: 'in_progress',
+                            setupOptionStatusReason: '测试阵营仍在实施中',
+                        },
+                    },
+                    {
+                        actionId: 'setup-select-faction-ready',
+                        kind: 'setup-select-faction',
+                        label: '选择阵营 ready',
+                        commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'ready' } }],
+                        metadata: { factionId: 'ready' },
+                    },
+                ];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-faction-in-progress' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildFactionSelectState(),
+            matchId: 'local:setup-option-status-filter',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.action.actionId).toBe('setup-select-faction-ready');
+        expect(resolution?.action.commands).toEqual([
+            { type: 'SELECT_FACTION', payload: { factionId: 'ready' } },
+        ]);
+    });
+
+    it('所有开局选项都不可自动选择时，共享 AI 决策层不应提交动作', async () => {
+        const gameId = '__test_setup_option_status_all_blocked__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'setup-select-character-in-progress',
+                    kind: 'setup-select-character',
+                    label: '选择角色 in-progress',
+                    commands: [{ type: 'SELECT_CHARACTER', payload: { characterId: 'in-progress' } }],
+                    metadata: { characterId: 'in-progress' },
+                }];
+            },
+            resolveSetupOptionStatus: () => ({ status: 'in_progress', reason: '测试角色仍在实施中' }),
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-character-in-progress' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildCharacterSelectState(),
+            matchId: 'local:setup-option-status-all-blocked',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
 });

@@ -13,7 +13,6 @@
  */
 
 import React, { useEffect, useCallback, useRef } from 'react';
-import { scheduleFxFrameCallback, type FxFrameSubscription } from '../../../engine/fx';
 
 export interface HitStopConfig {
   /** 冻结时长 (ms)，默认 80 */
@@ -37,7 +36,7 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
   style,
 }) => {
   const elRef = useRef<HTMLDivElement>(null);
-  const cancelUnfreezeRef = useRef<FxFrameSubscription | undefined>(undefined);
+  const unfreezeTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const el = elRef.current;
@@ -48,17 +47,21 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
     // 通过 CSS 类让子元素也暂停
     el.classList.add('hitstop-frozen');
 
-    cancelUnfreezeRef.current?.();
-    cancelUnfreezeRef.current = scheduleFxFrameCallback(duration, () => {
+    if (unfreezeTimerRef.current !== undefined) {
+      window.clearTimeout(unfreezeTimerRef.current);
+    }
+    unfreezeTimerRef.current = window.setTimeout(() => {
       // 解冻
       el.style.animationPlayState = '';
       el.classList.remove('hitstop-frozen');
-      cancelUnfreezeRef.current = undefined;
-    });
+      unfreezeTimerRef.current = undefined;
+    }, duration);
 
     return () => {
-      cancelUnfreezeRef.current?.();
-      cancelUnfreezeRef.current = undefined;
+      if (unfreezeTimerRef.current !== undefined) {
+        window.clearTimeout(unfreezeTimerRef.current);
+        unfreezeTimerRef.current = undefined;
+      }
       el.style.animationPlayState = '';
       el.classList.remove('hitstop-frozen');
     };
@@ -79,23 +82,27 @@ export const HitStopContainer: React.FC<HitStopContainerProps> = ({
 export const useHitStop = (defaultDuration = 80) => {
   const [isActive, setIsActive] = React.useState(false);
   const [config, setConfig] = React.useState<HitStopConfig | undefined>(undefined);
-  const cancelResetRef = useRef<FxFrameSubscription | undefined>(undefined);
+  const resetTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => () => {
-    cancelResetRef.current?.();
-    cancelResetRef.current = undefined;
+    if (resetTimerRef.current !== undefined) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = undefined;
+    }
   }, []);
 
   const triggerHitStop = useCallback((overrideConfig?: HitStopConfig) => {
     setIsActive(true);
     setConfig(overrideConfig);
-    cancelResetRef.current?.();
+    if (resetTimerRef.current !== undefined) {
+      window.clearTimeout(resetTimerRef.current);
+    }
 
     const dur = (overrideConfig?.duration ?? defaultDuration) + 250;
-    cancelResetRef.current = scheduleFxFrameCallback(dur, () => {
+    resetTimerRef.current = window.setTimeout(() => {
       setIsActive(false);
-      cancelResetRef.current = undefined;
-    });
+      resetTimerRef.current = undefined;
+    }, dur);
   }, [defaultDuration]);
 
   return { isActive, triggerHitStop, config };

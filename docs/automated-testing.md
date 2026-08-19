@@ -278,7 +278,8 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 **规则**：每个通过 `matchState` / `queueInteraction` 创建交互的能力，必须至少有 1 条通过 `execute()` 走完整链路的集成测试，验证：
 1. `execute()` 返回的事件列表正确
-2. `sys.interaction` 中有对应的 Interaction（sourceId 匹配）
+2. 通过游戏 prompt facade 能读到对应玩家提示（sourceId / 选项 / 可响应对象匹配）
+3. 通过 facade 响应该提示后，最终玩家结果或交互收口正确
 
 **参考**：`src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts`
 
@@ -324,6 +325,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 - 测试接口是测试可持续性的主要边界：实现重构可以改变内部模块、字段和 handler，但不应迫使业务测试逐个改断言。
 - 新增交互能力测试时，优先扩展对应游戏的 prompt facade；测试体只通过 facade 读取 prompt、选择候选和响应交互。
+- 如果测试目标是防止“界面上有按钮但玩家实际点不了 / 点了不生效”，正确写法是：用 facade 或 E2E 找到玩家可见选项，用公开响应 helper 或真实点击提交，再断言最终状态、日志、反馈或交互关闭；不要只断言内部 prompt 存在。
 - 禁止把“直接读内部字段更方便”当作默认理由。只有测试目标就是底层系统契约时，才允许直读内部字段，并应把测试放到对应系统测试文件中。
 - Smash Up 交互测试的默认端口包括 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`respondToPromptOptions`、`expectNoPrompt`、`getReactionPrompt` 与 `getReactionPromptOptionBySourceDefId`；缺少表达力时先补 helper，再改用例。
 
@@ -1510,6 +1512,8 @@ npm run test:api
 ## GameTestRunner
 
 游戏领域层专用测试运行器，输入命令序列 → 执行 pipeline → 断言最终状态。
+
+使用规范以 [`.spec/knowledge/standards/testing-tdd.md`](../.spec/knowledge/standards/testing-tdd.md) 为主源。成功路径除了断言最终状态，也要断言没有失败步骤；非法命令或拒绝路径才使用 `expectError`。
 
 ### 1. 定义断言类型
 

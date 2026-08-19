@@ -243,9 +243,11 @@
 
 - **真实问题定义**：当前 skill 已要求新游戏接 OpenSpec，也已默认复用 `ActionLog / Undo / Tutorial` 等系统，但还缺一层明确门禁：游戏本体确认完成后，哪些附加能力要继续正式实施，哪些本轮有意跳过，为什么跳过，何时补，不应靠 AI 临场猜。
 - **适用范围**：所有“新增游戏 / 完整接入一个 gameId / 以可交付游戏为目标推进”的 workflow。
+- **术语澄清（强制）**：本节的“可选能力 / 附加能力”指游戏支撑能力，例如操作日志、撤回、音效、AI、教程和调试配置；不是规则文本里的可选效果、事件可选分支或 optional rule。用户说“接入可选能力”但没有点名规则对象时，先按支撑能力矩阵处理。
+- **“接入可选”触发器（强制）**：用户说“接入可选 / 接入可选能力 / 可选都接 / 把可选接上”时，默认表示把默认可选能力矩阵全部标为`实施本轮`并进入实现；不得只审计、不得要求用户再逐项选择、不得只接其中一部分。只有用户明确说“只接 X”“暂不接 Y”“本轮跳过可选”，或当前 OpenSpec 已明确排除某项，才允许改成部分实施。任何无法完成的能力都必须报告现实阻塞、证据、影响和最小补救动作，不能静默跳过。
 - **先后顺序（强制）**：
   - `gameplay / scoring / runtime-entry / board-ui` 这些游戏本体能力优先；
-  - `action-log / undo-system / game-ai-system / tutorial-engine / debug-config` 默认视为**本体后的附加能力**；
+  - `action-log / undo-system / audio-feedback / game-ai-system / tutorial-engine / debug-config` 默认视为**本体后的附加能力**；
   - 附加能力不得反向阻塞“本体是否已完成”的判断，除非用户当轮明确把它们纳入本轮主交付。
 - **测试友好最低 AI 路径（强制）**：
   - 这里要区分两件事：`完整 game-ai-system` 仍然默认属于本体后的附加能力；但为了让新游戏可重复测试，**本体阶段必须至少保留一种可重复的人机测试路径**。
@@ -257,16 +259,18 @@
 - **默认可选能力矩阵**：至少逐项裁定以下能力，不得漏项：
   - `action-log`：操作日志 / HUD 日志面板
   - `undo-system`：撤回 / 撤回审批
+  - `audio-feedback`：事件音效 / BGM / UI 反馈音
   - `game-ai-system`：本地 AI、强单机、AI 座位可玩性
   - `tutorial-engine`：教学步骤 / 引导
   - `debug-config`：仅开发态调试面板（是否需要）
 - **每项都必须有状态**：`实施本轮` / `本轮明确跳过` / `仅保留底层接口，UI 暂不交付` 三选一，不允许空着。
+- **全量触发时的默认状态**：只要命中“接入可选”触发器，`action-log`、`undo-system`、`audio-feedback`、`game-ai-system`、`tutorial-engine`、`debug-config` 六项默认全部为`实施本轮`；若某项只能做最低测试路径或底层接口，必须在矩阵里降级标注并说明不能完整交付的现实原因。
 - **记录落点（强制）**：
   1. 游戏进入 OpenSpec 后，游戏主 spec 对应的首轮正式方案文档必须包含该矩阵；若当前 active change 是 `foundation`，可落在 `foundation` 的 `proposal.md` 或 `design.md`，但它承载的是游戏主 spec 的整体口径，而不是另一份并列总真相；
   2. `tasks.md` 必须把“本轮实施项”和“显式跳过项”写成可勾选条目；
   3. 若跳过，必须写明原因、影响和计划补回的后续 change（如 `ai-support` / `tutorial` / `action-log`）。
 - **实施边界**：
-  - `action-log / undo-system / tutorial-engine / game-ai-system` 属于**本体后的可选附加能力**，不是所有游戏首批都必须上；
+  - `action-log / undo-system / audio-feedback / tutorial-engine / game-ai-system` 属于**本体后的可选附加能力**，不是所有游戏首批都必须上；
   - `expansion / variant / promo / optional-rule / alt-setup / campaign-branch` 这类扩展、变体、宣传包、可选规则或替代开局，默认也属于**可选实施任务**，不是首轮主交付的自动组成部分；
   - 首轮默认优先 `base game / 核心玩法 / 主流程 / 当前明确点名的首个正式目标`；扩展、变体若要纳入，必须由用户或 proposal 明确点名进本轮范围；
   - 若本轮不做扩展/变体，必须在 proposal / tasks / 主 spec 里显式写明“本轮跳过”，不得既不实现也不记录；
@@ -280,6 +284,7 @@
   - 若用户此时追加其中某项（例如“把日志也带上”“顺手把 AI 做了”），必须先更新 OpenSpec 记录，再进入实现。
 - **禁止行为**：
   - 禁止因为 `createBaseSystems()` 默认带了 `ActionLog / Undo`，就默认把该游戏视为“已经支持日志/撤回”；
+  - 禁止因为存在空的 `audio.config.ts` 或 UI 点击音，就默认把该游戏视为“已经支持事件音效”；
   - 禁止因为某游戏已有 `ai.ts` 雏形，就默认视为“AI 已完成”；
   - 禁止在本体完成后准备提 PR 时，才临时发现“这个游戏其实没问过要不要日志/撤回/AI”。
 - **最低汇报要求**：只要用户希望“一次能实施完毕游戏”，就必须在前置阶段明确答出：

@@ -36,6 +36,7 @@
 | 自检项 | 状态 | 证据 |
 | --- | --- | --- |
 | 对象全集 | `passed` | `WHAT_WERE_WE_THINKING_CARDS` 48 张唯一卡面 + `WHAT_WERE_WE_THINKING_BASES` 8 个基地，逐项矩阵见第 7 节。 |
+| 真相源状态 | `passed` | 第 5 节锁定主真相源为仓库已录入的静态数据、locale、正式 atlas manifest 与能力实现；本轮没有外部规则书改写输入或未裁定冲突。 |
 | 规则子句表 | `passed` | 第 6 节按 C1 静态、C2 注册/消费、C3 主效果、C4 分支/负向、C5 生命周期拆分；第 7 节每个对象绑定 C 子句。 |
 | 完整技能流程矩阵 | `passed` | 第 7 节记录触发前条件、执行入口、command/handler/reducer 消费、最终状态、后续清理及 UI 共享链。 |
 | L0/L1/L2/L3/L4 证据层级 | `passed` | 第 8 节列出 L0-L4：对象全集、结构测试、领域行为、真实入口 E2E、治理收口。 |

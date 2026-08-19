@@ -8,6 +8,7 @@ import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, GamePhase, PlayerId, UnitCard, EventCard, FactionId } from '../domain/types';
 import { buildAiDecisionContext, resolveNextLocalAiAction } from '../../../engine/ai';
+import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import { buildSummonerWarsAiLegalActions, summonerWarsAiRuntime } from '../ai';
 import { abilityRegistry } from '../domain/abilities';
 import { CARD_IDS } from '../domain/ids';
@@ -38,6 +39,52 @@ const aiTestRandom = {
     range: (min: number) => min,
     shuffle: <T>(arr: T[]) => [...arr],
 };
+
+describe('Summoner Wars AI 可见步骤白名单', () => {
+    function createAiPhaseState(phase: GamePhase): MatchState<SummonerWarsCore> {
+        const core = createInitializedCore(['0', '1'], aiTestRandom);
+        core.currentPlayer = '1';
+        core.phase = phase;
+        const sys = createInitialSystemState(['0', '1'] as PlayerId[], []);
+        sys.phase = phase;
+        return { core, sys };
+    }
+
+    it('空阶段推进不吃 1 秒等待，抽牌交还真人仍保留可见延迟', () => {
+        const visibleStepConfig = summonerWarsAiRuntime.localVisibleStepDelayConfig;
+        expect(visibleStepConfig?.mode).toBe('whitelist');
+        expect(visibleStepConfig?.actionKinds).toEqual(expect.arrayContaining([
+            'summon-unit',
+            'move-unit',
+            'build-structure',
+            'declare-attack',
+            'discard-for-magic',
+            'activate-ability',
+            'play-event',
+        ]));
+        expect(visibleStepConfig?.actionKinds).not.toContain('advance-phase');
+        expect(visibleStepConfig?.actionKinds).not.toContain('interaction-choice');
+
+        const summonEndAction = buildSummonerWarsAiLegalActions({
+            playerId: '1',
+            state: createAiPhaseState('summon'),
+        }).find((action) => action.kind === 'advance-phase');
+        expect(summonEndAction).toBeDefined();
+        expect(resolveLocalAiActionVisibility(summonEndAction!, summonerWarsAiRuntime)).toBe('hidden');
+
+        const drawEndAction = buildSummonerWarsAiLegalActions({
+            playerId: '1',
+            state: createAiPhaseState('draw'),
+        }).find((action) => action.kind === 'advance-phase');
+        expect(drawEndAction).toBeDefined();
+        expect(resolveLocalAiActionVisibility(drawEndAction!, summonerWarsAiRuntime)).toBe('visible');
+
+        expect(resolveLocalAiActionVisibility({
+            kind: 'summon-unit',
+            commands: [{ type: SW_COMMANDS.SUMMON_UNIT, payload: {} }],
+        }, summonerWarsAiRuntime)).toBe('visible');
+    });
+});
 
 type SummonPhaseEventAiCase = {
     faction: FactionId;
@@ -1212,6 +1259,53 @@ describe('召唤师战争本地 AI', () => {
         expect(resolution?.action.commands[0]).not.toMatchObject({
             payload: { factionId: 'necromancer' },
         });
+    });
+
+    it('选角阶段共享 AI 上下文应过滤仍在实施中的阵营', () => {
+        const core = SummonerWarsDomain.setup(['0', '1'], aiTestRandom);
+        const sys = createInitialSystemState(['0', '1'], []);
+        const inProgressFactionIds = ['mogu', 'huijin', 'yongheng', 'shadow'];
+
+        const rawActions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys },
+        });
+        const rawFactionIds = rawActions
+            .filter((action) => action.kind === 'setup-select-faction')
+            .map((action) => action.metadata?.factionId);
+
+        expect(rawFactionIds).toEqual(expect.arrayContaining(inProgressFactionIds));
+        expect(rawActions.find((action) => action.metadata?.factionId === 'mogu')?.metadata).toMatchObject({
+            setupOptionStatus: 'in_progress',
+            setupOptionStatusReason: expect.stringContaining('实施中'),
+        });
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-setup-in-progress-filter',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+        const automatedFactionIds = context.legalActions
+            .filter((action) => action.kind === 'setup-select-faction')
+            .map((action) => action.metadata?.factionId);
+
+        for (const factionId of inProgressFactionIds) {
+            expect(automatedFactionIds).not.toContain(factionId);
+        }
+        expect(automatedFactionIds).toEqual(expect.arrayContaining([
+            'necromancer',
+            'trickster',
+            'paladin',
+            'goblin',
+            'frost',
+            'barbaric',
+            'shouren',
+        ]));
     });
 
     it('召唤阶段应优先选择合法召唤动作，而不是直接结束阶段', async () => {

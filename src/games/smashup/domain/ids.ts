@@ -292,6 +292,9 @@ export const SMASHUP_FACTION_IDS = {
     NINJAS_POD: 'ninjas_pod',
 } as const;
 
+export type SmashUpFactionId = typeof SMASHUP_FACTION_IDS[keyof typeof SMASHUP_FACTION_IDS];
+export type SmashUpFactionImplementationStatus = 'in_progress';
+
 const POD_SUFFIX = '_pod';
 
 export function normalizeFactionSelectionId(factionId: string | null | undefined): string {
@@ -312,16 +315,37 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
-export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
-    SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_MAGES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_ELVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_ORCS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS,
-]);
+export const SMASHUP_FACTION_IMPLEMENTATION_STATUS = {
+    [SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_MAGES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_ELVES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_ORCS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.DIY_KILLERS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.DIY_CLOWNS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.SUMO_WRESTLERS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MUSKETEERS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.MOUNTIES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.LUCHADORS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.ANANSI_TALES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.GRIMMS_FAIRY_TALES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.ANCIENT_INCAS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.ADOLESCENT_EPIC_GECKOS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.GI_GERALD]: 'in_progress',
+    [SMASHUP_FACTION_IDS.RULERS_OF_THE_COSMOS]: 'in_progress',
+    [SMASHUP_FACTION_IDS.PEARL_AND_THE_IMAGES]: 'in_progress',
+    [SMASHUP_FACTION_IDS.FROZEN]: 'in_progress',
+} as const satisfies Partial<Record<SmashUpFactionId, SmashUpFactionImplementationStatus>>;
+
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>(
+    Object.entries(SMASHUP_FACTION_IMPLEMENTATION_STATUS)
+        .filter(([, status]) => status === 'in_progress')
+        .map(([factionId]) => factionId),
+);
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
@@ -334,9 +358,20 @@ export function isSmashUpDiyFaction(factionId: string | null | undefined): boole
 }
 
 export function isSmashUpFactionImplementationInProgress(factionId: string): boolean {
+    return getSmashUpFactionImplementationStatus(factionId) === 'in_progress';
+}
+
+export function getSmashUpFactionImplementationStatus(
+    factionId: string | null | undefined,
+): SmashUpFactionImplementationStatus | undefined {
+    if (typeof factionId !== 'string') return undefined;
+    return SMASHUP_FACTION_IMPLEMENTATION_STATUS[factionId as SmashUpFactionId];
+}
+
+export function isSmashUpFactionSelectionIdentityImplementationInProgress(factionId: string): boolean {
     const normalizedId = normalizeFactionSelectionId(factionId);
-    return SMASHUP_IN_PROGRESS_FACTION_IDS.has(factionId)
-        || SMASHUP_IN_PROGRESS_FACTION_IDS.has(normalizedId);
+    return isSmashUpFactionImplementationInProgress(factionId)
+        || isSmashUpFactionImplementationInProgress(normalizedId);
 }
 
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */

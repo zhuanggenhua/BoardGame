@@ -15,6 +15,17 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
 }>(({ count, locale, isHandHidden = false, onToggleHandHidden }, ref) => {
     const { t } = useTranslation('game-dicethrone');
     const handToggleLabel = isHandHidden ? t('hud.showHand') : t('hud.hideHand');
+    const handToggleClassName = [
+        'absolute left-[calc(100%+0.55vw)] bottom-[0.15vw] z-20',
+        'flex h-[2.65vw] min-h-[44px] w-[2.65vw] min-w-[44px] items-center justify-center rounded-full',
+        'border-2 ring-2 ring-slate-950/80',
+        'shadow-[0_0_1.15vw_rgba(34,211,238,0.78),0_0.16vw_0.45vw_rgba(0,0,0,0.82)]',
+        'transition-[background-color,transform,border-color,box-shadow] duration-150',
+        'hover:scale-105 active:scale-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/90',
+        isHandHidden
+            ? 'border-amber-50 bg-amber-200 text-slate-950 hover:bg-amber-100'
+            : 'border-cyan-50 bg-cyan-200 text-slate-950 hover:bg-cyan-100',
+    ].join(' ');
 
     return (
         <div
@@ -50,11 +61,11 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                         event.stopPropagation();
                         onToggleHandHidden();
                     }}
-                    className="absolute left-[calc(100%+0.35vw)] bottom-0 z-20 flex h-[2.2vw] w-[2.2vw] items-center justify-center rounded-full border border-cyan-200/70 bg-slate-950/88 text-cyan-100 shadow-[0_0_0.9vw_rgba(34,211,238,0.32)] backdrop-blur-sm transition-[background-color,transform,border-color] duration-150 hover:scale-105 hover:border-cyan-100 hover:bg-cyan-900/90 active:scale-100"
+                    className={handToggleClassName}
                 >
                     {isHandHidden
-                        ? <ChevronUp className="h-[1.08vw] w-[1.08vw]" strokeWidth={2.4} />
-                        : <ChevronDown className="h-[1.08vw] w-[1.08vw]" strokeWidth={2.4} />}
+                        ? <ChevronUp className="h-[1.3vw] min-h-[20px] w-[1.3vw] min-w-[20px] drop-shadow-[0_1px_0_rgba(255,255,255,0.55)]" strokeWidth={3} />
+                        : <ChevronDown className="h-[1.3vw] min-h-[20px] w-[1.3vw] min-w-[20px] drop-shadow-[0_1px_0_rgba(255,255,255,0.55)]" strokeWidth={3} />}
                 </button>
             )}
         </div>

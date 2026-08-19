@@ -47,6 +47,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 - 动画/特效：`.spec/knowledge/standards/animation-effects.md`
 - 数据录入/真相源契约：`.spec/knowledge/standards/data-entry.md`
 - 图片/音频资源接入：`.spec/knowledge/standards/asset-pipeline.md`
+- 操作日志、撤回、音效等游戏支撑能力接入：`.spec/skills/support-capability-integration/SKILL.md`；用户说“接入可选 / 接入可选能力 / 可选都接”时，直接按该 workflow 全量接入默认可选能力矩阵。
 - 新游戏阶段 0 / S0 红线：`references/intake-redlines.md`
 - 音频细则：项目 `.spec/skills/audio-integration/SKILL.md`（workflow） + `.spec/knowledge/standards/audio-assets.md`（运行时主合同）；`docs/audio/audio-usage.md` 与 `docs/audio/add-audio.md` 只作命令、目录和产物示例参考
 - 工具脚本索引：`docs/tools.md`
@@ -60,6 +61,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 - 图片/缩略图/图集/音频落盘与引用：以 `.spec/knowledge/standards/asset-pipeline.md` 为单一实施合同。
 - UI 组件与布局：以 `.spec/knowledge/standards/ui-ux.md` 为实施合同。
 - 引擎、系统、move/command：以 `.spec/knowledge/standards/engine-systems.md` 为实施合同。
+- 操作日志、撤回、音效等游戏支撑能力：以 `.spec/skills/support-capability-integration/SKILL.md` 为实施 workflow；底层标准仍回到 ActionLog、Undo 和 Audio 主源。用户说“接入可选 / 接入可选能力 / 可选都接”时，默认进入该 workflow 并全量实施默认可选能力矩阵。
 - React 白屏、Hook、函数提升、注册时机：以 `.spec/knowledge/standards/golden-rules.md` 为实施合同。
 
 资源实施最低门禁：
@@ -549,13 +551,15 @@ const commandTypes = [
 ### 4.4 ActionLog + 卡牌预览（避免重复说明，按权威实现做）
 
 **强制先读（权威单一来源）**：
+- `.spec/skills/support-capability-integration/SKILL.md`（操作日志 / 撤回 / 音效接入 workflow）
 - `.spec/knowledge/standards/engine-action-log.md`（ActionLogSystem 使用规范）
 - `evidence/dicethrone/action-log-card-preview.md`（卡牌预览注册表模式 + 数据流说明）
 
 **你在新游戏里只需要做这些（最小闭环）**：
 1. 在 `game.ts` 配置 `createActionLogSystem({ commandAllowlist, formatEntry })`，`formatEntry` 产出包含 `segments` 的 `ActionLogEntry`。
 2. 若游戏有卡牌：实现 `ui/cardPreviewHelper.ts` 提供 `cardId → CardPreviewRef` 查询，并在 `game.ts` **文件末尾**调用 `registerCardPreviewGetter(gameId, getter)` 注册。
-3. Board 不重复实现日志/撤回 UI：行为日志、操作日志和撤回入口由通用 `GameHUD` / FAB 悬浮球承载。新游戏只负责产出正确 ActionLog 数据和接入 Undo 上下文，不在牌桌主界面、侧栏或底部再加日志面板、最近操作列表或第二套撤回按钮。
+3. `ACTION_LOG_ALLOWLIST` 与 `UNDO_ALLOWLIST` 必须独立；日志覆盖所有有意义玩家命令，撤回只保留玩家独立决策点。
+4. Board 不重复实现日志/撤回 UI：行为日志、操作日志和撤回入口由通用 `GameHUD` / FAB 悬浮球承载。新游戏只负责产出正确 ActionLog 数据和接入 Undo 上下文，不在牌桌主界面、侧栏或底部再加日志面板、最近操作列表或第二套撤回按钮。
 
 > 关键点：Vite SSR 的函数提升陷阱与“注册必须放文件末尾”的原因，详见 `AGENTS.md` / `.spec/knowledge/standards/golden-rules.md`。
 

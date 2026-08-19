@@ -22,7 +22,7 @@ import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomAc
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
-import { getActiveDice, getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getRollerId, getTokenStackLimit } from '../rules';
 import { buildDrawEvents } from '../deckEvents';
 import {
     POWDER_KEG_TRANSFER_CHOICE_ID,
@@ -143,6 +143,14 @@ const decodeWalkThePlankSelectionValue = (
         targetId: playerIds[targetIndex],
         mode: normalized % WALK_THE_PLANK_TARGET_FACTOR,
     };
+};
+
+const getRansomEligibleCurrentDice = (
+    state: CustomActionContext['state'],
+    targetId: string,
+) => {
+    if (getRollerId(state) !== targetId) return [];
+    return getActiveDice(state);
 };
 
 const encodeHumanTargetedCursedCoinChoiceValue = (
@@ -390,7 +398,7 @@ function requestRansomDieChoice({
     const target = state.players[targetId];
     if (!target) return [];
 
-    const dice = getActiveDice(state);
+    const dice = getRansomEligibleCurrentDice(state, targetId);
     if (dice.length === 0) return [];
 
     return [{
@@ -1538,7 +1546,7 @@ export function registerCursedPirateCustomActions(): void {
         if (!sourceAbilityId) return [];
         const decoded = decodeRansomSelectionValue(state, value ?? 0);
         const target = decoded.targetId ? state.players[decoded.targetId] : undefined;
-        const die = state.dice.find(entry => entry.id === decoded.dieId);
+        const die = getRansomEligibleCurrentDice(state, decoded.targetId).find(entry => entry.id === decoded.dieId);
         if (!decoded.attackerId || !decoded.targetId || !target || !die) return [];
 
         const targetCp = target.resources[RESOURCE_IDS.CP] ?? 0;
@@ -1616,7 +1624,7 @@ export function registerCursedPirateCustomActions(): void {
         }
 
         if (!random) return [];
-        const die = state.dice.find(entry => entry.id === decoded.dieId);
+        const die = getRansomEligibleCurrentDice(state, playerId).find(entry => entry.id === decoded.dieId);
         if (!die) return [];
         const newValue = random.d(6);
         return [{

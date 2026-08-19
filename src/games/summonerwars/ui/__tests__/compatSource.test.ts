@@ -36,6 +36,19 @@ describe('SummonerWars compatibility source guards', () => {
         expect(fxSetup).toContain('paddingTop: CARD_PADDING_TOP,');
     });
 
+    it('召唤光柱应保留 Summoner Wars 旧 cell 空间直连，不走共享召唤 preset', () => {
+        const fxSetup = readUiSource('fxSetup.ts');
+
+        expect(fxSetup).toContain("import { SummonEffect } from '../../../components/common/animations/SummonEffect';");
+        expect(fxSetup).not.toContain('BoardSummonEffectPreset');
+        expect(fxSetup).not.toContain('SummonHybridEffect');
+        expect(fxSetup).toContain('const scale = 7.5;');
+        expect(fxSetup).toContain('const box = createFxScaledCellBox(pos, scale);');
+        expect(fxSetup).toContain('React.createElement(SummonEffect, {');
+        expect(fxSetup).toContain('originY: 0.5,');
+        expect(fxSetup).not.toContain('anchorSnapshot');
+    });
+
     it('BoardGrid 充能圆点应使用正方形 padding 兜底，而不是只依赖 aspect-ratio 或 aspect-square', () => {
         const boardGrid = readUiSource('BoardGrid.tsx');
 

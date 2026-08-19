@@ -62,6 +62,9 @@
     "useRabbitFoot": "Player {{player}} used the Rabbit's Foot",
     "useRollRerollItem": "Player {{player}} used a possession to reroll",
     "resolveEventChoice": "Player {{player}} resolved an event",
+    "finalizeEventRoll": "Player {{player}} confirmed the event roll result",
+    "acknowledgeCardResolution": "Player {{player}} acknowledged the card resolution",
+    "acknowledgeRecentRoll": "Player {{player}} acknowledged the roll result",
     "useRoomEffect": "Player {{player}} used a room effect",
     "useRoomEffectAt": "Player {{player}} used the room effect in {{room}}",
     "tradePossession": "Player {{player}} traded with player {{target}}",
@@ -96,6 +99,8 @@
     "studyMummyName": "Player {{player}} searched for the mummy's true name",
     "learnMummyBanishment": "Player {{player}} learned the banishment spell",
     "banishMummy": "Player {{player}} banished the Mummy",
+    "resolveMummyAttackRewardDamage": "Player {{player}} chose to deal damage",
+    "resolveMummyAttackRewardSteal": "Player {{player}} chose to steal an Item or Omen",
     "pickUpMummyGirl": "Player {{player}} picked up the Girl",
     "giveGirlToMummy": "Player {{player}} gave the Girl to the Mummy",
     "giveOmenToMummy": "Player {{player}} gave the Holy Symbol or Ring to the Mummy",
@@ -107,6 +112,9 @@
     "takePhoto": "Player {{player}} took a photo with the Magic Camera",
     "smashMagicCamera": "Player {{player}} smashed the Magic Camera",
     "phantomPhotographerAttack": "Player {{player}} sent a phantom photographer to attack",
+    "giveMirrorHint": "Player {{player}} gave a mirror event hint",
+    "breakMirrorCurse": "Player {{player}} broke the mirror curse",
+    "confirmHauntSetupEntry": "Player {{player}} confirmed a haunt setup item",
     "completeScenario": "Player {{player}} completed the scenario"
   },
   "board": {
@@ -935,6 +943,7 @@
       "readyToUse": "Selected and ready to use",
       "rollModifierTag": "Modify Dice",
       "confirmCard": "Confirm",
+      "confirmResultAndResolution": "Confirm result and continue {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
       "waitingForAll": "Waiting for other players ({{confirmed}}/{{total}})"
@@ -955,10 +964,7 @@
       "failed": "Failed",
       "diceFaces": "Dice faces {{value}}",
       "cancelModifier": "Cancel",
-      "confirmModifier": "Use {{card}}",
-      "confirmFinalResult": "Confirm final result ({{progress}})",
-      "waitingForOtherConfirmations": "Confirmed, waiting for other players ({{progress}})",
-      "waitingForFinalResult": "Waiting for other players to confirm the final result ({{progress}})"
+      "confirmModifier": "Use {{card}}"
     },
     "useEffects": {
       "move": "Move {{value}}",

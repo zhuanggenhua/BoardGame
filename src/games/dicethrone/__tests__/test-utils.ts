@@ -85,10 +85,26 @@ export const cmd = (type: string, playerId: PlayerId, payload: Record<string, un
 });
 
 export const interactionRespondCommandType = INTERACTION_COMMANDS.RESPOND;
+export const interactionCancelCommandType = INTERACTION_COMMANDS.CANCEL;
 
 export const getCurrentInteractionId = (state: MatchState<DiceThroneCore>): string | undefined => (
     state.sys.interaction.current?.id
 );
+
+export const cancelPromptCommand = (
+    state: MatchState<DiceThroneCore>,
+    playerId: PlayerId,
+    reason?: string,
+): CommandInput => {
+    const interactionId = getCurrentInteractionId(state);
+    if (!interactionId) {
+        throw new Error('Expected an active prompt to cancel, but none was active.');
+    }
+    return cmd(interactionCancelCommandType, playerId, {
+        interactionId,
+        ...(reason ? { reason } : {}),
+    });
+};
 
 export const getSimpleChoicePrompt = (
     state: MatchState<DiceThroneCore>,
@@ -767,16 +783,29 @@ export function injectPendingInteraction(
         const maxSteps = undefined;
         const minSteps = interaction.minSelectCount
             ?? ((mode === 'adjust' || mode === 'any') ? 1 : selectCount);
+        const completedDieIds = Array.isArray(interaction.completedDieIds)
+            ? Array.from(new Set(interaction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
+            : [];
+        const completedSteps = typeof interaction.completedSteps === 'number' && Number.isFinite(interaction.completedSteps)
+            ? Math.max(0, Math.floor(interaction.completedSteps))
+            : undefined;
+        const completedCount = completedSteps ?? completedDieIds.length;
+        const remainingSelectCount = Math.max(0, selectCount - completedCount);
 
-        const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> = {
+        const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> & {
+            completedDieIds?: number[];
+            completedSteps?: number;
+        } = {
             title: interaction.titleKey,
             sourceId: interaction.sourceCardId,
             maxSteps,
             minSteps,
             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
-            localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
-            toCommands: (result) => diceModifyToCommands(result, selectCount),
-            getCompletedSteps: (result) => result.modCount,
+            localReducer: (current, step) => diceModifyReducer(current, step, config, remainingSelectCount),
+            toCommands: (result) => diceModifyToCommands(result, remainingSelectCount),
+            getCompletedSteps: (result) => completedCount + result.modCount,
+            ...(completedDieIds.length > 0 ? { completedDieIds } : {}),
+            ...(completedSteps !== undefined ? { completedSteps } : {}),
             meta: {
                 dtType: 'modifyDie',
                 dieModifyConfig: config,
@@ -800,21 +829,41 @@ export function injectPendingInteraction(
 
     // selectDie
     const selectCount = interaction.selectCount ?? 1;
+    const allowRepeatedDieSelection = interaction.allowRepeatedDieSelection === true;
+    const completedDieIds = Array.isArray(interaction.completedDieIds)
+        ? (
+            allowRepeatedDieSelection
+                ? interaction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+                : Array.from(new Set(interaction.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
+        )
+        : [];
+    const completedSteps = typeof interaction.completedSteps === 'number' && Number.isFinite(interaction.completedSteps)
+        ? Math.max(0, Math.floor(interaction.completedSteps))
+        : undefined;
+    const completedCount = allowRepeatedDieSelection
+        ? (completedSteps ?? completedDieIds.length)
+        : Array.from(new Set(completedDieIds)).length;
+    const remainingSelectCount = Math.max(0, selectCount - completedCount);
     const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> = {
         title: interaction.titleKey,
         sourceId: interaction.sourceCardId,
-        maxSteps: undefined,
+        maxSteps: selectCount,
         minSteps: interaction.minSelectCount ?? 1,
+        confirmationMode: 'submitBatch',
         initialResult: { selectedDiceIds: [] },
-        localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
-        toCommands: (result) => diceSelectToCommands(result, selectCount),
-        getCompletedSteps: (result) => result.selectedDiceIds.length,
+        localReducer: (current, step) => diceSelectReducer(current, step, remainingSelectCount, allowRepeatedDieSelection),
+        toCommands: (result) => diceSelectToCommands(result, remainingSelectCount),
+        getCompletedSteps: (result) => completedCount + result.selectedDiceIds.length,
+        ...(completedDieIds.length > 0 ? { completedDieIds } : {}),
+        ...(completedSteps !== undefined ? { completedSteps } : {}),
+        ...(allowRepeatedDieSelection ? { allowRepeatedDieSelection } : {}),
         meta: {
             dtType: 'selectDie',
             selectCount,
             diceOwnerId: interaction.diceOwnerId,
             targetOpponentDice: interaction.targetOpponentDice ?? false,
             skipAbilityReselection: interaction.skipAbilityReselection ?? false,
+            allowRepeatedDieSelection,
         },
     };
 

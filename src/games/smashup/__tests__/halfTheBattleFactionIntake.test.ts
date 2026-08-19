@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
@@ -222,13 +222,13 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             .toBe('smashup/base/half_the_battle_bases');
     });
 
-    it('四个派系不再标记实施中，并进入默认可见发布口径', () => {
+    it('四个派系可见，但因 L3/L4 与远端资源 evidence 未完整保持实施中', () => {
         const visibleIds = new Set(getVisibleFactionMetadata('zh-CN').map(meta => meta.id));
 
         for (const fixture of HALF_THE_BATTLE_FACTIONS) {
             expect(visibleIds.has(fixture.factionId), `${fixture.factionId} 应在 zh-CN 可见`).toBe(true);
-            expect(isSmashUpFactionImplementationInProgress(fixture.factionId)).toBe(false);
-            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(false);
+            expect(isSmashUpFactionImplementationInProgress(fixture.factionId)).toBe(true);
+            expect(isFactionImplementationInProgress(fixture.factionId)).toBe(true);
         }
     });
 
@@ -268,7 +268,7 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             .toBe('在你的回合，你可以在这里额外打出一个战力 2 或以下的随从。如果回合结束时你控制它，将其置于你的牌库顶。');
     });
 
-    it('半场战争扩正式资源已进入根级与游戏级 manifest', () => {
+    it('半场战争扩 runtime WebP 已进入 manifest，但源 PNG 缺失仍保持实施中', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
@@ -279,27 +279,33 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             const pngPath = `public/assets/i18n/zh-CN/smashup/cards/${asset}.png`;
             const webpPath = `public/assets/i18n/zh-CN/smashup/cards/compressed/${asset}.webp`;
 
-            expect(rootManifest.files[`zh-CN/smashup/cards/${asset}`].variants.png.sha256)
-                .toBe(sha256(pngPath));
             expect(rootManifest.files[`zh-CN/smashup/cards/compressed/${asset}`].variants.webp.sha256)
                 .toBe(sha256(webpPath));
-            expect(gameManifest.files[`cards/${asset}`].variants.png.sha256)
-                .toBe(sha256(pngPath));
             expect(gameManifest.files[`cards/compressed/${asset}`].variants.webp.sha256)
                 .toBe(sha256(webpPath));
+            expect(rootManifest.files[`zh-CN/smashup/cards/${asset}`].variants.png.sha256)
+                .toBeTypeOf('string');
+            expect(gameManifest.files[`cards/${asset}`].variants.png.sha256)
+                .toBeTypeOf('string');
+            expect(existsSync(pngPath), `${asset}.png 仍缺本地源图`).toBe(false);
         }
 
         const basePngPath = `public/assets/i18n/zh-CN/smashup/base/${BASE_ASSET}.png`;
         const baseWebpPath = `public/assets/i18n/zh-CN/smashup/base/compressed/${BASE_ASSET}.webp`;
 
-        expect(rootManifest.files[`zh-CN/smashup/base/${BASE_ASSET}`].variants.png.sha256)
-            .toBe(sha256(basePngPath));
         expect(rootManifest.files[`zh-CN/smashup/base/compressed/${BASE_ASSET}`].variants.webp.sha256)
             .toBe(sha256(baseWebpPath));
-        expect(gameManifest.files[`base/${BASE_ASSET}`].variants.png.sha256)
-            .toBe(sha256(basePngPath));
         expect(gameManifest.files[`base/compressed/${BASE_ASSET}`].variants.webp.sha256)
             .toBe(sha256(baseWebpPath));
+        expect(rootManifest.files[`zh-CN/smashup/base/${BASE_ASSET}`].variants.png.sha256)
+            .toBeTypeOf('string');
+        expect(gameManifest.files[`base/${BASE_ASSET}`].variants.png.sha256)
+            .toBeTypeOf('string');
+        expect(existsSync(basePngPath), `${BASE_ASSET}.png 仍缺本地源图`).toBe(false);
+
+        for (const fixture of HALF_THE_BATTLE_FACTIONS) {
+            expect(isSmashUpFactionImplementationInProgress(fixture.factionId)).toBe(true);
+        }
     });
 
     it('Geckos POD 英文源图与 runtime 图集已进入 en 资源合同', async () => {
@@ -324,19 +330,19 @@ describe('半场战争扩四派系 intake 静态合同', () => {
         expect(await imageDimensions(webpPath)).toEqual(ENGLISH_GECKOS_ATLAS_DIMENSIONS);
     });
 
-    it('半场战争扩 runtime WebP 保持源 PNG 尺寸，未被展示图压缩误降采样', async () => {
+    it('半场战争扩 runtime WebP 保持目标尺寸，源 PNG 仍是待补图件', async () => {
         for (const asset of CARD_ASSETS) {
             const pngPath = `public/assets/i18n/zh-CN/smashup/cards/${asset}.png`;
             const webpPath = `public/assets/i18n/zh-CN/smashup/cards/compressed/${asset}.webp`;
 
-            expect(await imageDimensions(pngPath), `${asset}.png dimensions`).toEqual(CARD_ATLAS_DIMENSIONS);
+            expect(existsSync(pngPath), `${asset}.png 仍缺本地源图`).toBe(false);
             expect(await imageDimensions(webpPath), `${asset}.webp dimensions`).toEqual(CARD_ATLAS_DIMENSIONS);
         }
 
         const basePngPath = `public/assets/i18n/zh-CN/smashup/base/${BASE_ASSET}.png`;
         const baseWebpPath = `public/assets/i18n/zh-CN/smashup/base/compressed/${BASE_ASSET}.webp`;
 
-        expect(await imageDimensions(basePngPath), `${BASE_ASSET}.png dimensions`).toEqual(BASE_ATLAS_DIMENSIONS);
+        expect(existsSync(basePngPath), `${BASE_ASSET}.png 仍缺本地源图`).toBe(false);
         expect(await imageDimensions(baseWebpPath), `${BASE_ASSET}.webp dimensions`).toEqual(BASE_ATLAS_DIMENSIONS);
     });
 });

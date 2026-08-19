@@ -39,8 +39,8 @@ export interface FactionMeta {
     descriptionKey: string;
     /** 可选：派系特有机制规则说明（用于派系选择详情面板） */
     mechanicRule?: FactionMechanicRuleMeta;
-    /** 派系实施状态：用于在派系选择页显示“实施中”横幅 */
-    implementationStatus?: 'in_progress';
+    /** @deprecated 派系实施状态由 domain/ids.ts 的配置提供，UI 元数据不得再维护第二份状态。 */
+    implementationStatus?: never;
     /** 可选：实施状态提示文案 key */
     implementationHintKey?: string;
     /** 可选：限制仅在哪些语言界面中显示此阵营，不填则全语言显示 */
@@ -194,7 +194,6 @@ export const FACTION_METADATA: FactionMeta[] = [
         icon: Shield,
         color: '#b45309',
         descriptionKey: 'factions.round_table_knights.description',
-        implementationStatus: 'implemented',
         locales: ['zh-CN'],
     },
     {
@@ -204,20 +203,19 @@ export const FACTION_METADATA: FactionMeta[] = [
         color: '#16a34a',
         descriptionKey: 'factions.goblins.description',
         mechanicRule: POWER_COUNTER_MECHANIC_RULE,
-        implementationStatus: 'implemented',
         locales: ['zh-CN'],
     },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES, nameKey: 'factions.munchkin_dwarves.name', icon: Axe, color: '#92400e', descriptionKey: 'factions.munchkin_dwarves.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS, nameKey: 'factions.munchkin_halflings.name', icon: Sprout, color: '#65a30d', descriptionKey: 'factions.munchkin_halflings.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES, nameKey: 'factions.munchkin_thieves.name', icon: Eye, color: '#334155', descriptionKey: 'factions.munchkin_thieves.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_MAGES, nameKey: 'factions.munchkin_mages.name', icon: Wand2, color: '#7c3aed', descriptionKey: 'factions.munchkin_mages.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_ELVES, nameKey: 'factions.munchkin_elves.name', icon: Flower2, color: '#16a34a', descriptionKey: 'factions.munchkin_elves.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS, nameKey: 'factions.munchkin_clerics.name', icon: Shield, color: '#0ea5e9', descriptionKey: 'factions.munchkin_clerics.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_ORCS, nameKey: 'factions.munchkin_orcs.name', icon: Skull, color: '#166534', descriptionKey: 'factions.munchkin_orcs.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS, nameKey: 'factions.munchkin_warriors.name', icon: Sword, color: '#dc2626', descriptionKey: 'factions.munchkin_warriors.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES, nameKey: 'factions.munchkin_dwarves.name', icon: Axe, color: '#92400e', descriptionKey: 'factions.munchkin_dwarves.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS, nameKey: 'factions.munchkin_halflings.name', icon: Sprout, color: '#65a30d', descriptionKey: 'factions.munchkin_halflings.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES, nameKey: 'factions.munchkin_thieves.name', icon: Eye, color: '#334155', descriptionKey: 'factions.munchkin_thieves.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_MAGES, nameKey: 'factions.munchkin_mages.name', icon: Wand2, color: '#7c3aed', descriptionKey: 'factions.munchkin_mages.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_ELVES, nameKey: 'factions.munchkin_elves.name', icon: Flower2, color: '#16a34a', descriptionKey: 'factions.munchkin_elves.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS, nameKey: 'factions.munchkin_clerics.name', icon: Shield, color: '#0ea5e9', descriptionKey: 'factions.munchkin_clerics.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_ORCS, nameKey: 'factions.munchkin_orcs.name', icon: Skull, color: '#166534', descriptionKey: 'factions.munchkin_orcs.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS, nameKey: 'factions.munchkin_warriors.name', icon: Sword, color: '#dc2626', descriptionKey: 'factions.munchkin_warriors.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.PALADINS, nameKey: 'factions.paladins.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.paladins.description' },
-    { id: SMASHUP_FACTION_IDS.DIY_KILLERS, nameKey: 'factions.diy_killers.name', icon: Skull, color: '#991b1b', descriptionKey: 'factions.diy_killers.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.DIY_CLOWNS, nameKey: 'factions.diy_clowns.name', icon: Theater, color: '#e11d48', descriptionKey: 'factions.diy_clowns.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.DIY_KILLERS, nameKey: 'factions.diy_killers.name', icon: Skull, color: '#991b1b', descriptionKey: 'factions.diy_killers.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.DIY_CLOWNS, nameKey: 'factions.diy_clowns.name', icon: Theater, color: '#e11d48', descriptionKey: 'factions.diy_clowns.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES_POD, nameKey: 'factions.princesses_pod.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses_pod.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description', locales: ['zh-CN'] },
@@ -264,10 +262,10 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.DRAGONS_POD, nameKey: 'factions.dragons_pod.name', icon: Bone, color: '#b91c1c', descriptionKey: 'factions.dragons_pod.description' },
     { id: SMASHUP_FACTION_IDS.SUPERHEROES, nameKey: 'factions.superheroes.name', icon: Medal, color: '#2563eb', descriptionKey: 'factions.superheroes.description' },
     { id: SMASHUP_FACTION_IDS.SUPERHEROES_POD, nameKey: 'factions.superheroes_pod.name', icon: Medal, color: '#2563eb', descriptionKey: 'factions.superheroes_pod.description' },
-    { id: SMASHUP_FACTION_IDS.SUMO_WRESTLERS, nameKey: 'factions.sumo_wrestlers.name', icon: Medal, color: '#a16207', descriptionKey: 'factions.sumo_wrestlers.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MUSKETEERS, nameKey: 'factions.musketeers.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.musketeers.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.MOUNTIES, nameKey: 'factions.mounties.name', icon: Shield, color: '#dc2626', descriptionKey: 'factions.mounties.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.LUCHADORS, nameKey: 'factions.luchadors.name', icon: Theater, color: '#7c3aed', descriptionKey: 'factions.luchadors.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.SUMO_WRESTLERS, nameKey: 'factions.sumo_wrestlers.name', icon: Medal, color: '#a16207', descriptionKey: 'factions.sumo_wrestlers.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUSKETEERS, nameKey: 'factions.musketeers.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.musketeers.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MOUNTIES, nameKey: 'factions.mounties.name', icon: Shield, color: '#dc2626', descriptionKey: 'factions.mounties.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.LUCHADORS, nameKey: 'factions.luchadors.name', icon: Theater, color: '#7c3aed', descriptionKey: 'factions.luchadors.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.LUCHADORS_POD, nameKey: 'factions.luchadors_pod.name', icon: Theater, color: '#7c3aed', descriptionKey: 'factions.luchadors_pod.description' },
     {
         id: SMASHUP_FACTION_IDS.AVENGERS,
@@ -421,12 +419,12 @@ export const FACTION_METADATA: FactionMeta[] = [
         descriptionKey: 'factions.wreck_it_ralph.description',
         locales: ['zh-CN'],
     },
-    { id: SMASHUP_FACTION_IDS.ANANSI_TALES, nameKey: 'factions.anansi_tales.name', icon: Theater, color: '#b45309', descriptionKey: 'factions.anansi_tales.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.ANANSI_TALES, nameKey: 'factions.anansi_tales.name', icon: Theater, color: '#b45309', descriptionKey: 'factions.anansi_tales.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.ANANSI_TALES_POD, nameKey: 'factions.anansi_tales_pod.name', icon: Theater, color: '#b45309', descriptionKey: 'factions.anansi_tales_pod.description' },
-    { id: SMASHUP_FACTION_IDS.GRIMMS_FAIRY_TALES, nameKey: 'factions.grimms_fairy_tales.name', icon: Wand2, color: '#9333ea', descriptionKey: 'factions.grimms_fairy_tales.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES, nameKey: 'factions.russian_fairy_tales.name', icon: BookOpen, color: '#475569', descriptionKey: 'factions.russian_fairy_tales.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.GRIMMS_FAIRY_TALES, nameKey: 'factions.grimms_fairy_tales.name', icon: Wand2, color: '#9333ea', descriptionKey: 'factions.grimms_fairy_tales.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES, nameKey: 'factions.russian_fairy_tales.name', icon: BookOpen, color: '#475569', descriptionKey: 'factions.russian_fairy_tales.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES_POD, nameKey: 'factions.russian_fairy_tales_pod.name', icon: BookOpen, color: '#475569', descriptionKey: 'factions.russian_fairy_tales_pod.description' },
-    { id: SMASHUP_FACTION_IDS.ANCIENT_INCAS, nameKey: 'factions.ancient_incas.name', icon: Pyramid, color: '#ca8a04', descriptionKey: 'factions.ancient_incas.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.ANCIENT_INCAS, nameKey: 'factions.ancient_incas.name', icon: Pyramid, color: '#ca8a04', descriptionKey: 'factions.ancient_incas.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.POLYNESIAN_VOYAGERS, nameKey: 'factions.polynesian_voyagers.name', icon: Droplet, color: '#0f766e', descriptionKey: 'factions.polynesian_voyagers.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE, locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.GEEKS, nameKey: 'factions.geeks.name', icon: GraduationCap, color: '#16a34a', descriptionKey: 'factions.geeks.description' },
     { id: SMASHUP_FACTION_IDS.ADOLESCENT_EPIC_GECKOS, nameKey: 'factions.adolescent_epic_geckos.name', icon: ShurikenIcon, color: '#16a34a', descriptionKey: 'factions.adolescent_epic_geckos.description' },
@@ -532,11 +530,7 @@ export function getFactionMeta(id: string): FactionMeta | undefined {
 }
 
 export function isFactionImplementationInProgress(factionId: string): boolean {
-    if (isSmashUpFactionImplementationInProgress(factionId)) {
-        return true;
-    }
-    const meta = getFactionMeta(factionId);
-    return meta?.implementationStatus === 'in_progress';
+    return isSmashUpFactionImplementationInProgress(factionId);
 }
 
 const FACTION_MECHANIC_TUTORIALS: Record<string, FactionMechanicTutorialMeta> = {

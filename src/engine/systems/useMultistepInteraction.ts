@@ -97,6 +97,9 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
             // maxSteps 达到时自动 confirm
             // 直接使用上方已计算好的 newResult，不依赖 ref（避免 React 批量更新导致 ref 仍是旧值）
             if (data.maxSteps !== undefined && newResult !== null) {
+                if (data.confirmationMode === 'submitBatch') {
+                    return next;
+                }
                 // 优先使用 getCompletedSteps 从结果中提取语义步骤数（如已修改的不同骰子数），
                 // 未提供时退化为按 step() 调用次数计数
                 const completedSteps = data.getCompletedSteps
@@ -129,14 +132,27 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         if (completedSteps < minSteps) return;
 
         confirmedRef.current = true;
+        const shouldResolve = data.confirmationMode === 'submitBatch'
+            ? data.shouldResolveOnConfirm?.(resultRef.current) === true
+            : true;
         const commands = data.toCommands(resultRef.current);
         // 捕获当前 interactionId，防止闭包中引用变化
         const confirmId = interactionId;
         for (const cmd of commands) {
             dispatch(cmd.type, cmd.payload);
         }
-        // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互（携带 interactionId 防止误 resolve 下一个交互）
-        dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
+        if (shouldResolve) {
+            // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互（携带 interactionId 防止误 resolve 下一个交互）
+            dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
+            return;
+        }
+
+        const nextResult = data.initialResult ?? null;
+        resultRef.current = nextResult;
+        stepCountRef.current = 0;
+        setResult(nextResult);
+        setStepCount(0);
+        confirmedRef.current = false;
     }, [data, dispatch, getCompletedStepCount, interactionId]);
 
     const cancel = useCallback(() => {

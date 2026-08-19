@@ -567,9 +567,9 @@ export const BaseZone: React.FC<{
             isCoarsePointer ? '' : 'hover:scale-110 hover:-translate-y-[0.12vw]'
         } ${
             isSelectedTitanSource
-                ? 'border-emerald-300 ring-4 ring-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.75)]'
+                ? 'border-green-400 ring-4 ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_36px_rgba(74,222,128,0.34)]'
                 : canSelectTitanSource
-                ? 'border-emerald-400 ring-2 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.6)]'
+                ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52)]'
                 : isTitanActivationArmed
                 ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
                 : canActivateTitan
@@ -1170,7 +1170,10 @@ export const BaseZone: React.FC<{
                                         : ''
                                 } ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-10 hover:z-[100]'}`}
                                 style={{
-                                    maxHeight: shouldUseMinionSelectionScroll ? layoutInlineSize(selectionListMaxHeight, layout) : undefined,
+                                    maxHeight: shouldUseMinionSelectionScroll ? layoutInlineSize(selectionListMaxHeight + 1.2, layout) : undefined,
+                                    paddingBlock: shouldUseMinionSelectionScroll ? layoutInlineSize(0.55, layout) : undefined,
+                                    paddingInline: shouldUseMinionSelectionScroll ? layoutInlineSize(0.38, layout) : undefined,
+                                    scrollPaddingBlock: shouldUseMinionSelectionScroll ? layoutInlineSize(0.55, layout) : undefined,
                                 }}
                                 transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                             >

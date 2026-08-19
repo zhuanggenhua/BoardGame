@@ -50,27 +50,13 @@ description: "BoardGame 规则审计 workflow：读取路由、执行顺序和 e
 
 ### 2. 做描述到实现审计
 
-按 `description-to-implementation-audit.md` 执行：
-
-1. 锁定权威描述或合同状态。
-2. 拆原子语义。
-3. 追静态定义、合法性、命令 / handler / reducer、最终权威状态、UI、AI / 自动推进和测试。
-4. 先分类缺口，再判断是否阻塞当前口径。
-5. 只有共享消费者有直接影响证据时，才扩到最小受影响对象集。
+按 `description-to-implementation-audit.md` 执行；本 workflow 不复写语义拆解、共享流程、配置差异、代表链、缺口分类或扩审判定。
 
 ### 3. 写 evidence
 
 审计文档默认落到 `evidence/<gameId>/`。已有同主题审计文档时优先原地回写，不新建平行总账。
 
-Evidence 必须写清：
-
-- 本轮范围和不在范围内的对象。
-- 权威来源或合同状态。
-- 原子语义断言。
-- 实现消费点和最终权威状态。
-- 真实入口、测试、截图或人工核对证据分别证明了什么。
-- 缺口分类、阻塞口径和最小补救动作。
-- 旧 evidence / 旧测试 / 旧总结是否需要降级或回写。
+Evidence 字段、共享流程表、配置差异表、结论等级和旧结论回写格式按 `audit-evidence-template.md` 执行；本 workflow 只约定默认落点和原地回写优先。
 
 ### 4. 验证与收口
 

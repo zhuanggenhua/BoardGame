@@ -577,6 +577,11 @@ function finalizeEventRollIfVisible() {
     const finalizeButton = screen.queryByTestId('betrayal-event-roll-finalize');
     if (finalizeButton) {
         fireEvent.click(finalizeButton);
+        return;
+    }
+    const unifiedConfirmButton = screen.queryByTestId('betrayal-discovery-continue');
+    if (unifiedConfirmButton?.textContent?.includes('确认结果并继续')) {
+        fireEvent.click(unifiedConfirmButton);
     }
 }
 
@@ -5260,7 +5265,7 @@ describe('Betrayal Board foundation', () => {
         );
     });
 
-    it('兔脚会在真实页面展示最近投骰并重掷指定骰子', () => {
+    it('兔脚会在真实页面展示最近投骰并重掷指定骰子', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -5334,14 +5339,13 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-roll-modifier-confirm'));
         expect(screen.queryByTestId('betrayal-rabbit-foot-dice')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-event-roll-finalize')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('betrayal-event-roll-finalize'));
-        const continueButton = screen.queryByTestId('betrayal-discovery-continue');
-        if (continueButton) {
-            fireEvent.click(continueButton);
-        }
-        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认结果并继续 0/4');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        });
     });
 
     it('别人触发的事件投骰采用全员确认，观看方确认一票后点击空白仍不能关闭发现面板', () => {
@@ -5404,20 +5408,22 @@ describe('Betrayal Board foundation', () => {
         const discoveryPanel = screen.getByTestId('betrayal-discovery-panel');
         expect(discoveryPanel).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         expect(screen.getByTestId('betrayal-recent-roll-actor')).toHaveTextContent('由 测试玩家 触发');
-        expect(screen.getByTestId('betrayal-event-roll-finalize')).toHaveTextContent('确认最终结果（0/3）');
+        expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认结果并继续 0/3');
 
-        fireEvent.click(screen.getByTestId('betrayal-event-roll-finalize'));
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
 
-        expect(screen.getByTestId('betrayal-event-roll-waiting')).toHaveTextContent('已确认，等待其他玩家确认（1/3）');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('等待其他玩家 1/3');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
 
         fireEvent.click(discoveryPanel);
 
         expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-event-roll-waiting')).toHaveTextContent('已确认，等待其他玩家确认（1/3）');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('等待其他玩家 1/3');
     });
 
-    it('别人触发的事件投骰等待确认时，横屏角落继续按钮也不能关闭发现面板', async () => {
+    it('别人触发的事件投骰确认一票后，横屏角落继续按钮不能关闭发现面板', async () => {
         const originalInnerWidthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
         const originalInnerHeightDescriptor = Object.getOwnPropertyDescriptor(window, 'innerHeight');
         const originalVisualViewportDescriptor = Object.getOwnPropertyDescriptor(window, 'visualViewport');
@@ -5483,15 +5489,17 @@ describe('Betrayal Board foundation', () => {
             );
 
             await waitFor(() => {
-                expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
+                expect(screen.getByTestId('betrayal-discovery-continue')).not.toBeDisabled();
             });
 
-            expect(screen.getByTestId('betrayal-event-roll-finalize')).toHaveTextContent('确认最终结果（0/3）');
+            expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
+            expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认结果并继续 0/3');
             fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
 
             expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
-            expect(screen.getByTestId('betrayal-event-roll-finalize')).toBeInTheDocument();
+            expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('等待其他玩家 1/3');
+            expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
         } finally {
             if (originalInnerWidthDescriptor) {
                 Object.defineProperty(window, 'innerWidth', originalInnerWidthDescriptor);
@@ -9742,7 +9750,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('通用伤害 1（速度）');
     });
 
-    it('夜幕众星待选事件能在真实页面选择检定属性', () => {
+    it('夜幕众星待选事件能在真实页面选择检定属性', async () => {
         const nightStars = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '夜幕众星');
         expect(nightStars?.effect).toBeTruthy();
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
@@ -9780,13 +9788,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识检定');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 -1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-event-roll-finalize')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('betrayal-event-roll-finalize'));
-        const continueButton = screen.queryByTestId('betrayal-discovery-continue');
-        if (continueButton) {
-            fireEvent.click(continueButton);
-        }
-        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认结果并继续 0/4');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        });
     });
 
     it('一抹鲜红待选事件能在真实页面跳过作祟检定并结算伤害', () => {

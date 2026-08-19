@@ -26,8 +26,8 @@ const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-兔脚重掷前最近投骰
 const RABBIT_FOOT_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-兔脚本体已选中.jpg`;
 const DIE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-选择具体骰子高亮.jpg`;
 const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认使用.jpg`;
-const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后等待确认最终结果.jpg`;
-const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-确认最终结果后结算.jpg`;
+const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后统一确认按钮可见.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-统一确认后结算.jpg`;
 
 function createRabbitFootRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -208,15 +208,34 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "2,2,0");
     await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("使用兔脚重掷第 2 颗骰子");
+      page.getByText("使用兔脚重掷第 2 颗骰子", { exact: false }).first(),
+    ).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "知识检定 4",
     );
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
+    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-roll-waiting")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-discovery-continue")).toContainText(
+      "确认结果并继续",
+    );
+    const unifiedConfirmButtonShape = await page
+      .getByTestId("betrayal-discovery-continue")
+      .evaluate((element) => {
+        const style = window.getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          borderColor: style.borderColor,
+          borderRadius: style.borderRadius,
+        };
+      });
+    expect(unifiedConfirmButtonShape).toEqual({
+      backgroundColor: "rgb(214, 181, 109)",
+      borderColor: "rgb(214, 181, 109)",
+      borderRadius: "0px",
+    });
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -245,7 +264,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "兔脚重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await page.getByTestId("betrayal-event-roll-finalize").click();
+    await page.getByTestId("betrayal-discovery-continue").click();
     const finalizedState = await page.evaluate(() => {
       const harness = (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } }).__BG_TEST_HARNESS__;
       return harness?.state?.get?.().core ?? null;

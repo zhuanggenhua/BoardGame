@@ -61,7 +61,6 @@ import { isCurrentBonusRollSettlement, resolveCurrentRollContext } from './domai
 import type { AbilityEffect, TriggerCondition } from './domain/combat';
 import type {
     AbilityCard,
-    CharacterDefinition,
     DiceThroneCore,
     DtResponseWindowType,
     PendingBonusDiceSettlement,
@@ -96,14 +95,6 @@ type DiceThroneStrategyTag =
     | 'dice-setup'
     | 'upgrade-engine'
     | 'purify-control';
-
-const isDiceThroneCharacterReadyForAiSetup = (character: CharacterDefinition): boolean => (
-    !character.badges?.some((badge) => badge.id === 'implementation_in_progress')
-);
-
-const AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG = DICETHRONE_CHARACTER_CATALOG.filter(
-    isDiceThroneCharacterReadyForAiSetup,
-);
 
 const resolveDiceThroneCurrentDecisionPlayerId = (args: {
     state: MatchState<unknown>;
@@ -197,6 +188,10 @@ type DiceChaseCandidate = {
 };
 
 type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
+    completedDieIds?: number[];
+    completedSteps?: number;
+    allowRepeatedDieSelection?: boolean;
+    allowedDieIds?: number[];
     meta?: {
         dtType?: 'modifyDie' | 'selectDie';
         selectCount?: number;
@@ -206,6 +201,7 @@ type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
         };
         diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
+        allowRepeatedDieSelection?: boolean;
     };
 };
 
@@ -404,6 +400,31 @@ const enumerateArrayCombinations = <T>(
     return results;
 };
 
+const enumerateArrayCombinationsWithReplacement = <T>(
+    items: T[],
+    minCount: number,
+    maxCount: number,
+): T[][] => {
+    const results: T[][] = [];
+    const path: T[] = [];
+
+    const dfs = (start: number) => {
+        if (path.length >= minCount && path.length <= maxCount) {
+            results.push([...path]);
+        }
+        if (path.length === maxCount) return;
+
+        for (let index = start; index < items.length; index += 1) {
+            path.push(items[index]);
+            dfs(index);
+            path.pop();
+        }
+    };
+
+    dfs(0);
+    return results;
+};
+
 const enumeratePerItemValueAssignments = <T>(
     items: T[],
     resolveValues: (item: T, index: number) => number[],
@@ -473,17 +494,20 @@ const resolveDiceInteractionSelectionBounds = (
     data: DiceInteractionData,
     selectableCount: number,
     completedCount: number,
+    allowRepeatedDieSelection = false,
 ): { selectCount: number; minSelectionCount: number } | null => {
     if (selectableCount <= 0) return null;
 
     const metaSelectCount = normalizePositiveStepCount(data.meta?.selectCount);
     const maxSteps = normalizePositiveStepCount(data.maxSteps);
     const minSteps = normalizePositiveStepCount(data.minSteps);
-    const totalSelectLimit = Math.max(1, Math.min(metaSelectCount ?? maxSteps ?? 1, selectableCount + completedCount));
+    const totalSelectLimit = Math.max(1, metaSelectCount ?? maxSteps ?? 1);
+    const remainingByTotalLimit = Math.max(0, totalSelectLimit - completedCount);
     const remainingMaxBySteps = maxSteps !== null
         ? Math.max(0, maxSteps - completedCount)
-        : selectableCount;
-    const selectCount = Math.min(totalSelectLimit, remainingMaxBySteps, selectableCount);
+        : remainingByTotalLimit;
+    const selectableCapacity = allowRepeatedDieSelection ? remainingByTotalLimit : selectableCount;
+    const selectCount = Math.min(remainingByTotalLimit, remainingMaxBySteps, selectableCapacity);
     if (selectCount <= 0) return null;
 
     const exactModifyMinSteps = data.meta?.dtType === 'modifyDie' && maxSteps !== null
@@ -494,6 +518,33 @@ const resolveDiceInteractionSelectionBounds = (
     const minSelectionCount = Math.max(1, Math.min(remainingMin > 0 ? remainingMin : 1, selectCount));
 
     return { selectCount, minSelectionCount };
+};
+
+const isRepeatedDieSelectionAllowed = (data: DiceInteractionData): boolean => {
+    return data.meta?.dtType === 'selectDie'
+        && (data.allowRepeatedDieSelection === true || data.meta?.allowRepeatedDieSelection === true);
+};
+
+const getCompletedDiceStepCount = (data: DiceInteractionData, allowRepeatedDieSelection: boolean): number => {
+    const completedDieIds = Array.isArray(data.completedDieIds)
+        ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+        : [];
+    if (allowRepeatedDieSelection) {
+        if (typeof data.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {
+            return Math.max(0, Math.floor(data.completedSteps));
+        }
+        return completedDieIds.length;
+    }
+    return Array.from(new Set(completedDieIds)).length;
+};
+
+const getRequiredDiceInteractionMinSteps = (data: DiceInteractionData): number => {
+    const minSteps = normalizePositiveStepCount(data.minSteps);
+    const maxSteps = normalizePositiveStepCount(data.maxSteps);
+    const exactModifyMinSteps = data.meta?.dtType === 'modifyDie' && maxSteps !== null
+        ? maxSteps
+        : null;
+    return minSteps ?? exactModifyMinSteps ?? 1;
 };
 
 const sumFaceRequirement = (faces: Record<string, number>): number => {
@@ -1714,6 +1765,20 @@ const buildEmergencyInteractionCancelAction = (
     },
 });
 
+const buildInteractionConfirmAction = (interactionId: string, reason: string): AiLegalAction => ({
+    actionId: createAiLegalActionId('interaction', interactionId, 'confirm', reason),
+    kind: 'interaction-confirm',
+    label: '确认',
+    commands: [{
+        type: 'SYS_INTERACTION_CONFIRM',
+        payload: { interactionId },
+    }],
+    metadata: {
+        interactionId,
+        reason,
+    },
+});
+
 const buildInteractionActions = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -2047,6 +2112,7 @@ const buildInteractionActions = (
     const meta = data.meta;
     const activeDice = getAiActiveDice(state, phase);
     const interactionId = current.id;
+    const allowRepeatedDieSelection = isRepeatedDieSelectionAllowed(data);
     const allowedDieIds = Array.isArray(data.allowedDieIds) && data.allowedDieIds.length > 0
         ? new Set(data.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number'))
         : null;
@@ -2055,23 +2121,39 @@ const buildInteractionActions = (
             ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
             : [],
     );
+    const completedCount = getCompletedDiceStepCount(data, allowRepeatedDieSelection);
+    const requiredMinSteps = getRequiredDiceInteractionMinSteps(data);
     const selectableDice = activeDice.filter((die) => {
         if (allowedDieIds && !allowedDieIds.has(die.id)) {
             return false;
         }
-        return !completedDieIds.has(die.id);
+        return allowRepeatedDieSelection || !completedDieIds.has(die.id);
     });
     if (selectableDice.length === 0) {
+        if (completedCount >= requiredMinSteps) {
+            return [buildInteractionConfirmAction(interactionId, 'completed-no-more-dice')];
+        }
         return [buildEmergencyInteractionCancelAction(interactionId, 'empty-options')];
     }
-    const selectionBounds = resolveDiceInteractionSelectionBounds(data, selectableDice.length, completedDieIds.size);
+    const selectionBounds = resolveDiceInteractionSelectionBounds(
+        data,
+        selectableDice.length,
+        completedCount,
+        allowRepeatedDieSelection,
+    );
     if (!selectionBounds) {
+        if (completedCount >= requiredMinSteps) {
+            return [buildInteractionConfirmAction(interactionId, 'completed-selection-limit')];
+        }
         return [buildEmergencyInteractionCancelAction(interactionId, 'empty-options')];
     }
     const { selectCount, minSelectionCount } = selectionBounds;
 
     if (meta?.dtType === 'selectDie') {
-        const selections = enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
+        const selections = allowRepeatedDieSelection
+            ? enumerateArrayCombinationsWithReplacement(selectableDice, minSelectionCount, selectCount)
+            : enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
+        const maxSteps = normalizePositiveStepCount(data.maxSteps);
         return selections.map((selection) => ({
             actionId: createAiLegalActionId('interaction', interactionId, 'reroll', ...selection.map((die) => die.id)),
             kind: 'interaction-multistep',
@@ -2081,7 +2163,12 @@ const buildInteractionActions = (
                     type: 'REROLL_DIE',
                     payload: { dieId: die.id },
                 })),
-                { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId } },
+                ...(
+                    data.confirmationMode !== 'submitBatch'
+                    || (maxSteps !== null && completedCount + selection.length >= maxSteps)
+                        ? [{ type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId } }]
+                        : []
+                ),
             ],
             metadata: withVisibleStepDelayPolicy(withAiActionStrategyTags({
                 interactionId,
@@ -2232,12 +2319,12 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                 takenCharacters.add(value as SelectableCharacterId);
             }
         }
-        const availableCharacters = AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG.filter(
+        const availableCharacters = DICETHRONE_CHARACTER_CATALOG.filter(
             (character) => !takenCharacters.has(character.id),
         );
         const candidates = availableCharacters.length > 0
             ? availableCharacters
-            : AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG;
+            : DICETHRONE_CHARACTER_CATALOG;
 
         for (const character of candidates) {
             appendAction(actions, state, playerId, {
@@ -2248,7 +2335,15 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                     type: 'SELECT_CHARACTER',
                     payload: { characterId: character.id },
                 }],
-                metadata: { characterId: character.id },
+                metadata: {
+                    characterId: character.id,
+                    ...(character.setupOptionStatus
+                        ? {
+                            setupOptionStatus: character.setupOptionStatus,
+                            setupOptionStatusReason: 'Dice Throne 角色仍在实施中',
+                        }
+                        : {}),
+                },
             });
         }
 

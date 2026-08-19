@@ -34,6 +34,7 @@ import type {
     MageWarsPlayerState,
 } from './types';
 import { getArenaObject } from './utils';
+import { hasObjectAbilityUseInRound } from './objectAbilityUsage';
 
 type MageWarsObjectAbilityValidator = (ctx: MageWarsObjectAbilityValidationContext) => ValidationResult;
 
@@ -125,7 +126,7 @@ function validateBeastStaff(ctx: MageWarsObjectAbilityValidationContext): Valida
     if (!actionTrack) return invalid('wrongPhase');
     if (
         source.trait.oncePerRound
-        && source.object.abilityUseRoundNumbers?.[source.trait.abilityId] === ctx.state.core.turnNumber
+        && hasObjectAbilityUseInRound(source.object, source.trait.abilityId, ctx.state.core.turnNumber)
     ) {
         return invalid('objectAbilityAlreadyUsedThisRound');
     }

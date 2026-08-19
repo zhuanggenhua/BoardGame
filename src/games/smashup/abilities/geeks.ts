@@ -42,7 +42,7 @@ import {
     createPendingActionResolution,
     maybeQueueActionCounterWindow,
 } from '../domain/actionCounter';
-import { appendResolvedActionAbility } from '../domain/externalActionPlay';
+import { appendResolvedActionAbility, type ExternalActionAbilityContinuationContext } from '../domain/externalActionPlay';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -968,6 +968,51 @@ function buildGeeksNonInfiniteLoopMinionOptions(
     ];
 }
 
+function buildGeeksNonInfiniteLoopReturnToHandEvent(
+    playerId: PlayerId,
+    cardUid: string,
+    defId: string,
+    ownerId: PlayerId,
+    timestamp: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED,
+        payload: {
+            playerId,
+            cardUid,
+            defId,
+            ownerId,
+            reason: 'geeks_non_infinite_loop',
+        },
+        timestamp,
+    } as SmashUpEvent;
+}
+
+type GeeksNonInfiniteLoopReturnAfterActionContext = ExternalActionAbilityContinuationContext & {
+    afterActionContext?: Record<string, unknown>;
+};
+
+const geeksNonInfiniteLoopReturnAfterActionProgram = createEffectProgram<
+    GeeksNonInfiniteLoopReturnAfterActionContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    const ownerId = typeof context.afterActionContext?.returnOwnerId === 'string'
+        ? context.afterActionContext.returnOwnerId as PlayerId
+        : context.playerId;
+    return {
+        events: [
+            buildGeeksNonInfiniteLoopReturnToHandEvent(
+                context.playerId,
+                context.cardUid,
+                context.defId,
+                ownerId,
+                context.timestamp,
+            ),
+        ],
+    };
+});
+
 function executeGeeksNonInfiniteLoopPlay(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -1000,17 +1045,13 @@ function executeGeeksNonInfiniteLoopPlay(
         sourceCommandType: SU_COMMANDS.PLAY_ACTION,
         timestamp,
     }) as SmashUpEvent;
-    const returnToHandEvent = {
-        type: SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED,
-        payload: {
-            playerId,
-            cardUid: replayCardUid,
-            defId: replayDefId,
-            ownerId: replayOwnerId,
-            reason: 'geeks_non_infinite_loop',
-        },
+    const returnToHandEvent = buildGeeksNonInfiniteLoopReturnToHandEvent(
+        playerId,
+        replayCardUid,
+        replayDefId,
+        replayOwnerId,
         timestamp,
-    } as SmashUpEvent;
+    );
     const baseEvents = [extraActionEvent, actionPlayedEvent];
     const pending = createPendingActionResolution({
         playerId,
@@ -1054,8 +1095,11 @@ function executeGeeksNonInfiniteLoopPlay(
         baseIndex: targetBaseIndex ?? 0,
         targetBaseIndex,
         targetMinionUid,
+        afterActionContext: {
+            returnOwnerId: replayOwnerId,
+        },
+        afterActionProgram: geeksNonInfiniteLoopReturnAfterActionProgram,
     });
-    appended.events.push(returnToHandEvent);
     return {
         matchState: appended.state,
         events: appended.events,

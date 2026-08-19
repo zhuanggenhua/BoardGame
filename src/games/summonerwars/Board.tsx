@@ -1288,7 +1288,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         quality={fxQuality}
                         onEffectComplete={removeDestroyEffect}
                       />
-                      {/* 召唤暗角已内置于 SummonShaderEffect（dimStrength），此处不再需要 CSS 遮罩 */}
                       {/* FX 特效层 */}
                       <FxLayer
                         bus={fxBus}

@@ -34,9 +34,6 @@ export function resolveLocalAiActionVisibility(
     action: Pick<AiLegalAction, 'kind' | 'commands' | 'metadata'>,
     runtime?: Pick<GameAiRuntime, 'localVisibleStepDelayConfig' | 'localFollowUpDelayConfig' | 'localHiddenCommandTypes'> | null,
 ): LocalAiActionVisibility {
-    if (typeof action.kind === 'string' && ALWAYS_VISIBLE_ACTION_KINDS.has(action.kind)) {
-        return 'visible';
-    }
     if (action.metadata?.visibleStepDelayPolicy === 'visible') {
         return 'visible';
     }
@@ -55,6 +52,10 @@ export function resolveLocalAiActionVisibility(
         return typeof action.kind === 'string' && visibleStepConfig.actionKinds.includes(action.kind)
             ? 'visible'
             : 'hidden';
+    }
+
+    if (typeof action.kind === 'string' && ALWAYS_VISIBLE_ACTION_KINDS.has(action.kind)) {
+        return 'visible';
     }
 
     if (typeof action.kind !== 'string') {

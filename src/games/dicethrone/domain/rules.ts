@@ -1058,6 +1058,14 @@ const checkStandardCardPlay = (
         if (diceEffectTarget === 'self' && playerId !== getRollerId(state, phase)) {
             return { ok: false, reason: 'requireIsRoller' };
         }
+        if (
+            !responseWindowType
+            && hasExistingDiceToolEffect(card)
+            && diceEffectTarget === 'opponent'
+            && playerId === getRollerId(state, phase)
+        ) {
+            return { ok: false, reason: 'requireIsNotRoller' };
+        }
     }
 
     if (
@@ -1570,6 +1578,7 @@ const EXISTING_DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
     'modify-die-any-1',
     'modify-die-any-2',
     'modify-die-adjust-1',
+    'cursed-pirate-ransom-die-choice',
     'reroll-opponent-die-1',
     'reroll-die-2',
     'reroll-die-5',

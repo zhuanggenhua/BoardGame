@@ -62,6 +62,9 @@
     "useRabbitFoot": "玩家 {{player}} 使用兔脚重掷",
     "useRollRerollItem": "玩家 {{player}} 使用持有物重掷",
     "resolveEventChoice": "玩家 {{player}} 处理了事件",
+    "finalizeEventRoll": "玩家 {{player}} 确认了事件检定结果",
+    "acknowledgeCardResolution": "玩家 {{player}} 确认了卡牌结算",
+    "acknowledgeRecentRoll": "玩家 {{player}} 确认了掷骰结果",
     "useRoomEffect": "玩家 {{player}} 使用了房间效果",
     "useRoomEffectAt": "玩家 {{player}} 使用了{{room}}的房间效果",
     "tradePossession": "玩家 {{player}} 与玩家 {{target}} 完成交易",
@@ -96,6 +99,8 @@
     "studyMummyName": "玩家 {{player}} 寻找木乃伊真名",
     "learnMummyBanishment": "玩家 {{player}} 学习驱逐木乃伊的法术",
     "banishMummy": "玩家 {{player}} 驱逐木乃伊",
+    "resolveMummyAttackRewardDamage": "玩家 {{player}} 选择造成伤害",
+    "resolveMummyAttackRewardSteal": "玩家 {{player}} 选择偷取一张物品或预兆",
     "pickUpMummyGirl": "玩家 {{player}} 拾起女孩",
     "giveGirlToMummy": "玩家 {{player}} 把女孩交给木乃伊",
     "giveOmenToMummy": "玩家 {{player}} 把圣符或指环交给木乃伊",
@@ -107,6 +112,9 @@
     "takePhoto": "玩家 {{player}} 使用魔法相机拍照",
     "smashMagicCamera": "玩家 {{player}} 砸毁魔法相机",
     "phantomPhotographerAttack": "玩家 {{player}} 让幻影摄影师发动攻击",
+    "giveMirrorHint": "玩家 {{player}} 给出了镜中事件提示",
+    "breakMirrorCurse": "玩家 {{player}} 解除了镜子诅咒",
+    "confirmHauntSetupEntry": "玩家 {{player}} 确认了作祟准备事项",
     "completeScenario": "玩家 {{player}} 完成了剧本"
   },
   "board": {
@@ -936,6 +944,7 @@
       "readyToUse": "已选中，可直接使用",
       "rollModifierTag": "改骰",
       "confirmCard": "确认",
+      "confirmResultAndResolution": "确认结果并继续 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
       "waitingForAll": "等待其他玩家 {{confirmed}}/{{total}}"
@@ -956,10 +965,7 @@
       "failed": "失败",
       "diceFaces": "骰面 {{value}}",
       "cancelModifier": "取消",
-      "confirmModifier": "确认使用{{card}}",
-      "confirmFinalResult": "确认最终结果（{{progress}}）",
-      "waitingForOtherConfirmations": "已确认，等待其他玩家确认（{{progress}}）",
-      "waitingForFinalResult": "等待其他玩家确认最终结果（{{progress}}）"
+      "confirmModifier": "确认使用{{card}}"
     },
     "useEffects": {
       "move": "移动 {{value}}",

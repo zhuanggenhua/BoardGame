@@ -21,6 +21,7 @@ metadata:
 - **冲击帧音效绑定（强制）**：有动画的事件（伤害/治疗/状态/Token）音效必须通过 `FlyingEffectData.onImpact`（或 FX 渲染器 `onImpact`）在动画到达时播放，禁止在事件生成时立即播放。此类事件的 `feedbackResolver` **必须返回 `null`**；音效 key 由动画层在 `onImpact` 回调中直接 `playSound(resolvedKey)`，或由 FX 系统通过 `FeedbackPack.sound`（`source: 'params'`）从 `event.params.soundKey` 读取并播放。
 - **优先复用原则（强制）**：新增或重写动画必须先复用/扩展上述组件、`src/components/common/animations/` 中的 Canvas/Shader/受击组件、`src/engine/fx/` 的注册调度能力，或已有游戏的成熟 `fxSetup.ts` 适配模式。禁止在游戏专属文件里先手写一套 CSS 光点、细线、圆环、timer、飘字或粒子替代现有效果库；若现有组件不够，先扩展通用组件并补预览/测试，再由游戏层参数化调用。召唤 / 降临语义必须优先复用 `BoardSummonEffectPreset` / `SummonHybridEffect` 或其通用层扩展；攻击 / 投射 / 命中语义必须优先复用 `BoardProjectilePathPreset`、`BoardProjectileAttackPreset` 或对照 Summoner Wars 等同项目成熟 `fxSetup.ts` 的飞行路径、命中回调和伤害反馈链路。**只复用底层粒子、Canvas、Shader 或单个 `ConeBlast`，再在游戏文件里重新拼出一套主效果，不得称为复用**；除非证明共享 preset 不适用，否则游戏侧 renderer 只能做事件参数到共享 preset 的适配。
 - **复用组件不等于复用参数（强制）**：复用的对象是组件职责、生命周期、帧时钟、冲击回调、性能预算、可测试锚点和渲染载体；颜色、粒子 preset、scale、origin、duration、路径 padding、字体大小、z-index、音效 key、强弱节奏等属于具体游戏 / 具体卡牌 / 具体规则语义的调参，必须由游戏侧 `fxTuning`、`fxSetup`、规则配置或素材合同显式声明。参考 Summoner Wars、Dice Throne 或 devtools 预览时，只能复用其组件组合和动作语法，不能把参考游戏参数、截图临界值或预览默认值隐式继承到新游戏。共享组件允许有安全默认值，但正式游戏 renderer 不得依赖默认调参；凡游戏层看不出参数来源、或只是把兄弟游戏参数整包复制过来，即使代码组件已复用，也判为参数污染，必须重构。
+- **成熟特效默认合同不得被新游戏改写（强制）**：其它游戏已经验证过的特效组件、preset、`fxSetup.ts` 定位方式、默认参数、节奏、层级和音效 / 震动时机，默认都是该游戏的表现合同；没有用户当轮明确授权或已批准规格时，新游戏或单游戏任务不得直接修改这些成熟默认来“顺便适配”。正确做法只有三类：①在新游戏自己的 `fxTuning` / `fxSetup` / 规则配置中传入参数；②给共享组件新增可选参数，默认值必须保持旧表现字节级或视觉等价，并补旧消费者回归；③现有 preset 语义确实不适用时新建命名明确的 preset / renderer，而不是改旧 preset。若修改会让 Summoner Wars、Dice Throne、Smash Up 等成熟游戏的截图、动效位置或节奏变化，必须先停在提案 / 审查，不得作为当前新游戏修复直接落代码。
 - **最小必要特效原则（强制）**：特效必须由规则事件的具体语义触发，不能把“能力”“施法”“结算”这类泛词直接映射成主舞台大特效。攻击 / 投射 / 伤害才需要来源、飞行、命中和飘字；召唤才需要召唤光柱；移动、推拉、传送只给位移相关反馈；装备、结界、buff、附件或同格状态变化只给宿主 / 附件槽 / 目标对象的轻量反馈，牌面和附件槽已经能表达的信息不得再用额外 UI 复读。
 - **棋盘特效尺寸与锚点匹配（强制）**：棋盘上的召唤、命中、推拉、传送、buff、装备、结界等局部反馈，默认必须以本次反馈对象的可见本体为锚点和尺寸参照，而不是以整格、整行、整屏或参考游戏截图为参照。普通单位召唤光柱、命中爆发和落点光团应贴在单位 / 法师 / 附件槽的可见中心或规则指定命中点，不能漂在格子中心、格线中心或空地上；全屏暗角、全场聚光和跨格大光幕只允许用于明确的大招、结算页或全局事件，并必须在游戏侧调参中显式声明。E2E / 图面验收不能只证明“有 canvas / 有亮点 / 目标格平均变亮”，还必须断言特效盒或可见主体相对目标单位、法师实体、卡牌或附件槽的中心距离、重叠比例和最大尺寸比例，防止“贴格子不贴对象”或“越大越容易通过”。
 - **结果反馈不得遮住来源 / 目标（强制）**：攻击骰、效果骰、伤害数值、结算徽章和类似结果反馈可以靠近本次动作路径，但不得压住正在被证明的来源对象、目标对象或合法交互对象。若反馈层需要浮在棋盘上，默认放在来源到目标路径的旁侧避让位，或放在明确的结果槽；不得默认取路径中点后让骰子 / 数字盖住单位。E2E / 图面验收不能只查目标 DOM `display`、`visibility` 或透明度，还必须检查前景结果层与目标本体的遮挡比例；目标“存在但被骰子盖住”按未通过处理。
@@ -29,9 +30,9 @@ metadata:
 - **性能友好（强制）**：
   - **设计时先锁表现与成本**：新增或重写动画/特效前，必须先写清玩家可见语义（触发时机、反馈对象、强度/节奏、位置补间或离场承接）和实现成本来源（渲染数量、布局测量、绘制属性、图片/Shader 预热、是否跨父组件重渲染）。禁止先用全量 DOM、全局状态刷新、`transition-all`、位置布局动画或运行时重复解码把效果堆出来，再把性能返工留给后续。
   - **性能优化不得偷改表现**：优化只能优先减少真实工作量、隔离重渲染、改用合成属性、预热资源或改渲染载体；如果需要改变动画强度、节奏、触发时机、位置补间、可见载体或反馈对象，必须标为表现变更并先取得用户确认，不能伪装成纯性能修复。
-  - **连续帧统一时钟**：Canvas 2D、WebGL Shader、粒子、手写 transform 震动等需要连续逐帧更新的特效，必须接入 `src/engine/fx/frameClock.ts` 的 `subscribeFxFrame`，由一个共享帧泵驱动；禁止每个组件各自递归创建 `requestAnimationFrame` 循环。只有“卸载后下一帧重挂载”这类一次性 React 生命周期切换，才允许直接使用单次 `requestAnimationFrame`。
+  - **连续帧统一时钟只属于 FX 渲染层**：Canvas 2D、WebGL Shader、粒子、投射物路径和 FX renderer 自己拥有的连续逐帧特效，必须接入 `src/engine/fx/frameClock.ts` 的 `subscribeFxFrame`，由一个共享帧泵驱动；禁止每个重型 FX renderer 各自递归创建长期 `requestAnimationFrame` 循环。普通 React UI 反馈、组件本地震动、hover / glow、受击 overlay 开关、hook 自动复位和不进入 `FxBus` 的轻量反馈不接入共享 FX 帧时钟；它们应使用 CSS / Web Animations / framer-motion 生命周期、本地 `requestAnimationFrame` 或本地 timer。
   - **事件帧合并**：FX 事件可以在同一规则 tick 内连续入队，但渲染层通知必须按帧合并，避免一次结算触发多次 React 渲染刷新；事件数据仍需即时写入队列，保证预算、并发和序列判断读取的是最新状态。
-  - **视觉生命周期帧回调**：动画阶段切换、冲击帧、完成回调、安全收口、hook 自动复位等纯视觉时序，必须优先使用 `scheduleFxFrameCallback`，让回调落在共享 FX 帧上；业务规则等待、网络重试、图片预加载空闲降级等非视觉时序不强行迁入。
+  - **FX 内部阶段回调用共享帧**：只有 `FxBus` 序列、FX renderer 的冲击帧 / 完成回调、粒子或投射物生命周期这类已经进入 FX 表现系统的时序，才优先使用 `scheduleFxFrameCallback`，让回调落在共享 FX 帧上。普通组件的显示 / 隐藏、受击闪光复位、钝帧解除、发光结束和 hook 自动复位不得把 `scheduleFxFrameCallback` 当作 `setTimeout` 的通用替代。
   - **禁止 `transition-all` / `transition-colors`**：会导致 `border-color` 等不可合成属性触发主线程渲染。改用具体属性：`transition-[background-color]`、`transition-[opacity,transform]`。
   - **优先合成属性**：`transform`、`opacity`、`filter`；**谨慎使用**：`background-color`、`box-shadow`、`border-*`。
   - **transition 与 @keyframes 互斥**：同一元素禁止同时使用，应通过 `style.transition` 动态切换。
@@ -141,7 +142,7 @@ metadata:
 - **tracking 显式声明**：持续光环、buff、蓄力环、附着状态等确实要跟随宿主的特效，才允许使用 `tracking` 模式，并必须声明宿主消失后的完成、转移或结束策略。投射物、命中爆发、召唤光柱和飘字不得隐式切成 live tracking。
 - **旧坐标是迁移层**：`ctx.cell`、`ctx.screenPos` 和游戏内旧 `position` 只能作为兼容 adapter；新增游戏或新增主特效不得再建立游戏私有坐标系统。
 - **百游戏接入边界**：新游戏接入 FX 的默认工作量应是“注册 surface / anchor + 配 cue 参数 / tuning”，不得要求修改共享 renderer、复制其它游戏 renderer，或新建一套坐标解析框架。
-- **旧游戏迁移边界**：旧游戏接入 FX surface / anchor snapshot 时，只能按 [`shared-refactor-guard`](shared-refactor-guard.md) 做兼容迁移；未获明确授权不得重做该游戏 UI、特效语义、参数节奏或玩家流程。
+- **旧游戏迁移边界**：旧游戏接入 FX surface / anchor snapshot 时，只能按 [`shared-refactor-guard`](shared-refactor-guard.md) 做兼容迁移；未获明确授权不得重做该游戏 UI、特效语义、参数节奏、定位坐标系或玩家流程。对已经有成熟 screen / cell / table 坐标合同的游戏，注册 surface / anchor 只能作为内部兼容入口；不得让旧的力量浮字、VP 飞行、行动卡展示、召唤光柱或攻击反馈自动改成新坐标表现。
 
 ### 反馈包系统（FeedbackPack）（强制）
 

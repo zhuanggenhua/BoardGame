@@ -52,6 +52,8 @@
 ## 6. AI 动作延迟门控（新增）
 
 - [ ] 是否明确区分“延迟时长”和“延迟动作范围”？
+- [ ] 用户反馈“AI 瞬间 / 太快 / 1 秒无效”时，是否先跑真实页面行动权时间线，而不是先用静态分类否定？
+- [ ] 是否已区分浏览器本地 AI 与服务端在线 AI；服务端执行时是否记录状态切换或 `[ONLINE_AI_BATCH_TRACE]`？
 - [ ] `src/engine/transport/react.tsx` 与 `e2e/src/engine/transport/react.tsx` 的延迟门控是否一致？
 - [ ] 静默动作是否已纳入 `NO_FOLLOW_UP_DELAY_ACTION_KINDS`（不再累计下一步 gate）？
 - [ ] 可见动作是否保留节奏延迟（而不是全局都 0）？

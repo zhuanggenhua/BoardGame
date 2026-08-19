@@ -563,6 +563,55 @@ describe('极客派系隐藏实现批', () => {
         expect(returned.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1']);
     });
 
+    it('无限循环重放禁卡表时，当前交互先停在禁卡表命名，再进入回手提示', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['geeks', 'dragons'],
+                    hand: [
+                        makeCard('loop-1', 'geeks_non_infinite_loop', 'action', '0'),
+                        makeCard('banned-1', 'geeks_banned_list', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['geeks', 'aliens'],
+                    hand: [
+                        makeCard('enemy-fan', 'geeks_fan', 'minion', '1'),
+                        makeCard('enemy-guru', 'geeks_game_guru', 'minion', '1'),
+                    ],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [makeBase('base_a', [])],
+        }));
+
+        const played = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'loop-1' },
+        });
+
+        const actionPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_non_infinite_loop_action');
+        const bannedOption = actionPrompt.options.find((option: any) => option.value?.cardUid === 'banned-1');
+        expect(bannedOption).toBeTruthy();
+
+        const afterPlay = respondToPrompt(played.finalState, bannedOption.id, '0', fixedRandom as any);
+        expect(getPromptsBySourceId(afterPlay.finalState, 'geeks_non_infinite_loop_return')).toHaveLength(1);
+
+        const bannedPrompt = getSimpleChoicePrompt(afterPlay.finalState, 'geeks_banned_list');
+        const fanOption = bannedPrompt.options.find((option: any) => option.value?.defId === 'geeks_fan');
+        expect(fanOption).toBeTruthy();
+
+        const afterBannedResolve = respondToPrompt(afterPlay.finalState, fanOption.id, '0', fixedRandom as any);
+        expect(afterBannedResolve.finalState.core.players['1'].deck.at(-1)?.uid).toBe('enemy-fan');
+        getSimpleChoicePrompt(afterBannedResolve.finalState, 'geeks_non_infinite_loop_return');
+
+        const returned = respondToPrompt(afterBannedResolve.finalState, 'return', '0', fixedRandom as any);
+        expect(returned.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual(['banned-1']);
+        expect(returned.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1']);
+    });
+
     it('控制仆从正常打出后会取得目标随从控制权，并在回合结束恢复', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 0,

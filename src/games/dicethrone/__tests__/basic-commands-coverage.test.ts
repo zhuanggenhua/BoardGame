@@ -327,6 +327,40 @@ describe('AI legal actions', () => {
         )).toBe(true);
     });
 
+    it('setup 阶段共享 AI 上下文应过滤仍标记实施中的角色', () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                phase: 'setup',
+                interaction: { queue: [] },
+            } as MatchState<DiceThroneCore>['sys'],
+        };
+
+        const rawCharacterIds = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        })
+            .filter((action) => action.kind === 'setup-select-character')
+            .map((action) => (action.commands[0]?.payload as { characterId?: string } | undefined)?.characterId);
+        const context = buildAiDecisionContext({
+            gameId: engineConfig.gameId,
+            matchId: 'dicethrone:setup-option-status',
+            playerId: '1',
+            visibleState: state,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai' },
+        });
+        const contextCharacterIds = context.legalActions
+            .filter((action) => action.kind === 'setup-select-character')
+            .map((action) => (action.commands[0]?.payload as { characterId?: string } | undefined)?.characterId);
+
+        expect(rawCharacterIds).toContain('lieren');
+        expect(contextCharacterIds).not.toContain('lieren');
+    });
+
     it('在线 AI 尚未选角和准备时，房主开始命令必须被拒绝，AI 仍能生成选角动作', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         core.selectedCharacters['0'] = 'monk';
@@ -1791,6 +1825,104 @@ describe('AI legal actions', () => {
         ]);
     });
 
+    it('AI selectDie 允许重复时应枚举同一颗骰子重复重掷', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 2).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 6][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'ai-select-dice-repeatable',
+            playerId: '0',
+            sourceCardId: 'reroll-two-repeatable-test',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selectCount: 2,
+            selected: [],
+            allowRepeatedDieSelection: true,
+        });
+
+        const rerollPayloads = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .filter((action) => action.kind === 'interaction-multistep')
+            .map((action) => action.commands
+                .filter((command) => command.type === 'REROLL_DIE')
+                .map((command) => (command.payload as { dieId: number }).dieId)
+                .join(','))
+            .sort();
+
+        expect(rerollPayloads).toEqual([
+            '0',
+            '0,0',
+            '0,1',
+            '1',
+            '1,1',
+        ]);
+    });
+
+    it('AI selectDie 允许重复且已完成一步时只生成剩余一步，可再次选择同一骰', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 2).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 6][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'ai-select-dice-repeatable-remaining',
+            playerId: '0',
+            sourceCardId: 'reroll-two-repeatable-test',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selectCount: 2,
+            selected: [],
+            allowRepeatedDieSelection: true,
+            completedDieIds: [0],
+            completedSteps: 1,
+        });
+
+        const rerollPayloads = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .filter((action) => action.kind === 'interaction-multistep')
+            .map((action) => action.commands
+                .filter((command) => command.type === 'REROLL_DIE')
+                .map((command) => (command.payload as { dieId: number }).dieId)
+                .join(','))
+            .sort();
+
+        expect(rerollPayloads).toEqual(['0', '1']);
+    });
+
+    it('AI selectDie 默认不可重复且已完成一步时只生成剩余未完成骰子', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 5][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'ai-select-dice-non-repeatable-remaining',
+            playerId: '0',
+            sourceCardId: 'reroll-two-test',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selectCount: 2,
+            selected: [],
+            completedDieIds: [0],
+        });
+
+        const rerollPayloads = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .filter((action) => action.kind === 'interaction-multistep')
+            .map((action) => action.commands
+                .filter((command) => command.type === 'REROLL_DIE')
+                .map((command) => (command.payload as { dieId: number }).dieId)
+                .join(','))
+            .sort();
+
+        expect(rerollPayloads).toEqual(['1', '2']);
+    });
+
     it('本地 AI 在 selectDie=2 时应优先一次处理两颗低点骰，而不是只选第一颗', async () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
@@ -1953,6 +2085,40 @@ describe('AI legal actions', () => {
         )).toBe(true);
     });
 
+    it('AI modifyDie 已完成一步时只生成剩余一步，不再按总额度继续改两颗', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 5][index],
+        }));
+
+        injectPendingInteraction(state, {
+            id: 'ai-modify-any-two-remaining',
+            playerId: '0',
+            sourceCardId: 'modify-any-two-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDiceToModify',
+            selectCount: 2,
+            selected: [],
+            dieModifyConfig: { mode: 'any' },
+            completedDieIds: [0],
+        });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '0', state })
+            .filter((action) => action.kind === 'interaction-multistep');
+
+        expect(actions.length).toBeGreaterThan(0);
+        expect(actions.every((action) =>
+            action.commands.filter((command) => command.type === 'MODIFY_DIE').length === 1
+        )).toBe(true);
+        expect(actions.every((action) =>
+            action.commands
+                .filter((command) => command.type === 'MODIFY_DIE')
+                .every((command) => (command.payload as { dieId: number }).dieId !== 0)
+        )).toBe(true);
+    });
+
     it('modifyDie set 双骰交互未达到最少步数时服务端不应允许提前确认', () => {
         let state = createInitializedState(['0', '1'], fixedRandom);
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
@@ -2031,8 +2197,9 @@ describe('AI legal actions', () => {
             selectCount: 1,
             selected: [],
         });
-        expect(rerollData.maxSteps).toBeUndefined();
+        expect(rerollData.maxSteps).toBe(1);
         expect(rerollData.minSteps).toBe(1);
+        expect(rerollData.confirmationMode).toBe('submitBatch');
     });
 
     it('copy 交互不能把同值骰当作源骰和目标骰，避免 AI 消耗牌但骰面不变', () => {

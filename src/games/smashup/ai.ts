@@ -46,7 +46,7 @@ import type { SmashUpCommand, SmashUpEvent } from './domain/types';
 import {
     buildFactionSelectionIdentitySet,
     isSmashUpDiyFaction,
-    isSmashUpFactionImplementationInProgress,
+    isSmashUpFactionSelectionIdentityImplementationInProgress,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
@@ -168,7 +168,6 @@ const isInteractionControlValue = (value: unknown): boolean => {
 
 const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => (
     factionId !== SMASHUP_FACTION_IDS.MADNESS
-    && !isSmashUpFactionImplementationInProgress(factionId)
     && getFactionCards(factionId).length > 0
 ));
 
@@ -1564,6 +1563,9 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
     const candidates = availableFactions.length > 0 ? availableFactions : selectableFactions;
 
     for (const factionId of candidates) {
+        const setupOptionStatus = isSmashUpFactionSelectionIdentityImplementationInProgress(factionId)
+            ? 'in_progress' as const
+            : undefined;
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('select-faction', factionId),
             kind: 'select-faction',
@@ -1574,6 +1576,12 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
             }],
             metadata: {
                 factionId,
+                ...(setupOptionStatus
+                    ? {
+                        setupOptionStatus,
+                        setupOptionStatusReason: 'Smash Up 派系仍在实施中',
+                    }
+                    : {}),
                 visibleStepDelayPolicy: 'hidden',
             },
         });

@@ -90,9 +90,8 @@ type SummonerWarsInteractionOption = {
     _ai?: AiHint;
 };
 
-const SETUP_FACTION_POOL: FactionId[] = FACTION_CATALOG
-    .filter((faction) => faction.selectable)
-    .map((faction) => faction.id);
+const SETUP_FACTIONS = FACTION_CATALOG
+    .filter((faction) => faction.selectable);
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
     CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -1467,10 +1466,11 @@ const buildSetupActions = (
                 takenFactions.add(value as FactionId);
             }
         }
-        const candidates = SETUP_FACTION_POOL.filter((factionId) => !takenFactions.has(factionId));
-        const availableFactions = candidates.length > 0 ? candidates : SETUP_FACTION_POOL;
+        const candidates = SETUP_FACTIONS.filter((faction) => !takenFactions.has(faction.id));
+        const availableFactions = candidates.length > 0 ? candidates : SETUP_FACTIONS;
 
-        for (const factionId of availableFactions) {
+        for (const faction of availableFactions) {
+            const factionId = faction.id;
             appendAction(actions, state, playerId, {
                 actionId: createAiLegalActionId('setup', 'select-faction', factionId),
                 kind: 'setup-select-faction',
@@ -1481,6 +1481,12 @@ const buildSetupActions = (
                 }],
                 metadata: {
                     factionId,
+                    ...(faction.setupOptionStatus
+                        ? {
+                            setupOptionStatus: faction.setupOptionStatus,
+                            setupOptionStatusReason: faction.setupOptionStatusReason,
+                        }
+                        : {}),
                 },
             });
         }
@@ -2171,18 +2177,22 @@ const buildMagicActions = (
 const buildEndPhaseAction = (
     state: SummonerWarsState,
     playerId: PlayerId,
-): AiLegalAction => ({
-    actionId: createAiLegalActionId('advance-phase', getCurrentPhase(state), playerId),
-    kind: 'advance-phase',
-    label: '结束当前阶段',
-    commands: [{
-        type: FLOW_COMMANDS.ADVANCE_PHASE,
-        payload: {},
-    }],
-    metadata: {
-        phase: getCurrentPhase(state),
-    },
-});
+): AiLegalAction => {
+    const phase = getCurrentPhase(state);
+    return {
+        actionId: createAiLegalActionId('advance-phase', phase, playerId),
+        kind: 'advance-phase',
+        label: '结束当前阶段',
+        commands: [{
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            payload: {},
+        }],
+        metadata: {
+            phase,
+            visibleStepDelayPolicy: phase === 'draw' ? 'visible' : 'hidden',
+        },
+    };
+};
 
 const buildFlowHaltedPhaseEndAbilityActions = (
     state: SummonerWarsState,
@@ -3270,6 +3280,18 @@ export const summonerWarsAiRuntime: GameAiRuntime = {
     buildLegalActions: buildSummonerWarsAiLegalActions,
     defaultMinimumActionDelayMs: 1000,
     localHiddenCommandTypes: [SW_COMMANDS.END_PHASE],
+    localVisibleStepDelayConfig: {
+        mode: 'whitelist',
+        actionKinds: [
+            'summon-unit',
+            'move-unit',
+            'build-structure',
+            'declare-attack',
+            'discard-for-magic',
+            'activate-ability',
+            'play-event',
+        ],
+    },
     buildFeatureSnapshot(args) {
         const playerId = asSummonerWarsPlayerId(args.playerId);
         if (!playerId) return null;

@@ -27,6 +27,7 @@ import { createShourenDeck } from './shouren';
 import { createYonghengDeck } from './yongheng';
 import { createShadowDeck } from './shadow';
 import type { FactionId } from '../../domain/types';
+import type { AiSetupOptionStatus } from '../../../../engine/ai/types';
 
 // 派系 ID 常量
 export const FACTION_IDS = {
@@ -73,11 +74,33 @@ export interface FactionCatalogEntry {
   tipImagePath: string;
   /** 是否可选（未实现的阵营设为 false） */
   selectable: boolean;
-  /** 用户可见实施状态；实施中对象必须显示共享斜条横幅 */
+  /** 开局选项状态：AI 自动选择与 UI 状态都从这里派生 */
+  setupOptionStatus?: AiSetupOptionStatus;
+  /** 状态原因；会透传给共享 AI 过滤诊断 */
+  setupOptionStatusReason?: string;
+  /**
+   * 用户可见实施状态；由 setupOptionStatus 派生，避免 UI 与 AI 各维护一份。
+   * @deprecated 新状态源应使用 setupOptionStatus。
+   */
   statusTag?: 'under_construction';
 }
 
-export const FACTION_CATALOG: FactionCatalogEntry[] = [
+type FactionCatalogSourceEntry = Omit<FactionCatalogEntry, 'statusTag'>;
+
+const SUMMONER_WARS_FACTION_IN_PROGRESS_REASON = 'Summoner Wars 阵营仍在实施中';
+
+const deriveFactionStatusTag = (
+  setupOptionStatus: AiSetupOptionStatus | undefined,
+): FactionCatalogEntry['statusTag'] => (
+  setupOptionStatus === 'in_progress' ? 'under_construction' : undefined
+);
+
+const withDerivedFactionStatusTag = (entry: FactionCatalogSourceEntry): FactionCatalogEntry => {
+  const statusTag = deriveFactionStatusTag(entry.setupOptionStatus);
+  return statusTag ? { ...entry, statusTag } : entry;
+};
+
+export const FACTION_CATALOG: FactionCatalogEntry[] = ([
   {
     id: 'necromancer',
     nameKey: 'factions.necromancer',
@@ -126,7 +149,8 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     heroImagePath: 'summonerwars/hero/mogu/hero',
     tipImagePath: 'summonerwars/hero/mogu/tip',
     selectable: true,
-    statusTag: 'under_construction',
+    setupOptionStatus: 'in_progress',
+    setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
   },
   {
     id: 'huijin',
@@ -134,7 +158,8 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     heroImagePath: 'summonerwars/hero/huijin/hero',
     tipImagePath: 'summonerwars/hero/huijin/tip',
     selectable: true,
-    statusTag: 'under_construction',
+    setupOptionStatus: 'in_progress',
+    setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
   },
   {
     id: 'shouren',
@@ -149,7 +174,8 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     heroImagePath: 'summonerwars/hero/yongheng/hero',
     tipImagePath: 'summonerwars/hero/yongheng/tip',
     selectable: true,
-    statusTag: 'under_construction',
+    setupOptionStatus: 'in_progress',
+    setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
   },
   {
     id: 'shadow',
@@ -157,9 +183,10 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     heroImagePath: 'summonerwars/hero/shadow/hero',
     tipImagePath: 'summonerwars/hero/shadow/tip',
     selectable: true,
-    statusTag: 'under_construction',
+    setupOptionStatus: 'in_progress',
+    setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
   },
-];
+] satisfies FactionCatalogSourceEntry[]).map(withDerivedFactionStatusTag);
 
 /** 根据阵营 ID 创建牌组 */
 export function createDeckByFactionId(factionId: FactionId) {

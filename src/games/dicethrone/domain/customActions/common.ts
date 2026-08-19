@@ -277,6 +277,7 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, stat
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 2,
         selected: [],
+        allowRepeatedDieSelection: true,
         diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),

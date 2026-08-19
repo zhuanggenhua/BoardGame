@@ -6,8 +6,8 @@
  * 2. 将底层动画组件包装为 FxRenderer
  * 3. 创建并注册 FxRegistry 单例
  *
- * SmashUp 没有棋盘格。新链路优先消费 table-local anchor snapshot；
- * 迁移期保留旧 screen 坐标作为显式兜底。
+ * SmashUp 特效全部使用 screen 空间定位（无棋盘格），
+ * 通过 event.params 传入屏幕坐标或 DOM 位置信息。
  */
 
 import React, { useRef, useCallback, useEffect } from 'react';
@@ -16,7 +16,6 @@ import {
   FxRegistry,
   scheduleFxFrameCallback,
   type FeedbackPack,
-  type FxAnchorSnapshot,
   type FxRendererProps,
 } from '../../../engine/fx';
 import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
@@ -55,23 +54,6 @@ function useStableComplete(onComplete: () => void): () => void {
   return useCallback(() => ref.current(), []);
 }
 
-function readFxAnchorSnapshot(value: unknown): FxAnchorSnapshot | null {
-  if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<FxAnchorSnapshot>;
-  if (
-    typeof candidate.surfaceId !== 'string'
-    || typeof candidate.anchorId !== 'string'
-    || !candidate.box
-    || typeof candidate.box.left !== 'number'
-    || typeof candidate.box.top !== 'number'
-    || typeof candidate.box.width !== 'number'
-    || typeof candidate.box.height !== 'number'
-  ) {
-    return null;
-  }
-  return candidate as FxAnchorSnapshot;
-}
-
 // ============================================================================
 // 渲染器：力量变化浮字
 // ============================================================================
@@ -79,15 +61,13 @@ function readFxAnchorSnapshot(value: unknown): FxAnchorSnapshot | null {
 /**
  * params:
  * - delta: number — 力量变化值
- * - targetSnapshot: FxAnchorSnapshot — table-local 基地锚点快照（优先）
- * - position: { left: number; top: number } — 屏幕像素坐标（旧兜底）
+ * - position: { left: number; top: number } — 屏幕像素坐标
  */
 const PowerChangeRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
   const delta = event.params?.delta as number | undefined;
-  const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
   const position = event.params?.position as { left: number; top: number } | undefined;
-  const shouldRender = !!delta && (!!targetSnapshot || !!position);
+  const shouldRender = !!delta && !!position;
 
   // 立即触发 impact（即时反馈）
   const impactFired = useRef(false);
@@ -112,28 +92,12 @@ const PowerChangeRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onI
 
   if (!shouldRender) return null;
 
-  const style = targetSnapshot
-    ? {
-        left: `${targetSnapshot.box.left + targetSnapshot.box.width + 0.7}%`,
-        top: `${Math.max(0, targetSnapshot.box.top - 1.2)}%`,
-        zIndex: UI_Z_INDEX.overlayRaised,
-        fontFamily: "'Caveat', 'Comic Sans MS', cursive",
-      }
-    : {
-        left: position?.left,
-        top: position?.top,
-        zIndex: UI_Z_INDEX.overlayRaised,
-        fontFamily: "'Caveat', 'Comic Sans MS', cursive",
-      };
-
-  return React.createElement(motion.div as React.ElementType, {
-    'data-target-anchor-id': targetSnapshot?.anchorId ?? '',
-    'data-surface-id': targetSnapshot?.surfaceId ?? '',
+  return React.createElement(motion.div, {
     initial: { opacity: 1, y: 0, scale: 0.8, rotate: -5 },
     animate: { opacity: 0, y: -40, scale: 1.2, rotate: 5 },
     transition: { duration: 0.8, ease: 'easeOut' },
-    className: `${targetSnapshot ? 'absolute' : 'fixed'} pointer-events-none select-none`,
-    style,
+    className: 'fixed pointer-events-none select-none',
+    style: { left: position.left, top: position.top, zIndex: UI_Z_INDEX.overlayRaised, fontFamily: "'Caveat', 'Comic Sans MS', cursive" },
   },
     React.createElement('span', {
       className: `text-[1.8vw] font-black drop-shadow-md ${delta > 0 ? 'text-green-400' : 'text-red-400'}`,
@@ -236,12 +200,10 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 /**
  * params:
  * - rankings: Array<{ playerId: string; power: number; vp: number; playerName?: string }>
- * - targetSnapshot: FxAnchorSnapshot — table-local 基地锚点快照（可选）
  */
 const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
   const rankings = event.params?.rankings as Array<{ playerId: string; power: number; vp: number; playerName?: string }> | undefined;
-  const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
   const validRankings = (rankings ?? []).filter(r => r.vp > 0);
   const shouldRender = validRankings.length > 0;
   const lastItemDelayMs = Math.max(0, validRankings.length - 1) * BASE_SCORED_ITEM_DELAY_S * 1000;
@@ -272,10 +234,8 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
   const t = i18next.getFixedT(null, 'game-smashup');
 
   // 使用 motion.div 作为根元素（与其他渲染器一致），确保 AnimatePresence 能正确追踪
-  return React.createElement(motion.div as React.ElementType, {
-    'data-target-anchor-id': targetSnapshot?.anchorId ?? '',
-    'data-surface-id': targetSnapshot?.surfaceId ?? '',
-    className: `${targetSnapshot ? 'absolute' : 'fixed'} inset-0 pointer-events-none`,
+  return React.createElement(motion.div, {
+    className: 'fixed inset-0 pointer-events-none',
     style: { zIndex: UI_Z_INDEX.overlayRaised },
     initial: { opacity: 0 },
     animate: { opacity: 1 },
@@ -288,15 +248,11 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
       const playerLabel = r.playerName || t('ui.player_short', { id: playerNumber });
       const conf = PLAYER_CONFIG[(Number.isFinite(playerIndex) ? playerIndex : 0) % PLAYER_CONFIG.length];
       const offsetY = (i - (validRankings.length - 1) / 2) * 68;
-      const feedbackStyle = targetSnapshot
-        ? { left: `${targetSnapshot.center.xPct}%`, top: `calc(${targetSnapshot.center.yPct}% + ${offsetY}px)` }
-        : { left: '50%', top: `calc(50% + ${offsetY}px)` };
       return React.createElement(motion.div as React.ElementType, {
         key: `${event.id}-${r.playerId}`,
         'data-testid': `su-vp-gain-feedback-${r.playerId}`,
-        'data-target-anchor-id': targetSnapshot?.anchorId ?? '',
         className: 'absolute pointer-events-none select-none',
-        style: feedbackStyle,
+        style: { left: '50%', top: `calc(50% + ${offsetY}px)` },
         initial: { opacity: 0, scale: 0.92, x: '-50%', y: 28 },
         animate: {
           opacity: [0, 1, 1, 0],

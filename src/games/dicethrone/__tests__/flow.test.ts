@@ -51,6 +51,7 @@ import {
     expectedDeckAfterDraw4,
     expectedIncomeCp,
     fistAttackAbilityId,
+    cancelPromptCommand,
     injectPendingInteraction,
     injectSimpleChoicePrompt,
     respondToPrompt,
@@ -3322,6 +3323,7 @@ describe('王权骰铸流程测试', () => {
                     },
                 },
             });
+            expect(result.steps.filter(step => !step.success)).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
         });
 
@@ -3411,6 +3413,7 @@ describe('王权骰铸流程测试', () => {
                     },
                 },
             });
+            expect(result.steps.filter(step => !step.success)).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
         });
 
@@ -5251,7 +5254,104 @@ describe('王权骰铸流程测试', () => {
                     players: { '0': { discardSize: 1 } },
                 },
             });
+            expect(result.steps.filter(step => !step.success)).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('不愧是我：允许同一颗骰子重掷 2 次', () => {
+            const runner = createRunner(createQueuedRandom([1, 2, 3, 4, 5, 6, 5]));
+            const result = runner.run({
+                name: '不愧是我 reroll-2 same die twice',
+                setup: createSetupWithHand(['card-worthy-of-me'], { cp: 10 }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
+                    cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
+                ],
+                expect: {
+                    diceValues: [5, 2, 3, 4, 5],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                },
+            });
+            expect(result.steps.filter(step => !step.success)).toEqual([]);
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('不愧是我：已提交一次重掷后取消不应返还 CP 和卡牌', () => {
+            const random = createQueuedRandom([1, 2, 3, 4, 5, 6]);
+            const runner = createRunner(random);
+            runner.setState(createSetupWithHand(['card-worthy-of-me'], { cp: 10 })(['0', '1'], random));
+
+            const openingCommands = [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
+            ];
+
+            for (const command of openingCommands) {
+                const result = runner.dispatch(command.type, { playerId: command.playerId, ...command.payload });
+                expect(result.success).toBe(true);
+            }
+
+            const afterPlay = runner.getState();
+            expect(afterPlay.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+            expect(afterPlay.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(false);
+            expect(afterPlay.core.players['0'].discard.some(card => card.id === 'card-worthy-of-me')).toBe(true);
+
+            expect(runner.dispatch('REROLL_DIE', { playerId: '0', dieId: 0 }).success).toBe(true);
+
+            const afterFirstReroll = runner.getState();
+            expect(afterFirstReroll.core.dice.map(die => die.value)).toEqual([6, 2, 3, 4, 5]);
+            const rerollPrompt = getMultistepChoicePrompt(afterFirstReroll);
+            expect(rerollPrompt.completedSteps).toBe(1);
+
+            const cancelCommand = cancelPromptCommand(afterFirstReroll, '0');
+            const cancelled = runner.dispatch(cancelCommand.type, { playerId: cancelCommand.playerId, ...cancelCommand.payload });
+            expect(cancelled.success).toBe(true);
+
+            const finalState = runner.getState();
+            expect(getCurrentInteractionSummary(finalState).kind).toBeUndefined();
+            expect(finalState.core.dice.map(die => die.value)).toEqual([6, 2, 3, 4, 5]);
+            expect(finalState.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+            expect(finalState.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(false);
+            expect(finalState.core.players['0'].discard.some(card => card.id === 'card-worthy-of-me')).toBe(true);
+        });
+
+        it('不愧是我：未提交任何重掷时取消仍返还 CP 和卡牌', () => {
+            const random = createQueuedRandom([1, 2, 3, 4, 5]);
+            const runner = createRunner(random);
+            runner.setState(createSetupWithHand(['card-worthy-of-me'], { cp: 10 })(['0', '1'], random));
+
+            const openingCommands = [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-worthy-of-me' }),
+            ];
+
+            for (const command of openingCommands) {
+                const result = runner.dispatch(command.type, { playerId: command.playerId, ...command.payload });
+                expect(result.success).toBe(true);
+            }
+
+            const afterPlay = runner.getState();
+            expect(afterPlay.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+            expect(afterPlay.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(false);
+            expect(afterPlay.core.players['0'].discard.some(card => card.id === 'card-worthy-of-me')).toBe(true);
+            expect(afterPlay.sys.interaction.current?.kind).toBe('multistep-choice');
+
+            const cancelled = runner.dispatch('SYS_INTERACTION_CANCEL', { playerId: '0' });
+            expect(cancelled.success).toBe(true);
+
+            const finalState = runner.getState();
+            expect(finalState.sys.interaction.current).toBeUndefined();
+            expect(finalState.core.dice.map(die => die.value)).toEqual([1, 2, 3, 4, 5]);
+            expect(finalState.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(10);
+            expect(finalState.core.players['0'].hand.some(card => card.id === 'card-worthy-of-me')).toBe(true);
+            expect(finalState.core.players['0'].discard.some(card => card.id === 'card-worthy-of-me')).toBe(false);
         });
 
         it('我又行了：重掷至多 5 颗骰子', () => {
@@ -5279,7 +5379,48 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
-        it('我又行了：至多 5 颗允许少选 1 颗后确认', () => {
+        it('我又行了：分两批各重掷 2 颗时确认本批次不关闭整段交互', () => {
+            const random = createQueuedRandom([1, 1, 1, 1, 1, 2, 3, 4, 5]);
+            const runner = createRunner(random);
+            runner.setState(createSetupWithHand(['card-i-can-again'], { cp: 10 })(['0', '1'], random));
+
+            const openingCommands = [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-i-can-again' }),
+            ];
+
+            for (const command of openingCommands) {
+                const result = runner.dispatch(command.type, { playerId: command.playerId, ...command.payload });
+                expect(result.success).toBe(true);
+            }
+
+            expect(runner.dispatch('REROLL_DIE', { playerId: '0', dieId: 0 }).success).toBe(true);
+            expect(runner.dispatch('REROLL_DIE', { playerId: '0', dieId: 1 }).success).toBe(true);
+
+            const afterFirstBatch = runner.getState();
+            expect(afterFirstBatch.core.dice.map(die => die.value)).toEqual([2, 3, 1, 1, 1]);
+            const firstBatchPrompt = getMultistepChoicePrompt(afterFirstBatch);
+            expect(firstBatchPrompt.completedSteps).toBe(2);
+            expect(firstBatchPrompt.completedDieIds).toEqual([0, 1]);
+
+            expect(runner.dispatch('REROLL_DIE', { playerId: '0', dieId: 2 }).success).toBe(true);
+            expect(runner.dispatch('REROLL_DIE', { playerId: '0', dieId: 3 }).success).toBe(true);
+
+            const afterSecondBatch = runner.getState();
+            expect(afterSecondBatch.core.dice.map(die => die.value)).toEqual([2, 3, 4, 5, 1]);
+            const secondBatchPrompt = getMultistepChoicePrompt(afterSecondBatch);
+            expect(secondBatchPrompt.completedSteps).toBe(4);
+            expect(secondBatchPrompt.completedDieIds).toEqual([0, 1, 2, 3]);
+
+            const finished = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '0' });
+            expect(finished.success).toBe(true);
+            expect(getCurrentInteractionSummary(finished.finalState).kind).toBeUndefined();
+            expect(finished.finalState.core.players['0'].discard).toHaveLength(1);
+            expect(finished.finalState.core.players['0'].discard[0]?.id).toBe('card-i-can-again');
+        });
+
+        it('我又行了：至多 5 颗允许已重掷 1 颗后空确认提前结束', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 6]));
             const result = runner.run({
                 name: '我又行了 reroll-5 少选',
@@ -5295,6 +5436,30 @@ describe('王权骰铸流程测试', () => {
                     diceValues: [6, 1, 1, 1, 1],
                     pendingInteraction: null,
                     players: { '0': { discardSize: 1 } },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('我又行了：未声明可重复时不允许同一颗骰子重复重掷', () => {
+            const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1, 6, 5]));
+            const result = runner.run({
+                name: '我又行了 reroll-5 默认同骰不可重复',
+                setup: createSetupWithHand(['card-i-can-again'], { cp: 10 }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-i-can-again' }),
+                    cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('REROLL_DIE', '0', { dieId: 0 }),
+                    cmd('SYS_INTERACTION_CONFIRM', '0'),
+                ],
+                expect: {
+                    diceValues: [6, 1, 1, 1, 1],
+                    pendingInteraction: null,
+                    players: { '0': { discardSize: 1 } },
+                    expectError: { command: 'REROLL_DIE', error: 'die_already_completed' },
                 },
             });
 

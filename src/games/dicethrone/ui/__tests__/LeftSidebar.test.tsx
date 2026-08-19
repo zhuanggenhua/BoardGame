@@ -23,6 +23,37 @@ vi.mock('../../../../components/common/overlays/InfoTooltip', () => ({
 }));
 
 describe('LeftSidebar 飞行 Token 入口', () => {
+    it('阶段牌恢复可读尺寸后仍保留左侧 Token 两排容量', () => {
+        const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
+        player.tokens = {
+            [TOKEN_IDS.FLIGHT]: 1,
+            [TOKEN_IDS.PURIFY]: 1,
+            [TOKEN_IDS.TAIJI]: 1,
+            [TOKEN_IDS.EVASIVE]: 1,
+            [TOKEN_IDS.ACCURACY]: 1,
+            [TOKEN_IDS.CRIT]: 1,
+        };
+
+        const { container } = render(
+            <LeftSidebar
+                currentPhase="main1"
+                viewPlayer={player}
+                playerId="0"
+                locale="zh-CN"
+                tokenDefinitions={TIANSHI_TOKENS}
+            />,
+        );
+
+        const tokenNodes = Array.from(container.querySelectorAll('[data-token-id]'));
+        expect(tokenNodes).toHaveLength(6);
+
+        const tokenContainer = container.querySelector('[data-tutorial-id="status-tokens"] > div');
+        expect(tokenContainer).not.toBeNull();
+        expect(tokenContainer).toHaveClass('flex-wrap-reverse');
+        expect((tokenContainer as HTMLElement).style.maxWidth).toBe('13.7vw');
+        expect(screen.getByTestId('turn-order-panel')).toContainElement(screen.getByTestId('dt-phase-indicator'));
+    });
+
     it('进攻或防御掷骰时可点击飞行 Token 并交给上层处理', () => {
         const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
         player.tokens[TOKEN_IDS.FLIGHT] = 1;

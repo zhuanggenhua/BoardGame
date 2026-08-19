@@ -137,6 +137,26 @@ describe('FACTION_NAME_TO_ID', () => {
     });
 });
 
+describe('FACTION_CATALOG 开局选项状态', () => {
+    it('实施中阵营应由 setupOptionStatus 派生 UI 横幅状态', () => {
+        const inProgressFactionIds = ['mogu', 'huijin', 'yongheng', 'shadow'];
+
+        for (const factionId of inProgressFactionIds) {
+            const catalogEntry = FACTION_CATALOG.find(faction => faction.id === factionId);
+            expect(catalogEntry).toMatchObject({
+                selectable: true,
+                setupOptionStatus: 'in_progress',
+                statusTag: 'under_construction',
+            });
+            expect(catalogEntry?.setupOptionStatusReason).toContain('实施中');
+        }
+
+        const shouren = FACTION_CATALOG.find(faction => faction.id === 'shouren');
+        expect(shouren?.setupOptionStatus).toBeUndefined();
+        expect(shouren?.statusTag).toBeUndefined();
+    });
+});
+
 // ============================================================================
 // 卡面数值录入
 // ============================================================================

@@ -4,7 +4,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { AiSeatController } from '../../../engine/ai/types';
+import type { AiSeatController, AiSetupOptionStatus } from '../../../engine/ai/types';
 import type { CardPreviewRef } from '../../../core';
 import type { AbilityDef, AbilityEffect } from './combat';
 import type { ResourcePool } from './resourceSystem';
@@ -109,6 +109,7 @@ export type TeamId = 'A' | 'B';
 export interface CharacterDefinition {
     id: SelectableCharacterId;
     nameKey: string;
+    setupOptionStatus?: AiSetupOptionStatus;
     badges?: import('../../../core/ui').CharacterBadgeDef[];
     /** 是否存在需要在选角与对局中展示的运行时提示卡。默认 true。 */
     hasTipBoard?: boolean;
@@ -120,6 +121,19 @@ const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: import('../../../core/ui').Ch
     tone: 'warning',
     variant: 'disabled-overlay',
 };
+
+function withDerivedCharacterBadges(character: CharacterDefinition): CharacterDefinition {
+    if (character.setupOptionStatus !== 'in_progress') {
+        return character;
+    }
+    return {
+        ...character,
+        badges: [
+            ...(character.badges ?? []),
+            DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE,
+        ],
+    };
+}
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'monk', nameKey: 'characters.monk' },
@@ -139,10 +153,10 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     {
         id: 'lieren',
         nameKey: 'characters.lieren',
-        badges: [DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE],
+        setupOptionStatus: 'in_progress',
         hasTipBoard: false,
     },
-];
+].map(withDerivedCharacterBadges);
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
     DICETHRONE_CHARACTER_CATALOG.map((character) => [character.id, character.nameKey]),
@@ -435,8 +449,12 @@ export interface InteractionDescriptor {
     targetOpponentDice?: boolean;
     /** multistep 骰子交互允许操作的骰子 ID 列表 */
     allowedDieIds?: number[];
-    /** multistep 骰子交互已完成的骰子 ID（用于去重与校验） */
+    /** 规则允许同一颗骰子在同一次重投交互里被重复选择。 */
+    allowRepeatedDieSelection?: boolean;
+    /** multistep 骰子交互已完成的骰子 ID（默认去重；允许重复时按次数记录） */
     completedDieIds?: number[];
+    /** multistep 骰子交互已完成的步骤数；允许重复选同骰时以次数为准。 */
+    completedSteps?: number;
     /** 为 true 时，UI 只允许选择已有状态效果/token 的玩家（如"移除所有状态"） */
     requiresTargetWithStatus?: boolean;
     /**

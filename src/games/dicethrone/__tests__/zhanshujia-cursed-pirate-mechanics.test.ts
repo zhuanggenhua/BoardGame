@@ -8,7 +8,7 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { createDiceThroneEventSystem } from '../domain/systems';
 import { initializeCustomActions } from '../domain/customActions';
 import { validateCommand } from '../domain/commandValidation';
-import { getTokenStackLimit } from '../domain/rules';
+import { checkPlayCard, getTokenStackLimit } from '../domain/rules';
 import { createPendingDamage, finalizeTokenResponse } from '../domain/tokenResponse';
 import { RESOURCE_IDS } from '../domain/resources';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../domain/ids';
@@ -3231,13 +3231,25 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType(blusterSkullAllEvents, 'DAMAGE_DEALT')).toHaveLength(0);
     });
 
-    it('赎金先选择对手骰子，再由对手支付 2CP 或重掷该骰子', () => {
+    it('赎金只能在对手投骰窗口选择对手骰子，再由对手支付 2CP 或重掷该骰子', () => {
+        const ownRollState = createCursedPirateCardPlayState('card-cursed-pirate-ransom', 'offensiveRoll');
+        ownRollState.core.rollCount = 1;
+        ownRollState.core.rollDiceCount = 5;
+        ownRollState.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        expect(checkPlayCard(
+            ownRollState.core,
+            '0',
+            getCardById('card-cursed-pirate-ransom'),
+            'offensiveRoll',
+        )).toEqual({ ok: false, reason: 'requireIsNotRoller' });
+
         const payState = createCursedPirateCardPlayState('card-cursed-pirate-ransom', 'offensiveRoll');
+        payState.core.activePlayerId = '1';
         payState.core.rollCount = 1;
         payState.core.rollDiceCount = 5;
         payState.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
         payState.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
-        payState.core.dice = payState.core.dice.map((die, index) => ({
+        payState.core.dice = createCharacterDice('zhanshujia').map((die, index) => ({
             ...die,
             value: index === 0 ? 6 : die.value,
         }));
@@ -3266,11 +3278,12 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(payResult.state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(1);
 
         const rerollState = createCursedPirateCardPlayState('card-cursed-pirate-ransom', 'offensiveRoll');
+        rerollState.core.activePlayerId = '1';
         rerollState.core.rollCount = 1;
         rerollState.core.rollDiceCount = 5;
         rerollState.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
         rerollState.core.players['1'].resources[RESOURCE_IDS.CP] = 0;
-        rerollState.core.dice = rerollState.core.dice.map((die, index) => ({
+        rerollState.core.dice = createCharacterDice('zhanshujia').map((die, index) => ({
             ...die,
             value: index === 0 ? 6 : die.value,
         }));

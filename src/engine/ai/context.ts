@@ -2,7 +2,15 @@ import type { MatchState } from '../types';
 import { resolveAiDifficultyProfile } from './difficulty';
 import { getGameAiRuntime } from './registry';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from './snapshots';
-import type { AiActionDecision, AiDecisionContext, AiLegalAction, AiSeatController } from './types';
+import type {
+    AiActionDecision,
+    AiDecisionContext,
+    AiLegalAction,
+    AiSeatController,
+    AiSetupOptionStatus,
+    AiSetupOptionStatusResolution,
+    GameAiRuntime,
+} from './types';
 
 export function createAiLegalActionId(...parts: Array<string | number | undefined | null>): string {
     return parts
@@ -43,16 +51,87 @@ function shouldBlockHiddenInteractionActions(
     return true;
 }
 
+function normalizeSetupOptionStatus(
+    value: AiSetupOptionStatus | AiSetupOptionStatusResolution | null | undefined,
+): AiSetupOptionStatusResolution | null {
+    if (!value) return null;
+    if (typeof value === 'string') {
+        return { status: value };
+    }
+    return value;
+}
+
+function resolveActionMetadataSetupOptionStatus(action: AiLegalAction): AiSetupOptionStatusResolution | null {
+    const status = action.metadata?.setupOptionStatus;
+    if (!status) return null;
+    return {
+        status,
+        reason: action.metadata?.setupOptionStatusReason,
+    };
+}
+
+function resolveActionSetupOptionStatus(args: {
+    runtime: GameAiRuntime | undefined;
+    playerId: string;
+    state: MatchState<unknown>;
+    action: AiLegalAction;
+}): AiSetupOptionStatusResolution | null {
+    const metadataResolution = resolveActionMetadataSetupOptionStatus(args.action);
+    if (metadataResolution) return metadataResolution;
+
+    const resolver = args.runtime?.resolveSetupOptionStatus;
+    if (!resolver) return null;
+    return normalizeSetupOptionStatus(resolver({
+        playerId: args.playerId,
+        state: args.state,
+        action: args.action,
+    }));
+}
+
+function shouldKeepActionForAiAutomation(args: {
+    runtime: GameAiRuntime | undefined;
+    playerId: string;
+    state: MatchState<unknown>;
+    action: AiLegalAction;
+}): boolean {
+    const resolution = resolveActionSetupOptionStatus(args);
+    return !resolution || resolution.status === 'available';
+}
+
+export function filterAiLegalActionsForAutomation(args: {
+    runtime: GameAiRuntime | undefined;
+    playerId: string;
+    state: MatchState<unknown>;
+    legalActions: AiLegalAction[];
+}): AiLegalAction[] {
+    if (args.legalActions.length === 0) {
+        return args.legalActions;
+    }
+
+    return args.legalActions.filter((action) => shouldKeepActionForAiAutomation({
+        runtime: args.runtime,
+        playerId: args.playerId,
+        state: args.state,
+        action,
+    }));
+}
+
 export function buildAiDecisionContext(args: BuildAiDecisionContextArgs): AiDecisionContext {
     const runtime = getGameAiRuntime(args.gameId);
     const interaction = extractAiInteractionSnapshot(args.visibleState);
     const responseWindow = extractAiResponseWindowSnapshot(args.visibleState);
-    const legalActions = shouldBlockHiddenInteractionActions(args.visibleState, interaction, responseWindow, args.playerId)
+    const rawLegalActions = shouldBlockHiddenInteractionActions(args.visibleState, interaction, responseWindow, args.playerId)
         ? []
         : (runtime?.buildLegalActions({
             playerId: args.playerId,
             state: args.visibleState,
         }) ?? []);
+    const legalActions = filterAiLegalActionsForAutomation({
+        runtime,
+        playerId: args.playerId,
+        state: args.visibleState,
+        legalActions: rawLegalActions,
+    });
     let featureSnapshot: Record<string, unknown> | null = null;
     if (runtime?.buildFeatureSnapshot) {
         try {

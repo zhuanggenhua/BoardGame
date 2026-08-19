@@ -19,6 +19,7 @@ type SidebarDiceMeta = {
     selectCount?: number;
     diceOwnerId?: PlayerId;
     targetOpponentDice?: boolean;
+    allowRepeatedDieSelection?: boolean;
     dieModifyConfig?: {
         mode?: 'set' | 'adjust' | 'copy' | 'any';
         targetValue?: number;
@@ -35,6 +36,20 @@ const getSidebarDiceMeta = (interaction?: InteractionDescriptor): SidebarDiceMet
     const meta = (interaction.data as { meta?: SidebarDiceMeta } | undefined)?.meta;
     if (!meta?.dtType) return undefined;
     return meta;
+};
+
+const getCompletedDiceStepCount = (interaction?: InteractionDescriptor, meta?: SidebarDiceMeta): number => {
+    if (!interaction || interaction.kind !== 'multistep-choice') return 0;
+    const data = interaction.data as { completedSteps?: unknown; completedDieIds?: unknown } | undefined;
+    if (typeof data?.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {
+        return Math.max(0, Math.floor(data.completedSteps));
+    }
+    if (!Array.isArray(data?.completedDieIds)) return 0;
+    const completedDieIds = data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number');
+    if (meta?.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true) {
+        return completedDieIds.length;
+    }
+    return Array.from(new Set(completedDieIds)).length;
 };
 
 export const RightSidebar = ({
@@ -151,7 +166,8 @@ export const RightSidebar = ({
         const selectResult = multistepInteraction?.result as DiceSelectResult | undefined;
         const modCount = modifyResult?.modCount ?? 0;
         const selectCount = selectResult?.selectedDiceIds?.length ?? 0;
-        const currentCount = isSelectMode ? selectCount : modCount;
+        const completedCount = getCompletedDiceStepCount(interaction, dtMeta);
+        const currentCount = completedCount + (isSelectMode ? selectCount : modCount);
         const maxCount = dtMeta.selectCount ?? 1;
 
         if (isModifyMode && mode === 'copy') {

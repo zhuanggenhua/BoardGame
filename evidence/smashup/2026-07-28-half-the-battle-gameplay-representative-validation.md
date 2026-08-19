@@ -1,5 +1,16 @@
 # 半场战争扩玩法对象级验证（2026-07-28）
 
+## 2026-08-19 状态回写：半场战争扩四派系实施中
+
+- 结论等级：`旧结论失效` / `代表性验证` / `仍有残余范围`。
+- 当前状态：忍者神龟、特种部队杰拉尔德、宇宙的巨人希曼、珍珠和幻像都应保持 `实施中`；`src/games/smashup/domain/ids.ts` 已将四个 faction id 回写为 `in_progress`。
+- 旧结论：本文第 13 行旧口径曾写“玩法对象级 L2 已收口，且 PR 范围已按用户要求包含合规图集”，OpenSpec 旧任务 4.4 / 4.5 / 4.6 曾被勾选为完成。
+- 失效原因：本文自己的残余范围已经写明 L3/L4 真实入口只覆盖派系选择、希瑞、玩乐一整夜代表链，服务器素材主源仍 404 / 上传阻塞；2026-08-19 复跑 intake 测试还发现 `public/assets/i18n/zh-CN/smashup/cards/half_the_battle_*.png` 与 `base/half_the_battle_bases.png` 本地源图缺失；且 evidence 自检缺“权威来源 / 逐项结论 / 真相源状态 / 最终权威结果 / 验证证据 / 共享影响与代表链依据”等必填项。这些证据不能支撑“完整实装完成 / 全面审计 / 已收口”口径。
+- 替代入口 / 新状态证据：以 `SMASHUP_FACTION_IMPLEMENTATION_STATUS` 的四个 `in_progress` 为当前 UI 与默认派系池真相，OpenSpec 4.4 / 4.5 / 4.6 改回未完成，本文只保留为 L2 对象级与代表链证据，不再作为完整 closeout 证据。
+- 测试语义对账：现有 `half-the-battle.test.ts` 可以证明若干对象的最终状态断言和清理语义，但旧完成口径把 L2 测试与代表性 E2E 外推成四派系完整完成；当前降级点是测试断言和真实入口证据不足以覆盖全部对象 direct L3/L4，不是把已有 L2 断言判为无效。
+- 同类扩审范围：本轮横向限定在半场战争扩四派系状态入口、OpenSpec 任务表和本文 evidence；命中项为四派系整体完成口径失效。其它已完成派系只作为候选残余，不在没有对象级证据前盲降级。
+- 下一步：补齐非代表对象必要 L3/L4 或把对象级 evidence 改写到能明确说明代表链判等依据，并完成服务器素材主源发布回查；完成前禁止说“四派系已完整实装完成 / 已全面审计 / 已收口 / 当前发布口径已收口”。
+
 ## 基本信息
 
 - 对象：大杀四方半场战争扩四派系（忍者神龟、特种部队杰拉尔德、宇宙的巨人希曼、珍珠和幻像）
@@ -10,22 +21,22 @@
 
 ## 结论等级
 
-结论为 **玩法对象级 L2 已收口，且 PR 范围已按用户要求包含合规图集**。当前代码已完成四派系静态接入，并已注册半场战争扩全对象 ability / trigger / base ability handler；本轮把 `half-the-battle.test.ts` 从 20 条扩到 29 条，覆盖每个新增卡牌 / 基地的主要 effect atom 与关键分支。真实入口 L3/L4 仍保持代表性链证据。服务器素材主源上传仍被 SSH 发布权限阻塞，但用户已明确要求“把图件放 PR 里一起传”，因此本 PR 交付口径改为随 PR 纳入 5 个源 PNG 图集与 5 个运行时 WebP 图集；服务器远端上传保留为生产发布 follow-up。
+当前结论降级为 **代表性验证，仍有残余范围**。当前代码已完成四派系静态接入，并已注册半场战争扩全对象 ability / trigger / base ability handler；`half-the-battle.test.ts` 覆盖多个新增卡牌 / 基地的主要 effect atom 与关键分支。真实入口 L3/L4 仍只是代表性链证据，服务器素材主源上传仍被 SSH 发布权限阻塞，因此本文不能再作为“四派系完整实装完成 / 全面审计 / 已收口 / 当前发布口径已收口”的证据。
 
-## 全面审计自检表
+## 旧结论失效自检表
 
 | 自检项 | 状态 | 证据 |
 | --- | --- | --- |
-| 对象全集 | `passed:L2_object_level` | 全对象已注册 handler，并在 `half-the-battle.test.ts` 29 条 L2 中按对象 / 能力族覆盖 |
-| 规则子句表 | `passed:L2_object_level` | intake 合同记录 L0/L1；本文补充对象级 L2 effect atom 矩阵 |
-| 完整技能流程矩阵 | `passed:L2_object_level` | L2 覆盖卡牌 / 基地主要 effect atom、融合牌双面、optional / fallback / cleanup 分支 |
-| L0-L4 证据层级 | `partial_by_layer` | L0/L1 intake 通过；L2 对象级通过；L3/L4 代表性真实入口通过 |
-| 命中 D 维度 | `passed:representative_risk` | 覆盖 D1/D3/D5/D7/D8/D12/D14/D18/D35/D57 及对象级 effect atom |
-| 真实入口 E2E 与截图核验 | `passed` | `e2e/smashup/smashup-half-the-battle-four-factions.e2e.ts`，3 tests passed；人工核图确认派系卡/详情面板/希瑞/玩乐一整夜截图有效 |
-| PR 图件交付 | `passed` | 用户明确要求把图件随 PR 一起传；PR 范围包含 5 个源 PNG 图集与 5 个 `compressed/*.webp` 运行时图集 |
-| 服务器素材主源发布 | `blocked:deployment_followup` | 上传命令超时；SSH 探针返回 `Permission denied (publickey,gssapi-keyex,gssapi-with-mic)`；远端 HEAD 仍 404；不再作为本次 PR 带图件口径的阻塞项 |
-| 残余范围声明 | `passed` | 本文下方列出 remaining blockers |
-| 旧 evidence / 旧结论对账回写 | `passed` | 已回写 2026-07-27 intake 合同，不再继续写成“真实入口 E2E 未做” |
+| 对象范围 | `representative_only` | 四派系全对象已静态接入并注册 handler，但本文没有按当前模板给每个对象列出 direct L3/L4 或代表链判等依据。 |
+| 真相源状态 | `scoped_debt` | intake 合同和本地代码可证明静态 / L2 范围；本地源 PNG 缺失，服务器素材主源仍 404，发布链未闭合。 |
+| 原子语义断言 | `representative_only` | L2 矩阵覆盖主要 effect atom，但没有按当前 evidence 模板逐对象列出原子语义、实现消费、最终权威结果。 |
+| 实现消费链 | `representative_only` | `half_the_battle.ts`、reducer 与 base active ability 覆盖代表链；非代表对象 direct 入口仍未逐项写清。 |
+| 最终权威结果 | `representative_only` | 领域测试证明局部最终状态；真实入口 E2E 只直接证明希瑞、玩乐一整夜和派系选择链路。 |
+| 交互真实入口 | `representative_only` | `e2e/smashup/smashup-half-the-battle-four-factions.e2e.ts` 有 3 条代表链，不等于四派系全对象 direct L3/L4。 |
+| 验证证据 | `representative_only` | 现有测试语义对账结论是“L2 + 代表链有效”，不能支撑完整 closeout。 |
+| 共享影响与代表链依据 | `scoped_debt` | 本文未为每个非代表对象写清触发时机、候选生成、入口、payload、handler、最终状态和清理语义的判等依据。 |
+| 残余范围声明 | `scoped_debt` | 本地源 PNG、远端素材发布、非代表对象 direct L3/L4 和最终 closeout evidence 仍未完成。 |
+| 旧 evidence / 旧结论对账回写 | `passed` | 2026-08-19 已在本文、OpenSpec 和状态入口回写旧完成口径失效。 |
 
 ## 审计范围
 

@@ -11141,15 +11141,13 @@ export default function BetrayalBoard({
     pendingLatestDiscoveryEventRollRequiredPlayerIds.length;
   const hasCurrentViewerConfirmedLatestDiscoveryEventRoll =
     pendingLatestDiscoveryEventRollAcknowledgedPlayerIds.includes(viewerPlayerId);
-  const latestDiscoveryEventRollProgressText =
-    pendingLatestDiscoveryEventRoll
-      ? `${pendingLatestDiscoveryEventRollConfirmedCount}/${pendingLatestDiscoveryEventRollTotalCount}`
-      : "";
   const canCurrentViewerFinalizeLatestDiscoveryEventRoll = Boolean(
     pendingLatestDiscoveryEventRoll &&
       pendingLatestDiscoveryEventRollRequiredPlayerIds.includes(viewerPlayerId) &&
       !hasCurrentViewerConfirmedLatestDiscoveryEventRoll,
   );
+  const diceConfirmButtonClass =
+    "min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d] transition hover:bg-[#f0d28a] disabled:cursor-not-allowed disabled:border-[rgba(214,181,109,0.32)] disabled:bg-[rgba(214,181,109,0.18)] disabled:text-[rgba(243,224,166,0.48)]";
   const latestDiscoveryRollActionSlot = selectedRollModifierCanConfirm ? (
     <div className="pointer-events-auto flex items-center gap-2">
       <button
@@ -11168,30 +11166,12 @@ export default function BetrayalBoard({
       <button
         type="button"
         data-testid="betrayal-roll-modifier-confirm"
-        className="min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d]"
+        className={diceConfirmButtonClass}
         onClick={confirmSelectedRollModifier}
       >
         {t("board.roll.confirmModifier", { card: selectedRollModifierCard?.name ?? "" })}
       </button>
     </div>
-  ) : canCurrentViewerFinalizeLatestDiscoveryEventRoll ? (
-    <button
-      type="button"
-      data-testid="betrayal-event-roll-finalize"
-      className="pointer-events-auto min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[12px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
-      onClick={finalizePendingEventRoll}
-    >
-      {t("board.roll.confirmFinalResult", { progress: latestDiscoveryEventRollProgressText })}
-    </button>
-  ) : pendingLatestDiscoveryEventRoll ? (
-    <span
-      data-testid="betrayal-event-roll-waiting"
-      className="rounded-[6px] border border-[rgba(214,181,109,0.34)] bg-[rgba(18,17,13,0.74)] px-4 py-2 text-[12px] font-semibold tracking-[0.08em] text-[#eadbb0]"
-    >
-      {hasCurrentViewerConfirmedLatestDiscoveryEventRoll
-        ? t("board.roll.waitingForOtherConfirmations", { progress: latestDiscoveryEventRollProgressText })
-        : t("board.roll.waitingForFinalResult", { progress: latestDiscoveryEventRollProgressText })}
-    </span>
   ) : null;
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
@@ -11400,6 +11380,18 @@ export default function BetrayalBoard({
       && !canAdvanceLatestDiscoverySearch,
   );
   const latestDiscoveryContinueLabel = (() => {
+    if (pendingLatestDiscoveryEventRoll) {
+      if (hasCurrentViewerConfirmedLatestDiscoveryEventRoll) {
+        return t("board.discovery.waitingForAll", {
+          confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
+          total: pendingLatestDiscoveryEventRollTotalCount,
+        });
+      }
+      return t("board.discovery.confirmResultAndResolution", {
+        confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
+        total: pendingLatestDiscoveryEventRollTotalCount,
+      });
+    }
     if (!latestDiscoveryPendingCardResolution) {
       return t("board.roll.backToBoard");
     }
@@ -11424,6 +11416,10 @@ export default function BetrayalBoard({
   const latestDiscoveryPendingResolutionSeenRef = React.useRef<{
     sourceKey: string;
     resolutionId: string;
+  } | null>(null);
+  const latestDiscoveryPendingEventRollSeenRef = React.useRef<{
+    sourceKey: string;
+    rollId: string;
   } | null>(null);
   const startPendingDiscoveryGainVisual = React.useCallback(
     (onComplete: () => void) => {
@@ -11510,6 +11506,9 @@ export default function BetrayalBoard({
       return;
     }
     if (pendingLatestDiscoveryEventRoll) {
+      if (canCurrentViewerFinalizeLatestDiscoveryEventRoll) {
+        finalizePendingEventRoll();
+      }
       return;
     }
     if (latestDiscoveryPendingCardResolution) {
@@ -11541,9 +11540,11 @@ export default function BetrayalBoard({
     handleDismissLatestDiscovery();
   }, [
     dispatch,
+    finalizePendingEventRoll,
     handleDismissLatestDiscovery,
     isVisualBusy,
     pendingLatestDiscoveryEventRoll,
+    canCurrentViewerFinalizeLatestDiscoveryEventRoll,
     canAdvanceLatestDiscoverySearch,
     canCurrentViewerAcknowledgeCardResolution,
     startPendingDiscoveryGainVisual,
@@ -11581,7 +11582,8 @@ export default function BetrayalBoard({
           : undefined
       }
       disabled={Boolean(
-        pendingLatestDiscoveryEventRoll ||
+        (pendingLatestDiscoveryEventRoll &&
+          !canCurrentViewerFinalizeLatestDiscoveryEventRoll) ||
           (latestDiscoveryPendingCardResolution &&
             !canAdvanceLatestDiscoverySearch &&
             !canCurrentViewerAcknowledgeCardResolution),
@@ -11592,6 +11594,63 @@ export default function BetrayalBoard({
       {latestDiscoveryContinueLabel}
     </button>
   );
+  React.useEffect(() => {
+    const pendingEventRoll = pendingLatestDiscoveryEventRoll;
+    if (pendingEventRoll && latestDiscoveryEntry?.sourceKey) {
+      latestDiscoveryPendingEventRollSeenRef.current = {
+        sourceKey: latestDiscoveryEntry.sourceKey,
+        rollId: pendingEventRoll.rollId,
+      };
+      return;
+    }
+    const seenEventRoll = latestDiscoveryPendingEventRollSeenRef.current;
+    if (!seenEventRoll) {
+      return;
+    }
+    latestDiscoveryPendingEventRollSeenRef.current = null;
+    if (
+      latestDiscoveryPendingCardResolution &&
+      latestDiscoveryEntry?.sourceKey === seenEventRoll.sourceKey
+    ) {
+      return;
+    }
+    const dismissedDiscoveryKey =
+      latestDiscoveryEntry?.sourceKey === seenEventRoll.sourceKey
+        ? latestDiscoveryEntry.key
+        : null;
+    if (dismissedDiscoveryKey) {
+      dismissedLatestDiscoveryKeysRef.current.add(dismissedDiscoveryKey);
+    }
+    setLatestDiscoveryQueue((previousQueue) => {
+      let removedAnyEntry = false;
+      const nextQueue = previousQueue.filter((entry) => {
+        if (entry.sourceKey !== seenEventRoll.sourceKey) {
+          return true;
+        }
+        dismissedLatestDiscoveryKeysRef.current.add(entry.key);
+        removedAnyEntry = true;
+        return false;
+      });
+      return removedAnyEntry ? nextQueue : previousQueue;
+    });
+    setPreviewState((previousState) => ({
+      ...previousState,
+      dismissedLatestDiscoveryKey:
+        dismissedDiscoveryKey ?? previousState.dismissedLatestDiscoveryKey,
+      dismissedRecentRollId:
+        latestDiscoveryRecentRoll?.sourceTitle === latestDiscoveryTitle
+          ? latestDiscoveryRecentRollDisplayKey
+          : previousState.dismissedRecentRollId,
+    }));
+  }, [
+    latestDiscoveryEntry?.key,
+    latestDiscoveryEntry?.sourceKey,
+    latestDiscoveryRecentRoll?.sourceTitle,
+    latestDiscoveryRecentRollDisplayKey,
+    latestDiscoveryTitle,
+    latestDiscoveryPendingCardResolution,
+    pendingLatestDiscoveryEventRoll,
+  ]);
   React.useEffect(() => {
     const pendingResolution = latestDiscoveryPendingCardResolution;
     if (pendingResolution && latestDiscoveryEntry?.sourceKey) {
@@ -15664,7 +15723,9 @@ export default function BetrayalBoard({
                     latestDiscoveryRecentRoll ? (
                       renderLatestDiscoveryContinueButton(
                         "panel-corner",
-                        "pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]",
+                        pendingLatestDiscoveryEventRoll
+                          ? `pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-w-[132px] shrink-0 items-center justify-center leading-tight ${diceConfirmButtonClass}`
+                          : "pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]",
                       )
                     ) : null}
                     <span
@@ -15783,7 +15844,9 @@ export default function BetrayalBoard({
                         >
                           {renderLatestDiscoveryContinueButton(
                             "bottom",
-                            "pointer-events-auto min-h-[46px] min-w-[118px] shrink-0 rounded-[10px] border border-[rgba(214,181,109,0.72)] bg-[linear-gradient(180deg,rgba(31,25,13,0.96),rgba(11,10,7,0.94))] px-6 py-2 text-[12px] font-black tracking-[0.14em] text-[#fff1b8] shadow-[0_14px_28px_rgba(0,0,0,0.52),0_0_18px_rgba(214,181,109,0.16)] transition hover:border-[#f0cc7a] hover:bg-[linear-gradient(180deg,rgba(46,36,15,0.98),rgba(18,14,8,0.96))]",
+                            pendingLatestDiscoveryEventRoll
+                              ? `pointer-events-auto inline-flex min-w-[132px] shrink-0 items-center justify-center ${diceConfirmButtonClass}`
+                              : "pointer-events-auto min-h-[46px] min-w-[118px] shrink-0 rounded-[10px] border border-[rgba(214,181,109,0.72)] bg-[linear-gradient(180deg,rgba(31,25,13,0.96),rgba(11,10,7,0.94))] px-6 py-2 text-[12px] font-black tracking-[0.14em] text-[#fff1b8] shadow-[0_14px_28px_rgba(0,0,0,0.52),0_0_18px_rgba(214,181,109,0.16)] transition hover:border-[#f0cc7a] hover:bg-[linear-gradient(180deg,rgba(46,36,15,0.98),rgba(18,14,8,0.96))]",
                             { disabledWhilePendingRoll: true },
                           )}
                         </div>

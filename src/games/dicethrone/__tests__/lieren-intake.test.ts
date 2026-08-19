@@ -195,6 +195,26 @@ describe('DiceThrone 女猎手录入与资源合同', () => {
             targetAbilityId: 'beast-force',
             newAbilityLevel: 2,
         });
+        const upgradeTargets = Object.fromEntries(
+            LIEREN_CARDS
+                .filter(card => card.type === 'upgrade')
+                .map((card) => {
+                    const action = card.effects?.find(effect => effect.action?.type === 'replaceAbility')?.action;
+                    expect(action, `${card.id} 必须是替换基础技能的升级牌`).toMatchObject({ type: 'replaceAbility' });
+                    return [card.id, action?.type === 'replaceAbility' ? action.targetAbilityId : null];
+                }),
+        );
+        expect(upgradeTargets).toEqual({
+            'upgrade-lieren-kindred-bond-3': 'kindred-bond',
+            'upgrade-lieren-kindred-bond-2': 'kindred-bond',
+            'upgrade-lieren-beast-force-2': 'beast-force',
+            'upgrade-lieren-brutal-strike-2': 'brutal-strike',
+            'upgrade-lieren-hunt-ambush-2': 'hunt-ambush',
+            'upgrade-lieren-beast-instinct-2': 'beast-instinct',
+            'upgrade-lieren-life-revival-2': 'life-revival',
+            'upgrade-lieren-savage-force-2': 'savage-force',
+            'upgrade-lieren-wild-force-2': 'wild-force',
+        });
     });
 
     it('正式媒体、状态 atlas 和 33 格卡牌 atlas 配置存在', () => {

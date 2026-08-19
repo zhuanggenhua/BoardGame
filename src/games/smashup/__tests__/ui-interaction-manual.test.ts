@@ -220,6 +220,97 @@ describe('SmashUp UI 交互验证', () => {
         expect(titanCard.className).not.toContain('hover:scale-125');
     });
 
+    it('BaseZone 泰坦来源选择必须复用场上对象统一高亮样式', () => {
+        const titan: TitanState = {
+            uid: 't-kraken',
+            defId: 'pirates_the_kraken',
+            faction: 'pirates',
+            ownerId: '0',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+        };
+        const core = makeState({
+            titans: [titan],
+        });
+
+        render(
+            React.createElement(
+                ToastProvider,
+                undefined,
+                React.createElement(BaseZone, {
+                    base: core.bases[0],
+                    baseIndex: 0,
+                    core,
+                    turnOrder: core.turnOrder,
+                    isDeployMode: false,
+                    isMyTurn: true,
+                    myPlayerId: '0',
+                    dispatch: vi.fn(),
+                    onClick: vi.fn(),
+                    onViewMinion: vi.fn(),
+                    onViewAction: vi.fn(),
+                    onViewBase: vi.fn(),
+                    onViewTitan: vi.fn(),
+                    selectableTitanUids: new Set(['t-kraken']),
+                    onTitanSelect: vi.fn(),
+                }),
+            ),
+        );
+
+        const titanCard = screen.getByTestId('su-base-titan-t-kraken');
+        expect(titanCard.getAttribute('data-highlighted')).toBe('true');
+        expect(titanCard.className).toContain('ring-2');
+        expect(titanCard.className).toContain('ring-green-400');
+        expect(titanCard.className).toContain('shadow-[0_0_15px');
+        expect(screen.queryByTestId('su-base-titan-source-highlight-t-kraken')).toBeNull();
+    });
+
+    it('BaseZone 随从选择滚动列表必须给统一高亮外环留出缓冲', () => {
+        const minions = Array.from({ length: 5 }, (_, index) =>
+            makeMinion(`ally-${index + 1}`, 'robot_microbot_alpha', '0', 2),
+        );
+        const core = makeState({
+            bases: [makeBase('test_base_1', minions), makeBase('test_base_2'), makeBase('test_base_3')],
+        });
+
+        render(
+            React.createElement(
+                ToastProvider,
+                undefined,
+                React.createElement(BaseZone, {
+                    base: core.bases[0],
+                    baseIndex: 0,
+                    core,
+                    turnOrder: core.turnOrder,
+                    isDeployMode: false,
+                    isMinionSelectMode: true,
+                    selectableMinionUids: new Set(['ally-1']),
+                    isMyTurn: true,
+                    myPlayerId: '0',
+                    dispatch: vi.fn(),
+                    onClick: vi.fn(),
+                    onMinionSelect: vi.fn(),
+                    onViewMinion: vi.fn(),
+                    onViewAction: vi.fn(),
+                    onViewBase: vi.fn(),
+                    onViewTitan: vi.fn(),
+                }),
+            ),
+        );
+
+        const stack = screen.getByTestId('su-base-stack-0-0');
+        const minion = document.querySelector('[data-minion-uid="ally-1"]') as HTMLElement | null;
+        const minionFrame = screen.getByTestId('su-minion-frame-ally-1');
+        expect(stack.getAttribute('data-minion-select-list')).toBe('true');
+        expect(stack.getAttribute('style') ?? '').toContain('padding-block');
+        expect(minion?.getAttribute('data-highlighted')).toBe('true');
+        expect(minionFrame.className).toContain('ring-[0.26vw]');
+        expect(minionFrame.className).toContain('ring-green-400');
+        expect(screen.queryByTestId('su-minion-selection-highlight-ally-1')).toBeNull();
+    });
+
     it('桌面端附加行动卡可见时应把所属列抬到最高层', () => {
         const core = makeState({
             bases: [

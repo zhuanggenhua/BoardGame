@@ -208,6 +208,11 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                 const completedDieIds = Array.isArray(data.completedDieIds)
                     ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
                     : [];
+                const completedSteps = typeof data.completedSteps === 'number' && Number.isFinite(data.completedSteps)
+                    ? Math.max(0, Math.floor(data.completedSteps))
+                    : undefined;
+                const allowRepeatedDieSelection = data.allowRepeatedDieSelection === true
+                    || meta.allowRepeatedDieSelection === true;
                 pendingInteraction = {
                     id: interaction.id,
                     playerId: interaction.playerId,
@@ -222,6 +227,8 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                     skipAbilityReselection: meta.skipAbilityReselection === true,
                     allowedDieIds,
                     completedDieIds,
+                    completedSteps,
+                    allowRepeatedDieSelection,
                 } as InteractionDescriptor;
             }
         }

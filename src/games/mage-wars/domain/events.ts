@@ -2,6 +2,7 @@ import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, StatusTokenId } from './ids';
 import type { MageWarsArenaObjectState, MageWarsSpellCasterRef } from './core-types';
 import type { MageWarsResponseContext } from './responseResolution';
+import type { MageWarsTemporaryTraitGrantId, MageWarsTemporaryTraitId } from './temporaryTraits';
 
 export const MAGE_WARS_EVENTS = {
     FOUNDATION_READY: 'MW_FOUNDATION_READY',
@@ -196,7 +197,7 @@ export interface MageWarsArenaObjectAbilityResolvedEvent extends GameEvent<typeo
         actionTrack?: 'quickcast' | 'action';
         roundNumber?: number;
         actionCost?: 'normal' | 'none';
-        grants?: Array<'swift' | 'teleportMovement'>;
+        grants?: MageWarsTemporaryTraitGrantId[];
     };
 }
 
@@ -219,7 +220,7 @@ export interface MageWarsArenaObjectTemporaryTraitsClearedEvent extends GameEven
     payload: {
         ownerId: PlayerId;
         objectId: string;
-        traitIds: Array<'swift' | 'teleportMovement' | 'swiftFreeMove' | 'movedThisAction' | 'quickActionAfterMove' | 'charge' | 'meleeDice' | 'vampiric' | 'pierce'>;
+        traitIds: MageWarsTemporaryTraitId[];
         sourceAbilityId: string;
     };
 }

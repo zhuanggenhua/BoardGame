@@ -25,14 +25,9 @@ metadata:
 | 推导权限、响应窗口、Choice Request、AI 合法动作 | [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md) | 交互授权和消费者同源的主源 |
 | 处理回归、漏审复盘和同类扩审 | [`regression-closeout.md`](regression-closeout.md) | 回到原始症状、最后正常证据和根因分层 |
 
-## 项目级审计口径
+## 口径归属
 
-- 审计默认覆盖**本轮已锁定范围**，不是自动扩大到整批、全牌库或全仓库。
-- 审计先判断现实缺口类别：`功能实现阻塞`、`语义不一致`、`当前范围验证缺口`、`审计留档缺口`、`非阻塞扩展`。
-- `功能实现阻塞` 只用于规则对象、玩家合法动作、候选生成、资源消耗、流程态、共享消费者或最终权威状态确实错误的情况。
-- `审计留档缺口` 只说明证据没有被总账消费、旧结论未回写或目录未索引；不能写成“功能没实现”。
-- 代表链只能在触发时机、候选生成、交互入口、payload、resolver / handler 和最终权威状态都等价时复用；否则必须对象级审计。
-- 旧 evidence 被当前代码、测试或新合同推翻时，必须原地降级或回写旧结论，不能另建一份新文档让旧结论继续误导。
+本文件不定义审计完成标准。规则、玩法和机制审计口径回到 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)；evidence 字段、结论等级和旧结论回写格式回到 [`audit-evidence-template.md`](audit-evidence-template.md)。旧分卷只作兼容入口。
 
 ## 禁止
 

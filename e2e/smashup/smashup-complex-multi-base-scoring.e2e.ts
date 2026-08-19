@@ -1,6 +1,6 @@
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { attachPageDiagnostics } from '../helpers/common';
 
 type SceneConfig = Parameters<GameTestContext['setupScene']>[0];
@@ -92,6 +92,68 @@ async function expectNoVisibleReactionProxyButtons(page: Page, matcher: RegExp, 
     ).toEqual([]);
 }
 
+async function expectStandardObjectHighlight(locator: Locator, description: string): Promise<void> {
+    await expect(locator, `${description}: 对象本体必须可见`).toBeVisible({ timeout: 5000 });
+    const metrics = await locator.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        const classText = [element, ...Array.from(element.querySelectorAll<HTMLElement>('*'))]
+            .map((node) => {
+                const className = node.className;
+                return typeof className === 'string' ? className : '';
+            })
+            .join(' ');
+        const clippingAncestors: Array<{
+            tag: string;
+            testId: string | null;
+            overflow: string;
+            outside: boolean;
+        }> = [];
+        let ancestor = element.parentElement;
+        while (ancestor && ancestor !== document.documentElement) {
+            const ancestorStyle = window.getComputedStyle(ancestor);
+            const overflow = `${ancestorStyle.overflow} ${ancestorStyle.overflowX} ${ancestorStyle.overflowY}`;
+            if (/(auto|hidden|scroll|clip)/.test(overflow)) {
+                const ancestorRect = ancestor.getBoundingClientRect();
+                clippingAncestors.push({
+                    tag: ancestor.tagName.toLowerCase(),
+                    testId: ancestor.getAttribute('data-testid'),
+                    overflow,
+                    outside: rect.left < ancestorRect.left - 1
+                        || rect.right > ancestorRect.right + 1
+                        || rect.top < ancestorRect.top - 1
+                        || rect.bottom > ancestorRect.bottom + 1,
+                });
+            }
+            ancestor = ancestor.parentElement;
+        }
+
+        return {
+            width: rect.width,
+            height: rect.height,
+            display: style.display,
+            visibility: style.visibility,
+            opacity: Number(style.opacity || '1'),
+            classText,
+            clippingAncestors,
+        };
+    });
+
+    expect(metrics.width, `${description}: 对象宽度必须可见`).toBeGreaterThan(8);
+    expect(metrics.height, `${description}: 对象高度必须可见`).toBeGreaterThan(8);
+    expect(metrics.display, `${description}: 对象不能 display:none`).not.toBe('none');
+    expect(metrics.visibility, `${description}: 对象不能 visibility:hidden`).not.toBe('hidden');
+    expect(metrics.opacity, `${description}: 对象不能透明`).toBeGreaterThan(0.15);
+    expect(
+        /ring-(?:2|4|\[[^\]]+\])/.test(metrics.classText) && /shadow-\[0_0/.test(metrics.classText),
+        `${description}: 必须复用统一 ring/shadow 高亮样式，不得依赖专属覆盖层`,
+    ).toBe(true);
+    expect(
+        metrics.clippingAncestors.filter((ancestor) => ancestor.outside),
+        `${description}: 对象本体不能被滚动/裁切祖先截断`,
+    ).toEqual([]);
+}
+
 async function readReactionTriggerSourceForOption(page: Page, optionId: string): Promise<{
     triggerId: string | null;
     sourceDefId: string | null;
@@ -133,6 +195,12 @@ async function clickReactionTriggerSourceByOption(
         const ongoingSource = page.locator(`[data-ongoing-uid="${source.sourceCardUid}"]`).first();
         if (await ongoingSource.isVisible({ timeout: 1000 }).catch(() => false)) {
             await ongoingSource.click({ force: true });
+            await page.waitForTimeout(200);
+            return;
+        }
+        const titanSource = page.locator(`[data-titan-uid="${source.sourceCardUid}"]`).first();
+        if (await titanSource.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await titanSource.click({ force: true });
             await page.waitForTimeout(200);
             return;
         }
@@ -837,6 +905,834 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             await page.waitForTimeout(500);
             await waitForVisibleSmashUpCardArt(page, 3);
             await game.screenshot('complex-hand-response-11-scoring-chain-complete', testInfo);
+            assertNoReactNaNWarnings(diagnostics);
+        } catch (error) {
+            if (diagnostics.errors.length > 0) {
+                console.log('[page-diagnostics]', diagnostics.errors);
+            }
+            throw error;
+        }
+    });
+
+    test('最复杂计分压力链会交错手牌响应、随从、基地、持续行动和泰坦来源', async ({ page, game }, testInfo) => {
+        test.setTimeout(240000);
+
+        const diagnostics = attachPageDiagnostics(page);
+        page.on('console', (msg) => {
+            if (msg.type() === 'error' || msg.text().includes('[LocalGame]')) {
+                console.log(`[browser-console] ${msg.type()}: ${msg.text()}`);
+            }
+        });
+
+        const createPlayer = (id: string, factions: [string, string], hand: Array<{ uid: string; defId: string; type: 'action' | 'minion' }> = []) => ({
+            id,
+            vp: 0,
+            hand,
+            deck: [],
+            discard: [],
+            factions,
+            minionsPlayed: 0,
+            minionLimit: 1,
+            actionsPlayed: 0,
+            actionLimit: 1,
+            minionsPlayedPerBase: {},
+            sameNameMinionDefId: null,
+        });
+
+        const createMinion = (
+            uid: string,
+            defId: string,
+            owner: string,
+            basePower: number,
+            overrides: Partial<{
+                controller: string;
+                powerModifier: number;
+                powerCounters: number;
+                tempPowerModifier: number;
+                talentUsed: boolean;
+                attachedActions: unknown[];
+                playedThisTurn: boolean;
+            }> = {},
+        ) => ({
+            uid,
+            defId,
+            owner,
+            controller: owner,
+            basePower,
+            powerModifier: 0,
+            powerCounters: 0,
+            tempPowerModifier: 0,
+            talentUsed: false,
+            attachedActions: [],
+            ...overrides,
+        });
+
+        const clickFieldSourceThenTargetBase = async ({
+            source,
+            sourceDescription,
+            sourceScreenshot,
+            targetBaseIndex,
+            targetScreenshot,
+        }: {
+            source: ReturnType<Page['locator']>;
+            sourceDescription: string;
+            sourceScreenshot: string;
+            targetBaseIndex: number;
+            targetScreenshot: string;
+        }) => {
+            const targetBase = page.getByTestId(`base-zone-${targetBaseIndex}`);
+            if (await source.getAttribute('data-selected') !== 'true') {
+                await expect(source, `${sourceDescription} 第一层应高亮来源本体`).toHaveAttribute('data-highlighted', 'true');
+                await expect(source, `${sourceDescription} 第一层还不能把来源当作已选中`).toHaveAttribute('data-selected', 'false');
+                await expect(targetBase, `${sourceDescription} 点击来源前目标基地不能提前高亮`).toHaveAttribute('data-selectable', 'false');
+                await game.screenshot(sourceScreenshot, testInfo);
+                await source.click({ force: true });
+                await page.waitForTimeout(300);
+            }
+            await expect(source, `${sourceDescription} 点击来源后应保留来源选中态`).toHaveAttribute('data-selected', 'true');
+            await expect(targetBase, `${sourceDescription} 点击来源后目标基地必须高亮`).toHaveAttribute('data-selectable', 'true');
+            await expect(targetBase, `${sourceDescription} 点击来源后目标基地必须进入可投放/可选择表现`).toHaveAttribute('data-deploy-mode', 'true');
+            await expect(targetBase, `${sourceDescription} 合法目标基地不能被置灰`).toHaveAttribute('data-dimmed', 'false');
+            await game.screenshot(targetScreenshot, testInfo);
+            await targetBase.click({ force: true });
+            await page.waitForTimeout(300);
+        };
+
+        const clickPromptButtonByOptionId = async (optionId: string, description: string) => {
+            const directButton = page.locator(`[data-option-id="${optionId}"]`).first();
+            if (await directButton.isVisible({ timeout: 1200 }).catch(() => false)) {
+                await directButton.click({ force: true });
+                await page.waitForTimeout(300);
+                return;
+            }
+
+            const currentInteraction = await readCurrentInteraction(page);
+            const option = currentInteraction?.options.find(candidate => candidate.id === optionId);
+            expect(option, `${description}: 找不到当前交互选项 ${optionId}`).toBeTruthy();
+            const buttonByText = page.getByRole('button', {
+                name: new RegExp(String(option!.label ?? optionId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+            }).first();
+            await expect(buttonByText, `${description}: 选项按钮必须真实可见`).toBeVisible({ timeout: 5000 });
+            await buttonByText.click({ force: true });
+            await page.waitForTimeout(300);
+        };
+
+        const setSliderValue = async (amount: number) => {
+            const slider = page.getByLabel(/slider-choice|滑杆选择/i);
+            await expect(slider).toBeVisible({ timeout: 5000 });
+            await slider.evaluate((element, nextAmount) => {
+                const input = element as HTMLInputElement;
+                input.value = String(nextAmount);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }, amount);
+        };
+
+        const clickTransferConfirmButton = async (description: string) => {
+            const confirmButton = page.getByRole('button', { name: /确认转移/i }).first();
+            await expect(confirmButton, `${description}: 数量确认按钮必须真实可见`).toBeVisible({ timeout: 5000 });
+            await confirmButton.click({ force: true });
+            await page.waitForTimeout(300);
+        };
+
+        try {
+            await page.setViewportSize({ width: 1600, height: 950 });
+            await openFourPlayerTestGame(game);
+            await game.setupScene({
+                gameId: 'smashup',
+                phase: 'playCards',
+                currentPlayer: '0',
+                extra: {
+                    core: {
+                        turnOrder: ['0', '1', '2', '3'],
+                        currentPlayerIndex: 0,
+                        turnNumber: 18,
+                        enabledExpansions: ['titans'],
+                        players: {
+                            '0': createPlayer('0', ['pirates', 'giant_ants'], [
+                                { uid: 'stress-full-sail-hand', defId: 'pirate_full_sail', type: 'action' },
+                                { uid: 'stress-under-pressure-hand', defId: 'giant_ant_under_pressure', type: 'action' },
+                                { uid: 'stress-shinobi-hand', defId: 'ninja_shinobi', type: 'minion' },
+                                { uid: 'stress-champions-hand', defId: 'giant_ant_we_are_the_champions', type: 'action' },
+                                { uid: 'stress-hidden-hand', defId: 'ninja_hidden_ninja', type: 'action' },
+                                { uid: 'stress-acolyte-hand', defId: 'ninja_acolyte', type: 'minion' },
+                            ]),
+                            '1': createPlayer('1', ['aliens', 'wizards']),
+                            '2': createPlayer('2', ['mermaids', 'skeletons']),
+                            '3': createPlayer('3', ['dinosaurs', 'robots']),
+                        },
+                        bases: [
+                            {
+                                defId: 'base_tortuga',
+                                minions: [
+                                    createMinion('stress-first-mate', 'pirate_first_mate', '0', 2),
+                                    createMinion('stress-kraken-save', 'pirate_buccaneer', '0', 3),
+                                    createMinion('stress-p0-anchor', 'ninja_acolyte', '0', 2),
+                                    createMinion('stress-full-sail-move', 'pirate_buccaneer', '0', 1),
+                                    createMinion('stress-pressure-source', 'giant_ant_worker', '0', 1, { powerCounters: 2 }),
+                                    createMinion('stress-champions-source', 'giant_ant_soldier', '0', 2, { powerCounters: 2 }),
+                                    createMinion('stress-p1-winner', 'alien_invader', '1', 30),
+                                    createMinion('stress-p2-rival', 'mermaids_sea_dog', '2', 6),
+                                    createMinion('stress-p3-rival', 'dino_war_raptor', '3', 5),
+                                ],
+                                ongoingActions: [
+                                    {
+                                        uid: 'stress-shipwreck-cove',
+                                        defId: 'mermaids_shipwreck_cove',
+                                        ownerId: '0',
+                                        talentUsed: false,
+                                    },
+                                    {
+                                        uid: 'stress-gravestones',
+                                        defId: 'skeletons_gravestones',
+                                        ownerId: '0',
+                                        talentUsed: false,
+                                    },
+                                ],
+                            },
+                            {
+                                defId: 'base_dread_lookout',
+                                minions: [
+                                    createMinion('stress-pirate-king', 'pirate_king', '0', 5),
+                                    createMinion('stress-runnerup-reserve', 'wizard_apprentice', '0', 2),
+                                    createMinion('stress-second-base-winner', 'ghost_spectre', '2', 22),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_secret_garden',
+                                minions: [
+                                    createMinion('stress-ant-target', 'giant_ant_drone', '0', 1),
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_the_mothership',
+                                minions: [],
+                                ongoingActions: [],
+                            },
+                        ],
+                        titans: [
+                            {
+                                uid: 'stress-kraken',
+                                defId: 'pirates_the_kraken',
+                                faction: 'pirates',
+                                ownerId: '0',
+                                controllerId: '0',
+                                powerCounters: 0,
+                                talentUsed: false,
+                                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                            },
+                        ],
+                        baseDeck: ['base_central_brain', 'base_cave_of_shinies', 'base_rhodes_plaza'],
+                        factionSelection: undefined,
+                        scoringEligibleBases: undefined,
+                    },
+                },
+            });
+
+            await expect.poll(async () => {
+                const text = await page.evaluate(() => document.body?.innerText ?? '');
+                return text.includes('Loading match resources...');
+            }, { timeout: 20000 }).toBe(false);
+            await expect(page.locator('[data-tutorial-id="su-scoreboard"]')).toBeVisible({ timeout: 15000 });
+            await waitForVisibleSmashUpCardArt(page, 12);
+            await game.screenshot('stress-01-scene-ready-with-all-scoring-sources', testInfo);
+
+            await advancePhaseFromUI(page, game);
+            const firstSourceId = await waitForInteractionSourceIn(page, ['multi_base_scoring', 'pirate_king_move'], 30000);
+            if (firstSourceId === 'multi_base_scoring') {
+                await game.screenshot('stress-02-multi-base-choice-before-pressure-chain', testInfo);
+                await chooseScoringBaseByDefId(page, 'base_tortuga');
+            }
+
+            const resolvedSources: string[] = [];
+            const capturedSources = new Set<string>();
+            let selectedPrimaryScoringBase = firstSourceId === 'multi_base_scoring';
+
+            for (let step = 0; step < 80; step += 1) {
+                const currentInteraction = await readCurrentInteraction(page);
+                if (!currentInteraction) break;
+                resolvedSources.push(currentInteraction.sourceId);
+
+                if (currentInteraction.sourceId === 'multi_base_scoring') {
+                    const tortugaOption = currentInteraction.options.find((option) => option.value?.baseDefId === 'base_tortuga');
+                    if (tortugaOption && !selectedPrimaryScoringBase) {
+                        selectedPrimaryScoringBase = true;
+                        await respondCurrentInteractionByOptionId(page, tortugaOption.id);
+                        continue;
+                    }
+                    const nextScoringBase = currentInteraction.options.find((option) => option.value?.baseDefId === 'base_dread_lookout')
+                        ?? currentInteraction.options.find((option) => !isPassOption(option));
+                    expect(nextScoringBase, '压力链清完第一基地后仍有可计分基地时必须能继续选择').toBeTruthy();
+                    await game.screenshot('stress-19-after-first-base-back-to-multi-base-scoring', testInfo);
+                    await respondCurrentInteractionByOptionId(page, nextScoringBase!.id);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'pirate_king_move') {
+                    const pirateKingCard = page.locator('[data-minion-uid="stress-pirate-king"]').first();
+                    const scoringBase = page.getByTestId('base-zone-0');
+                    const wrongBase = page.getByTestId('base-zone-1');
+                    await expect(pirateKingCard).toHaveAttribute('data-highlighted', 'true');
+                    await expect(scoringBase).toHaveAttribute('data-selectable', 'false');
+                    await expect(wrongBase).toHaveAttribute('data-selectable', 'false');
+                    await game.screenshot('stress-03-pirate-king-source-highlight-before-targets', testInfo);
+
+                    await pirateKingCard.click({ force: true });
+                    await page.waitForTimeout(300);
+                    await expect(pirateKingCard).toHaveAttribute('data-selected', 'true');
+                    await expect(scoringBase).toHaveAttribute('data-selectable', 'true');
+                    await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'true');
+                    await expect(wrongBase).toHaveAttribute('data-selectable', 'false');
+                    await expect(wrongBase).toHaveAttribute('data-dimmed', 'true');
+                    await game.screenshot('stress-04-pirate-king-target-scoring-base-highlight', testInfo);
+
+                    await scoringBase.click({ force: true });
+                    capturedSources.add('pirate_king_move');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'smashup_reaction_choose') {
+                    const handArea = page.getByTestId('su-hand-area');
+                    const pendingScoringBase = page.getByTestId('base-zone-0');
+                    const selectedReactionHandCardUid = await page.evaluate(() => {
+                        const hand = document.querySelector<HTMLElement>('[data-testid="su-hand-area"]');
+                        const selected = hand?.querySelector<HTMLElement>('[data-card-uid][data-selected="true"]');
+                        return selected?.dataset.cardUid ?? null;
+                    });
+                    if (selectedReactionHandCardUid) {
+                        const baseReady = await expect(pendingScoringBase)
+                            .toHaveAttribute('data-selectable', 'true', { timeout: 1500 })
+                            .then(() => true)
+                            .catch(() => false);
+                        if (baseReady) {
+                            await expect(pendingScoringBase).toHaveAttribute('data-dimmed', 'false');
+                            const selectedHandCard = handArea.locator(`[data-card-uid="${selectedReactionHandCardUid}"]`).first();
+                            await expect(selectedHandCard).toHaveAttribute('data-selected', 'true');
+                            const shotByCardUid: Record<string, string> = {
+                                'stress-full-sail-hand': 'stress-05aa-full-sail-target-scoring-base-highlight-after-hand-click',
+                                'stress-under-pressure-hand': 'stress-06aa-under-pressure-target-scoring-base-highlight-after-hand-click',
+                                'stress-shinobi-hand': 'stress-06-hand-response-target-scoring-base-highlight',
+                                'stress-champions-hand': 'stress-16b-champions-target-scoring-base-highlight-after-hand-click',
+                            };
+                            await game.screenshot(shotByCardUid[selectedReactionHandCardUid] ?? 'stress-reaction-hand-target-scoring-base-highlight', testInfo);
+                            await pendingScoringBase.click({ force: true });
+                            if (selectedReactionHandCardUid === 'stress-full-sail-hand') {
+                                capturedSources.add('pirate_full_sail_hand');
+                            } else if (selectedReactionHandCardUid === 'stress-under-pressure-hand') {
+                                capturedSources.add('giant_ant_under_pressure_hand');
+                            } else if (selectedReactionHandCardUid === 'stress-shinobi-hand') {
+                                capturedSources.add('hand-response');
+                            } else if (selectedReactionHandCardUid === 'stress-champions-hand') {
+                                capturedSources.add('giant_ant_we_are_the_champions_hand');
+                            }
+                            await page.waitForTimeout(300);
+                            continue;
+                        }
+                    }
+                    const fullSailCard = handArea.locator('[data-card-uid="stress-full-sail-hand"]');
+                    if (
+                        !capturedSources.has('pirate_full_sail')
+                        && !capturedSources.has('pirate_full_sail_hand')
+                        && await fullSailCard.isVisible({ timeout: 500 }).catch(() => false)
+                        && await fullSailCard.getAttribute('data-highlighted') === 'true'
+                    ) {
+                        const hiddenNinjaCard = handArea.locator('[data-card-uid="stress-hidden-hand"]');
+                        const acolyteCard = handArea.locator('[data-card-uid="stress-acolyte-hand"]');
+                        await expectNoVisibleReactionProxyButtons(page, /全速航行|full sail|pirate_full_sail/i, '压力链全速航行手牌响应');
+                        await expect(page.getByTestId('su-reaction-pass-button')).toBeVisible({ timeout: 10000 });
+                        await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+                        await expect(fullSailCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(hiddenNinjaCard).toHaveAttribute('data-disabled', 'true');
+                        await expect(acolyteCard).toHaveAttribute('data-disabled', 'true');
+                        await expectStandardObjectHighlight(
+                            fullSailCard,
+                            '全速航行手牌响应高亮',
+                        );
+                        await game.screenshot('stress-05a-full-sail-hand-card-highlight-before-click', testInfo);
+
+                        await fullSailCard.click({ force: true });
+                        capturedSources.add('pirate_full_sail_hand');
+                        await page.waitForTimeout(300);
+                        continue;
+                    }
+
+                    const underPressureCard = handArea.locator('[data-card-uid="stress-under-pressure-hand"]');
+                    if (
+                        !capturedSources.has('giant_ant_under_pressure')
+                        && !capturedSources.has('giant_ant_under_pressure_hand')
+                        && await underPressureCard.isVisible({ timeout: 500 }).catch(() => false)
+                        && await underPressureCard.getAttribute('data-highlighted') === 'true'
+                    ) {
+                        await expectNoVisibleReactionProxyButtons(page, /承受压力|under pressure|giant_ant_under_pressure/i, '压力链承受压力手牌响应');
+                        await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+                        await expect(underPressureCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(handArea.locator('[data-card-uid="stress-acolyte-hand"]')).toHaveAttribute('data-disabled', 'true');
+                        await expectStandardObjectHighlight(
+                            underPressureCard,
+                            '承受压力手牌响应高亮',
+                        );
+                        await game.screenshot('stress-06a-under-pressure-hand-card-highlight-before-click', testInfo);
+
+                        await underPressureCard.click({ force: true });
+                        capturedSources.add('giant_ant_under_pressure_hand');
+                        await page.waitForTimeout(300);
+                        const scoringBase = page.getByTestId('base-zone-0');
+                        if (await expect(scoringBase).toHaveAttribute('data-selectable', 'true', { timeout: 1500 }).then(() => true).catch(() => false)) {
+                            await expect(underPressureCard).toHaveAttribute('data-selected', 'true');
+                            await expect(scoringBase).toHaveAttribute('data-deploy-mode', 'true');
+                            await expect(scoringBase).toHaveAttribute('data-dimmed', 'false');
+                            await game.screenshot('stress-06aa-under-pressure-target-scoring-base-highlight-after-hand-click', testInfo);
+                            await scoringBase.click({ force: true });
+                            await page.waitForTimeout(300);
+                        }
+                        continue;
+                    }
+
+                    const shinobiCard = handArea.locator('[data-card-uid="stress-shinobi-hand"]');
+                    if (
+                        !capturedSources.has('hand-response')
+                        && await shinobiCard.isVisible({ timeout: 500 }).catch(() => false)
+                        && await shinobiCard.getAttribute('data-highlighted') === 'true'
+                    ) {
+                        const hiddenNinjaCard = handArea.locator('[data-card-uid="stress-hidden-hand"]');
+                        const acolyteCard = handArea.locator('[data-card-uid="stress-acolyte-hand"]');
+                        await expect(page.getByTestId('su-reaction-pass-button')).toBeVisible({ timeout: 10000 });
+                        await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+                        await expect(shinobiCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(hiddenNinjaCard).toHaveAttribute('data-disabled', 'true');
+                        await expect(acolyteCard).toHaveAttribute('data-disabled', 'true');
+                        await game.screenshot('stress-05-hand-response-card-highlight-non-response-dimmed', testInfo);
+
+                        await shinobiCard.click({ force: true });
+                        await page.waitForTimeout(300);
+                        await expect(shinobiCard).toHaveAttribute('data-selected', 'true');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-deploy-mode', 'true');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-dimmed', 'false');
+                        await expect(page.getByTestId('base-zone-1')).toHaveAttribute('data-dimmed', 'true');
+                        await game.screenshot('stress-06-hand-response-target-scoring-base-highlight', testInfo);
+
+                        await page.getByTestId('base-zone-0').click({ force: true });
+                        capturedSources.add('hand-response');
+                        continue;
+                    }
+
+                    const championsCard = handArea.locator('[data-card-uid="stress-champions-hand"]');
+                    if (
+                        !capturedSources.has('giant_ant_we_are_the_champions')
+                        && !capturedSources.has('giant_ant_we_are_the_champions_hand')
+                        && await championsCard.isVisible({ timeout: 500 }).catch(() => false)
+                        && await championsCard.getAttribute('data-highlighted') === 'true'
+                    ) {
+                        await expectNoVisibleReactionProxyButtons(page, /我们乃最强|we are the champions|giant_ant_we_are_the_champions/i, '压力链我们乃最强手牌响应');
+                        await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+                        await expect(championsCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-deploy-mode', 'false');
+                        await expectStandardObjectHighlight(
+                            championsCard,
+                            '我们乃最强手牌响应高亮',
+                        );
+                        await game.screenshot('stress-16a-champions-hand-card-highlight-before-click', testInfo);
+
+                        await championsCard.click({ force: true });
+                        await page.waitForTimeout(300);
+                        await expect(championsCard).toHaveAttribute('data-selected', 'true');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'true');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-deploy-mode', 'true');
+                        await game.screenshot('stress-16b-champions-target-scoring-base-highlight-after-hand-click', testInfo);
+                        await page.getByTestId('base-zone-0').click({ force: true });
+                        capturedSources.add('giant_ant_we_are_the_champions_hand');
+                        await page.waitForTimeout(300);
+                        continue;
+                    }
+
+                    const shipwreckTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /沉船湾|shipwreck|mermaids_shipwreck_cove/i.test(optionDebugText(option)),
+                    );
+                    if (shipwreckTrigger && !capturedSources.has('mermaids_shipwreck_cove_after_scoring')) {
+                        await expectNoVisibleReactionProxyButtons(page, /沉船湾|shipwreck|mermaids_shipwreck_cove/i, '压力链沉船湾 afterScoring');
+                        const source = page.locator('[data-ongoing-uid="stress-shipwreck-cove"]').first();
+                        await expect(source).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-selectable', 'false');
+                        await game.screenshot('stress-07-shipwreck-cove-source-highlight-from-reaction-window', testInfo);
+                        await clickReactionTriggerSourceByOption(page, shipwreckTrigger, '压力链沉船湾 afterScoring');
+                        continue;
+                    }
+
+                    const gravestonesTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /墓碑|gravestones|skeletons_gravestones/i.test(optionDebugText(option)),
+                    );
+                    if (gravestonesTrigger && !capturedSources.has('skeletons_gravestones_after_scoring')) {
+                        await expectNoVisibleReactionProxyButtons(page, /墓碑|gravestones|skeletons_gravestones/i, '压力链墓碑 afterScoring');
+                        const source = page.locator('[data-ongoing-uid="stress-gravestones"]').first();
+                        await expect(source).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.getByTestId('base-zone-3')).toHaveAttribute('data-selectable', 'false');
+                        await game.screenshot('stress-09-gravestones-source-highlight-from-reaction-window', testInfo);
+                        await clickReactionTriggerSourceByOption(page, gravestonesTrigger, '压力链墓碑 afterScoring');
+                        continue;
+                    }
+
+                    const firstMateTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /大副|first mate|pirate_first_mate/i.test(optionDebugText(option)),
+                    );
+                    if (firstMateTrigger && !capturedSources.has('pirate_first_mate_choose_base')) {
+                        await expectNoVisibleReactionProxyButtons(page, /大副|first mate|pirate_first_mate/i, '压力链大副 afterScoring');
+                        const firstMate = page.locator('[data-minion-uid="stress-first-mate"]').first();
+                        await expect(firstMate).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-selectable', 'false');
+                        await game.screenshot('stress-13-first-mate-source-highlight-from-reaction-window', testInfo);
+                        await clickReactionTriggerSourceByOption(page, firstMateTrigger, '压力链大副 afterScoring');
+                        continue;
+                    }
+
+                    const tortugaTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
+                    );
+                    if (tortugaTrigger && !capturedSources.has('base_tortuga')) {
+                        await expectNoVisibleReactionProxyButtons(page, /托尔图加|tortuga|base_tortuga/i, '压力链托尔图加 afterScoring');
+                        await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'true');
+                        await expect(page.locator('[data-minion-uid="stress-runnerup-reserve"]').first()).toHaveAttribute('data-highlighted', 'false');
+                        await game.screenshot('stress-15-tortuga-source-base-highlight-from-reaction-window', testInfo);
+                        await clickReactionTriggerSourceByOption(page, tortugaTrigger, '压力链托尔图加 afterScoring');
+                        continue;
+                    }
+
+                    const krakenTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /克拉肯|kraken|pirates_the_kraken/i.test(optionDebugText(option)),
+                    );
+                    if (krakenTrigger && !capturedSources.has('titan_pirates_the_kraken_choose_minion')) {
+                        await expectNoVisibleReactionProxyButtons(page, /克拉肯|kraken|pirates_the_kraken/i, '压力链克拉肯 afterScoring');
+                        const kraken = page.locator('[data-titan-uid="stress-kraken"]').first();
+                        await expect(kraken).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.locator('[data-minion-uid="stress-kraken-save"]').first()).toHaveAttribute('data-highlighted', 'false');
+                        await expectStandardObjectHighlight(
+                            kraken,
+                            '克拉肯泰坦响应窗口来源高亮',
+                        );
+                        await game.screenshot('stress-11-kraken-source-highlight-from-reaction-window', testInfo);
+                        await clickReactionTriggerSourceByOption(page, krakenTrigger, '压力链克拉肯 afterScoring');
+                        continue;
+                    }
+
+                    await passCurrentSmashupResponse(page);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'pirate_full_sail_choose_minion') {
+                    const fullSailMinion = page.locator('[data-minion-uid="stress-full-sail-move"]').first();
+                    if (
+                        !capturedSources.has('pirate_full_sail_move')
+                        && await fullSailMinion.isVisible({ timeout: 500 }).catch(() => false)
+                        && await fullSailMinion.getAttribute('data-highlighted') === 'true'
+                    ) {
+                        await expect(fullSailMinion).toHaveAttribute('data-highlighted', 'true');
+                        await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-selectable', 'false');
+                        await expectStandardObjectHighlight(
+                            fullSailMinion,
+                            '全速航行随从目标高亮',
+                        );
+                        await game.screenshot('stress-05b-full-sail-minion-target-highlight-after-hand-click', testInfo);
+                        await fullSailMinion.click({ force: true });
+                        await page.waitForTimeout(300);
+                        continue;
+                    }
+
+                    expect(capturedSources.has('pirate_full_sail_move'), '全速航行完成按钮只能在至少移动过一个随从后点击').toBe(true);
+                    await clickPromptButtonByOptionId('done', '压力链全速航行完成移动');
+                    capturedSources.add('pirate_full_sail');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'pirate_full_sail_choose_base') {
+                    await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-selectable', 'true');
+                    await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-dimmed', 'false');
+                    await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'false');
+                    await game.screenshot('stress-05c-full-sail-target-base-highlight-before-move', testInfo);
+                    await page.getByTestId('base-zone-2').click({ force: true });
+                    capturedSources.add('pirate_full_sail_move');
+                    await page.waitForTimeout(300);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_under_pressure_choose_source') {
+                    const sourceMinion = page.locator('[data-minion-uid="stress-pressure-source"]').first();
+                    const targetMinion = page.locator('[data-minion-uid="stress-ant-target"]').first();
+                    await expect(sourceMinion).toHaveAttribute('data-highlighted', 'true');
+                    await expect(targetMinion).toHaveAttribute('data-highlighted', 'false');
+                    await expectStandardObjectHighlight(
+                        sourceMinion,
+                        '承受压力来源随从高亮',
+                    );
+                    await game.screenshot('stress-06b-under-pressure-source-minion-highlight-before-click', testInfo);
+                    await sourceMinion.click({ force: true });
+                    await page.waitForTimeout(300);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_under_pressure_choose_target') {
+                    const targetMinion = page.locator('[data-minion-uid="stress-ant-target"]').first();
+                    await expect(targetMinion).toHaveAttribute('data-highlighted', 'true');
+                    await expect(page.locator('[data-minion-uid="stress-pressure-source"]').first()).toHaveAttribute('data-highlighted', 'false');
+                    await expectStandardObjectHighlight(
+                        targetMinion,
+                        '承受压力目标随从高亮',
+                    );
+                    await game.screenshot('stress-06c-under-pressure-target-minion-highlight-after-source-click', testInfo);
+                    await targetMinion.click({ force: true });
+                    await page.waitForTimeout(300);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_under_pressure_choose_amount') {
+                    await setSliderValue(2);
+                    await game.screenshot('stress-06d-under-pressure-amount-slider-before-confirm', testInfo);
+                    await clickTransferConfirmButton('压力链承受压力数量选择');
+                    capturedSources.add('giant_ant_under_pressure');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'mermaids_shipwreck_cove_after_scoring') {
+                    await clickFieldSourceThenTargetBase({
+                        source: page.locator('[data-ongoing-uid="stress-shipwreck-cove"]').first(),
+                        sourceDescription: '沉船湾计分后持续行动',
+                        sourceScreenshot: 'stress-07b-shipwreck-cove-direct-source-highlight',
+                        targetBaseIndex: 2,
+                        targetScreenshot: 'stress-08-shipwreck-cove-target-base-highlight-after-source-click',
+                    });
+                    capturedSources.add('mermaids_shipwreck_cove_after_scoring');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'skeletons_gravestones_after_scoring') {
+                    await clickFieldSourceThenTargetBase({
+                        source: page.locator('[data-ongoing-uid="stress-gravestones"]').first(),
+                        sourceDescription: '墓碑计分后持续行动',
+                        sourceScreenshot: 'stress-09b-gravestones-direct-source-highlight',
+                        targetBaseIndex: 3,
+                        targetScreenshot: 'stress-10-gravestones-target-base-highlight-after-source-click',
+                    });
+                    capturedSources.add('skeletons_gravestones_after_scoring');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'titan_pirates_the_kraken_choose_minion') {
+                    const kraken = page.locator('[data-titan-uid="stress-kraken"]').first();
+                    const targetMinion = page.locator('[data-minion-uid="stress-kraken-save"]').first();
+                    if (await kraken.getAttribute('data-selected') !== 'true') {
+                        await expect(kraken).toHaveAttribute('data-highlighted', 'true');
+                        await expect(kraken).toHaveAttribute('data-selected', 'false');
+                        await expect(targetMinion).toHaveAttribute('data-highlighted', 'false');
+                        await expectStandardObjectHighlight(
+                            kraken,
+                            '克拉肯泰坦第一层来源高亮',
+                        );
+                        await game.screenshot('stress-11-kraken-titan-source-highlight-before-minion-target', testInfo);
+                        await kraken.click({ force: true });
+                        await page.waitForTimeout(300);
+                    }
+                    await expect(kraken).toHaveAttribute('data-selected', 'true');
+                    await expect(targetMinion).toHaveAttribute('data-highlighted', 'true');
+                    await expectStandardObjectHighlight(
+                        kraken,
+                        '克拉肯泰坦选中态高亮',
+                    );
+                    await expectStandardObjectHighlight(
+                        targetMinion,
+                        '克拉肯目标随从高亮',
+                    );
+                    await game.screenshot('stress-12-kraken-target-minion-highlight-after-source-click', testInfo);
+                    await targetMinion.click({ force: true });
+                    capturedSources.add('titan_pirates_the_kraken_choose_minion');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'titan_pirates_the_kraken_choose_base') {
+                    await expect(page.getByTestId('base-zone-3')).toHaveAttribute('data-selectable', 'true');
+                    await expect(page.getByTestId('base-zone-3')).toHaveAttribute('data-dimmed', 'false');
+                    await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'false');
+                    await game.screenshot('stress-12b-kraken-followup-target-base-highlight', testInfo);
+                    await page.getByTestId('base-zone-3').click({ force: true });
+                    capturedSources.add('titan_pirates_the_kraken_choose_base');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'pirate_first_mate_choose_base') {
+                    const firstMate = page.locator('[data-minion-uid="stress-first-mate"]').first();
+                    await expect(firstMate).toHaveAttribute('data-highlighted', 'true');
+                    await expect(firstMate).toHaveAttribute('data-selected', 'true');
+                    await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-selectable', 'true');
+                    await expect(page.getByTestId('base-zone-2')).toHaveAttribute('data-deploy-mode', 'true');
+                    await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'false');
+                    await game.screenshot('stress-14-first-mate-target-base-highlight-after-source-click', testInfo);
+                    await page.getByTestId('base-zone-2').click({ force: true });
+                    capturedSources.add('pirate_first_mate_choose_base');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'base_tortuga') {
+                    const moveRunnerUpReserve = currentInteraction.options.find((option) =>
+                        option.value?.minionUid === 'stress-runnerup-reserve'
+                        && option.value?.fromBaseIndex === 1,
+                    );
+                    expect(moveRunnerUpReserve, '托尔图加应能选择亚军在其它基地上的随从').toBeTruthy();
+                    await expect(page.locator('[data-minion-uid="stress-runnerup-reserve"]').first()).toHaveAttribute('data-highlighted', 'true');
+                    await game.screenshot('stress-16-tortuga-runnerup-minion-highlight-after-source-click', testInfo);
+                    await respondInteractionOptionIfStillCurrent(page, currentInteraction, moveRunnerUpReserve!.id);
+                    capturedSources.add('base_tortuga');
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_we_are_the_champions_choose_source') {
+                    const sourceMinion = page.locator('[data-minion-uid="stress-champions-source"]').first();
+                    const targetMinion = page.locator('[data-minion-uid="stress-ant-target"]').first();
+                    await expect(sourceMinion).toHaveAttribute('data-highlighted', 'true');
+                    await expect(targetMinion).toHaveAttribute('data-highlighted', 'false');
+                    await expectStandardObjectHighlight(
+                        sourceMinion,
+                        '我们乃最强来源随从高亮',
+                    );
+                    await game.screenshot('stress-16c-champions-source-minion-highlight-before-click', testInfo);
+                    await sourceMinion.click({ force: true });
+                    await page.waitForTimeout(300);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_we_are_the_champions_choose_snapshot_source') {
+                    await game.screenshot('stress-16c-champions-snapshot-source-card-choice-before-click', testInfo);
+                    await chooseCurrentInteractionOptionMatching(
+                        page,
+                        (option) => option.value?.minionUid === 'stress-champions-source',
+                        '压力链我们乃最强计分后快照来源',
+                    );
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_we_are_the_champions_choose_target') {
+                    const targetMinion = page.locator('[data-minion-uid="stress-ant-target"]').first();
+                    await expect(targetMinion).toHaveAttribute('data-highlighted', 'true');
+                    await expectStandardObjectHighlight(
+                        targetMinion,
+                        '我们乃最强目标随从高亮',
+                    );
+                    await game.screenshot('stress-16d-champions-target-minion-highlight-after-source-click', testInfo);
+                    await targetMinion.click({ force: true });
+                    await page.waitForTimeout(300);
+                    continue;
+                }
+
+                if (currentInteraction.sourceId === 'giant_ant_we_are_the_champions_choose_amount') {
+                    await setSliderValue(2);
+                    await game.screenshot('stress-16e-champions-amount-slider-before-confirm', testInfo);
+                    await clickTransferConfirmButton('压力链我们乃最强数量选择');
+                    capturedSources.add('giant_ant_we_are_the_champions');
+                    continue;
+                }
+
+                throw new Error(`最复杂计分压力链遇到未预期交互: ${currentInteraction.sourceId}`);
+            }
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    if (!state) return false;
+                    return !state.sys?.interaction?.current
+                        && !state.sys?.responseWindow?.current
+                        && state.sys?.phase === 'playCards'
+                        && state.core?.currentPlayerIndex === 1;
+                },
+                { timeout: 45000, polling: 100 },
+            );
+
+            const finalState = await page.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                const bases = state?.core?.bases ?? [];
+                const findOngoingBase = (uid: string) => bases.findIndex((base: any) =>
+                    (base.ongoingActions ?? []).some((action: any) => action.uid === uid),
+                );
+                const findBuriedBase = (uid: string) => bases.findIndex((base: any) =>
+                    (base.buriedCards ?? []).some((card: any) => card.uid === uid || card.cardUid === uid),
+                );
+                const findMinionBase = (uid: string) => bases.findIndex((base: any) =>
+                    (base.minions ?? []).some((minion: any) => minion.uid === uid),
+                );
+                const findMinion = (uid: string) => {
+                    for (let baseIndex = 0; baseIndex < bases.length; baseIndex += 1) {
+                        const minion = (bases[baseIndex].minions ?? []).find((candidate: any) => candidate.uid === uid);
+                        if (minion) return { baseIndex, minion };
+                    }
+                    return null;
+                };
+                const antTarget = findMinion('stress-ant-target');
+                return {
+                    phase: state?.sys?.phase,
+                    currentPlayerIndex: state?.core?.currentPlayerIndex,
+                    interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                    triggerQueueLength: state?.core?.triggerQueue?.length ?? 0,
+                    baseDefIds: bases.map((base: any) => base.defId),
+                    p0Vp: state?.core?.players?.['0']?.vp ?? 0,
+                    p1Vp: state?.core?.players?.['1']?.vp ?? 0,
+                    p2Vp: state?.core?.players?.['2']?.vp ?? 0,
+                    p3Vp: state?.core?.players?.['3']?.vp ?? 0,
+                    shipwreckBaseIndex: findOngoingBase('stress-shipwreck-cove'),
+                    gravestonesBuriedBaseIndex: findBuriedBase('stress-gravestones'),
+                    krakenSavedBaseIndex: findMinionBase('stress-kraken-save'),
+                    firstMateBaseIndex: findMinionBase('stress-first-mate'),
+                    tortugaMovedBaseIndex: findMinionBase('stress-runnerup-reserve'),
+                    fullSailMovedBaseIndex: findMinionBase('stress-full-sail-move'),
+                    antTargetBaseIndex: antTarget?.baseIndex ?? -1,
+                    antTargetCounters: antTarget?.minion?.powerCounters ?? null,
+                    baseMinionUids: bases.map((base: any) => (base.minions ?? []).map((minion: any) => minion.uid)),
+                };
+            });
+
+            expect(finalState.phase).toBe('playCards');
+            expect(finalState.currentPlayerIndex).toBe(1);
+            expect(finalState.interactionSourceId).toBeNull();
+            expect(finalState.responseWindowId).toBeNull();
+            expect(finalState.triggerQueueLength).toBe(0);
+            expect(finalState.p0Vp).toBeGreaterThan(0);
+            expect(finalState.p1Vp).toBeGreaterThan(0);
+            expect(finalState.p2Vp).toBeGreaterThan(0);
+            expect(finalState.shipwreckBaseIndex).toBe(2);
+            expect(finalState.gravestonesBuriedBaseIndex).toBe(3);
+            expect(finalState.krakenSavedBaseIndex).toBe(3);
+            expect(finalState.firstMateBaseIndex).toBe(2);
+            expect(finalState.tortugaMovedBaseIndex).toBe(0);
+            expect(finalState.fullSailMovedBaseIndex).toBe(2);
+            expect(finalState.antTargetBaseIndex).toBe(2);
+            expect(finalState.antTargetCounters).toBe(4);
+            if (capturedSources.has('pirate_full_sail_move') && finalState.fullSailMovedBaseIndex === 2) {
+                capturedSources.add('pirate_full_sail');
+            }
+
+            for (const source of [
+                'pirate_king_move',
+                'pirate_full_sail',
+                'giant_ant_under_pressure',
+                'hand-response',
+                'giant_ant_we_are_the_champions',
+                'mermaids_shipwreck_cove_after_scoring',
+                'skeletons_gravestones_after_scoring',
+                'titan_pirates_the_kraken_choose_minion',
+                'titan_pirates_the_kraken_choose_base',
+                'pirate_first_mate_choose_base',
+                'base_tortuga',
+            ]) {
+                expect(capturedSources.has(source), `压力链必须真实跑过 ${source}`).toBe(true);
+            }
+
+            await expect(page.getByTestId('su-interaction-select-banner')).toBeHidden({ timeout: 10000 });
+            await expect(page.getByTestId('su-reaction-hand-status')).toBeHidden({ timeout: 10000 });
+            await expect(page.getByTestId('su-reaction-pass-button')).toBeHidden({ timeout: 10000 });
+            await waitForVisibleSmashUpCardArt(page, 8);
+            await game.screenshot('stress-20-final-no-residual-after-all-interleaved-effects', testInfo);
             assertNoReactNaNWarnings(diagnostics);
         } catch (error) {
             if (diagnostics.errors.length > 0) {

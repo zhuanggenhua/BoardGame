@@ -32,9 +32,9 @@
 
 ## 4. 冰雪奇缘 / Frozen
 
-- [x] 4.1 Implement all locked 冰雪奇缘 card/base effect atoms using existing shared mechanisms where possible
-- [x] 4.2 Add focused L2 behavior tests for movement, deck discard, hand/deck return, base lock, and scoring-related clauses as applicable
-- [x] 4.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
+- [ ] 4.1 Implement all locked 冰雪奇缘 card/base effect atoms using existing shared mechanisms where possible（2026-08-19 回写：旧完成勾选被本地反馈推翻，当前保持实施中）
+- [ ] 4.2 Add focused L2 behavior tests for movement, deck discard, hand/deck return, base lock, and scoring-related clauses as applicable（2026-08-19 回写：仍有 9 个冰雪对象缺对象级验证）
+- [ ] 4.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses（2026-08-19 回写：冰雪真实入口仍只有代表链 / 局部证据）
 
 ## 5. 狮子王 / The Lion King
 
@@ -54,6 +54,6 @@
 - [x] 7.2 Run focused Vitest, typecheck, i18n check, and targeted Smash Up asset validation
 - [x] 7.3 Run target Smash Up E2E and inspect at least one screenshot per new interaction/UI type
 - [ ] 7.4 Upload the mainline runtime resources to the server asset source and verify representative public URLs match current local bytes/hash
-- [x] 7.5 Write final full-object audit evidence with L0/L1/L2/L3/L4 matrix and residual-risk statement
-- [x] 7.6 Update every task checkbox only after evidence supports the status
-- [x] 7.7 Prepare push/PR handoff with a Chinese, information-dense commit message covering all four factions
+- [ ] 7.5 Write final full-object audit evidence with L0/L1/L2/L3/L4 matrix and residual-risk statement（2026-08-19 回写：旧 full-object / closeout 口径对冰雪不成立）
+- [ ] 7.6 Update every task checkbox only after evidence supports the status（2026-08-19 回写：冰雪完成勾选已撤回）
+- [ ] 7.7 Prepare push/PR handoff with a Chinese, information-dense commit message covering all four factions（2026-08-19 回写：四派系整体 handoff 需等冰雪重新收口）
