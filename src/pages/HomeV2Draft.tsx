@@ -57,7 +57,7 @@ import {
 } from '../ui-scene';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
-import { assetsPath, getLocalAssetPath } from '../core/AssetLoader';
+import { assetsPath, getOptimizedImageUrls } from '../core/AssetLoader';
 
 const HOME_V2_ASSET_ROOT = 'common/images/home-v2';
 const HOME_V2_BOOK_DESK = assetsPath(`${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`);
@@ -71,7 +71,7 @@ const HOME_V2_STAGE_STANDARD_WIDTH = 1864;
 const HOME_V2_STAGE_STANDARD_HEIGHT = 843;
 const HOME_V2_OVERVIEW_STAGE_WIDTH = 1864;
 const HOME_V2_OVERVIEW_STAGE_HEIGHT = 843;
-const HOME_V2_OVERVIEW_BACKGROUND = getLocalAssetPath(`${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`);
+const HOME_V2_OVERVIEW_BACKGROUND = getOptimizedImageUrls(`${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`).webp;
 const HOME_V2_DETAIL_LEFT_RECT = { left: '10.80%', top: '9.35%', width: '37.20%', height: '77.60%' };
 const HOME_V2_DETAIL_RIGHT_RECT = { left: '51.40%', top: '9.35%', width: '38.80%', height: '77.60%' };
 const HOME_V2_FLIP_TO_DETAIL_RECT = { left: '50.55%', top: '6.40%', width: '37.10%', height: '84.80%' };

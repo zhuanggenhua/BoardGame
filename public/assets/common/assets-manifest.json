@@ -12136,6 +12136,15 @@
         }
       }
     },
+    "images/home-v2/book-catalog-wide/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "75d933d33c0db51eaf12a3f5308a69ab9f50af091e7455d2c877eecacf38c17a",
+          "bytes": 237612,
+          "mime": "image/webp"
+        }
+      }
+    },
     "images/home-v2/book-close/compressed/1": {
       "variants": {
         "webp": {

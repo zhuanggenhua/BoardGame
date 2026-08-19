@@ -29,6 +29,7 @@ test('OTA 仅保留资源清单，不携带嵌套游戏资源', () => {
     for (const relativePath of [
         'assets/atlas-configs/smashup/2833984701.json',
         'assets/common/images/home-v2/book-catalog-wide/1.png',
+        'assets/common/images/home-v2/book-catalog-wide/compressed/1.webp',
         'assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
         'assets/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json',
         'assets/common/audio/bgm/compressed/theme.ogg',

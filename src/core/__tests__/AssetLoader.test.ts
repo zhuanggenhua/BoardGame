@@ -81,8 +81,8 @@ afterEach(() => {
         vi.stubEnv('VITE_DEV_REMOTE_ASSETS', 'true');
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
-        expect(getLocalAssetPath('common/images/home-v2/book-catalog-wide/1.png'))
-            .toBe('https://assets.easyboardgame.top/official/common/images/home-v2/book-catalog-wide/1.png');
+        expect(getOptimizedImageUrls('common/images/home-v2/book-catalog-wide/1.png').webp)
+            .toBe('https://assets.easyboardgame.top/official/common/images/home-v2/book-catalog-wide/compressed/1.webp');
         expect(getLocalizedLocalAssetPath('dicethrone/images/paladin/status-icons-atlas.json', 'zh-CN'))
             .toBe('https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/status-icons-atlas.json');
     });

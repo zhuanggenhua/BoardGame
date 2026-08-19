@@ -34,7 +34,7 @@ export const DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
   // V2 书本首页首屏背景是 Android 壳根路由的关键图片；
   // 生产包必须保留本地副本，不能依赖 CDN 单点可用性。
-  'images/home-v2/book-catalog-wide/1.png',
+  'images/home-v2/book-catalog-wide/compressed/1.webp',
 ];
 export const DIST_LOGOS_RETAIN_RELATIVE_PATHS = [
   'weixin.jpg',
