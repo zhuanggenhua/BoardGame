@@ -354,15 +354,34 @@ const createMetadata = (credentials: string): MatchMetadata => ({
     setupData: {},
 });
 
+type TestOnlineAiSeatController = {
+    type: 'human' | 'local-ai' | 'remote-ai';
+    policyId?: string;
+    fallbackPolicyId?: string;
+    manualSetupSelection?: boolean;
+    minimumActionDelayMs?: number;
+};
+
+const normalizeTestOnlineAiSeatControllers = (
+    seatControllers?: Record<string, TestOnlineAiSeatController>,
+): Record<string, TestOnlineAiSeatController> => Object.fromEntries(
+    Object.entries(seatControllers ?? {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai' },
+    }).map(([playerId, controller]) => [
+        playerId,
+        controller.type === 'human'
+            ? controller
+            : {
+                minimumActionDelayMs: 0,
+                ...controller,
+            },
+    ]),
+);
+
 const createOnlineAiRecoveryMetadata = (overrides?: {
     gameName?: string;
-    seatControllers?: Record<string, {
-        type: 'human' | 'local-ai' | 'remote-ai';
-        policyId?: string;
-        fallbackPolicyId?: string;
-        manualSetupSelection?: boolean;
-        minimumActionDelayMs?: number;
-    }>;
+    seatControllers?: Record<string, TestOnlineAiSeatController>;
 }): MatchMetadata => ({
     gameName: overrides?.gameName ?? 'test-game',
     players: {
@@ -381,10 +400,7 @@ const createOnlineAiRecoveryMetadata = (overrides?: {
     updatedAt: Date.now(),
     setupData: {
         enableAi: true,
-        seatControllers: overrides?.seatControllers ?? {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        },
+        seatControllers: normalizeTestOnlineAiSeatControllers(overrides?.seatControllers),
     },
 });
 
@@ -27982,7 +27998,13 @@ describe('GameTransportServer（离座与重连）', () => {
                 },
                 eventStreamNextId: 554,
             }),
-            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'smashup',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                },
+            }),
         });
 
         const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
