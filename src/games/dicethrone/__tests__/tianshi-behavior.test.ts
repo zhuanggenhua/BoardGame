@@ -23,6 +23,7 @@ import {
     createQueuedRandom,
     getCardById,
     getCardInteractionPrompt,
+    getMultistepChoicePrompt,
     getSimpleChoicePrompt,
     injectPendingInteraction,
     respondToPrompt,
@@ -1643,12 +1644,10 @@ describe('炽天使领域行为', () => {
         );
         expect(played.success).toBe(true);
         if (!played.success) return;
-        expect(played.state.sys.interaction.current).toMatchObject({
-            kind: 'multistep-choice',
-            playerId: '1',
-        });
-        expect((played.state.sys.interaction.current as any)?.data?.meta?.diceOwnerId).toBe('0');
-        expect((played.state.sys.interaction.current as any)?.data?.allowedDieIds).toEqual([0, 1, 2, 3, 4]);
+        const rerollPrompt = getMultistepChoicePrompt(played.state);
+        expect(rerollPrompt.playerId).toBe('1');
+        expect((rerollPrompt.meta as { diceOwnerId?: string } | undefined)?.diceOwnerId).toBe('0');
+        expect(rerollPrompt.allowedDieIds).toEqual([0, 1, 2, 3, 4]);
 
         const rerolled = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
