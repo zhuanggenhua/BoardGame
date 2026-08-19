@@ -847,16 +847,18 @@ export function injectPendingInteraction(
     const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> = {
         title: interaction.titleKey,
         sourceId: interaction.sourceCardId,
-        maxSteps: selectCount,
+        maxSteps: allowRepeatedDieSelection ? selectCount : undefined,
         minSteps: interaction.minSelectCount ?? 1,
-        confirmationMode: 'submitBatch',
         initialResult: { selectedDiceIds: [] },
         localReducer: (current, step) => diceSelectReducer(current, step, remainingSelectCount, allowRepeatedDieSelection),
         toCommands: (result) => diceSelectToCommands(result, remainingSelectCount),
         getCompletedSteps: (result) => completedCount + result.selectedDiceIds.length,
         ...(completedDieIds.length > 0 ? { completedDieIds } : {}),
         ...(completedSteps !== undefined ? { completedSteps } : {}),
-        ...(allowRepeatedDieSelection ? { allowRepeatedDieSelection } : {}),
+        ...(allowRepeatedDieSelection ? {
+            confirmationMode: 'submitBatch' as const,
+            allowRepeatedDieSelection,
+        } : {}),
         meta: {
             dtType: 'selectDie',
             selectCount,

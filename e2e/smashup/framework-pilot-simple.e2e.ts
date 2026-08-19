@@ -23,15 +23,33 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 };
 void __ensureThreeAxesMarker;
 
-async function expectActionFxAutoDismisses(page: Page, defId: string): Promise<void> {
+async function expectActionSpotlightClosesOnBlankClick(page: Page, defId: string): Promise<void> {
     const fxCard = page.getByTestId('smashup-action-fx-card');
     const spotlightQueue = page.getByTestId('card-spotlight-queue');
+    const spotlightCard = page.getByTestId('smashup-action-spotlight-card');
 
-    await expect(fxCard).toBeVisible({ timeout: 5000 });
-    await expect(fxCard).toHaveAttribute('data-card-def-id', defId);
-    await expect(spotlightQueue).toHaveCount(0);
+    await expect(fxCard).toHaveCount(0);
+    await expect(spotlightQueue).toBeVisible({ timeout: 5000 });
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+    const cardBox = await spotlightCard.boundingBox();
+    expect(cardBox, '行动卡特写卡牌本体必须可测量').not.toBeNull();
+    const viewport = page.viewportSize() ?? await page.evaluate(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    }));
+    expect(
+        Math.abs((cardBox!.x + cardBox!.width / 2) - viewport.width / 2),
+        '行动卡特写卡牌本体应保持水平居中',
+    ).toBeLessThanOrEqual(24);
+    expect(
+        Math.abs((cardBox!.y + cardBox!.height / 2) - viewport.height / 2),
+        '行动卡特写卡牌本体应保持垂直居中',
+    ).toBeLessThanOrEqual(24);
 
-    await expect(fxCard, '行动卡展示必须是瞬时 FX，不能升级成手动关闭特写').toBeHidden({ timeout: 3000 });
+    await page.waitForTimeout(2200);
+    await expect(spotlightCard, '行动卡特写不应在旧 FX 超时时间内自动关闭').toBeVisible();
+
+    await spotlightQueue.click({ position: { x: 12, y: 12 } });
     await expect(spotlightQueue).toHaveCount(0);
 }
 
@@ -183,7 +201,7 @@ test.describe('测试框架试点 - 简化版', () => {
         console.log('📸 截图已保存: final-state.png');
     });
 
-    test('本地模式双方打出行动卡都应显示瞬时行动卡展示', async ({ page, game }) => {
+    test('本地模式双方打出行动卡特写都应保持到点击空白关闭', async ({ page, game }) => {
         test.setTimeout(60000);
 
         await page.goto('/play/smashup');
@@ -215,7 +233,7 @@ test.describe('测试框架试点 - 简化版', () => {
         });
 
         await game.playCard('wizard_mystic_studies');
-        await expectActionFxAutoDismisses(page, 'wizard_mystic_studies');
+        await expectActionSpotlightClosesOnBlankClick(page, 'wizard_mystic_studies');
 
         await game.advancePhase();
         await expect.poll(async () => {
@@ -241,6 +259,6 @@ test.describe('测试框架试点 - 简化版', () => {
         await expect(page.locator(`[data-card-uid="${p1ActionUid}"]`)).toBeVisible({ timeout: 5000 });
 
         await game.playCard('wizard_mystic_studies');
-        await expectActionFxAutoDismisses(page, 'wizard_mystic_studies');
+        await expectActionSpotlightClosesOnBlankClick(page, 'wizard_mystic_studies');
     });
 });

@@ -908,8 +908,8 @@ export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
     getCompletedSteps?: (result: TResult) => number;
     /**
      * submitBatch 模式下，当前确认是否应关闭整段交互。
-     * 例如“重掷至多 5 颗”中，选中骰子后确认只执行本批次；
-     * 本地无新选择且服务端已完成至少一步时，再确认才表示结束该卡牌交互。
+     * 例如规则允许同一骰子重复重掷时，选中骰子后确认只提交本批次；
+     * 本地无新选择且服务端已完成至少一步时，再确认才表示结束剩余交互。
      */
     shouldResolveOnConfirm?: (result: TResult) => boolean;
     /** 附加元数据（透传给 UI 层，如骰子模式配置） */

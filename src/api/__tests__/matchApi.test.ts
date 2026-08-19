@@ -39,4 +39,24 @@ describe('matchApi.getMatch', () => {
             }),
         );
     });
+
+    it('可把预期内的旧房间 404 交给调用方处理，不输出红色错误日志', async () => {
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+            error: 'Match stale-room not found',
+        }), {
+            status: 404,
+            statusText: 'Not Found',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }));
+
+        await expect(getMatch('betrayal', 'stale-room', { expectedStatuses: [404] }))
+            .rejects
+            .toMatchObject({ status: 404 });
+
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+        consoleErrorSpy.mockRestore();
+    });
 });

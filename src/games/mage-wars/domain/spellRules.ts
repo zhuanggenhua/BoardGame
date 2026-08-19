@@ -23,6 +23,17 @@ import {
 import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId, type StatusTokenId } from './ids';
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
 import { getArenaZone, resolveTargetZoneForObjectOrPlayer } from './utils';
+import { getStatusTokenAmount, hasStatusToken } from './statusTokens';
+import {
+    getTemporaryChargeDiceModifier,
+    getTemporaryMeleeDiceModifier,
+    getTemporaryNextMeleePierceModifier,
+    hasTemporaryMovedThisAction,
+    hasTemporaryQuickActionAfterMove,
+    hasTemporarySwift,
+    hasTemporarySwiftFreeMoveUsed,
+    hasTemporaryVampiricNextMelee,
+} from './temporaryTraits';
 
 export interface MageWarsSpellCostResolution {
     spell: MageWarsConfigSpellCard;
@@ -1325,20 +1336,20 @@ export function resolveMageWarsWeakAdjustedAttackDice(
 }
 
 export function resolveMageWarsWeakAttackDiceModifier(attacker: MageWarsWeakStatusCarrier): number {
-    const weakCount = attacker.statusTokens[STATUS_TOKEN_IDS.WEAK] ?? 0;
+    const weakCount = getStatusTokenAmount(attacker, STATUS_TOKEN_IDS.WEAK);
     return -weakCount;
 }
 
 export function hasMageWarsDazeStatus(attacker: MageWarsDazeStatusCarrier): boolean {
-    return (attacker.statusTokens[STATUS_TOKEN_IDS.DAZE] ?? 0) > 0;
+    return hasStatusToken(attacker, STATUS_TOKEN_IDS.DAZE);
 }
 
 export function hasMageWarsStunStatus(object: MageWarsDazeStatusCarrier): boolean {
-    return (object.statusTokens[STATUS_TOKEN_IDS.STUN] ?? 0) > 0;
+    return hasStatusToken(object, STATUS_TOKEN_IDS.STUN);
 }
 
 export function isMageWarsDefenseDisabledByStatus(defender: MageWarsDazeStatusCarrier): boolean {
-    if ((defender.statusTokens[STATUS_TOKEN_IDS.STUN] ?? 0) <= 0) return false;
+    if (!hasStatusToken(defender, STATUS_TOKEN_IDS.STUN)) return false;
 
     const stunToken = requireMageWarsStatusTokenFromConfig(STATUS_TOKEN_IDS.STUN);
     return stunToken.paralyzeRule?.includes('defend') === true;
@@ -1367,7 +1378,7 @@ export function isMageWarsObjectAttackUnavoidable(profile: MageWarsObjectAttackP
 }
 
 export function resolveMageWarsDefenseDieModifier(defender: MageWarsDazeStatusCarrier): number {
-    const dazeCount = defender.statusTokens[STATUS_TOKEN_IDS.DAZE] ?? 0;
+    const dazeCount = getStatusTokenAmount(defender, STATUS_TOKEN_IDS.DAZE);
     let modifier = 0;
 
     if (dazeCount > 0) {
@@ -1384,11 +1395,11 @@ export function resolveMageWarsDefenseDieModifier(defender: MageWarsDazeStatusCa
 }
 
 export function isMageWarsArenaObjectCrippled(object: MageWarsArenaObjectState): boolean {
-    return (object.statusTokens[STATUS_TOKEN_IDS.CRIPPLE] ?? 0) > 0;
+    return hasStatusToken(object, STATUS_TOKEN_IDS.CRIPPLE);
 }
 
 export function isMageWarsArenaObjectRestrained(object: MageWarsDazeStatusCarrier): boolean {
-    return (object.statusTokens[STATUS_TOKEN_IDS.CRIPPLE] ?? 0) > 0 || Boolean(object.restrainedByObjectId);
+    return hasStatusToken(object, STATUS_TOKEN_IDS.CRIPPLE) || Boolean(object.restrainedByObjectId);
 }
 
 export function isMageWarsSmallArenaObject(object: MageWarsArenaObjectState): boolean {
@@ -1443,10 +1454,10 @@ export function canMageWarsArenaObjectUseSwiftFreeMove(
     core: MageWarsCore,
     object: MageWarsArenaObjectState,
 ): boolean {
-    const hasSwiftMove = object.temporaryTraits?.swift === true || isMageWarsSwiftArenaObject(object);
+    const hasSwiftMove = hasTemporarySwift(object) || isMageWarsSwiftArenaObject(object);
     if (!hasSwiftMove) return false;
     if (isMageWarsSlowArenaObject(core, object)) return false;
-    if (object.temporaryTraits?.freeMoveUsedThisAction === true) return false;
+    if (hasTemporarySwiftFreeMoveUsed(object)) return false;
     if (isMageWarsArenaObjectHinderedInZone(core, object, object.zoneId)) return false;
     return true;
 }
@@ -1630,11 +1641,11 @@ export function resolveMageWarsObjectChargeDiceModifier(
     object: MageWarsArenaObjectState,
     attackProfile: MageWarsObjectAttackProfile,
 ): number {
-    if (!object.temporaryTraits?.movedThisAction) return 0;
+    if (!hasTemporaryMovedThisAction(object)) return 0;
     if (attackProfile.rangeKind !== 'melee') return 0;
 
     const traitText = [object.attackOrTraitLine, object.rulesText].filter(Boolean).join('；');
-    let modifier = object.temporaryTraits.chargeDiceModifier ?? 0;
+    let modifier = getTemporaryChargeDiceModifier(object);
     for (const match of traitText.matchAll(/冲锋\+?(\d+)/g)) {
         modifier += Number(match[1]);
     }
@@ -1648,7 +1659,7 @@ export function resolveMageWarsObjectMeleeDiceModifier(
 ): number {
     if (attackProfile.rangeKind !== 'melee') return 0;
     const traitText = resolveMageWarsArenaObjectActiveTraitText(object) ?? '';
-    let modifier = (object.temporaryTraits?.meleeDiceModifier ?? 0)
+    let modifier = getTemporaryMeleeDiceModifier(object)
         + resolveMageWarsAttachedVisibleEnchantmentModifierValue(core, object, 'meleeDice');
     for (const match of traitText.matchAll(/近战\s*\+\s*(\d+)/g)) {
         modifier += Number(match[1]);
@@ -1718,7 +1729,7 @@ export function resolveMageWarsObjectBloodstrikePierceModifier(
     attackProfile: MageWarsObjectAttackProfile,
 ): number {
     if (attackProfile.rangeKind !== 'melee') return 0;
-    return object.temporaryTraits?.nextMeleePierceModifier ?? 0;
+    return getTemporaryNextMeleePierceModifier(object);
 }
 
 export function hasMageWarsObjectBloodstrikeVampiricNextMelee(
@@ -1726,7 +1737,7 @@ export function hasMageWarsObjectBloodstrikeVampiricNextMelee(
     attackProfile: MageWarsObjectAttackProfile,
 ): boolean {
     return attackProfile.rangeKind === 'melee'
-        && object.temporaryTraits?.vampiricNextMelee === true;
+        && hasTemporaryVampiricNextMelee(object);
 }
 
 export function hasMageWarsObjectVampiricEnchantment(
@@ -1742,7 +1753,7 @@ export function canMageWarsObjectUsePostMoveQuickAction(
     object: MageWarsArenaObjectState,
     attackProfile: MageWarsObjectAttackProfile,
 ): boolean {
-    return object.temporaryTraits?.quickActionAfterMoveAvailable === true
+    return hasTemporaryQuickActionAfterMove(object)
         && attackProfile.actionKind === 'quick';
 }
 

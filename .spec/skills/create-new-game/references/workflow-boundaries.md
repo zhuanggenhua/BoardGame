@@ -262,7 +262,7 @@
   - `audio-feedback`：事件音效 / BGM / UI 反馈音
   - `game-ai-system`：本地 AI、强单机、AI 座位可玩性
   - `tutorial-engine`：教学步骤 / 引导
-  - `debug-config`：仅开发态调试面板（是否需要）
+  - `debug-config`：仅开发态局内调试面板（按 `support-capability-integration`，默认不进大厅工具栏目）
 - **每项都必须有状态**：`实施本轮` / `本轮明确跳过` / `仅保留底层接口，UI 暂不交付` 三选一，不允许空着。
 - **全量触发时的默认状态**：只要命中“接入可选”触发器，`action-log`、`undo-system`、`audio-feedback`、`game-ai-system`、`tutorial-engine`、`debug-config` 六项默认全部为`实施本轮`；若某项只能做最低测试路径或底层接口，必须在矩阵里降级标注并说明不能完整交付的现实原因。
 - **记录落点（强制）**：
@@ -271,6 +271,8 @@
   3. 若跳过，必须写明原因、影响和计划补回的后续 change（如 `ai-support` / `tutorial` / `action-log`）。
 - **实施边界**：
   - `action-log / undo-system / audio-feedback / tutorial-engine / game-ai-system` 属于**本体后的可选附加能力**，不是所有游戏首批都必须上；
+  - `debug-config` 实施时默认只创建游戏内 `debug-config.tsx` 并挂载到 Board 内的 `GameDebugPanel`；游戏专属调试页、区域编辑器、运行时预览和配置面板不得默认注册为 `src/tools` 全局工具，也不得进入大厅工具栏目；
+  - 只有用户明确要求“做成全局工具 / 工具栏目入口 / 独立开发工具”，或该工具服务多个游戏 / 项目共享流程时，才允许把调试工具放进 `src/tools`，并必须在 OpenSpec / tasks 中写清这个入口不是游戏专属 `debug-config`；
   - `expansion / variant / promo / optional-rule / alt-setup / campaign-branch` 这类扩展、变体、宣传包、可选规则或替代开局，默认也属于**可选实施任务**，不是首轮主交付的自动组成部分；
   - 首轮默认优先 `base game / 核心玩法 / 主流程 / 当前明确点名的首个正式目标`；扩展、变体若要纳入，必须由用户或 proposal 明确点名进本轮范围；
   - 若本轮不做扩展/变体，必须在 proposal / tasks / 主 spec 里显式写明“本轮跳过”，不得既不实现也不记录；
@@ -286,6 +288,7 @@
   - 禁止因为 `createBaseSystems()` 默认带了 `ActionLog / Undo`，就默认把该游戏视为“已经支持日志/撤回”；
   - 禁止因为存在空的 `audio.config.ts` 或 UI 点击音，就默认把该游戏视为“已经支持事件音效”；
   - 禁止因为某游戏已有 `ai.ts` 雏形，就默认视为“AI 已完成”；
+  - 禁止把游戏专属调试工具注册进大厅工具栏目来冒充 `debug-config` 已接入；成熟游戏默认模式是局内 `GameDebugPanel`；
   - 禁止在本体完成后准备提 PR 时，才临时发现“这个游戏其实没问过要不要日志/撤回/AI”。
 - **最低汇报要求**：只要用户希望“一次能实施完毕游戏”，就必须在前置阶段明确答出：
   1. 本轮目标是“先把游戏本体做完”还是“本体 + 附加能力一次性交付”；

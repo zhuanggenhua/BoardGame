@@ -54,7 +54,7 @@ async function closeBoardMagnifyIfVisible(page: any): Promise<void> {
 }
 
 test.describe('DiceThrone - 选择骰子重投', () => {
-    test('card-i-can-again 分批重掷时确认本批次不关闭整段交互', async ({ page, game }, testInfo) => {
+    test('card-i-can-again 一次选择两颗确认后关闭整张牌交互', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -116,8 +116,6 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         const diceTray = getRightTrayDiceTray(page);
         const firstDieButton = diceTray.getByTestId('die-button-0').first();
         const secondDieButton = diceTray.getByTestId('die-button-1').first();
-        const thirdDieButton = diceTray.getByTestId('die-button-2').first();
-        const fourthDieButton = diceTray.getByTestId('die-button-3').first();
         const confirmButton = page.getByTestId('dice-interaction-confirm-button');
 
         await expect(firstDieButton).toBeVisible({ timeout: 5000 });
@@ -140,7 +138,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
         await page.evaluate(() => {
-            window.__BG_TEST_HARNESS__?.dice.setValues([6, 6, 5, 5]);
+            window.__BG_TEST_HARNESS__?.dice.setValues([6, 6]);
         });
 
         await game.screenshot('i-can-again-first-two-dice-selected-before-confirm', testInfo);
@@ -153,58 +151,11 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             return {
                 diceValues: (state?.core?.dice ?? []).map((die: any) => die.value),
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                completedSteps: state?.sys?.interaction?.current?.data?.completedSteps ?? null,
-                completedDieIds: state?.sys?.interaction?.current?.data?.completedDieIds ?? [],
-            };
-        }, { timeout: 5000 }).toMatchObject({
-            diceValues: [6, 6, 3, 4, 5],
-            interactionKind: 'multistep-choice',
-            completedSteps: 2,
-            completedDieIds: [0, 1],
-        });
-
-        await expect(page.getByText(/选择骰子\s*[（(]2\/5[）)]/)).toBeVisible({ timeout: 5000 });
-        await expect(thirdDieButton).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
-        await game.screenshot('i-can-again-after-first-confirm-shows-2-of-5', testInfo);
-
-        await thirdDieButton.click();
-        await fourthDieButton.click();
-        await expect(thirdDieButton).toHaveAttribute('data-selected', 'true', { timeout: 5000 });
-        await expect(fourthDieButton).toHaveAttribute('data-selected', 'true', { timeout: 5000 });
-        await game.screenshot('i-can-again-second-two-dice-selected-before-confirm', testInfo);
-
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                diceValues: (state?.core?.dice ?? []).map((die: any) => die.value),
-                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                completedSteps: state?.sys?.interaction?.current?.data?.completedSteps ?? null,
-                completedDieIds: state?.sys?.interaction?.current?.data?.completedDieIds ?? [],
-            };
-        }, { timeout: 5000 }).toMatchObject({
-            diceValues: [6, 6, 5, 5, 5],
-            interactionKind: 'multistep-choice',
-            completedSteps: 4,
-            completedDieIds: [0, 1, 2, 3],
-        });
-
-        await expect(page.getByText(/选择骰子\s*[（(]4\/5[）)]/)).toBeVisible({ timeout: 5000 });
-        await game.screenshot('i-can-again-after-second-confirm-shows-4-of-5', testInfo);
-
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
                 discardIds: (state?.core?.players?.['0']?.discard ?? []).map((card: any) => card.id),
             };
         }, { timeout: 5000 }).toMatchObject({
+            diceValues: [6, 6, 3, 4, 5],
             interactionKind: null,
             handIds: [],
             discardIds: ['card-i-can-again'],
@@ -212,7 +163,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await expect(page.getByTestId('hand-flying-card')).toHaveCount(0, { timeout: 5000 });
         await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-i-can-again"]')).toHaveCount(0);
-        await game.screenshot('i-can-again-empty-confirm-settles-card', testInfo);
+        await game.screenshot('i-can-again-after-confirm-closes-card', testInfo);
 
         const finalState = await game.getState();
         const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);
@@ -220,10 +171,10 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             .slice(-8)
             .map((entry: any) => entry.event?.type);
 
-        expect(finalState?.core?.dice?.map((die: any) => die.value)).toEqual([6, 6, 5, 5, 5]);
+        expect(finalState?.core?.dice?.map((die: any) => die.value)).toEqual([6, 6, 3, 4, 5]);
         expect(finalHandIds).not.toContain('card-i-can-again');
         expect(finalEventTypes).toContain('CARD_PLAYED');
-        expect(finalEventTypes.filter((type: string) => type === 'DIE_REROLLED')).toHaveLength(4);
+        expect(finalEventTypes.filter((type: string) => type === 'DIE_REROLLED')).toHaveLength(2);
     });
 
     test('card-just-this 防御阶段可通过真实骰子入口重掷已锁定防御骰', async ({ page, game }, testInfo) => {
@@ -356,39 +307,20 @@ test.describe('DiceThrone - 选择骰子重投', () => {
                 },
                 otherDice: (state?.core?.dice ?? []).slice(1, 3).map((die: any) => die.value),
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                completedSteps: state?.sys?.interaction?.current?.data?.completedSteps ?? null,
                 handIds: (state?.core?.players?.['1']?.hand ?? []).map((card: any) => card.id),
+                discardIds: (state?.core?.players?.['1']?.discard ?? []).map((card: any) => card.id),
                 lastEventTypes: lastEvents.map((entry: any) => entry.event?.type),
             };
         }, { timeout: 5000 }).toMatchObject({
             firstDie: { value: 6, kept: true },
             otherDice: [3, 4],
-            interactionKind: 'multistep-choice',
-            completedSteps: 1,
-            handIds: [],
-            lastEventTypes: expect.arrayContaining(['CARD_PLAYED', 'DIE_REROLLED']),
-        });
-
-        await expect(page.getByText(/选择骰子\s*[（(]1\/5[）)]/)).toBeVisible({ timeout: 5000 });
-        await game.screenshot('just-this-locked-defense-die-rerolled-shows-1-of-5', testInfo);
-
-        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-        await confirmButton.click();
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
-                handIds: (state?.core?.players?.['1']?.hand ?? []).map((card: any) => card.id),
-                discardIds: (state?.core?.players?.['1']?.discard ?? []).map((card: any) => card.id),
-            };
-        }, { timeout: 5000 }).toMatchObject({
             interactionKind: null,
             handIds: [],
             discardIds: ['card-just-this'],
+            lastEventTypes: expect.arrayContaining(['CARD_PLAYED', 'DIE_REROLLED']),
         });
 
-        await game.screenshot('just-this-locked-defense-empty-confirm-settles-card', testInfo);
+        await game.screenshot('just-this-locked-defense-confirm-closes-card', testInfo);
     });
 
     test('card-worthy-of-me 可重掷两颗不同骰并确认', async ({ page, game }, testInfo) => {

@@ -32,6 +32,7 @@ const JQUERY_SCRIPT_PATH = '/vendor/jquery/jquery-1.12.0.min.js';
 const TURNJS_SCRIPT_PATH = '/vendor/turnjs/turn.min.js';
 
 type RenderStage = (options?: { includeTestId?: boolean }) => React.ReactNode;
+type FlippingShellContent = 'source' | 'target';
 
 type TurnJsInstance = {
     turn: (...args: unknown[]) => unknown;
@@ -273,6 +274,8 @@ export interface FoldLinePageFlipStageProps {
     leftPageRect: PageRect;
     rightPageRect: PageRect;
     durationMs?: number;
+    enableDetailPreview?: boolean;
+    flippingShellContent?: FlippingShellContent;
     testId?: string;
     onFlipToDetailComplete?: () => void;
     onFlipToOverviewComplete?: () => void;
@@ -289,6 +292,8 @@ export function FoldLinePageFlipStage({
     leftPageRect,
     rightPageRect,
     durationMs = DEFAULT_DURATION_MS,
+    enableDetailPreview = true,
+    flippingShellContent = 'target',
     testId,
     onFlipToDetailComplete,
     onFlipToOverviewComplete,
@@ -385,8 +390,13 @@ export function FoldLinePageFlipStage({
 
     const overviewStageForTurn = (renderOverviewFlipStage ?? renderOverviewStage)({ includeTestId: false });
     const detailStageForTurn = (renderDetailFlipStage ?? renderDetailStage)({ includeTestId: false });
-    const flippingShellStage = turningToDetail ? detailStageForTurn : overviewStageForTurn;
-    const detailPreviewOpacity = turningToDetail && isFlipping
+    const sourceVisibleStage = turningToDetail
+        ? renderOverviewStage({ includeTestId: false })
+        : renderDetailStage({ includeTestId: false });
+    const targetVisibleStage = turningToDetail ? detailStageForTurn : overviewStageForTurn;
+    const flippingShellStage = flippingShellContent === 'source' ? sourceVisibleStage : targetVisibleStage;
+    const shouldHoldSourceStage = isFlipping && !isAnimating;
+    const detailPreviewOpacity = enableDetailPreview && turningToDetail && isFlipping
         ? Math.min(0.92, Math.max(0, (progress - 0.12) / 0.32) * 0.92)
         : 0;
     const activeStageSize = mode === 'detail' || mode === 'flippingToDetail'
@@ -402,21 +412,36 @@ export function FoldLinePageFlipStage({
             : isFlipping
                 ? (
                     <div className="relative h-full w-full">
+                        {shouldHoldSourceStage ? (
+                            <div
+                                className="pointer-events-none absolute inset-0 z-[30]"
+                                aria-hidden="true"
+                            >
+                                {sourceVisibleStage}
+                            </div>
+                        ) : null}
                         {turningToDetail ? (
                             <div
                                 className="pointer-events-none absolute inset-0 z-[11]"
                                 aria-hidden="true"
-                                style={{ opacity: detailPreviewOpacity }}
+                                style={{ opacity: shouldHoldSourceStage ? 0 : detailPreviewOpacity }}
                             >
                                 {renderDetailStage({ includeTestId: false })}
                             </div>
                         ) : null}
-                        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                        <div
+                            className="pointer-events-none absolute inset-0"
+                            aria-hidden="true"
+                            style={{ visibility: shouldHoldSourceStage ? 'hidden' : 'visible' }}
+                        >
                             {flippingShellStage}
                         </div>
                         <div
                             className="absolute overflow-visible"
-                            style={createRectStyleFromParsedRect(unionRect)}
+                            style={{
+                                ...createRectStyleFromParsedRect(unionRect),
+                                visibility: shouldHoldSourceStage ? 'hidden' : 'visible',
+                            }}
                             aria-hidden="true"
                         >
                             <div
@@ -744,6 +769,7 @@ export function FoldLinePageFlipStage({
             data-turn-animating={isAnimating ? 'true' : 'false'}
             data-turn-error={turnError ?? ''}
             data-turn-source-snapshot-ready={activeSourceReady ? 'true' : 'false'}
+            data-turn-source-hold-visible={shouldHoldSourceStage ? 'true' : 'false'}
         >
             <StageCanvas>
                 <StageFrame stageSize={activeStageSize}>

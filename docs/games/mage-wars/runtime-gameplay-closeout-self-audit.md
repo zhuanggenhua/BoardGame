@@ -1,6 +1,6 @@
 # 法师战争标准竞技场两派系运行链收口自审
 
-> 状态：`formal-two-faction-runtime-e2e-pass / current-scope-golden-flow-pass / summon-and-attack-fx-process-frames-current-readable / attachment-rendering-fixed / mobile-landscape-desktop-mirror-pass / wall-family-deferred / scoped-not-full-game`。本文件只证明标准竞技场下兽王 / 女祭司两派系的正式联机核心链和当前运行池代表对象已经打通；当前黄金链用例为 `Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划`，它覆盖当前范围的常见阶段与高风险代表操作，并收口到双方回到下一轮计划阶段。装备 / 结界代表链已补充“附件显示而非场上单位”的 UI 断言；旧攻击 / 法术 FX 截图曾补充来源唤醒、投射物飞行、命中和伤害飘字过程帧，但用户在 PureRef 正常审图时看不到特效，因此旧过程帧结论已降级为 `REVISE / visual-effect-not-readable`。当前重新生成并已通过原图核验的过程帧是：`2026-08-16 09:22` 生物部署召唤光柱，`2026-08-19 18:36` 黄金链重跑内间歇喷泉攻击法术来源到目标投射、跨格飞行、命中斩击和伤害飘字。`冲锋陷阵` 是同格强化 / 律令效果，当前实现按最小必要特效原则不再生成泛化施法大特效；`2026-08-16 09:25` 截图只证明法力、弃牌和卡牌结果链。`2026-08-16 11:04` 移动横屏正式联机移动 / 攻击 / 阶段推进图组已按当前 PC `1920x1080` 基线重拍并通过原图核验，移动端不再使用独立 HUD、底部移动法术轨或右上紧凑计划镜像，而是由 board-shell 缩放同一套桌面承载。端到端截图仍只能证明本轮覆盖到的玩法链、必要特效过程帧和移动横屏桌面镜像代表态，不表示完整实体版 Mage Wars、全卡表、墙体 / 墙壁法术、教程或后续产品系统完成。
+> 状态：`formal-two-faction-runtime-e2e-pass / current-scope-golden-flow-pass / summon-and-attack-fx-process-frames-current-readable / attachment-rendering-fixed / mobile-landscape-desktop-mirror-pass / wall-family-deferred / scoped-not-full-game`。本文件只证明标准竞技场下兽王 / 女祭司两派系的正式联机核心链和当前运行池代表对象已经打通；当前黄金链用例为 `Mage Wars 当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划`，它覆盖当前范围的常见阶段与高风险代表操作，并收口到双方回到下一轮计划阶段。装备 / 结界代表链已补充“附件显示而非场上单位”的 UI 断言；旧攻击 / 法术 FX 截图曾补充来源唤醒、投射物飞行、命中和伤害飘字过程帧，但用户在 PureRef 正常审图时看不到特效，因此旧过程帧结论已降级为 `REVISE / visual-effect-not-readable`。当前重新生成并已通过原图核验的过程帧是：`2026-08-16 09:22` 生物部署召唤光柱，`2026-08-20 00:12` 当前范围黄金链重跑中，间歇喷泉攻击法术来源到目标投射、跨格飞行、命中斩击和伤害飘字。`冲锋陷阵` 是同格强化 / 律令效果，当前实现按最小必要特效原则不再生成泛化施法大特效；`2026-08-16 09:25` 截图只证明法力、弃牌和卡牌结果链。`2026-08-16 11:04` 移动横屏正式联机移动 / 攻击 / 阶段推进图组已按当前 PC `1920x1080` 基线重拍并通过原图核验，移动端不再使用独立 HUD、底部移动法术轨或右上紧凑计划镜像，而是由 board-shell 缩放同一套桌面承载。端到端截图仍只能证明本轮覆盖到的玩法链、必要特效过程帧和移动横屏桌面镜像代表态，不表示完整实体版 Mage Wars、全卡表、墙体 / 墙壁法术、教程或后续产品系统完成。
 
 ## 收口结论
 
@@ -35,7 +35,7 @@
 | 两派系法术类型代表链 | 两派系通过正式页面计划并施放各自预设法术类型代表 | 已证明 / 代表覆盖 | `online-runtime.e2e.ts` 用例“覆盖两派系法术类型代表链”；截图 `09` / `10` / `11` | 代表性覆盖，不表示逐张法术全量完成；法师固有能力和场上对象主动能力另列为未覆盖 |
 | 场地对象直选 | 场上生物本体可直接作为移动 / 攻击来源 | 已证明 | `online-runtime.e2e.ts` 用例“真实移动、攻击并切换回合”；截图 `05-生物行动前-场地对象可直选.jpg` | 需继续覆盖更多对象能力来源 |
 | 移动 | 丛林灰狼从源区域移动到目标区域 | 已证明 / 移动横屏桌面镜像视觉通过 | 截图 `06A-PC基线-丛林灰狼移动后桌面同源布局.jpg` 与 `06B-移动横屏镜像-丛林灰狼进入目标区域.jpg`，时间 `2026-08-16 11:04` | 只证明当前 1920x1080 PC 基线与 960x540 横屏代表态，不替代全设备矩阵 |
-| 攻击与伤害 | 圣光之柱攻击阿希拉牧师，显示攻击骰 / 效果骰并落伤害 token；间歇喷泉跨格攻击法术触发投射物、命中和伤害飘字节点 | 玩法已证明 / 当前 FX 过程帧可读 / 移动横屏桌面镜像视觉通过 | 截图 `07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg`，时间 `2026-08-16 11:04`；`11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg`、`11A-间歇喷泉攻击法术-投射物飞行中.jpg`、`11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg`，黄金链截图时间 `2026-08-19 18:38` | 只证明代表攻击链，不表示所有攻击法术逐张完成 |
+| 攻击与伤害 | 圣光之柱攻击阿希拉牧师，显示攻击骰 / 效果骰并落伤害 token；间歇喷泉跨格攻击法术触发投射物、命中和伤害飘字节点 | 玩法已证明 / 当前 FX 过程帧可读 / 移动横屏桌面镜像视觉通过 | 截图 `07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg`，时间 `2026-08-16 11:04`；`11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg`、`11A-间歇喷泉攻击法术-投射物飞行中.jpg`、`11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg`，当前范围黄金链截图时间 `2026-08-20 00:14` | 只证明代表攻击链，不表示所有攻击法术逐张完成 |
 | 阶段推进 | 攻击后进入终末快速施法窗口 | 已证明 / 移动横屏桌面镜像视觉通过 | 截图 `08-攻击行动结束后-进入终末快速施法窗口.jpg`，时间 `2026-08-16 11:04` | 只证明当前阶段推进代表态 |
 | 守卫 | 玩家通过守卫动作获得守卫 token，并影响后续攻击 | 部分证明 | 基础牌桌用例能看到守卫入口 / 选中态；领域层有守卫规则测试 | 正式联机 E2E 未形成“点击守卫 -> token 可见 -> 后续攻击影响”的完整截图链 |
 | 胜负与完整整局 | 从开局自然推进到一方法师失败或 gameover | 证据不足 | 领域层有 gameover 相关测试 | 正式联机 E2E 未覆盖自然终局 |
@@ -49,7 +49,7 @@
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口从双方计划到部署并保持对手计划隐藏 | 正式入局、法术计划、部署生物、召唤光柱过程帧、对手隐藏计划 | 本轮重跑证据；最新截图存在，时间为 `2026-08-16 09:22`，命令结果 `1 passed (53.5s)` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实施放强化法术并只产生法力、弃牌和卡牌结果 | 强化法术施放、法力 / 弃牌变化、旧泛化施法大特效不存在 | 本轮重跑证据；最新截图存在，时间为 `2026-08-16 09:25`，命令结果 `1 passed (55.5s)` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实移动、攻击并切换回合 | 场地对象直选、移动、攻击与伤害、阶段推进、PC 基线与移动横屏桌面镜像 | 本轮重跑证据；截图存在，时间为 `2026-08-16 11:04`；命令结果 `1 passed (1.2m)`；图面审计为 `PASS / mobile-landscape-desktop-mirror` |
-| `e2e/mage-wars/online-runtime.e2e.ts` | Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划 | 生物、装备、结界、咒语、攻击、魔物的两派系预设法术类型代表链；跨格攻击法术来源 / 飞行 / 命中 / 伤害飘字过程帧；链尾回到下一轮双方计划阶段 | 2026-08-19 18:36 重跑通过；生成 13 张截图，命令结果 `1 passed (1.7m)` |
+| `e2e/mage-wars/online-runtime.e2e.ts` | Mage Wars 当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划 | 生物、装备、结界、咒语、攻击、魔物的两派系预设法术类型代表链；跨格攻击法术来源 / 飞行 / 命中 / 伤害飘字过程帧；链尾回到下一轮双方计划阶段 | 2026-08-20 00:12 重跑通过；生成 13 张截图，命令结果 `1 passed (1.8m)` |
 | `e2e/mage-wars/foundation-board-runtime.e2e.ts` | 真实入口加载正式牌桌素材并落桌面验收截图 | 标准竞技场、基础牌桌、桌面布局、攻击结算视觉 | 已有覆盖；截图存在，时间为 `2026-08-14 22:01-22:02`，不替代正式联机玩法链 |
 | `e2e/mage-wars/foundation-board-runtime.e2e.ts` | 移动横屏真实入口加载正式牌桌素材并落验收截图 | 基础牌桌移动横屏、素材加载、board 尺寸与横向溢出约束 | 已有覆盖；截图存在，时间为 `2026-08-14 22:02`，不替代正式联机玩法链 |
 
@@ -62,7 +62,7 @@
 ```powershell
 # 当前范围黄金链定向验证：当前过程帧可读并回到下一轮计划阶段
 $env:PW_E2E_SERVICE_REUSE='isolated'
-node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "黄金全流程"
+node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "当前范围黄金链"
 
 # 本轮部署召唤过程帧定向验证：当前过程帧可读
 $env:PW_E2E_SERVICE_REUSE='ci'
@@ -73,7 +73,7 @@ $env:PW_E2E_SERVICE_REUSE='ci'
 node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放强化法术"
 ```
 
-结果：当前范围黄金链最新定向验证 `1 passed (1.7m)`；部署召唤定向验证 `1 passed (53.5s)`；强化法术结果链定向验证 `1 passed (55.5s)`。这些命令使用项目 E2E runtime 和本地完整素材包，证明对应真实页面链路和截图落盘通过；它们不表示全量实体版 Mage Wars、全卡表或自然终局重新跑过。
+结果：当前范围黄金链最新定向验证 `1 passed (1.8m)`；部署召唤定向验证 `1 passed (53.5s)`；强化法术结果链定向验证 `1 passed (55.5s)`。这些命令使用项目 E2E runtime 和本地完整素材包，证明对应真实页面链路和截图落盘通过；它们不表示全量实体版 Mage Wars、全卡表或自然终局重新跑过。
 
 覆盖关系：
 
@@ -87,17 +87,17 @@ node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --
 | 正式联机入口真实移动、攻击并切换回合 | 丛林灰狼真实移动到目标区域，并生成当前 PC 基线与移动横屏镜像对照 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06A-PC基线-丛林灰狼移动后桌面同源布局.jpg`；`test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06B-移动横屏镜像-丛林灰狼进入目标区域.jpg` |
 | 正式联机入口真实移动、攻击并切换回合 | 圣光之柱攻击、攻击骰、效果骰、伤害 token | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg` |
 | 正式联机入口真实移动、攻击并切换回合 | 攻击行动结束后进入终末快速施法窗口 | `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/08-攻击行动结束后-进入终末快速施法窗口.jpg` |
-| Mage Wars 黄金全流程 | 双方通过正式页面部署生物，建立后续代表链起点 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\09-两派系生物部署后-兽王女祭司各有场上生物.jpg` |
-| Mage Wars 黄金全流程 | 兽王 / 女祭司装备和结界均通过正式页面结算为宿主附件 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\10-装备和结界作为附件结算后-两派系附着关系可见.jpg` |
-| Mage Wars 黄金全流程 | 兽王魔物缠绕藤蔓与攻击法术间歇喷泉通过正式页面结算 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg` |
-| Mage Wars 黄金全流程 | 间歇喷泉跨格攻击法术来源到目标投射过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg` |
-| Mage Wars 黄金全流程 | 间歇喷泉跨格攻击法术投射物飞行过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-投射物飞行中.jpg` |
-| Mage Wars 黄金全流程 | 间歇喷泉跨格攻击法术命中、斜切和 `-6` 伤害飘字过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` |
-| Mage Wars 黄金全流程 | 魔物 / 攻击代表链完成后回到下一轮双方计划阶段 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\12-黄金链收口-回到下一轮计划阶段.jpg` |
+| Mage Wars 当前范围黄金链 | 双方通过正式页面部署生物，建立后续代表链起点 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\09-两派系生物部署后-兽王女祭司各有场上生物.jpg` |
+| Mage Wars 当前范围黄金链 | 兽王 / 女祭司装备和结界均通过正式页面结算为宿主附件 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\10-装备和结界作为附件结算后-两派系附着关系可见.jpg` |
+| Mage Wars 当前范围黄金链 | 兽王魔物缠绕藤蔓与攻击法术间歇喷泉通过正式页面结算 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg` |
+| Mage Wars 当前范围黄金链 | 间歇喷泉跨格攻击法术来源到目标投射过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg` |
+| Mage Wars 当前范围黄金链 | 间歇喷泉跨格攻击法术投射物飞行过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-投射物飞行中.jpg` |
+| Mage Wars 当前范围黄金链 | 间歇喷泉跨格攻击法术命中、斜切和 `-6` 伤害飘字过程帧 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` |
+| Mage Wars 当前范围黄金链 | 魔物 / 攻击代表链完成后回到下一轮双方计划阶段 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mage-wars\online-runtime.e2e\Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划\12-黄金链收口-回到下一轮计划阶段.jpg` |
 
 这些截图只作为 E2E 过程证据；除非用户明确要求打开图片，或后续已经进入稳定候选最终视觉验收，否则不把截图展示动作当成本阶段门禁。
 
-用户可见展示口径：当前黄金链需要按完整流程展示时，打开 `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/` 下的 `00-sequence-index.png` 和 `01` 至 `13` 编号图。单张 `12-黄金链收口-回到下一轮计划阶段.jpg` 只证明链尾回到计划阶段，不能代表整条流程图组。
+用户可见展示口径：当前范围黄金链需要按完整流程展示时，打开 `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/` 下的 `00-sequence-index.png` 和 `01` 至 `13` 编号图。单张 `12-黄金链收口-回到下一轮计划阶段.jpg` 只证明链尾回到计划阶段，不能代表整条流程图组。
 
 ## 当前已核验过程帧清单
 
@@ -155,10 +155,10 @@ node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --
 | `09-两派系生物部署后-兽王女祭司各有场上生物.jpg` | 兽王和女祭司均有正式场上生物，作为装备 / 结界 / 魔物目标链起点。 | 流程证据有效 |
 | `10-装备和结界作为附件结算后-两派系附着关系可见.jpg` | 巨熊皮甲 / 风龙皮甲显示为法师旁附件，巨熊力量 / 公牛耐力显示为生物旁附件；装备和结界不再作为主场地单位占位。 | 流程证据有效 |
 | `11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg` | 兽王侧缠绕藤蔓和攻击法术已结算，弃牌堆与法力变化可见。 | 流程证据有效 |
-| `11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg` | 左下来源格出现发光粒子和路径起点，投射链路指向目标格，玩家能看出攻击从兽王侧来源发动。 | 当前黄金链过程帧 `PASS`；截图时间 `2026-08-19 18:38` |
-| `11A-间歇喷泉攻击法术-投射物飞行中.jpg` | 独立投射物 / 路径已经离开来源并位于飞行中段；画面尚未出现伤害飘字，能和命中帧区分。 | 当前黄金链过程帧 `PASS`；截图时间 `2026-08-19 18:38` |
-| `11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` | 目标格出现红色命中层、斜切效果和清晰 `-6` 伤害飘字，证明命中 / resolve 过程被运行时截图捕捉。 | 当前黄金链过程帧 `PASS`；截图时间 `2026-08-19 18:38` |
-| `12-黄金链收口-回到下一轮计划阶段.jpg` | 间歇喷泉和缠绕藤蔓结算后，房主重新看到可计划法术、右侧己方计划槽为空、对手计划仍以牌背隐藏，说明双方已回到下一轮计划阶段。 | 当前黄金链收口图 `PASS`；截图时间 `2026-08-19 18:38` |
+| `11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg` | 左下来源格出现发光粒子和路径起点，投射链路指向目标格，玩家能看出攻击从兽王侧来源发动。 | 当前范围黄金链过程帧 `PASS`；截图时间 `2026-08-20 00:14` |
+| `11A-间歇喷泉攻击法术-投射物飞行中.jpg` | 独立投射物 / 路径已经离开来源并位于飞行中段；画面尚未出现伤害飘字，能和命中帧区分。 | 当前范围黄金链过程帧 `PASS`；截图时间 `2026-08-20 00:14` |
+| `11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg` | 目标格出现红色命中层、斜切效果和清晰 `-6` 伤害飘字，证明命中 / resolve 过程被运行时截图捕捉。 | 当前范围黄金链过程帧 `PASS`；截图时间 `2026-08-20 00:14` |
+| `12-黄金链收口-回到下一轮计划阶段.jpg` | 间歇喷泉和缠绕藤蔓结算后，房主重新看到可计划法术、右侧己方计划槽为空、对手计划仍以牌背隐藏，说明双方已回到下一轮计划阶段。 | 当前范围黄金链收口图 `PASS`；截图时间 `2026-08-20 00:14` |
 | `05-横屏生物行动前-场地对象可直选.jpg`（旧移动横屏目录） | 旧目录中仍有移动横屏场地对象直选截图；已纳入人工打开清单，但不作为本轮 closeout 主证据。 | 历史 / 辅助证据 |
 
 ## 两派系法术类型覆盖矩阵
@@ -197,7 +197,7 @@ node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --
 | --- | --- | --- |
 | 预设法术能力 | `src/games/mage-wars/__tests__/ability-catalog.test.ts` | 配置 ability catalog、`mageWarsAbilityRegistry` 和 `mageWarsSpellAbilityExecutorRegistry` 的能力 ID 同步；`needs-code` 仍显式保留为缺口 |
 | 场上对象主动能力 | `src/games/mage-wars/domain/objectAbilityRuntime.ts` 与 `ability-catalog.test.ts` | 当前对象能力全部可枚举、有元数据、有执行器；未知能力在验证阶段 fail-close |
-| 当前范围黄金链 / 浏览器法术类型代表链 | `e2e/mage-wars/online-runtime.e2e.ts` 用例“Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划” | 两派系预设法术类型已有正式页面黄金链；装备 / 结界代表断言包含“附件卡存在且不作为场上单位卡片出现”；链尾已回到下一轮双方计划阶段；不包含墙体 / 墙壁法术，也不外推到全卡逐张完成 |
+| 当前范围黄金链 / 浏览器法术类型代表链 | `e2e/mage-wars/online-runtime.e2e.ts` 用例“Mage Wars 当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划” | 两派系预设法术类型已有正式页面黄金链；装备 / 结界代表断言包含“附件卡存在且不作为场上单位卡片出现”；链尾已回到下一轮双方计划阶段；不包含墙体 / 墙壁法术，也不外推到全卡逐张完成 |
 | 法师固有能力 / 场上对象主动能力 UI | `src/games/mage-wars/domain/validate.ts`、`objectAbilityRuntime.ts`、`domain-flow.test.ts` | 领域层已有能力执行与校验测试；当前正式 UI 入口和浏览器 E2E 仍未补齐 |
 | 状态 / buff 迁移边界 | `openspec/changes/refactor-mage-wars-object-ability-runtime/specs/mage-wars/spec.md` | 旧状态字段只作为当前实现债务记录，不建立第二套 buff 真相 |
 
@@ -209,7 +209,7 @@ node scripts\infra\run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --
 | Mage Wars FX 单测 | `node scripts/infra/vitest-cli-safe.mjs run src/games/mage-wars/__tests__/event-fx-mapper.test.ts src/games/mage-wars/__tests__/Board.fx.test.tsx --config vitest.config.core.ts --configLoader native` | `2 files / 16 tests passed` |
 | 项目规范 lint | `npm run spec:lint` | `spec-lint: OK` |
 | Diff 空白检查 | `git diff --check -- <本轮相关文件>` | 通过；仅输出 CRLF 提示 |
-| 当前范围黄金链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "黄金全流程"` | 最新命令 `1 passed (1.7m)`；13 张截图落盘，含 3 张 11A 过程帧和 `12-黄金链收口-回到下一轮计划阶段.jpg`；当前原图核验为 `PASS / current-scope-golden-flow` |
+| 当前范围黄金链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "当前范围黄金链"` | 最新命令 `1 passed (1.8m)`；13 张截图落盘，含 3 张 11A 过程帧和 `12-黄金链收口-回到下一轮计划阶段.jpg`；当前原图核验为 `PASS / current-scope-golden-flow` |
 | 部署召唤过程帧 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口从双方计划到部署"` | 最新命令 `1 passed (53.5s)`；3 张截图落盘，含 `02A` 召唤光柱过程帧；当前原图核验为 `PASS / summon-process-frame-readable` |
 | 强化法术结果链 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放强化法术"` | 最新命令 `1 passed (55.5s)`；1 张截图落盘；断言旧泛化施法大特效不存在 |
 | 移动横屏移动 / 攻击 / 阶段推进 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实移动、攻击并切换回合"` | 最新命令 `1 passed (1.2m)`；截图时间 `2026-08-16 11:04`；断言 PC 基线截图存在，移动横屏使用桌面镜像层并保留桌面同源 HUD，且移动专用己方法术轨 / 对手法术轨 / 紧凑计划镜像不存在 |

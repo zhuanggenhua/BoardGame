@@ -208,6 +208,7 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
                 key={id}
                 className={`fixed inset-0 flex items-center justify-center ${(blockPointerEvents || shouldCaptureBackdropClick) ? 'pointer-events-auto' : 'pointer-events-none'}`}
                 style={{ zIndex }}
+                data-testid="spotlight-container-root"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

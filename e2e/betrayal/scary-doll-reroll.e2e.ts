@@ -11,6 +11,7 @@ import {
   createRuntimeCore,
   expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
+  expectUnifiedEventRollConfirmButton,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
   injectCore,
@@ -191,15 +192,15 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-values", "2,2,2");
     await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("使用恐怖玩偶重掷3 颗骰子");
+      page.getByText("使用恐怖玩偶重掷3 颗骰子", { exact: false }).first(),
+    ).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "知识检定 6",
     );
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
+    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -230,7 +231,7 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "恐怖玩偶重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await page.getByTestId("betrayal-event-roll-finalize").click();
+    await page.getByTestId("betrayal-discovery-continue").click();
     const finalizedState = await page.evaluate(() => {
       const harness = (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: BetrayalCore } } } }).__BG_TEST_HARNESS__;
       return harness?.state?.get?.().core ?? null;

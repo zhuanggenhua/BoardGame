@@ -9,7 +9,7 @@ import {
 } from '../../../engine/systems/resolutionStack';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { validate, getManualSpecialScoringBaseIndices } from './commands';
-import { execute, reduce } from './reducer';
+import { execute } from './reducer';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import {
     FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
@@ -1257,19 +1257,16 @@ function executeQueuedTrigger(
         frameId,
         processedEvents,
     );
-    const stateAfterReducedTriggerEvents: MatchState<SmashUpCore> = {
-        ...stateAfterConsumedTrigger,
-        core: processedEvents.reduce(
-            (core, event) => event.type === SU_EVENTS.TRIGGER_CONSUMED ? core : reduce(core, event),
-            stateAfterConsumedTrigger.core,
-        ),
-    };
-    const hasRemainingFrameTriggers = getSessionFrameTriggers(stateAfterReducedTriggerEvents, frameId).length > 0;
+    const hasRemainingFrameTriggers = hasRemainingFrameTriggersAfterEvents(
+        stateAfterConsumedTrigger,
+        frameId,
+        processedEvents,
+    );
     if (!hasRemainingFrameTriggers) {
         clearQueuedTriggerRuntimeSharedState(trigger.frameId, trigger.id);
     }
     return {
-        state: stateAfterReducedTriggerEvents,
+        state: stateAfterConsumedTrigger,
         events: processedEvents,
     };
 }

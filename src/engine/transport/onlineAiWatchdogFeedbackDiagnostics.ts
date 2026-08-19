@@ -3,12 +3,15 @@ import type { AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/type
 import { isEnabledControlChoiceOption } from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
 import {
+    resolveCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
     type OnlineAiRecoveryEngineConfig,
     type ForceEndTurnStalledAiResolution,
     type HiddenInteractionDescriptor,
 } from './onlineAiRecovery';
 import { resolveOnlineAiRecoveryFingerprint } from './onlineAiWatchdogSequenceFingerprinting';
+
+const MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS = 8;
 
 export type InteractionSelectabilityDiagnostic = {
     totalOptions: number;
@@ -32,6 +35,55 @@ export type OnlineAiRecoveryPendingDamageDiagnostic = {
     currentDamage: unknown;
     sourceAbilityId: unknown;
     tokenUsageTotals: unknown;
+};
+
+export type OnlineAiRecoveryActionLogTailEntry = {
+    text?: string;
+    type?: unknown;
+};
+
+export type OnlineAiRecoveryEventTailEntry = {
+    type?: string;
+    timestamp?: unknown;
+    payload?: unknown;
+};
+
+export type OnlineAiRecoveryLegalActionSummary = {
+    total: number;
+    truncated: boolean;
+    items: Array<{
+        actionId: string;
+        kind: string;
+        label: string;
+        commandTypes: string[];
+    }>;
+};
+
+export type OnlineAiRecoveryDecisionPreview = {
+    previewSource: 'seat-policy' | 'remote-fallback-policy';
+    policyId: string;
+    chosenAction: {
+        actionId: string;
+        kind: string;
+        label: string;
+        commandTypes: string[];
+    } | null;
+    reasoningSummary: string | null;
+    confidence: number | null;
+    error: string | null;
+};
+
+export type OnlineAiRecoveryAiSummary = {
+    seatControllerType: 'human' | 'local-ai' | 'remote-ai';
+    legalActions: OnlineAiRecoveryLegalActionSummary | null;
+    decisionPreview: OnlineAiRecoveryDecisionPreview | null;
+};
+
+type OnlineAiRecoveryLegalActionLike = {
+    actionId: string;
+    kind: string;
+    label: string;
+    commands: Array<{ type: string }>;
 };
 
 export type OnlineAiFeedbackDiagnosticsContext = {
@@ -62,6 +114,17 @@ const normalizeOnlineAiDiagnosticSegment = (value: unknown, fallback: string): s
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9:_-]/g, '');
     return normalized || fallback;
+};
+
+const cloneOnlineAiDiagnosticValue = (value: unknown): unknown => {
+    if (value === undefined) {
+        return undefined;
+    }
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return value;
+    }
 };
 
 const resolveOnlineAiResponseWindowResponderId = (
@@ -167,6 +230,179 @@ export function buildOnlineAiPendingDamageDiagnostic(
         sourceAbilityId: pendingDamage.sourceAbilityId ?? null,
         tokenUsageTotals: pendingDamage.tokenUsageTotals ?? null,
     } : null;
+}
+
+export function summarizeOnlineAiRecoveryLegalActions(
+    legalActions: OnlineAiRecoveryLegalActionLike[],
+): OnlineAiRecoveryLegalActionSummary {
+    return {
+        total: legalActions.length,
+        truncated: legalActions.length > MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS,
+        items: legalActions.slice(0, MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS).map((action) => ({
+            actionId: action.actionId,
+            kind: action.kind,
+            label: action.label,
+            commandTypes: action.commands.map((command) => command.type),
+        })),
+    };
+}
+
+export function buildOnlineAiRecoveryStateSnapshot(args: {
+    matchId: string;
+    gameId: string;
+    state: MatchState<unknown>;
+    seatState: MatchState<unknown>;
+    candidate: ForceEndTurnStalledAiResolution;
+    trackerKey: string;
+    progressMarker: string;
+    blockerFingerprint: string | null;
+    aiSummary: OnlineAiRecoveryAiSummary;
+}): string {
+    const interactionState = args.state.sys?.interaction as { isBlocked?: unknown } | undefined;
+    const diagnostics = buildOnlineAiFeedbackDiagnosticsContext({
+        sharedState: args.state,
+        seatState: args.seatState,
+    });
+
+    return JSON.stringify({
+        matchId: args.matchId,
+        gameId: args.gameId,
+        playerId: args.candidate.playerId,
+        reason: args.candidate.reason,
+        trackerKey: args.trackerKey,
+        blockerFingerprint: args.blockerFingerprint,
+        phase: args.state.sys?.phase ?? null,
+        turnNumber: args.state.sys?.turnNumber ?? null,
+        currentPlayerId: resolveCurrentPlayerId(args.state),
+        progressMarker: args.progressMarker,
+        recentActionLogTail: extractOnlineAiRecoveryActionLogTail(args.state),
+        recentEventStreamTail: extractOnlineAiRecoveryEventTail(args.state),
+        loop: args.candidate.reason === 'action-loop' ? (args.candidate.loopInfo ?? null) : null,
+        interaction: {
+            isBlocked: interactionState?.isBlocked ?? null,
+            shared: diagnostics.sharedInteraction,
+            sharedSelectability: diagnostics.sharedSelectability,
+            sharedUnsatisfiableReason: diagnostics.sharedUnsatisfiableReason,
+            seat: diagnostics.seatInteraction,
+            seatSelectability: diagnostics.seatSelectability,
+            seatUnsatisfiableReason: diagnostics.seatUnsatisfiableReason,
+        },
+        seatControllerType: args.aiSummary.seatControllerType,
+        legalActions: args.aiSummary.legalActions,
+        aiDecisionPreview: args.aiSummary.decisionPreview,
+        responseWindow: diagnostics.sharedResponseWindow,
+        pendingDamage: diagnostics.pendingDamage,
+    });
+}
+
+export function extractOnlineAiRecoveryActionLogTail(
+    state: MatchState<unknown>,
+): OnlineAiRecoveryActionLogTailEntry[] {
+    const entries = (state.sys?.actionLog as {
+        entries?: Array<{ text?: unknown; event?: { type?: unknown } }>;
+    } | undefined)?.entries;
+    if (!Array.isArray(entries) || entries.length === 0) {
+        return [];
+    }
+    return entries.slice(-5).map((entry) => ({
+        text: typeof entry?.text === 'string' ? entry.text : undefined,
+        type: entry?.event?.type,
+    }));
+}
+
+export function extractOnlineAiRecoveryEventTail(
+    state: MatchState<unknown>,
+): OnlineAiRecoveryEventTailEntry[] {
+    const entries = (state.sys?.eventStream as {
+        entries?: Array<{ type?: unknown; timestamp?: unknown; payload?: unknown }>;
+    } | undefined)?.entries;
+    if (!Array.isArray(entries) || entries.length === 0) {
+        return [];
+    }
+    return entries.slice(-5).map((entry) => ({
+        type: typeof entry?.type === 'string' ? entry.type : undefined,
+        timestamp: entry?.timestamp,
+        ...(entry?.payload !== undefined ? { payload: cloneOnlineAiDiagnosticValue(entry.payload) } : {}),
+    }));
+}
+
+export function buildOnlineAiDiagnosticActionLog(args: {
+    state: MatchState<unknown>;
+    phase?: unknown;
+    progressMarker?: string;
+    trackerKey?: string;
+    blockerFingerprint?: string | null;
+    sharedInteraction?: AiInteractionSnapshot | null;
+    interaction?: AiInteractionSnapshot | null;
+    responseWindow?: AiResponseWindowSnapshot | null;
+    pendingDamage?: OnlineAiRecoveryPendingDamageDiagnostic | null;
+    commandType?: string;
+    reason?: string;
+    feedbackSource?: string;
+    commandPayload?: unknown;
+}): string | undefined {
+    const actionLogTail = extractOnlineAiRecoveryActionLogTail(args.state);
+    const eventStreamTail = extractOnlineAiRecoveryEventTail(args.state);
+    const interactionOptions = (args.interaction?.options ?? []).slice(0, 8);
+    const hasSharedInteraction = Boolean(args.sharedInteraction);
+    const hasResponseWindow = Boolean(args.responseWindow);
+    const hasPendingDamage = Boolean(args.pendingDamage);
+    if (
+        actionLogTail.length === 0
+        && eventStreamTail.length === 0
+        && interactionOptions.length === 0
+        && !hasSharedInteraction
+        && !hasResponseWindow
+        && !hasPendingDamage
+        && !args.blockerFingerprint
+        && !args.commandPayload
+    ) {
+        return undefined;
+    }
+    return JSON.stringify({
+        kind: 'online-ai-feedback-diagnostic',
+        ...(args.phase !== undefined ? { phase: args.phase } : {}),
+        ...(args.progressMarker ? { progressMarker: args.progressMarker } : {}),
+        ...(args.trackerKey ? { trackerKey: args.trackerKey } : {}),
+        ...(args.blockerFingerprint ? { blockerFingerprint: args.blockerFingerprint } : {}),
+        ...(args.commandType ? { commandType: args.commandType } : {}),
+        ...(args.reason ? { reason: args.reason } : {}),
+        ...(args.feedbackSource ? { feedbackSource: args.feedbackSource } : {}),
+        ...(args.commandPayload !== undefined
+            ? { commandPayload: cloneOnlineAiDiagnosticValue(args.commandPayload) }
+            : {}),
+        actionLogTail,
+        eventStreamTail,
+        ...((hasSharedInteraction || args.interaction)
+            ? {
+                interaction: {
+                    ...(args.sharedInteraction
+                        ? {
+                            shared: {
+                                id: args.sharedInteraction.id,
+                                kind: args.sharedInteraction.kind,
+                                sourceId: args.sharedInteraction.sourceId,
+                            },
+                            sharedSelectability: buildInteractionSelectabilityDiagnostic(args.sharedInteraction),
+                        }
+                        : {}),
+                    ...(args.interaction
+                        ? {
+                            seat: {
+                                id: args.interaction.id,
+                                kind: args.interaction.kind,
+                                sourceId: args.interaction.sourceId,
+                                options: interactionOptions,
+                            },
+                            seatSelectability: buildInteractionSelectabilityDiagnostic(args.interaction),
+                        }
+                        : {}),
+                },
+            }
+            : {}),
+        ...(args.responseWindow ? { responseWindow: args.responseWindow } : {}),
+        ...(args.pendingDamage ? { pendingDamage: args.pendingDamage } : {}),
+    });
 }
 
 export function buildOnlineAiFeedbackDiagnosticsContext(args: {

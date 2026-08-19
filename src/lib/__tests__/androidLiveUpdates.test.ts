@@ -191,6 +191,34 @@ describe('androidLiveUpdates', () => {
         });
     });
 
+    it('旧 Android WebView 缺少 Array.at 时仍能解析版本化 APK 兜底入口', async () => {
+        const originalArrayAt = Array.prototype.at;
+        Object.defineProperty(Array.prototype, 'at', {
+            configurable: true,
+            value: undefined,
+        });
+        try {
+            const result = await resolveAndroidWebAppDownload({
+                VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+                VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/native-app-updates/android/stable/latest.json',
+            }, vi.fn(async () => ({
+                ok: false,
+                status: 503,
+                json: async () => ({}),
+            } as Response)));
+
+            expect(result).toEqual({
+                url: currentVersionedApkUrl,
+                source: 'versioned',
+            });
+        } finally {
+            Object.defineProperty(Array.prototype, 'at', {
+                configurable: true,
+                value: originalArrayAt,
+            });
+        }
+    });
+
     it('默认 manifest 也不可用且没有 APK 直链时，网页端下载入口返回 manifest-unavailable', async () => {
         const result = await resolveAndroidWebAppDownload({}, vi.fn(async () => ({
             ok: false,

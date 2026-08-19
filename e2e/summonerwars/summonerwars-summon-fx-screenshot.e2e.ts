@@ -198,13 +198,6 @@ test('召唤特效过程帧应贴近目标格且不回到混合大特效', async
   await page.screenshot({ path: sustainPath, fullPage: false });
   const sustainMetrics = await readSummonFxMetrics(page, row, col);
 
-  expect(impactMetrics.activeCues).toContain('fx.summon');
-  expect(impactMetrics.fxLayerCanvasCount).toBe(1);
-  expect(impactMetrics.fixedDimmingOverlayCount).toBe(0);
-  expect(impactMetrics.visiblePixelBox, '召唤爆发过程帧应有可见 Canvas 像素').not.toBeNull();
-  expect(impactMetrics.visiblePixelBoxToCell?.widthRatio ?? 99).toBeLessThanOrEqual(4.2);
-  expect(impactMetrics.visiblePixelBoxToCell?.heightRatio ?? 99).toBeLessThanOrEqual(4.2);
-
   const diagnosticsPath = testInfo.outputPath('summonerwars-summon-fx-screenshot-diagnostics.json');
   const diagnostics = {
     screenshotPaths: {
@@ -218,4 +211,11 @@ test('召唤特效过程帧应贴近目标格且不回到混合大特效', async
   };
   writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2), 'utf8');
   console.log('[SW_SUMMON_FX_SCREENSHOT]', JSON.stringify(diagnostics));
+
+  expect(impactMetrics.activeCues).toContain('fx.summon');
+  expect(impactMetrics.fxLayerCanvasCount).toBe(1);
+  expect(impactMetrics.fixedDimmingOverlayCount).toBe(0);
+  expect(impactMetrics.visiblePixelBox, '召唤爆发过程帧应有可见 Canvas 像素').not.toBeNull();
+  expect(impactMetrics.visiblePixelBoxToCell?.widthRatio ?? 99).toBeLessThanOrEqual(4.2);
+  expect(impactMetrics.visiblePixelBoxToCell?.heightRatio ?? 99).toBeLessThanOrEqual(4.2);
 });

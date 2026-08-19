@@ -93,111 +93,59 @@ const RISE_PRESET: ParticlePreset = {
   pulseFreq: 5,
 };
 
-/** 缓动 / 辅助函数 */
+/** 缓动函数 */
 function easeOutExpo(t: number): number {
   return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
 }
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const v = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-  return v * v * (3 - 2 * v);
-}
-function clamp01(x: number): number {
-  return x < 0 ? 0 : x > 1 ? 1 : x;
+function easeInQuad(t: number): number {
+  return t * t;
 }
 
-/**
- * 亮度 → 颜色映射（完全对齐 shader 的 6 阶 smoothstep mix）
- *
- * shader 中：
- *   base  = c.sub (blue-500),  sub   = c.main (blue-300),
- *   bright = c.bright,         glow  = [240,248,255]
- */
-function mapBrightToRGB(bright: number, c: SummonColorSet): [number, number, number] {
-  const [mr, mg, mb] = c.main;   // shader uSubColor
-  const [sr, sg, sb] = c.sub;    // shader uBaseColor
-  const [br, bg, bb] = c.bright; // shader uBrightColor
-  let r = 0, g = 0, b = 0;
-  const mix = (a: number, v: number, t: number) => a + (v - a) * t;
-  // ① 暗基色
-  const m1 = smoothstep(0.03, 0.15, bright);
-  r = mix(r, sr * 0.4, m1); g = mix(g, sg * 0.4, m1); b = mix(b, sb * 0.4, m1);
-  // ② 基色
-  const m2 = smoothstep(0.12, 0.25, bright);
-  r = mix(r, sr, m2); g = mix(g, sg, m2); b = mix(b, sb, m2);
-  // ③ 副色（较亮）
-  const m3 = smoothstep(0.25, 0.45, bright);
-  r = mix(r, mr, m3); g = mix(g, mg, m3); b = mix(b, mb, m3);
-  // ④ 高光色
-  const m4 = smoothstep(0.45, 0.65, bright);
-  r = mix(r, br, m4); g = mix(g, bg, m4); b = mix(b, bb, m4);
-  // ⑤ 辉光（接近白）
-  const m5 = smoothstep(0.65, 0.82, bright);
-  r = mix(r, 240, m5); g = mix(g, 248, m5); b = mix(b, 255, m5);
-  // ⑥ 纯白
-  const m6 = smoothstep(0.82, 0.98, bright);
-  r = mix(r, 255, m6); g = mix(g, 255, m6); b = mix(b, 255, m6);
-  return [r, g, b];
-}
-
-/**
- * 生成光柱纵向渐变（对齐 shader 的指数衰减 + 6 阶颜色映射）
- * N 个停靠点产生平滑连续的渐变，无可见色带分段。
- */
-function makePillarGradient(
-  ctx: CanvasRenderingContext2D,
-  cy: number, top: number,
-  cx: number,
-  c: SummonColorSet,
-  alpha: number,
-): CanvasGradient {
-  const grad = ctx.createLinearGradient(cx, cy, cx, top);
-  const N = 20;
-  for (let i = 0; i <= N; i++) {
-    const ratio = i / N; // 0=底部  1=顶部
-    // 指数衰减亮度（对齐 shader vertGrad = exp(-heightT * 2.2)）
-    const bright = Math.exp(-ratio * 2.2);
-    // 顶部渐隐（对齐 shader 1-smoothstep(0.82, 1.0, heightT)）
-    const topFade = 1 - smoothstep(0.82, 1.0, ratio);
-    const a = bright * topFade * alpha;
-    const [r, g, b] = mapBrightToRGB(bright, c);
-    grad.addColorStop(ratio, `rgba(${r | 0},${g | 0},${b | 0},${a})`);
-  }
-  return grad;
-}
-
-/** 绘制光柱（简洁梯形 + 平滑渐变 + 柔边辉光） */
+/** 绘制光柱（底部白亮 → 主题色 → 顶部消散，带柔和边缘） */
 function drawPillar(
   ctx: CanvasRenderingContext2D,
   cx: number, cy: number,
   width: number, height: number,
   c: SummonColorSet,
   intensity: number,
-  _time: number,
 ) {
+  const [mr, mg, mb] = c.main;
+  const [sr, sg, sb] = c.sub;
   const halfW = width / 2;
   const top = cy - height;
-  if (height < 2) return;
 
-  const TAPER = 0.55; // 顶部宽度 = 底部 55%
+  // 主体渐变（从底部白亮到顶部透明）
+  const grad = ctx.createLinearGradient(cx, cy, cx, top);
+  grad.addColorStop(0, `rgba(255,255,255,${0.95 * intensity})`);
+  grad.addColorStop(0.08, `rgba(${mr},${mg},${mb},${0.85 * intensity})`);
+  grad.addColorStop(0.35, `rgba(${sr},${sg},${sb},${0.5 * intensity})`);
+  grad.addColorStop(0.7, `rgba(${sr},${sg},${sb},${0.15 * intensity})`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
 
-  // --- 1. 外层柔光（宽 1.4x，低透明度） ---
-  ctx.beginPath();
-  ctx.moveTo(cx - halfW * 1.4, cy);
-  ctx.lineTo(cx - halfW * TAPER * 1.2, top);
-  ctx.lineTo(cx + halfW * TAPER * 1.2, top);
-  ctx.lineTo(cx + halfW * 1.4, cy);
-  ctx.closePath();
-  ctx.fillStyle = makePillarGradient(ctx, cy, top, cx, c, intensity * 0.2);
-  ctx.fill();
-
-  // --- 2. 主体光柱 ---
+  // 柱体形状：底部宽，顶部略窄（梯形）
+  const topW = halfW * 0.6;
+  ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.moveTo(cx - halfW, cy);
-  ctx.lineTo(cx - halfW * TAPER, top);
-  ctx.lineTo(cx + halfW * TAPER, top);
+  ctx.lineTo(cx - topW, top);
+  ctx.lineTo(cx + topW, top);
   ctx.lineTo(cx + halfW, cy);
   ctx.closePath();
-  ctx.fillStyle = makePillarGradient(ctx, cy, top, cx, c, intensity);
+  ctx.fill();
+
+  // 柔和边缘辉光
+  const edgeGrad = ctx.createLinearGradient(cx, cy, cx, top);
+  edgeGrad.addColorStop(0, `rgba(${mr},${mg},${mb},${0.3 * intensity})`);
+  edgeGrad.addColorStop(0.5, `rgba(${sr},${sg},${sb},${0.1 * intensity})`);
+  edgeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  ctx.fillStyle = edgeGrad;
+  ctx.beginPath();
+  ctx.moveTo(cx - halfW * 1.25, cy);
+  ctx.lineTo(cx - topW * 1.2, top);
+  ctx.lineTo(cx + topW * 1.2, top);
+  ctx.lineTo(cx + halfW * 1.25, cy);
+  ctx.closePath();
   ctx.fill();
 }
 
@@ -250,8 +198,13 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
 
     // 光柱参数 — 基于原点到 canvas 顶部的可用空间
     const pillarBaseWidth = isStrong ? cw * 0.08 : cw * 0.06;
-    const pillarMaxHeight = cy * 0.9; // 原点到顶部距离的 90%，确保不超出 canvas
+    const pillarMaxHeight = cy * 0.78; // 原点到顶部距离的 78%，避免局部召唤光柱跨多格
     const totalDuration = isStrong ? 1.4 : 1.1;
+
+    // 阶段时间点
+    const CHARGE_END = 0.12;
+    const BURST_END = 0.35;
+    const SUSTAIN_END = 0.65;
 
     // 粒子池
     const particles: Particle[] = [];
@@ -263,7 +216,8 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
     const rings: { t0: number; dur: number; maxR: number }[] = [];
     let ringsSpawned = false;
     let impactFired = false;
-    const ringMaxR = Math.min(cw, ch) * 0.4;
+
+    const ringMaxR = Math.min(cw, ch) * 0.34;
 
     let startTime = 0;
     let lastTime = 0;
@@ -276,7 +230,7 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
       const elapsed = (now - startTime) / 1000;
       const t = Math.min(1, elapsed / totalDuration);
 
-      if (!impactFired && t >= 0.12) {
+      if (!impactFired && t >= CHARGE_END) {
         impactFired = true;
         onImpactRef.current?.();
       }
@@ -285,64 +239,110 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
       ctx.globalCompositeOperation = 'lighter';
 
       // ================================================================
-      // 连续动画曲线（对齐 shader 方案，无 if/else 分段）
+      // 阶段 1：蓄力（0 ~ CHARGE_END）— 底部能量聚集
       // ================================================================
-      const fadeIn  = smoothstep(0, 0.12, t);
-      const fadeOut = 1 - smoothstep(0.8, 1.0, t);
+      if (t < CHARGE_END) {
+        const ct = t / CHARGE_END;
+        const chargeR = pillarBaseWidth * (1 + ct * 3);
+        const chargeAlpha = ct * 0.6;
 
-      // 光柱高度：爆发期快速生长 + 消散期二次收缩
-      const growT = clamp01((t - 0.12) / 0.23);
-      const pillarGrow = 1 - Math.pow(2, -10 * growT);   // easeOutExpo
-      const shrinkT = clamp01((t - 0.65) / 0.35);
-      const pillarShrink = 1 - shrinkT * shrinkT;         // easeInQuad
-      const pillarH = pillarMaxHeight * pillarGrow * pillarShrink;
-
-      // 宽度呼吸（仅持续阶段连续深化）
-      const breathePhase = smoothstep(0.35, 0.40, t) * (1 - smoothstep(0.60, 0.70, t));
-      const breathe = 1 + 0.08 * Math.sin(elapsed * 12) * breathePhase;
-      const pillarW = pillarBaseWidth * breathe;
-
-      // 整体强度
-      const intensity = fadeIn * fadeOut;
-
-      // --- 光柱 ---
-      if (pillarH > 2) {
-        drawPillar(ctx, cx, cy, pillarW, pillarH, c, intensity, elapsed);
-      }
-
-      // --- 原点核心光球 + 爆发白闪（连续） ---
-      const coreVis  = smoothstep(0, 0.12, t);
-      const coreFade = 1 - smoothstep(0.70, 1.0, t);
-      const burstT   = clamp01((t - 0.12) / 0.23);
-      const flash     = (1 - burstT) * smoothstep(0.12, 0.13, t) * (1 - smoothstep(0.34, 0.35, t));
-      const coreR     = pillarBaseWidth * (1 + coreVis * 2 + flash * 4);
-      const coreAlpha = coreVis * coreFade * 0.45 + flash * 0.9;
-
-      if (coreAlpha > 0.01) {
-        const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-        coreGrad.addColorStop(0, `rgba(255,255,255,${coreAlpha})`);
-        coreGrad.addColorStop(0.3, `rgba(${br},${bg},${bb},${coreAlpha * 0.4})`);
-        coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = coreGrad;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, chargeR);
+        grad.addColorStop(0, `rgba(255,255,255,${chargeAlpha})`);
+        grad.addColorStop(0.4, `rgba(${mr},${mg},${mb},${chargeAlpha * 0.5})`);
+        grad.addColorStop(1, `rgba(${c.sub[0]},${c.sub[1]},${c.sub[2]},0)`);
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+        ctx.arc(cx, cy, chargeR, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // --- 冲击波环（触发一次，持续渲染） ---
-      if (!ringsSpawned && t > 0.19) {
-        ringsSpawned = true;
-        rings.push(
-          { t0: elapsed, dur: isStrong ? 0.5 : 0.4, maxR: ringMaxR * 0.7 },
-          { t0: elapsed + 0.08, dur: isStrong ? 0.7 : 0.55, maxR: ringMaxR },
-        );
+      // ================================================================
+      // 阶段 2：爆发（CHARGE_END ~ BURST_END）— 光柱快速冲出
+      // ================================================================
+      if (t >= CHARGE_END && t < BURST_END) {
+        const bt = (t - CHARGE_END) / (BURST_END - CHARGE_END);
+        const eased = easeOutExpo(bt);
+        const overshoot = eased > 0.8 ? 1 + (1 - eased) * 0.15 : eased;
+        const pillarH = pillarMaxHeight * overshoot;
+        const pillarW = pillarBaseWidth * (0.5 + eased * 0.5);
+
+        drawPillar(ctx, cx, cy, pillarW, pillarH, c, eased);
+
+        // 底部白闪
+        const flashAlpha = (1 - bt) * 0.9;
+        const flashR = pillarBaseWidth * (1.8 + bt * 3.3);
+        const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashR);
+        flashGrad.addColorStop(0, `rgba(255,255,255,${flashAlpha})`);
+        flashGrad.addColorStop(0.3, `rgba(${br},${bg},${bb},${flashAlpha * 0.4})`);
+        flashGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = flashGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, flashR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 生成冲击波环
+        if (!ringsSpawned && bt > 0.3) {
+          ringsSpawned = true;
+          rings.push(
+            { t0: elapsed, dur: isStrong ? 0.5 : 0.4, maxR: ringMaxR * 0.7 },
+            { t0: elapsed + 0.08, dur: isStrong ? 0.7 : 0.55, maxR: ringMaxR },
+          );
+        }
       }
+
+      // ================================================================
+      // 阶段 3：持续（BURST_END ~ SUSTAIN_END）— 光柱保持 + 脉冲呼吸
+      // ================================================================
+      if (t >= BURST_END && t < SUSTAIN_END) {
+        const breathe = 1 + Math.sin(elapsed * 12) * 0.08;
+        const pillarW = pillarBaseWidth * breathe;
+        const pillarH = pillarMaxHeight;
+
+        drawPillar(ctx, cx, cy, pillarW, pillarH, c, 1);
+
+        // 生成升腾粒子
+        if (Math.random() < (quality === 'reduced' ? 0.22 : (isStrong ? 0.7 : 0.4))) {
+          const px = cx + (Math.random() - 0.5) * pillarW * 0.8;
+          const py = cy - Math.random() * pillarH * 0.6;
+          const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
+          particles.push(createParticle({
+            x: px, y: py,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -(1 + Math.random() * 3),
+            size: 2 + Math.random() * (isStrong ? 4 : 3),
+            maxLife: 0.4 + Math.random() * 0.5,
+            rgb,
+          }));
+        }
+      }
+
+      // ================================================================
+      // 阶段 4：消散（SUSTAIN_END ~ 1.0）— 光柱从底部收缩 + 淡出
+      // ================================================================
+      if (t >= SUSTAIN_END) {
+        const ft = (t - SUSTAIN_END) / (1 - SUSTAIN_END);
+        const fadeEased = easeInQuad(ft);
+        const pillarH = pillarMaxHeight * (1 - fadeEased);
+        const pillarW = pillarBaseWidth * (1 - fadeEased * 0.5);
+        const alpha = 1 - fadeEased;
+
+        if (pillarH > 2) {
+          ctx.globalAlpha = alpha;
+          drawPillar(ctx, cx, cy - pillarMaxHeight * fadeEased * 0.3, pillarW, pillarH, c, 1);
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // ================================================================
+      // 冲击波环（跨阶段）
+      // ================================================================
       for (const ring of rings) {
         const ringElapsed = elapsed - ring.t0;
         if (ringElapsed < 0 || ringElapsed > ring.dur) continue;
         const rt = ringElapsed / ring.dur;
         const ringR = ring.maxR * easeOutExpo(rt);
         const ringAlpha = (1 - rt) * 0.7;
+
         ctx.globalAlpha = ringAlpha;
         ctx.strokeStyle = `rgba(${mr},${mg},${mb},0.8)`;
         ctx.lineWidth = isStrong ? 2.5 : 1.8;
@@ -355,21 +355,6 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
         ctx.globalAlpha = 1;
       }
 
-      // --- 粒子（持续阶段生成，连续曲线控制生成率） ---
-      const spawnRate = smoothstep(0.30, 0.38, t) * (1 - smoothstep(0.62, 0.68, t));
-      if (spawnRate > 0 && Math.random() < spawnRate * (quality === 'reduced' ? 0.22 : (isStrong ? 0.7 : 0.4))) {
-        const px = cx + (Math.random() - 0.5) * pillarW * 0.8;
-        const py = cy - Math.random() * pillarH * 0.6;
-        const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
-        particles.push(createParticle({
-          x: px, y: py,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: -(1 + Math.random() * 3),
-          size: 2 + Math.random() * (isStrong ? 4 : 3),
-          maxLife: 0.4 + Math.random() * 0.5,
-          rgb,
-        }));
-      }
       updateParticles(particles, dt, RISE_PRESET);
       drawParticles(ctx, particles, RISE_PRESET, cw, ch);
 

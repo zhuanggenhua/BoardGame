@@ -850,6 +850,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     if (pendingInteraction.type === 'selectDie') {
                         const selectCount = pendingInteraction.selectCount ?? 1;
                         const allowRepeatedDieSelection = pendingInteraction.allowRepeatedDieSelection === true;
+                        const isRepeatedReroll = allowRepeatedDieSelection;
                         const allowedDieIds = Array.isArray(pendingInteraction.allowedDieIds) && pendingInteraction.allowedDieIds.length > 0
                             ? Array.from(new Set(pendingInteraction.allowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
                             : getActiveDice(newState.core, currentPhase).map(die => die.id);
@@ -869,9 +870,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         } = {
                             title: pendingInteraction.titleKey,
                             sourceId: pendingInteraction.sourceCardId,
-                            maxSteps: selectCount,
+                            maxSteps: isRepeatedReroll ? selectCount : undefined,
                             minSteps: pendingInteraction.minSelectCount ?? 1,
-                            confirmationMode: 'submitBatch',
                             initialResult: { selectedDiceIds: [] },
                             localReducer: (current, step) => diceSelectReducer(current, step, selectCount, allowRepeatedDieSelection),
                             toCommands: (result) => diceSelectToCommands(result, selectCount),
@@ -879,7 +879,10 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             allowedDieIds,
                             completedDieIds,
                             completedSteps: pendingInteraction.completedSteps,
-                            allowRepeatedDieSelection,
+                            ...(isRepeatedReroll ? {
+                                confirmationMode: 'submitBatch' as const,
+                                allowRepeatedDieSelection,
+                            } : {}),
                             meta: {
                                 dtType: 'selectDie',
                                 selectCount,

@@ -375,6 +375,7 @@ export type OnlineAiRecoveryReportedLegalAction = {
     playerId: string;
     actionKind: string;
     actionId: string;
+    metadata?: Record<string, unknown>;
 };
 
 export type OnlineAiRecoverySequenceProgress = {

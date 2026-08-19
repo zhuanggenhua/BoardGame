@@ -16,6 +16,7 @@ import { executeCommand } from './execute';
 import { reduceEvent } from './reducer';
 import { validateCommand } from './validate';
 import type { MageWarsCore, MageWarsCommand, MageWarsEvent, MageWarsPlayerState } from './types';
+import { getStatusTokenAmount } from './statusTokens';
 
 function normalizePlayerIds(playerIds: PlayerId[]): PlayerId[] {
     return playerIds.length >= 2 ? playerIds.slice(0, 2) : ['0', '1'];
@@ -85,7 +86,11 @@ function createSleepDamageReplacementEvents(core: MageWarsCore, event: MageWarsE
     const targetObject = core.objects[event.payload.targetId];
     if (!targetPlayer && !targetObject) return undefined;
 
-    const sleepAmount = (targetPlayer ?? targetObject)?.statusTokens[STATUS_TOKEN_IDS.SLEEP] ?? 0;
+    const sleepAmount = targetPlayer
+        ? getStatusTokenAmount(targetPlayer, STATUS_TOKEN_IDS.SLEEP)
+        : targetObject
+            ? getStatusTokenAmount(targetObject, STATUS_TOKEN_IDS.SLEEP)
+            : 0;
     if (sleepAmount <= 0) return undefined;
 
     const targetRef = targetPlayer

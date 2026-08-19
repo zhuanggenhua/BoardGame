@@ -1,4 +1,4 @@
-export const SPA_FALLBACK_EXCLUDE_RE = /^\/(assets|auth|health|social-socket|games|default|lobby-socket|socket\.io|admin|ugc|layout|feedback|review|invite|message|friend|user-settings|sponsors|notifications|game-changelogs)(\/|$)/;
+export const SPA_FALLBACK_EXCLUDE_RE = /^\/(assets|fonts|logos|game-data|locales|manifest\.webmanifest|auth|health|social-socket|games|default|lobby-socket|socket\.io|admin|ugc|layout|feedback|review|invite|message|friend|user-settings|sponsors|notifications|game-changelogs)(\/|$)/;
 export const NO_CACHE_HEADER = 'no-cache, no-store, must-revalidate';
 export const LONG_CACHE_MAX_AGE = '1y';
 export const LONG_CACHE_IMMUTABLE_HEADER = 'public, max-age=31536000, immutable';

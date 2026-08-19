@@ -523,7 +523,7 @@ export const Home = () => {
         };
         setMyMatchRole(resolvedRole);
 
-        void matchApi.getMatch(localMatchRole.gameName, localMatchRole.matchID)
+        void matchApi.getMatch(localMatchRole.gameName, localMatchRole.matchID, { expectedStatuses: [404] })
             .then(match => {
                 if (cancelled) return;
                 const stored = readStoredMatchCredentials(localMatchRole.matchID);
@@ -547,10 +547,22 @@ export const Home = () => {
                     })),
                 });
             })
-            .catch(() => {
+            .catch((error: unknown) => {
                 if (cancelled) return;
-                // 不在这里处理 404，交给 WebSocket 监听统一处理
-                // 只设置一个临时状态，等待 WebSocket 确认
+                if (isMatchNotFoundError(error)) {
+                    const notice = publishMatchCleanupNotice(localMatchRole.matchID);
+                    if (notice && !hasSeenMatchCleanupNotice(notice)) {
+                        markMatchCleanupNoticeSeen(notice);
+                        toastWarning({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
+                    }
+                    clearMatchCredentials(localMatchRole.matchID);
+                    clearOwnerActiveMatch(localMatchRole.matchID);
+                    setActiveMatch(null);
+                    setMyMatchRole(null);
+                    setLocalStorageTick((t) => t + 1);
+                    return;
+                }
+                // 网络类失败保留临时状态，等待大厅快照或后续重试确认。
                 setMyMatchRole(resolvedRole);
                 setActiveMatch({
                     matchID: localMatchRole.matchID,
@@ -562,7 +574,7 @@ export const Home = () => {
         return () => {
             cancelled = true;
         };
-    }, [localMatchRole]);
+    }, [localMatchRole, toastWarning]);
 
     const lobbyPresence = useLobbyMatchPresence({
         gameId: activeMatch?.gameName,
@@ -603,7 +615,7 @@ export const Home = () => {
 
         let cancelled = false;
 
-        void matchApi.getMatch(gameName, matchID)
+        void matchApi.getMatch(gameName, matchID, { expectedStatuses: [404] })
             .then(() => {
                 if (cancelled) return;
                 if (missingMatchConfirmRetryTimerRef.current !== null) {

@@ -11,6 +11,7 @@ import {
   createRuntimeCore,
   expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
+  expectUnifiedEventRollConfirmButton,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
   injectCore,
@@ -143,7 +144,7 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "知识检定 1",
     );
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
+    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
     const rollPanel = page.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
     await expectEventRollWorkbenchReadable(page, "幸运硬币重掷前", {
@@ -295,11 +296,11 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "幸运硬币重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toBeVisible();
+    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await saveScreenshot(page, DAMAGE_RESOLVED_SCREENSHOT);
 
-    await page.getByTestId("betrayal-event-roll-finalize").click();
+    await page.getByTestId("betrayal-discovery-continue").click();
     const finalizedState = await page.evaluate(() => {
       const harness = (
         window as Window & {
@@ -317,6 +318,7 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       (finalState?.currentExplorer.traits.speed ?? 0) - 1,
     );
     await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-discovery-continue")).toHaveCount(0);
     await saveScreenshot(page, EVENT_ROLL_FINALIZED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([

@@ -8,6 +8,7 @@ import {
     isRemovedAndroidEmbeddedPublicAssetDir,
     isRemovedWebLegacyGameAssetDir,
     isRetainedDistI18nFile,
+    isRetainedDistLogoFile,
     WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE,
 } from '../../../scripts/deploy/prune-web-dist-assets.mjs';
 
@@ -49,6 +50,13 @@ describe('Android embedded 资源裁剪', () => {
         expect(isRemovedWebLegacyGameAssetDir('smashup')).toBe(true);
         expect(isRemovedWebLegacyGameAssetDir('i18n')).toBe(false);
         expect(isRemovedWebLegacyGameAssetDir('atlas-configs')).toBe(false);
+    });
+
+    it('Web 和 Android embedded 会保留首页 HTML 直接引用的 logos 静态图', () => {
+        expect(isRetainedDistLogoFile('logo_1_grid.png')).toBe(true);
+        expect(isRetainedDistLogoFile('logo_1_grid.svg')).toBe(true);
+        expect(isRetainedDistLogoFile('weixin.jpg')).toBe(true);
+        expect(isRetainedDistLogoFile('zhifubao.jpg')).toBe(true);
     });
 
     it('Android embedded 会移除 public/assets 镜像目录，避免把游戏素材打进 APK', () => {

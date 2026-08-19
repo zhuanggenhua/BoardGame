@@ -37,6 +37,7 @@ import {
     isMageWarsObjectAttackTargetInRange,
     isMageWarsQuickSpell,
     canMageWarsArenaObjectUseSwiftFreeMove,
+    canMageWarsObjectUsePostMoveQuickAction,
     getMageWarsObjectDefenseProfiles,
     getMageWarsPlayerDefenseProfiles,
     getMageWarsPlayerDefenseProfile,
@@ -68,6 +69,8 @@ import {
 import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS } from './ids';
 import { getArenaObject } from './utils';
 import { resolveMageWarsSpellCasterRef } from './spellCasting';
+import { getStatusTokenAmount } from './statusTokens';
+import { hasTemporaryTeleportMovement } from './temporaryTraits';
 
 const BLOODSTRIKE_SPELL_CARD_ID = 3404;
 const BLOODSTRIKE_SPELL_SOURCE_ID = 'mw.spell.3404';
@@ -1594,7 +1597,7 @@ export function executeCommand(
             };
             const statusRemovalEvents = command.payload.statusTokenIds
                 .map((statusTokenId): MageWarsEvent | undefined => {
-                    const amount = targetObject.statusTokens[statusTokenId] ?? 0;
+                    const amount = getStatusTokenAmount(targetObject, statusTokenId);
                     if (amount <= 0) return undefined;
                     return {
                         type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
@@ -1651,7 +1654,7 @@ export function executeCommand(
         case MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT: {
             const object = getArenaObject(state.core, command.payload.objectId);
             if (!object) return [];
-            const usesTeleportMovement = object.temporaryTraits?.teleportMovement === true;
+            const usesTeleportMovement = hasTemporaryTeleportMovement(object);
             const usesSwiftFreeMove = canMageWarsArenaObjectUseSwiftFreeMove(
                 state.core,
                 object,
@@ -1726,8 +1729,9 @@ export function executeCommand(
             const attackProfile = attacker
                 ? getMageWarsObjectAttackProfile(attacker, command.payload.attackProfileId)
                 : undefined;
-            const usesPostMoveQuickAttack = attacker?.temporaryTraits?.quickActionAfterMoveAvailable === true
-                && attackProfile?.actionKind === 'quick';
+            const usesPostMoveQuickAttack = attacker && attackProfile
+                ? canMageWarsObjectUsePostMoveQuickAction(attacker, attackProfile)
+                : false;
             return resolveMageWarsObjectAttackEvents({
                 state,
                 sourceCommandType: command.type,

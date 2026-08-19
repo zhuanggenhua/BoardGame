@@ -37,6 +37,8 @@ export const DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS = [
   'images/home-v2/book-catalog-wide/compressed/1.webp',
 ];
 export const DIST_LOGOS_RETAIN_RELATIVE_PATHS = [
+  'logo_1_grid.png',
+  'logo_1_grid.svg',
   'weixin.jpg',
   'zhifubao.jpg',
 ];

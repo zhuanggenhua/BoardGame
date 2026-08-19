@@ -1,8 +1,8 @@
 /**
  * 通用卡牌特写队列组件
  *
- * 展示其他玩家打出的卡牌特写，支持队列堆叠。
- * 通过明确关闭按钮关闭当前特写，不接管整屏点击。
+ * 展示玩家打出的卡牌特写，支持队列堆叠。
+ * 玩家点击空白背景或关闭按钮后，才关闭当前特写。
  *
  * 面向百游戏设计：
  * - 游戏层通过 renderCard 注入卡牌渲染
@@ -63,7 +63,7 @@ function CardSpotlightQueueInner<TData = unknown>({
         <AnimatePresence mode="wait">
             <motion.div
                 key={current.id}
-                className="fixed inset-0 pointer-events-none"
+                className="fixed inset-0 pointer-events-auto"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 data-testid="card-spotlight-queue"
                 initial={{ opacity: 0 }}
@@ -71,9 +71,11 @@ function CardSpotlightQueueInner<TData = unknown>({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 data-interaction-allow
+                onClick={handleDismiss}
             >
                 <motion.div
-                    className="absolute left-1/2 top-[clamp(0.25rem,1vh,0.75rem)] flex -translate-x-1/2 flex-col items-center gap-2 pointer-events-none"
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    data-testid="card-spotlight-positioner"
                     initial={{ scale: 0.5, opacity: 0, y: -32 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.85, opacity: 0, y: -24 }}
@@ -81,14 +83,15 @@ function CardSpotlightQueueInner<TData = unknown>({
                 >
                     {/* 卡牌内容 */}
                     <div
-                        className="relative pointer-events-none pt-8 pr-8"
+                        className="relative pointer-events-auto"
                         data-testid="card-spotlight-content"
+                        onClick={(event) => event.stopPropagation()}
                     >
                         <button
                             type="button"
                             aria-label={t('cardSpotlightQueue.closeSpotlight')}
                             title={t('cardSpotlightQueue.closeSpotlight')}
-                            className="absolute right-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/65 bg-slate-950/90 text-lg font-bold leading-none text-white shadow-lg transition-colors hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white pointer-events-auto"
+                            className="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/65 bg-slate-950/90 text-lg font-bold leading-none text-white shadow-lg transition-colors hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white pointer-events-auto"
                             onClick={handleDismiss}
                         >
                             ×
@@ -96,7 +99,7 @@ function CardSpotlightQueueInner<TData = unknown>({
                         {renderCard(current)}
 
                         <div
-                            className="absolute left-full top-8 ml-2 flex max-w-[min(42vw,12rem)] flex-col items-start gap-2 pointer-events-none"
+                            className="absolute left-full top-0 ml-2 flex max-w-[min(42vw,12rem)] flex-col items-start gap-2 pointer-events-none"
                             data-testid="card-spotlight-status"
                         >
                             {/* 队列指示器（多张时显示） */}

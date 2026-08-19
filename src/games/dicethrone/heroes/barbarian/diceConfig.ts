@@ -3,7 +3,6 @@
  */
 
 import type { DiceDefinition } from '../../../../engine/primitives';
-import { versionedPublicFileUrl } from '../../../../lib/publicFileUrl';
 import { BARBARIAN_DICE_FACE_IDS } from '../../domain/ids';
 
 /**
@@ -33,7 +32,7 @@ export const barbarianDiceDefinition: DiceDefinition = {
         { value: 6, symbols: [BARBARIAN_DICE_FACE_IDS.STRENGTH] },
     ],
     assets: {
-        spriteSheet: versionedPublicFileUrl('/game-data/dicethrone/barbarian/dice-sprite.png'),
+        spriteSheet: 'dicethrone/images/barbarian/dice',
     },
 };
 

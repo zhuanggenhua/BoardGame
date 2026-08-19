@@ -1,6 +1,6 @@
 # Summoner Wars 本地反馈：AI 断线后没有恢复连接
 
-- 时间：2026-08-19 20:30:00 +08:00
+- 时间：2026-08-19 20:48:03 +08:00
 - 口径：本地数据库反馈，不回写线上。
 - 反馈内容：`ai断线了没有恢复连接`
 - 本地反馈记录：`6a859abd0bdd9b46777fe4b1`
@@ -25,6 +25,7 @@
 - 房主以 0 号座位身份重进时，缺失的 AI 座位凭据会通过 `matchApi.claimSeat` 补领；guest 房间优先使用房间 owner 的 `guestId`，避免拿当前账号 token 去补领 guest 房 AI 座位。
 - 补领结果只写入 `match_ai_creds_<matchId>`，不覆盖真人主座位凭据 `match_creds_<matchId>`。
 - 非房主视角只恢复 AI 座位定义，不主动补领 AI 座位凭据。
+- 状态写入增加“内容真的变化才 setState”的门禁，避免相同 AI 座位/凭据反复写入造成页面级渲染循环；这是重跑 `MatchRoom.onlineIdentity` 时暴露出的实际测试问题。
 
 ## AI-only / Human Guard
 
@@ -43,9 +44,14 @@
 - `npx eslint src/pages/useOnlineAiSeatStateLoader.ts src/pages/__tests__/useOnlineAiSeatStateLoader.test.tsx`：通过。
 - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/useOnlineAiSeatStateLoader.test.tsx --configLoader native`：1 个测试文件、3 个测试通过。
 - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/useOnlineAiSeatStateLoader.test.tsx src/pages/__tests__/matchSeatValidation.test.ts --configLoader native -t "onlineAiSeats|useOnlineAiSeatStateLoader"`：2 个测试文件通过，21 个相关测试通过。
+- `node scripts/infra/vitest-cli-safe.mjs run src/server/__tests__/claimSeat.test.ts --configLoader native`：1 个测试文件、4 个测试通过，覆盖重复/并发补领 AI 座位凭据不覆盖。
+- `node scripts/infra/vitest-cli-safe.mjs run src/components/lobby/__tests__/GameDetailsModalJoinConfirm.test.ts --configLoader native -t "AI seat controller helpers|创建 3 AI 房间"`：1 个测试文件、10 个相关测试通过，覆盖创建 AI 房间顺序占座。
+- `$env:NODE_OPTIONS='--max-old-space-size=8192'; node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/MatchRoom.onlineIdentity.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testTimeout 300000`：1 个测试文件、13 个测试通过，覆盖 MatchRoom 在线身份、AI HUD 和重连窗口内座位保护。
 - `npm run typecheck`：通过。
+- `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json`：通过。
+- 测试收口清单：`temp/feedback-closeout/2026-08-19-local-ai-reconnect/test-guard.json`。
 
 ## 非本次阻塞记录
 
 - 未加过滤运行 `src/pages/__tests__/matchSeatValidation.test.ts` 时，有一条 DiceThrone 奖励骰测试失败：`奖励骰缺少掷骰者角色：playerId=1`。
-- 这条失败来自 DiceThrone 奖励骰测试数据缺角色，不在 Summoner Wars 本地 AI 座位重连链路；本次收口使用上述聚焦测试覆盖 AI 座位恢复行为。
+- 这条失败来自 DiceThrone 奖励骰测试数据缺角色，不在 Summoner Wars 本地 AI 座位重连链路；本次收口使用上述页面、服务端、大厅和座位状态聚焦测试覆盖 AI 座位恢复行为。

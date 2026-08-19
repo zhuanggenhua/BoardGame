@@ -4,8 +4,8 @@
 
 - 当前结论：`旧结论失效 / 仍有残余范围`
 - 旧结论：本文原写法把 longzu 三派系表述为`当前发布口径已收口`，并把多个对象的 `shared` 代表链当作对象级完成证据。
-- 失效原因：2026-07-18 复盘发现`角色扮演（geeks_cosplay）`旧 `shared:onVpAwarded triggered special` 只证明收到 VP 获得事件后能响应，不证明基地计分这类 VP 来源一定会派发该事件；“shared 已覆盖”口径过宽。
-- 替代证据或替代入口：当前替代证据是 `src/games/smashup/__tests__/abilities/geeks.test.ts` 中角色扮演对基地计分 VP 的定向回归；本文档保留为历史矩阵和失效回写，不再单独作为全面收口凭证。
+- 失效原因：2026-07-18 复盘发现`角色扮演（geeks_cosplay）`旧 `shared:onVpAwarded triggered special` 只证明收到 VP 获得事件后能响应，不证明基地计分这类 VP 来源一定会派发该事件；“shared 已覆盖”口径过宽。2026-08-20 复盘又发现`粉丝（geeks_fan）`旧 `shared:hand special discard-for-draw` 只证明命令层可以直接激活，不证明普通打出与手牌 special 同时合法时，真实手牌入口会让玩家选择“打出 / 使用能力 / 取消或跳过”。
+- 替代证据或替代入口：当前替代证据包括 `src/games/smashup/__tests__/abilities/geeks.test.ts` 中角色扮演对基地计分 VP 的定向回归，以及 `e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e.ts` 中粉丝真实手牌入口三分支回归；本文档保留为历史矩阵和失效回写，不再单独作为全面收口凭证。
 - 降级后当前状态：longzu 大部分对象仍有历史 L2/L3/L4 证据，但凡复用代表链的对象必须重新按“共享链名称 / 代表对象 / 六项判等依据 / 剩余差异”补齐；补齐前只能写`仍有残余范围`。
 - 判定依据：
   - 本批对象全集已建表，覆盖龙、超级英雄、极客三派系全部 `38` 张卡与 `6` 个基地。
@@ -158,7 +158,7 @@
 | 菲丽希亚（`geeks_felicia_day`） | `C1` 打出后把其他所有随从移到这个基地；`C2` 作为同批移动一次性结算；`C3` 同批移入者不会互相见证彼此 arrival；`C4` 不会反向见证 Felicia 自己的 onPlay | passed | passed | passed | shared | shared | `shared:Felicia Day/批量移动同批见证过滤`；L2 已覆盖 FAQ 边界 |
 | 维尔（`geeks_wil_wheaton`） | `C1` 当对手打出行动时可从手牌作为 triggered special 打出；`C2` 先选择一个基地把维尔打到那里；`C3` 然后使目标行动无效 | passed | passed | passed | direct | direct | `GK_COUNTER_PLAY_MINION_TO_BASE`；E2E direct |
 | 游戏专家（`geeks_game_guru`） | `C1` 不受其他玩家能力影响；`C2` 不会错误免疫其他玩家的行动牌 | passed | passed | passed | N/A | passed | `GK_ONGOING_PROTECTION`；纯持续保护，已覆盖 `action/nonAction` 边界 |
-| 粉丝（`geeks_fan`） | `C1` 你的回合中可从手牌作为 special 发动；`C2` 结算时弃掉自己；`C3` 摸 1 | passed | passed | passed | shared | shared | `shared:粉丝/hand special discard-for-draw`；同构链已由 L2 覆盖 |
+| 粉丝（`geeks_fan`） | `C1` 你的回合中可从手牌作为 special 发动；`C2` 结算时弃掉自己；`C3` 摸 1；`C4` 普通打出与 special 同时合法时，真实手牌入口必须先让玩家选择打出 / 使用能力 / 取消或跳过 | passed | passed | passed | direct | direct | 2026-08-20 修订：旧 `shared:粉丝/hand special discard-for-draw` 只覆盖命令层直激活，漏掉真实入口多动作仲裁；现由 `e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e.ts` 覆盖额度满 special、普通+special 同时合法时取消/使用能力、选择打出为随从三条真实入口 |
 | 角色扮演（`geeks_cosplay`） | `C1` 当你获得 1+ VP 时进入反应队列；`C2` 你可以从手牌打出或跳过；`C3` 若打出则额外获得 1 VP | passed | passed | passed | shared 降级 | shared 降级 | 2026-07-18 修订：旧 `shared:角色扮演/onVpAwarded triggered special` 只证明“收到 VP 获得事件后能响应”，不证明所有 VP 来源都会派发该事件；基地计分 VP 来源曾暴露缺口，旧 shared 不能继续当对象级已收口证据 |
 | 维尔的力量（`geeks_force_of_wil`） | `C1` 当对手打出行动时可从手牌反制；`C2` 普通行动不会继续结算；`C3` ongoing 不会附着但仍入原拥有者弃牌堆；`C4` 支持 `Force of Wil -> Force of Wil` 嵌套反制 | passed | passed | passed | direct | direct | `GK_ACTION_COUNTER_STACK`；E2E direct |
 | 规则咬定者（`geeks_rules_lawyer`） | `C1` 选择一个已在场的基地持续行动或随从附着行动；`C2` 若是基地行动则移到另一基地；`C3` 若是随从附着行动则移到另一随从；`C4` 不改变 owner/sourceController 语义 | passed | passed | passed | direct | direct | `GK_MOVE_ONGOING_WITHOUT_OWNER_CHANGE`；E2E direct |
@@ -224,7 +224,7 @@
 | 菲丽希亚（`geeks_felicia_day`） | 有 | shared | `D1/D8/D19/D50` | `GK_BATCH_MOVE_ALL_MINIONS`；复用成熟批量移动链，L2 已额外覆盖同批 move witness FAQ、帝国龙见证边界与组内互不反向见证 | 共享 |
 | 维尔（`geeks_wil_wheaton`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_COUNTER_PLAY_MINION_TO_BASE`；真实 hand triggered special 打到基地并反制目标行动 | 通过 |
 | 游戏专家（`geeks_game_guru`） | 有 | 无玩家入口 | `D1/D8/D14/D50` | `GK_ONGOING_PROTECTION`；纯持续保护，L2 已覆盖 `action` / `nonAction` 来源区分与 live target filtering | 通过 |
-| 粉丝（`geeks_fan`） | 有 | shared | `D1/D5/D8/D14` | `GK_HAND_SPECIAL_DRAW`；复用“手牌手动 special -> 弃自身 -> 摸牌”链，L2 已覆盖 `ACTIVATE_SPECIAL` from hand 合同 | 共享 |
+| 粉丝（`geeks_fan`） | 有 | direct | `D1/D5/D8/D14/D39` | `GK_HAND_SPECIAL_DRAW + HAND_ACTION_CHOICE`；2026-08-20 修订：旧共享证据只能证明 `ACTIVATE_SPECIAL` from hand 命令合同，不能证明玩家真实入口。现已补真实手牌 E2E，覆盖普通可打时弹出“打出为随从 / 使用能力 / 取消或跳过”，并分别验证取消不消耗、使用能力弃自身摸 1、打出为随从进入基地 | 通过 |
 | 角色扮演（`geeks_cosplay`） | 有 | shared 降级 | `D1/D5/D8/D18/D39` | 2026-07-18 修订：旧 `GK_VP_TRIGGERED_SPECIAL` 共享链只覆盖收到 `VP_AWARDED` 后的 hand triggered special；不覆盖基地计分 VP 是否正确派生 `VP_AWARDED`。该行不能再作为对象级全链路收口证据 | 仍有残余范围 |
 | 维尔的力量（`geeks_force_of_wil`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_ACTION_COUNTER_STACK`；真实 reaction 入口反制普通行动 / ongoing / counter-on-counter | 通过 |
 | 规则咬定者（`geeks_rules_lawyer`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_MOVE_ONGOING_WITHOUT_OWNER_CHANGE`；真实手牌行动移动基地持续行动 | 通过 |
@@ -236,6 +236,20 @@
 | 平衡（`geeks_min_maxing`） | 有 | shared | `D1/D5/D8/D18/D39` | `GK_REVEAL_HAND_AND_BORROW_ACTION`；复用 borrowed `CARD_TRANSFERRED` + 真实 `PLAY_ACTION` 链，差异仅入口来自对手手牌 reveal | 共享 |
 | 桌游桌（`base_tabletop`） | 有 | direct | `D1/D5/D8/D18/D39` | `BASE_TABLETOP_AFTER_SCORING_DRAW_THEN_DISCARD`；真实计分后摸三再强制弃二 | 通过 |
 | 展会（`base_the_con`） | 有 | 无玩家入口 | `D1/D8/D14/D50` | `BASE_THE_CON_FACTION_BUFF`；纯基地触发临时同派系加力，无独立玩家 prompt | 通过 |
+
+## 2026-08-20 粉丝同类扩审记录
+
+- 原始漏审症状：`粉丝（geeks_fan）`在己方出牌阶段既能普通打出、又能从手牌作为 special 发动时，真实手牌入口没有让玩家选择“打出 / 使用能力 / 取消或跳过”，导致 special 被普通出牌路径遮蔽。
+- 漏审归因：这不是简单“测试数量不够”。旧证据属于**证据停在中间态**，只证明 `ACTIVATE_SPECIAL` 命令层可以直接激活粉丝；旧测试属于**测试断言过窄**，没有构造“普通打出与手牌 special 同时合法”的并存场景；旧 shared 结论属于**共享抽象没扩审**，把 hand special 执行链当成真实手牌入口完成，漏掉点击 / 拖拽第一入口的动作仲裁。
+- 搜索范围：
+  - `rg -n -C 2 "kind:\s*'special',\s*zone:\s*'hand'|zone:\s*'hand',\s*window:\s*'playCards'" src/games/smashup/data/factions`：定位所有“出牌阶段手牌 special”静态定义。
+  - `rg -n "shouldOfferHandSpecialActionChoice|shouldPreferHandSpecialSelection|getHandSpecialPlayableBaseIndices|ACTIVATE_SPECIAL, \{ handCardUid|hand-special" src/games/smashup e2e/smashup public/locales/zh-CN/game-smashup.json public/locales/en/game-smashup.json evidence/smashup/smashup-longzu-deep-audit-2026-06-01.md`：核对共享 UI 判定、点击 / 拖拽入口、命令提交、测试和文案落点。
+  - `rg -n "hand special|手牌 special|手牌特殊|ACTIVATE_SPECIAL from hand|GK_HAND_SPECIAL|HAND_ACTION_CHOICE|shared:hand" evidence src/games/smashup/__tests__ e2e/smashup`：核对旧测试 / 旧 evidence 是否还把命令层直激活误写成真实入口收口。
+- 命中项：
+  - 当前 longzu 范围内命中 `geeks_fan`；已由 `shouldOfferHandSpecialActionChoice(...)`、Board 点击 / 拖拽入口和 `e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e.ts` 三条粉丝用例直接覆盖。
+  - 同类静态定义还命中 `all_stars_fan` 与 `penguins_dancing_penguin`。二者共享同一个 Board 手牌入口和 `handSpecialSelection` 判定，因此会受本轮共享 UI 修复保护；但它们不属于 longzu 三派系对象级审计，本文件不把它们外推成对象级已收口。
+  - 极客里 `geeks_cosplay`、`geeks_wil_wheaton`、`geeks_control_minion` 属于响应窗口手牌 special，不是己方出牌阶段“普通打出 + hand special”同时合法的第一入口冲突；本轮只确认它们不属于粉丝同类根因，不重写其既有对象结论。
+- 残余扩审范围：粉丝当前点位已补真实入口三分支；跨派系同类对象若后续要对外宣称对象级收口，需要分别在对应派系 evidence 中补本对象真实入口验证或共享流程判等表。
 
 ## 当前残余范围
 

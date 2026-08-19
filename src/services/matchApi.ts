@@ -62,6 +62,10 @@ export interface LeaveMatchOptions {
 
 const baseUrl = (): string => getGameServerUrl() || '';
 
+type ApiRequestOptions = {
+    expectedStatuses?: number[];
+};
+
 export interface MatchApiError extends Error {
     status?: number;
     details?: string;
@@ -137,7 +141,7 @@ async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: R
     return response.json() as Promise<T>;
 }
 
-async function apiGet<T = unknown>(url: string): Promise<T> {
+async function apiGet<T = unknown>(url: string, options: ApiRequestOptions = {}): Promise<T> {
     let response: Response;
     try {
         response = await fetch(url, {
@@ -155,13 +159,16 @@ async function apiGet<T = unknown>(url: string): Promise<T> {
     }
     if (!response.ok) {
         const text = await response.text().catch(() => '');
-        console.error('[matchApi] GET response not ok', {
-            url,
-            method: 'GET',
-            status: response.status,
-            statusText: response.statusText,
-            details: text,
-        });
+        const isExpectedStatus = options.expectedStatuses?.includes(response.status) ?? false;
+        if (!isExpectedStatus) {
+            console.error('[matchApi] GET response not ok', {
+                url,
+                method: 'GET',
+                status: response.status,
+                statusText: response.statusText,
+                details: text,
+            });
+        }
         // 401 仅上抛给调用方处理，避免业务接口误判时提前清空登录态
         if (response.status === 401) {
             console.warn('[matchApi] 401 Unauthorized');
@@ -198,9 +205,10 @@ export async function createMatch(
 export async function getMatch(
     gameName: string,
     matchID: string,
+    options?: ApiRequestOptions,
 ): Promise<MatchInfo> {
     const url = `${baseUrl()}/games/${gameName}/${matchID}`;
-    return apiGet<MatchInfo>(url);
+    return apiGet<MatchInfo>(url, options);
 }
 
 /**

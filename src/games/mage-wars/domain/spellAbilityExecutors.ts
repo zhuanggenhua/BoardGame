@@ -18,6 +18,7 @@ import {
 import { MAGE_WARS_EVENTS } from './events';
 import { STATUS_TOKEN_IDS, type StatusTokenId } from './ids';
 import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from './types';
+import { getStatusTokenAmount } from './statusTokens';
 import {
     canMageWarsStatusTokenAffectArenaObject,
     isMageWarsConjurationSpell,
@@ -1270,7 +1271,7 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
 
     for (const target of targets) {
         const sourceAbilityId = ctx.sourceId;
-        const burnAmount = target.statusTokens[STATUS_TOKEN_IDS.BURN] ?? 0;
+        const burnAmount = getStatusTokenAmount(target, STATUS_TOKEN_IDS.BURN);
         if (isMageWarsIntermittentJetSpell(ctx.spell) && burnAmount > 0) {
             events.push({
                 type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,

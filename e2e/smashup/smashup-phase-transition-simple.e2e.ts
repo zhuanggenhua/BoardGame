@@ -25,15 +25,33 @@ async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: stri
     await page.screenshot({ path, fullPage: true });
 }
 
-async function expectActionFxAutoDismisses(page: Page, defId: string): Promise<void> {
+async function expectActionSpotlightClosesOnBlankClick(page: Page, defId: string): Promise<void> {
     const fxCard = page.getByTestId('smashup-action-fx-card');
     const spotlightQueue = page.getByTestId('card-spotlight-queue');
+    const spotlightCard = page.getByTestId('smashup-action-spotlight-card');
 
-    await expect(fxCard).toBeVisible({ timeout: 8000 });
-    await expect(fxCard).toHaveAttribute('data-card-def-id', defId);
-    await expect(spotlightQueue).toHaveCount(0);
+    await expect(fxCard).toHaveCount(0);
+    await expect(spotlightQueue).toBeVisible({ timeout: 8000 });
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+    const cardBox = await spotlightCard.boundingBox();
+    expect(cardBox, '行动卡特写卡牌本体必须可测量').not.toBeNull();
+    const viewport = page.viewportSize() ?? await page.evaluate(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    }));
+    expect(
+        Math.abs((cardBox!.x + cardBox!.width / 2) - viewport.width / 2),
+        '行动卡特写卡牌本体应保持水平居中',
+    ).toBeLessThanOrEqual(24);
+    expect(
+        Math.abs((cardBox!.y + cardBox!.height / 2) - viewport.height / 2),
+        '行动卡特写卡牌本体应保持垂直居中',
+    ).toBeLessThanOrEqual(24);
 
-    await expect(fxCard, '行动卡展示必须是瞬时 FX，不能升级成手动关闭特写').toBeHidden({ timeout: 3000 });
+    await page.waitForTimeout(2200);
+    await expect(spotlightCard, '行动卡特写不应在旧 FX 超时时间内自动关闭').toBeVisible();
+
+    await spotlightQueue.click({ position: { x: 12, y: 12 } });
     await expect(spotlightQueue).toHaveCount(0);
 }
 
@@ -2296,7 +2314,7 @@ test('Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行�
     await saveEvidenceScreenshot(page, testInfo, 'oops-extra-play-after-resolve');
 });
 
-test('在线模式对手打出行动卡时应显示瞬时行动卡展示且不生成关闭队列', async ({ browser }, testInfo) => {
+test('在线模式行动卡特写应保持到玩家点击空白背景关闭', async ({ browser }, testInfo) => {
     test.setTimeout(120000);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -2314,14 +2332,12 @@ test('在线模式对手打出行动卡时应显示瞬时行动卡展示且不�
         await waitForTurnTracker(hostPage, 'YOU');
         await waitForTurnTracker(guestPage, 'OPP');
 
-        const hostSpotlightQueue = hostPage.getByTestId('card-spotlight-queue');
-
         const hostActionUid = await getPlayerActionUid(hostPage, '0', 'wizard_mystic_studies');
         expect(hostActionUid).toBeTruthy();
         await playActionCardWithoutTargetByUi(hostPage, firstSetup.matchId, '0', hostActionUid);
-        await expectActionFxAutoDismisses(guestPage, 'wizard_mystic_studies');
-        await expect(hostSpotlightQueue).toHaveCount(0);
-        await saveEvidenceScreenshot(guestPage, testInfo, 'action-fx-auto-dismissed-online-p0');
+        await expectActionSpotlightClosesOnBlankClick(guestPage, 'wizard_mystic_studies');
+        await expectActionSpotlightClosesOnBlankClick(hostPage, 'wizard_mystic_studies');
+        await saveEvidenceScreenshot(guestPage, testInfo, 'action-spotlight-blank-dismissed-online-p0');
     } finally {
         await firstSetup.guestContext.close();
         await firstSetup.hostContext.close();
@@ -2341,22 +2357,17 @@ test('在线模式对手打出行动卡时应显示瞬时行动卡展示且不�
         await waitForTurnTracker(hostPage, 'OPP');
         await waitForTurnTracker(guestPage, 'YOU');
 
-        const hostSpotlightQueue = hostPage.getByTestId('card-spotlight-queue');
-        const guestSpotlightQueue = guestPage.getByTestId('card-spotlight-queue');
-
         const guestActionUid = await getPlayerActionUid(guestPage, '1', 'wizard_mystic_studies');
         expect(guestActionUid).toBeTruthy();
         await playActionCardWithoutTargetByUi(guestPage, secondSetup.matchId, '1', guestActionUid);
-        await expectActionFxAutoDismisses(hostPage, 'wizard_mystic_studies');
-        await expect(guestSpotlightQueue).toHaveCount(0);
-        await saveEvidenceScreenshot(hostPage, testInfo, 'action-fx-auto-dismissed-online-p1');
-        await expect(hostSpotlightQueue).toHaveCount(0);
+        await expectActionSpotlightClosesOnBlankClick(hostPage, 'wizard_mystic_studies');
+        await expectActionSpotlightClosesOnBlankClick(guestPage, 'wizard_mystic_studies');
+        await saveEvidenceScreenshot(hostPage, testInfo, 'action-spotlight-blank-dismissed-online-p1');
     } finally {
         await secondSetup.guestContext.close();
         await secondSetup.hostContext.close();
     }
 });
-
 test('在线双人非目标页在 prompt 打开与权威关闭后都不应残留 waiting overlay', async ({ browser }, testInfo) => {
     test.setTimeout(120000);
 

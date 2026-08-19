@@ -29,6 +29,10 @@ function readBaseZoneSource(): string {
     return readFileSync(resolve(__dirname, '..', 'ui', 'BaseZone.tsx'), 'utf-8');
 }
 
+function readSmashUpLocale(locale: 'zh-CN' | 'en'): Record<string, any> {
+    return JSON.parse(readFileSync(resolve(__dirname, '..', '..', '..', '..', 'public', 'locales', locale, 'game-smashup.json'), 'utf-8'));
+}
+
 describe('SmashUp 交互浮动操作栏源码约束', () => {
     it('浮动操作栏外层容器应保持 pointer-events-auto，避免真机触摸命中丢失', () => {
         const source = readBoardSource();
@@ -85,6 +89,37 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('deployableBaseIndices: new Set(reactionTargetState.baseIndices)');
         expect(source).toContain('!reactionChoicePlayableCardUids.has(card.uid)');
         expect(source).not.toContain('respondCurrentPrompt({ optionId: reactionOption.id })');
+    });
+
+    it('手牌 special 与普通打出同时合法时，Board 必须让玩家先选择动作意图', () => {
+        const source = readBoardSource();
+        const zh = readSmashUpLocale('zh-CN').ui;
+        const en = readSmashUpLocale('en').ui;
+
+        expect(source.match(/shouldOfferHandSpecialActionChoice/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+        expect(source.match(/setPendingHandActionChoiceUid\(card\.uid\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+        expect(source).toContain('const confirmHandActionChoice = useCallback');
+        expect(source).toContain("confirmHandActionChoice('minion')");
+        expect(source).toContain("confirmHandActionChoice('hand-special')");
+        expect(source).toContain('const closeHandActionChoice = useCallback');
+        expect(source).toContain('pendingHandActionChoiceCard &&');
+        expect(source).not.toContain("t('ui.hand_action_choose')");
+        expect(source).not.toContain("t('ui.hand_action_choose_desc')");
+        expect(source).toContain("t('ui.hand_action_play_minion')");
+        expect(source).toContain("t('ui.hand_action_use_special')");
+        expect(source).toContain("t('ui.hand_action_cancel')");
+        expect(source).toContain('dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { handCardUid: card.uid, baseIndex: dropTarget.baseIndex })');
+
+        expect('hand_action_choose' in zh).toBe(false);
+        expect('hand_action_choose_desc' in zh).toBe(false);
+        expect('hand_action_choose' in en).toBe(false);
+        expect('hand_action_choose_desc' in en).toBe(false);
+        expect(zh.hand_action_play_minion).toBe('打出为随从');
+        expect(zh.hand_action_use_special).toBe('使用能力');
+        expect(zh.hand_action_cancel).toContain('跳过');
+        expect(en.hand_action_play_minion).toBe('Play as Minion');
+        expect(en.hand_action_use_special).toBe('Use Ability');
+        expect(en.hand_action_cancel).toContain('Skip');
     });
 
     it('smashup_reaction_choose 选项语义必须由共享 helper 解析', () => {

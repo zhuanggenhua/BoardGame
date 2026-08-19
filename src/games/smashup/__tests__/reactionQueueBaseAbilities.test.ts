@@ -87,6 +87,8 @@ describe('Reaction queue: base abilities', () => {
       '0',
       { shuffle: (a: any[]) => a } as any,
     );
+    expect(r2.success).toBe(true);
+    expect(r2.error).toBeUndefined();
     expect(r2).toBeDefined();
     const evts = r2.events as SmashUpEvent[];
     expect(evts.some(e => e.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);

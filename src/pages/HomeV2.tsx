@@ -32,6 +32,7 @@ const HOME_V2_OVERVIEW_STAGE_ASPECT_RATIO = HOME_V2_OVERVIEW_STAGE_WIDTH / HOME_
 const HOME_V2_STAGE_STANDARD_WIDTH = 1864;
 const HOME_V2_STAGE_STANDARD_HEIGHT = 843;
 const HOME_V2_STAGE_STANDARD_ASPECT_RATIO = HOME_V2_STAGE_STANDARD_WIDTH / HOME_V2_STAGE_STANDARD_HEIGHT;
+const HOME_V2_INTERNAL_PAGE_FLIP_DURATION_MS = 560;
 const HOME_V2_DETAIL_LEFT_RECT = { left: '10.80%', top: '9.35%', width: '37.20%', height: '77.60%' };
 const HOME_V2_DETAIL_RIGHT_RECT = { left: '51.40%', top: '9.35%', width: '38.80%', height: '77.60%' };
 const HOME_V2_FLIP_TO_DETAIL_RECT = { left: '50.55%', top: '6.40%', width: '37.10%', height: '84.80%' };
@@ -44,7 +45,9 @@ type HomeV2SceneState =
     | 'flippingToDetail'
     | 'flippingToOverview'
     | 'flippingCategoryForward'
-    | 'flippingCategoryBackward';
+    | 'flippingCategoryBackward'
+    | 'flippingCatalogPageForward'
+    | 'flippingCatalogPageBackward';
 
 type HomeV2StageStyle = React.CSSProperties & {
     '--home-v2-stage-scale': number;
@@ -78,6 +81,8 @@ export const HomeV2 = () => {
     const [pendingGameId, setPendingGameId] = React.useState<string | null>(null);
     const [activeCategory, setActiveCategory] = React.useState<LobbyCategory>('all');
     const [pendingCategory, setPendingCategory] = React.useState<LobbyCategory | null>(null);
+    const [catalogPageIndex, setCatalogPageIndex] = React.useState(0);
+    const [pendingCatalogPageIndex, setPendingCatalogPageIndex] = React.useState<number | null>(null);
     const [authMode, setAuthMode] = React.useState<'login' | 'register' | 'reset'>('login');
     const [authModalOpen, setAuthModalOpen] = React.useState(false);
     const [matchStorageTick, setMatchStorageTick] = React.useState(0);
@@ -148,6 +153,7 @@ export const HomeV2 = () => {
     const isExactHomepageOverview = sceneState === 'overview';
     const isOverviewDetailFlip = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
     const isCategoryFlip = sceneState === 'flippingCategoryForward' || sceneState === 'flippingCategoryBackward';
+    const isCatalogPageFlip = sceneState === 'flippingCatalogPageForward' || sceneState === 'flippingCatalogPageBackward';
     const createStageLayout = React.useCallback((standardWidth: number, aspectRatio: number) => {
         const viewportWidth = Math.max(0, viewportSize.width);
         const viewportHeight = Math.max(0, viewportSize.height);
@@ -190,7 +196,9 @@ export const HomeV2 = () => {
     const isPageFlipping = sceneState === 'flippingToDetail'
         || sceneState === 'flippingToOverview'
         || sceneState === 'flippingCategoryForward'
-        || sceneState === 'flippingCategoryBackward';
+        || sceneState === 'flippingCategoryBackward'
+        || sceneState === 'flippingCatalogPageForward'
+        || sceneState === 'flippingCatalogPageBackward';
 
     const handleGameOpen = React.useCallback((gameId: string) => {
         if (sceneState !== 'overview' || isPageFlipping) {
@@ -231,8 +239,18 @@ export const HomeV2 = () => {
         const isForward = nextIndex >= currentIndex;
 
         setPendingCategory(nextCategory);
+        setPendingCatalogPageIndex(0);
         setSceneState(isForward ? 'flippingCategoryForward' : 'flippingCategoryBackward');
     }, [activeCategory, isPageFlipping, sceneState]);
+
+    const handleCatalogPageChange = React.useCallback((nextPageIndex: number) => {
+        if (sceneState !== 'overview' || isPageFlipping || nextPageIndex === catalogPageIndex) {
+            return;
+        }
+
+        setPendingCatalogPageIndex(nextPageIndex);
+        setSceneState(nextPageIndex > catalogPageIndex ? 'flippingCatalogPageForward' : 'flippingCatalogPageBackward');
+    }, [catalogPageIndex, isPageFlipping, sceneState]);
 
     const handleContinueMatch = React.useCallback((match: HomeV2ContinueMatch) => {
         if (!match.matchID || !match.gameName) return;
@@ -310,7 +328,9 @@ export const HomeV2 = () => {
 
     const renderOverviewStageForCategory = React.useCallback((
         category: LobbyCategory,
+        pageIndex: number,
         onCategorySelect: (nextCategory: LobbyCategory) => void,
+        onCatalogPageSelect: (nextPageIndex: number) => void,
         { includeTestId = true }: { includeTestId?: boolean } = {},
     ) => (
         <div
@@ -330,6 +350,8 @@ export const HomeV2 = () => {
                     mostPopularGameId={mostPopularGameId}
                     activeCategory={category}
                     onCategoryChange={onCategorySelect}
+                    catalogPageIndex={pageIndex}
+                    onCatalogPageChange={onCatalogPageSelect}
                     onGameClick={handleGameOpen}
                     onAccountClick={handleOpenAuthModal}
                     continueMatch={continueMatch}
@@ -350,19 +372,23 @@ export const HomeV2 = () => {
     const renderCurrentOverviewStage = React.useCallback(
         ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(
             activeCategory,
+            catalogPageIndex,
             handleCategoryChange,
+            handleCatalogPageChange,
             { includeTestId },
         ),
-        [activeCategory, handleCategoryChange, renderOverviewStageForCategory],
+        [activeCategory, catalogPageIndex, handleCatalogPageChange, handleCategoryChange, renderOverviewStageForCategory],
     );
 
     const renderPendingOverviewStage = React.useCallback(
         ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(
             pendingCategory ?? activeCategory,
+            pendingCatalogPageIndex ?? catalogPageIndex,
+            () => undefined,
             () => undefined,
             { includeTestId },
         ),
-        [activeCategory, pendingCategory, renderOverviewStageForCategory],
+        [activeCategory, catalogPageIndex, pendingCatalogPageIndex, pendingCategory, renderOverviewStageForCategory],
     );
 
     const renderOverviewFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
@@ -418,21 +444,25 @@ export const HomeV2 = () => {
         </div>
     ), [detailStageLayout.height, detailStageLayout.scale, detailStageLayout.width]);
 
-    const foldLineMode = sceneState === 'flippingCategoryForward'
+    const isOverviewInternalForwardFlip = sceneState === 'flippingCategoryForward' || sceneState === 'flippingCatalogPageForward';
+    const isOverviewInternalBackwardFlip = sceneState === 'flippingCategoryBackward' || sceneState === 'flippingCatalogPageBackward';
+    const isOverviewInternalFlip = isCategoryFlip || isCatalogPageFlip;
+    const foldLineMode = isOverviewInternalForwardFlip
         ? 'flippingToDetail'
-        : sceneState === 'flippingCategoryBackward'
+        : isOverviewInternalBackwardFlip
             ? 'flippingToOverview'
             : sceneState;
-    const foldLineRenderOverviewStage = sceneState === 'flippingCategoryBackward'
+    const foldLineRenderOverviewStage = isOverviewInternalBackwardFlip
         ? renderPendingOverviewStage
         : renderCurrentOverviewStage;
-    const foldLineRenderDetailStage = sceneState === 'flippingCategoryForward'
+    const foldLineRenderDetailStage = isOverviewInternalForwardFlip
         ? renderPendingOverviewStage
-        : sceneState === 'flippingCategoryBackward'
+        : isOverviewInternalBackwardFlip
             ? renderCurrentOverviewStage
             : renderDetailStage;
-    const foldLineRenderDetailFlipStage = isCategoryFlip ? renderOverviewFlipStage : renderDetailFlipStage;
-    const foldLineDetailStageSize = isCategoryFlip ? overviewStageLayout : detailStageLayout;
+    const foldLineRenderOverviewFlipStage = isOverviewInternalFlip ? undefined : renderOverviewFlipStage;
+    const foldLineRenderDetailFlipStage = isOverviewInternalFlip ? undefined : renderDetailFlipStage;
+    const foldLineDetailStageSize = isOverviewInternalFlip ? overviewStageLayout : detailStageLayout;
 
     return (
         <main
@@ -444,22 +474,33 @@ export const HomeV2 = () => {
             <div className="relative flex h-full items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(92,70,48,0.28)_0%,_rgba(13,10,8,0.92)_68%,_rgba(10,8,7,1)_100%)]" />
                 <div className="relative flex h-full w-full items-center justify-center">
-                    {isExactHomepageOverview || isExactDetailView || isOverviewDetailFlip || isCategoryFlip ? (
+                    {isExactHomepageOverview || isExactDetailView || isOverviewDetailFlip || isCategoryFlip || isCatalogPageFlip ? (
                         <FoldLinePageFlipStage
                             mode={isExactHomepageOverview ? 'overview' : isExactDetailView ? 'detail' : foldLineMode}
                             testId="home-v2-fold-line-flip"
                             renderOverviewStage={foldLineRenderOverviewStage}
                             renderDetailStage={foldLineRenderDetailStage}
-                            renderOverviewFlipStage={renderOverviewFlipStage}
+                            renderOverviewFlipStage={foldLineRenderOverviewFlipStage}
                             renderDetailFlipStage={foldLineRenderDetailFlipStage}
                             overviewStageSize={overviewStageLayout}
                             detailStageSize={foldLineDetailStageSize}
                             leftPageRect={HOME_V2_FLIP_TO_OVERVIEW_RECT}
                             rightPageRect={HOME_V2_FLIP_TO_DETAIL_RECT}
+                            durationMs={isOverviewInternalFlip ? HOME_V2_INTERNAL_PAGE_FLIP_DURATION_MS : undefined}
+                            enableDetailPreview={!isOverviewInternalFlip}
+                            flippingShellContent={isOverviewInternalFlip ? 'source' : 'target'}
                             onFlipToDetailComplete={() => {
                                 if (sceneState === 'flippingCategoryForward') {
                                     setActiveCategory(pendingCategory ?? activeCategory);
+                                    setCatalogPageIndex(pendingCatalogPageIndex ?? 0);
                                     setPendingCategory(null);
+                                    setPendingCatalogPageIndex(null);
+                                    setSceneState('overview');
+                                    return;
+                                }
+                                if (sceneState === 'flippingCatalogPageForward') {
+                                    setCatalogPageIndex(pendingCatalogPageIndex ?? catalogPageIndex);
+                                    setPendingCatalogPageIndex(null);
                                     setSceneState('overview');
                                     return;
                                 }
@@ -470,7 +511,15 @@ export const HomeV2 = () => {
                             onFlipToOverviewComplete={() => {
                                 if (sceneState === 'flippingCategoryBackward') {
                                     setActiveCategory(pendingCategory ?? activeCategory);
+                                    setCatalogPageIndex(pendingCatalogPageIndex ?? 0);
                                     setPendingCategory(null);
+                                    setPendingCatalogPageIndex(null);
+                                    setSceneState('overview');
+                                    return;
+                                }
+                                if (sceneState === 'flippingCatalogPageBackward') {
+                                    setCatalogPageIndex(pendingCatalogPageIndex ?? catalogPageIndex);
+                                    setPendingCatalogPageIndex(null);
                                     setSceneState('overview');
                                     return;
                                 }

@@ -4908,11 +4908,13 @@ function BetrayalAttackImpactSurface({
 function BetrayalHauntRevealCue({
   revealProtocol,
   scenarioRuntime,
+  readerScope,
   isPhoneLandscapeLayout,
   onDismiss,
 }: {
   revealProtocol: BetrayalHauntRevealProtocol;
   scenarioRuntime: BetrayalCore["scenarioRuntime"];
+  readerScope: ScenarioReaderScope;
   isPhoneLandscapeLayout: boolean;
   onDismiss: () => void;
 }) {
@@ -4922,6 +4924,12 @@ function BetrayalHauntRevealCue({
       scenarioRuntime.triggeringOmenName &&
       scenarioRuntime.hauntCardNumber,
   );
+  const viewerRoleCueKey =
+    readerScope === "traitor"
+      ? "board.status.hauntRevealViewerTraitor"
+      : readerScope === "heroes"
+        ? "board.status.hauntRevealViewerHero"
+        : "board.status.hauntRevealViewerAll";
 
   return (
     <div
@@ -4949,6 +4957,13 @@ function BetrayalHauntRevealCue({
             className="min-w-0 text-[13px] font-semibold tracking-[0.02em] text-[#ffe6bd]"
           >
             {t("board.status.hauntRevealLead")}
+          </span>
+          <span
+            data-testid="betrayal-haunt-reveal-viewer-role"
+            data-scenario-reader-scope={readerScope}
+            className="min-w-0 text-[12px] font-black tracking-[0.03em] text-[#fff7dc]"
+          >
+            {t(viewerRoleCueKey)}
           </span>
           {hasHauntSource ? (
             <span
@@ -11147,7 +11162,9 @@ export default function BetrayalBoard({
       !hasCurrentViewerConfirmedLatestDiscoveryEventRoll,
   );
   const diceConfirmButtonClass =
-    "min-h-[42px] border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d] transition hover:bg-[#f0d28a] disabled:cursor-not-allowed disabled:border-[rgba(214,181,109,0.32)] disabled:bg-[rgba(214,181,109,0.18)] disabled:text-[rgba(243,224,166,0.48)]";
+    "inline-flex min-h-[42px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d] transition hover:bg-[#f0d28a] disabled:cursor-not-allowed disabled:border-[rgba(214,181,109,0.32)] disabled:bg-[rgba(214,181,109,0.18)] disabled:text-[rgba(243,224,166,0.48)]";
+  const eventRollConfirmButtonClass =
+    `pointer-events-auto min-w-[132px] shrink-0 ${diceConfirmButtonClass}`;
   const latestDiscoveryRollActionSlot = selectedRollModifierCanConfirm ? (
     <div className="pointer-events-auto flex items-center gap-2">
       <button
@@ -11387,7 +11404,7 @@ export default function BetrayalBoard({
           total: pendingLatestDiscoveryEventRollTotalCount,
         });
       }
-      return t("board.discovery.confirmResultAndResolution", {
+      return t("board.discovery.confirmWithProgress", {
         confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
         total: pendingLatestDiscoveryEventRollTotalCount,
       });
@@ -14867,6 +14884,7 @@ export default function BetrayalBoard({
             <BetrayalHauntRevealCue
               revealProtocol={hauntRevealProtocol}
               scenarioRuntime={core.scenarioRuntime}
+              readerScope={scenarioReaderScope}
               isPhoneLandscapeLayout={isPhoneLandscapeLayout}
               onDismiss={handleDismissHauntRevealCue}
             />
@@ -15494,7 +15512,14 @@ export default function BetrayalBoard({
             id="betrayal-inventory-section"
             data-testid="betrayal-inventory-section"
             data-tutorial-id="betrayal-inventory-zone"
-            className={`pointer-events-none absolute z-40 mt-0 px-0 ${
+            className={`pointer-events-none absolute ${
+              shouldShowLatestDiscovery &&
+              !shouldAutoReturnAfterLatestDiscovery &&
+              !pendingEventChoice &&
+              canCurrentPlayerModifyLatestDiscoveryRoll
+                ? "z-[150]"
+                : "z-40"
+            } mt-0 px-0 ${
               activeHauntTargetGuide ? "opacity-[0.72]" : ""
             } ${
               isPhoneLandscapeLayout
@@ -15575,7 +15600,15 @@ export default function BetrayalBoard({
             ) : null}
           </div>
 
-            <section className="absolute inset-0 z-10 grid min-h-0">
+            <section
+              className={`absolute inset-0 grid min-h-0 ${
+                shouldShowLatestDiscovery &&
+                !shouldAutoReturnAfterLatestDiscovery &&
+                !pendingEventChoice
+                  ? "z-[130]"
+                  : "z-10"
+              }`}
+            >
               <div className="sr-only">
                 {shouldShowBoardActionStatus ? (
                   <>
@@ -15658,7 +15691,7 @@ export default function BetrayalBoard({
                       ? shouldUseMobileEventOpenTableChrome
                         ? "inset-0 z-50 items-start justify-end bg-transparent px-2 pb-[74px] pr-[8.25rem] pt-[92px]"
                         : "inset-0 z-[120] items-center justify-center bg-[rgba(3,7,6,0.92)] px-3 pb-[76px] pt-[5.75rem]"
-                      : `inset-y-0 left-0 right-0 z-[120] items-center justify-center px-4 py-16 md:left-[392px] md:right-[240px] ${shouldShowLatestDiscoveryRoll && latestDiscoveryRecentRoll ? "" : "bg-[rgba(3,7,6,0.76)]"}`
+                      : `inset-0 z-[120] items-center justify-center px-4 py-16 ${shouldShowLatestDiscoveryRoll && latestDiscoveryRecentRoll ? "" : "bg-[rgba(3,7,6,0.76)]"}`
                   }`}
                 >
                   {latestDiscoveryPanelVisual ? null : (
@@ -15724,7 +15757,7 @@ export default function BetrayalBoard({
                       renderLatestDiscoveryContinueButton(
                         "panel-corner",
                         pendingLatestDiscoveryEventRoll
-                          ? `pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-w-[132px] shrink-0 items-center justify-center leading-tight ${diceConfirmButtonClass}`
+                          ? `absolute right-2 top-2 z-20 leading-tight ${eventRollConfirmButtonClass}`
                           : "pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]",
                       )
                     ) : null}
@@ -15845,7 +15878,7 @@ export default function BetrayalBoard({
                           {renderLatestDiscoveryContinueButton(
                             "bottom",
                             pendingLatestDiscoveryEventRoll
-                              ? `pointer-events-auto inline-flex min-w-[132px] shrink-0 items-center justify-center ${diceConfirmButtonClass}`
+                              ? eventRollConfirmButtonClass
                               : "pointer-events-auto min-h-[46px] min-w-[118px] shrink-0 rounded-[10px] border border-[rgba(214,181,109,0.72)] bg-[linear-gradient(180deg,rgba(31,25,13,0.96),rgba(11,10,7,0.94))] px-6 py-2 text-[12px] font-black tracking-[0.14em] text-[#fff1b8] shadow-[0_14px_28px_rgba(0,0,0,0.52),0_0_18px_rgba(214,181,109,0.16)] transition hover:border-[#f0cc7a] hover:bg-[linear-gradient(180deg,rgba(46,36,15,0.98),rgba(18,14,8,0.96))]",
                             { disabledWhilePendingRoll: true },
                           )}
@@ -16952,13 +16985,20 @@ export default function BetrayalBoard({
                             type="button"
                             onClick={handleToggleTraitorEventSkip}
                             data-testid="betrayal-explore-option-traitor-event-skip"
-                            className={`pointer-events-auto min-h-[44px] rounded-[10px] border px-3 text-[13px] font-bold shadow-[0_8px_18px_rgba(0,0,0,0.22)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd17c] ${
+                            title={t("board.inventory.traitorEventSkipDescription")}
+                            className={`pointer-events-auto inline-flex min-h-[44px] flex-col items-start justify-center gap-0.5 rounded-[10px] border px-3 text-left text-[13px] font-bold shadow-[0_8px_18px_rgba(0,0,0,0.22)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efd17c] ${
                               ignoreEventSymbolWithTraitorPower
                                 ? "border-[#d6b56d] bg-[rgba(214,181,109,0.24)] text-[#fff1b8]"
                                 : "border-[rgba(214,181,109,0.34)] bg-[rgba(28,24,18,0.72)] text-[#ead7a5] hover:border-[#d6b56d] hover:bg-[rgba(214,181,109,0.16)] hover:text-[#fff1b8]"
                             }`}
                           >
-                            {t("board.inventory.traitorEventSkip")}
+                            <span>{t("board.inventory.traitorEventSkip")}</span>
+                            <span
+                              data-testid="betrayal-explore-option-traitor-event-skip-description"
+                              className="text-[10px] font-semibold leading-tight text-[#d9c68f]"
+                            >
+                              {t("board.inventory.traitorEventSkipDescription")}
+                            </span>
                           </button>
                         ) : null}
                       </div>

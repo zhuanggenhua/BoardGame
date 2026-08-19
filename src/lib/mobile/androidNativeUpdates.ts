@@ -516,10 +516,10 @@ export const resolveAndroidWebAppDownload = async (
     fetchImpl: typeof fetch = fetch,
 ): Promise<AndroidWebAppDownloadResolution> => {
     const { directDownloadUrl, manifestUrl, manifestUrls } = readAndroidWebAppDownloadConfig(env);
-    const versionedFallbackUrl = manifestUrls
+    const versionedFallbackUrls = manifestUrls
         .map((candidateUrl) => buildVersionedAndroidApkUrl(candidateUrl, packageJson.version))
-        .filter(Boolean)
-        .at(-1) || '';
+        .filter(Boolean);
+    const versionedFallbackUrl = versionedFallbackUrls[versionedFallbackUrls.length - 1] || '';
 
     if (manifestUrl) {
         const manifest = await fetchAndroidNativeUpdateManifestFromCandidates(manifestUrls, fetchImpl);

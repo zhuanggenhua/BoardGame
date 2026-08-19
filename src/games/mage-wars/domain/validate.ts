@@ -18,6 +18,7 @@ import {
     isMageWarsSpellcastingObject,
 } from './spellCasting';
 import { validateMageWarsArenaObjectAbility } from './objectAbilityRuntime';
+import { getStatusTokenAmount } from './statusTokens';
 import {
     isMageWarsAreaTargetSpell,
     isMageWarsAttackSpell,
@@ -219,7 +220,7 @@ function resolveStatusRemovalCost(
 ): { manaCost: number } | { error: string } {
     let manaCost = 0;
     for (const statusTokenId of statusTokenIds) {
-        const currentAmount = targetObject.statusTokens[statusTokenId] ?? 0;
+        const currentAmount = getStatusTokenAmount(targetObject, statusTokenId);
         if (currentAmount <= 0) {
             return { error: 'targetMissingStatusToken' };
         }

@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('CardSpotlightOverlay', () => {
-    it('自建卡牌短展示保留 3 秒自动关闭合同，但不靠内容点击关闭', () => {
+    it('卡牌特写不会自动关闭，点击空白背景才关闭', () => {
         vi.useFakeTimers();
         const onClose = vi.fn();
 
@@ -66,7 +66,6 @@ describe('CardSpotlightOverlay', () => {
                     },
                 }]}
                 onClose={onClose}
-                autoCloseDelay={3000}
             />,
         );
 
@@ -74,13 +73,11 @@ describe('CardSpotlightOverlay', () => {
         expect(onClose).not.toHaveBeenCalled();
 
         act(() => {
-            vi.advanceTimersByTime(2999);
+            vi.advanceTimersByTime(5000);
         });
         expect(onClose).not.toHaveBeenCalled();
 
-        act(() => {
-            vi.advanceTimersByTime(1);
-        });
+        fireEvent.click(screen.getByTestId('spotlight-container-root'));
         expect(onClose).toHaveBeenCalledWith('watch-out-1000');
     });
 

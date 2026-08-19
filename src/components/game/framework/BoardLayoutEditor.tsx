@@ -13,6 +13,7 @@ import type {
   ZoneType,
 } from '../../../core/ui/board-layout.types';
 import { createDefaultLayoutConfig, pixelToNormalized } from '../../../core/ui/board-layout.types';
+import { OptimizedImage } from '../../common/media/OptimizedImage';
 
 export interface BoardLayoutEditorProps {
   /** 初始配置 */
@@ -30,6 +31,15 @@ export interface BoardLayoutEditorProps {
 }
 
 type EditTool = 'select' | 'grid' | 'zone' | 'track' | 'stackPoint';
+
+const toOptimizedBackgroundSource = (source: string): string | null => {
+  const trimmed = source.trim();
+  if (!trimmed) return null;
+  if (/^(data:|blob:|https?:\/\/)/i.test(trimmed)) return null;
+  if (trimmed.startsWith('/assets/')) return trimmed.slice('/assets/'.length);
+  if (trimmed.startsWith('/')) return null;
+  return trimmed;
+};
 
 export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
   initialConfig,
@@ -52,6 +62,10 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveHint, setSaveHint] = useState<string | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+  const effectiveBackgroundImage = backgroundImage || config.backgroundImage;
+  const optimizedBackgroundImage = effectiveBackgroundImage
+    ? toOptimizedBackgroundSource(effectiveBackgroundImage)
+    : null;
   
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -74,7 +88,7 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
 
   useEffect(() => {
     setImageAspectRatio(null);
-  }, [backgroundImage]);
+  }, [effectiveBackgroundImage]);
 
   const handleBackgroundImageLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth, naturalHeight } = event.currentTarget;
@@ -566,14 +580,22 @@ export const BoardLayoutEditor: React.FC<BoardLayoutEditorProps> = ({
         }}
       >
         {/* 背景图片 */}
-        {(backgroundImage || config.backgroundImage) && (
+        {effectiveBackgroundImage && (optimizedBackgroundImage ? (
+          <OptimizedImage
+            src={optimizedBackgroundImage}
+            alt={t('layoutEditor.backgroundAlt')}
+            onLoad={handleBackgroundImageLoad}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            placeholder={false}
+          />
+        ) : (
           <img
-            src={backgroundImage || config.backgroundImage}
+            src={effectiveBackgroundImage}
             alt={t('layoutEditor.backgroundAlt')}
             onLoad={handleBackgroundImageLoad}
             className="absolute inset-0 w-full h-full object-contain pointer-events-none"
           />
-        )}
+        ))}
 
         {/* 网格 */}
         {config.grid && renderGridPreview()}

@@ -11,6 +11,7 @@ import {
   createRuntimeCore,
   expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
+  expectUnifiedEventRollConfirmButton,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
   injectCore,
@@ -216,26 +217,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-event-roll-waiting")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-discovery-continue")).toContainText(
-      "确认结果并继续",
-    );
-    const unifiedConfirmButtonShape = await page
-      .getByTestId("betrayal-discovery-continue")
-      .evaluate((element) => {
-        const style = window.getComputedStyle(element);
-        return {
-          backgroundColor: style.backgroundColor,
-          borderColor: style.borderColor,
-          borderRadius: style.borderRadius,
-        };
-      });
-    expect(unifiedConfirmButtonShape).toEqual({
-      backgroundColor: "rgb(214, 181, 109)",
-      borderColor: "rgb(214, 181, 109)",
-      borderRadius: "0px",
-    });
+    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {

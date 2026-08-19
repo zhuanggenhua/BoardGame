@@ -213,4 +213,24 @@ describe('HomeV2 Overview game ordering', () => {
         expect(screen.getByTestId('home-v2-hot-badge-smashup')).toBeInTheDocument();
         expect(screen.queryByTestId('home-v2-hot-badge-cardia')).not.toBeInTheDocument();
     });
+
+    it('受控目录页码会渲染指定页，并通过分页按钮请求上层切页', () => {
+        const handleCatalogPageChange = vi.fn();
+
+        render(createElement(OverviewSpread, {
+            games: ['game-1', 'game-2', 'game-3', 'game-4', 'game-5', 'game-6', 'game-7'].map(buildGame),
+            activeCategory: 'all',
+            catalogPageIndex: 1,
+            onCatalogPageChange: handleCatalogPageChange,
+            onCategoryChange: vi.fn(),
+            onGameClick: vi.fn(),
+        }));
+
+        expect(screen.getByTestId('home-v2-catalog-page-label')).toHaveTextContent('2 / 2');
+        expect(Array.from(document.querySelectorAll<HTMLElement>('[data-game-id]')).map((element) => element.dataset.gameId)).toEqual(['game-7']);
+
+        fireEvent.click(screen.getByTestId('home-v2-catalog-prev-page'));
+
+        expect(handleCatalogPageChange).toHaveBeenCalledWith(0);
+    });
 });

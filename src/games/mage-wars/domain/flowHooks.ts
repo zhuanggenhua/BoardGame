@@ -14,6 +14,17 @@ import {
 } from './spellRules';
 import { MAGE_WARS_PHASE_ORDER } from './types';
 import { getCreatureObjectIdsForOwner, getOpponentId } from './utils';
+import { getStatusTokenAmount } from './statusTokens';
+import {
+    getTemporaryChargeDiceModifier,
+    getTemporaryMeleeDiceModifier,
+    getTemporaryNextMeleePierceModifier,
+    getTemporaryTraitIdsForTurnCleanup,
+    hasTemporarySwift,
+    hasTemporarySwiftFreeMoveUsed,
+    hasTemporaryTeleportMovement,
+    hasTemporaryVampiricNextMelee,
+} from './temporaryTraits';
 
 const PRINTED_SWIFT_TRAIT_SOURCE_ID = 'mw.trait.swift.printed';
 const POST_MOVE_QUICK_ACTION_SOURCE_ID = 'mw.move.quick-action-window';
@@ -222,7 +233,7 @@ function createUpkeepRotDamageEvents(
     const events: MageWarsEvent[] = [];
 
     for (const player of Object.values(state.core.players)) {
-        const rotAmount = player.statusTokens[STATUS_TOKEN_IDS.ROT] ?? 0;
+        const rotAmount = getStatusTokenAmount(player, STATUS_TOKEN_IDS.ROT);
         if (rotAmount <= 0) continue;
         appendDirectDamageEventsForTarget(events, state, {
             targetId: player.id,
@@ -235,7 +246,7 @@ function createUpkeepRotDamageEvents(
     }
 
     for (const object of Object.values(state.core.objects)) {
-        const rotAmount = object.statusTokens[STATUS_TOKEN_IDS.ROT] ?? 0;
+        const rotAmount = getStatusTokenAmount(object, STATUS_TOKEN_IDS.ROT);
         if (rotAmount <= 0 || !isMageWarsLivingArenaObject(object)) continue;
         appendDirectDamageEventsForTarget(events, state, {
             targetId: object.id,
@@ -393,7 +404,7 @@ function createUpkeepBurnEvents(
     const events: MageWarsEvent[] = [];
 
     for (const player of Object.values(state.core.players)) {
-        const burnAmount = player.statusTokens[STATUS_TOKEN_IDS.BURN] ?? 0;
+        const burnAmount = getStatusTokenAmount(player, STATUS_TOKEN_IDS.BURN);
         if (burnAmount <= 0) continue;
         appendBurnUpkeepEventsForTarget(events, state, {
             targetId: player.id,
@@ -405,7 +416,7 @@ function createUpkeepBurnEvents(
     }
 
     for (const object of Object.values(state.core.objects)) {
-        const burnAmount = object.statusTokens[STATUS_TOKEN_IDS.BURN] ?? 0;
+        const burnAmount = getStatusTokenAmount(object, STATUS_TOKEN_IDS.BURN);
         if (burnAmount <= 0) continue;
         appendBurnUpkeepEventsForTarget(events, state, {
             targetId: object.id,
@@ -429,7 +440,7 @@ function createCreatureActionStatusRemovalEvents(
 ): MageWarsEvent[] {
     const player = core.players[core.currentPlayerId];
     const events: MageWarsEvent[] = [];
-    const playerStatusAmount = player?.statusTokens[statusTokenId] ?? 0;
+    const playerStatusAmount = player ? getStatusTokenAmount(player, statusTokenId) : 0;
     if (player && playerStatusAmount > 0) {
         events.push({
             type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
@@ -446,7 +457,7 @@ function createCreatureActionStatusRemovalEvents(
 
     for (const objectId of getCreatureObjectIdsForOwner(core, core.currentPlayerId)) {
         const object = core.objects[objectId];
-        const objectStatusAmount = object?.statusTokens[statusTokenId] ?? 0;
+        const objectStatusAmount = object ? getStatusTokenAmount(object, statusTokenId) : 0;
         if (!object || objectStatusAmount <= 0) continue;
         events.push({
             type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
@@ -473,7 +484,7 @@ function createCreatureActionCrippleEscapeEvents(
 
     for (const objectId of getCreatureObjectIdsForOwner(core, core.currentPlayerId)) {
         const object = core.objects[objectId];
-        const crippleAmount = object?.statusTokens[STATUS_TOKEN_IDS.CRIPPLE] ?? 0;
+        const crippleAmount = object ? getStatusTokenAmount(object, STATUS_TOKEN_IDS.CRIPPLE) : 0;
         if (!object || crippleAmount <= 0) continue;
 
         const effectDieResult = random.d(12);
@@ -502,49 +513,26 @@ function createArenaObjectTemporaryTraitsClearedEvents(
     timestamp: number,
 ): MageWarsEvent[] {
     return getCreatureObjectIdsForOwner(core, core.currentPlayerId)
-        .map((objectId) => core.objects[objectId])
-        .filter((object) => object?.temporaryTraits?.swift
-            || object?.temporaryTraits?.teleportMovement
-            || object?.temporaryTraits?.freeMoveUsedThisAction
-            || object?.temporaryTraits?.movedThisAction
-            || object?.temporaryTraits?.quickActionAfterMoveAvailable
-            || object?.temporaryTraits?.chargeDiceModifier
-            || (
-                object?.temporaryTraits?.meleeDiceModifier
-                && object.temporaryTraits.meleeDiceModifierUntilRoundNumber !== core.turnNumber
-            )
-            || object?.temporaryTraits?.vampiricNextMelee
-            || object?.temporaryTraits?.nextMeleePierceModifier)
-        .map((object): MageWarsEvent => {
-            const hasTemporarySwiftOrTeleport = object.temporaryTraits?.swift
-                || object.temporaryTraits?.teleportMovement;
-            const hasChargeOn = (object.temporaryTraits?.chargeDiceModifier ?? 0) > 0;
-            const hasCallOfTheWild = (object.temporaryTraits?.meleeDiceModifier ?? 0) > 0;
-            const hasBloodstrike = object.temporaryTraits?.vampiricNextMelee === true
-                || (object.temporaryTraits?.nextMeleePierceModifier ?? 0) > 0;
-            const hasPrintedSwiftFreeMove = object.temporaryTraits?.freeMoveUsedThisAction
+        .flatMap((objectId): MageWarsEvent[] => {
+            const object = core.objects[objectId];
+            if (!object) return [];
+            const traitIds = getTemporaryTraitIdsForTurnCleanup(object, core.turnNumber);
+            if (traitIds.length === 0) return [];
+
+            const hasTemporarySwiftOrTeleport = hasTemporarySwift(object)
+                || hasTemporaryTeleportMovement(object);
+            const hasChargeOn = getTemporaryChargeDiceModifier(object) > 0;
+            const hasCallOfTheWild = getTemporaryMeleeDiceModifier(object) > 0;
+            const hasBloodstrike = hasTemporaryVampiricNextMelee(object)
+                || getTemporaryNextMeleePierceModifier(object) > 0;
+            const hasPrintedSwiftFreeMove = hasTemporarySwiftFreeMoveUsed(object)
                 && !hasTemporarySwiftOrTeleport;
-            return {
+            return [{
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED,
                 payload: {
                     ownerId: object.ownerId,
                     objectId: object.id,
-                    traitIds: [
-                        ...(object.temporaryTraits?.swift ? ['swift' as const] : []),
-                        ...(object.temporaryTraits?.teleportMovement ? ['teleportMovement' as const] : []),
-                        ...(object.temporaryTraits?.freeMoveUsedThisAction ? ['swiftFreeMove' as const] : []),
-                        ...(object.temporaryTraits?.movedThisAction ? ['movedThisAction' as const] : []),
-                        ...(object.temporaryTraits?.quickActionAfterMoveAvailable ? ['quickActionAfterMove' as const] : []),
-                        ...(object.temporaryTraits?.chargeDiceModifier ? ['charge' as const] : []),
-                        ...(
-                            object.temporaryTraits?.meleeDiceModifier
-                            && object.temporaryTraits.meleeDiceModifierUntilRoundNumber !== core.turnNumber
-                                ? ['meleeDice' as const]
-                                : []
-                        ),
-                        ...(object.temporaryTraits?.vampiricNextMelee ? ['vampiric' as const] : []),
-                        ...(object.temporaryTraits?.nextMeleePierceModifier ? ['pierce' as const] : []),
-                    ],
+                    traitIds,
                     sourceAbilityId: hasChargeOn
                         ? CHARGE_ON_SPELL_SOURCE_ID
                         : hasCallOfTheWild
@@ -559,7 +547,7 @@ function createArenaObjectTemporaryTraitsClearedEvents(
                 },
                 sourceCommandType,
                 timestamp,
-            };
+            }];
         });
 }
 

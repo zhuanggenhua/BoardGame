@@ -3,7 +3,7 @@ import { getGamesByCategory } from '../../config/games.config';
 import { sortGamesForLobbyDirectory } from '../../components/home-v2/lobbyDirectorySorting';
 
 describe('games.config 工具入口可见性', () => {
-    it('全部分类隐藏工具，工具分类保留项目工具', () => {
+    it('全部分类隐藏全局工具，工具分类不收游戏专属调试页', () => {
         const allIds = getGamesByCategory('All').map((game) => game.id);
         const toolIds = getGamesByCategory('tools').map((game) => game.id);
 
@@ -12,13 +12,13 @@ describe('games.config 工具入口可见性', () => {
         expect(allIds).not.toContain('audiobrowser');
         expect(allIds).not.toContain('archview');
         expect(allIds).not.toContain('qidahenregionmask');
+        expect(toolIds).not.toContain('qidahenregionmask');
 
         expect(toolIds).toEqual(expect.arrayContaining([
             'assetslicer',
             'fxpreview',
             'audiobrowser',
             'archview',
-            'qidahenregionmask',
         ]));
     });
 

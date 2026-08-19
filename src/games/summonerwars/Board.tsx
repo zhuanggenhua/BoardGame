@@ -1153,7 +1153,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               </div>
               <BoardLayoutEditor
                 initialConfig={layoutConfig ?? undefined}
-                backgroundImage="/assets/summonerwars/common/map.png"
+                backgroundImage="summonerwars/common/map.png"
                 onChange={setLayoutConfig}
                 onSave={handleSaveLayout}
                 saveLabel={t('layoutEditor.saveLayout')}

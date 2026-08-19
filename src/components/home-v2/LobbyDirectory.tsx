@@ -267,6 +267,8 @@ export interface OverviewSpreadProps {
     mostPopularGameId?: string | null;
     activeCategory?: LobbyCategory;
     onCategoryChange?: (category: LobbyCategory) => void;
+    catalogPageIndex?: number;
+    onCatalogPageChange?: (pageIndex: number) => void;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -280,6 +282,8 @@ export const OverviewSpread = ({
     mostPopularGameId,
     activeCategory = 'all',
     onCategoryChange,
+    catalogPageIndex: controlledCatalogPageIndex,
+    onCatalogPageChange,
     onGameClick,
     onAccountClick,
     continueMatch,
@@ -288,7 +292,7 @@ export const OverviewSpread = ({
 }: OverviewSpreadProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
     const { user, logout } = useAuth();
-    const [catalogPageIndex, setCatalogPageIndex] = React.useState(0);
+    const [uncontrolledCatalogPageIndex, setUncontrolledCatalogPageIndex] = React.useState(0);
     const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
     const languageMenuRef = React.useRef<HTMLDivElement>(null);
 
@@ -297,6 +301,8 @@ export const OverviewSpread = ({
         [activeCategory, games, popularityByGameId],
     );
     const totalPages = Math.max(1, Math.ceil(orderedGames.length / PAGE_SIZE));
+    const requestedCatalogPageIndex = controlledCatalogPageIndex ?? uncontrolledCatalogPageIndex;
+    const catalogPageIndex = Math.max(0, Math.min(totalPages - 1, requestedCatalogPageIndex));
     const visibleEntries = React.useMemo(
         () => orderedGames
             .slice(catalogPageIndex * PAGE_SIZE, catalogPageIndex * PAGE_SIZE + PAGE_SIZE)
@@ -309,12 +315,30 @@ export const OverviewSpread = ({
     );
 
     React.useEffect(() => {
-        setCatalogPageIndex(0);
-    }, [activeCategory]);
+        if (controlledCatalogPageIndex === undefined) {
+            setUncontrolledCatalogPageIndex(0);
+        }
+    }, [activeCategory, controlledCatalogPageIndex]);
 
     React.useEffect(() => {
-        setCatalogPageIndex((current) => Math.min(current, totalPages - 1));
-    }, [totalPages]);
+        if (controlledCatalogPageIndex === undefined) {
+            setUncontrolledCatalogPageIndex((current) => Math.min(current, totalPages - 1));
+        }
+    }, [controlledCatalogPageIndex, totalPages]);
+
+    const requestCatalogPageChange = React.useCallback((nextPageIndex: number) => {
+        const clampedNextPageIndex = Math.max(0, Math.min(totalPages - 1, nextPageIndex));
+        if (clampedNextPageIndex === catalogPageIndex) {
+            return;
+        }
+
+        if (onCatalogPageChange) {
+            onCatalogPageChange(clampedNextPageIndex);
+            return;
+        }
+
+        setUncontrolledCatalogPageIndex(clampedNextPageIndex);
+    }, [catalogPageIndex, onCatalogPageChange, totalPages]);
 
     const playerLabel = user?.username?.trim() || t('auth:menu.login');
     const canGoPrevious = catalogPageIndex > 0;
@@ -680,7 +704,7 @@ export const OverviewSpread = ({
                     borderRadius: scaled(3),
                 }}
                 disabled={!canGoPrevious}
-                onClick={() => setCatalogPageIndex((current) => Math.max(0, current - 1))}
+                onClick={() => requestCatalogPageChange(catalogPageIndex - 1)}
             >
                 <ChevronLeft aria-hidden="true" style={{ width: scaled(18), height: scaled(18) }} />
             </button>
@@ -705,7 +729,7 @@ export const OverviewSpread = ({
                     borderRadius: scaled(3),
                 }}
                 disabled={!canGoNext}
-                onClick={() => setCatalogPageIndex((current) => Math.min(totalPages - 1, current + 1))}
+                onClick={() => requestCatalogPageChange(catalogPageIndex + 1)}
             >
                 <ChevronRight aria-hidden="true" style={{ width: scaled(18), height: scaled(18) }} />
             </button>

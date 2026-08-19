@@ -5464,6 +5464,57 @@ describe('Betrayal first scenario runtime', () => {
         expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById[mummyMonsterId]).toBe(0);
     });
 
+    it('木乃伊普通移动与叛徒同房时只消耗 1 点并可继续连续移动', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const mummyRuntime = core.scenarioRuntime.mummy!;
+        const mummyMonsterId = mummyRuntime.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId;
+        if (!mummyRoomId) {
+            throw new Error('木乃伊连续移动测试夹具缺少木乃伊房间');
+        }
+        const quietRoomId = core.rooms.find((room) => (
+            room.state === 'discovered'
+            && room.id !== mummyRoomId
+            && room.id !== mummyRuntime.girlRoomId
+        ))?.id ?? mummyRuntime.girlRoomId!;
+        activateTestExplorer(core, traitorId);
+        setTestExplorerRoom(core, traitorId, mummyRoomId);
+        for (const playerId of core.playerIds.filter((playerId) => playerId !== traitorId)) {
+            setTestExplorerRoom(core, playerId, quietRoomId);
+        }
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId: '木乃伊:3' },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2),
+        );
+
+        expect(resolveBetrayalMonsterTurnRuntimeState(core).movementRollsByGroupId['木乃伊:3']).toMatchObject({
+            dice: [1, 1, 1],
+            total: 3,
+            moveAllowance: 3,
+        });
+        expect(resolveBetrayalMonsterMoveCost(core, mummyMonsterId)).toBe(1);
+        const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId)[0];
+        expect(targetRoom).toBeDefined();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, traitorId, {
+            monsterId: mummyMonsterId,
+            roomId: targetRoom!.id,
+        });
+
+        expect(core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId).toBe(targetRoom!.id);
+        expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById[mummyMonsterId]).toBe(2);
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId).length).toBeGreaterThan(0);
+        expect(resolveBetrayalMonsterActionPanel(core).slots.find((slot) => slot.id === `move:${mummyMonsterId}`)).toMatchObject({
+            enabled: true,
+        });
+    });
+
     it('木乃伊移动骰为 0 或 1 时可跨楼层选择已发现房间，但不能去未发现房间', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
@@ -5545,6 +5596,7 @@ describe('Betrayal first scenario runtime', () => {
         setTestExplorerRoom(core, deadHeroId, mummyRoomId);
         core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
 
+        expect(resolveBetrayalMonsterMoveCost(core, mummyMonsterId)).toBe(2);
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,

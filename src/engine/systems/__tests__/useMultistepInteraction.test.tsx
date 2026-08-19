@@ -39,10 +39,10 @@ function BatchHarness({
 }
 
 describe('useMultistepInteraction', () => {
-    it('批量骰子交互第一次确认只提交本批次命令，不关闭整段交互', () => {
+    it('submitBatch 交互第一次确认只提交本批次命令，不关闭整段交互', () => {
         const dispatchLog: Array<{ type: string; payload?: unknown }> = [];
         const interaction: InteractionDescriptor<MultistepChoiceData<SelectStep, SelectResult>> = {
-            id: 'reroll-up-to-five',
+            id: 'repeatable-reroll-batch',
             kind: 'multistep-choice',
             playerId: '0',
             data: {

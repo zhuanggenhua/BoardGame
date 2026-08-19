@@ -230,10 +230,8 @@ export function useGameEvents({
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-          const p = event.payload as { defId?: string };
-          if (p.defId) {
-            fxBus.push(SU_FX.ACTION_SHOW, { space: 'screen' }, { defId: p.defId });
-          }
+          // 行动卡特写由 Board 中的 CardSpotlightQueue 消费同一事件流；
+          // 这里不再推自动退场 FX，避免玩家没读清就关闭。
           break;
         }
 

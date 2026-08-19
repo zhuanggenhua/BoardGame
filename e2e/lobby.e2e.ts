@@ -47,7 +47,7 @@ async function ensureHomeV2BookMaterialsReady(
 ): Promise<void> {
     const requiredImageKeywords = [
         ...(options?.requireLegacyTabs === false
-            ? ['/book-catalog-wide/1.png']
+            ? ['/book-catalog-wide/compressed/1.webp']
             : ['/book-idle/compressed/1.webp', '/side-tabs-static/compressed/1.webp']),
     ];
 
@@ -173,6 +173,7 @@ async function confirmCreateRoomFromModal(page: Page): Promise<void> {
 }
 
 const HOME_V2_QUERY_ENTRY_TEST_NAME = 'homeV2Draft 查询参数会切到 V2 首页并可进入详情页';
+const HOME_V2_CATALOG_PAGINATION_FLIP_TEST_NAME = 'homeV2Draft 目录左右分页按钮会触发真实书页翻页';
 const HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME = 'homeV2Draft 详情页输入房间密码后可加入加密房间';
 const HOME_V2_PACKAGE_ENTRY_TEST_NAME = 'homeV2Draft 原生运行时 package-managed 游戏详情显示移动包管理入口';
 const HOME_V2_MODAL_UNIFIED_TEST_NAME = 'homeV2Draft 登录与创建房间弹窗统一使用纸面 modal';
@@ -251,7 +252,7 @@ async function captureHomeV2FlipFrameAtProgress(
     testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
     name: string,
     targetProgress: number,
-): Promise<void> {
+): Promise<Record<string, unknown>> {
     const flipStage = page.locator('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]').first();
     await expect(flipStage).toBeVisible({ timeout: 5000 });
     const startedAt = Date.now();
@@ -293,7 +294,7 @@ async function captureHomeV2FlipFrameAtProgress(
                 console.log(`[home-v2-flip-capture] ${name} => ${JSON.stringify(lastSnapshot)}`);
                 const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
                 await page.screenshot({ path: screenshotPath, fullPage: true });
-                return;
+                return lastSnapshot;
             }
             await page.waitForTimeout(80);
         }
@@ -700,6 +701,7 @@ test.describe('Lobby E2E', () => {
         await setChineseLocale(page);
         if (
             testInfo.title === HOME_V2_QUERY_ENTRY_TEST_NAME
+            || testInfo.title === HOME_V2_CATALOG_PAGINATION_FLIP_TEST_NAME
             || testInfo.title === HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME
             || testInfo.title === HOME_V2_PACKAGE_ENTRY_TEST_NAME
             || testInfo.title === HOME_V2_MODAL_UNIFIED_TEST_NAME
@@ -1483,6 +1485,123 @@ test.describe('Lobby E2E', () => {
         await waitForMatchBoardOrLoading(page);
             const continueMatchScreenshotPath = getEvidenceScreenshotPath(testInfo, 'continue-match-entry-20260516');
             await page.screenshot({ path: continueMatchScreenshotPath, fullPage: true });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test(HOME_V2_CATALOG_PAGINATION_FLIP_TEST_NAME, async ({ browser, workerPorts }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
+        const page = await context.newPage();
+
+        try {
+            await useHomeV2MobileLandscapeViewport(page);
+            await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
+            await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
+            await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 15000 });
+            await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            await ensureHomeV2OverviewThumbnailsReady(page);
+
+            const pageLabel = page.getByTestId('home-v2-catalog-page-label');
+            await expect(pageLabel).toHaveText(/1\s*\/\s*\d+/, { timeout: 10000 });
+            const firstPageGameIds = await page.locator('[data-scene-slot="overview_spread_body"] [data-game-id]').evaluateAll((cards) =>
+                cards.map((card) => card.getAttribute('data-game-id')),
+            );
+            expect(firstPageGameIds.length).toBeGreaterThan(1);
+
+            const flipStage = page.getByTestId('home-v2-fold-line-flip');
+            const sourceHoldBootstrap = page.evaluate(() => {
+                type FlipBootstrapSnapshot = {
+                    mode: string | null;
+                    animating: string | null;
+                    holdVisible: string | null;
+                    ready: string | null;
+                };
+
+                return new Promise<{ seen: boolean; snapshots: FlipBootstrapSnapshot[] }>((resolve) => {
+                    const stage = document.querySelector('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]');
+                    if (!stage) {
+                        resolve({ seen: false, snapshots: [] });
+                        return;
+                    }
+
+                    const snapshots: FlipBootstrapSnapshot[] = [];
+                    let settled = false;
+                    let timeoutId: number | null = null;
+                    const readSnapshot = (): FlipBootstrapSnapshot => ({
+                        mode: stage.getAttribute('data-flip-mode'),
+                        animating: stage.getAttribute('data-turn-animating'),
+                        holdVisible: stage.getAttribute('data-turn-source-hold-visible'),
+                        ready: stage.getAttribute('data-turn-ready'),
+                    });
+                    const observer = new MutationObserver(() => {
+                        const snapshot = readSnapshot();
+                        snapshots.push(snapshot);
+                        if (snapshot.mode?.startsWith('flipping') && snapshot.holdVisible === 'true' && snapshot.animating === 'false') {
+                            settled = true;
+                            observer.disconnect();
+                            if (timeoutId !== null) {
+                                window.clearTimeout(timeoutId);
+                            }
+                            resolve({ seen: true, snapshots });
+                        }
+                    });
+
+                    timeoutId = window.setTimeout(() => {
+                        if (settled) {
+                            return;
+                        }
+                        settled = true;
+                        observer.disconnect();
+                        resolve({ seen: false, snapshots });
+                    }, 1500);
+                    observer.observe(stage, {
+                        attributes: true,
+                        attributeFilter: [
+                            'data-flip-mode',
+                            'data-turn-animating',
+                            'data-turn-ready',
+                            'data-turn-source-hold-visible',
+                        ],
+                    });
+                });
+            });
+
+            await page.evaluate(() => {
+                (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = 0.5;
+            });
+            await expect(page.getByTestId('home-v2-catalog-next-page')).toBeEnabled({ timeout: 10000 });
+            await page.getByTestId('home-v2-catalog-next-page').click();
+            const bootstrapResult = await sourceHoldBootstrap;
+            expect(bootstrapResult.seen, `未观察到翻页启动前保持源页面，snapshots=${JSON.stringify(bootstrapResult.snapshots)}`).toBe(true);
+            const nextFlipSnapshot = await captureHomeV2FlipFrameAtProgress(page, testInfo, 'catalog-next-page-flip-50', 0.5);
+            expect(nextFlipSnapshot.pluginAnimating).toBe('true');
+            await waitForHomeV2FlipMode(page, 'overview');
+            await expect(pageLabel).toHaveText(/2\s*\/\s*\d+/, { timeout: 10000 });
+
+            const secondPageGameIds = await page.locator('[data-scene-slot="overview_spread_body"] [data-game-id]').evaluateAll((cards) =>
+                cards.map((card) => card.getAttribute('data-game-id')),
+            );
+            expect(secondPageGameIds).not.toEqual(firstPageGameIds);
+
+            const catalogSecondPageScreenshotPath = getEvidenceScreenshotPath(testInfo, 'catalog-second-page-after-flip');
+            await page.screenshot({ path: catalogSecondPageScreenshotPath, fullPage: true });
+
+            await page.evaluate(() => {
+                (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = 0.5;
+            });
+            await expect(page.getByTestId('home-v2-catalog-prev-page')).toBeEnabled({ timeout: 10000 });
+            await page.getByTestId('home-v2-catalog-prev-page').click();
+            const previousFlipSnapshot = await captureHomeV2FlipFrameAtProgress(page, testInfo, 'catalog-prev-page-flip-50', 0.5);
+            expect(previousFlipSnapshot.pluginAnimating).toBe('true');
+            await waitForHomeV2FlipMode(page, 'overview');
+            await expect(pageLabel).toHaveText(/1\s*\/\s*\d+/, { timeout: 10000 });
+
+            const returnedPageGameIds = await page.locator('[data-scene-slot="overview_spread_body"] [data-game-id]').evaluateAll((cards) =>
+                cards.map((card) => card.getAttribute('data-game-id')),
+            );
+            expect(returnedPageGameIds).toEqual(firstPageGameIds);
         } finally {
             await context.close();
         }

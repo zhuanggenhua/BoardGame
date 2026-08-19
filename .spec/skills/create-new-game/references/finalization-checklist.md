@@ -79,12 +79,13 @@
 
 > 参考实现：`src/games/smashup/criticalImageResolver.ts` / `src/games/summonerwars/criticalImageResolver.ts` / `src/games/dicethrone/criticalImageResolver.ts`。
 
-### 6.5 debug-config（可选）
+### 6.5 debug-config（必须裁定）
 
-若需要调试面板，创建 `debug-config.tsx` 提供游戏专属调试选项。
+若附加能力矩阵为`实施本轮`，或用户说“接入可选 / 可选都接”，创建 `debug-config.tsx` 提供游戏专属调试选项，并在 Board 内挂载 `GameDebugPanel`。若本轮明确跳过，也必须在矩阵和 tasks 中写明原因。
 
 **调试面板规范**：
 - 调试入口统一使用 `GameDebugPanel` 组件挂载在 Board 内，不得创建新的全局入口。
+- 游戏专属调试页、区域编辑器、运行时预览和配置面板不得默认注册为 `src/tools` 全局工具，不得进入大厅工具栏目；只有用户明确要求“全局工具 / 工具栏目入口 / 独立开发工具”，或工具服务多个游戏 / 项目共享流程时，才允许走全局工具注册。
 - 调试操作必须通过 `SYS_CHEAT_*` 指令（依赖 CheatSystem），禁止直接修改 core。
 - 若包含“发牌/出牌”类调试：
   - **必须以精灵图索引为发牌依据**（或等价的稳定索引），保证可复现。

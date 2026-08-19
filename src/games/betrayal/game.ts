@@ -7411,11 +7411,12 @@ export function resolveBetrayalMonsterMoveCost(
     if (!monster) {
         return 0;
     }
-    const sharesRoomWithLivingExplorer = getAllExplorers(core).some((explorer) => (
+    const sharesRoomWithLivingHero = getAllExplorers(core).some((explorer) => (
         resolveControlledRoomId(core, explorer) === monster.roomId
         && isExplorerTargetableByMonsters(core, explorer)
+        && resolveExplorerSide(core, explorer.playerId) === 'hero'
     ));
-    return sharesRoomWithLivingExplorer ? 2 : 1;
+    return sharesRoomWithLivingHero ? 2 : 1;
 }
 
 export function resolveBetrayalMonsterMoveTargetRooms(

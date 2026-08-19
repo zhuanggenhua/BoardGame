@@ -6,7 +6,17 @@ import {
     applyTemporaryTraitGain,
     clearPostMoveAttackTraits,
     clearTemporaryTraits,
+    getTemporaryChargeDiceModifier,
+    getTemporaryMeleeDiceModifier,
+    getTemporaryNextMeleePierceModifier,
+    getTemporaryTraitIdsForTurnCleanup,
     hasExpiredRoundScopedTemporaryTraits,
+    hasTemporaryMovedThisAction,
+    hasTemporaryQuickActionAfterMove,
+    hasTemporarySwift,
+    hasTemporarySwiftFreeMoveUsed,
+    hasTemporaryTeleportMovement,
+    hasTemporaryVampiricNextMelee,
 } from '../domain/temporaryTraits';
 
 function arenaObject(patch: Partial<MageWarsArenaObjectState> = {}): MageWarsArenaObjectState {
@@ -29,6 +39,82 @@ function arenaObject(patch: Partial<MageWarsArenaObjectState> = {}): MageWarsAre
 }
 
 describe('Mage Wars temporary traits lifecycle', () => {
+    it('reads absent temporary traits as inactive and zero-valued', () => {
+        const object = arenaObject();
+
+        expect(hasTemporarySwift(object)).toBe(false);
+        expect(hasTemporaryTeleportMovement(object)).toBe(false);
+        expect(hasTemporarySwiftFreeMoveUsed(object)).toBe(false);
+        expect(hasTemporaryMovedThisAction(object)).toBe(false);
+        expect(hasTemporaryQuickActionAfterMove(object)).toBe(false);
+        expect(hasTemporaryVampiricNextMelee(object)).toBe(false);
+        expect(getTemporaryChargeDiceModifier(object)).toBe(0);
+        expect(getTemporaryMeleeDiceModifier(object)).toBe(0);
+        expect(getTemporaryNextMeleePierceModifier(object)).toBe(0);
+    });
+
+    it('reads boolean and numeric temporary traits through the formal accessors', () => {
+        const object = arenaObject({
+            temporaryTraits: {
+                swift: true,
+                teleportMovement: true,
+                freeMoveUsedThisAction: true,
+                movedThisAction: true,
+                quickActionAfterMoveAvailable: true,
+                chargeDiceModifier: 2,
+                meleeDiceModifier: 3,
+                vampiricNextMelee: true,
+                nextMeleePierceModifier: 1,
+            },
+        });
+
+        expect(hasTemporarySwift(object)).toBe(true);
+        expect(hasTemporaryTeleportMovement(object)).toBe(true);
+        expect(hasTemporarySwiftFreeMoveUsed(object)).toBe(true);
+        expect(hasTemporaryMovedThisAction(object)).toBe(true);
+        expect(hasTemporaryQuickActionAfterMove(object)).toBe(true);
+        expect(hasTemporaryVampiricNextMelee(object)).toBe(true);
+        expect(getTemporaryChargeDiceModifier(object)).toBe(2);
+        expect(getTemporaryMeleeDiceModifier(object)).toBe(3);
+        expect(getTemporaryNextMeleePierceModifier(object)).toBe(1);
+    });
+
+    it('lists the temporary trait families that should clear at turn cleanup', () => {
+        expect(getTemporaryTraitIdsForTurnCleanup(arenaObject(), 3)).toEqual([]);
+
+        expect(getTemporaryTraitIdsForTurnCleanup(arenaObject({
+            temporaryTraits: {
+                swift: true,
+                teleportMovement: true,
+                freeMoveUsedThisAction: true,
+                movedThisAction: true,
+                quickActionAfterMoveAvailable: true,
+                chargeDiceModifier: 2,
+                meleeDiceModifier: 1,
+                meleeDiceModifierUntilRoundNumber: 2,
+                vampiricNextMelee: true,
+                nextMeleePierceModifier: 1,
+            },
+        }), 3)).toEqual([
+            'swift',
+            'teleportMovement',
+            'swiftFreeMove',
+            'movedThisAction',
+            'quickActionAfterMove',
+            'charge',
+            'meleeDice',
+            'vampiric',
+            'pierce',
+        ]);
+
+        expect(getTemporaryTraitIdsForTurnCleanup(arenaObject({
+            temporaryTraits: {
+                meleeDiceModifier: 1,
+                meleeDiceModifierUntilRoundNumber: 3,
+            },
+        }), 3)).toEqual([]);
+    });
+
     it('keeps the strongest numeric temporary trait while adding boolean grants', () => {
         const first = applyTemporaryTraitGain(arenaObject({
             temporaryTraits: {

@@ -35,3 +35,18 @@ export function shouldPreferHandSpecialSelection(args: {
     );
     return handSpecialBaseIndices.size > 0 && args.normalPlayableBaseIndices.size === 0;
 }
+
+export function shouldOfferHandSpecialActionChoice(args: {
+    matchState: MatchState<SmashUpCore>;
+    playerId: string;
+    card: CardInstance;
+    normalPlayableBaseIndices: Set<number>;
+}): boolean {
+    if (args.card.type === 'fusion') return false;
+    const handSpecialBaseIndices = getHandSpecialPlayableBaseIndices(
+        args.matchState,
+        args.playerId,
+        args.card.uid,
+    );
+    return handSpecialBaseIndices.size > 0 && args.normalPlayableBaseIndices.size > 0;
+}

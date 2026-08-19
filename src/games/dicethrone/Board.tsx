@@ -566,6 +566,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             const originalData = sysInteraction.data as Record<string, unknown>;
             const selectCount = Number(meta.selectCount) || 1;
             const allowRepeatedDieSelection = meta.allowRepeatedDieSelection === true;
+            const isRepeatedReroll = allowRepeatedDieSelection;
             const completedDieIds = Array.isArray(originalData.completedDieIds)
                 ? originalData.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
                 : [];
@@ -585,12 +586,18 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, remainingSelectCount, allowRepeatedDieSelection),
                     toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, remainingSelectCount),
                     getCompletedSteps: (result: DiceSelectResult) => completedCount + result.selectedDiceIds.length,
-                    maxSteps: typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
-                        ? originalData.maxSteps
-                        : selectCount,
+                    maxSteps: isRepeatedReroll
+                        ? (typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
+                            ? originalData.maxSteps
+                            : selectCount)
+                        : (typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
+                            ? originalData.maxSteps
+                            : undefined),
                     minSteps: originalData.minSteps ?? 1,
-                    confirmationMode: 'submitBatch',
-                    shouldResolveOnConfirm: (result: DiceSelectResult) => result.selectedDiceIds.length === 0,
+                    confirmationMode: isRepeatedReroll ? 'submitBatch' : originalData.confirmationMode,
+                    shouldResolveOnConfirm: isRepeatedReroll
+                        ? (result: DiceSelectResult) => result.selectedDiceIds.length === 0
+                        : undefined,
                     allowedDieIds: originalData.allowedDieIds,
                     completedDieIds,
                     completedSteps,

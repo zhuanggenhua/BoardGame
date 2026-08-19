@@ -16,7 +16,7 @@ description: "BoardGame 游戏支撑能力接入 workflow。用于用户要求�
 - 音效：[`../../knowledge/standards/audio-assets.md`](../../knowledge/standards/audio-assets.md)、[`../audio-integration/SKILL.md`](../audio-integration/SKILL.md)
 - AI：[`../game-ai-adaptation/SKILL.md`](../game-ai-adaptation/SKILL.md)
 - 教程：[`../tutorial-workflow/SKILL.md`](../tutorial-workflow/SKILL.md)、[`../../knowledge/standards/tutorial-design.md`](../../knowledge/standards/tutorial-design.md)
-- 调试配置：项目现有 `debug-config.tsx` / `createCheatSystem` / `CheatModifier` 模式；本 skill 只做开发态接入检查，不新建第二套调试规范。
+- 调试配置：项目现有 `debug-config.tsx` / `GameDebugPanel` / `createCheatSystem` / `CheatModifier` 模式；游戏专属调试默认挂局内共享调试面板，不注册为全局工具。
 - HUD / FAB 承载：[`../../knowledge/standards/ui-ux.md`](../../knowledge/standards/ui-ux.md)
 
 ## 触发语义
@@ -30,7 +30,7 @@ description: "BoardGame 游戏支撑能力接入 workflow。用于用户要求�
 - `audio-feedback`：事件音效 / BGM / UI 反馈音
 - `game-ai-system`：本地 AI、强单机、AI 座位可玩性
 - `tutorial-engine`：教学步骤 / 引导
-- `debug-config`：仅开发态调试面板
+- `debug-config`：仅开发态局内调试面板
 
 只有用户明确说“只接 X”“暂不接 Y”“本轮跳过可选”或 OpenSpec 当前批准范围明确排除某项时，才允许从全量改成部分；被排除项必须写明现实影响和后续补回口径。
 
@@ -144,15 +144,18 @@ description: "BoardGame 游戏支撑能力接入 workflow。用于用户要求�
 
 ### 8. 调试配置接入
 
-调试配置只服务开发态，不进入正式玩家 UI：
+调试配置只服务开发态，不进入正式玩家 UI 或大厅工具栏目：
 
 - 若用户触发“接入可选”全量语义，`debug-config` 默认进入本轮接入；至少审查是否需要 `createCheatSystem`、`CheatModifier` 或等价开发态面板。
+- 游戏专属调试页、配置页、状态预览或运行时编辑器默认通过该游戏 Board 内的 `GameDebugPanel` 暴露；不得为了“可选能力已接入”而注册 `src/tools/<gameId>...`、加入大厅工具栏目或新增全局工具入口。
+- 只有用户当轮明确要求“做成全局工具 / 工具栏目入口 / 独立开发工具”，或该工具服务多个游戏 / 项目共享流程时，才允许进入 `src/tools`；此时必须在 OpenSpec 或任务记录里写清它不是游戏专属调试配置。
 - 调试入口必须限定开发态或测试场景，不能作为正式玩法入口、E2E 正式玩家动作或教程完成证据。
 - 如果该游戏规则没有可安全修改的资源、阶段或对象，允许标记为`本轮明确跳过`，但必须写明为什么不需要。
 
 最低测试：
 
 - 开发态调试配置不会出现在正式玩家主 UI。
+- 游戏专属调试配置不会出现在大厅工具栏目或 `src/tools` 全局工具清单。
 - 若接入 `CheatModifier`，至少验证一个读写动作不会破坏核心状态结构。
 
 ## 收口验证

@@ -43,6 +43,20 @@ const resolveAiSeatPlayerName = (matchInfo: MatchInfo, playerId: string): string
     return Number.isFinite(seatNumber) ? `AI ${seatNumber + 1}` : `AI ${playerId}`;
 };
 
+const serializeSeatController = (controller: AiSeatController | undefined): string => JSON.stringify(controller ?? {});
+
+const haveAiSeatControllersChanged = (
+    prev: Record<string, AiSeatController>,
+    next: Record<string, AiSeatController>,
+): boolean => {
+    const prevKeys = Object.keys(prev);
+    const nextKeys = Object.keys(next);
+    if (prevKeys.length !== nextKeys.length) {
+        return true;
+    }
+    return nextKeys.some((key) => serializeSeatController(prev[key]) !== serializeSeatController(next[key]));
+};
+
 export function useOnlineAiSeatStateLoader(
     args: UseOnlineAiSeatStateLoaderArgs,
 ): UseOnlineAiSeatStateLoaderResult {
@@ -87,8 +101,12 @@ export function useOnlineAiSeatStateLoader(
             if (haveAiSeatCredentialsChanged(storedAiSeatCredentials, state.seatCredentials)) {
                 persistAiSeatCredentials(matchId, state.seatCredentials);
             }
-            setOnlineAiSeatControllers(state.seatControllers);
-            setOnlineAiSeatCredentials(state.seatCredentials);
+            setOnlineAiSeatControllers((prev) => (
+                haveAiSeatControllersChanged(prev, state.seatControllers) ? state.seatControllers : prev
+            ));
+            setOnlineAiSeatCredentials((prev) => (
+                haveAiSeatCredentialsChanged(prev, state.seatCredentials) ? state.seatCredentials : prev
+            ));
             logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-state-load-finished', {
                 gameId,
                 matchId,

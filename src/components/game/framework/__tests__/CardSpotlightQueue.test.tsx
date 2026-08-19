@@ -15,7 +15,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('CardSpotlightQueue', () => {
-    it('只允许明确关闭按钮关闭，并保留玩家可见的默认提示文案', () => {
+    it('点击空白背景或关闭按钮关闭，卡牌本体点击不关闭', () => {
         const onDismiss = vi.fn();
 
         render(
@@ -33,14 +33,22 @@ describe('CardSpotlightQueue', () => {
         );
 
         const content = screen.getByTestId('card-spotlight-content');
+        const queue = screen.getByTestId('card-spotlight-queue');
+        const positioner = screen.getByTestId('card-spotlight-positioner');
         const closeButton = screen.getByRole('button', { name: '关闭特写' });
 
         expect(screen.getByText('关闭特写')).toBeInTheDocument();
-        expect(screen.getByTestId('card-spotlight-queue').className).toContain('pointer-events-none');
+        expect(queue.className).toContain('pointer-events-auto');
+        expect(positioner.className).toContain('items-center');
+        expect(positioner.className).toContain('justify-center');
 
         fireEvent.click(content);
         expect(onDismiss).not.toHaveBeenCalled();
 
+        fireEvent.click(queue);
+        expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
+
+        onDismiss.mockClear();
         fireEvent.click(closeButton);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
     });

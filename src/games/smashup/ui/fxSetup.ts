@@ -18,8 +18,6 @@ import {
   type FeedbackPack,
   type FxRendererProps,
 } from '../../../engine/fx';
-import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
-import { CardPreview } from '../../../components/common/media/CardPreview';
 import { UI_Z_INDEX } from '../../../core';
 import i18next from 'i18next';
 import { PLAYER_CONFIG } from './playerConfig';
@@ -33,8 +31,6 @@ import { SmashUpAbilityTriggeredEffect } from './AbilityTriggeredEffect';
 export const SU_FX = {
   /** 力量变化浮字 */
   POWER_CHANGE: 'fx.power-change',
-  /** 行动卡打出展示 */
-  ACTION_SHOW: 'fx.action-show',
   /** 基地记分 VP 飞行 */
   BASE_SCORED: 'fx.base-scored',
   /** 持续效果/触发器激活 */
@@ -102,94 +98,6 @@ const PowerChangeRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onI
     React.createElement('span', {
       className: `text-[1.8vw] font-black drop-shadow-md ${delta > 0 ? 'text-green-400' : 'text-red-400'}`,
     }, delta > 0 ? `+${delta}` : `${delta}`),
-  );
-};
-
-// ============================================================================
-// 渲染器：行动卡展示浮层
-// ============================================================================
-
-/**
- * params:
- * - defId: string — 卡牌定义 ID
- */
-const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
-  const stableComplete = useStableComplete(onComplete);
-  const defId = event.params?.defId as string | undefined;
-  const shouldRender = !!defId;
-
-  const impactFired = useRef(false);
-  useEffect(() => {
-    if (!impactFired.current) {
-      impactFired.current = true;
-      onImpact();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!shouldRender) return;
-    const cancel = scheduleFxFrameCallback(800, stableComplete);
-    return cancel;
-  }, [shouldRender, stableComplete]);
-
-  useEffect(() => {
-    if (!shouldRender) {
-      stableComplete();
-    }
-  }, [shouldRender, stableComplete]);
-
-  if (!shouldRender) return null;
-
-  const t = i18next.getFixedT(null, 'game-smashup');
-  const def = getCardDef(defId);
-  const resolvedName = resolveCardName(def, t) || defId;
-  const resolvedText = resolveCardText(def, t);
-
-  return React.createElement(motion.div, {
-    className: 'fixed inset-0 flex items-center justify-center pointer-events-none',
-    style: { zIndex: UI_Z_INDEX.overlayRaised },
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-    transition: { duration: 0.15 },
-  },
-    // 半透明背景
-    React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
-    // 卡牌
-    React.createElement(motion.div as React.ElementType, {
-      'data-testid': 'smashup-action-fx-card',
-      'data-card-def-id': defId,
-      className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
-      style: {
-        width: '18vw',
-        height: 'calc(18vw / 0.714)',
-        aspectRatio: '0.714 / 1',
-      },
-      initial: { scale: 0.3, y: 200, rotate: -10 },
-      animate: { scale: 1, y: 0, rotate: 2 },
-      exit: { scale: 0.2, y: -100, x: 300, rotate: 15, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } },
-      transition: { type: 'spring', stiffness: 400, damping: 25 },
-    },
-      React.createElement(CardPreview, {
-        previewRef: def?.previewRef,
-        className: 'w-full h-full object-cover',
-        title: resolvedName,
-      }),
-      !def?.previewRef && React.createElement('div', {
-        className: 'absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#f3f0e8]',
-      },
-        React.createElement('div', { className: 'text-[1.2vw] font-black uppercase text-slate-800 mb-2' }, resolvedName),
-        React.createElement('div', { className: 'text-[0.7vw] text-slate-600 text-center font-mono' }, resolvedText),
-      ),
-      // "PLAYED!" 标签
-      React.createElement(motion.div, {
-        className: 'absolute top-2 right-2 bg-red-500 text-white text-[0.7vw] font-black px-2 py-0.5 rounded shadow-md',
-        initial: { scale: 0, rotate: -20 },
-        animate: { scale: 1, rotate: 12 },
-        transition: { delay: 0.15, type: 'spring', stiffness: 500 },
-        style: { transformOrigin: 'center' },
-      }, t('ui.played')),
-    ),
   );
 };
 
@@ -305,7 +213,6 @@ export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = (props) =>
 // ============================================================================
 
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
-const ACTION_PLAY_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_magic_deck_001';
 const TALENT_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001';
 
 // ============================================================================
@@ -315,11 +222,6 @@ const TALENT_KEY = 'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.a
 /** 力量变化：即时播放音效 */
 const POWER_CHANGE_FEEDBACK: FeedbackPack = {
   sound: { key: POWER_GAIN_KEY, timing: 'immediate' },
-};
-
-/** 行动卡展示：即时播放音效 */
-const ACTION_SHOW_FEEDBACK: FeedbackPack = {
-  sound: { key: ACTION_PLAY_KEY, timing: 'immediate' },
 };
 
 /** 基地记分：impact 时播放得分音效 */
@@ -343,11 +245,6 @@ function createRegistry(): FxRegistry {
   registry.register(SU_FX.POWER_CHANGE, PowerChangeRenderer, {
     timeoutMs: 2000,
   }, POWER_CHANGE_FEEDBACK);
-
-  registry.register(SU_FX.ACTION_SHOW, ActionShowRenderer, {
-    timeoutMs: 2000,
-    maxConcurrent: 1,
-  }, ACTION_SHOW_FEEDBACK);
 
   registry.register(SU_FX.BASE_SCORED, BaseScoredRenderer, {
     timeoutMs: 5000,

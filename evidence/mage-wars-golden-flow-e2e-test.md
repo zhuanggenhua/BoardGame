@@ -1,4 +1,4 @@
-# Mage Wars 当前范围黄金全流程 E2E 证据
+# Mage Wars 当前范围黄金链 E2E 证据
 
 ## 本轮目标
 
@@ -9,11 +9,11 @@
 
 ## 本次端到端验证
 
-- 时间：2026-08-19 18:36（本地执行；截图落盘约 18:37-18:38）
-- 命令：`PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "黄金全流程"`
-- 结果：`1 passed (1.7m)`
-- 目标用例：`Mage Wars formal online runtime › Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划`
-- 截图目录：`test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/`
+- 时间：2026-08-20 00:12（本地执行；截图落盘约 00:13-00:14）
+- 命令：`PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "当前范围黄金链"`
+- 结果：`1 passed (1.8m)`
+- 目标用例：`Mage Wars formal online runtime › Mage Wars 当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划`
+- 截图目录：`test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/`
 
 ## 截图证据清单
 
@@ -71,9 +71,9 @@
 
 ## 口径
 
-- 允许说：Mage Wars 当前标准竞技场两派系核心链已经有一条单条 Playwright 黄金全流程 E2E，并且本地定向通过。
+- 允许说：Mage Wars 当前标准竞技场两派系核心链已经有一条单条 Playwright 当前范围黄金链 E2E，并且本地定向通过。
 - 允许说：这条黄金链复用了现有正式联机 fixture、页面操作 helper、召唤 / 攻击过程帧捕捉 helper 和附件 UI 断言，不是把低层散件测试改名冒充黄金链。
 - 允许说：黄金链覆盖当前范围常见阶段与高风险代表操作，并回到下一轮双方计划阶段。
-- 允许说：给用户看黄金链截图时，应打开完整有序图组；单张收口图只能作为链尾证据。
+- 允许说：给用户看当前范围黄金链截图时，应打开完整有序图组；单张收口图只能作为链尾证据。
 - 禁止说：完整实体版 Mage Wars、全 322 张法术、墙体 / 墙壁、自由构筑、自然终局、完整 AI、教程、行动日志 UI 或撤回 UI 已经完成。
 - 禁止说：这条截图组本身就是黄金链；黄金链的通过条件是 Playwright 真实页面动作与自动断言，截图只是证据附件。

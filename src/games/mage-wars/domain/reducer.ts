@@ -1,6 +1,5 @@
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent, MageWarsPlayerState } from './types';
 import { MAGE_WARS_EVENTS } from './events';
-import { STATUS_TOKEN_IDS, type StatusTokenId } from './ids';
 import {
     addArenaObject,
     moveArenaOccupant,
@@ -19,6 +18,7 @@ import {
     hasExpiredRoundScopedTemporaryTraits,
 } from './temporaryTraits';
 import { recordObjectAbilityUseInRound } from './objectAbilityUsage';
+import { applyStatusTokenPlacement, applyStatusTokenRemoval } from './statusTokens';
 
 function removePreparedSpell(preparedSpellCardIds: number[], spellCardId: number): number[] {
     let removed = false;
@@ -29,22 +29,6 @@ function removePreparedSpell(preparedSpellCardIds: number[], spellCardId: number
         }
         return true;
     });
-}
-
-function removeStatusTokenAmount(
-    statusTokens: Partial<Record<StatusTokenId, number>>,
-    statusTokenId: StatusTokenId,
-    amount: number,
-): Partial<Record<StatusTokenId, number>> {
-    const current = statusTokens[statusTokenId] ?? 0;
-    const nextAmount = Math.max(0, current - amount);
-    const next = { ...statusTokens };
-    if (nextAmount > 0) {
-        next[statusTokenId] = nextAmount;
-    } else {
-        delete next[statusTokenId];
-    }
-    return next;
 }
 
 function clearDefenseUsesThisRound(object: MageWarsArenaObjectState): MageWarsArenaObjectState {
@@ -662,47 +646,27 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
 
         case MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED:
             if (event.payload.targetPlayerId) {
-                return updatePlayer(core, event.payload.targetPlayerId, (player) => ({
-                    ...player,
-                    guarding: event.payload.statusTokenId === STATUS_TOKEN_IDS.STUN ? false : player.guarding,
-                    statusTokens: {
-                        ...player.statusTokens,
-                        [event.payload.statusTokenId]: (player.statusTokens[event.payload.statusTokenId] ?? 0) + event.payload.amount,
-                    },
-                }));
+                return updatePlayer(core, event.payload.targetPlayerId, (player) => (
+                    applyStatusTokenPlacement(player, event.payload.statusTokenId, event.payload.amount)
+                ));
             }
             if (event.payload.targetObjectId) {
-                return updateArenaObject(core, event.payload.targetObjectId, (object) => ({
-                    ...object,
-                    guarding: event.payload.statusTokenId === STATUS_TOKEN_IDS.STUN ? false : object.guarding,
-                    statusTokens: {
-                        ...object.statusTokens,
-                        [event.payload.statusTokenId]: (object.statusTokens[event.payload.statusTokenId] ?? 0) + event.payload.amount,
-                    },
-                }));
+                return updateArenaObject(core, event.payload.targetObjectId, (object) => (
+                    applyStatusTokenPlacement(object, event.payload.statusTokenId, event.payload.amount)
+                ));
             }
             return core;
 
         case MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED:
             if (event.payload.targetPlayerId) {
-                return updatePlayer(core, event.payload.targetPlayerId, (player) => ({
-                    ...player,
-                    statusTokens: removeStatusTokenAmount(
-                        player.statusTokens,
-                        event.payload.statusTokenId,
-                        event.payload.amount,
-                    ),
-                }));
+                return updatePlayer(core, event.payload.targetPlayerId, (player) => (
+                    applyStatusTokenRemoval(player, event.payload.statusTokenId, event.payload.amount)
+                ));
             }
             if (event.payload.targetObjectId) {
-                return updateArenaObject(core, event.payload.targetObjectId, (object) => ({
-                    ...object,
-                    statusTokens: removeStatusTokenAmount(
-                        object.statusTokens,
-                        event.payload.statusTokenId,
-                        event.payload.amount,
-                    ),
-                }));
+                return updateArenaObject(core, event.payload.targetObjectId, (object) => (
+                    applyStatusTokenRemoval(object, event.payload.statusTokenId, event.payload.amount)
+                ));
             }
             return core;
 

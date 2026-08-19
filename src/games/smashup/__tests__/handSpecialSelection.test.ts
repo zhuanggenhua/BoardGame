@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { makeBase, makeCard, makeMatchState, makePlayer, makeState } from './helpers';
-import { getHandSpecialPlayableBaseIndices, shouldPreferHandSpecialSelection } from '../ui/handSpecialSelection';
+import {
+    getHandSpecialPlayableBaseIndices,
+    shouldOfferHandSpecialActionChoice,
+    shouldPreferHandSpecialSelection,
+} from '../ui/handSpecialSelection';
 
 describe('SmashUp 手牌 special 选择策略', () => {
     beforeEach(() => {
@@ -34,7 +38,7 @@ describe('SmashUp 手牌 special 选择策略', () => {
         })).toBe(true);
     });
 
-    it('极客粉丝在仍可正常打出时，不应强制抢占普通随从选择', () => {
+    it('极客粉丝在仍可正常打出时，应先让玩家选择普通打出或使用 special', () => {
         const matchState = makeMatchState(makeState({
             currentPlayerIndex: 0,
             players: {
@@ -55,5 +59,11 @@ describe('SmashUp 手牌 special 选择策略', () => {
             card,
             normalPlayableBaseIndices: new Set([0]),
         })).toBe(false);
+        expect(shouldOfferHandSpecialActionChoice({
+            matchState,
+            playerId: '0',
+            card,
+            normalPlayableBaseIndices: new Set([0]),
+        })).toBe(true);
     });
 });

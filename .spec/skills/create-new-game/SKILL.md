@@ -598,6 +598,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 - 音频细则读上方登记的音频运行时主合同和音频 workflow。
 - 关键图片预加载读 `.spec/knowledge/standards/critical-image-preload.md`。
 - 资源落盘、压缩、manifest、服务器素材主源回查按 `.spec/knowledge/standards/asset-pipeline.md`。
+- `debug-config` 按 `.spec/skills/support-capability-integration/SKILL.md` 的调试配置边界执行：游戏专属调试默认挂局内 `GameDebugPanel`，不注册进大厅工具栏目。
 - 最终验证至少覆盖清单生成、游戏测试、类型检查、资源检查/上传和真实入口可玩性。
 
 ---

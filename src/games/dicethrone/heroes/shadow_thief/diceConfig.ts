@@ -7,7 +7,6 @@
  * 6: Shadow (暗影)
  */
 import type { DiceDefinition } from '../../../../engine/primitives';
-import { versionedPublicFileUrl } from '../../../../lib/publicFileUrl';
 import { SHADOW_THIEF_DICE_FACE_IDS } from '../../domain/ids';
 
 export const shadowThiefDiceDefinition: DiceDefinition = {
@@ -24,7 +23,7 @@ export const shadowThiefDiceDefinition: DiceDefinition = {
         { value: 6, symbols: [SHADOW_THIEF_DICE_FACE_IDS.SHADOW] },
     ],
     assets: {
-        spriteSheet: versionedPublicFileUrl('/game-data/dicethrone/shadow_thief/dice-sprite.png'),
+        spriteSheet: 'dicethrone/images/shadow_thief/dice',
     },
 };
 

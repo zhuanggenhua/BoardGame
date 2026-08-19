@@ -35,6 +35,7 @@ import type {
 } from './types';
 import { getArenaObject } from './utils';
 import { hasObjectAbilityUseInRound } from './objectAbilityUsage';
+import { hasTemporarySwift, hasTemporaryTeleportMovement } from './temporaryTraits';
 
 type MageWarsObjectAbilityValidator = (ctx: MageWarsObjectAbilityValidationContext) => ValidationResult;
 
@@ -165,7 +166,7 @@ function validateBlueGremlinSwiftTeleport(ctx: MageWarsObjectAbilityValidationCo
     if (ctx.command.payload.manaCost !== 1) return invalid('manaCostMismatch');
     if (ctx.player.mana < ctx.command.payload.manaCost) return invalid('insufficientMana');
     if (source.object.sourceSpellCardId !== 2822) return invalid('invalidArenaObjectAbilitySource');
-    if (source.object.temporaryTraits?.swift || source.object.temporaryTraits?.teleportMovement) {
+    if (hasTemporarySwift(source.object) || hasTemporaryTeleportMovement(source.object)) {
         return invalid('objectAbilityAlreadyActive');
     }
 

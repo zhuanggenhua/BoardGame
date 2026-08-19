@@ -64,7 +64,7 @@ type MageWarsTargetContinuityProbeReport = {
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
-const MAGE_WARS_GOLDEN_TEST_NAME = 'Mage Wars 黄金全流程：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划';
+const MAGE_WARS_GOLDEN_TEST_NAME = 'Mage Wars 当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划';
 type EvidenceScreenshotAnimationMode = 'allow' | 'disabled';
 const TRUTHY_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
 

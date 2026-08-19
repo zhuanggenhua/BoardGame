@@ -2197,9 +2197,23 @@ describe('AI legal actions', () => {
             selectCount: 1,
             selected: [],
         });
-        expect(rerollData.maxSteps).toBe(1);
+        expect(rerollData.maxSteps).toBeUndefined();
         expect(rerollData.minSteps).toBe(1);
-        expect(rerollData.confirmationMode).toBe('submitBatch');
+        expect(rerollData.confirmationMode).toBeUndefined();
+
+        const repeatedRerollData = runInteractionRequest({
+            id: 'manual-repeatable-select-die',
+            playerId: '0',
+            sourceCardId: 'reroll-repeatable-test',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selectCount: 2,
+            selected: [],
+            allowRepeatedDieSelection: true,
+        });
+        expect(repeatedRerollData.maxSteps).toBe(2);
+        expect(repeatedRerollData.minSteps).toBe(1);
+        expect(repeatedRerollData.confirmationMode).toBe('submitBatch');
     });
 
     it('copy 交互不能把同值骰当作源骰和目标骰，避免 AI 消耗牌但骰面不变', () => {

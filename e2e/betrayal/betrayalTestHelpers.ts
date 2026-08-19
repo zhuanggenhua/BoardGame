@@ -334,12 +334,24 @@ export const expectEventRollWorkbenchReadable = async (
       );
       return width * height;
     };
-    const confirm = optionalRectOf(
-      '[data-testid="betrayal-event-roll-finalize"], [data-testid="betrayal-roll-modifier-confirm"]',
-    );
-    const confirmElement = document.querySelector<HTMLElement>(
-      '[data-testid="betrayal-event-roll-finalize"], [data-testid="betrayal-roll-modifier-confirm"]',
-    );
+    const confirmElement =
+      document.querySelector<HTMLElement>('[data-testid="betrayal-roll-modifier-confirm"]') ??
+      document.querySelector<HTMLElement>('[data-testid="betrayal-discovery-continue"]');
+    const confirm = confirmElement
+      ? (() => {
+          const rect = confirmElement.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+            centerX: rect.left + rect.width / 2,
+            centerY: rect.top + rect.height / 2,
+          };
+        })()
+      : null;
     const diceGroupElement = document.querySelector<HTMLElement>(
       '[data-testid="betrayal-house-dice-3d-group"]',
     );
@@ -398,6 +410,7 @@ export const expectEventRollWorkbenchReadable = async (
     }
     return {
       viewport: { width: window.innerWidth, height: window.innerHeight },
+      discoveryPanel: rectOf('[data-testid="betrayal-discovery-panel"]'),
       content: rectOf('[data-testid="betrayal-discovery-panel-content"]'),
       card: rectOf('[data-testid="betrayal-discovery-card-front-atlas"]'),
       roll: rectOf(
@@ -441,6 +454,22 @@ export const expectEventRollWorkbenchReadable = async (
     };
   });
 
+  expect(
+    metrics.discoveryPanel.left,
+    `${label}特写背景遮罩必须从视口左边开始，不能只是一条中间竖条：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    metrics.discoveryPanel.top,
+    `${label}特写背景遮罩必须从视口顶部开始，不能只盖局部：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    metrics.discoveryPanel.right,
+    `${label}特写背景遮罩必须覆盖到视口右边，不能露出右侧 HUD：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThanOrEqual(metrics.viewport.width - 1);
+  expect(
+    metrics.discoveryPanel.bottom,
+    `${label}特写背景遮罩必须覆盖到视口底部，不能露出底部 HUD：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThanOrEqual(metrics.viewport.height - 1);
   expect(
     metrics.card.width,
     `${label}事件牌必须保持桌面可读宽度：${JSON.stringify(metrics)}`,
@@ -519,9 +548,14 @@ export const expectEventRollWorkbenchReadable = async (
       `${label}骰盘命中层只能承接真实骰子目标，不得再显示提示正文：${JSON.stringify(metrics)}`,
     ).not.toMatch(/选择要重掷的骰子|选择骰子/);
   }
+  const workbenchRight = Math.max(
+    metrics.card.right,
+    metrics.roll.right,
+    metrics.confirm?.right ?? 0,
+  );
   expect(
-    metrics.content.right,
-    `${label}工作台不能压进右侧牌堆/状态栏：${JSON.stringify(metrics)}`,
+    workbenchRight,
+    `${label}卡牌、骰盘和确认入口不能压进右侧牌堆/状态栏：${JSON.stringify(metrics)}`,
   ).toBeLessThanOrEqual(metrics.statusRail.left - 2);
   expect(
     metrics.content.bottom,
@@ -551,12 +585,44 @@ export const expectEventRollWorkbenchReadable = async (
     expect(
       metrics.confirmHitTestId,
       `${label}确认按钮中心点必须真实命中按钮本体：${JSON.stringify(metrics)}`,
-    ).toMatch(/betrayal-(event-roll-finalize|roll-modifier-confirm)/);
-    expect(
-      metrics.bottomContinueCount,
-      `${label}已有投骰确认入口时不得再残留底部返回/确认按钮：${JSON.stringify(metrics)}`,
-    ).toBe(0);
+    ).toMatch(/betrayal-(discovery-continue|roll-modifier-confirm)/);
+    if (metrics.confirmHitTestId === "betrayal-discovery-continue") {
+      expect(
+        metrics.bottomContinueCount,
+        `${label}统一投骰确认按钮必须是唯一底部确认入口：${JSON.stringify(metrics)}`,
+      ).toBe(1);
+    } else {
+      expect(
+        metrics.bottomContinueCount,
+        `${label}改骰确认入口可见时不得再残留底部返回/确认按钮：${JSON.stringify(metrics)}`,
+      ).toBe(0);
+    }
   }
+};
+
+export const expectUnifiedEventRollConfirmButton = async (
+  page: Page,
+  expectedText = "确认 2/3",
+) => {
+  await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
+  await expect(page.getByTestId("betrayal-event-roll-waiting")).toHaveCount(0);
+
+  const confirmButton = page.getByTestId("betrayal-discovery-continue");
+  await expect(confirmButton).toHaveText(expectedText);
+
+  const buttonShape = await confirmButton.evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      borderRadius: style.borderRadius,
+    };
+  });
+  expect(buttonShape).toEqual({
+    backgroundColor: "rgb(214, 181, 109)",
+    borderColor: "rgb(214, 181, 109)",
+    borderRadius: "0px",
+  });
 };
 
 export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {

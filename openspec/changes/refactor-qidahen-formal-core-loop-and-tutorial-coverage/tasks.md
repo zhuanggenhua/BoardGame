@@ -187,4 +187,4 @@
 - [x] 5.2 `undo-system`：实施本轮。`src/games/qidahen/game.ts` 已接入共享撤回系统，`src/games/qidahen/Board.tsx` 已在局内壳层提供撤回上下文。
 - [x] 5.3 `game-ai-system`：实施本轮。`src/games/qidahen/manifest.ts` 开启本地 AI 能力，`src/games/qidahen/game.ts` 已注册七大恨 AI 运行时。
 - [x] 5.4 `tutorial-engine`：实施本轮。七大恨教程已接入共享教程系统，最终 closeout 记录已覆盖 16/16 教程 E2E。
-- [x] 5.5 `debug-config`：实施本轮，2026-08-19 补漏。七大恨现已把区域蒙版编辑器和运行时预览挂进局内共享调试面板，并把区域工具注册到开发态工具分类；本项不宣称已实现任意改牌、改资源或跳阶段等底层作弊命令，后者需要单独接 `cheat-system` / `createCheatSystem` 后才能交付。
+- [x] 5.5 `debug-config`：实施本轮，2026-08-19 补漏。七大恨现已把区域蒙版编辑器和运行时预览挂进局内共享调试面板；没有注册到大厅工具栏目。本项不宣称已实现任意改牌、改资源或跳阶段等底层作弊命令，后者需要单独接 `cheat-system` / `createCheatSystem` 后才能交付。

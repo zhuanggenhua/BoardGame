@@ -1,0 +1,56 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "我又行了/就这这类至多 5 颗骰的重投牌，确认当前选择后关闭整张牌交互，不再停留在 1/5、2/5 或 4/5。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-reroll.e2e.ts: 10 passed",
+        "01/02 展示我又行了选两颗后确认关闭",
+        "03/04 展示就这在防御阶段选已锁定防御骰后确认关闭"
+      ]
+    },
+    {
+      "requirement": "不愧是我仍支持同一颗骰子重掷两次，且这是唯一显式允许同骰重复的重投合同。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/domain/customActions/common.ts: reroll-die-2 才声明 allowRepeatedDieSelection",
+        "05/06 展示不愧是我同骰两次选择并结算"
+      ]
+    },
+    {
+      "requirement": "不愧是我已提交一次重投后取消只关闭剩余交互，不返还 CP、卡牌或已重投骰面。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/__tests__/flow.test.ts -t \"我又行了|就这|不愧是我\": 8 passed",
+        "07/08 展示已提交一次后取消，状态断言确认 CP 和弃牌不返还"
+      ]
+    },
+    {
+      "requirement": "规范已沉淀同类规则：至多 N 个对象默认是一批多选，只有规则明写同对象可重复/次数分配才使用跨确认多步累计。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/rule-driven-interaction-design.md 已新增通用条款",
+        "npm run spec:lint: OK"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/01-labeled-i-can-again-first-two-dice-selected-before-confirm.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/02-labeled-i-can-again-after-confirm-closes-card.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/03-labeled-just-this-locked-defense-die-selected-before-confirm.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/04-labeled-just-this-locked-defense-confirm-closes-card.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/05-labeled-worthy-of-me-same-die-selected-twice-before-confirm.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/06-labeled-worthy-of-me-same-die-rerolled-twice-settled.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/07-labeled-worthy-of-me-after-one-reroll-before-cancel.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/_display-reroll-contract-2026-08-19/08-labeled-worthy-of-me-cancel-after-one-reroll-no-refund.png"
+  ]
+}

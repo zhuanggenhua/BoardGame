@@ -21,6 +21,68 @@ export interface MageWarsTemporaryTraitGain {
     nextMeleePierceModifier?: number;
 }
 
+export interface MageWarsTemporaryTraitReader {
+    temporaryTraits?: MageWarsArenaObjectState['temporaryTraits'];
+}
+
+export function hasTemporarySwift(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.swift === true;
+}
+
+export function hasTemporaryTeleportMovement(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.teleportMovement === true;
+}
+
+export function hasTemporarySwiftFreeMoveUsed(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.freeMoveUsedThisAction === true;
+}
+
+export function hasTemporaryMovedThisAction(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.movedThisAction === true;
+}
+
+export function hasTemporaryQuickActionAfterMove(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.quickActionAfterMoveAvailable === true;
+}
+
+export function getTemporaryChargeDiceModifier(reader: MageWarsTemporaryTraitReader): number {
+    return reader.temporaryTraits?.chargeDiceModifier ?? 0;
+}
+
+export function getTemporaryMeleeDiceModifier(reader: MageWarsTemporaryTraitReader): number {
+    return reader.temporaryTraits?.meleeDiceModifier ?? 0;
+}
+
+export function getTemporaryNextMeleePierceModifier(reader: MageWarsTemporaryTraitReader): number {
+    return reader.temporaryTraits?.nextMeleePierceModifier ?? 0;
+}
+
+export function hasTemporaryVampiricNextMelee(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.vampiricNextMelee === true;
+}
+
+export function getTemporaryTraitIdsForTurnCleanup(
+    reader: MageWarsTemporaryTraitReader,
+    turnNumber: number,
+): MageWarsTemporaryTraitId[] {
+    const traitIds: MageWarsTemporaryTraitId[] = [];
+    if (hasTemporarySwift(reader)) traitIds.push('swift');
+    if (hasTemporaryTeleportMovement(reader)) traitIds.push('teleportMovement');
+    if (hasTemporarySwiftFreeMoveUsed(reader)) traitIds.push('swiftFreeMove');
+    if (hasTemporaryMovedThisAction(reader)) traitIds.push('movedThisAction');
+    if (hasTemporaryQuickActionAfterMove(reader)) traitIds.push('quickActionAfterMove');
+    if (getTemporaryChargeDiceModifier(reader) > 0) traitIds.push('charge');
+    if (
+        getTemporaryMeleeDiceModifier(reader) > 0
+        && reader.temporaryTraits?.meleeDiceModifierUntilRoundNumber !== turnNumber
+    ) {
+        traitIds.push('meleeDice');
+    }
+    if (hasTemporaryVampiricNextMelee(reader)) traitIds.push('vampiric');
+    if (getTemporaryNextMeleePierceModifier(reader) > 0) traitIds.push('pierce');
+    return traitIds;
+}
+
 function hasTemporaryTraits(temporaryTraits: NonNullable<MageWarsArenaObjectState['temporaryTraits']>): boolean {
     return Object.keys(temporaryTraits).length > 0;
 }

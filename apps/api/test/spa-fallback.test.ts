@@ -18,6 +18,15 @@ describe('SPA fallback guards', () => {
         expect(shouldServeSpaFallback('/assets/images/card.webp')).toBe(false);
     });
 
+    it('should keep public static file directories out of SPA fallback', () => {
+        expect(shouldServeSpaFallback('/logos/weixin.jpg')).toBe(false);
+        expect(shouldServeSpaFallback('/logos/logo_1_grid.svg')).toBe(false);
+        expect(shouldServeSpaFallback('/fonts/inter-400-latin.woff2')).toBe(false);
+        expect(shouldServeSpaFallback('/game-data/qidahen.map-regions.json')).toBe(false);
+        expect(shouldServeSpaFallback('/locales/zh-CN/game.json')).toBe(false);
+        expect(shouldServeSpaFallback('/manifest.webmanifest')).toBe(false);
+    });
+
     it('should keep API-style routes out of SPA fallback', () => {
         expect(shouldServeSpaFallback('/auth/login')).toBe(false);
         expect(shouldServeSpaFallback('/games/list')).toBe(false);

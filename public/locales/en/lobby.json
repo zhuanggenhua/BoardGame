@@ -495,11 +495,6 @@
       "description": "An asymmetric three-faction historical strategy game about card resources, action wheel tempo, Northeast Asian area control, and complex battle resolution.",
       "players": "3 Players"
     },
-    "qidahenregionmask": {
-      "title": "Seven Hatreds Region Tool",
-      "description": "Developer entry for maintaining the Seven Hatreds region mask, runtime centers, passages, and movement rules.",
-      "players": "Solo Tool"
-    },
     "fantasyrealms": {
       "title": "Fantasy Realms",
       "description": "A 2-6 player fantasy hand-building card game centered on a 7-card hand, the face-up discard row, and high-synergy endgame scoring.",

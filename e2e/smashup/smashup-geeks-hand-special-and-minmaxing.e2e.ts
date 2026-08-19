@@ -82,6 +82,98 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         await game.screenshot('geeks-fan-03-resolved', testInfo);
     });
 
+    test('粉丝普通打出和 special 同时合法时，先弹出打出/使用能力/取消仲裁', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+
+        await openGeeksScene(game, {
+            player0: {
+                hand: [
+                    { uid: 'fan-1', defId: 'geeks_fan', type: 'minion', owner: '0' },
+                ],
+                deck: [
+                    { uid: 'draw-1', defId: 'wizard_zap', type: 'action', owner: '0' },
+                ],
+                minionsPlayed: 0,
+                minionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_dragons_lair', minions: [] },
+                { defId: 'base_converted_cave', minions: [] },
+            ],
+        });
+
+        const fanCard = page.locator('[data-testid="su-hand-area"] [data-card-uid="fan-1"]');
+        const playAsMinionButton = page.getByRole('button', { name: /打出为随从|Play as Minion/ });
+        const useAbilityButton = page.getByRole('button', { name: /使用能力|Use Ability/ });
+        const cancelButton = page.getByRole('button', { name: /取消 \/ 跳过|Cancel \/ Skip/ });
+
+        await expect(fanCard).toBeVisible({ timeout: 10000 });
+        await fanCard.click();
+
+        await expect(playAsMinionButton).toBeVisible({ timeout: 10000 });
+        await expect(useAbilityButton).toBeVisible();
+        await expect(cancelButton).toBeVisible();
+        await expect(page.getByText(/选择要对|Choose what to do with/)).toHaveCount(0);
+        await expect(page.getByText(/既可以正常打出|can be played normally/)).toHaveCount(0);
+        await game.screenshot('geeks-fan-choice-01-options', testInfo);
+
+        await cancelButton.click();
+        await expect(playAsMinionButton).toHaveCount(0);
+        let state = await game.getState();
+        expect(state.core.players['0'].hand.map((card: any) => card.uid)).toEqual(['fan-1']);
+        expect(state.core.players['0'].discard).toHaveLength(0);
+        expect(state.core.bases[0].minions).toHaveLength(0);
+        expect(state.core.bases[1].minions).toHaveLength(0);
+
+        await fanCard.click();
+        await expect(useAbilityButton).toBeVisible({ timeout: 10000 });
+        await useAbilityButton.click();
+        await game.selectBase(1);
+        await game.waitForNoInteraction(10000);
+
+        state = await game.getState();
+        expect(state.core.players['0'].hand.map((card: any) => card.uid)).toEqual(['draw-1']);
+        expect(state.core.players['0'].discard.map((card: any) => card.uid)).toEqual(['fan-1']);
+        expect(state.core.bases[1].minions).toHaveLength(0);
+        expect(state.core.players['0'].minionsPlayed).toBe(0);
+        expect(state.core.players['0'].actionsPlayed).toBe(0);
+
+        await game.screenshot('geeks-fan-choice-02-special-resolved', testInfo);
+    });
+
+    test('粉丝动作仲裁选择打出为随从后，应继续走普通出牌基地选择', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+
+        await openGeeksScene(game, {
+            player0: {
+                hand: [
+                    { uid: 'fan-1', defId: 'geeks_fan', type: 'minion', owner: '0' },
+                ],
+                minionsPlayed: 0,
+                minionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_dragons_lair', minions: [] },
+                { defId: 'base_converted_cave', minions: [] },
+            ],
+        });
+
+        await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="fan-1"]')).toBeVisible({ timeout: 10000 });
+        await page.locator('[data-testid="su-hand-area"] [data-card-uid="fan-1"]').click();
+        await page.getByRole('button', { name: /打出为随从|Play as Minion/ }).click();
+        await game.selectBase(0);
+        await game.waitForNoInteraction(10000);
+
+        const state = await game.getState();
+        expect(state.core.players['0'].hand).toHaveLength(0);
+        expect(state.core.players['0'].discard).toHaveLength(0);
+        expect(state.core.bases[0].minions.map((minion: any) => minion.uid)).toEqual(['fan-1']);
+        expect(state.core.players['0'].minionsPlayed).toBe(1);
+        expect(state.core.players['0'].actionsPlayed).toBe(0);
+
+        await game.screenshot('geeks-fan-choice-03-play-minion-resolved', testInfo);
+    });
+
     test('平衡从真实手牌打出时，应展示对手手牌并可借打附着行动到己方随从', async ({ page, game }, testInfo) => {
         test.setTimeout(180000);
 

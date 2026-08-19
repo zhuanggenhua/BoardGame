@@ -1,0 +1,50 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "不愧是我允许选择两颗不同正式骰并确认重投",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-reroll.e2e.ts: 10 passed",
+        "e2e/dicethrone/dicethrone-die-reroll.e2e.ts::card-worthy-of-me 可重掷两颗不同骰并确认"
+      ]
+    },
+    {
+      "requirement": "不愧是我允许同一颗正式骰重投两次",
+      "status": "PASS",
+      "evidence": [
+        "npx vitest run src/games/dicethrone/__tests__/flow.test.ts -t \"不愧是我\": 4 passed",
+        "e2e/dicethrone/dicethrone-die-reroll.e2e.ts::card-worthy-of-me 可通过真实骰子入口重掷同一颗骰子两次"
+      ]
+    },
+    {
+      "requirement": "已提交一次重投后取消只关闭剩余交互，不返还 CP、卡牌或骰面",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/__tests__/flow.test.ts::不愧是我：已提交一次重掷后取消不应返还 CP 和卡牌",
+        "e2e/dicethrone/dicethrone-die-reroll.e2e.ts::card-worthy-of-me 提交一次重掷后取消不返还 CP 和卡牌"
+      ]
+    },
+    {
+      "requirement": "未提交任何重投前取消仍保留正常返还语义",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/__tests__/flow.test.ts::不愧是我：未提交任何重掷时取消仍返还 CP 和卡牌"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/card-worthy-of-me-最终验收图组/_labeled-for-pureref/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/card-worthy-of-me-最终验收图组/_labeled-for-pureref/01-labeled-worthy-of-me-two-dice-selected-before-confirm.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/card-worthy-of-me-最终验收图组/_labeled-for-pureref/02-labeled-worthy-of-me-same-die-selected-twice-before-confirm.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/card-worthy-of-me-最终验收图组/_labeled-for-pureref/03-labeled-worthy-of-me-after-one-reroll-before-cancel.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-die-reroll.e2e/card-worthy-of-me-最终验收图组/_labeled-for-pureref/04-labeled-worthy-of-me-cancel-after-one-reroll-no-refund.png"
+  ]
+}
