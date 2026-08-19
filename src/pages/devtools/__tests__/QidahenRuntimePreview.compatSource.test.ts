@@ -7,6 +7,13 @@ const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const readSource = () => readFileSync(resolve(TEST_DIR, '..', 'QidahenRuntimePreview.tsx'), 'utf8');
 
 describe('QidahenRuntimePreview compatibility source guards', () => {
+    it('运行时预览底图必须固定走本地 /assets，不能被远端资源基址带跑', () => {
+        const source = readSource();
+
+        expect(source).toContain("const DEFAULT_MAP_PATH = '/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png';");
+        expect(source).not.toContain("getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png')");
+    });
+
     it('会显式暴露共享 printed 图块对应多个 runtime 的真相，而不是继续把它们当成单一区', () => {
         const source = readSource();
 

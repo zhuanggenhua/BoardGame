@@ -1654,6 +1654,12 @@ export function registerBaseAbilities(): void {
                 ...interaction,
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
     }, {
+        mandatory: false,
+        effectContract: {
+            reads: [{ kind: 'scoring' }],
+            writes: [{ kind: 'targetAvailability' }],
+            opensInteraction: true,
+        },
     });
 
     // base_wizard_academy: 巫师学院

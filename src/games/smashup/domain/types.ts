@@ -804,6 +804,7 @@ export interface SmashUpReactionSession {
     sourceBaseIndex?: number;
     responseWindowType?: 'meFirst' | 'afterScoring';
     consumedSpecialCardUids?: string[];
+    consumedTriggerIds?: string[];
 }
 
 export type DuelOutcomeKind =

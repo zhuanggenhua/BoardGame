@@ -6,7 +6,7 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
-import { STATUS_IDS } from './ids';
+import { STATUS_IDS, TOKEN_IDS } from './ids';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
@@ -202,6 +202,7 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         && targetId === state.pendingAttack?.defenderId;
 
     if (isCurrentAttackDamage && parleyStacks > 0) {
+        event.payload.actualDamage = 0;
         return {
             ...state,
             pendingAttack: state.pendingAttack
@@ -290,8 +291,24 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         newResources = result.pool;
     }
 
-    const hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
+    let newTokens = target.tokens;
+    let hpAfter = newResources[RESOURCE_IDS.HP] ?? 0;
+
+    // 神圣祝福是“受到致死伤害时保留 1 点生命”的规则不变量。
+    // 这里位于正式扣血入口，覆盖攻击、状态、Token、奖励骰和旧手写 DAMAGE_DEALT。
+    const blessingCount = target.tokens?.[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0;
+    if (hpBefore > 0 && hpAfter <= 0 && blessingCount > 0) {
+        newTokens = {
+            ...target.tokens,
+            [TOKEN_IDS.BLESSING_OF_DIVINITY]: blessingCount - 1,
+        };
+        const hpResetResult = resourceSystem.modify(newResources, RESOURCE_IDS.HP, 1 - hpAfter);
+        newResources = hpResetResult.pool;
+        hpAfter = 1;
+    }
+
     const netHpLoss = Math.max(0, hpBefore - hpAfter);
+    event.payload.actualDamage = netHpLoss;
 
     let pendingAttack = state.pendingAttack;
     // 统一累计“本次攻击对防御方造成的净掉血”，作为 lastResolvedAttackDamage 的单一来源。
@@ -312,7 +329,7 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         ...state,
         players: {
             ...syncedPlayers,
-            [targetId]: { ...nextTarget, damageShields: newDamageShields, resources: newResources },
+            [targetId]: { ...nextTarget, damageShields: newDamageShields, resources: newResources, tokens: newTokens },
         },
         teamHealth: buildNextTeamHealth(state, targetId, hpAfter),
         pendingAttack,

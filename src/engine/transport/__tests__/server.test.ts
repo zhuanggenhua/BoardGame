@@ -7,7 +7,9 @@ import {
     resolveOnlineAiCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
 } from '../onlineAiRecovery';
+import type { ChoiceRequest } from '../../ChoiceRequest';
 import { createCompareRollChoice, createInteractionSystem, createSimpleChoice, INTERACTION_COMMANDS } from '../../systems/InteractionSystem';
+import { createSimpleChoiceFromChoiceRequest } from '../../systems/ChoiceRequestSimpleChoiceAdapter';
 import { createSimpleChoiceSystem } from '../../systems/SimpleChoiceSystem';
 import { createResponseWindowSystem, RESPONSE_WINDOW_EVENTS } from '../../systems/ResponseWindowSystem';
 import { createInitialSystemState, executePipeline } from '../../pipeline';
@@ -1393,6 +1395,39 @@ describe('buildAiProgressMarker（响应窗口语义指纹）', () => {
                             '2': ['robots'],
                             '3': ['wizards'],
                         },
+                    },
+                },
+            },
+        };
+
+        expect(buildAiProgressMarker(baseState.G as any))
+            .not.toBe(buildAiProgressMarker(progressedState.G as any));
+    });
+
+    it('公开开局阶段的准备状态变化应被视为进展', () => {
+        const baseState = createOnlineAiRecoveryState({
+            activePlayerId: '0',
+            phase: 'summon',
+        });
+        (baseState.G as any).core.hostStarted = false;
+        (baseState.G as any).core.selectedFactions = {
+            '0': 'necromancer',
+            '1': 'frost',
+        };
+        (baseState.G as any).core.readyPlayers = {
+            '0': false,
+            '1': false,
+        };
+
+        const progressedState = {
+            ...baseState,
+            G: {
+                ...baseState.G,
+                core: {
+                    ...(baseState.G as any).core,
+                    readyPlayers: {
+                        '0': false,
+                        '1': true,
                     },
                 },
             },
@@ -3694,6 +3729,57 @@ describe('GameTransportServer（离座与重连）', () => {
         await socket.clientEmit('manual-setup-selection', 'match-manual-setup-non-owner', {
             targetPlayerId: '1', actionKind: 'setup-select-faction', selectionId: 'robots',
         }, 'cred-2');
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(hasEvent(socket, 'error', (args) => args[1] === 'manual_setup_selection_rejected')).toBe(true);
+    });
+
+    it('未开启手动代选的 AI 座位不能被房主请求服务端代选', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const gameId = 'test-manual-setup-unchecked-ai-seat';
+        const executeSpy = vi.fn(() => []);
+        aiModule.registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => playerId === '1'
+                ? [{
+                    actionId: 'setup-select-faction-robots',
+                    kind: 'setup-select-faction',
+                    label: '选择 robots',
+                    commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'robots' } }],
+                }]
+                : [],
+        });
+        const metadata = createOnlineAiRecoveryMetadata({
+            gameName: gameId,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        });
+        metadata.setupData = { ...(metadata.setupData as Record<string, unknown>), ownerKey: 'user:owner' };
+        metadata.players['0'].ownerKey = 'user:owner';
+        await storage.createMatch('match-manual-setup-unchecked-ai-seat', {
+            initialState: createOnlineAiRecoveryState({ phase: 'factionSelect' }),
+            metadata,
+        });
+        const base = createEngineConfigWithId(gameId);
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{ ...base, domain: { ...base.domain, execute: executeSpy } }],
+            onlineAiRecoveryTickMs: 0,
+            authenticate: async (_matchID, playerID, credentials, latestMetadata) => latestMetadata.players[playerID]?.credentials === credentials,
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-manual-setup-unchecked-ai-seat');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-manual-setup-unchecked-ai-seat', '0', 'cred-0');
+        socket.sent.length = 0;
+        await socket.clientEmit('manual-setup-selection', 'match-manual-setup-unchecked-ai-seat', {
+            targetPlayerId: '1', actionKind: 'setup-select-faction', selectionId: 'robots',
+        }, 'cred-0');
 
         expect(executeSpy).not.toHaveBeenCalled();
         expect(hasEvent(socket, 'error', (args) => args[1] === 'manual_setup_selection_rejected')).toBe(true);
@@ -29808,6 +29894,132 @@ describe('GameTransportServer（离座与重连）', () => {
             id: 'only-disabled',
             disabledReason: '目标已失效',
         }));
+    });
+
+    it('Choice Request 无解交互的线上恢复反馈应携带请求诊断，且不推断业务目标', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const request: ChoiceRequest<{ targetId: string }> = {
+            requestId: 'choice-request-unsat',
+            gameId: 'test-game',
+            playerId: '1',
+            ownerFrameId: 'choice-frame',
+            kind: 'select-object',
+            sourceId: 'choice-request-source',
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: 'choice-request-unsat' },
+            ai: { status: 'shared-policy' },
+            candidates: [{
+                id: 'target-1',
+                label: '目标 1',
+                value: { targetId: 'monster-1' },
+                disabled: true,
+                disabledReason: '目标已失效',
+            }],
+        };
+        const interaction = createSimpleChoiceFromChoiceRequest(request, {
+            title: '选择目标',
+            targetType: 'minion',
+        });
+
+        await storage.createMatch('match-choice-request-unsat-auto-feedback', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                    },
+                    sys: {
+                        phase: 'main2',
+                        turnNumber: 4,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: interaction,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createInteractiveEngineConfig()],
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-choice-request-unsat-auto-feedback');
+        const success = await serverInternal.executeCommandInternal(
+            match,
+            '1',
+            INTERACTION_COMMANDS.RESPOND,
+            { interactionId: 'choice-request-unsat', optionId: '__emergency_skip__' },
+        );
+
+        expect(success).toBe(true);
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-choice-request-unsat-auto-feedback',
+            playerId: '1',
+            incidentKind: 'unsatisfiable-interaction-auto-skipped',
+            reason: 'all-options-disabled',
+        }));
+
+        const payload = feedbackReporter.mock.calls[0]?.[0] as {
+            stateSnapshot?: string;
+            actionLog?: string;
+        } | undefined;
+        const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+        expect(snapshot.interaction?.seat?.choiceRequest).toMatchObject({
+            requestId: 'choice-request-unsat',
+            choiceKind: 'select-object',
+            sourceId: 'choice-request-source',
+            aiDiagnosticStatus: 'invalid-request',
+            diagnostics: [expect.objectContaining({ code: 'mandatory-choice-unsatisfied' })],
+            candidateSummary: {
+                total: 1,
+                enabledCandidateIds: [],
+                disabledCandidateIds: ['target-1'],
+            },
+            projectedLegalActionCount: 0,
+        });
+        expect(snapshot.interaction?.seat?.options).toContainEqual(expect.objectContaining({
+            id: '__emergency_skip__',
+        }));
+        expect(snapshot.interaction?.seat?.options).toContainEqual(expect.objectContaining({
+            id: 'target-1',
+            disabledReason: '目标已失效',
+        }));
+
+        const actionLog = JSON.parse(payload?.actionLog ?? '{}');
+        expect(actionLog).toMatchObject({
+            commandType: INTERACTION_COMMANDS.CANCEL,
+            reason: 'all-options-disabled',
+        });
+        expect(actionLog.commandPayload).toBeUndefined();
+        expect(JSON.stringify(actionLog)).not.toContain('"optionId":"target-1"');
     });
 
     it('AI seat-view 只剩 emergency skip、但 authoritative interaction 仍保留旧选项时，应翻译成 CANCEL 收口', async () => {

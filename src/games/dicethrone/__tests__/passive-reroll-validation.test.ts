@@ -189,7 +189,7 @@ describe('教皇税被动重掷校验', () => {
     const DRAW_INDEX = 1;
 
     describe('进攻阶段', () => {
-        it('已投掷+有CP+有未锁定骰子 → 可用', () => {
+        it('已投掷+有CP+当前骰区有骰子 → 可用', () => {
             const state = createState({ cp: 5, rollCount: 1 });
             expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(true);
         });
@@ -204,17 +204,17 @@ describe('教皇税被动重掷校验', () => {
             expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(false);
         });
 
-        it('所有骰子都锁定 → 不可用', () => {
+        it('所有骰子都锁定 → 仍可用指定重掷', () => {
             const dice = [1, 2, 3, 4, 5].map((v, i) => createDie(i, v, true));
             const state = createState({ cp: 5, rollCount: 1, dice });
-            expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(false);
+            expect(isPassiveActionUsable(state, '0', 'tithes', REROLL_INDEX, 'offensiveRoll')).toBe(true);
         });
 
-        it('部分骰子锁定但有未锁定的 → 可用', () => {
+        it('部分骰子锁定 → 可用指定重掷', () => {
             const dice = [
                 createDie(0, 1, true),
                 createDie(1, 2, true),
-                createDie(2, 3, false),  // 未锁定
+                createDie(2, 3, false),
                 createDie(3, 4, true),
                 createDie(4, 5, true),
             ];
@@ -234,8 +234,8 @@ describe('教皇税被动重掷校验', () => {
     });
 
     describe('防御阶段', () => {
-        it('防御方已投掷+有CP+有未锁定骰子 → 可用', () => {
-            // 防御阶段：3颗活跃骰子，前3颗未锁定
+        it('防御方已投掷+有CP+当前防御骰区有骰子 → 可用', () => {
+            // 防御阶段：3颗活跃骰子，锁定状态不影响指定重掷动作的可用性。
             const dice = [
                 createDie(0, 1, false),
                 createDie(1, 3, false),
@@ -315,8 +315,8 @@ describe('教皇税被动重掷校验', () => {
             )).toBe(true);
         });
 
-        it('rollDiceCount=0 时所有骰子都是 isKept → 不可用', () => {
-            // 防御阶段刚进入，还没选技能，rollDiceCount=0
+        it('rollDiceCount=0 时当前骰区为空 → 不可用', () => {
+            // 防御阶段刚进入，还没选技能，主骰状态里即使有历史骰，也没有当前防御骰区。
             const dice = [1, 2, 3, 4, 5].map((v, i) => createDie(i, v, true));
             const state = createState({
                 cp: 5, rollCount: 0, rollDiceCount: 0, dice,
@@ -446,7 +446,7 @@ describe('战术优势当前骰区重投矩阵', () => {
         )).toBe(false);
     });
 
-    it('当前骰区没有未锁定骰子时，战术优势不可用', () => {
+    it('当前骰区只有锁定骰时，战术优势仍可指定重掷', () => {
         const state = createTacticalAdvantageCurrentRollState('compare', {
             dice: [{ ...createDie(0, 3), ownerId: '0', isKept: true }],
         });
@@ -457,7 +457,7 @@ describe('战术优势当前骰区重投矩阵', () => {
             'zhanshujia-tactical-advantage',
             TACTICAL_ADVANTAGE_REROLL_INDEX,
             'main1',
-        )).toBe(false);
+        )).toBe(true);
     });
 
     it('当前骰区禁止骰牌介入时，确认后响应窗口也不能绕过策略重投', () => {

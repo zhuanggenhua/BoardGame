@@ -339,6 +339,83 @@ describe('响应窗口跳过逻辑', () => {
         expect(stateAfterFirstPass.sys.responseWindow?.current).toBeUndefined();
     });
 
+    it('全速航行在 Me First 计分响应窗口中选随从和目标基地后应真实移动随从', () => {
+        const runner = createRunner((playerIds, random) => {
+            const core = SmashUpDomain.setup(playerIds, random);
+            const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases[0] = {
+                defId: 'base_the_mothership',
+                minions: [
+                    makeMinion('friendly-first-mate', 'pirate_first_mate', '0', '0', 3),
+                    ...Array.from({ length: 4 }, (_, index) =>
+                        makeMinion(`scoring-anchor-${index}`, 'test_minion', '0', '0', 5),
+                    ),
+                ],
+                ongoingActions: [],
+            };
+            core.bases[1] = {
+                defId: 'base_the_factory',
+                minions: [],
+                ongoingActions: [],
+            };
+            core.players['0'].hand = [
+                { uid: 'card-1', defId: 'pirate_full_sail', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [];
+
+            return { core, sys };
+        });
+
+        const advanceResult = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advanceResult.success).toBe(true);
+
+        const reactionChoice = getCurrentChoice(runner.getState());
+        expect(reactionChoice?.sourceId).toBe('smashup_reaction_choose');
+        const playOptionId = findOptionId(
+            reactionChoice!,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'card-1',
+            '找不到全速航行选项',
+        );
+        const playResult = runner.resolveInteraction('0', { optionId: playOptionId });
+        expect(playResult.success).toBe(true);
+
+        const minionChoice = getSimpleChoicePrompt(runner.getState(), 'pirate_full_sail_choose_minion');
+        const minionOption = getPromptOption(
+            minionChoice,
+            (option: any) => option.value?.minionUid === 'friendly-first-mate',
+            '找不到全速航行要移动的随从',
+        );
+        const chooseMinionResult = runner.resolveInteraction('0', { optionId: minionOption.id });
+        expect(chooseMinionResult.success).toBe(true);
+
+        const baseChoice = getSimpleChoicePrompt(runner.getState(), 'pirate_full_sail_choose_base');
+        const baseOption = getPromptOption(
+            baseChoice,
+            (option: any) => option.value?.baseIndex === 1,
+            '找不到全速航行目标基地',
+        );
+        const moveResult = runner.resolveInteraction('0', { optionId: baseOption.id });
+        expect(moveResult.success).toBe(true);
+        expect(moveResult.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_MOVED,
+            payload: expect.objectContaining({
+                minionUid: 'friendly-first-mate',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                sourceDefId: 'pirate_full_sail',
+                reason: 'pirate_full_sail',
+            }),
+        }));
+
+        const finalState = runner.getState();
+        expect(finalState.core.bases[0].minions.some(minion => minion.uid === 'friendly-first-mate')).toBe(false);
+        expect(finalState.core.bases[1].minions.some(minion => minion.uid === 'friendly-first-mate')).toBe(true);
+        expect(getCurrentChoice(finalState)?.sourceId).toBe('pirate_full_sail_choose_minion');
+    });
+
     it('smashup_reaction_choose 被 cancelPrompt 收口时，应按 pass 处理并正常关闭 session', () => {
         const runner = createRunner((playerIds, random) => {
             const core = SmashUpDomain.setup(playerIds, random);

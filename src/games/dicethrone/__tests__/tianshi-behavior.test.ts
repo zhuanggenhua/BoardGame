@@ -680,12 +680,13 @@ describe('炽天使领域行为', () => {
         const after = applyEvents(state.core, events as DiceThroneEvent[]);
 
         expect(events).toContainEqual(expect.objectContaining({
-            type: 'TOKEN_CONSUMED',
+            type: 'DAMAGE_DEALT',
             payload: expect.objectContaining({
-                playerId: '1',
-                tokenId: TOKEN_IDS.BLESSING_OF_DIVINITY,
+                targetId: '1',
+                amount: 1,
             }),
         }));
+        expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
         expect(after.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);
         expect(after.players['1'].resources[RESOURCE_IDS.HP]).toBe(1);
     });
@@ -1464,12 +1465,13 @@ describe('炽天使领域行为', () => {
 
         const after = applyEvents(state.core, events);
         expect(events).toContainEqual(expect.objectContaining({
-            type: 'TOKEN_CONSUMED',
+            type: 'DAMAGE_DEALT',
             payload: expect.objectContaining({
-                playerId: '1',
-                tokenId: TOKEN_IDS.BLESSING_OF_DIVINITY,
+                targetId: '1',
+                amount: 3,
             }),
         }));
+        expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
         expect(after.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);
         expect(after.players['1'].resources[RESOURCE_IDS.HP]).toBe(1);
     });
@@ -1540,7 +1542,12 @@ describe('炽天使领域行为', () => {
     it('防御阶段先选择天使斗篷后，飞行失败不会取消已激活的防御能力，且需确认骰面', () => {
         let state = createTianshiState();
         state.sys.phase = 'defensiveRoll';
+        state.sys.currentPlayerIndex = 1;
+        state.core.activePlayerId = '1';
+        state.core.turnPhase = 'defensiveRoll';
         state.core.players['0'].tokens[TOKEN_IDS.FLIGHT] = 1;
+        state.core.players['1'].hand = [getCardById('card-give-hand')];
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
         state.core.pendingAttack = {
             attackerId: '1',
             defenderId: '0',
@@ -1560,6 +1567,24 @@ describe('炽天使领域行为', () => {
         if (!selectDefense.success) return;
         state = selectDefense.state;
         expect(state.core.pendingAttack?.defenseAbilityId).toBe('angelic-cloak');
+        state.core.rollCount = 1;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            id: index,
+            value: [3, 3, 3, 3, 3][index] ?? 3,
+            ownerId: '0',
+        }));
+        state.sys.responseWindow = {
+            current: {
+                windowId: 'afterRollConfirmed-defense-flight',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                windowType: 'afterRollConfirmed',
+                sourceId: 'defense-roll-confirmed-before-flight',
+            } as any,
+        };
 
         const flight = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
@@ -1581,6 +1606,11 @@ describe('炽天使领域行为', () => {
             display: { replayOnly: false },
             dice: [{ value: 1 }, { value: 2 }],
         });
+        expect(flight.state.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+        expect(flight.state.sys.interaction?.current).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         const confirmed = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
@@ -1590,6 +1620,46 @@ describe('炽天使领域行为', () => {
             playerIds,
         );
         expect(confirmed.success).toBe(true);
+        if (!confirmed.success) return;
+        expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(confirmed.state.core.currentRollContext).toMatchObject({
+            kind: 'defensive',
+            ownerPlayerId: '0',
+            status: 'settling',
+            display: { replayOnly: false },
+            dice: [{ value: 3 }, { value: 3 }, { value: 3 }, { value: 3 }, { value: 3 }],
+        });
+        expect(confirmed.state.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+
+        const giveHand = getCardById('card-give-hand');
+        expect(checkPlayCard(confirmed.state.core, '1', giveHand, 'defensiveRoll', 'afterRollConfirmed')).toEqual({ ok: true });
+
+        const played = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            confirmed.state,
+            command('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
+            createQueuedRandom([6]),
+            playerIds,
+        );
+        expect(played.success).toBe(true);
+        if (!played.success) return;
+        expect(played.state.sys.interaction.current).toMatchObject({
+            kind: 'multistep-choice',
+            playerId: '1',
+        });
+        expect((played.state.sys.interaction.current as any)?.data?.meta?.diceOwnerId).toBe('0');
+        expect((played.state.sys.interaction.current as any)?.data?.allowedDieIds).toEqual([0, 1, 2, 3, 4]);
+
+        const rerolled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            played.state,
+            command('REROLL_DIE', '1', { dieId: 0 }),
+            createQueuedRandom([6]),
+            playerIds,
+        );
+        expect(rerolled.success).toBe(true);
+        if (!rerolled.success) return;
+        expect(rerolled.state.core.dice[0]?.value).toBe(6);
     });
 
     it('神圣祝福在炽天使持有者遭受致死伤害时消耗标记并保留 1 点生命', () => {
@@ -1607,9 +1677,9 @@ describe('炽天使领域行为', () => {
         };
 
         const events = resolveEffectsToEvents(ability?.effects ?? [], 'withDamage', context);
-        expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(true);
-        expect(events.some(event => event.type === 'TOKEN_CONSUMED' && event.payload.tokenId === TOKEN_IDS.BLESSING_OF_DIVINITY)).toBe(true);
-        expect(events.some(event => event.type === 'DAMAGE_DEALT' && event.payload.targetId === '0' && event.payload.amount === 13)).toBe(false);
+        expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
+        expect(events.some(event => event.type === 'TOKEN_CONSUMED' && event.payload.tokenId === TOKEN_IDS.BLESSING_OF_DIVINITY)).toBe(false);
+        expect(events.some(event => event.type === 'DAMAGE_DEALT' && event.payload.targetId === '0' && event.payload.amount === 13)).toBe(true);
 
         const after = applyEvents(state.core, events);
         expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);

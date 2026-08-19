@@ -57,6 +57,7 @@ describe('PcWebMascot', () => {
 
         expect(mascot).toHaveStyle({ zIndex: String(PC_WEB_MASCOT_Z_INDEX) });
         expect(PC_WEB_MASCOT_Z_INDEX).toBeLessThan(UI_Z_INDEX.tooltip);
+        expect(PC_WEB_MASCOT_Z_INDEX).toBeLessThan(UI_Z_INDEX.globalHudFab);
         expect(PC_WEB_MASCOT_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.overlayRaised);
     });
 

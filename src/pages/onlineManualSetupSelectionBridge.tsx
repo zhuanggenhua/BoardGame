@@ -7,7 +7,6 @@ import {
     resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
-    shouldStageManualSetupSelectionBeforeReady,
     shouldReleaseManualSetupAttemptFromSharedState,
 } from './matchManualSetup';
 
@@ -109,7 +108,7 @@ export const OnlineManualSetupSelectionBridge = ({
             selectionId: pendingManualSetupSelection.selectionId,
             engineConfig,
         });
-    const shouldOverrideManualSetupSelection = shouldTakeOver && !isManualSetupSelectionPending;
+    const shouldInterceptManualSetupSelection = shouldTakeOver && !isManualSetupSelectionPending;
     const isDraftManualSetupSelectionReleased = draftManualSetupSelection !== null
         && shouldReleaseManualSetupAttemptFromSharedState({
             sharedState,
@@ -127,10 +126,13 @@ export const OnlineManualSetupSelectionBridge = ({
     }, [sharedState]);
 
     const manualSetupDraftState = useMemo(() => {
+        const activeDraftPlayerId = activeDraftManualSetupSelection?.playerId ?? null;
         if (
-            !shouldOverrideManualSetupSelection
-            || !activeDraftManualSetupSelection
-            || activeDraftManualSetupSelection.playerId !== manualSetupPlayerId
+            !activeDraftManualSetupSelection
+            || (
+                activeDraftPlayerId !== manualSetupPlayerId
+                && activeDraftPlayerId !== pendingManualSetupSelection?.playerId
+            )
         ) {
             return undefined;
         }
@@ -138,8 +140,8 @@ export const OnlineManualSetupSelectionBridge = ({
     }, [
         activeDraftManualSetupSelection,
         manualSetupPlayerId,
+        pendingManualSetupSelection?.playerId,
         sharedState,
-        shouldOverrideManualSetupSelection,
     ]);
 
     const manualDispatch = useCallback((type: string, payload: unknown) => {
@@ -212,17 +214,14 @@ export const OnlineManualSetupSelectionBridge = ({
                 ? resolveManualSetupSelectionId({ actionKind, payload, engineConfig })
                 : null;
             if (actionKind && selectionId) {
-                if (shouldStageManualSetupSelectionBeforeReady(actionKind)) {
-                    setDraftManualSetupSelection({
-                        playerId: latestManualSetupPlayerId,
-                        actionKind,
-                        selectionId,
-                        commandType: type,
-                        payload,
-                    });
-                    return;
-                }
-
+                const nextDraft = {
+                    playerId: latestManualSetupPlayerId,
+                    actionKind,
+                    selectionId,
+                    commandType: type,
+                    payload,
+                };
+                setDraftManualSetupSelection(nextDraft);
                 setPendingManualSetupSelection({
                     playerId: latestManualSetupPlayerId,
                     actionKind,
@@ -240,11 +239,13 @@ export const OnlineManualSetupSelectionBridge = ({
                 }, (result) => {
                     if (!result.accepted) {
                         setPendingManualSetupSelection(null);
+                        setDraftManualSetupSelection(null);
                     }
                 })
                 : dispatchManualSetupCommand?.(latestManualSetupPlayerId, type, payload) ?? false;
             if (!accepted) {
                 setPendingManualSetupSelection(null);
+                setDraftManualSetupSelection(null);
             }
             return;
         }
@@ -262,8 +263,7 @@ export const OnlineManualSetupSelectionBridge = ({
     return (
         <GameClientOverrideProvider
             state={manualSetupDraftState}
-            playerId={shouldOverrideManualSetupSelection ? manualSetupPlayerId : undefined}
-            dispatch={shouldOverrideManualSetupSelection ? manualDispatch : undefined}
+            dispatch={shouldInterceptManualSetupSelection ? manualDispatch : undefined}
         >
             {children}
         </GameClientOverrideProvider>

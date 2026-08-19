@@ -21,6 +21,7 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { getSmashUpReactionSession } from '../domain/reactionSession';
 import {
     expectNoPrompt,
     getFirstPrompt,
@@ -428,7 +429,10 @@ describe('完整回合循环', () => {
         expect(getPromptSourceId(firstPrompt)).toBe('base_mushroom_kingdom');
         expect(getPromptSourceId(firstPrompt)).not.toBe('smashup_reaction_choose');
         expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'ninjas_invisible_ninja')).toBe(true);
-        expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_mushroom_kingdom')).toBe(false);
+        const mushroomTriggerIds = ((queuedBase as any).payload.triggers ?? []).map((trigger: any) => trigger.id);
+        expect(getSmashUpReactionSession(resolved!.state)?.consumedTriggerIds ?? []).toEqual(
+            expect.arrayContaining(mushroomTriggerIds),
+        );
 
         const firstResolved = respondToPromptOption(
             resolved!.state,

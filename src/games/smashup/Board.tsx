@@ -504,6 +504,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
     const [selectedFieldPromptSourceUid, setSelectedFieldPromptSourceUid] = useState<string | null>(null);
+    const pendingReactionFieldTriggerSourceUidRef = useRef<string | null>(null);
     const [pendingFusionChoiceUid, setPendingFusionChoiceUid] = useState<string | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
@@ -624,6 +625,24 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const fieldSourceTargetSelection = useMemo(() => {
         return resolveFieldSourceTargetSelectionState(fieldSourceTargetPrompt, selectedFieldPromptSourceUid);
     }, [fieldSourceTargetPrompt, selectedFieldPromptSourceUid]);
+    useEffect(() => {
+        const pendingSourceUid = pendingReactionFieldTriggerSourceUidRef.current;
+        if (!pendingSourceUid) return;
+        if (fieldSourceTargetPrompt) {
+            if (fieldSourceTargetPrompt.sourceTargetOptions.has(pendingSourceUid)) {
+                setSelectedFieldPromptSourceUid(pendingSourceUid);
+            }
+            pendingReactionFieldTriggerSourceUidRef.current = null;
+            return;
+        }
+        if (
+            currentPrompt
+            && currentPromptData?.sourceId !== 'smashup_reaction_choose'
+            && currentPromptData?.targetType !== 'field-source-target'
+        ) {
+            pendingReactionFieldTriggerSourceUidRef.current = null;
+        }
+    }, [currentPrompt, currentPromptData?.sourceId, currentPromptData?.targetType, fieldSourceTargetPrompt]);
     const isFieldSourceTargetReady = fieldSourceTargetSelection.isReady;
     const selectedFieldSourceTargetEntry = fieldSourceTargetSelection.selectedEntry;
     const fieldSourceTargetExtraOptions = useMemo(() => {
@@ -790,6 +809,95 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return result;
     }, [core.triggerQueue, coreTitans, currentPrompt, isCurrentPromptForPlayer]);
 
+    const reactionFieldTriggerSourceOptions = useMemo(() => {
+        const result = {
+            optionIds: new Set<string>(),
+            optionIdsByBaseIndex: new Map<number, string>(),
+            optionIdsByMinionUid: new Map<string, string>(),
+            optionIdsByOngoingUid: new Map<string, string>(),
+            optionIdsByTitanUid: new Map<string, string>(),
+            sourceByOptionId: new Map<string, { kind: 'base' | 'minion' | 'ongoing' | 'titan'; key: string | number }>(),
+        };
+        if (!isCurrentPromptForPlayer || !currentPrompt) return result;
+        if (currentPrompt.sourceId !== 'smashup_reaction_choose') return result;
+
+        const candidates: Array<{
+            optionId: string;
+            kind: 'base' | 'minion' | 'ongoing' | 'titan';
+            key: string | number;
+        }> = [];
+        const queuedTriggers = core.triggerQueue ?? [];
+
+        for (const opt of currentPrompt.options) {
+            if (opt.disabled) continue;
+            const val = opt.value as { kind?: string; triggerId?: string } | undefined;
+            if (val?.kind !== 'trigger' || !val.triggerId) continue;
+            const trigger = queuedTriggers.find(candidate => candidate.id === val.triggerId);
+            if (!trigger || trigger.resolutionClass !== 'optional') continue;
+
+            if (trigger.sourceCardUid) {
+                let mapped = false;
+                for (const base of coreBases) {
+                    if (base.minions.some(minion => minion.uid === trigger.sourceCardUid)) {
+                        candidates.push({ optionId: opt.id, kind: 'minion', key: trigger.sourceCardUid });
+                        mapped = true;
+                        break;
+                    }
+                    if (base.ongoingActions.some(action => action.uid === trigger.sourceCardUid)) {
+                        candidates.push({ optionId: opt.id, kind: 'ongoing', key: trigger.sourceCardUid });
+                        mapped = true;
+                        break;
+                    }
+                    if (base.minions.some(minion => minion.attachedActions?.some(action => action.uid === trigger.sourceCardUid))) {
+                        candidates.push({ optionId: opt.id, kind: 'ongoing', key: trigger.sourceCardUid });
+                        mapped = true;
+                        break;
+                    }
+                }
+                if (mapped) continue;
+
+                const titan = coreTitans.find(candidate => candidate.uid === trigger.sourceCardUid);
+                if (titan) {
+                    candidates.push({ optionId: opt.id, kind: 'titan', key: titan.uid });
+                    continue;
+                }
+            }
+
+            const sourceBaseIndex = trigger.sourceBaseIndex ?? trigger.baseIndex;
+            if (
+                typeof sourceBaseIndex === 'number'
+                && coreBases[sourceBaseIndex]?.defId === trigger.sourceDefId
+                && getBaseDef(trigger.sourceDefId)
+            ) {
+                candidates.push({ optionId: opt.id, kind: 'base', key: sourceBaseIndex });
+            }
+        }
+
+        const sourceCounts = new Map<string, number>();
+        for (const candidate of candidates) {
+            const key = `${candidate.kind}:${String(candidate.key)}`;
+            sourceCounts.set(key, (sourceCounts.get(key) ?? 0) + 1);
+        }
+
+        for (const candidate of candidates) {
+            const uniqueKey = `${candidate.kind}:${String(candidate.key)}`;
+            if (sourceCounts.get(uniqueKey) !== 1) continue;
+            result.optionIds.add(candidate.optionId);
+            if (candidate.kind === 'base') {
+                result.optionIdsByBaseIndex.set(candidate.key as number, candidate.optionId);
+            } else if (candidate.kind === 'minion') {
+                result.optionIdsByMinionUid.set(candidate.key as string, candidate.optionId);
+            } else if (candidate.kind === 'ongoing') {
+                result.optionIdsByOngoingUid.set(candidate.key as string, candidate.optionId);
+            } else {
+                result.optionIdsByTitanUid.set(candidate.key as string, candidate.optionId);
+            }
+            result.sourceByOptionId.set(candidate.optionId, { kind: candidate.kind, key: candidate.key });
+        }
+
+        return result;
+    }, [core.triggerQueue, coreBases, coreTitans, currentPrompt, isCurrentPromptForPlayer]);
+
     const reactionTitanPromptUids = useMemo(
         () => new Set(reactionTitanTriggerOptionIdsByUid.keys()),
         [reactionTitanTriggerOptionIdsByUid],
@@ -842,11 +950,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const reactionChoiceExtraOptions = useMemo(() => {
         if (!isReactionChoicePrompt || !isCurrentPromptForPlayer || !currentPrompt) return [];
-        return currentPrompt.options.filter(opt => !isSmashUpReactionHandPlayValue(opt.value) && !isFieldSourceTargetValue(opt.value) && !isFieldSourceActionValue(opt.value)).map(opt => ({
+        return currentPrompt.options.filter(opt => !reactionFieldTriggerSourceOptions.optionIds.has(opt.id) && !isSmashUpReactionHandPlayValue(opt.value) && !isFieldSourceTargetValue(opt.value) && !isFieldSourceActionValue(opt.value)).map(opt => ({
             ...opt,
             label: resolvePromptOptionLabel(opt),
         }));
-    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, resolvePromptOptionLabel]);
+    }, [currentPrompt, isCurrentPromptForPlayer, isReactionChoicePrompt, reactionFieldTriggerSourceOptions.optionIds, resolvePromptOptionLabel]);
 
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
@@ -1366,6 +1474,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // interaction 切换时重置手牌/弃牌区选中状态。
     // 这里必须监听 currentPrompt 对象引用，而不是 currentPrompt?.id，
     // 否则同 id 的新交互复用时会残留上一轮移动端选中态。
+    const preserveFieldSourceSelectionOnPromptSwitch = currentPromptData?.targetType === 'field-source-target';
     useEffect(() => {
         let cancelled = false;
         queueMicrotask(() => {
@@ -1375,7 +1484,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setSelectedCardMode(null);
                 setPendingFusionChoiceUid(null);
                 setSelectedSetAsideTitanUid(null);
-                setSelectedFieldPromptSourceUid(null);
+                if (!preserveFieldSourceSelectionOnPromptSwitch) {
+                    setSelectedFieldPromptSourceUid(null);
+                }
             }
             setDiscardStripSelectedUid(null);
             setMultiSelectedOptionIds(new Set());
@@ -1383,7 +1494,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return () => {
             cancelled = true;
         };
-    }, [currentPrompt]);
+    }, [currentPrompt, preserveFieldSourceSelectionOnPromptSwitch]);
 
     // 统一弃牌堆出牌：合并正常弃牌堆出牌 + interaction 驱动的弃牌堆随从选择
     const discardStripCards = useMemo(() => buildDiscardStripCards({
@@ -1564,6 +1675,26 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return next;
     }, [displayedDeckPlayerId, playerID, setAsideTitanActivationState]);
 
+    const reactionFieldTriggerSourcesAreActive = isReactionChoicePrompt
+        && isCurrentPromptForPlayer
+        && !selectedCardUid
+        && !meFirstPendingCard
+        && !discardStripSelectedUid
+        && !selectedSetAsideTitanUid;
+
+    const reactionFieldTriggerSourceMinionUids = useMemo(
+        () => new Set(reactionFieldTriggerSourceOptions.optionIdsByMinionUid.keys()),
+        [reactionFieldTriggerSourceOptions.optionIdsByMinionUid],
+    );
+    const reactionFieldTriggerSourceOngoingUids = useMemo(
+        () => new Set(reactionFieldTriggerSourceOptions.optionIdsByOngoingUid.keys()),
+        [reactionFieldTriggerSourceOptions.optionIdsByOngoingUid],
+    );
+    const reactionFieldTriggerSourceTitanUids = useMemo(
+        () => new Set(reactionFieldTriggerSourceOptions.optionIdsByTitanUid.keys()),
+        [reactionFieldTriggerSourceOptions.optionIdsByTitanUid],
+    );
+
     const selectableSetAsideTitanUids = useMemo(() => {
         const next = new Set<string>(activatableSetAsideTitanUids);
         if (displayedDeckPlayerId !== playerID) return next;
@@ -1578,8 +1709,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 next.add(titanUid);
             }
         }
+        if (reactionFieldTriggerSourcesAreActive) {
+            for (const titanUid of reactionFieldTriggerSourceTitanUids) {
+                next.add(titanUid);
+            }
+        }
         return next;
-    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, isTitanReactionPrompt, playerID, reactionTitanPromptUids, titanPromptBaseSelection]);
+    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, isTitanReactionPrompt, playerID, reactionFieldTriggerSourceTitanUids, reactionFieldTriggerSourcesAreActive, reactionTitanPromptUids, titanPromptBaseSelection]);
 
     const selectedTitanDeployableBaseIndices = useMemo(() => {
         if (!selectedSetAsideTitanUid) return new Set<number>();
@@ -2414,8 +2550,25 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         respondCurrentPrompt({ optionId });
     }, [reactionTitanTriggerOptionIdsByUid, respondCurrentPrompt]);
 
+    const respondReactionFieldTriggerSource = useCallback((optionId?: string): boolean => {
+        if (!reactionFieldTriggerSourcesAreActive || !optionId) return false;
+        const source = reactionFieldTriggerSourceOptions.sourceByOptionId.get(optionId);
+        pendingReactionFieldTriggerSourceUidRef.current = source && source.kind !== 'base'
+            ? String(source.key)
+            : null;
+        setSelectedCardUid(null);
+        setSelectedCardMode(null);
+        setSelectedFieldPromptSourceUid(null);
+        setSelectedSetAsideTitanUid(null);
+        respondCurrentPrompt({ optionId });
+        return true;
+    }, [reactionFieldTriggerSourceOptions.sourceByOptionId, reactionFieldTriggerSourcesAreActive, respondCurrentPrompt]);
+
     const handleSetAsideTitanSelect = useCallback((titanUid: string) => {
         if (!playerID) return;
+        if (respondReactionFieldTriggerSource(reactionFieldTriggerSourceOptions.optionIdsByTitanUid.get(titanUid))) {
+            return;
+        }
         if (isTitanReactionPrompt && reactionTitanTriggerOptionIdsByUid.has(titanUid)) {
             handleTitanReactionTrigger(titanUid);
             return;
@@ -2459,7 +2612,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setDiscardStripSelectedUid(null);
         setMeFirstPendingCard(null);
         setSelectedSetAsideTitanUid((prev) => (prev === titanUid ? null : titanUid));
-    }, [playerID, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, respondCurrentPrompt, titanPromptBaseSelection, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
+    }, [playerID, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByTitanUid, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, respondCurrentPrompt, titanPromptBaseSelection, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
 
     // VIEWING STATE
     const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
@@ -2568,6 +2721,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedSetAsideTitanUid(null);
             return;
         }
+        if (respondReactionFieldTriggerSource(reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.get(index))) {
+            return;
+        }
+        if (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.size > 0) {
+            playDeniedSound();
+            return;
+        }
         if (fieldSourceTargetPrompt) {
             if (!selectedFieldPromptSourceUid || !fieldSourceTargetPrompt.sourceTargetOptions.has(selectedFieldPromptSourceUid)) {
                 playDeniedSound();
@@ -2656,7 +2816,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             dispatch(SU_COMMANDS.USE_BASE_ABILITY, { baseIndex: index });
         }
-    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, fieldSourceTargetOptionIdsByBaseIndex]);
+    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByBaseIndex, reactionFieldTriggerSourcesAreActive, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, fieldSourceTargetOptionIdsByBaseIndex]);
 
     const handleBuriedCardSelect = useCallback((cardUid: string) => {
         if (!isBuriedSelectPrompt || !currentPrompt) return;
@@ -3023,6 +3183,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
+        if (respondReactionFieldTriggerSource(reactionFieldTriggerSourceOptions.optionIdsByMinionUid.get(minionUid))) {
+            return;
+        }
+        if (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByMinionUid.size > 0) {
+            playDeniedSound();
+            return;
+        }
         // 交互驱动的随从选择
         if ((isMinionSelectPrompt || isBoardSelectPrompt) && currentPrompt) {
             const promptSelectableMinionUids = isBoardSelectPrompt ? boardSelectableMinionUids : selectableMinionUids;
@@ -3089,7 +3256,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setDiscardStripSelectedUid(null);
             }
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isBoardSelectPrompt, isMultiMinionSelect, isMultiBoardSelect, multiMinionConstraints, selectableMinionUids, boardSelectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, respondCurrentPrompt, playDeniedSound]);
+    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isBoardSelectPrompt, isMultiMinionSelect, isMultiBoardSelect, multiMinionConstraints, selectableMinionUids, boardSelectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, respondCurrentPrompt, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByMinionUid, reactionFieldTriggerSourcesAreActive, playDeniedSound]);
 
     /** 持续行动卡点击回调：交互驱动的行动卡选择 */
     const handleOngoingSelect = useCallback((ongoingUid: string) => {
@@ -3112,6 +3279,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setSelectedFieldPromptSourceUid((current) => current === ongoingUid ? null : ongoingUid);
                 return;
             }
+            playDeniedSound();
+            return;
+        }
+        if (respondReactionFieldTriggerSource(reactionFieldTriggerSourceOptions.optionIdsByOngoingUid.get(ongoingUid))) {
+            return;
+        }
+        if (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByOngoingUid.size > 0) {
             playDeniedSound();
             return;
         }
@@ -3138,7 +3312,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardMode(null);
             respondCurrentPrompt({ optionId: option.id });
         }
-    }, [currentPrompt, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isMultiOngoingSelect, isMultiBoardSelect, selectableOngoingUids, boardSelectableOngoingUids, multiMinionConstraints.max, respondCurrentPrompt, setSelectedCardMode, setSelectedCardUid, playDeniedSound]);
+    }, [currentPrompt, fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isMultiOngoingSelect, isMultiBoardSelect, selectableOngoingUids, boardSelectableOngoingUids, multiMinionConstraints.max, respondCurrentPrompt, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByOngoingUid, reactionFieldTriggerSourcesAreActive, setSelectedCardMode, setSelectedCardUid, playDeniedSound]);
 
     const handleFieldSourceTitanSelect = useCallback((titanUid: string) => {
         if (fieldSourceActionPrompt) {
@@ -3153,6 +3327,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
+        if (respondReactionFieldTriggerSource(reactionFieldTriggerSourceOptions.optionIdsByTitanUid.get(titanUid))) {
+            return;
+        }
+        if (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByTitanUid.size > 0) {
+            playDeniedSound();
+            return;
+        }
         if (!fieldSourceTargetPrompt) return;
         if (fieldSourceTargetPrompt.sourceTitanUids.has(titanUid)) {
             setSelectedCardUid(null);
@@ -3161,7 +3342,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
         playDeniedSound();
-    }, [fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, fieldSourceTargetPrompt, playDeniedSound, respondCurrentPrompt]);
+    }, [fieldSourceActionPrompt, fieldSourceActionOptionIdsBySourceUid, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByTitanUid, reactionFieldTriggerSourcesAreActive, fieldSourceTargetPrompt, playDeniedSound, respondCurrentPrompt]);
 
     const handleViewCardDetail = useCallback((card: CardInstance) => {
         const nextTarget = { defId: card.defId, type: card.type === 'minion' ? 'minion' : 'action' } as const;
@@ -4169,7 +4350,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         variant="secondary"
                                         size="md"
                                         disabled={!!opt.disabled}
-                                        data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : undefined}
+                                        data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : 'su-reaction-option-button'}
+                                        data-option-id={opt.id}
                                         onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
@@ -4366,6 +4548,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0)
                                         || ((fieldSourceActionSelectableMinionUids?.size ?? 0) > 0)
                                         || ((fieldSourceTargetSelectableMinionUids?.size ?? 0) > 0)
+                                        || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceMinionUids.size > 0)
                                         || (isMinionSelectPrompt && selectableMinionUids.size > 0)
                                         || (isBoardSelectPrompt && boardSelectableMinionUids.size > 0)
                                         || (!!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion') && dragOngoingMinionTargetUids.size > 0)
@@ -4375,6 +4558,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             ? fieldSourceActionSelectableMinionUids
                                         : fieldSourceTargetSelectableMinionUids
                                             ? fieldSourceTargetSelectableMinionUids
+                                        : reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceMinionUids.size > 0
+                                            ? reactionFieldTriggerSourceMinionUids
                                         : isBoardSelectPrompt
                                             ? boardSelectableMinionUids
                                             : isMinionSelectPrompt
@@ -4393,10 +4578,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
                                         || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && !fieldSourceTargetOptionIdsByBaseIndex.has(idx))
+                                        || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.size > 0 && !reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx))
                                         || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
                                         || (!!selectedCardUid && selectedCardMode !== 'ongoing-minion' && selectedCardMode !== 'action-minion' && selectedCardMode !== 'action' && !deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && !meFirstEligibleBaseIndices.has(idx))
@@ -4410,7 +4596,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onMinionSelect={handleMinionSelect}
                                     onOngoingSelect={handleOngoingSelect}
                                     onBuriedCardSelect={handleBuriedCardSelect}
-                                    selectableOngoingUids={fieldSourceActionSelectableOngoingUids ? fieldSourceActionSelectableOngoingUids : fieldSourceTargetSelectableOngoingUids ? fieldSourceTargetSelectableOngoingUids : isBoardSelectPrompt ? boardSelectableOngoingUids : isOngoingSelectPrompt ? selectableOngoingUids : undefined}
+                                    selectableOngoingUids={fieldSourceActionSelectableOngoingUids ? fieldSourceActionSelectableOngoingUids : fieldSourceTargetSelectableOngoingUids ? fieldSourceTargetSelectableOngoingUids : reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOngoingUids.size > 0 ? reactionFieldTriggerSourceOngoingUids : isBoardSelectPrompt ? boardSelectableOngoingUids : isOngoingSelectPrompt ? selectableOngoingUids : undefined}
                                     selectedOngoingUids={isFieldSourceTargetReady && selectedFieldPromptSourceUid && (selectedFieldSourceTargetEntry?.sourceType === 'ongoing' || selectedFieldSourceTargetEntry?.sourceType === 'action') ? new Set([selectedFieldPromptSourceUid]) : undefined}
                                     multiSelectedOngoingUids={isMultiOngoingSelect || isMultiBoardSelect ? multiSelectedOngoingUids : undefined}
                                     onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
@@ -4424,7 +4610,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     usableTitanOngoingUids={usableTitanOngoingUids}
                                     reactionTitanTriggerUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
                                     onResolveTitanReaction={handleTitanReactionTrigger}
-                                    selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids}
+                                    selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids ?? (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceTitanUids.size > 0 ? reactionFieldTriggerSourceTitanUids : undefined)}
                                     selectedTitanUids={isFieldSourceTargetReady && selectedFieldPromptSourceUid && selectedFieldSourceTargetEntry?.sourceType === 'titan' ? new Set([selectedFieldPromptSourceUid]) : undefined}
                                     onTitanSelect={handleFieldSourceTitanSelect}
                                     isMonsterSelectMode={isMonsterSelectPrompt}

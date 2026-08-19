@@ -255,7 +255,7 @@ export const DiceTray = ({
                         : isInteractionMode
                         ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
                         : (isPassiveRerollMode
-                            ? canInteract && !die.isKept
+                            ? canInteract
                             : isBonusRerollMode
                                 ? canRerollBonusDie
                                 : canToggleDieLock);

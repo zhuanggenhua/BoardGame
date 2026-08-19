@@ -698,8 +698,9 @@
     "bonusDieModified": "Modified temporary die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieRerolled": "Rerolled die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieRerolledSource": "({{source}})",
-    "bonusDieRolled": "Bonus die result: {{value}}",
-    "bonusDiceRolled": "Bonus dice result:",
+    "bonusDieRolled": "Bonus die rolled: {{value}}",
+    "bonusDiceRolled": "Bonus dice rolled:",
+    "bonusDiceSettled": "Final bonus dice result:",
     "bonusDieRerolled": "Rerolled bonus die #{{dieId}}: {{oldValue}} → {{newValue}}"
   },
   "purify": {
@@ -715,6 +716,8 @@
     "energy": "Energy",
     "shield": "Shield",
     "deck": "Deck",
+    "hideHand": "Hide Hand",
+    "showHand": "Show Hand",
     "discardPile": "Discard Pile",
     "viewingOpponent": "Observing Opponent",
     "opponent": "Opponent",
@@ -1240,6 +1243,7 @@
     "roll_already_confirmed": "Roll already confirmed",
     "no_roll_yet": "Please roll the dice first",
     "ability_not_available": "This ability is not available",
+    "observedAbilityDisplayOnly": "This is an opponent ability highlight for observation only",
     "die_not_found": "Die not found",
     "cannot_advance_phase": "Cannot advance phase",
     "attackModifierRequiresSelectedAttack": "Select an attack ability before playing this attack modifier",

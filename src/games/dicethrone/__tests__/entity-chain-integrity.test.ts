@@ -149,7 +149,7 @@ describe('customActionId 引用链', () => {
     );
 
     it('TokenDef 中提取到 customActionId 引用', () => {
-        // paladin-blessing-prevent 应存在（shadow_thief-sneak-prevent 已废弃）
+        // 至少应存在主动 token 或其它被动 token 的 customActionId 引用。
         expect(tokenChains.length).toBeGreaterThanOrEqual(1);
     });
 

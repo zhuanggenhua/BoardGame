@@ -7,6 +7,13 @@ const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const readSource = () => readFileSync(resolve(TEST_DIR, '..', 'QidahenRegionMaskTool.tsx'), 'utf8');
 
 describe('QidahenRegionMaskTool compatibility source guards', () => {
+    it('区域蒙版工具底图必须固定走本地 /assets，不能被远端资源基址带跑', () => {
+        const source = readSource();
+
+        expect(source).toContain("const DEFAULT_MAP_PATH = '/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png';");
+        expect(source).not.toContain("getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png')");
+    });
+
     it('会把 shared printed 缺 guide 与当前工具模型的 runtime-only blocker 直接暴露出来', () => {
         const source = readSource();
 

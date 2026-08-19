@@ -649,6 +649,18 @@ export function createResponseWindowSystem<TCore>(
                 return;
             }
 
+            // 游戏侧可以为当前活跃交互声明额外合法命令。
+            // 例如 DiceThrone 的临时奖励骰确认属于骰主自己的阻塞交互，
+            // 不应被响应窗口的“当前响应者”轮次误挡。
+            if (allowNonResponderCommand?.({
+                state: state as MatchState<unknown>,
+                command,
+                currentWindow,
+                currentResponderId,
+            })) {
+                return;
+            }
+
             // 检查命令是否被允许（白名单 + 分类系统）
             if (isCommandAllowed(command.type)) {
                 // 窗口类型约束检查

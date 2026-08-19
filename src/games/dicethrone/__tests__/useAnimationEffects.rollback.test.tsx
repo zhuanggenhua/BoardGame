@@ -1,18 +1,25 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
 import type { EventStreamEntry } from '../../../engine/types';
 import type { FxBus } from '../../../engine/fx';
 import { useAnimationEffects } from '../hooks/useAnimationEffects';
+import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 
 function HookProbe({
     entries,
     fxBus,
+    selfHp = 20,
+    opponentHp = 20,
+    onBuffer,
 }: {
     entries: EventStreamEntry[];
     fxBus: FxBus;
+    selfHp?: number;
+    opponentHp?: number;
+    onBuffer?: (buffer: UseVisualStateBufferReturn) => void;
 }) {
     const selfHpRef = React.useRef<HTMLDivElement | null>(null);
     const opponentHpRef = React.useRef<HTMLDivElement | null>(null);
@@ -22,17 +29,17 @@ function HookProbe({
     const opponentBuffRef = React.useRef<HTMLDivElement | null>(null);
     const opponentHeaderRef = React.useRef<HTMLDivElement | null>(null);
 
-    useAnimationEffects({
+    const { damageBuffer } = useAnimationEffects({
         fxBus,
         players: {
             player: {
-                resources: { hp: 20 },
+                resources: { hp: selfHp },
                 abilities: [],
                 statusEffects: {},
                 tokens: {},
             } as any,
             opponent: {
-                resources: { hp: 20 },
+                resources: { hp: opponentHp },
                 abilities: [],
                 statusEffects: {},
                 tokens: {},
@@ -56,8 +63,14 @@ function HookProbe({
         eventStreamEntries: entries,
     });
 
+    React.useEffect(() => {
+        onBuffer?.(damageBuffer);
+    }, [damageBuffer, onBuffer]);
+
     return (
         <div>
+            <div data-testid="visual-self-hp">{damageBuffer.get('hp-0', selfHp)}</div>
+            <div data-testid="visual-opponent-hp">{damageBuffer.get('hp-1', opponentHp)}</div>
             <div ref={selfHpRef} data-testid="self-hp" />
             <div ref={opponentHpRef} data-testid="opponent-hp" />
             <div ref={selfCpRef} data-testid="self-cp" />
@@ -74,7 +87,7 @@ describe('useAnimationEffects rollback consumer', () => {
         vi.restoreAllMocks();
     });
 
-    it('wait-confirm 确认同步后应消费新伤害事件，并按护盾后净伤害播放浮字', async () => {
+    it('wait-confirm 确认同步后应消费新伤害事件，并直接按 reducer 回填的净掉血播放浮字', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,
             seq: 0,
@@ -106,7 +119,7 @@ describe('useAnimationEffects rollback consumer', () => {
                 payload: {
                     targetId: '0',
                     amount: 5,
-                    actualDamage: 5,
+                    actualDamage: 2,
                     shieldsConsumed: [{ sourceId: 'duel', reductionPercent: 50, absorbed: 3 }],
                     sourceAbilityId: 'harmony',
                 },
@@ -136,6 +149,67 @@ describe('useAnimationEffects rollback consumer', () => {
             {},
             expect.objectContaining({ damage: 2 }),
         );
+    });
+
+    it('正式 HP 先同步到 core，动画期间只冻结显示值，impact 后回到正式 HP', async () => {
+        const fxBus = {
+            push: vi.fn(() => 'fx-1'),
+        } as unknown as FxBus;
+        let latestBuffer: UseVisualStateBufferReturn | null = null;
+
+        const damageEntry: EventStreamEntry = {
+            id: 1,
+            event: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '0',
+                    amount: 5,
+                    actualDamage: 2,
+                    sourceAbilityId: 'test-attack',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        const view = render(
+            <HookProbe
+                entries={[]}
+                fxBus={fxBus}
+                selfHp={20}
+                onBuffer={(buffer) => {
+                    latestBuffer = buffer;
+                }}
+            />,
+        );
+
+        view.rerender(
+            <HookProbe
+                entries={[damageEntry]}
+                fxBus={fxBus}
+                selfHp={18}
+                onBuffer={(buffer) => {
+                    latestBuffer = buffer;
+                }}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('visual-self-hp').textContent).toBe('20');
+        });
+
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.damage',
+            {},
+            expect.objectContaining({ damage: 2 }),
+        );
+
+        act(() => {
+            latestBuffer?.release(['hp-0']);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('visual-self-hp').textContent).toBe('18');
+        });
     });
 
     it('optimistic rollback 后应清空旧动画队列，并且恢复旧事件时不重播，只消费新的后续事件', async () => {

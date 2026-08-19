@@ -10,6 +10,7 @@ export { createFlowSystem, getCurrentPhase, setPhase, FLOW_COMMANDS, FLOW_EVENTS
 export { createUndoSystem, getUndoSnapshotCount, setUndoAiSeatIds, UNDO_COMMANDS, type UndoSystemConfig } from './UndoSystem';
 export { createInteractionSystem, createSimpleChoice, createCompareRollChoice, createMultistepChoice, queueInteraction, resolveInteraction, asSimpleChoice, asCompareRollChoice, asMultistepChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS, type InteractionDescriptor, type InteractionState, type SimpleChoiceData, type CompareRollChoiceData, type CompareRollChoiceParticipant, type MultistepChoiceData, type InteractionSystemConfig, type SimpleChoiceResponseValidationMode } from './InteractionSystem';
 export { createSimpleChoiceFromChoiceRequest, type CreateSimpleChoiceFromChoiceRequestOptions } from './ChoiceRequestSimpleChoiceAdapter';
+export { projectChoiceRequestToDirectSelectionTargets, projectChoiceRequestToConfirmCurrentAction, projectChoiceRequestToDiceConfirmationSurface, type ChoiceRequestDirectSelectionSurface, type ChoiceRequestDirectSelectionTarget, type ChoiceRequestConfirmCurrentAction, type ChoiceRequestDiceConfirmationSurface } from './ChoiceRequestDirectAdapter';
 export { createSimpleChoiceSystem, type SimpleChoiceSystemConfig } from './SimpleChoiceSystem';
 export { createCompareRollChoiceSystem, type CompareRollChoiceSystemConfig } from './CompareRollChoiceSystem';
 export { createMultistepChoiceSystem, type MultistepChoiceSystemConfig } from './MultistepChoiceSystem';

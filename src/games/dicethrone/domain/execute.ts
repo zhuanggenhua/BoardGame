@@ -1150,7 +1150,7 @@ export function execute(
             if (action.type === 'rerollDie') {
                 if (!Number.isInteger(targetDieId)) break;
                 const currentDie = findCurrentRollDie(state, targetDieId, phase);
-                if (!currentDie || currentDie.die.isKept) break;
+                if (!currentDie) break;
             }
 
             const player = state.players[command.playerId];

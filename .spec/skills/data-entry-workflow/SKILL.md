@@ -73,7 +73,7 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 ### 通用新增派系 / 新增角色 / 新增英雄
 
 - 适用：用户说“新增派系”“新增角色”“新增英雄”“从素材做到可玩”“数据录入、上传、审计、端到端全流程”“彻底完成才停”等语义。
-- 必须先读 `.spec/skills/add-new-faction/SKILL.md`，把批次矩阵、L0-L4、资源上传、审计 evidence、真实入口 E2E 作为统一交付门禁。
+- 必须先读 `.spec/skills/add-new-faction/SKILL.md`，把批次矩阵、证据轴、资源上传、审计 evidence、真实入口 E2E 作为统一交付门禁。
 - 然后再进入下方游戏专用 workflow。
 - 禁止只完成选角、静态数据、资源显示或 smoke 测试后就宣称新增完成。
 

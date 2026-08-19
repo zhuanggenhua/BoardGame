@@ -876,8 +876,8 @@ describe('MageWarsBoard FX wiring', () => {
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-start-delay-ms')).toBe('0');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-delay-ms')).toBe('0');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-testid')).toBe('mage-wars-fx-attack-damage-float');
-            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('1.75');
-            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-color-class')).toBe('text-amber-50');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-font-scale')).toBe('2.55');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-color-class')).toBe('text-red-100');
             expect(screen.queryByTestId('mage-wars-fx-attack-damage-host')).not.toBeNull();
             expect(travel.getAttribute('data-source-col')).toBe('0');
             expect(travel.getAttribute('data-target-row')).toBe('2');
@@ -895,7 +895,7 @@ describe('MageWarsBoard FX wiring', () => {
                 .getByTestId('mage-wars-fx-attack-impact-burst')
                 .querySelector('[data-testid="mock-burst-particles"]')
                 ?.getAttribute('data-overflow')).toBe('2.2');
-            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.35');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.6');
 
             act(() => {
                 advanceSharedFxClockDelay(2600);

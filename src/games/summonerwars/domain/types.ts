@@ -18,6 +18,11 @@ export interface CellCoord {
 /** 玩家 ID */
 export type PlayerId = '0' | '1';
 
+/** 开局座位控制者。领域层只关心座位是否为 AI，不保存 provider / 凭据等外部细节。 */
+export interface SummonerWarsSeatController {
+  type?: 'human' | 'local-ai' | 'remote-ai' | string;
+}
+
 /** 攻击类型 */
 export type AttackType = 'melee' | 'ranged';
 
@@ -222,6 +227,8 @@ export interface SummonerWarsCore {
   hostStarted: boolean;
   /** 自定义牌组数据（选角阶段使用，玩家选择自定义牌组时存储） */
   customDeckData?: Partial<Record<PlayerId, SerializedCustomDeck>>;
+  /** 座位控制者（选角阶段用于区分真人占用与 AI 预占） */
+  seatControllers?: Partial<Record<PlayerId, SummonerWarsSeatController>>;
   /** 技能使用次数追踪（key: `${instanceId}:${abilityId}`，回合结束清空） */
   abilityUsageCount: Record<string, number>;
   /** 单位本回合击杀计数（key: killerUnitInstanceId，回合切换清空） */

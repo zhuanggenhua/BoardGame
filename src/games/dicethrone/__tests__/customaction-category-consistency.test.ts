@@ -838,8 +838,6 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 武僧雷霆万钧：伤害由奖励骰结算链路落地，基础 mock 只会创建待结算骰面
             'thunder-strike-roll-damage',
             'thunder-strike-2-roll-damage',
-            // 圣骑士神圣祝福防御：只有致死伤害 + 有 Blessing token 时才触发，产生 DAMAGE_DEALT（将 HP 设为 1）
-            'paladin-blessing-prevent',
             // 神枪手决斗：当前 handler 只发起比较/选项交互，实际伤害在 choice-resolved handler 中落地
             'gunslinger-duel-resolve',
             // 通用加攻与部分工匠 / 忍者动作会把伤害挂到当前攻击、机器人分支或后续结算路径，不在基础 mock 中直接落 DAMAGE_DEALT

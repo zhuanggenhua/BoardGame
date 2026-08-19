@@ -18,6 +18,7 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         data?: {
             sourceId?: unknown;
             ai?: unknown;
+            choiceRequest?: unknown;
             options?: Array<{
                 id?: unknown;
                 label?: unknown;
@@ -43,6 +44,9 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
     const ai = rawAi ? toJsonSafe(rawAi as AiInteractionSupportDeclaration) : undefined;
     const aiDecisions = Array.isArray(ai?.decisions)
         ? ai.decisions
+        : undefined;
+    const choiceRequest = current.data?.choiceRequest && typeof current.data.choiceRequest === 'object'
+        ? toJsonSafe(current.data.choiceRequest as Record<string, unknown>)
         : undefined;
 
     const options = Array.isArray(current.data?.options)
@@ -76,6 +80,7 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         ...(current.data?.multi !== undefined ? { multi: toJsonSafe(current.data.multi) } : {}),
         ...(ai ? { ai } : {}),
         ...(aiDecisions ? { aiDecisions } : {}),
+        ...(choiceRequest ? { choiceRequest } : {}),
     };
 }
 

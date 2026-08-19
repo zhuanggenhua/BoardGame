@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildChoiceRequestDiagnosticSnapshot,
     diagnoseChoiceRequestForAi,
     filterChoiceRequestForPlayer,
     projectChoiceRequestToAiLegalActions,
     validateChoiceRequest,
     type ChoiceRequest,
 } from '../ChoiceRequest';
-import { createSimpleChoiceFromChoiceRequest } from '../systems';
+import {
+    createSimpleChoiceFromChoiceRequest,
+    projectChoiceRequestToConfirmCurrentAction,
+    projectChoiceRequestToDiceConfirmationSurface,
+    projectChoiceRequestToDirectSelectionTargets,
+} from '../systems';
 
 const createTargetChoiceRequest = (): ChoiceRequest<{ targetId: string }> => ({
     requestId: 'choose-target',
@@ -237,6 +243,35 @@ describe('ChoiceRequest', () => {
         });
     });
 
+    it('共享 AI 策略必须来自注册表，未知 shared policy 不能静默放行', () => {
+        const request = createTargetChoiceRequest();
+        request.ai = {
+            status: 'shared-policy',
+            policyId: 'unknown-shared-policy',
+        };
+
+        expect(diagnoseChoiceRequestForAi(request)).toMatchObject({
+            status: 'missing-policy',
+            policyId: 'unknown-shared-policy',
+        });
+        expect(diagnoseChoiceRequestForAi(request, {
+            registeredSharedPolicyIds: ['unknown-shared-policy'],
+        })).toMatchObject({
+            status: 'ok',
+            policyId: 'unknown-shared-policy',
+        });
+    });
+
+    it('未显式 policyId 的共享 AI 策略会解析到内置 generic policy', () => {
+        const request = createTargetChoiceRequest();
+        request.ai = { status: 'shared-policy' };
+
+        expect(diagnoseChoiceRequestForAi(request)).toMatchObject({
+            status: 'ok',
+            policyId: 'choice-request:simple-target',
+        });
+    });
+
     it('明确 unsupported 的 AI 请求会诊断为 unsupported', () => {
         const request = createTargetChoiceRequest();
         request.ai = {
@@ -299,5 +334,118 @@ describe('ChoiceRequest', () => {
                 expect.objectContaining({ id: 'target-b', disabled: true }),
             ],
         });
+        expect(interaction.data.choiceRequest).toMatchObject({
+            requestId: 'choose-target',
+            choiceKind: 'select-object',
+            sourceId: 'test-source',
+            aiDiagnosticStatus: 'missing-policy',
+            policyId: 'test-target-policy',
+            candidateSummary: {
+                total: 2,
+                enabledCandidateIds: ['target-a'],
+                disabledCandidateIds: ['target-b'],
+            },
+        });
+    });
+
+    it('diagnostic snapshot 只汇总请求与候选状态，不替 watchdog 选择业务目标', () => {
+        const request = createTargetChoiceRequest();
+        request.ai = { status: 'shared-policy' };
+        request.skipPolicy = 'forbidden';
+        request.recoveryAction = undefined;
+        request.candidates[0].disabled = true;
+        request.candidates[0].disabledReason = '目标已经离场';
+
+        const snapshot = buildChoiceRequestDiagnosticSnapshot(request);
+
+        expect(snapshot).toMatchObject({
+            requestId: 'choose-target',
+            choiceKind: 'select-object',
+            aiDiagnosticStatus: 'invalid-request',
+            diagnostics: [expect.objectContaining({ code: 'mandatory-choice-unsatisfied' })],
+            candidateSummary: {
+                total: 2,
+                enabledCandidateIds: [],
+                disabledCandidateIds: ['target-a', 'target-b'],
+            },
+            projectedLegalActionCount: 0,
+        });
+        expect(JSON.stringify(snapshot)).not.toContain('optionId');
+    });
+
+    it('direct adapter 把候选投给棋盘/场地 UI，但不重新拥有候选真相', () => {
+        const request = createTargetChoiceRequest();
+        request.ai = { status: 'shared-policy' };
+
+        const surface = projectChoiceRequestToDirectSelectionTargets(request);
+
+        expect(surface).toMatchObject({
+            requestId: 'choose-target',
+            playerId: 'p1',
+            kind: 'select-object',
+            sourceId: 'test-source',
+            selection: { min: 1, max: 1 },
+        });
+        expect(surface.targets.map((target) => ({
+            id: target.id,
+            targetRef: target.targetRef,
+            disabled: target.disabled,
+            commandPreview: target.commandPreview,
+        }))).toEqual([
+            {
+                id: 'target-a',
+                targetRef: 'a',
+                disabled: false,
+                commandPreview: [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: { interactionId: 'choose-target', optionId: 'target-a' },
+                }],
+            },
+            {
+                id: 'target-b',
+                targetRef: 'b',
+                disabled: true,
+                commandPreview: [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: { interactionId: 'choose-target', optionId: 'target-b' },
+                }],
+            },
+        ]);
+    });
+
+    it('confirm-current / dice surface 只暴露声明的确认命令和骰子候选', () => {
+        const request: ChoiceRequest<{ dieId: number }> = {
+            requestId: 'confirm-dice',
+            playerId: 'p1',
+            ownerFrameId: 'roll-frame',
+            kind: 'select-dice',
+            sourceId: 'dice-confirm',
+            selection: { min: 0, max: 2 },
+            skipPolicy: 'confirm-current',
+            recoveryAction: {
+                id: 'confirm',
+                label: '确认当前骰面',
+                commands: [{ type: 'CONFIRM_DICE', payload: { scope: 'current-roll' } }],
+            },
+            resolution: { type: 'interaction-response' },
+            ai: { status: 'shared-policy' },
+            candidates: [
+                { id: 'die-1', label: '骰子 1', value: { dieId: 1 } },
+                { id: 'die-2', label: '骰子 2', value: { dieId: 2 } },
+            ],
+        };
+
+        const confirm = projectChoiceRequestToConfirmCurrentAction(request);
+        const surface = projectChoiceRequestToDiceConfirmationSurface(request);
+
+        expect(confirm.action).toMatchObject({
+            requestId: 'confirm-dice',
+            label: '确认当前骰面',
+            commands: [{ type: 'CONFIRM_DICE', payload: { scope: 'current-roll' } }],
+        });
+        expect(surface.diceTargets.map((target) => target.targetRef)).toEqual([1, 2]);
+        expect(surface.confirmAction?.commands).toEqual([
+            { type: 'CONFIRM_DICE', payload: { scope: 'current-roll' } },
+        ]);
     });
 });

@@ -561,8 +561,8 @@ describe('pirate_full_sail special', () => {
         const state = makeState({
             scoringEligibleBaseIndices: [0],
             bases: [
-                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
-                makeBase('base_temple_of_goju'),
+                makeBase({ defId: 'base_the_jungle', minions: [] }),
+                makeBase({ defId: 'base_temple_of_goju', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
             ],
             players: {
                 '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },
@@ -579,6 +579,64 @@ describe('pirate_full_sail special', () => {
         const prompt = getSimpleChoicePrompt(result.finalState, 'pirate_full_sail_choose_minion');
         expect(getPromptSourceId(prompt)).toBe('pirate_full_sail_choose_minion');
         expect(getPromptOptions(prompt).some(option => option.value.done === true)).toBe(true);
+    });
+
+    it('计分响应时选择己方随从后仍应进入目标基地选择', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            bases: [
+                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('already-scoring', 'test_minion', '0', 3, { powerModifier: 0 })] }),
+                makeBase({ defId: 'base_temple_of_goju', minions: [makeMinion('move-me', 'test_minion', '0', 3, { powerModifier: 0 })] }),
+                makeBase({ defId: 'base_secret_garden', minions: [makeMinion('enemy', 'test_minion', '1', 3, { powerModifier: 0 })] }),
+            ],
+            players: {
+                '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },
+                '1': makeState().players['1'],
+            },
+        });
+        const result = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'fs-1' },
+        } as any, dummyRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'pirate_full_sail_choose_minion');
+        const options = getPromptOptions(prompt);
+        expect(options.some(option => option.value?.minionUid === 'move-me')).toBe(true);
+        expect(options.some(option => option.value?.minionUid === 'already-scoring')).toBe(true);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.minionUid === 'move-me',
+            'full sail scoring minion option',
+            '0',
+            dummyRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        const basePrompt = getSimpleChoicePrompt(resolved.finalState, 'pirate_full_sail_choose_base');
+        const baseOptions = getPromptOptions(basePrompt);
+        expect(baseOptions.some(option => option.value?.baseIndex === 0)).toBe(true);
+        expect(baseOptions.some(option => option.value?.baseIndex === 1)).toBe(false);
+
+        const moved = respondToPromptOption(
+            resolved.finalState,
+            option => option.value?.baseIndex === 0,
+            'full sail scoring target base option',
+            '0',
+            dummyRandom,
+        );
+        expect(moved.success, moved.error).toBe(true);
+        const moveEvent = moved.events.find((event): event is MinionMovedEvent => event.type === SU_EVENTS.MINION_MOVED);
+        expect(moveEvent?.payload).toMatchObject({
+            minionUid: 'move-me',
+            fromBaseIndex: 1,
+            toBaseIndex: 0,
+            reason: 'pirate_full_sail',
+        });
+        expect(moved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('move-me');
     });
 
     it('无己方随从时打出后不产生额外效果', () => {
@@ -608,8 +666,8 @@ describe('pirate_full_sail special', () => {
         const state = makeState({
             scoringEligibleBaseIndices: [0],
             bases: [
-                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
-                makeBase('base_temple_of_goju'),
+                makeBase({ defId: 'base_the_jungle', minions: [] }),
+                makeBase({ defId: 'base_temple_of_goju', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
             ],
             players: {
                 '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },

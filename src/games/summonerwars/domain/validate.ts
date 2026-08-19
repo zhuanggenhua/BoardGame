@@ -41,6 +41,7 @@ import {
 import { getPhaseDisplayName } from './execute';
 import { validateAbilityActivation } from './abilityValidation';
 import { VALID_FACTION_IDS, getBaseCardId, CARD_IDS, isMoguFungalBeastCard, isMoguSporePlagueBodyCard } from './ids';
+import { isSummonerWarsAiSeat } from './utils';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -225,6 +226,19 @@ const hasValidEventInteractionTargets = (
   }
 };
 
+function isFactionBlockedByHumanOrUnknownSeat(
+  core: SummonerWarsCore,
+  selectingPlayerId: PlayerId,
+  factionId: string,
+): boolean {
+  return Object.entries(core.selectedFactions)
+    .some(([selectedPlayerId, selectedFactionId]) => (
+      selectedPlayerId !== selectingPlayerId
+      && selectedFactionId === factionId
+      && !isSummonerWarsAiSeat(core, selectedPlayerId as PlayerId)
+    ));
+}
+
 // ============================================================================
 // 命令验证
 // ============================================================================
@@ -266,11 +280,9 @@ export function validateCommand(
       if (!VALID_FACTION_IDS.includes(factionId as FactionId)) return { valid: false, error: '无效的阵营 ID' };
       const selectingPlayerId = (command.playerId as PlayerId | undefined) ?? playerId;
       if (!isTutorialActive) {
-        const selectedByOtherPlayer = Object.entries(core.selectedFactions)
-          .some(([selectedPlayerId, selectedFactionId]) => (
-            selectedPlayerId !== selectingPlayerId && selectedFactionId === factionId
-          ));
-        if (selectedByOtherPlayer) return { valid: false, error: '该阵营已被其他玩家选择' };
+        if (isFactionBlockedByHumanOrUnknownSeat(core, selectingPlayerId, factionId)) {
+          return { valid: false, error: '该阵营已被其他玩家选择' };
+        }
       }
       return { valid: true };
     }
@@ -282,6 +294,10 @@ export function validateCommand(
       if (!deckData.summonerId || typeof deckData.summonerId !== 'string') return { valid: false, error: '缺少召唤师 ID' };
       if (!deckData.summonerFaction || typeof deckData.summonerFaction !== 'string') return { valid: false, error: '缺少召唤师阵营' };
       if (!Array.isArray(deckData.cards)) return { valid: false, error: '缺少卡牌列表' };
+      const selectingPlayerId = (command.playerId as PlayerId | undefined) ?? playerId;
+      if (!isTutorialActive && isFactionBlockedByHumanOrUnknownSeat(core, selectingPlayerId, deckData.summonerFaction)) {
+        return { valid: false, error: '该阵营已被其他玩家选择' };
+      }
       return { valid: true };
     }
 

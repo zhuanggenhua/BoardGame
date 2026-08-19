@@ -14,49 +14,6 @@ async function openSmashupScene(page: Page, game: GameTestContext, scene: SceneC
     await game.setupScene(scene);
 }
 
-function escapeRegExp(source: string): string {
-    return source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-async function clickInteractionOption(page: Page, optionId: string, label?: string): Promise<void> {
-    try {
-        await page.locator(`[data-option-id="${optionId}"]`).first().click({ force: true, timeout: 5000 });
-        await page.waitForTimeout(200);
-        return;
-    } catch {
-        // fallback to role based click below
-    }
-    if (label) {
-        try {
-            await page.getByRole('button', { name: new RegExp(escapeRegExp(label), 'i') }).first().click({ force: true, timeout: 5000 });
-            await page.waitForTimeout(200);
-            return;
-        } catch {
-            try {
-                await page.locator('button').filter({ hasText: label }).first().click({ force: true, timeout: 5000 });
-                await page.waitForTimeout(200);
-                return;
-            } catch {
-                // fallback to generic pass/skip button below
-            }
-        }
-    }
-    if (optionId === 'skip' || optionId === 'pass') {
-        await page.getByRole('button', { name: /^(跳过|Skip|Pass|过|计过|让过)(?:\s*\(\d+\))?$/i }).first().click({ force: true, timeout: 5000 });
-        await page.waitForTimeout(200);
-        return;
-    }
-    if (optionId.startsWith('trigger:')) {
-        await page.locator('button')
-            .filter({ hasNotText: /^(跳过|Skip|Pass|过|计过)$/i })
-            .first()
-            .click({ force: true, timeout: 5000 });
-        await page.waitForTimeout(200);
-        return;
-    }
-    throw new Error(`交互选项不可点击: ${optionId}`);
-}
-
 type CurrentInteraction = {
     id: string;
     playerId: string;
@@ -106,23 +63,88 @@ async function waitForInteractionSourceIn(page: Page, sourceIds: string[], timeo
     );
 }
 
-function findNonPassOptionMatching(
+function optionDebugText(option: CurrentInteraction['options'][number]): string {
+    return `${option.id} ${option.label ?? ''} ${JSON.stringify(option.value ?? {})}`;
+}
+
+function findReactionTriggerOptionMatching(
     interaction: CurrentInteraction | null,
     matcher: (option: CurrentInteraction['options'][number]) => boolean,
 ) {
-    return interaction?.options.find((option) => !isPassOption(option) && matcher(option));
+    return interaction?.options.find((option) => !isPassOption(option) && option.value?.kind === 'trigger' && matcher(option));
 }
 
-async function chooseReactionOptionMatching(
+async function expectNoVisibleReactionProxyButtons(page: Page, matcher: RegExp, description: string): Promise<void> {
+    const labels = await page.locator('[data-testid="su-reaction-option-button"]').evaluateAll((buttons) => buttons
+        .filter((button) => {
+            const style = window.getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            return style.visibility !== 'hidden'
+                && style.display !== 'none'
+                && Number(style.opacity || '1') > 0.01
+                && rect.width > 2
+                && rect.height > 2;
+        })
+        .map((button) => button.textContent?.trim() ?? ''));
+    expect(
+        labels.filter((label) => matcher.test(label)),
+        `${description}: 响应窗口不应再显示场上效果代理按钮；当前可见响应按钮=${JSON.stringify(labels)}`,
+    ).toEqual([]);
+}
+
+async function readReactionTriggerSourceForOption(page: Page, optionId: string): Promise<{
+    triggerId: string | null;
+    sourceDefId: string | null;
+    sourceCardUid: string | null;
+    sourceBaseIndex: number | null;
+}> {
+    return page.evaluate(({ nextOptionId }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        const option = (current?.data?.options ?? []).find((candidate: any) => candidate.id === nextOptionId);
+        const triggerId = option?.value?.triggerId ?? null;
+        const trigger = (state?.core?.triggerQueue ?? []).find((candidate: any) => candidate.id === triggerId);
+        return {
+            triggerId,
+            sourceDefId: trigger?.sourceDefId ?? null,
+            sourceCardUid: trigger?.sourceCardUid ?? null,
+            sourceBaseIndex: typeof (trigger?.sourceBaseIndex ?? trigger?.baseIndex) === 'number'
+                ? (trigger.sourceBaseIndex ?? trigger.baseIndex)
+                : null,
+        };
+    }, { nextOptionId: optionId });
+}
+
+async function clickReactionTriggerSourceByOption(
     page: Page,
-    matcher: (option: CurrentInteraction['options'][number]) => boolean,
+    option: CurrentInteraction['options'][number],
     description: string,
 ): Promise<void> {
-    const currentInteraction = await readCurrentInteraction(page);
-    expect(currentInteraction?.sourceId, `${description}: 当前交互必须是统一反应选择`).toBe('smashup_reaction_choose');
-    const option = findNonPassOptionMatching(currentInteraction, matcher);
-    expect(option, `${description}: 未找到匹配的反应选项`).toBeTruthy();
-    await respondCurrentInteractionByOptionId(page, option!.id);
+    const source = await readReactionTriggerSourceForOption(page, option.id);
+    expect(source.triggerId, `${description}: 反应选项必须能追到当前触发来源`).toBeTruthy();
+
+    if (source.sourceCardUid) {
+        const minionSource = page.locator(`[data-minion-uid="${source.sourceCardUid}"]`).first();
+        if (await minionSource.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await minionSource.click({ force: true });
+            await page.waitForTimeout(200);
+            return;
+        }
+        const ongoingSource = page.locator(`[data-ongoing-uid="${source.sourceCardUid}"]`).first();
+        if (await ongoingSource.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await ongoingSource.click({ force: true });
+            await page.waitForTimeout(200);
+            return;
+        }
+    }
+
+    if (typeof source.sourceBaseIndex === 'number') {
+        await page.getByTestId(`base-zone-${source.sourceBaseIndex}`).click({ force: true });
+        await page.waitForTimeout(200);
+        return;
+    }
+
+    throw new Error(`${description}: 没有可点击的场上来源本体: ${JSON.stringify(source)}`);
 }
 
 async function chooseCurrentInteractionOptionMatching(
@@ -327,6 +349,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                 player0: {
                     hand: [
                         { uid: 'card-after-1', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+                        { uid: 'card-normal-1', defId: 'ninja_acolyte', type: 'minion', owner: '0' },
                     ],
                     field: [
                         { uid: 'queen-1', defId: 'giant_ant_killer_queen', baseIndex: 0, owner: '0', controller: '0' },
@@ -353,7 +376,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                     const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
                     return state?.sys?.phase === 'playCards'
                         && state?.core?.factionSelection === undefined
-                        && state?.core?.players?.['0']?.hand?.length === 1
+                        && state?.core?.players?.['0']?.hand?.length === 2
                         && state?.core?.bases?.[0]?.minions?.length === 3;
                 },
                 { timeout: 30000 },
@@ -399,10 +422,15 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             if (!overlayVisible) {
                 expect(reactionPrompt?.sourceId).toBe('smashup_reaction_choose');
             }
-            await expect(
-                page.getByRole('button', { name: /我们乃最强|we are the champions/i }).first(),
-                'afterScoring 应显示玩家可见的“我们乃最强”响应按钮',
-            ).toBeVisible({ timeout: 5000 });
+            await expectNoVisibleReactionProxyButtons(
+                page,
+                /我们乃最强|we are the champions/i,
+                'afterScoring 手牌响应第一层',
+            );
+            await expect(page.getByTestId('su-reaction-hand-status')).toContainText('点高亮手牌响应', { timeout: 10000 });
+            const handArea = page.getByTestId('su-hand-area');
+            await expect(handArea.locator('[data-card-uid="card-after-1"]')).toHaveAttribute('data-highlighted', 'true');
+            await expect(handArea.locator('[data-card-uid="card-normal-1"]')).toHaveAttribute('data-disabled', 'true');
             await game.screenshot('02-after-scoring-reaction-open', testInfo);
 
             await passCurrentSmashupResponse(page);
@@ -520,7 +548,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                                 minions: [
                                     createMinion('mate-0', 'pirate_first_mate', '0', 2),
                                     createMinion('tortuga-p0', 'pirate_buccaneer', '0', 10),
-                                    createMinion('tortuga-p1', 'alien_invader', '1', 10),
+                                    createMinion('tortuga-p1', 'alien_invader', '1', 25),
                                 ],
                                 ongoingActions: [],
                             },
@@ -535,7 +563,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                             {
                                 defId: 'base_secret_garden',
                                 minions: [
-                                    createMinion('reserve-p1', 'wizard_apprentice', '1', 2),
+                                    createMinion('reserve-p0', 'wizard_apprentice', '0', 2),
                                 ],
                                 ongoingActions: [],
                             },
@@ -670,19 +698,56 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                 resolvedSources.push(currentInteraction.sourceId);
 
                 if (currentInteraction.sourceId === 'smashup_reaction_choose') {
-                    const optionText = (option: CurrentInteraction['options'][number]) =>
-                        `${option.id} ${option.label ?? ''} ${JSON.stringify(option.value ?? {})}`;
-                    const trigger = currentInteraction.options.find((option) =>
-                        option.id !== 'pass'
-                        && option.value?.kind === 'trigger'
-                        && /大副|first mate|pirate_first_mate/i.test(optionText(option)),
-                    ) ?? currentInteraction.options.find((option) =>
-                        option.id !== 'pass'
-                        && option.value?.kind === 'trigger'
-                        && /托尔图加|base_tortuga/i.test(optionText(option)),
-                    ) ?? currentInteraction.options.find((option) => option.id !== 'pass' && option.value?.kind === 'trigger');
-                    if (trigger) {
-                        await respondInteractionOptionIfStillCurrent(page, currentInteraction, trigger.id);
+                    const firstMateTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /大副|first mate|pirate_first_mate/i.test(optionDebugText(option)),
+                    );
+                    if (firstMateTrigger) {
+                        await expectNoVisibleReactionProxyButtons(page, /大副|first mate|pirate_first_mate/i, '大副计分后可选效果第一层');
+                        const firstMateCard = page.locator('[data-minion-uid="mate-0"]').first();
+                        const firstMateFrame = page.getByTestId('su-minion-frame-mate-0');
+                        const firstMateSourceBase = page.getByTestId('base-zone-0');
+                        const firstMateJungleBase = page.getByTestId('base-zone-1');
+                        const firstMateSecretGardenBase = page.getByTestId('base-zone-2');
+                        const tortugaSourceIsAlsoAvailable = Boolean(findReactionTriggerOptionMatching(
+                            currentInteraction,
+                            (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
+                        ));
+
+                        await expect(firstMateCard).toHaveAttribute('data-highlighted', 'true');
+                        await expect(firstMateFrame).toHaveAttribute('data-highlighted', 'true');
+                        await expect(firstMateSourceBase).toHaveAttribute('data-selectable', tortugaSourceIsAlsoAvailable ? 'true' : 'false');
+                        await expect(firstMateJungleBase).toHaveAttribute('data-selectable', 'false');
+                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-selectable', 'false');
+                        await game.screenshot('complex-hand-response-07-first-mate-reaction-source-highlight-before-trigger', testInfo);
+
+                        await firstMateCard.click({ force: true });
+                        await waitForInteractionSourceIn(page, ['pirate_first_mate_choose_base'], 20000);
+                        continue;
+                    }
+
+                    const tortugaTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
+                    );
+                    if (tortugaTrigger) {
+                        await expectNoVisibleReactionProxyButtons(page, /托尔图加|tortuga|base_tortuga/i, '托尔图加计分后可选效果第一层');
+                        const tortugaBase = page.getByTestId('base-zone-0');
+                        const runnerUpReserve = page.locator('[data-minion-uid="reserve-p0"]').first();
+
+                        await expect(tortugaBase).toHaveAttribute('data-selectable', 'true');
+                        await expect(tortugaBase).toHaveAttribute('data-dimmed', 'false');
+                        await expect(runnerUpReserve).toHaveAttribute('data-highlighted', 'false');
+                        await game.screenshot('complex-hand-response-09-tortuga-reaction-source-base-highlight-before-trigger', testInfo);
+
+                        await tortugaBase.click({ force: true });
+                        await waitForInteractionSourceIn(page, ['base_tortuga'], 20000);
+                        continue;
+                    }
+
+                    const unmappedTrigger = findReactionTriggerOptionMatching(currentInteraction, () => true);
+                    if (unmappedTrigger) {
+                        await clickReactionTriggerSourceByOption(page, unmappedTrigger, '复杂手牌响应链其它场上可选效果');
                     } else {
                         await passCurrentSmashupResponse(page);
                     }
@@ -699,12 +764,6 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
                         await expect(firstMateCard).toHaveAttribute('data-highlighted', 'true');
                         await expect(firstMateFrame).toHaveAttribute('data-highlighted', 'true');
-                        await expect(firstMateSourceBase).toHaveAttribute('data-selectable', 'false');
-                        await expect(firstMateJungleBase).toHaveAttribute('data-selectable', 'false');
-                        await expect(firstMateSecretGardenBase).toHaveAttribute('data-selectable', 'false');
-                        await game.screenshot('complex-hand-response-07-first-mate-source-highlight', testInfo);
-
-                        await firstMateCard.click({ force: true });
                         await expect(firstMateCard).toHaveAttribute('data-selected', 'true');
                         await expect(firstMateFrame).toHaveAttribute('data-selected', 'true');
                         await expect(firstMateSourceBase).toHaveAttribute('data-selectable', 'false');
@@ -712,7 +771,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                         await expect(firstMateSecretGardenBase).toHaveAttribute('data-selectable', 'true');
                         await expect(firstMateSecretGardenBase).toHaveAttribute('data-deploy-mode', 'true');
                         await expect(firstMateSecretGardenBase).toHaveAttribute('data-dimmed', 'false');
-                        await game.screenshot('complex-hand-response-08-first-mate-target-base-highlight', testInfo);
+                        await game.screenshot('complex-hand-response-08-first-mate-target-base-highlight-after-source-click', testInfo);
                         capturedFirstMateChoice = true;
                     }
                     const moveToSecretGarden = currentInteraction.options.find((option) =>
@@ -726,11 +785,11 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
                 if (currentInteraction.sourceId === 'base_tortuga') {
                     if (!capturedTortugaChoice) {
-                        await game.screenshot('complex-hand-response-09-tortuga-after-scoring-minion-choice', testInfo);
+                        await game.screenshot('complex-hand-response-10-tortuga-minion-choice-after-source-click', testInfo);
                         capturedTortugaChoice = true;
                     }
                     const moveRunnerUpReserve = currentInteraction.options.find((option) =>
-                        option.value?.minionUid === 'reserve-p1'
+                        option.value?.minionUid === 'reserve-p0'
                         && option.value?.fromBaseIndex === 2,
                     );
                     expect(moveRunnerUpReserve, '托尔图加应能选择亚军在其它基地上的随从').toBeTruthy();
@@ -759,24 +818,25 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect(resolvedSources).toContain('pirate_king_move');
             expect(resolvedSources).toContain('smashup_reaction_choose');
             expect(resolvedSources).toContain('pirate_first_mate_choose_base');
+            expect(resolvedSources).toContain('base_tortuga');
             expect(finalState.sys.interaction?.current ?? null).toBeNull();
             expect(finalState.sys.responseWindow?.current ?? null).toBeNull();
             expect(finalState.core.players['0'].vp).toBeGreaterThan(0);
             expect(finalState.core.players['1'].vp).toBeGreaterThan(0);
             const replacementBase = finalState.core.bases.find((base: any) => base.defId === 'base_central_brain');
             expect(
-                replacementBase?.minions.some((minion: any) => minion.uid === 'reserve-p1'),
-                '托尔图加可以由 AI 自动选择；最终必须看到亚军随从已移动到替换基地',
+                replacementBase?.minions.some((minion: any) => minion.uid === 'reserve-p0'),
+                '托尔图加应由玩家点击基地来源后选择亚军随从，并把该随从移动到替换基地',
             ).toBe(true);
             expect(finalState.core.bases[2].minions.map((minion: any) => minion.uid)).toContain('mate-0');
-            expect(finalState.core.bases[2].minions.map((minion: any) => minion.uid)).not.toContain('reserve-p1');
+            expect(finalState.core.bases[2].minions.map((minion: any) => minion.uid)).not.toContain('reserve-p0');
 
             await expect(page.getByTestId('su-interaction-select-banner')).toBeHidden({ timeout: 10000 });
             await expect(page.getByTestId('su-reaction-hand-status')).toBeHidden({ timeout: 10000 });
             await expect(page.getByTestId('su-reaction-pass-button')).toBeHidden({ timeout: 10000 });
             await page.waitForTimeout(500);
             await waitForVisibleSmashUpCardArt(page, 3);
-            await game.screenshot('complex-hand-response-10-scoring-chain-complete', testInfo);
+            await game.screenshot('complex-hand-response-11-scoring-chain-complete', testInfo);
             assertNoReactNaNWarnings(diagnostics);
         } catch (error) {
             if (diagnostics.errors.length > 0) {
@@ -936,18 +996,35 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                 }
 
                 if (currentInteraction.sourceId === 'smashup_reaction_choose') {
-                    const nextTrigger = currentInteraction.options.find((option: any) => {
-                        const label = String(option.label ?? '');
-                        return option.id !== 'skip' && /托尔图加|base_tortuga/i.test(label);
-                    })
-                        ?? currentInteraction.options.find((option: any) => {
-                            const label = String(option.label ?? '');
-                            return option.id !== 'skip' && /大副|first mate/i.test(label);
-                        })
-                        ?? currentInteraction.options.find((option: any) => option.id !== 'skip' && option.value?.kind === 'trigger')
-                        ?? currentInteraction.options.find((option: any) => option.id !== 'skip');
-                    expect(nextTrigger).toBeTruthy();
-                    await respondCurrentInteractionByOptionId(page, nextTrigger!.id);
+                    const tortugaTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
+                    );
+                    if (tortugaTrigger) {
+                        await expectNoVisibleReactionProxyButtons(page, /托尔图加|tortuga|base_tortuga/i, '四人链托尔图加计分后可选效果第一层');
+                        await clickReactionTriggerSourceByOption(page, tortugaTrigger, '四人链托尔图加计分后可选效果');
+                        continue;
+                    }
+
+                    const firstMateTrigger = findReactionTriggerOptionMatching(
+                        currentInteraction,
+                        (option) => /大副|first mate|pirate_first_mate/i.test(optionDebugText(option)),
+                    );
+                    if (firstMateTrigger) {
+                        await expectNoVisibleReactionProxyButtons(page, /大副|first mate|pirate_first_mate/i, '四人链大副计分后可选效果第一层');
+                        await clickReactionTriggerSourceByOption(page, firstMateTrigger, '四人链大副计分后可选效果');
+                        continue;
+                    }
+
+                    const unmappedTrigger = findReactionTriggerOptionMatching(currentInteraction, () => true);
+                    if (unmappedTrigger) {
+                        await clickReactionTriggerSourceByOption(page, unmappedTrigger, '四人链其它场上可选效果');
+                        continue;
+                    }
+
+                    const nextOption = currentInteraction.options.find((option: any) => option.id !== 'skip');
+                    expect(nextOption).toBeTruthy();
+                    await respondCurrentInteractionByOptionId(page, nextOption!.id);
                     continue;
                 }
 
@@ -1191,12 +1268,16 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             await game.screenshot('golden-03-vp-awarded-before-clear-old-base-still-visible', testInfo);
 
             if (afterTortugaSourceId === 'smashup_reaction_choose') {
-                await chooseReactionOptionMatching(
-                    page,
-                    (option) => String(option.id).includes('base_tortuga')
-                        || /托尔图加|tortuga|base_tortuga/i.test(String(option.label ?? '')),
-                    '三基地黄金链里的托尔图加 afterScoring',
+                const tortugaReaction = await readCurrentInteraction(page);
+                const tortugaTrigger = findReactionTriggerOptionMatching(
+                    tortugaReaction,
+                    (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
                 );
+                expect(tortugaTrigger, '三基地黄金链里的托尔图加 afterScoring 必须保留真实响应触发选项').toBeTruthy();
+                await expectNoVisibleReactionProxyButtons(page, /托尔图加|tortuga|base_tortuga/i, '三基地黄金链托尔图加 afterScoring');
+                await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'true');
+                await game.screenshot('golden-04-tortuga-source-base-highlight-before-trigger', testInfo);
+                await clickReactionTriggerSourceByOption(page, tortugaTrigger!, '三基地黄金链托尔图加 afterScoring');
             }
 
             await waitForInteractionSourceIn(page, ['base_tortuga'], 20000);
@@ -1205,7 +1286,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             const moveRunnerUpMinion = tortugaInteraction?.options.find((option) => option.value?.minionUid === 'p0-b1-runnerup');
             expect(moveRunnerUpMinion, '托尔图加应允许亚军移动另一基地上的随从').toBeTruthy();
             await waitForVisibleSmashUpCardArt(page, 12);
-            await game.screenshot('golden-04-tortuga-runner-up-minion-choice-before-clear', testInfo);
+            await game.screenshot('golden-05-tortuga-runner-up-minion-choice-after-source-click', testInfo);
             await respondCurrentInteractionByOptionId(page, moveRunnerUpMinion!.id);
 
             await waitForInteractionSourceIn(page, ['multi_base_scoring'], 30000);
@@ -1227,7 +1308,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect(afterFirstBaseState.replacementBase0MinionUids).toContain('p0-b1-runnerup');
             expect(afterFirstBaseState.remainingBaseOptions).toEqual(['base_dread_lookout', 'base_tsars_palace']);
             await waitForVisibleSmashUpCardArt(page, 8);
-            await game.screenshot('golden-05-after-first-base-cleared-replaced-back-to-scoring-choice', testInfo);
+            await game.screenshot('golden-06-after-first-base-cleared-replaced-back-to-scoring-choice', testInfo);
 
             await chooseScoringBaseByDefId(page, 'base_dread_lookout');
 
@@ -1279,7 +1360,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect(finalState.triggerQueueLength).toBe(0);
 
             await waitForVisibleSmashUpCardArt(page, 4);
-            await game.screenshot('golden-06-final-scoring-complete-no-duplicate-vp', testInfo);
+            await game.screenshot('golden-07-final-scoring-complete-no-duplicate-vp', testInfo);
             await page.waitForTimeout(300);
             assertNoReactNaNWarnings(diagnostics);
         } catch (error) {
@@ -1436,12 +1517,16 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
 
             const firstSourceId = await waitForInteractionSourceIn(page, ['smashup_reaction_choose', 'base_tortuga'], 20000);
             if (firstSourceId === 'smashup_reaction_choose') {
-                await chooseReactionOptionMatching(
-                    page,
-                    (option) => String(option.id).includes('base_tortuga')
-                        || /托尔图加|tortuga|base_tortuga/i.test(String(option.label ?? '')),
-                    '托尔图加 afterScoring',
+                const tortugaReaction = await readCurrentInteraction(page);
+                const tortugaTrigger = findReactionTriggerOptionMatching(
+                    tortugaReaction,
+                    (option) => /托尔图加|tortuga|base_tortuga/i.test(optionDebugText(option)),
                 );
+                expect(tortugaTrigger, '托尔图加 afterScoring 必须保留真实响应触发选项').toBeTruthy();
+                await expectNoVisibleReactionProxyButtons(page, /托尔图加|tortuga|base_tortuga/i, '托尔图加 afterScoring');
+                await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'true');
+                await game.screenshot('tortuga-02-source-base-highlight-before-trigger', testInfo);
+                await clickReactionTriggerSourceByOption(page, tortugaTrigger!, '托尔图加 afterScoring');
             }
             await waitForInteractionSourceIn(page, ['base_tortuga'], 20000);
 
@@ -1451,7 +1536,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
                 option.value?.minionUid === 'runner-up-traveler'
             ));
             expect(moveOption).toBeTruthy();
-            await game.screenshot('tortuga-02-interaction-open', testInfo);
+            await game.screenshot('tortuga-03-minion-choice-after-source-click', testInfo);
             await respondCurrentInteractionByOptionId(page, moveOption!.id);
 
             await page.waitForFunction(
@@ -1492,7 +1577,7 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             expect(finalState.replacementBaseMinions).toContain('runner-up-traveler');
             expect(finalState.originalBaseMinions).not.toContain('runner-up-traveler');
 
-            await game.screenshot('tortuga-03-moved-to-replacement-base', testInfo);
+            await game.screenshot('tortuga-04-moved-to-replacement-base', testInfo);
         } catch (error) {
             if (diagnostics.errors.length > 0) {
                 console.log('[page-diagnostics]', diagnostics.errors);

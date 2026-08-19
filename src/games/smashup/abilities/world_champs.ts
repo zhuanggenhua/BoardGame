@@ -481,7 +481,7 @@ const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCard
         return createAbilityRuntimeSimpleChoice(
             `world_champs_akye_the_turtle_card_${context.now}`,
             context.playerId,
-            '海龟阿凯：选择要交给对方的一张手牌',
+            '阿克耶海龟：选择要交给对方的一张手牌',
             player.hand.map((card, index) => ({
                 id: `card-${index}`,
                 label: getCardDef(card.defId)?.name ?? card.defId,
@@ -512,7 +512,7 @@ const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPrompt
         return createAbilityRuntimeSimpleChoice(
             `world_champs_akye_the_turtle_player_${context.now}`,
             context.playerId,
-            '海龟阿凯：选择一位玩家并交给其一张手牌（然后你抽两张牌）',
+            '阿克耶海龟：选择一位玩家并交给其一张手牌（然后你抽两张牌）',
             [
                 createSkipOption('跳过（不发动）', 'ui.world_champs_akye_the_turtle_skip_option'),
                 ...buildPlayerTargetOptions(

@@ -896,13 +896,19 @@ describe('scoreBases 多基地计分链恢复', () => {
         let state = scoringStart.stateAfterPirateKing;
         const chainEvents: SmashUpEvent[] = [...scoringStart.events];
 
-        let sawKrakenReactionChoice = false;
+        let sawKrakenOpportunity = false;
         let sawKrakenPrompt = false;
 
         for (let guard = 0; guard < 40; guard += 1) {
             state = drainScoreBasesDelayUntilPromptOrIdle(state, runCommandWithFullSystems, chainEvents);
             const choice = getActiveSimpleChoice(state);
             if (!choice) break;
+
+            if (choice.sourceId === 'titan_pirates_the_kraken_play_replacement') {
+                sawKrakenOpportunity = true;
+                sawKrakenPrompt = true;
+                break;
+            }
 
             if (choice.sourceId === 'smashup_reaction_choose') {
                 const options = getPromptOptions(choice);
@@ -913,7 +919,7 @@ describe('scoreBases 多基地计分链恢复', () => {
                     || option.value?.defId === 'pirates_the_kraken',
                 );
                 if (krakenOption) {
-                    sawKrakenReactionChoice = true;
+                    sawKrakenOpportunity = true;
                     const chosen = runCommandWithFullSystems(state, respondCommand(krakenOption.id, choice.playerId));
                     expect(chosen.success).toBe(true);
                     chainEvents.push(...(chosen.events as SmashUpEvent[]));
@@ -958,7 +964,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             state = resolved.finalState;
         }
 
-        expect(sawKrakenReactionChoice).toBe(true);
+        expect(sawKrakenOpportunity).toBe(true);
         expect(sawKrakenPrompt).toBe(true);
     });
 

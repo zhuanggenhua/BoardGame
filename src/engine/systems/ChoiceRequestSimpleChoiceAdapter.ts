@@ -1,7 +1,8 @@
-import type {
-    ChoiceRequest,
-    ChoiceRequestCandidate,
-    ChoiceRequestSelectionBounds,
+import {
+    buildChoiceRequestDiagnosticSnapshot,
+    type ChoiceRequest,
+    type ChoiceRequestCandidate,
+    type ChoiceRequestSelectionBounds,
 } from '../ChoiceRequest';
 import type { AiDecisionDescriptor, AiDecisionKind, AiDecisionSkipPolicy } from '../ai/decisionSemantics';
 import {
@@ -103,7 +104,7 @@ export function createSimpleChoiceFromChoiceRequest<TValue>(
     request: ChoiceRequest<TValue>,
     options: CreateSimpleChoiceFromChoiceRequestOptions<TValue>,
 ): InteractionDescriptor<SimpleChoiceData<TValue>> {
-    return createSimpleChoice(
+    const interaction = createSimpleChoice(
         request.requestId,
         request.playerId,
         options.title,
@@ -135,4 +136,6 @@ export function createSimpleChoiceFromChoiceRequest<TValue>(
             },
         },
     );
+    interaction.data.choiceRequest = buildChoiceRequestDiagnosticSnapshot(request);
+    return interaction;
 }

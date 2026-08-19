@@ -216,6 +216,20 @@ function buildStringRecordSemanticSignature(values: unknown): string {
         .join(',');
 }
 
+function buildBooleanRecordSemanticSignature(values: unknown): string {
+    if (!isPlainRecord(values)) {
+        return '';
+    }
+
+    return Object.keys(values)
+        .sort()
+        .map((key) => {
+            const value = values[key];
+            return `${key}:${typeof value === 'boolean' ? (value ? '1' : '0') : ''}`;
+        })
+        .join(',');
+}
+
 function buildStringArrayRecordSemanticSignature(values: unknown): string {
     if (!isPlainRecord(values)) {
         return '';
@@ -237,12 +251,14 @@ function buildSharedPregameSelectionProgressSignature(core: unknown): string {
     const playerSelectionsSignature = buildStringArrayRecordSemanticSignature(factionSelection?.playerSelections);
     const selectedFactionsSignature = buildStringRecordSemanticSignature(core.selectedFactions);
     const selectedCharactersSignature = buildStringRecordSemanticSignature(core.selectedCharacters);
+    const readyPlayersSignature = buildBooleanRecordSemanticSignature(core.readyPlayers);
 
     if (
         !takenFactionsSignature
         && !playerSelectionsSignature
         && !selectedFactionsSignature
         && !selectedCharactersSignature
+        && !readyPlayersSignature
     ) {
         return '';
     }
@@ -252,6 +268,7 @@ function buildSharedPregameSelectionProgressSignature(core: unknown): string {
         playerSelectionsSignature,
         selectedFactionsSignature,
         selectedCharactersSignature,
+        readyPlayersSignature,
     ].join('#');
 }
 

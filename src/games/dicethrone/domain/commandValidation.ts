@@ -68,7 +68,7 @@ import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
-import { getGameMode } from './utils';
+import { getGameMode, isDiceThroneAiSeat } from './utils';
 import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
@@ -360,11 +360,12 @@ const validateSelectCharacter = (
     }
 
     const isTutorialMode = getGameMode() === 'tutorial';
-    const selectedByOtherPlayer = Object.entries(state.selectedCharacters)
+    const selectedByHumanPlayer = Object.entries(state.selectedCharacters)
         .some(([otherPlayerId, selectedCharacterId]) => (
             otherPlayerId !== playerId && selectedCharacterId === cmd.payload.characterId
+            && !isDiceThroneAiSeat(state, otherPlayerId)
         ));
-    if (selectedByOtherPlayer && !isTutorialMode) {
+    if (selectedByHumanPlayer && !isTutorialMode) {
         return fail('character_already_taken');
     }
 
@@ -1680,10 +1681,6 @@ const validateUsePassiveAbility = (
                 diceIds: currentDice.map(d => d.id),
             });
             return fail('die_not_found');
-        }
-        // 不能重掷被锁定的骰子
-        if (currentDie.die.isKept) {
-            return fail('die_is_locked');
         }
     }
 

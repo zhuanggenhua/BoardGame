@@ -19,6 +19,7 @@ import {
     resolveMobileFabOverflowWarning,
     shouldTrackFabButtonRect,
 } from '../system/FabMenu';
+import { GLOBAL_HUD_FAB_Z_INDEX } from '../system/GlobalHUD';
 import { shouldAllowFabDragFromTarget } from '../system/fabDrag';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
@@ -189,6 +190,13 @@ describe('GameHUD chat preview helpers', () => {
 });
 
 describe('FabMenu helpers', () => {
+    it('大厅全局悬浮球层级必须高于看板娘且低于反馈弹窗', () => {
+        expect(GLOBAL_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.globalHudFab);
+        expect(GLOBAL_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.tooltip - 1);
+        expect(resolveFabLayerZIndex(GLOBAL_HUD_FAB_Z_INDEX).root).toBeGreaterThan(UI_Z_INDEX.tooltip - 1);
+        expect(resolveFabLayerZIndex(GLOBAL_HUD_FAB_Z_INDEX).floatingText).toBeLessThan(UI_Z_INDEX.modalOverlay);
+    });
+
     it('游戏内应急悬浮球层级必须高于所有常规 modal 内容层', () => {
         expect(GAME_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.emergencyHud);
         expect(GAME_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.modalContent);

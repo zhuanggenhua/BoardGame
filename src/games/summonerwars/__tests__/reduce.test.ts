@@ -11,7 +11,6 @@ import { SW_SELECTION_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, UnitCard, EventCard, StructureCard, BoardUnit } from '../domain/types';
 import type { RandomFn, GameEvent } from '../../../engine/types';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
-import { BOARD_ROWS, BOARD_COLS } from '../domain/helpers';
 
 // ============================================================================
 // 辅助
@@ -814,6 +813,72 @@ describe('阵营选择事件', () => {
       timestamp: 0,
     });
     expect(result.selectedFactions['0']).toBe('trickster');
+  });
+
+  it('FACTION_SELECTED 释放被玩家接管派系的 AI 座位', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+    core.readyPlayers['1'] = true;
+    core.customDeckData = {
+      '1': {
+        name: 'AI 自定义牌组',
+        summonerId: 'ai-summoner',
+        summonerFaction: 'necromancer',
+        cards: [],
+      },
+    };
+
+    const result = reduce(core, {
+      type: SW_SELECTION_EVENTS.FACTION_SELECTED,
+      payload: { playerId: '0', factionId: 'necromancer' },
+      timestamp: 0,
+    });
+
+    expect(result.selectedFactions['0']).toBe('necromancer');
+    expect(result.selectedFactions['1']).toBe('unselected');
+    expect(result.readyPlayers['1']).toBe(false);
+    expect(result.customDeckData).toBeUndefined();
+  });
+
+  it('FACTION_SELECTED 接管 AI 派系时保留当前玩家自定义牌组', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'remote-ai' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+    core.readyPlayers['1'] = true;
+    core.customDeckData = {
+      '1': {
+        name: 'AI 自定义牌组',
+        summonerId: 'ai-summoner',
+        summonerFaction: 'necromancer',
+        cards: [],
+      },
+    };
+    const playerDeck = {
+      name: '玩家自定义牌组',
+      summonerId: 'player-summoner',
+      summonerFaction: 'necromancer' as const,
+      cards: [],
+    };
+
+    const result = reduce(core, {
+      type: SW_SELECTION_EVENTS.FACTION_SELECTED,
+      payload: { playerId: '0', factionId: 'necromancer', customDeckData: playerDeck },
+      timestamp: 0,
+    });
+
+    expect(result.selectedFactions['0']).toBe('necromancer');
+    expect(result.selectedFactions['1']).toBe('unselected');
+    expect(result.readyPlayers['1']).toBe(false);
+    expect(result.customDeckData).toEqual({ '0': playerDeck });
   });
 
   it('PLAYER_READY 更新准备状态', () => {

@@ -1,24 +1,13 @@
-# 审计维度高风险速查
+# 旧 D 维度兼容入口
 
-> 权威细节请以 `.spec/knowledge/standards/testing-audit-dimensions.md` 为准。
-> 本文件仅用于快速索引与提醒，审计时**必须打开权威文档**逐条检查。
+> 角色：historical adapter。
+>
+> 本文件不再提供高风险维度清单。旧 D 编号只用于阅读历史 evidence、旧测试名或旧复盘。
 
-## 使用要求（强制）
-1. 审计时必须打开 `.spec/knowledge/standards/testing-audit-dimensions.md`。
-2. Evidence 文档必须写明命中的维度（如 D1/D5/D8/D34/D49/D52）。
-3. 如发现“同类语义分叉/绕过共享抽象”，按 D3/D23/D33 记录。
+当前审计不按编号机械填表。请改读：
 
-## 高频漏审门禁（本技能补强点）
-> 这几类问题往往“玩家一眼就能发现”，但如果只做静态对照/只测正向路径，很容易漏掉。
+- `.spec/knowledge/standards/description-to-implementation-audit.md`：项目级审计口径和描述到实现链路。
+- `.spec/knowledge/standards/testing-audit-dimensions.md`：旧 D 编号历史对照。
+- `.spec/knowledge/standards/audit-evidence-template.md`：证据记录、自检和旧结论回写。
 
-1) **成功路径截图链**（D47/D49）：禁止只有失败提示截图就宣告完成；必须给出成功闭环链路。
-2) **特写交互四段式闭环**（D5/D8/D14/D47/D49）：Spotlight Open → Reroll/Action → Close → Settle。
-3) **UI 归因一致性**（D12/D15/D20）：token 变化≠攻击修正汇总展示；卡牌加伤必须在攻击修正区/日志/结算拆解中可见，并有证据截图包含该区域。
-4) **代词/指代消歧**（D1/D5/D15/D18）：规则里“此/该/那/其/this/that/it”必须明确指向“哪颗骰/哪个玩家/哪个状态”，并落到代码字段与证据。
-5) **修订记录可推翻旧结论**（D48/D49）：必须写旧结论为何失效 + 新证据绝对路径 + 新结论与维度编号。
-6) **图片可判定合同直接看图**（D52）：只要玩家板/棋盘/卡图/图集能直接回答“落在哪、哪格应空、哪格 display-only、哪格可交互”，就必须建图片合同表，不能靠旧共享语义猜。
-
-## 维度路由
-
-- 完整维度清单、D1-D58 定义、维度选择指南和输出格式只看 `.spec/knowledge/standards/testing-audit-dimensions.md`。
-- 本 reference 只保留上面 6 类高频漏审提醒，不再复制 D 维度名称和定义；命中具体维度后必须回权威维度库核对完整条款。
+如果需要把旧 D 分卷里的有效内容继续保留，先抽象成“语义、消费、功能结果、交互可用性、共享影响、证据状态”中的现实问题，再迁入对应主源。

@@ -7,20 +7,8 @@
  * 事件流消费遵循 EventStreamSystem 模式 A（过滤式消费），
  * 单一游标统一处理所有事件类型，避免游标推进遗漏导致重复触发。
  * 
- * ## 护盾动画优化（2026-02-16）
- * 
- * 问题：当防御技能授予大额护盾（如暗影守护 999 护盾）完全吸收伤害时，
- * UI 仍会播放伤害飞行动画，导致 HP 数字先跳变再恢复的视觉问题。
- * 
- * 根因：DAMAGE_DEALT 事件的 actualDamage 字段在事件创建时计算（不考虑护盾），
- * reducer 消耗护盾后 HP 不变，但 UI 层读取 actualDamage 播放动画。
- * 
- * 解决方案：在事件消费阶段扫描 DAMAGE_SHIELD_GRANTED 事件，识别大额护盾
- * （value >= 100），标记被保护的目标，跳过这些目标的伤害动画。
- * 
- * 限制：使用阈值启发式（>= 100），适用于"完全免疫"类护盾（如暗影守护 999）。
- * 不支持部分护盾吸收的精确动画（如护盾 3 吸收 8 伤害中的 3，仍播放 5 伤害动画）。
- * 若未来需要精确支持，需在 reducer 中计算 netDamage 并写回事件或侧信道。
+ * DAMAGE_DEALT.payload.actualDamage 必须是 reducer 扣除护盾、防止、低血量钳制后
+ * 回填的正式净掉血。动画层只展示该正式结果，不再根据护盾事件或显示预估二次推导。
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -60,8 +48,6 @@ interface AnimStep {
     };
 }
 
-/** 护盾值阈值：>= 此值视为"完全免疫"（如暗影守护 999 护盾） */
-const FULL_IMMUNITY_SHIELD_THRESHOLD = 100;
 /** 已处理事件 ID 的保留窗口，避免长局内存持续增长 */
 const MAX_TRACKED_EVENT_IDS = 1200;
 
@@ -176,26 +162,14 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
      * 返回 null 表示该事件不需要动画（无效目标/护盾完全抵消等）
      * 
      * @param dmgEvent 伤害事件
-     * @param shieldedTargets 本批次中被大额护盾完全保护的目标集合（护盾值 >= FULL_IMMUNITY_SHIELD_THRESHOLD）
      */
     const buildDamageStep = useCallback((
         dmgEvent: DamageDealtEvent,
-        shieldedTargets?: Set<string>,
     ): AnimStep | null => {
-        const rawDamage = dmgEvent.payload.actualDamage ?? 0;
-        if (rawDamage <= 0) return null;
+        const damage = dmgEvent.payload.actualDamage ?? 0;
+        if (damage <= 0) return null;
 
         const targetId = dmgEvent.payload.targetId;
-
-        // 如果目标在本批次中被大额护盾保护（如暗影守护 999 护盾），跳过伤害动画。
-        // 这避免了"先播放伤害动画，HP 数字跳变，然后又恢复"的视觉问题。
-        if (shieldedTargets?.has(targetId)) return null;
-
-        // 计算最终伤害（与日志层保持一致）
-        // 直接使用 shieldsConsumed 累加所有护盾吸收量（包括百分比护盾和固定值护盾）
-        const totalShieldAbsorbed = dmgEvent.payload.shieldsConsumed?.reduce((sum, s) => sum + s.absorbed, 0) ?? 0;
-        const damage = Math.max(0, rawDamage - totalShieldAbsorbed);
-        if (damage <= 0) return null;
 
         const sourceId = dmgEvent.payload.sourceAbilityId ?? '';
         const isDot = sourceId.startsWith('upkeep-');
@@ -423,27 +397,11 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         const healSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
 
-        // 收集本批次中被大额护盾完全保护的目标（用于跳过伤害动画）
-        const shieldedTargets = new Set<string>();
-        for (const entry of dedupedEntries) {
-            const event = entry.event as { type: string; payload?: Record<string, unknown> };
-            if (event.type !== 'DAMAGE_SHIELD_GRANTED') continue;
-
-            const targetId = typeof event.payload?.targetId === 'string' ? event.payload.targetId : undefined;
-            if (!targetId) continue;
-
-            const shieldValue = typeof event.payload?.value === 'number' ? event.payload.value : 0;
-            if (shieldValue >= FULL_IMMUNITY_SHIELD_THRESHOLD) {
-                shieldedTargets.add(targetId);
-            }
-        }
-
         for (const entry of dedupedEntries) {
             const event = entry.event as { type: string; payload: Record<string, unknown> };
             if (event.type === 'DAMAGE_DEALT') {
                 const step = buildDamageStep(
                     event as unknown as DamageDealtEvent,
-                    shieldedTargets,
                 );
                 if (step) damageSteps.push(step);
             } else if (event.type === 'HEAL_APPLIED') {

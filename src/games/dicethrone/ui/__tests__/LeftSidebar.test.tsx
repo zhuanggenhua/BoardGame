@@ -14,6 +14,14 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
+vi.mock('../../../../components/common/overlays/InfoTooltip', () => ({
+    InfoTooltip: ({ title, isVisible }: { title: unknown; isVisible: boolean }) => (
+        <div data-testid="info-tooltip-probe" data-visible={String(isVisible)}>
+            {String(title)}
+        </div>
+    ),
+}));
+
 describe('LeftSidebar 飞行 Token 入口', () => {
     it('进攻或防御掷骰时可点击飞行 Token 并交给上层处理', () => {
         const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
@@ -37,7 +45,7 @@ describe('LeftSidebar 飞行 Token 入口', () => {
         expect(onFlightClick).toHaveBeenCalledTimes(1);
     });
 
-    it('响应阶段直接点击 Token 本体，左侧不再渲染独立提示框', () => {
+    it('响应阶段直接点击 Token 本体，左侧不再渲染独立提示框且仍保留悬浮说明', () => {
         const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
         player.tokens[TOKEN_IDS.FLIGHT] = 1;
         const onTokenClick = vi.fn();
@@ -54,7 +62,10 @@ describe('LeftSidebar 飞行 Token 入口', () => {
             />,
         );
 
-        fireEvent.click(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`));
+        const flightToken = screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+        expect(screen.getByText(new RegExp(`tokens\\.${TOKEN_IDS.FLIGHT}\\.name`))).toBeInTheDocument();
+
+        fireEvent.click(flightToken);
 
         expect(onTokenClick).toHaveBeenCalledWith(TOKEN_IDS.FLIGHT);
         expect(screen.queryByTestId('dicethrone-token-response-inline')).not.toBeInTheDocument();

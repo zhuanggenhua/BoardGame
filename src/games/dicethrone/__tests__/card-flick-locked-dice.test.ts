@@ -111,12 +111,12 @@ describe('弹一手修改对手锁定骰子', () => {
         expect(result.finalState.core.dice.map(die => die.value)).toEqual([3, 3, 3, 3, 3]);
     });
 
-    it('自己打出"弹一手"修改自己的骰子时，不能修改已锁定的骰子', () => {
+    it('自己打出"弹一手"修改自己的骰子时，也能修改已锁定的骰子并保留锁定状态', () => {
         const random = createQueuedRandom([3, 3, 3, 3, 3]);
         const runner = createRunner(random, false);
 
         const result = runner.run({
-            name: '弹一手不能修改自己的锁定骰子',
+            name: '弹一手修改自己的锁定骰子',
             setup: createSetupWithHand(['card-flick'], {
                 playerId: '0', // 玩家0持有弹一手
                 cp: 10,
@@ -133,16 +133,14 @@ describe('弹一手修改对手锁定骰子', () => {
                 cmd('TOGGLE_DIE_LOCK', '0', { dieId: 0 }),
                 // 玩家0打出弹一手（修改自己的骰子）
                 cmd('PLAY_CARD', '0', { cardId: 'card-flick' }),
+                cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 4 }),
+                cmd('SYS_INTERACTION_CONFIRM', '0'),
             ],
         });
 
-        // 验证：交互已创建，targetOpponentDice=false（因为玩家0是 rollerId）
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        const meta = (interaction?.data as any)?.meta;
-        expect(meta?.targetOpponentDice).toBe(false); // 玩家0是 rollerId，所以是 false
-        
-        // UI 层应该只允许修改未锁定的骰子（骰子1-4），不能修改骰子0
+        const die0 = result.finalState.core.dice.find(d => d.id === 0);
+        expect(die0?.value).toBe(4);
+        expect(die0?.isKept).toBe(true);
     });
 
     it('自己打出"俺也一样"时，已锁定骰子也可以作为复制目标', () => {

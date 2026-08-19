@@ -11,7 +11,6 @@ import type { SummonerWarsCore, PlayerId, CellCoord, UnitCard, EventCard, Struct
 import type { RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
-import { BOARD_ROWS, BOARD_COLS } from '../domain/helpers';
 import { CARD_IDS } from '../domain/ids';
 
 // ============================================================================
@@ -87,13 +86,6 @@ function placeUnit(core: SummonerWarsCore, pos: CellCoord, unit: Partial<BoardUn
   return boardUnit;
 }
 
-function placeStructure(core: SummonerWarsCore, pos: CellCoord, owner: PlayerId, card?: StructureCard) {
-  const c = card ?? makeStructureCard(`struct-${pos.row}-${pos.col}`);
-  core.board[pos.row][pos.col].structure = {
-    cardId: c.id, card: c, owner, position: pos, damage: 0,
-  };
-}
-
 function clearArea(core: SummonerWarsCore, rows: number[], cols: number[]) {
   for (const r of rows) for (const c of cols) {
     if (core.board[r]?.[c]) { core.board[r][c].unit = undefined; core.board[r][c].structure = undefined; }
@@ -115,6 +107,34 @@ describe('SELECT_FACTION 验证', () => {
     core.selectedFactions['0'] = 'necromancer';
 
     const r = validate(core, SW_COMMANDS.SELECT_FACTION, { factionId: 'necromancer' }, '1');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('已被其他玩家选择');
+  });
+
+  it('允许玩家选择已被 AI 暂占的阵营', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+
+    const r = validate(core, SW_COMMANDS.SELECT_FACTION, { factionId: 'necromancer' }, '0');
+    expect(r.valid).toBe(true);
+  });
+
+  it('显式关闭 AI 时，残留 AI 座位配置不得允许抢占真人派系', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      enableAi: false,
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+
+    const r = validate(core, SW_COMMANDS.SELECT_FACTION, { factionId: 'necromancer' }, '0');
     expect(r.valid).toBe(false);
     expect(r.error).toContain('已被其他玩家选择');
   });
@@ -146,6 +166,42 @@ describe('SELECT_FACTION 验证', () => {
     const r = validate(core, SW_COMMANDS.SELECT_FACTION, { factionId: 'necromancer' });
     expect(r.valid).toBe(false);
     expect(r.error).toContain('游戏已开始');
+  });
+});
+
+describe('SELECT_CUSTOM_DECK 验证', () => {
+  const deckData = {
+    name: '测试自定义牌组',
+    summonerId: 'test-summoner',
+    summonerFaction: 'necromancer',
+    cards: [],
+  };
+
+  it('自定义牌组可接管 AI 已暂占的同阵营', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'remote-ai' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+
+    const r = validate(core, SW_COMMANDS.SELECT_CUSTOM_DECK, { deckData }, '0');
+    expect(r.valid).toBe(true);
+  });
+
+  it('自定义牌组仍拒绝抢真人已选阵营', () => {
+    const core = SummonerWarsDomain.setup(['0', '1'], createTestRandom(), {
+      seatControllers: {
+        '0': { type: 'human' },
+        '1': { type: 'human' },
+      },
+    });
+    core.selectedFactions['1'] = 'necromancer';
+
+    const r = validate(core, SW_COMMANDS.SELECT_CUSTOM_DECK, { deckData }, '0');
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('已被其他玩家选择');
   });
 });
 

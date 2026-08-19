@@ -20,7 +20,7 @@ import type {
     BonusDieRolledEvent,
 } from '../domain/types';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
-import { createInitializedState, fixedRandom, fistAttackAbilityId } from './test-utils';
+import { createInitializedState, fixedRandom, fistAttackAbilityId, getCardById } from './test-utils';
 import { formatDiceThroneActionEntry } from '../game';
 
 const normalizeEntries = (result: ActionLogEntry | ActionLogEntry[] | null): ActionLogEntry[] => {
@@ -748,6 +748,112 @@ describe('formatDiceThroneActionEntry', () => {
         expect(rerollEntry).toBeTruthy();
         const rerollSegment = findI18nSegment(rerollEntry!.segments, 'actionLog.bonusDieRerolled');
         expect(rerollSegment?.params).toMatchObject({ dieId: 1, oldValue: 3, newValue: 1 });
+    });
+
+    it('奖励骰等待确认时不应提前写最终效果，确认后才按最终骰面写结果日志', () => {
+        const state = createState();
+        state.core.players['0'].hand = [getCardById('volley')];
+        const command: Command = {
+            type: 'PLAY_CARD',
+            playerId: '0',
+            payload: { cardId: 'volley' },
+            timestamp: 80,
+        };
+        const volleyBonusEvents: BonusDieRolledEvent[] = [1, 2, 3, 4, 5].map((value, index) => ({
+            type: 'BONUS_DIE_ROLLED',
+            payload: { value, face: index < 3 ? 'bow' : 'fist', playerId: '0', targetPlayerId: '1' },
+            timestamp: 81 + index,
+        }));
+        const volleySummary: BonusDieRolledEvent = {
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value: 3,
+                face: 'bow',
+                playerId: '0',
+                targetPlayerId: '1',
+                effectKey: 'bonusDie.effect.volley.result',
+                effectParams: { bowCount: 3, bonusDamage: 3 },
+            },
+            timestamp: 87,
+        };
+        const requestEvent = {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: {
+                settlement: {
+                    id: 'volley-pending-log-test',
+                    sourceAbilityId: 'volley',
+                    attackerId: '0',
+                    targetId: '1',
+                    dice: volleyBonusEvents.map((event, index) => ({
+                        index,
+                        value: event.payload.value,
+                        face: event.payload.face,
+                    })),
+                    rerollCostTokenId: '',
+                    rerollCostAmount: 0,
+                    rerollCount: 0,
+                    maxRerollCount: 0,
+                    readyToSettle: false,
+                    displayOnly: true,
+                    allowDiceModification: true,
+                    summaryEffectKey: 'bonusDie.effect.volley.result',
+                    summaryEffectParams: { bowCount: 3, bonusDamage: 3 },
+                },
+            },
+            timestamp: 88,
+        } as GameEvent;
+
+        const pendingEntries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [...volleyBonusEvents, volleySummary, requestEvent] as GameEvent[],
+        }));
+        const pendingBonusEntry = pendingEntries.find(entry => entry.kind === 'BONUS_DIE_ROLLED');
+        const pendingCardRollEntry = pendingEntries.find(entry => entry.kind === 'CARD_ROLL_RESULT');
+        expect(pendingCardRollEntry).toBeUndefined();
+        expect(pendingBonusEntry).toBeTruthy();
+        expect(getI18nKeys(pendingBonusEntry!.segments)).toContain('actionLog.bonusDiceRolled');
+        expect(getI18nKeys(pendingBonusEntry!.segments)).not.toContain('bonusDie.effect.volley.result');
+
+        const confirmCommand: Command = {
+            type: 'CONFIRM_ROLL',
+            playerId: '0',
+            payload: {},
+            timestamp: 90,
+        };
+        const settledEvent = {
+            type: 'BONUS_DICE_SETTLED',
+            payload: {
+                finalDice: [
+                    { index: 0, value: 1, face: 'bow' },
+                    { index: 1, value: 2, face: 'bow' },
+                    { index: 2, value: 4, face: 'fist' },
+                    { index: 3, value: 4, face: 'fist' },
+                    { index: 4, value: 5, face: 'fist' },
+                ],
+                totalDamage: 2,
+                thresholdTriggered: false,
+                attackerId: '0',
+                targetId: '1',
+                sourceAbilityId: 'volley',
+                displayOnly: true,
+                allowDiceModification: true,
+                effectKey: 'bonusDie.effect.volley.result',
+                effectParams: { bowCount: 2, bonusDamage: 2 },
+            },
+            timestamp: 91,
+        } as GameEvent;
+        const settledEntries = normalizeEntries(formatDiceThroneActionEntry({
+            command: confirmCommand,
+            state,
+            events: [settledEvent],
+        }));
+        const settledEntry = settledEntries.find(entry => entry.kind === 'BONUS_DICE_SETTLED');
+        expect(settledEntry).toBeTruthy();
+        expect(getI18nKeys(settledEntry!.segments)).toContain('actionLog.bonusDiceSettled');
+        expect(getI18nKeys(settledEntry!.segments)).toContain('bonusDie.effect.volley.result');
+        const finalDiceSegment = settledEntry!.segments.find(segment => segment.type === 'diceResult') as Extract<ActionLogSegment, { type: 'diceResult' }> | undefined;
+        expect(finalDiceSegment?.dice.map(die => die.value)).toEqual([1, 2, 4, 4, 5]);
     });
 
 });

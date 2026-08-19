@@ -698,8 +698,9 @@
     "bonusDieModified": "修改临时骰 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieRerolled": "重投骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieRerolledSource": "（{{source}}）",
-    "bonusDieRolled": "奖励骰结果：{{value}}",
-    "bonusDiceRolled": "奖励骰结果：",
+    "bonusDieRolled": "奖励骰掷出：{{value}}",
+    "bonusDiceRolled": "奖励骰掷出：",
+    "bonusDiceSettled": "奖励骰确认结果：",
     "bonusDieRerolled": "重投奖励骰 #{{dieId}}：{{oldValue}} → {{newValue}}"
   },
   "purify": {
@@ -715,6 +716,8 @@
     "energy": "能量",
     "shield": "护盾",
     "deck": "牌堆",
+    "hideHand": "隐藏手牌",
+    "showHand": "显示手牌",
     "discardPile": "弃牌堆",
     "viewingOpponent": "正在观察对手",
     "opponent": "对手",
@@ -1308,6 +1311,7 @@
     "roll_already_confirmed": "已确认投掷结果",
     "no_roll_yet": "请先投掷骰子",
     "ability_not_available": "该技能当前不可用",
+    "observedAbilityDisplayOnly": "这是对方技能的观察高亮，不能替对方选择技能",
     "die_not_found": "找不到骰子",
     "cannot_advance_phase": "无法推进阶段",
     "attackModifierRequiresSelectedAttack": "请先选择一个攻击技能，再打出此攻击修正牌",

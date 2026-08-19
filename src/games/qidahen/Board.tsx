@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Maximize2 } from 'lucide-react';
 import './qidahen-board.css';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
+import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import {
     SelectableGameObject,
     ZoomPanViewport,
@@ -141,6 +142,7 @@ import qidahenRegionMaskUrl from './data/region-mask.png?url';
 import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
 import { QIDAHEN_MANIFEST } from './manifest';
 import { QidahenBoardShell, type QidahenBoardLayoutConfig } from './QidahenBoardShell';
+import { QidahenDebugConfig } from './debug-config';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
@@ -6856,6 +6858,18 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && handLimitDiscardSelection == null
         && core.gaoDiDispatchSelection == null
         && core.sunYuanhuaTechSelection == null;
+
+    const debugPanel = (
+        <GameDebugPanel
+            G={G}
+            dispatch={dispatch}
+            playerID={playerID}
+            aiSupport={QIDAHEN_MANIFEST.ai}
+            playerOptions={QIDAHEN_MANIFEST.playerOptions}
+        >
+            <QidahenDebugConfig G={G} />
+        </GameDebugPanel>
+    );
     const selectedPrimaryAction = getQidahenForegroundActionChoice(core, {
         actionPaymentPreviewVisible,
         recruitSelection,
@@ -7276,12 +7290,15 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     backgroundColor={QIDAHEN_STAGE_BG}
                     scene={<StaticMapScene locale={locale} />}
                     hud={(
-                        <QidahenScenarioVoteScreen
-                            core={core}
-                            playerID={playerID}
-                            playerNamesById={playerNamesById}
-                            onCastScenarioVote={castScenarioVote}
-                        />
+                        <>
+                            <QidahenScenarioVoteScreen
+                                core={core}
+                                playerID={playerID}
+                                playerNamesById={playerNamesById}
+                                onCastScenarioVote={castScenarioVote}
+                            />
+                            {debugPanel}
+                        </>
                     )}
                 />
             </UndoProvider>
@@ -7296,13 +7313,16 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     backgroundColor={QIDAHEN_STAGE_BG}
                     scene={<StaticMapScene locale={locale} />}
                     hud={(
-                        <QidahenFactionSelectionScreen
-                            core={core}
-                            playerID={playerID}
-                            playerNamesById={playerNamesById}
-                            locale={locale}
-                            onSelectFaction={selectFaction}
-                        />
+                        <>
+                            <QidahenFactionSelectionScreen
+                                core={core}
+                                playerID={playerID}
+                                playerNamesById={playerNamesById}
+                                locale={locale}
+                                onSelectFaction={selectFaction}
+                            />
+                            {debugPanel}
+                        </>
                     )}
                 />
             </UndoProvider>
@@ -7445,6 +7465,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             />
             <EndgameOverlay {...endgameProps} />
             <QidahenCardMagnifyOverlay target={magnifyTarget} locale={locale} onClose={() => setMagnifyTarget(null)} />
+            {debugPanel}
                     </>
                 )}
             />

@@ -39,6 +39,8 @@ export const LeftSidebar = ({
     onAutoResponseToggle,
     responseTokenIds,
     onResponseTokenClick,
+    isHandHidden,
+    onToggleHandHidden,
 }: {
     currentPhase: TurnPhase;
     viewPlayer: HeroState;
@@ -80,6 +82,9 @@ export const LeftSidebar = ({
     /** 当前响应中可直接点击使用的 Token。提示与跳过由手牌上方的共享响应框承接。 */
     responseTokenIds?: string[];
     onResponseTokenClick?: (tokenId: string) => void;
+    /** 手牌层是否临时隐藏，仅影响本地 UI。 */
+    isHandHidden?: boolean;
+    onToggleHandHidden?: () => void;
 }) => {
     return (
         <div
@@ -114,7 +119,6 @@ export const LeftSidebar = ({
                         atlas={statusIconAtlas}
                         tokenDefinitions={tokenDefinitions}
                         tokenStackLimits={viewPlayer.tokenStackLimits}
-                        suppressTooltips={Boolean(responseTokenIds?.length)}
                         testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
                         onTokenClick={(tokenId) => {
                             if (responseTokenIds?.includes(tokenId)) {
@@ -183,7 +187,13 @@ export const LeftSidebar = ({
                     data-tutorial-id="draw-deck"
                     data-player-seat-anchor={playerId}
                 >
-                    <DrawDeck ref={drawDeckRef} count={viewPlayer.deck.length} locale={locale} />
+                    <DrawDeck
+                        ref={drawDeckRef}
+                        count={viewPlayer.deck.length}
+                        locale={locale}
+                        isHandHidden={isHandHidden}
+                        onToggleHandHidden={onToggleHandHidden}
+                    />
                 </div>
             </div>
         </div>

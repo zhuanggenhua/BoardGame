@@ -141,8 +141,9 @@ export const PALADIN_TOKENS: TokenDef[] = [
     // ============================================
 
     /**
-     * 神圣祝福 (Blessing of Divinity) - 免疫致死伤害
-     * 当受到致死伤害时，移除此标记并将 HP 设为 1
+     * 神圣祝福 (Blessing of Divinity) - 致死保护
+     * 受到致死伤害时，正式扣血入口会移除此标记并将 HP 设为 1。
+     * 这不是减伤/免伤修正，不能在伤害计算阶段把原攻击伤害压成 0。
      */
     {
         id: TOKEN_IDS.BLESSING_OF_DIVINITY,
@@ -155,9 +156,6 @@ export const PALADIN_TOKENS: TokenDef[] = [
         passiveTrigger: {
             timing: 'onDamageReceived',
             removable: false,
-            actions: [
-                { type: 'custom', customActionId: 'paladin-blessing-prevent', target: 'self' },
-            ],
         },
         frameId: 'guardian-angel',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.PALADIN,

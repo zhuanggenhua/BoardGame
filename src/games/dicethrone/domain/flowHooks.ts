@@ -675,7 +675,7 @@ function checkDazeExtraAttack(
  * 仍应执行。与潜行（sneak）语义一致：攻击成功但伤害被免除。
  *
  * 将 resolvedDamage 设为基础伤害值，让 onHit 条件正确判定为"命中"。
- * 调用方需要过滤掉 DAMAGE_DEALT 事件（伤害已被闪避免除）。
+ * 调用方需要过滤掉防御方本次被免除的 incoming damage，不能吞掉攻击者自伤等后续结算。
  */
 function getCoreForPostDamageAfterEvasion(core: DiceThroneCore): DiceThroneCore {
     const pending = core.pendingAttack;
@@ -693,6 +693,23 @@ function getCoreForPostDamageAfterEvasion(core: DiceThroneCore): DiceThroneCore 
             resolvedDamage: baseDamage,
         },
     };
+}
+
+function filterPreventedDefenderDamage(
+    events: DiceThroneEvent[],
+    pending: DiceThroneCore['pendingAttack'],
+): DiceThroneEvent[] {
+    const defenderId = pending?.defenderId;
+    if (!defenderId) return events;
+    return events.filter((event) => {
+        if (event.type === 'DAMAGE_DEALT') {
+            return event.payload.targetId !== defenderId;
+        }
+        if (event.type === 'TOKEN_RESPONSE_REQUESTED') {
+            return event.payload.pendingDamage.targetPlayerId !== defenderId;
+        }
+        return true;
+    });
 }
 
 /**
@@ -1586,9 +1603,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         includeWithDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
                         continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
                     });
-                    // 闪避免伤：过滤掉 DAMAGE_DEALT 事件（伤害已被闪避免除，非伤害效果仍生效）
+                    // 闪避免伤：只过滤防御方本次被免除的 incoming damage。
+                    // onHit 里的攻击者自伤、资源或状态后续效果仍应执行。
                     const filteredPostDamageEvents = isFullyEvaded
-                        ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')
+                        ? filterPreventedDefenderDamage(postDamageEvents, coreForPostDamage.pendingAttack)
                         : postDamageEvents;
                     events.push(...filteredPostDamageEvents);
 
@@ -1678,8 +1696,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         },
                     };
                     const postDamageEventsSneak = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
-                    // 潜行免伤：过滤掉所有 DAMAGE_DEALT 事件（包括 rollDie 的 bonusDamage 独立伤害）
-                    events.push(...postDamageEventsSneak.filter(e => e.type !== 'DAMAGE_DEALT'));
+                    // 潜行免伤：只过滤防御方 incoming damage，保留攻击者自伤等后续结算。
+                    events.push(...filterPreventedDefenderDamage(postDamageEventsSneak, coreForPostDamage.pendingAttack));
 
                     // === 与非潜行路径对齐的 halt 检查 ===
                     const hasBonusDiceRerollSneak = postDamageEventsSneak.some(isInteractiveBonusDiceRerollEvent);
@@ -1942,7 +1960,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
                 });
                 const filteredPostDamageEvents = isFullyEvaded
-                    ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')
+                    ? filterPreventedDefenderDamage(postDamageEvents, coreForPostDamage.pendingAttack)
                     : postDamageEvents;
                 events.push(...filteredPostDamageEvents);
 
@@ -2021,7 +2039,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     },
                 };
                 const postDamageEventsSneak = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
-                events.push(...postDamageEventsSneak.filter(e => e.type !== 'DAMAGE_DEALT'));
+                events.push(...filterPreventedDefenderDamage(postDamageEventsSneak, coreForPostDamage.pendingAttack));
 
                 const hasBonusDiceRerollSneak = postDamageEventsSneak.some(isInteractiveBonusDiceRerollEvent);
                 const hasPostDamageChoiceSneak = postDamageEventsSneak.some(isBlockingInteractionEvent);
@@ -2131,9 +2149,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         includeWithDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
                         continueWithDamageAfterFirstDamage: coreForPostDamage.pendingAttack?.damageResolved === true,
                     });
-                    // 闪避免伤：过滤掉 DAMAGE_DEALT 事件（伤害已被闪避免除，非伤害效果仍生效）
+                    // 闪避免伤：只过滤防御方本次被免除的 incoming damage。
+                    // onHit 里的攻击者自伤、资源或状态后续效果仍应执行。
                     const filteredPostDamageEvents = isFullyEvaded
-                        ? postDamageEvents.filter(e => e.type !== 'DAMAGE_DEALT')
+                        ? filterPreventedDefenderDamage(postDamageEvents, coreForPostDamage.pendingAttack)
                         : postDamageEvents;
                     events.push(...filteredPostDamageEvents);
 

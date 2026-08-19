@@ -6,7 +6,7 @@
  * - poison（中毒）upkeep 伤害（持续效果，不自动移除层数）
  * - concussion（脑震荡）跳过收入阶段
  * - stun（眩晕）跳过进攻掷骰阶段
- * - paladin blessing-prevent（神圣祝福）custom action 注册与执行
+ * - paladin blessing（神圣祝福）正式扣血入口致死保护
  * - accuracy（精准）使攻击不可防御
  * - retribution（神罚）反弹伤害给攻击者
  * - targeted（锁定）受伤+2
@@ -149,6 +149,29 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         });
         const core = result.finalState.core;
         expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2); // 固定 2 点伤害
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
+    });
+
+    it('燃烧致死伤害应自动消耗神圣祝福并保留 1 点生命', () => {
+        const runner = createRunner(fixedRandom);
+        const result = runner.run({
+            name: '燃烧致死触发神圣祝福',
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+            ],
+            setup: (playerIds, random) => {
+                const state = createSetupAtPlayer0Discard([
+                    { playerId: '1', statusId: STATUS_IDS.BURN, stacks: 1 },
+                ])(playerIds, random);
+                state.core.players['1'].resources[RESOURCE_IDS.HP] = 2;
+                state.core.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] = 1;
+                return state;
+            },
+        });
+
+        const core = result.finalState.core;
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(core.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);
         expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
     });
 });
@@ -430,91 +453,105 @@ describe('脑震荡 (Concussion) 跳过收入', () => {
 });
 
 // ============================================================================
-// 圣骑士 神圣祝福 (Blessing of Divinity) — custom action
+// 圣骑士 神圣祝福 (Blessing of Divinity) — 正式扣血入口致死保护
 // ============================================================================
 
-describe('圣骑士 神圣祝福 custom action', () => {
-    it('paladin-blessing-prevent handler 已注册', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent');
-        expect(handler).toBeDefined();
-    });
-
-    it('执行：致死伤害时消耗 token + 防止伤害 + HP设为1', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
+describe('圣骑士 神圣祝福致死保护', () => {
+    it('致死伤害不被提前防止，正式结算后消耗 token 并保留 1 HP', () => {
         const mockState = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                     resources: { [RESOURCE_IDS.HP]: 5 },
+                    damageShields: [],
+                },
+                '1': {
+                    tokens: {},
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    damageShields: [],
                 },
             },
+            tokenDefinitions: PALADIN_TOKENS,
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
+        const events = createDamageCalculation({
+            source: { playerId: '1', abilityId: 'test-lethal-damage' },
+            target: { playerId: '0' },
+            baseDamage: 10,
             state: mockState,
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 10 } } as any,
-        });
+        }).toEvents() as any[];
 
-        expect(events.length).toBe(3); // TOKEN_CONSUMED + PREVENT_DAMAGE + DAMAGE_DEALT
-        expect(events[0].type).toBe('TOKEN_CONSUMED');
-        expect((events[0] as any).payload.tokenId).toBe(TOKEN_IDS.BLESSING_OF_DIVINITY);
-        expect(events[1].type).toBe('PREVENT_DAMAGE');
-        expect(events[2].type).toBe('DAMAGE_DEALT');
-        expect((events[2] as any).payload.amount).toBe(4); // HP 5 → 1（扣除 4 点使 HP 降至 1）
-        expect((events[2] as any).payload.bypassShields).toBe(true); // 绕过护盾
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe('DAMAGE_DEALT');
+        expect(events[0].payload.amount).toBe(10);
+        expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
+
+        const after = applyEvents(mockState, events, reduce as any) as any;
+        expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(0);
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(events[0].payload.actualDamage).toBe(4);
     });
 
-    it('非致死伤害时不触发', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
+    it('非致死伤害正常扣血且不消耗神圣祝福', () => {
         const mockState = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                     resources: { [RESOURCE_IDS.HP]: 50 },
+                    damageShields: [],
+                },
+                '1': {
+                    tokens: {},
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    damageShields: [],
                 },
             },
+            tokenDefinitions: PALADIN_TOKENS,
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
+        const events = createDamageCalculation({
+            source: { playerId: '1', abilityId: 'test-non-lethal-damage' },
+            target: { playerId: '0' },
+            baseDamage: 5,
             state: mockState,
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 5 } } as any,
-        });
+        }).toEvents() as any[];
 
-        expect(events.length).toBe(0);
+        const after = applyEvents(mockState, events, reduce as any) as any;
+        expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(1);
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(45);
+        expect(events[0].payload.actualDamage).toBe(5);
     });
 
-    it('无 blessing token 时不产生事件', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
+    it('无神圣祝福时致死伤害正常击败目标', () => {
         const mockState = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 0 },
                     resources: { [RESOURCE_IDS.HP]: 5 },
+                    damageShields: [],
+                },
+                '1': {
+                    tokens: {},
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    damageShields: [],
                 },
             },
+            tokenDefinitions: PALADIN_TOKENS,
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
+        const events = createDamageCalculation({
+            source: { playerId: '1', abilityId: 'test-lethal-damage' },
+            target: { playerId: '0' },
+            baseDamage: 10,
             state: mockState,
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 10 } } as any,
-        });
+        }).toEvents() as any[];
 
-        expect(events.length).toBe(0);
+        const after = applyEvents(mockState, events, reduce as any) as any;
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(0);
+        expect(events[0].payload.actualDamage).toBe(5);
     });
 });
 

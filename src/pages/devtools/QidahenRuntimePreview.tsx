@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Eye, Pencil, RefreshCcw, Route } from 'lucide-react';
-import { getLocalAssetPath } from '../../core';
 import {
     normalizeQidahenRegionMaskRuntimeGuideCandidates,
     type QidahenRegionMaskRuntimeGuideCandidate,
@@ -23,7 +22,7 @@ import {
 } from '../../games/qidahen/ui/sharedPrintedRuntimePreview';
 
 const DEFAULT_WORKSPACE = 'best-available-move-cost-ready';
-const DEFAULT_MAP_PATH = getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png');
+const DEFAULT_MAP_PATH = '/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png';
 const LOAD_ENDPOINT = '/devtools/qidahen-region-mask/load';
 
 const BOUNDARY_TYPE_RUNTIME_COLORS: Record<string, string> = {

@@ -21,7 +21,6 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH } from '../domain/types';
 import { processTokenUsage } from '../domain/tokenResponse';
-import { getCustomActionHandler } from '../domain/effects';
 import { reduce } from '../domain/reducer';
 import { MONK_TOKENS } from '../heroes/monk/tokens';
 
@@ -332,121 +331,99 @@ describe('Sneak（潜行）被动免伤 — 已移至攻击流程', () => {
 });
 
 describe('Blessing of Divinity（神圣祝福）致死保护', () => {
-    it('HP=3 受到 10 点伤害时触发：消耗 token + 防止伤害 + HP扣至1', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-        expect(handler).toBeDefined();
-
-        const mockState = {
+    it('HP=3 受到 10 点伤害时：不防止原伤害，正式扣血后消耗 token 并保留 1 HP', () => {
+        const mockCore = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                     resources: { [RESOURCE_IDS.HP]: 3 },
+                    damageShields: [],
                 },
             },
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
-            state: mockState,
+        const event = {
+            type: 'DAMAGE_DEALT',
+            payload: { targetId: '0', amount: 10, actualDamage: 10, sourceAbilityId: 'test' },
+            sourceCommandType: 'ABILITY_EFFECT',
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 10 } } as any,
-        });
+        };
 
-        // 消耗 token
-        const consumed = events.find((e: any) => e.type === 'TOKEN_CONSUMED');
-        expect(consumed).toBeDefined();
-        expect((consumed as any).payload.tokenId).toBe(TOKEN_IDS.BLESSING_OF_DIVINITY);
-
-        // 防止伤害
-        const prevent = events.find((e: any) => e.type === 'PREVENT_DAMAGE');
-        expect(prevent).toBeDefined();
-
-        // HP 扣至 1（DAMAGE_DEALT amount = 3 - 1 = 2，bypassShields）
-        const dmg = events.find((e: any) => e.type === 'DAMAGE_DEALT');
-        expect(dmg).toBeDefined();
-        expect((dmg as any).payload.amount).toBe(2);
-        expect((dmg as any).payload.bypassShields).toBe(true);
+        const after = reduce(mockCore, event as any) as any;
+        expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(0);
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(event.payload.actualDamage).toBe(2);
     });
 
-    it('非致死伤害时不触发（HP=30 受到 5 点伤害）', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-
-        const mockState = {
+    it('非致死伤害时：正常扣血且不消耗 token', () => {
+        const mockCore = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                     resources: { [RESOURCE_IDS.HP]: 30 },
+                    damageShields: [],
                 },
             },
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
-            state: mockState,
+        const event = {
+            type: 'DAMAGE_DEALT',
+            payload: { targetId: '0', amount: 5, actualDamage: 5, sourceAbilityId: 'test' },
+            sourceCommandType: 'ABILITY_EFFECT',
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 5 } } as any,
-        });
+        };
 
-        expect(events).toHaveLength(0);
+        const after = reduce(mockCore, event as any) as any;
+        expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(1);
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(25);
+        expect(event.payload.actualDamage).toBe(5);
     });
 
-    it('无 blessing token 时不触发', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-
-        const mockState = {
+    it('无 blessing token 时：致死伤害正常击败目标', () => {
+        const mockCore = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 0 },
                     resources: { [RESOURCE_IDS.HP]: 3 },
+                    damageShields: [],
                 },
             },
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
-            state: mockState,
+        const event = {
+            type: 'DAMAGE_DEALT',
+            payload: { targetId: '0', amount: 10, actualDamage: 10, sourceAbilityId: 'test' },
+            sourceCommandType: 'ABILITY_EFFECT',
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 10 } } as any,
-        });
+        };
 
-        expect(events).toHaveLength(0);
+        const after = reduce(mockCore, event as any) as any;
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(0);
+        expect(event.payload.actualDamage).toBe(3);
     });
 
-    it('HP=1 受到致死伤害时：不产生 DAMAGE_DEALT（无需扣血），只有消耗+防止', () => {
-        const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-
-        const mockState = {
+    it('HP=1 受到致死伤害时：仍消耗 token，HP 保持 1', () => {
+        const mockCore = {
             players: {
                 '0': {
                     tokens: { [TOKEN_IDS.BLESSING_OF_DIVINITY]: 1 },
                     resources: { [RESOURCE_IDS.HP]: 1 },
+                    damageShields: [],
                 },
             },
         } as any;
 
-        const events = handler({
-            targetId: '0',
-            attackerId: '1',
-            sourceAbilityId: 'test',
-            state: mockState,
+        const event = {
+            type: 'DAMAGE_DEALT',
+            payload: { targetId: '0', amount: 5, actualDamage: 5, sourceAbilityId: 'test' },
+            sourceCommandType: 'ABILITY_EFFECT',
             timestamp: 1000,
-            ctx: {} as any,
-            action: { type: 'customAction', customActionId: 'paladin-blessing-prevent', params: { damageAmount: 5 } } as any,
-        });
+        };
 
-        // TOKEN_CONSUMED + PREVENT_DAMAGE（HP 已经是 1，无需 DAMAGE_DEALT）
-        expect(events).toHaveLength(2);
-        expect(events[0].type).toBe('TOKEN_CONSUMED');
-        expect(events[1].type).toBe('PREVENT_DAMAGE');
+        const after = reduce(mockCore, event as any) as any;
+        expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(0);
+        expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(event.payload.actualDamage).toBe(0);
     });
 });
 

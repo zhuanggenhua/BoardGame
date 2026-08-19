@@ -36,6 +36,27 @@ export interface ChoiceRequestAiSupport {
     reason?: string;
 }
 
+export const CHOICE_REQUEST_SHARED_AI_POLICY_IDS = {
+    SKIP: 'choice-request:skip',
+    PASS: 'choice-request:pass',
+    CONFIRM_CURRENT: 'choice-request:confirm-current',
+    SINGLE_REQUIRED_CANDIDATE: 'choice-request:single-required-candidate',
+    ORDERED_SELECTION: 'choice-request:ordered-selection',
+    UNORDERED_SELECTION: 'choice-request:unordered-selection',
+    SIMPLE_TARGET: 'choice-request:simple-target',
+} as const;
+
+export type ChoiceRequestSharedAiPolicyId =
+    typeof CHOICE_REQUEST_SHARED_AI_POLICY_IDS[keyof typeof CHOICE_REQUEST_SHARED_AI_POLICY_IDS];
+
+export const DEFAULT_CHOICE_REQUEST_SHARED_AI_POLICY_IDS: readonly string[] = [
+    ...Object.values(CHOICE_REQUEST_SHARED_AI_POLICY_IDS),
+    // First-batch aliases kept stable while game files move to the generic IDs.
+    'mage-wars-button-options',
+    'qidahen-button-options',
+    'dicethrone-choice-options',
+];
+
 export interface ChoiceRequestSelectionBounds {
     min: number;
     max: number;
@@ -135,6 +156,29 @@ export interface ChoiceRequestAiDiagnostic {
     diagnostics?: ChoiceRequestDiagnostic[];
 }
 
+export interface ChoiceRequestDiagnosticSnapshot {
+    requestId: string;
+    choiceKind: ChoiceRequestKind;
+    sourceId?: string;
+    aiStatus: ChoiceRequestAiSupportStatus | 'missing';
+    policyId?: string;
+    aiDiagnosticStatus: ChoiceRequestAiDiagnosticStatus;
+    aiDiagnosticReason: string;
+    diagnostics: Array<{
+        severity: ChoiceRequestDiagnosticSeverity;
+        code: ChoiceRequestDiagnosticCode;
+        message: string;
+    }>;
+    candidateSummary: {
+        total: number;
+        enabledCandidateIds: string[];
+        disabledCandidateIds: string[];
+        staleCandidateIds: string[];
+    };
+    recoveryActionId?: string;
+    projectedLegalActionCount: number;
+}
+
 export interface ProjectChoiceRequestLegalActionsResult {
     actions: AiLegalAction[];
     diagnostics: ChoiceRequestDiagnostic[];
@@ -142,9 +186,13 @@ export interface ProjectChoiceRequestLegalActionsResult {
 
 export interface DiagnoseChoiceRequestForAiOptions {
     registeredGamePolicyIds?: Iterable<string>;
+    registeredSharedPolicyIds?: Iterable<string>;
 }
 
 const DEFAULT_MAX_GENERATED_SELECTIONS = 500;
+const DEFAULT_CHOICE_REQUEST_SHARED_AI_POLICY_ID_SET = new Set<string>(
+    DEFAULT_CHOICE_REQUEST_SHARED_AI_POLICY_IDS,
+);
 
 function enabledCandidates<TValue>(request: ChoiceRequest<TValue>): ChoiceRequestCandidate<TValue>[] {
     return request.candidates.filter((candidate) => candidate.disabled !== true && candidate.stale !== true);
@@ -166,6 +214,46 @@ export function filterChoiceRequestForPlayer<TValue>(
 
 function hasRecoveryAction(request: ChoiceRequest): boolean {
     return Array.isArray(request.recoveryAction?.commands) && request.recoveryAction.commands.length > 0;
+}
+
+export function resolveChoiceRequestSharedAiPolicyId<TValue>(
+    request: ChoiceRequest<TValue>,
+): string | undefined {
+    if (request.ai?.status !== 'shared-policy') return undefined;
+    if (request.ai.policyId) return request.ai.policyId;
+
+    const skipPolicy = request.skipPolicy ?? 'forbidden';
+    if (request.kind === 'pass') return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.PASS;
+    if (request.kind === 'confirm' || skipPolicy === 'confirm-current') {
+        return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.CONFIRM_CURRENT;
+    }
+    if (request.kind === 'optional-skip' || skipPolicy === 'required' || skipPolicy === 'cancel-only') {
+        return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.SKIP;
+    }
+    if (
+        request.kind === 'select-player'
+        || request.kind === 'select-card'
+        || request.kind === 'select-object'
+        || request.kind === 'select-dice'
+    ) {
+        return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.SIMPLE_TARGET;
+    }
+    if (request.selection.ordered === true) {
+        return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.ORDERED_SELECTION;
+    }
+    if (request.selection.min === 1 && request.selection.max === 1 && enabledCandidates(request).length === 1) {
+        return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.SINGLE_REQUIRED_CANDIDATE;
+    }
+    return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.UNORDERED_SELECTION;
+}
+
+export function isChoiceRequestSharedAiPolicyRegistered(
+    policyId: string | undefined,
+    registeredSharedPolicyIds?: Iterable<string>,
+): boolean {
+    if (!policyId) return false;
+    if (DEFAULT_CHOICE_REQUEST_SHARED_AI_POLICY_ID_SET.has(policyId)) return true;
+    return new Set(registeredSharedPolicyIds ?? []).has(policyId);
 }
 
 function normalizeSelection(selection: ChoiceRequestSelectionBounds): AiSelectionBounds {
@@ -391,12 +479,25 @@ export function diagnoseChoiceRequestForAi<TValue>(
     }
 
     if (request.ai?.status === 'shared-policy') {
+        const sharedPolicyId = resolveChoiceRequestSharedAiPolicyId(request);
+        if (!isChoiceRequestSharedAiPolicyRegistered(sharedPolicyId, options.registeredSharedPolicyIds)) {
+            return {
+                status: 'missing-policy',
+                requestId: request.requestId,
+                choiceKind: request.kind,
+                sourceId: request.sourceId,
+                policyId: sharedPolicyId,
+                reason: sharedPolicyId
+                    ? 'Choice Request 声明共享 AI 策略，但该共享策略未注册'
+                    : 'Choice Request 声明共享 AI 策略，但缺少可识别的共享策略 ID',
+            };
+        }
         return {
             status: 'ok',
             requestId: request.requestId,
             choiceKind: request.kind,
             sourceId: request.sourceId,
-            policyId: request.ai.policyId,
+            policyId: sharedPolicyId,
             reason: 'Choice Request 使用共享 AI 策略',
         };
     }
@@ -470,4 +571,39 @@ export function projectChoiceRequestToAiLegalActions<TValue>(
     }
 
     return { actions, diagnostics };
+}
+
+export function buildChoiceRequestDiagnosticSnapshot<TValue>(
+    request: ChoiceRequest<TValue>,
+    options: DiagnoseChoiceRequestForAiOptions = {},
+): ChoiceRequestDiagnosticSnapshot {
+    const diagnostics = validateChoiceRequest(request);
+    const aiDiagnostic = diagnoseChoiceRequestForAi(request, options);
+    const legalActionProjection = projectChoiceRequestToAiLegalActions(request);
+    const enabled = enabledCandidates(request);
+    const disabled = request.candidates.filter((candidate) => candidate.disabled === true);
+    const stale = request.candidates.filter((candidate) => candidate.stale === true);
+
+    return {
+        requestId: request.requestId,
+        choiceKind: request.kind,
+        sourceId: request.sourceId,
+        aiStatus: request.ai?.status ?? 'missing',
+        policyId: aiDiagnostic.policyId ?? request.ai?.policyId,
+        aiDiagnosticStatus: aiDiagnostic.status,
+        aiDiagnosticReason: aiDiagnostic.reason,
+        diagnostics: diagnostics.map((diagnostic) => ({
+            severity: diagnostic.severity,
+            code: diagnostic.code,
+            message: diagnostic.message,
+        })),
+        candidateSummary: {
+            total: request.candidates.length,
+            enabledCandidateIds: enabled.map((candidate) => candidate.id),
+            disabledCandidateIds: disabled.map((candidate) => candidate.id),
+            staleCandidateIds: stale.map((candidate) => candidate.id),
+        },
+        ...(request.recoveryAction ? { recoveryActionId: request.recoveryAction.id ?? request.skipPolicy } : {}),
+        projectedLegalActionCount: legalActionProjection.actions.length,
+    };
 }

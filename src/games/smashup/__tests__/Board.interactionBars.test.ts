@@ -49,7 +49,8 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('isSmashUpReactionHandPlayValue');
         expect(source).toContain('matchesSmashUpReactionHandPlayTarget');
         expect(source).toContain('data-testid="su-reaction-hand-status"');
-        expect(source).toContain("data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : undefined}");
+        expect(source).toContain("data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : 'su-reaction-option-button'}");
+        expect(source).toContain('data-option-id={opt.id}');
         expect(source).toContain('&& !isDiscardCardPrompt');
         expect(source).toContain('isDiscardMode={needDiscard}');
         expect(source).not.toContain('isHandDrivenPrompt');
@@ -232,7 +233,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('fieldSourceActionSelectableOngoingUids');
         expect(source).toContain('fieldSourceActionSelectableTitanUids');
         expect(source).toContain('&& !fieldSourceActionPrompt');
-        expect(source).toContain('selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids}');
+        expect(source).toContain('selectableTitanUids={fieldSourceActionSelectableTitanUids ?? fieldSourceTargetSelectableTitanUids ?? (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceTitanUids.size > 0 ? reactionFieldTriggerSourceTitanUids : undefined)}');
     });
 
     it('直选模式的额外按钮统一由 interactionMode helper 分流', () => {

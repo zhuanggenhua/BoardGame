@@ -23,8 +23,10 @@ import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGa
 import { toggleDocumentFullscreen } from '../../lib/webFullscreen';
 import { isConfigReviewPath } from '../../config/gameConfigReviewRoutes';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
+import { UI_Z_INDEX } from '../../core';
 
 const HUD_MODAL_NS = 'hud';
+export const GLOBAL_HUD_FAB_Z_INDEX = UI_Z_INDEX.globalHudFab;
 const LazyAudioProvider = lazy(() => import('../../contexts/AudioContext').then(m => ({ default: m.AudioProvider })));
 const LazyAudioControlSection = lazy(() => import('../game/framework/widgets/AudioControlSection').then(m => ({ default: m.AudioControlSection })));
 const LazyFriendsChatModal = lazy(() => import('../social/FriendsChatModal').then(m => ({ default: m.FriendsChatModal })));
@@ -358,6 +360,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
                 isDark={isDark}
                 items={items}
                 position="bottom-right"
+                zIndex={GLOBAL_HUD_FAB_Z_INDEX}
             />
 
             {showAbout && (

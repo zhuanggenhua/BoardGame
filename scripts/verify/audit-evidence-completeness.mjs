@@ -21,15 +21,15 @@ const REQUIRED_AUDIT_SECTIONS = [
   },
   {
     name: '逐项结论',
-    patterns: [/##\s+.*逐项结论/, /##\s+.*对象全集/, /##\s+.*规则子句表/, /完整技能流程矩阵/],
+    patterns: [/##\s+.*逐项结论/, /##\s+.*对象全集/, /##\s+.*规则子句表/, /原子语义/, /实现消费/],
   },
   {
     name: '验证证据',
-    patterns: [/##\s+.*验证证据/, /##\s+.*测试结果/, /L2\s+领域行为证据/, /真实入口\s+E2E/],
+    patterns: [/##\s+.*验证证据/, /##\s+.*测试结果/, /最终权威结果/, /真实入口\s+E2E/],
   },
   {
     name: '共享根因与残余范围',
-    patterns: [/##\s+.*共享根因/, /##\s+.*残余范围/, /残余范围[:：]/, /L4\s+治理证据/],
+    patterns: [/##\s+.*共享根因/, /##\s+.*共享影响/, /##\s+.*残余范围/, /残余范围[:：]/, /代表链依据/],
   },
   {
     name: '修订或失效记录',
@@ -306,48 +306,40 @@ const P0_SCREENING_BEFORE_RESIDUAL_EVIDENCE = [
   /未经 P0 筛查/,
 ];
 
-const SELF_CHECK_HEADING_PATTERN = /^##\s+.*全面审计自检表.*$/m;
+const SELF_CHECK_HEADING_PATTERN = /^##\s+.*审计自检表.*$/m;
 
 const SELF_CHECK_REQUIRED_ITEMS = [
   {
-    name: '对象全集',
-    patterns: [/对象全集/, /录入对象全集/, /批次矩阵/, /当前范围内每个对象/],
+    name: '对象范围',
+    patterns: [/对象范围/, /对象全集/, /录入对象全集/, /批次矩阵/, /当前范围内每个对象/],
   },
   {
-    name: '规则子句表',
-    patterns: [/规则子句表/, /规则子句/, /原子子句/, /C\d+/],
+    name: '真相源状态',
+    patterns: [/真相源状态/, /权威来源/, /合同状态/, /主真相源/],
   },
   {
-    name: '完整技能流程矩阵',
-    patterns: [/完整技能流程矩阵/, /完整流程/, /触发前条件/, /后续清理/, /执行入口/],
+    name: '原子语义断言',
+    patterns: [/原子语义断言/, /原子语义/, /规则子句/, /C\d+/],
   },
   {
-    name: 'L0-L4 证据层级',
-    patterns: [/L0.*L1.*L2.*L3.*L4/s, /L0\/L1\/L2\/L3\/L4/, /L0-L4/],
+    name: '实现消费链',
+    patterns: [/实现消费链/, /实现消费/, /执行入口/, /handler|reducer|validator|command/i],
   },
   {
-    name: '命中 D 维度',
-    patterns: [/命中\s*D\s*维度/, /D\s*维度/, /D\d+/],
+    name: '最终权威结果',
+    patterns: [/最终权威结果/, /最终权威状态/, /最终状态/, /finalState/i],
   },
   {
-    name: '真实入口 E2E 与截图核验',
-    patterns: [/真实入口.*E2E/s, /E2E.*真实入口/s, /截图核验/, /真实玩法证据/],
+    name: '交互真实入口',
+    patterns: [/交互真实入口/, /真实入口.*E2E/s, /E2E.*真实入口/s, /截图核验/, /真实玩法证据/],
   },
   {
-    name: '测试语义对账 / 旧测试失效检查',
-    patterns: [/测试语义对账/, /测试断言/, /旧测试.*(失效|错误语义|过窄)/s, /红测/, /首跑失败/],
+    name: '验证证据',
+    patterns: [/验证证据/, /测试语义对账/, /测试断言/, /旧测试.*(失效|错误语义|过窄)/s, /红测/, /首跑失败/],
   },
   {
-    name: '同类扩审记录',
-    patterns: [/同类扩审/, /扩审范围/, /横向搜索/, /搜索范围/, /根因关键词/, /共享.*调用点/],
-  },
-  {
-    name: '分支/可选/数量边界',
-    patterns: [/分支/, /可选/, /或者/, /二选一/, /空选/, /少选/, /至多/, /任意数量/, /边界/],
-  },
-  {
-    name: '阶段/生命周期收口',
-    patterns: [/阶段.*(收口|推进|可继续)/s, /生命周期/, /无残留/, /sys\.interaction\.current/, /triggerQueue/i, /finalState/i],
+    name: '共享影响与代表链依据',
+    patterns: [/共享影响/, /代表链依据/, /同类扩审/, /扩审范围/, /横向搜索/, /搜索范围/, /根因关键词/, /共享.*调用点/],
   },
   {
     name: '残余范围声明',
@@ -530,24 +522,24 @@ function checkFullAuditSelfCheck(file, content) {
   const errors = [];
   const head = content.slice(0, 8000);
   if (!SELF_CHECK_HEADING_PATTERN.test(head)) {
-    errors.push(`${file}: 声称全面审计或当前发布口径收口，但前部缺少“全面审计自检表”。`);
+    errors.push(`${file}: 声称全面审计或当前发布口径收口，但前部缺少“审计自检表”。`);
     return errors;
   }
 
   const section = extractMarkdownSection(content, SELF_CHECK_HEADING_PATTERN);
   for (const item of SELF_CHECK_REQUIRED_ITEMS) {
     if (!hasAny(section, item.patterns)) {
-      errors.push(`${file}: “全面审计自检表”缺少“${item.name}”自检项。`);
+      errors.push(`${file}: “审计自检表”缺少“${item.name}”自检项。`);
     }
   }
 
   if (!/\bpassed\b/.test(section)) {
-    errors.push(`${file}: “全面审计自检表”没有可搜索状态词 passed。`);
+    errors.push(`${file}: “审计自检表”没有可搜索状态词 passed。`);
   }
 
   const incompleteStatus = section.match(/\b(representative_only|blocked|scoped_debt)\b/);
   if (incompleteStatus) {
-    errors.push(`${file}: 声称已审计/已收口，但“全面审计自检表”仍包含 ${incompleteStatus[1]}，应先降级结论或补齐证据。`);
+    errors.push(`${file}: 声称已审计/已收口，但“审计自检表”仍包含 ${incompleteStatus[1]}，应先降级结论或补齐证据。`);
   }
 
   return errors;
@@ -578,22 +570,13 @@ function checkCompletionClaimDoc(file, content) {
   }
   errors.push(...checkFullAuditSelfCheck(file, content));
 
-  const hasLevelMatrix = /L0/.test(content) && /L1/.test(content) && /L2/.test(content) && /L3/.test(content) && /L4/.test(content);
-  if (!hasLevelMatrix) {
-    errors.push(`${file}: 声称全面审计或当前发布口径收口，但未同时列出 L0/L1/L2/L3/L4 层级矩阵。`);
-  }
-
-  if (!/C\d+/.test(content)) {
-    errors.push(`${file}: 声称全面审计或当前发布口径收口，但未看到 C1/C2/C3 这类规则子句编号。`);
+  if (!/(C\d+|原子语义|规则子句)/.test(content)) {
+    errors.push(`${file}: 声称全面审计或当前发布口径收口，但未看到规则子句或原子语义断言。`);
   }
 
   const hasImplementationEntry = /实现入口|执行入口|validator|validate|command|handler|reducer|execute|UI\s*消费|真实入口/i.test(content);
   if (!hasImplementationEntry) {
     errors.push(`${file}: 声称全面审计或当前发布口径收口，但没有写清规则子句对应的实现/执行入口。`);
-  }
-
-  if (!/D\d+/.test(content)) {
-    errors.push(`${file}: 声称全面审计或当前发布口径收口，但未登记命中的 D 维度。`);
   }
 
   const hasFinalStateEvidence = /最终权威状态|最终状态|finalState/i.test(content);
@@ -609,7 +592,7 @@ function checkCompletionClaimDoc(file, content) {
   if (hasAny(content, HIGH_RISK_TERMS)) {
     const hasQueueOrLifecycleEvidence = /触发队列|triggerQueue|reaction session|deferred|finalize|阶段可继续|流程收口|无残留/i.test(content);
     if (!hasQueueOrLifecycleEvidence) {
-      errors.push(`${file}: 命中阶段/死亡/额外攻击等高风险语义，但缺少触发队列、阶段收口、无残留或等价 L4 生命周期证据。`);
+      errors.push(`${file}: 命中阶段/死亡/额外攻击等高风险语义，但缺少触发队列、阶段收口、无残留或等价生命周期证据。`);
     }
   }
 

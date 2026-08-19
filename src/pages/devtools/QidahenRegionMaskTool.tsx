@@ -19,7 +19,6 @@ import {
     WandSparkles,
     X,
 } from 'lucide-react';
-import { getLocalAssetPath } from '../../core';
 import {
     buildQidahenRuntimeGuideCandidateKey,
     normalizeQidahenRegionMaskRuntimeGuideCandidates,
@@ -510,7 +509,7 @@ type DiagnosticPreview = {
 
 type PersistedWorkspaceState = 'empty' | 'populated';
 
-const DEFAULT_MAP_PATH = getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png');
+const DEFAULT_MAP_PATH = '/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png';
 const MASK_WIDTH = 1265;
 const MASK_HEIGHT = 893;
 const DEFAULT_BRUSH_SIZE = 3;
@@ -6672,6 +6671,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         graphNodes,
         isIsolatedWorkspace,
         lastBoundaryComponentDiagnostics,
+        lastRegionGenerationResults.length,
         lastRegionGenerationSummary,
         lastRegionGenerationWorkflow,
         passages.length,

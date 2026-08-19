@@ -36,8 +36,14 @@ import type {
     DiceThroneCore,
     PendingAttack,
     PendingAttackSettlementStage,
+    PlayerId,
 } from './types';
 import { getPlayerAbilityBaseDamage } from './abilityLookup';
+
+export function isDiceThroneAiSeat(state: DiceThroneCore, playerId: PlayerId): boolean {
+    const controllerType = state.seatControllers?.[playerId]?.type;
+    return controllerType === 'local-ai' || controllerType === 'remote-ai';
+}
 
 /**
  * 获取 pendingAttack 的预期总伤害（baseDamage + bonusDamage）

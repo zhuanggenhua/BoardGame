@@ -80,6 +80,7 @@ import {
     shouldAutoPassResponseWindow,
     shouldShowManualPhaseAdvance,
 } from './ui/viewMode';
+import { shouldShowResponseObservedRollAbilityHighlights } from './ui/abilityHighlightVisibility';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { resolveMoves, type DiceThroneMoveMap } from './ui/resolveMoves';
 import { LayoutSaveButton } from './ui/LayoutSaveButton';
@@ -186,6 +187,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
     const [autoResponseEnabled, setAutoResponseEnabled] = React.useState(() => getAutoResponseEnabled());
+    const [isHandHidden, setIsHandHidden] = React.useState(false);
+    const handleToggleHandHidden = React.useCallback(() => {
+        setIsHandHidden((current) => !current);
+    }, []);
 
     const isGameOver = rawG.sys.gameover;
     const resolveMatchFallbackName = React.useCallback((playerId: string) => `P${Number(playerId) + 1}`, []);
@@ -707,6 +712,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const viewPlayer = (isSelfView ? player : opponent) || player;
     const isRollPhase = currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll' || currentPhase === 'defensiveRoll';
     const isViewRolling = viewPid === rollerId;
+    const isResponseObservedRollAbilityHighlight = shouldShowResponseObservedRollAbilityHighlights({
+        isResponseWindowOpen,
+        currentResponderId,
+        rootPlayerId: rootPid,
+        viewPlayerId: viewPid,
+        rollerId,
+        isRollPhase,
+    });
     const rollConfirmed = G.rollConfirmed;
     const isCompareRoll = G.currentRollContext?.kind === 'compare';
     const isCurrentBonusDiceSettlementActive = isCurrentBonusRollSettlement(G, G.pendingBonusDiceSettlement);
@@ -720,19 +733,21 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (isCurrentBonusDiceSettlementActive) {
             return [];
         }
-        // 响应窗口打开时，显示当前响应者的可用技能
+        // 响应窗口打开时：
+        // 1. 当前视角是响应者：显示并允许操作响应者自己的技能。
+        // 2. 自己响应但正在观察对方骰区：只显示对方当前骰面可达技能，作为战局观察提示。
         if (isResponseWindowOpen && currentResponderId) {
-            // 如果当前视角是响应者，显示响应者的可用技能
             if (viewPid === currentResponderId) {
-                // 响应窗口期间，使用 getAvailableAbilityIds 计算可用技能
-                // 注意：这里需要传入响应者的 ID 和当前阶段
                 return getAvailableAbilityIds(G, currentResponderId, currentPhase);
+            }
+            if (isResponseObservedRollAbilityHighlight) {
+                return getAvailableAbilityIds(G, viewPid, currentPhase);
             }
             return [];
         }
         // 掷骰阶段，显示掷骰者的可用技能
         return isViewRolling ? access.availableAbilityIds : [];
-    }, [isCurrentBonusDiceSettlementActive, isResponseWindowOpen, currentResponderId, viewPid, isViewRolling, access.availableAbilityIds, G, currentPhase]);
+    }, [isCurrentBonusDiceSettlementActive, isResponseWindowOpen, currentResponderId, viewPid, isViewRolling, access.availableAbilityIds, G, currentPhase, isResponseObservedRollAbilityHighlight]);
     
     const availableAbilityIdsForRoller = React.useMemo(
         () => isCurrentBonusDiceSettlementActive ? [] : access.availableAbilityIds,
@@ -954,7 +969,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const canSelectAbility = (
         (canOperateView && isViewRolling && isRollPhase && (currentPhase === 'defensiveRoll' ? true : G.rollConfirmed))
         || isManualSelfResponseWindow
-    ) && !hasBlockingAttackShowcase && !isCurrentBonusDiceSettlementActive;
+    ) && !isResponseObservedRollAbilityHighlight && !hasBlockingAttackShowcase && !isCurrentBonusDiceSettlementActive;
 
     // 同一 slot 多 variant 选择：玩家点击 slot 时，如果该 slot 有多个 variant 同时满足，弹窗让玩家选
     const [abilityChoiceOptions, setAbilityChoiceOptions] = React.useState<AbilityChoiceOption[]>([]);
@@ -1233,9 +1248,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 被动重掷：骰子选择回调
     const handlePassiveRerollDieSelect = React.useCallback((dieId: number) => {
         if (!rerollSelectingAction) return;
-        // 不能重掷被锁定的骰子
         const die = currentRollDice.find(d => d.id === dieId);
-        if (!die || die.isKept) return;
+        if (!die) return;
         engineMoves.usePassiveAbility(
             rerollSelectingAction.passiveId,
             rerollSelectingAction.actionIndex,
@@ -1339,7 +1353,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         rightTrayBonusDiceSettlement
         && !isSpectator
         && String(rightTrayBonusDiceSettlement.attackerId) === String(rootPid)
-        && !rawG.sys.responseWindow?.current
         && (
             !rawG.sys.interaction?.current
             || rawG.sys.interaction.current.kind === 'dt:bonus-dice'
@@ -1781,11 +1794,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     ]);
 
     const handleBoardHighlightedAbilityClick = React.useCallback(() => {
+        if (isResponseObservedRollAbilityHighlight) {
+            playDeniedSound();
+            toast.warning(t('error.observedAbilityDisplayOnly'), undefined, { dedupeKey: 'dicethrone.observedAbilityDisplayOnly' });
+            return;
+        }
         if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
             playDeniedSound();
             toast.warning(t('error.confirmRoll'), undefined, { dedupeKey: 'dicethrone.confirmRoll' });
         }
-    }, [G.rollConfirmed, currentPhase, t, toast]);
+    }, [G.rollConfirmed, currentPhase, isResponseObservedRollAbilityHighlight, t, toast]);
 
     const handleAdvancePhase = () => {
         if (!canAdvancePhase) {
@@ -2077,6 +2095,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         tokenDefinitions={G.tokenDefinitions}
                         responseTokenIds={tokenInteraction?.tokenIds}
                         onResponseTokenClick={tokenInteraction?.onTokenClick}
+                        isHandHidden={isHandHidden}
+                        onToggleHandHidden={handleToggleHandHidden}
                         onKnockdownClick={() => openUiModal('removeKnockdown')}
                         canRemoveKnockdown={canRemoveKnockdown}
                         isSelfShaking={selfImpact.shake.isShaking}
@@ -2226,7 +2246,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     const isDiscardMode = currentPhase === 'discard' && mustDiscardCount > 0 && canOperateView;
                     return (
                         <>
-                            <div className="absolute bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent h-[15vw]" />
+                            {!isHandHidden && (
+                                <div className="absolute bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent h-[15vw]" />
+                            )}
                             {/* 游戏提示统一组件 */}
                             <GameHints
                                 isDiscardMode={isDiscardMode}
@@ -2240,66 +2262,68 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 currentPhase={currentPhase}
                                 isPassiveRerollSelecting={!!rerollSelectingAction}
                             />
-                            <HandArea
-                                hand={handOwner.hand}
-                                locale={locale}
-                                currentPhase={currentPhase}
-                                playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
-                                onPlayCard={(card) => {
-                                    const targetAbilityId = card.type === 'upgrade'
-                                        ? getUpgradeTargetAbilityId(card)
-                                        : null;
-                                    if (targetAbilityId) {
-                                        dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
+                            {!isHandHidden && (
+                                <HandArea
+                                    hand={handOwner.hand}
+                                    locale={locale}
+                                    currentPhase={currentPhase}
+                                    playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
+                                    onPlayCard={(card) => {
+                                        const targetAbilityId = card.type === 'upgrade'
+                                            ? getUpgradeTargetAbilityId(card)
+                                            : null;
+                                        if (targetAbilityId) {
+                                            dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
+                                            return true;
+                                        }
+
+                                        const cardCheck = checkPlayCard(
+                                            G,
+                                            rootPid,
+                                            card,
+                                            currentPhase,
+                                            currentResponseWindow?.windowType,
+                                        );
+                                        if (!cardCheck.ok) {
+                                            playDeniedSound();
+                                            toast.warning(t(`error.${cardCheck.reason}`), undefined, {
+                                                dedupeKey: `dicethrone.play-card.${cardCheck.reason}`,
+                                            });
+                                            return false;
+                                        }
+
+                                        engineMoves.playCard(card.id);
                                         return true;
-                                    }
-
-                                    const cardCheck = checkPlayCard(
-                                        G,
-                                        rootPid,
-                                        card,
-                                        currentPhase,
-                                        currentResponseWindow?.windowType,
-                                    );
-                                    if (!cardCheck.ok) {
-                                        playDeniedSound();
-                                        toast.warning(t(`error.${cardCheck.reason}`), undefined, {
-                                            dedupeKey: `dicethrone.play-card.${cardCheck.reason}`,
-                                        });
-                                        return false;
-                                    }
-
-                                    engineMoves.playCard(card.id);
-                                    return true;
-                                }}
-                                onSellCard={(cardId) => {
-                                    const blocked = shouldBlockTutorialAction('discard-pile');
-                                    if (blocked) return;
-                                    engineMoves.sellCard(cardId);
-                                    advanceTutorialIfNeeded('discard-pile');
-                                }}
-                                onError={(msg) => { playDeniedSound(); toast.warning(msg, undefined, { dedupeKey: 'dicethrone.handArea.error' }); }}
-                                canInteract={canInteractHand}
-                                canPlayCards={canPlayHandCards}
-                                canSellCards={canSellHandCards}
-                                drawDeckRef={drawDeckRef}
-                                discardPileRef={discardPileRef}
-                                undoCardId={lastUndoCardId}
-                                onSellHintChange={setDiscardHighlighted}
-                                onPlayHintChange={setCoreAreaHighlighted}
-                                onSellButtonChange={setSellButtonVisible}
-                                isDiscardMode={isDiscardMode}
-                                onDiscardCard={(cardId) => {
-                                    if (shouldBlockTutorialAction('discard-pile')) return;
-                                    engineMoves.discardCard(cardId);
-                                    advanceTutorialIfNeeded('discard-pile');
-                                }}
-                                onMagnifyCard={(card) => setMagnifiedCard(card)}
-                                respondableCardIds={respondableCardIds}
-                                characterId={handOwner.characterId}
-                                playerBoardFace={handOwner.playerBoardFace}
-                                disableCardPointerEvents={Boolean(diceMultistepInteraction)}
-                            />
+                                    }}
+                                    onSellCard={(cardId) => {
+                                        const blocked = shouldBlockTutorialAction('discard-pile');
+                                        if (blocked) return;
+                                        engineMoves.sellCard(cardId);
+                                        advanceTutorialIfNeeded('discard-pile');
+                                    }}
+                                    onError={(msg) => { playDeniedSound(); toast.warning(msg, undefined, { dedupeKey: 'dicethrone.handArea.error' }); }}
+                                    canInteract={canInteractHand}
+                                    canPlayCards={canPlayHandCards}
+                                    canSellCards={canSellHandCards}
+                                    drawDeckRef={drawDeckRef}
+                                    discardPileRef={discardPileRef}
+                                    undoCardId={lastUndoCardId}
+                                    onSellHintChange={setDiscardHighlighted}
+                                    onPlayHintChange={setCoreAreaHighlighted}
+                                    onSellButtonChange={setSellButtonVisible}
+                                    isDiscardMode={isDiscardMode}
+                                    onDiscardCard={(cardId) => {
+                                        if (shouldBlockTutorialAction('discard-pile')) return;
+                                        engineMoves.discardCard(cardId);
+                                        advanceTutorialIfNeeded('discard-pile');
+                                    }}
+                                    onMagnifyCard={(card) => setMagnifiedCard(card)}
+                                    respondableCardIds={respondableCardIds}
+                                    characterId={handOwner.characterId}
+                                    playerBoardFace={handOwner.playerBoardFace}
+                                    disableCardPointerEvents={Boolean(diceMultistepInteraction)}
+                                />
+                            )}
                         </>
                     );
                 })()}

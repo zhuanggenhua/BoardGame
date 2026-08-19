@@ -404,8 +404,7 @@ export const openTemporaryRollContext = (
         const legacyDice = getLegacyActiveDice(state);
         if (state.rollCount <= 0 || legacyDice.length === 0) return undefined;
         return createMainRollContext(state, {
-            phase: getStatePhase(state),
-            ownerPlayerId: state.activePlayerId,
+            phase: inferLegacyMainRollPhase(state),
             dice: legacyDice,
         });
     })();
@@ -478,6 +477,31 @@ const getStatePhase = (state: DiceThroneCore): TurnPhase | undefined => {
     return phaseCarrier.turnPhase ?? phaseCarrier.phase;
 };
 
+const inferLegacyMainRollPhase = (state: DiceThroneCore): TurnPhase | undefined => {
+    const explicitPhase = getStatePhase(state);
+    if (isMainRollPhase(explicitPhase)) return explicitPhase;
+
+    const legacyDice = getLegacyActiveDice(state);
+    if (state.rollCount <= 0 || state.rollDiceCount <= 0 || legacyDice.length === 0 || state.rollConfirmed !== true) {
+        return explicitPhase;
+    }
+
+    const pending = state.pendingAttack;
+    if (pending?.targetingSelectionPending === true) return 'targetingRoll';
+    if (pending?.defenseAbilityId) return 'defensiveRoll';
+
+    const ownerIds = new Set(legacyDice.map(die => die.ownerId).filter((ownerId): ownerId is PlayerId => Boolean(ownerId)));
+    if (pending?.defenderId && ownerIds.has(pending.defenderId)) return 'defensiveRoll';
+    if (pending?.attackerId && ownerIds.has(pending.attackerId)) return 'offensiveRoll';
+
+    if (!pending && (ownerIds.size === 0 || ownerIds.has(state.activePlayerId))) {
+        return 'offensiveRoll';
+    }
+
+    if (pending?.sourceAbilityId) return 'offensiveRoll';
+    return explicitPhase;
+};
+
 export const resolveCurrentRollContext = (
     state: DiceThroneCore,
     phase?: TurnPhase,
@@ -495,7 +519,7 @@ export const resolveCurrentRollContext = (
     ) {
         return createBonusRollContextFromSettlement(state, settlement);
     }
-    const legacyPhase = phase ?? getStatePhase(state);
+    const legacyPhase = phase ?? inferLegacyMainRollPhase(state);
     if (!isMainRollPhase(legacyPhase)) {
         if (legacyPhase !== undefined || state.currentRollContext) return undefined;
     }

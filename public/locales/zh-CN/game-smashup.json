@@ -569,8 +569,8 @@
     "world_champs_calicoin_title": "金币猫：选择一个其他随从放置 1 个 +1 力量指示物",
     "world_champs_its_blitzin_time_title": "现在是闪电时间！：选择你的一个随从，本回合力量 +3",
     "world_champs_fighting_spirit_prize_title": "战斗精神奖：选择 1-2 个你的随从分配 2 个 +1 力量指示物",
-    "world_champs_akye_the_turtle_card_title": "海龟阿凯：选择要交给对方的一张手牌",
-    "world_champs_akye_the_turtle_player_title": "海龟阿凯：选择一位玩家并交给其一张手牌（然后你抽两张牌）",
+    "world_champs_akye_the_turtle_card_title": "阿克耶海龟：选择要交给对方的一张手牌",
+    "world_champs_akye_the_turtle_player_title": "阿克耶海龟：选择一位玩家并交给其一张手牌（然后你抽两张牌）",
     "world_champs_akye_the_turtle_skip_option": "跳过（不发动）",
     "world_champs_fast_as_lightning_title": "快如闪电：选择一个随从，本回合力量 +2",
     "world_champs_high_speed_chase_base_title": "高速追逐：选择目标基地",
@@ -5893,7 +5893,7 @@
       "abilityText": "从你的牌库中搜索 1 张行动，加入你的手牌。"
     },
     "world_champs_akye_the_turtle": {
-      "name": "海龟阿凯",
+      "name": "阿克耶海龟",
       "abilityText": "你可以将手中的 1 张牌交给另一位玩家，然后抓 2 张牌。"
     },
     "world_champs_diva": {

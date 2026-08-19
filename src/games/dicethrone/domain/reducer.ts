@@ -25,7 +25,7 @@ import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
-import { removeCard, updatePendingAttackSettlementStage } from './utils';
+import { isDiceThroneAiSeat, removeCard, updatePendingAttackSettlementStage } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
@@ -387,10 +387,6 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
         settlement
         && currentContext?.id === `bonus:${settlement.id}`
         && currentContext.suspendedParent
-        && (
-            restoredSettlement
-            || continuation?.kind !== 'complete'
-        )
     );
     const nextState = {
         ...state,
@@ -1613,8 +1609,35 @@ const handleCharacterSelected: EventHandler<Extract<DiceThroneEvent, { type: 'CH
 ) => {
     const { playerId, characterId, initialDeckCardIds } = event.payload;
     const selectedCharacters = { ...(state.selectedCharacters || {}), [playerId]: characterId };
+    let readyPlayers = state.readyPlayers;
 
     let players = state.players;
+    for (const [otherPlayerId, selectedCharacterId] of Object.entries(state.selectedCharacters || {})) {
+        if (
+            otherPlayerId === playerId
+            || selectedCharacterId !== characterId
+            || !isDiceThroneAiSeat(state, otherPlayerId)
+        ) {
+            continue;
+        }
+
+        selectedCharacters[otherPlayerId] = 'unselected';
+        if (readyPlayers[otherPlayerId]) {
+            readyPlayers = { ...readyPlayers, [otherPlayerId]: false };
+        }
+        const otherPlayer = players[otherPlayerId];
+        if (otherPlayer) {
+            players = {
+                ...players,
+                [otherPlayerId]: {
+                    ...otherPlayer,
+                    characterId: 'unselected',
+                    initialDeckCardIds: undefined,
+                },
+            };
+        }
+    }
+
     const player = state.players[playerId];
     if (player) {
         const playerUpdates: Partial<HeroState> = { characterId };
@@ -1622,12 +1645,12 @@ const handleCharacterSelected: EventHandler<Extract<DiceThroneEvent, { type: 'CH
             playerUpdates.initialDeckCardIds = initialDeckCardIds;
         }
         players = {
-            ...state.players,
+            ...players,
             [playerId]: { ...player, ...playerUpdates },
         };
     }
 
-    return { ...state, selectedCharacters, players };
+    return { ...state, selectedCharacters, readyPlayers, players };
 };
 
 /**

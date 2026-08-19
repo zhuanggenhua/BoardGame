@@ -1,6 +1,7 @@
 # DiceThrone 圣骑士神圣祝福 Token 不可移除历史修复证据
 
 > 2026-06-06 当前有效口径：本文只保留圣骑士 `Blessing of Divinity / 神圣祝福` 不可移除合同这一条历史专项修复证据，不代表 DiceThrone 全体 token/状态链、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时 `REMOVE_STATUS / TRANSFER_STATUS` 对 `removable: false` 的保护链被专项修补并测试过，不能外推成 DiceThrone 当前总体收口。
+> 2026-08-18 修订：本文下方历史代码片段中的 `paladin-blessing-prevent` 已不是当前致死保护入口。当前神圣祝福致死保护由正式扣血入口 `handleDamageDealt` 处理：原伤害仍进入结算，若会降到 0 或以下，则消耗神圣祝福并把 HP 保留为 1。本文仍只作为“不可移除”历史证据。
 
 ## 问题描述
 

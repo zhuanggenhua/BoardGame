@@ -279,7 +279,7 @@ describe('圣骑士 Token 定义', () => {
         expect(ret!.activeUse!.timing).toContain('beforeDamageReceived');
     });
 
-    it('应包含 Blessing of Divinity（神圣祝福）— consumable, onDamageReceived 被动触发', () => {
+    it('应包含 Blessing of Divinity（神圣祝福）— consumable, onDamageReceived 致死保护元数据', () => {
         const blessing = PALADIN_TOKENS.find(t => t.id === TOKEN_IDS.BLESSING_OF_DIVINITY);
         expect(blessing).toBeDefined();
         expect(blessing!.category).toBe('consumable');
@@ -287,14 +287,7 @@ describe('圣骑士 Token 定义', () => {
         expect(blessing!.passiveTrigger).toBeDefined();
         expect(blessing!.passiveTrigger!.timing).toBe('onDamageReceived');
         expect(blessing!.passiveTrigger!.removable).toBe(false);
-        expect(blessing!.passiveTrigger!.actions).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    type: 'custom',
-                    customActionId: 'paladin-blessing-prevent',
-                }),
-            ])
-        );
+        expect(blessing!.passiveTrigger!.actions ?? []).toEqual([]);
     });
 
     it('Token 数量应为 6', () => {

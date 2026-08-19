@@ -9,7 +9,7 @@ import {
 } from '../../../engine/systems/resolutionStack';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { validate, getManualSpecialScoringBaseIndices } from './commands';
-import { execute } from './reducer';
+import { execute, reduce } from './reducer';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import {
     FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
@@ -86,6 +86,26 @@ const queuedTriggerRuntimeSharedState = new Map<string, Record<string, unknown>>
 
 function hasDomainEvents(events: readonly SmashUpEvent[]): boolean {
     return events.some(event => typeof event.type === 'string' && !event.type.startsWith('SYS_'));
+}
+
+function getInteractionSourceId(interaction: unknown): string | undefined {
+    const sourceId = (interaction as { data?: { sourceId?: unknown } } | undefined)?.data?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : undefined;
+}
+
+function promoteQueuedFollowupAfterReactionChoice(
+    state: MatchState<SmashUpCore>,
+): MatchState<SmashUpCore> {
+    const currentSourceId = getInteractionSourceId(state.sys.interaction?.current);
+    if (currentSourceId !== 'smashup_reaction_choose') return state;
+
+    const queuedFollowup = state.sys.interaction?.queue?.[0];
+    const queuedFollowupSourceId = getInteractionSourceId(queuedFollowup);
+    if (!queuedFollowup || !queuedFollowupSourceId || queuedFollowupSourceId === 'smashup_reaction_choose') {
+        return state;
+    }
+
+    return resolveInteraction(state);
 }
 
 function getQueuedTriggerRuntimeSharedState(frameId: string | undefined, triggerId: string): Record<string, unknown> {
@@ -357,13 +377,21 @@ function pruneUnavailableScoringFrameTriggers(
     }
 
     return {
-        state,
+        state: markConsumedTriggersInSession(state, state, session.frameId, events),
         events,
     };
 }
 
-function getSessionFrameTriggers(state: MatchState<SmashUpCore>, frameId: string): TriggerInstance[] {
-    return (state.core.triggerQueue ?? []).filter(trigger => (trigger.frameId ?? trigger.id) === frameId);
+function getSessionFrameTriggers(
+    state: MatchState<SmashUpCore>,
+    frameId: string,
+    consumedTriggerIds?: readonly string[],
+): TriggerInstance[] {
+    const consumedIds = new Set(consumedTriggerIds ?? getReactionSessionFromFrameId(state, frameId)?.consumedTriggerIds ?? []);
+    return (state.core.triggerQueue ?? []).filter(trigger => (
+        (trigger.frameId ?? trigger.id) === frameId
+        && !consumedIds.has(trigger.id)
+    ));
 }
 
 function buildConsumedTriggerIdsAfterEvents(
@@ -412,6 +440,36 @@ function hasRemainingFrameTriggersAfterEvents(
             trigger => (trigger.frameId ?? trigger.id) === frameId && !consumedIds.has(trigger.id),
         )
     ));
+}
+
+function markConsumedTriggersInSession(
+    state: MatchState<SmashUpCore>,
+    referenceState: MatchState<SmashUpCore>,
+    frameId: string,
+    events: readonly SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    const consumedIds = buildConsumedTriggerIdsAfterEvents(referenceState, events);
+    if (consumedIds.size === 0) {
+        return state;
+    }
+
+    const session = getReactionSessionFromFrameId(state, frameId);
+    if (!session) {
+        return state;
+    }
+
+    const mergedIds = new Set(session.consumedTriggerIds ?? []);
+    for (const triggerId of consumedIds) {
+        mergedIds.add(triggerId);
+    }
+    if (mergedIds.size === (session.consumedTriggerIds?.length ?? 0)) {
+        return state;
+    }
+
+    return setSmashUpReactionSession(state, {
+        ...session,
+        consumedTriggerIds: [...mergedIds],
+    });
 }
 
 function getTriggerResolutionClass(trigger: TriggerInstance): 'mandatory' | 'optional' {
@@ -499,8 +557,9 @@ function consumeRemainingFrameTriggers(
     state: MatchState<SmashUpCore>,
     frameId: string,
     now: number,
+    consumedTriggerIds?: readonly string[],
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const triggers = getSessionFrameTriggers(state, frameId);
+    const triggers = getSessionFrameTriggers(state, frameId, consumedTriggerIds);
     if (triggers.length === 0) {
         return { state, events: [] };
     }
@@ -516,20 +575,62 @@ function consumeRemainingFrameTriggers(
     }
 
     return {
-        state,
+        state: markConsumedTriggersInSession(state, state, frameId, events),
         events,
     };
 }
 
-function completeReactionFrameAfterPass(
+function buildPreviouslyConsumedFrameTriggerEvents(
     state: MatchState<SmashUpCore>,
     frameId: string,
+    consumedTriggerIds: readonly string[] | undefined,
+    now: number,
+): TriggerConsumedEvent[] {
+    if (!consumedTriggerIds?.length) {
+        return [];
+    }
+
+    const liveFrameTriggerIds = new Set(
+        (state.core.triggerQueue ?? [])
+            .filter(trigger => (trigger.frameId ?? trigger.id) === frameId)
+            .map(trigger => trigger.id),
+    );
+    if (liveFrameTriggerIds.size === 0) {
+        return [];
+    }
+
+    const events: TriggerConsumedEvent[] = [];
+    const emittedIds = new Set<string>();
+    for (const triggerId of consumedTriggerIds) {
+        if (emittedIds.has(triggerId) || !liveFrameTriggerIds.has(triggerId)) {
+            continue;
+        }
+        emittedIds.add(triggerId);
+        events.push({
+            type: SU_EVENTS.TRIGGER_CONSUMED,
+            payload: { triggerId },
+            timestamp: now,
+        });
+    }
+    return events;
+}
+
+function completeReactionFrameAfterPass(
+    state: MatchState<SmashUpCore>,
+    session: SmashUpReactionSession,
     now: number,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const consumed = consumeRemainingFrameTriggers(state, frameId, now);
+    const previouslyConsumed = buildPreviouslyConsumedFrameTriggerEvents(
+        state,
+        session.frameId,
+        session.consumedTriggerIds,
+        now,
+    );
+    const consumed = consumeRemainingFrameTriggers(state, session.frameId, now, session.consumedTriggerIds);
+    const events = [...previouslyConsumed, ...consumed.events];
     return {
-        state: completeResolutionFrame(clearSmashUpReactionSession(consumed.state), frameId),
-        events: consumed.events,
+        state: completeResolutionFrame(clearSmashUpReactionSession(consumed.state), session.frameId),
+        events,
     };
 }
 
@@ -957,6 +1058,21 @@ function dedupeReactionOptions(options: ReactionOption[]): ReactionOption[] {
     return deduped;
 }
 
+function getTriggerByReactionChoiceValue(
+    state: MatchState<SmashUpCore>,
+    value: ReactionChoiceValue,
+): TriggerInstance | undefined {
+    if (value.kind !== 'trigger') return undefined;
+    return (state.core.triggerQueue ?? []).find(candidate => candidate.id === value.triggerId);
+}
+
+function triggerOpensDedicatedInteraction(trigger: TriggerInstance | undefined): boolean {
+    return Boolean(
+        trigger?.derivedFootprint?.opensInteraction
+        || trigger?.fallbackFootprint?.opensInteraction,
+    );
+}
+
 export function resolveLiveSmashUpReactionChoice(
     state: MatchState<SmashUpCore>,
     value: ReactionChoiceValue,
@@ -1134,20 +1250,27 @@ function executeQueuedTrigger(
         },
     );
     const frameId = trigger.frameId ?? trigger.id;
-    const consumedTriggerIds = new Set(
-        [consumed, ...postProcessed.events]
-            .filter((event): event is TriggerConsumedEvent => event.type === SU_EVENTS.TRIGGER_CONSUMED)
-            .map(event => event.payload.triggerId),
+    const processedEvents = [consumed, ...postProcessed.events];
+    const stateAfterConsumedTrigger = markConsumedTriggersInSession(
+        postProcessed.state,
+        state,
+        frameId,
+        processedEvents,
     );
-    const hasRemainingFrameTriggers = (postProcessed.state.core.triggerQueue ?? []).some(
-        (candidate) => (candidate.frameId ?? candidate.id) === frameId && !consumedTriggerIds.has(candidate.id),
-    );
+    const stateAfterReducedTriggerEvents: MatchState<SmashUpCore> = {
+        ...stateAfterConsumedTrigger,
+        core: processedEvents.reduce(
+            (core, event) => event.type === SU_EVENTS.TRIGGER_CONSUMED ? core : reduce(core, event),
+            stateAfterConsumedTrigger.core,
+        ),
+    };
+    const hasRemainingFrameTriggers = getSessionFrameTriggers(stateAfterReducedTriggerEvents, frameId).length > 0;
     if (!hasRemainingFrameTriggers) {
         clearQueuedTriggerRuntimeSharedState(trigger.frameId, trigger.id);
     }
     return {
-        state: postProcessed.state,
-        events: [consumed, ...postProcessed.events],
+        state: stateAfterReducedTriggerEvents,
+        events: processedEvents,
     };
 }
 
@@ -1350,7 +1473,7 @@ function autoAdvanceOptionalWithoutChoices(
                 currentSession.activePlayerId,
             );
             if (!nextActivePlayerId) {
-                const completed = completeReactionFrameAfterPass(currentState, currentSession.frameId, now);
+                const completed = completeReactionFrameAfterPass(currentState, currentSession, now);
                 events.push(...completed.events);
                 return { state: completed.state, events };
             }
@@ -1370,7 +1493,7 @@ function autoAdvanceOptionalWithoutChoices(
 
         const nextPassCount = currentSession.consecutivePasses + 1;
         if (nextPassCount >= playerCount) {
-            const completed = completeReactionFrameAfterPass(currentState, currentSession.frameId, now);
+            const completed = completeReactionFrameAfterPass(currentState, currentSession, now);
             events.push(...completed.events);
             return { state: completed.state, events };
         }
@@ -1540,6 +1663,17 @@ export function advanceSmashUpReactionSession(
         currentState = autoAdvancedState;
         session = autoAdvancedSession;
     }
+    if (session.phase === 'optional' && nonPassOptions.length === 1) {
+        const onlyOption = nonPassOptions[0];
+        const trigger = onlyOption ? getTriggerByReactionChoiceValue(currentState, onlyOption.value) : undefined;
+        if (triggerOpensDedicatedInteraction(trigger)) {
+            const resolved = resolveSmashUpReactionChoice(currentState, random, now, onlyOption.value, options);
+            return {
+                state: resolved.state,
+                events: [...emittedEvents, ...resolved.events],
+            };
+        }
+    }
     if (session.phase === 'mandatory' && nonPassOptions.length === 1) {
         const resolved = resolveSmashUpReactionChoice(currentState, random, now, nonPassOptions[0].value, options);
         return {
@@ -1578,7 +1712,7 @@ export function resolveSmashUpReactionChoice(
         const nextPassCount = passedSession.consecutivePasses + 1;
         const nextActivePlayerId = getNextUnpassedResponder(state.core, passedSession, session.activePlayerId);
         if (!nextActivePlayerId || nextPassCount >= state.core.turnOrder.length) {
-            const completed = completeReactionFrameAfterPass(state, session.frameId, now);
+            const completed = completeReactionFrameAfterPass(state, session, now);
             if (completed.events.length > 0) return completed;
             const resumed = continueSuspendedReactionIfNeeded(completed.state, random, now, options);
             const result = resumed
@@ -1630,11 +1764,9 @@ export function resolveSmashUpReactionChoice(
     }
     const producedDomainEvents = hasDomainEvents(result.events);
     if (producedDomainEvents) {
-        let suspendedState = result.state;
+        let suspendedState = promoteQueuedFollowupAfterReactionChoice(result.state);
         const suspendedInteraction = suspendedState.sys.interaction?.current;
-        const suspendedInteractionSourceId = suspendedInteraction
-            ? ((suspendedInteraction.data ?? {}) as { sourceId?: string }).sourceId
-            : undefined;
+        const suspendedInteractionSourceId = getInteractionSourceId(suspendedInteraction);
         const hasRemainingFrameTriggers = hasRemainingFrameTriggersAfterEvents(state, session.frameId, result.events);
 
         if (!suspendedInteraction) {
@@ -1665,16 +1797,12 @@ export function resolveSmashUpReactionChoice(
         : result.state;
 
     const currentInteraction = continuationBaseState.sys.interaction?.current;
-    const currentInteractionSourceId = currentInteraction
-        ? ((currentInteraction.data ?? {}) as { sourceId?: string }).sourceId
-        : undefined;
+    const currentInteractionSourceId = getInteractionSourceId(currentInteraction);
     if (currentInteraction) {
         const queuedFollowup = currentInteractionSourceId === 'smashup_reaction_choose'
             ? continuationBaseState.sys.interaction?.queue?.[0]
             : undefined;
-        const queuedFollowupSourceId = queuedFollowup
-            ? ((queuedFollowup.data ?? {}) as { sourceId?: string }).sourceId
-            : undefined;
+        const queuedFollowupSourceId = getInteractionSourceId(queuedFollowup);
         if (queuedFollowup && queuedFollowupSourceId && queuedFollowupSourceId !== 'smashup_reaction_choose') {
             const promotedState = resolveInteraction(continuationBaseState);
             const parkedState = continuationSession === session

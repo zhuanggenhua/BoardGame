@@ -45,6 +45,7 @@ const Probe = () => {
     return (
         <div>
             <div data-testid="player-id">{playerId ?? 'none'}</div>
+            <div data-testid="host-start-control">{playerId === '0' ? 'visible' : 'hidden'}</div>
             <div data-testid="ai-faction">{core.selectedFactions?.['1'] ?? 'missing'}</div>
             <div data-testid="ai2-faction">{core.selectedFactions?.['2'] ?? 'missing'}</div>
             <div data-testid="ai-character">{core.selectedCharacters?.['1'] ?? 'missing'}</div>
@@ -134,19 +135,15 @@ afterEach(() => {
 });
 
 describe('OnlineManualSetupSelectionBridge', () => {
-    it('SummonerWars 前置阵营点击只形成 AI 草稿，准备就绪时才请求服务端提交', () => {
+    it('SummonerWars 前置阵营由真人房主页面代选时，应保留房主身份并立即请求 AI 座位选择', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
-        expect(screen.getByTestId('player-id').textContent).toBe('1');
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
         expect(screen.getByTestId('ai-faction').textContent).toBe('unselected');
 
         fireEvent.click(screen.getByTestId('select-faction'));
-
-        expect(requestManualSetupSelection).not.toHaveBeenCalled();
-        expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
-
-        fireEvent.click(screen.getByTestId('ready-sw'));
 
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
         expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
@@ -154,18 +151,17 @@ describe('OnlineManualSetupSelectionBridge', () => {
             actionKind: 'setup-select-faction',
             selectionId: 'trickster',
         });
+        expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
     });
 
-    it('DiceThrone 前置角色点击只形成 AI 草稿，准备就绪时才请求服务端提交', () => {
+    it('DiceThrone 前置角色由真人房主页面代选时，应走同一套通用手动准备请求', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+
         fireEvent.click(screen.getByTestId('select-character'));
-
-        expect(requestManualSetupSelection).not.toHaveBeenCalled();
-        expect(screen.getByTestId('ai-character').textContent).toBe('gunslinger');
-
-        fireEvent.click(screen.getByTestId('ready-dt'));
 
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
         expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
@@ -173,6 +169,27 @@ describe('OnlineManualSetupSelectionBridge', () => {
             actionKind: 'setup-select-character',
             selectionId: 'gunslinger',
         });
+        expect(screen.getByTestId('ai-character').textContent).toBe('gunslinger');
+    });
+
+    it('未勾选玩家代选时，不应拦截真人选派系或请求服务端替 AI 选择', () => {
+        const requestManualSetupSelection = vi.fn(() => true);
+        const { dispatch } = renderBridge({
+            requestManualSetupSelection,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+
+        fireEvent.click(screen.getByTestId('select-faction'));
+
+        expect(requestManualSetupSelection).not.toHaveBeenCalled();
+        expect(dispatch).toHaveBeenCalledWith('sw:select_faction', { factionId: 'trickster' });
+        expect(screen.getByTestId('ai-faction').textContent).toBe('unselected');
     });
 
     it('旧 AI 草稿被 shared state 确认后，不应吞掉下一名 AI 的第一次候选点击', () => {
@@ -198,8 +215,10 @@ describe('OnlineManualSetupSelectionBridge', () => {
         confirmedCore.readyPlayers['1'] = true;
         confirmedCore.readyPlayers['2'] = false;
 
+        const requestManualSetupSelection = vi.fn(() => true);
         const { rerenderWithState } = renderBridge({
             state: initialState,
+            requestManualSetupSelection,
             seatControllers: {
                 '0': { type: 'human' },
                 '1': { type: 'local-ai', manualFactionSelection: true },
@@ -211,10 +230,16 @@ describe('OnlineManualSetupSelectionBridge', () => {
         expect(screen.getByTestId('ai-faction').textContent).toBe('trickster');
 
         rerenderWithState(confirmedFirstAiState);
-        expect(screen.getByTestId('player-id').textContent).toBe('2');
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
 
         fireEvent.click(screen.getByTestId('select-second-faction'));
 
+        expect(requestManualSetupSelection).toHaveBeenLastCalledWith({
+            targetPlayerId: '2',
+            actionKind: 'setup-select-faction',
+            selectionId: 'necromancer',
+        }, expect.any(Function));
         expect(screen.getByTestId('ai2-faction').textContent).toBe('necromancer');
     });
 

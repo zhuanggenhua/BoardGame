@@ -537,7 +537,7 @@ describe('DiceThrone 单槽当前骰区', () => {
                 { index: 1, value: 4, face: 'sabre', effectParams: { value: 4 } },
             ],
         };
-        const parent = {
+        const parent = reduce({
             ...roll(createCore(), [1, 2, 3, 4, 5]),
             pendingAttack: {
                 attackerId: '0',
@@ -547,7 +547,11 @@ describe('DiceThrone 单槽当前骰区', () => {
                 sourceAbilityId: 'parent-attack',
                 bonusDamage: 0,
             },
-        } as DiceThroneCore;
+        } as DiceThroneCore, {
+            type: 'ROLL_CONFIRMED',
+            payload: { playerId: '0' },
+            timestamp: 2,
+        } as DiceThroneEvent);
         const opened = reduce(parent, {
             type: 'BONUS_DICE_REROLL_REQUESTED',
             payload: { settlement },
@@ -576,7 +580,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(settled.currentRollContext).toMatchObject({
             kind: 'offensive',
             ownerPlayerId: '0',
-            status: 'open',
+            status: 'settling',
             display: { replayOnly: false },
             dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
         });
@@ -637,7 +641,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         });
     });
 
-    it('complete 奖励骰确认后不恢复旧进攻骰，避免阻塞阶段继续', () => {
+    it('complete 临时骰确认后若挂起了正式骰，必须恢复正式骰而不是停在奖励骰回看', () => {
         const settlement = createBonusSettlement({
             continuation: { kind: 'complete' },
             dice: [
@@ -659,17 +663,97 @@ describe('DiceThrone 单槽当前骰区', () => {
 
         expect(settled.pendingBonusDiceSettlement).toBeUndefined();
         expect(settled.currentRollContext).toMatchObject({
-            id: `bonus:${settlement.id}`,
-            kind: 'bonus',
-            status: 'settled',
-            policy: {
-                modifiableBy: 'none',
-                rerollableBy: 'none',
-                allowDiceCardTargeting: false,
-                blocksPhaseFlow: false,
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            status: 'open',
+            display: { replayOnly: false },
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
+    });
+
+    it('无 currentRollContext 和 core 阶段字段时，进攻临时骰确认后仍应恢复正式进攻骰', () => {
+        const settlement = createBonusSettlement({
+            continuation: { kind: 'complete' },
+            dice: [
+                { index: 0, value: 6, face: 'sabre' },
+                { index: 1, value: 4, face: 'banner' },
+            ],
+        });
+        const parent = {
+            ...createCore(),
+            dice: [1, 2, 3, 4, 5].map((value, id) => createDie(id, value)),
+            rollCount: 1,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            currentRollContext: undefined,
+        } as DiceThroneCore;
+        const opened = reduce(parent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        expect(settled.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.currentRollContext).toMatchObject({
+            kind: 'offensive',
+            ownerPlayerId: '0',
+            status: 'settling',
+            display: { replayOnly: false },
+            dice: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }],
+        });
+        expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
+    });
+
+    it('无 currentRollContext 和 core 阶段字段时，已选防御技的临时骰确认后应恢复正式防御骰', () => {
+        const settlement = createBonusSettlement({
+            attackerId: '1',
+            continuation: { kind: 'complete' },
+            dice: [
+                { index: 0, value: 1, face: 'sabre' },
+                { index: 1, value: 2, face: 'banner' },
+            ],
+        });
+        const parent = {
+            ...createCore(),
+            activePlayerId: '1',
+            dice: [3, 3, 3, 3, 3].map((value, id) => createDie(id, value)),
+            rollCount: 1,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            currentRollContext: undefined,
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'test-attack',
+                defenseAbilityId: 'test-defense',
+                isDefendable: true,
+                damage: 5,
             },
-            display: { replayOnly: true },
-            dice: [{ value: 6 }, { value: 4 }],
+        } as DiceThroneCore;
+        const opened = reduce(parent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            timestamp: 3,
+        } as DiceThroneEvent);
+        const settled = reduce(opened, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: { displayOnly: false },
+            timestamp: 4,
+        } as DiceThroneEvent);
+
+        expect(settled.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.currentRollContext).toMatchObject({
+            kind: 'defensive',
+            ownerPlayerId: '0',
+            status: 'settling',
+            display: { replayOnly: false },
+            dice: [{ value: 3 }, { value: 3 }, { value: 3 }, { value: 3 }, { value: 3 }],
         });
         expect(settled.currentRollContext?.suspendedParent).toBeUndefined();
     });

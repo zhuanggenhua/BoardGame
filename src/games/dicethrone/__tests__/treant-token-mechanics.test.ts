@@ -81,12 +81,12 @@ describe('DiceThrone Treant Token 机制', () => {
         expect(DiceThroneDomain.validate(validationState, validation).valid).toBe(false);
     });
 
-    it('幼种树灵可在自己的掷骰阶段消耗并重掷 1 颗骰子', () => {
+    it('幼种树灵可在自己的掷骰阶段消耗并重掷 1 颗已锁定骰子', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         state.sys.phase = 'offensiveRoll';
         state.core.rollCount = 1;
         state.core.rollDiceCount = 5;
-        state.core.dice[0] = { ...state.core.dice[0], id: 0, value: 1, isKept: false };
+        state.core.dice[0] = { ...state.core.dice[0], id: 0, value: 1, isKept: true };
         state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
 
         const events = execute(state, command('USE_PASSIVE_ABILITY', '0', {
@@ -98,15 +98,16 @@ describe('DiceThrone Treant Token 机制', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(0);
         expect(next.dice[0].value).toBe(6);
+        expect(next.dice[0].isKept).toBe(true);
     });
 
-    it('幼种树灵重掷应拒绝缺失、越界或已锁定的目标骰且不消耗 token', () => {
+    it('幼种树灵重掷应拒绝缺失或越界的目标骰且不消耗 token', () => {
         const base = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         base.sys.phase = 'offensiveRoll';
         base.core.rollCount = 1;
         base.core.rollDiceCount = 5;
         base.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
-        base.core.dice[0] = { ...base.core.dice[0], id: 0, value: 1, isKept: true };
+        base.core.dice[0] = { ...base.core.dice[0], id: 0, value: 1, isKept: false };
         base.core.dice[1] = { ...base.core.dice[1], id: 1, value: 2, isKept: false };
 
         let events = execute(base, command('USE_PASSIVE_ABILITY', '0', {
@@ -119,13 +120,6 @@ describe('DiceThrone Treant Token 机制', () => {
             passiveId: 'treant-seedling-cultivation',
             actionIndex: 0,
             targetDieId: 99,
-        }), createQueuedRandom([6]));
-        expect(events).toHaveLength(0);
-
-        events = execute(base, command('USE_PASSIVE_ABILITY', '0', {
-            passiveId: 'treant-seedling-cultivation',
-            actionIndex: 0,
-            targetDieId: 0,
         }), createQueuedRandom([6]));
         expect(events).toHaveLength(0);
 

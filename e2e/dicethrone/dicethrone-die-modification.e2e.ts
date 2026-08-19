@@ -8,6 +8,7 @@ import {
 import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../../src/games/dicethrone/heroes/zhanshujia/tokens';
 import {
+    getRightTrayDiceTray,
     expectRightTrayBonusDiceConfirmation,
     expectRightTrayBonusDiceReadOnlyReview,
     settleCurrentBonusDice,
@@ -99,6 +100,86 @@ async function confirmDiceInteraction(page: any): Promise<void> {
 }
 
 test.describe('DiceThrone - 选择骰子修改', () => {
+    test('弹一手应能通过真实骰子入口修改已锁定骰子并保留锁定状态', async ({ page, game }, testInfo) => {
+        await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: ['card-flick'],
+                resources: { CP: 10, HP: 50 },
+            },
+            player1: {
+                resources: { CP: 2, HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
+                hostStarted: true,
+                activePlayerId: '0',
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: false,
+                dice: [
+                    { id: 0, value: 3, isKept: true },
+                    { id: 1, value: 2, isKept: false },
+                    { id: 2, value: 4, isKept: false },
+                    { id: 3, value: 5, isKept: false },
+                    { id: 4, value: 1, isKept: false },
+                ],
+            },
+        });
+        await game.waitForPhase('offensiveRoll', 5000);
+
+        const diceTray = getRightTrayDiceTray(page);
+        const lockedDie = diceTray.getByTestId('die-button-0').first();
+        await expect(lockedDie).toHaveAttribute('data-display-value', '3', { timeout: 5000 });
+        await expect(lockedDie.getByTestId('dice-2d')).toHaveAttribute('data-face-value', '3', { timeout: 5000 });
+        await game.screenshot('弹一手-锁定骰改面前', testInfo);
+
+        await dragHandCardToPlay(page, 'card-flick');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const interaction = state?.sys?.interaction?.current;
+            return {
+                kind: interaction?.kind ?? null,
+                playerId: interaction?.playerId ?? null,
+                dtType: interaction?.data?.meta?.dtType ?? null,
+                kept: state?.core?.dice?.[0]?.isKept ?? null,
+                value: state?.core?.dice?.[0]?.value ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            kind: 'multistep-choice',
+            playerId: '0',
+            dtType: 'modifyDie',
+            kept: true,
+            value: 3,
+        });
+
+        const incrementButton = diceTray.getByTestId('die-adjust-increment-0');
+        await expect(incrementButton).toBeVisible({ timeout: 5000 });
+        await expect(incrementButton).toBeEnabled({ timeout: 5000 });
+        await incrementButton.click();
+        await expect(lockedDie).toHaveAttribute('data-display-value', '4', { timeout: 5000 });
+        await expect(lockedDie.getByTestId('dice-2d')).toHaveAttribute('data-face-value', '4', { timeout: 5000 });
+        await game.screenshot('弹一手-锁定骰改面待确认', testInfo);
+
+        await confirmDiceInteraction(page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                value: state?.core?.dice?.[0]?.value ?? null,
+                kept: state?.core?.dice?.[0]?.isKept ?? null,
+                interaction: state?.sys?.interaction?.current?.kind ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            value: 4,
+            kept: true,
+            interaction: null,
+        });
+        await game.screenshot('弹一手-锁定骰改面后', testInfo);
+    });
+
     test('AI 遇到全同骰面的复制交互应取消空操作并解除交互锁', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', { playerID: '0', seat0: 'local-ai', seat0Delay: 0, seat1: 'human' });
         await game.setupScene({
@@ -1568,7 +1649,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await game.screenshot('防御骰确认后-战术优势已重掷对方防御骰', testInfo);
     });
 
-    test('战术家可从真实主骰入口主动使用战术优势重掷', async ({ page, game }, testInfo) => {
+    test('战术家可从真实主骰入口主动使用战术优势重掷已锁定骰', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
@@ -1588,7 +1669,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                 rollLimit: 3,
                 rollConfirmed: false,
                 dice: [
-                    { id: 0, value: 3, isKept: false },
+                    { id: 0, value: 3, isKept: true },
                     { id: 1, value: 2, isKept: false },
                     { id: 2, value: 4, isKept: false },
                     { id: 3, value: 5, isKept: false },
@@ -1609,11 +1690,13 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             return {
                 phase: state?.sys?.phase ?? null,
                 dieValue: state?.core?.dice?.[0]?.value ?? null,
+                dieKept: state?.core?.dice?.[0]?.isKept ?? null,
                 tacticalAdvantage: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? null,
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'offensiveRoll',
             dieValue: 3,
+            dieKept: true,
             tacticalAdvantage: 1,
         });
 
@@ -1622,29 +1705,31 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await expect(passiveReroll).toBeVisible({ timeout: 10000 });
         await expect(passiveReroll).toBeEnabled();
         await expect(die).toHaveAttribute('data-clickable', 'true');
-        await game.screenshot('04-战术家-主骰主动重掷前', testInfo);
+        await game.screenshot('04-战术家-锁定主骰主动重掷前', testInfo);
 
         await passiveReroll.click();
         await expect(passiveReroll).toContainText(/取消|Cancel/);
         await expect(die).toHaveAttribute('data-clickable', 'true');
-        await game.screenshot('05-战术家-主骰主动重掷选择中', testInfo);
+        await game.screenshot('05-战术家-锁定主骰主动重掷选择中', testInfo);
         await die.click();
 
         await expect.poll(async () => {
             const state = await game.getState();
             return {
                 dieValue: state?.core?.dice?.[0]?.value ?? null,
+                dieKept: state?.core?.dice?.[0]?.isKept ?? null,
                 tacticalAdvantage: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? null,
                 passiveButtonVisible: await passiveReroll.isVisible().catch(() => false),
             };
         }, { timeout: 10000 }).toMatchObject({
             dieValue: 6,
+            dieKept: true,
             tacticalAdvantage: 0,
             passiveButtonVisible: false,
         });
         await expect.poll(() => die.getByTestId('dice-2d').getAttribute('data-roll-animation'), { timeout: 5000 })
             .toBe('settled');
         await expect(page.getByTestId('card-spotlight-overlay')).toBeHidden({ timeout: 10000 });
-        await game.screenshot('06-战术家-主骰已重掷且战术优势已消耗', testInfo);
+        await game.screenshot('06-战术家-锁定主骰已重掷且战术优势已消耗', testInfo);
     });
 });

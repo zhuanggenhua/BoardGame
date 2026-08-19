@@ -586,6 +586,26 @@
       }
     }
   },
+  "debug": {
+    "tools": {
+      "sectionTitle": "七大恨专项工具",
+      "regionMask": {
+        "title": "区域蒙版与通路编辑",
+        "description": "打开区域命中、中心点、通路和边界规则编辑器。"
+      },
+      "runtimePreview": {
+        "title": "运行时预览",
+        "description": "只读检查当前工作区如何被正式运行时消费。"
+      }
+    },
+    "stateSummary": {
+      "sectionTitle": "局面速查",
+      "turn": "当前回合",
+      "phase": "阶段",
+      "wheel": "轮盘",
+      "empty": "暂无局面数据。"
+    }
+  },
   "devtools": {
     "runtimePreview": {
       "eyebrow": "七大恨运行时预览",

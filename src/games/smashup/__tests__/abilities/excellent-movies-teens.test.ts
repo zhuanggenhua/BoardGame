@@ -1531,6 +1531,22 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         expect(hasRegisteredTrigger('wraithrustlers_funkman', 'onCardDestroyed')).toBe(true);
     });
 
+    it('怨灵行动挂在基地后立即把该基地临界点提高 3', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_temple_of_goju'),
+                makeBase({
+                    defId: 'base_temple_of_goju',
+                    minions: [makeMinion('watson', 'wraithrustlers_watson', '0', 2)],
+                    ongoingActions: [{ uid: 'haunt', defId: 'wraithrustlers_librarian_haunt', ownerId: '0' }],
+                }),
+            ],
+        });
+        const baseline = getEffectiveBreakpoint(core, 0);
+
+        expect(getEffectiveBreakpoint(core, 1)).toBe(baseline + 3);
+    });
+
     it('罗伊打出时把另一个基地的己方持续行动转移到所在基地', () => {
         const core = makeState({
             bases: [

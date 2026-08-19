@@ -13,6 +13,7 @@ export const UI_Z_INDEX = {
     overlayRaised: 600,
     magnify: 800,
     tooltip: 900,
+    globalHudFab: 920,
     debugPanel: 1200,
     debugButton: 1210,
     loading: 1500,

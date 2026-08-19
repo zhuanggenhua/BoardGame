@@ -43,6 +43,7 @@ import type {
     CpChangedEvent,
     CardDrawnEvent,
     BonusDieRolledEvent,
+    BonusDiceSettledEvent,
     BonusDieRerolledEvent,
     DamageShieldGrantedEvent,
 } from './domain/types';
@@ -108,6 +109,12 @@ const DT_NS = 'game-dicethrone';
 const isBonusDieSummaryEvent = (event: BonusDieRolledEvent): boolean => (
     typeof event.payload.effectKey === 'string'
     && event.payload.effectKey.includes('.result')
+);
+
+const hasPendingBonusDiceSettlementRequestForPlayer = (events: GameEvent[], playerId: PlayerId): boolean => (
+    events.some(event => event.type === 'BONUS_DICE_REROLL_REQUESTED'
+        && typeof (event as { payload?: { settlement?: { attackerId?: unknown } } }).payload?.settlement?.attackerId === 'string'
+        && (event as { payload?: { settlement?: { attackerId?: unknown } } }).payload?.settlement?.attackerId === playerId)
 );
 
 const OFFENSIVE_ROLL_END_TOKEN_EFFECT_KEYS: Partial<Record<string, string>> = {
@@ -301,7 +308,8 @@ function formatDiceThroneActionEntry({
         const bonusDieEvents = events.filter(
             (e): e is BonusDieRolledEvent => e.type === 'BONUS_DIE_ROLLED'
         );
-        if (bonusDieEvents.length > 0) {
+        const hasDeferredBonusDiceSettlement = hasPendingBonusDiceSettlementRequestForPlayer(events, command.playerId);
+        if (bonusDieEvents.length > 0 && !hasDeferredBonusDiceSettlement) {
             const isChoiceResult = bonusDieEvents.some(event => event.payload.presentationKind === 'choice');
             const rollSegments: ActionLogSegment[] = [
                 i18nSeg(isChoiceResult ? 'actionLog.cardChoiceResult' : 'actionLog.cardRollResult'),
@@ -720,11 +728,9 @@ function formatDiceThroneActionEntry({
                 // Token 响应窗口关闭后产生的伤害：用 sourcePlayerId 推断攻击方
                 actorId = sourcePlayerId;
             }
-            const dealt = actualDamage ?? amount ?? 0;
-            
-            // 计算最终伤害（扣除护盾后）
-            const totalShieldAbsorbed = shieldsConsumed?.reduce((sum, s) => sum + s.absorbed, 0) ?? 0;
-            const finalDamage = Math.max(0, dealt - totalShieldAbsorbed);
+            // actualDamage 由 reducer 在消耗护盾、防止和 HP 钳制后回填为正式净掉血。
+            // 日志只读该正式结果，不能再根据 shieldsConsumed 二次推导。
+            const finalDamage = actualDamage ?? amount ?? 0;
             
             const isSelfDamage = actorId === targetId;
 
@@ -1090,6 +1096,8 @@ function formatDiceThroneActionEntry({
                 : [summaryEvent ?? bonusDieEvent];
             const firstBonusDieIndex = events.findIndex(candidate => candidate === renderableBonusDieEvents[0]);
             if (index !== firstBonusDieIndex) return;
+            const shouldDeferBonusDiceEffect = hasPendingBonusDiceSettlementRequestForPlayer(events, playerId)
+                || core.pendingBonusDiceSettlement?.attackerId === playerId;
             const diceResult = buildDiceResultSegment(
                 playerId,
                 renderableBonusDieEvents.map(candidate => candidate.payload.value),
@@ -1105,7 +1113,9 @@ function formatDiceThroneActionEntry({
                     text: renderableBonusDieEvents.map(candidate => candidate.payload.value).join(', '),
                 });
             }
-            const firstEffect = summaryEvent ?? renderableBonusDieEvents.find(candidate => candidate.payload.effectKey);
+            const firstEffect = shouldDeferBonusDiceEffect
+                ? undefined
+                : summaryEvent ?? renderableBonusDieEvents.find(candidate => candidate.payload.effectKey);
             if (firstEffect?.payload.effectKey) {
                 segments.push({ type: 'text', text: ' ' });
                 segments.push(i18nSeg(firstEffect.payload.effectKey, firstEffect.payload.effectParams));
@@ -1115,6 +1125,38 @@ function formatDiceThroneActionEntry({
                 timestamp: entryTimestamp,
                 actorId: playerId,
                 kind: 'BONUS_DIE_ROLLED',
+                segments,
+            });
+            return;
+        }
+
+        if (event.type === 'BONUS_DICE_SETTLED') {
+            const settledEvent = event as BonusDiceSettledEvent;
+            const { attackerId, finalDice, effectKey, effectParams } = settledEvent.payload;
+            const diceResult = buildDiceResultSegment(
+                attackerId,
+                finalDice.map(die => die.value),
+            );
+            const segments: ActionLogSegment[] = [
+                i18nSeg('actionLog.bonusDiceSettled'),
+            ];
+            if (diceResult) {
+                segments.push(diceResult);
+            } else {
+                segments.push({
+                    type: 'text',
+                    text: finalDice.map(die => die.value).join(', '),
+                });
+            }
+            if (effectKey) {
+                segments.push({ type: 'text', text: ' ' });
+                segments.push(i18nSeg(effectKey, effectParams));
+            }
+            entries.push({
+                id: `BONUS_DICE_SETTLED-${attackerId}-${entryTimestamp}-${index}`,
+                timestamp: entryTimestamp,
+                actorId: attackerId,
+                kind: 'BONUS_DICE_SETTLED',
                 segments,
             });
             return;
@@ -1250,20 +1292,37 @@ const systems = [
         
         responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY'],
         allowNonResponderCommand: ({ state, command, currentWindow }) => {
-            if (currentWindow.windowType !== 'afterRollConfirmed') {
-                return false;
-            }
-
             const matchState = state as MatchState<DiceThroneCore>;
-            if (!isDirectDiceInterferenceActor(matchState.core, currentWindow, command.playerId)) {
-                return false;
-            }
-
             const currentInteraction = matchState.sys.interaction?.current as {
                 id?: unknown;
                 playerId?: unknown;
                 kind?: unknown;
             } | undefined;
+            const activeBonusSettlement = matchState.core.pendingBonusDiceSettlement;
+            if (
+                currentInteraction?.playerId === command.playerId
+                && currentInteraction?.kind === 'dt:bonus-dice'
+                && (
+                    command.type === 'CONFIRM_ROLL'
+                    || command.type === 'REROLL_BONUS_DIE'
+                    || command.type === 'SKIP_BONUS_DICE_REROLL'
+                )
+                && activeBonusSettlement
+                && activeBonusSettlement.attackerId === command.playerId
+            ) {
+                // 临时奖励骰有独立交互归属：即使响应窗口当前轮到别人，
+                // 骰主也必须能确认/重掷自己的临时骰，确认后再回到正式骰区。
+                return true;
+            }
+
+            if (currentWindow.windowType !== 'afterRollConfirmed') {
+                return false;
+            }
+
+            if (!isDirectDiceInterferenceActor(matchState.core, currentWindow, command.playerId)) {
+                return false;
+            }
+
             if (
                 currentInteraction?.playerId === command.playerId
                 && (

@@ -20,6 +20,7 @@ import { reduceEvent } from './reduce';
 import { validateCommand } from './validate';
 import { getShadowBloodMagicChargeEvents, postProcessDeathChecks } from './execute/helpers';
 import { interceptYonghengContinuanceEvent } from './yonghengMechanics';
+import { normalizeSummonerWarsSeatControllersFromSetupData } from './utils';
 
 // 重新导出类型和常量
 export type { SummonerWarsCore } from './types';
@@ -67,6 +68,7 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
   setup: (_playerIds, _random, setupData?) => {
     const board = createEmptyBoard();
     const setup = setupData as { firstPlayerId?: unknown } | undefined;
+    const seatControllers = normalizeSummonerWarsSeatControllersFromSetupData(setupData);
 
     // 重赛先手轮换：优先使用 setupData 中的 firstPlayerId
     const firstPlayer = (typeof setup?.firstPlayerId === 'string' && ['0', '1'].includes(setup.firstPlayerId))
@@ -89,6 +91,7 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
       readyPlayers: { '0': false, '1': false } as Record<PlayerId, boolean>,
       hostPlayerId: '0' as PlayerId,
       hostStarted: false,
+      ...(seatControllers ? { seatControllers } : {}),
       abilityUsageCount: {},
       unitKillCountThisTurn: {},
     };

@@ -35,12 +35,53 @@ import {
 } from '../../../engine/primitives';
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
-import { buildUsageKey } from './utils';
+import { buildUsageKey, isSummonerWarsAiSeat } from './utils';
 import { getBaseCardId, CARD_IDS, isMoguFungalBeastCard, isMoguSporePlagueBodyCard } from './ids';
 
 // ============================================================================
 // 状态归约
 // ============================================================================
+
+function removeCustomDeckData(
+  customDeckData: SummonerWarsCore['customDeckData'],
+  playerId: PlayerId,
+): SummonerWarsCore['customDeckData'] {
+  if (!customDeckData?.[playerId]) {
+    return customDeckData;
+  }
+  const { [playerId]: _removed, ...rest } = customDeckData;
+  return Object.keys(rest).length > 0 ? rest : undefined;
+}
+
+function releaseAiFactionConflicts(
+  core: SummonerWarsCore,
+  selectingPlayerId: PlayerId,
+  factionId: FactionId,
+): Pick<SummonerWarsCore, 'selectedFactions' | 'readyPlayers' | 'customDeckData'> {
+  const selectedFactions = { ...core.selectedFactions };
+  let readyPlayers = core.readyPlayers;
+  let customDeckData = core.customDeckData;
+
+  for (const [otherPlayerId, selectedFactionId] of Object.entries(core.selectedFactions)) {
+    const playerId = otherPlayerId as PlayerId;
+    if (
+      playerId === selectingPlayerId
+      || selectedFactionId !== factionId
+      || !isSummonerWarsAiSeat(core, playerId)
+    ) {
+      continue;
+    }
+
+    selectedFactions[playerId] = 'unselected';
+    if (readyPlayers[playerId]) {
+      readyPlayers = { ...readyPlayers, [playerId]: false };
+    }
+    customDeckData = removeCustomDeckData(customDeckData, playerId);
+  }
+
+  selectedFactions[selectingPlayerId] = factionId;
+  return { selectedFactions, readyPlayers, customDeckData };
+}
 
 /**
  * 应用事件到状态
@@ -974,7 +1015,8 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
         playerId: PlayerId; factionId: FactionId;
         customDeckData?: import('./types').SerializedCustomDeck;
       };
-      let newCore = { ...core, selectedFactions: { ...core.selectedFactions, [pid]: factionId } };
+      const selectionState = releaseAiFactionConflicts(core, pid, factionId);
+      let newCore = { ...core, ...selectionState };
       if (customDeckData) {
         // 存储自定义牌组数据，供 HOST_START_GAME 时使用
         newCore = {
@@ -983,10 +1025,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
         };
       } else {
         // 选择预构筑阵营时，清除该玩家的自定义牌组数据
-        if (newCore.customDeckData?.[pid]) {
-          const { [pid]: _, ...rest } = newCore.customDeckData;
-          newCore = { ...newCore, customDeckData: Object.keys(rest).length > 0 ? rest : undefined };
-        }
+        newCore = { ...newCore, customDeckData: removeCustomDeckData(newCore.customDeckData, pid) };
       }
       return newCore;
     }

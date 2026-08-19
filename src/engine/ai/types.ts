@@ -103,6 +103,7 @@ export interface AiInteractionSnapshot {
     multi?: unknown;
     ai?: AiInteractionSupportDeclaration;
     aiDecisions?: AiDecisionDescriptor[];
+    choiceRequest?: Record<string, unknown>;
 }
 
 export interface AiResponseWindowSnapshot {

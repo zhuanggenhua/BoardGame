@@ -39,7 +39,7 @@ export const WORLD_CHAMPS_MINIONS: MinionCardDef[] = [
     {
         id: 'world_champs_akye_the_turtle',
         type: 'minion',
-        name: '海龟阿凯',
+        name: '阿克耶海龟',
         nameEn: 'Akye the Turtle',
         faction: SMASHUP_FACTION_IDS.WORLD_CHAMPS,
         power: 3,

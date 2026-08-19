@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AbilityCard } from '../../types';
 import { DrawDeck } from '../DrawDeck';
@@ -35,6 +35,34 @@ describe('DiceThrone compatibility sizing', () => {
         const deck = screen.getByTestId('mock-optimized-image').parentElement?.parentElement as HTMLElement | null;
         expect(deck?.style.width).toBe('10.2vw');
         expect(deck?.style.height).toContain('vw');
+    });
+
+    it('牌库右下角提供手牌隐藏切换按钮', () => {
+        const onToggleHandHidden = vi.fn();
+        render(<DrawDeck count={18} onToggleHandHidden={onToggleHandHidden} />);
+
+        const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
+        expect(toggle).toHaveAttribute('aria-label', 'hud.hideHand');
+        expect(toggle.className).toContain('left-[calc(100%+0.35vw)] bottom-0');
+        expect(toggle.className).not.toContain('-translate-x-[34%]');
+        expect(toggle.className).not.toContain('-translate-y-[34%]');
+        expect(toggle.querySelector('.lucide-chevron-down')).not.toBeNull();
+        expect(toggle.querySelector('.lucide-eye')).toBeNull();
+        expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
+
+        fireEvent.click(toggle);
+        expect(onToggleHandHidden).toHaveBeenCalledTimes(1);
+    });
+
+    it('手牌已收起时，切换按钮使用向上图标表示展开', () => {
+        render(<DrawDeck count={18} isHandHidden onToggleHandHidden={vi.fn()} />);
+
+        const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
+        expect(toggle).toHaveAttribute('aria-label', 'hud.showHand');
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        expect(toggle.querySelector('.lucide-chevron-up')).not.toBeNull();
+        expect(toggle.querySelector('.lucide-eye')).toBeNull();
+        expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
     });
 
     it('弃牌堆应提供 padding 比例盒兜底高度', () => {

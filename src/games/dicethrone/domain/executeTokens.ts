@@ -106,6 +106,9 @@ export function buildBonusDiceSettlementEvents({
         ...(settlementResult?.followupEvents ?? []),
         ...rollDieFollowupEvents,
     ]);
+    const singleFinalDie = settlementDice.length === 1 ? settlementDice[0] : undefined;
+    const effectKey = settlement.summaryEffectKey ?? singleFinalDie?.effectKey;
+    const effectParams = settlement.summaryEffectParams ?? singleFinalDie?.effectParams;
 
     events.push({
         type: 'BONUS_DICE_SETTLED',
@@ -118,6 +121,8 @@ export function buildBonusDiceSettlementEvents({
             sourceAbilityId: settlement.sourceAbilityId,
             ...(settlement.displayOnly ? { displayOnly: true } : {}),
             allowDiceModification: true,
+            ...(effectKey ? { effectKey } : {}),
+            ...(effectParams ? { effectParams } : {}),
         },
         sourceCommandType,
         timestamp,

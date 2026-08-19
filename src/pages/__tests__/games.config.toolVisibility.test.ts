@@ -11,12 +11,14 @@ describe('games.config 工具入口可见性', () => {
         expect(allIds).not.toContain('fxpreview');
         expect(allIds).not.toContain('audiobrowser');
         expect(allIds).not.toContain('archview');
+        expect(allIds).not.toContain('qidahenregionmask');
 
         expect(toolIds).toEqual(expect.arrayContaining([
             'assetslicer',
             'fxpreview',
             'audiobrowser',
             'archview',
+            'qidahenregionmask',
         ]));
     });
 

@@ -33,14 +33,14 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-function createRunner() {
+function createRunner(playerIds: string[] = PLAYER_IDS) {
     return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
         domain: SmashUpDomain,
         systems: [
             createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
             ...createBaseSystems<SmashUpCore>(),
         ],
-        playerIds: PLAYER_IDS,
+        playerIds,
         silent: true,
     });
 }
@@ -337,6 +337,32 @@ describe('派系选择系统', () => {
                 const player = result.finalState.core.players[pid];
                 expect(player.hand.length + player.deck.length).toBe(40);
             }
+        });
+
+        it('四人蛇形选秀中末位玩家的两派系都会进入牌库', () => {
+            const playerIds = ['0', '1', '2', '3'];
+            const runner = createRunner(playerIds);
+            const result = runner.run({
+                name: '反馈 6a10f998：P4 两个派系都进入牌库',
+                commands: [
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.ZOMBIES } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '2', payload: { factionId: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '3', payload: { factionId: SMASHUP_FACTION_IDS.KAIJU } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '3', payload: { factionId: SMASHUP_FACTION_IDS.GHOSTS_POD } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '2', payload: { factionId: SMASHUP_FACTION_IDS.ROBOTS } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS_POD } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.FAIRIES } },
+                ],
+            });
+
+            expect(result.steps.every(step => step.success)).toBe(true);
+            const player = result.finalState.core.players['3'];
+            const cards = [...player.hand, ...player.deck];
+            expect(player.factions).toEqual([SMASHUP_FACTION_IDS.KAIJU, SMASHUP_FACTION_IDS.GHOSTS_POD]);
+            expect(cards).toHaveLength(40);
+            expect(cards.filter(card => card.defId.startsWith('kaiju_'))).toHaveLength(20);
+            expect(cards.filter(card => card.defId.startsWith('ghost_'))).toHaveLength(20);
         });
     });
 

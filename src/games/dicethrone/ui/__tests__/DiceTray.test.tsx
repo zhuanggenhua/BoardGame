@@ -163,11 +163,11 @@ describe('DiceTray', () => {
         expect(onToggleLock).toHaveBeenCalledWith(0);
     });
 
-    it('主动重掷模式不依赖主骰投掷次数，并把奖励骰点击交给上层', () => {
+    it('主动重掷模式不依赖主骰投掷次数，并允许点击已锁定骰子', () => {
         const onToggleLock = vi.fn();
         render(
             <DiceTray
-                dice={[{ ...dice[0], value: 3, displayOnly: true }]}
+                dice={[{ ...dice[0], value: 3, isKept: true, displayOnly: true }]}
                 rollCount={0}
                 onToggleLock={onToggleLock}
                 currentPhase="main1"
@@ -202,6 +202,25 @@ describe('DiceTray', () => {
         fireEvent.click(screen.getByTestId('die-adjust-increment-0'));
         expect(step).toHaveBeenCalledWith({ action: 'adjust', dieId: 0, delta: 1, currentValue: 1 });
         expect(screen.getByTestId('dicethrone-2d-dice-tray')).toHaveClass('ring-amber-500');
+    });
+
+    it('改骰模式下锁定骰子仍可通过加减按钮修改', () => {
+        const step = vi.fn();
+        render(
+            <DiceTray
+                dice={twoDice}
+                rollCount={1}
+                onToggleLock={vi.fn()}
+                currentPhase="offensiveRoll"
+                canInteract
+                isRolling={false}
+                interaction={createModifyInteraction('adjust')}
+                multistepInteraction={createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step)}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('die-adjust-increment-1'));
+        expect(step).toHaveBeenCalledWith({ action: 'adjust', dieId: 1, delta: 1, currentValue: 2 });
     });
 
     it('右侧骰盘的任意改面模式可以分别修改两颗骰子', () => {

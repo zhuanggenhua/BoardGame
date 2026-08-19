@@ -284,7 +284,14 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).toContain('data-original-damage="5"');
         expect(html).toContain('damageSummary.label');
         expect(html).toContain('damageSummary.changed:original=5,current=7');
-        expect(html).toContain('pointer-events-none absolute inset-x-0 bottom-full');
+        expect(html).toContain('data-testid="current-total-damage-badge-anchor"');
+        expect(html).toContain('data-placement="dice-tray-left-top-outside"');
+        expect(html).toContain('absolute right-[calc(100%+0.35vw)] top-0');
+        expect(html).not.toContain('bottom-full');
+        expect(html).not.toContain('right-full');
+        expect(html).not.toContain('-translate-x-[0.35vw]');
+        expect(html).not.toContain('-translate-y-[0.35vw]');
+        expect(html).not.toContain('absolute inset-x-0 bottom-full');
     });
 
     it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {

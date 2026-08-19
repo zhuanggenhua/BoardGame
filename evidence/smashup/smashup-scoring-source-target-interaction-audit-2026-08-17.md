@@ -8,6 +8,33 @@
 - 结论等级：代表性玩法已验证
 - 主目标：回答“计分时效果是否都要审计”，并把本轮已经验证的共享交互族、全量 L1 清单和仍需逐牌深审的计分效果分开。
 
+## 2026-08-19 增量收口
+
+- 用户原始症状：计分响应里大副、托尔图加等场上计分时可选效果不应由按钮代替主路径；应先点来源本体，点击来源前不高亮该来源的目标，点击来源后才高亮合法目标。全速航行作为计分响应打出后也必须实际移动到当前计分基地。
+- 本轮定位：大副和托尔图加的触发队列能找到真实场上来源，但它们被注册成强制触发，UI 的响应窗口只把“可选触发”映射成场上来源本体，结果二者留在响应按钮里。大副进入下一层来源-目标 prompt 后，Board 的通用交互切换重置又清掉了刚点的大副来源选中态，导致目标基地没有亮。
+- 本轮修复：`pirate_first_mate` 与 `base_tortuga` 改为可选触发；响应窗口不再把它们作为主路径按钮展示。Board 的来源-目标 prompt 切换保留来源选中态，保证“点大副 -> 目标基地亮起”不断链。全速航行计分响应保留“点手牌 -> 选己方随从 -> 直接移动到当前计分基地”的实现。
+- AI 口径：AI 仍从真实响应选项和 interaction options 枚举合法动作；UI 是否把真人主路径渲染成按钮或本体高亮，不是 AI 合法动作的真相源。本轮 `aiReactionChoiceValidation` 继续通过，说明合法响应枚举没有被 UI 重构改坏。
+- 验证命令：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pirate_full_sail"`：4 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/Board.interactionBars.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：12 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/aiReactionChoiceValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`：4 passed。
+  - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts "复杂链路里海盗王可发动时应先点本体再高亮计分基地"`：1 passed。
+  - `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：5 passed。
+- 当前关键截图：
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开/02-after-scoring-reaction-open.jpg`：afterScoring 窗口打开后，手牌响应从手牌本体高亮，非响应手牌置灰，不再以“我们乃最强”按钮作为主路径。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-07-first-mate-reaction-source-highlight-before-trigger.jpg`：大副作为可发动来源本体高亮；同屏托尔图加基地也作为另一个来源亮起，非大副目标基地未提前高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-08-first-mate-target-base-highlight-after-source-click.jpg`：点击大副后，大副保持选中态，合法目标基地高亮。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-09-tortuga-reaction-source-base-highlight-before-trigger.jpg`：托尔图加第一层为基地本体高亮，旧代理按钮不存在。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-10-tortuga-minion-choice-after-source-click.jpg`：点击托尔图加基地后进入亚军随从选择。
+  - `test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/复杂链路里海盗王可发动时应先点本体再高亮计分基地/complex-hand-response-11-scoring-chain-complete.jpg`：计分链收口后无响应窗口、无残留交互。
+- 2026-08-19 终验补充：
+  - 重新运行 `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`：5 passed，截图时间戳刷新到 2026-08-19 01:15。
+  - 重新运行三条低层回归：`pirate_full_sail` 4 passed；`Board.interactionBars.test.ts` 12 passed；`aiReactionChoiceValidation.test.ts` 4 passed。
+  - 运行 `npm run spec:lint`：OK。
+  - 最终用户验收标注图组：`test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/_final-scoring-source-target-labeled-2026-08-19/`，包含 00 顺序索引和 01-10 中文编号图。
+  - 开图前非展示型图面检查：10 张原始截图均为 1920x1080、非空、文件大小非零；截图组覆盖手牌响应、海盗王、大副、托尔图加和最终链路收口。
+- 本轮范围结论：已完成手牌响应、海盗王、大副、托尔图加、全速航行和现有复杂黄金链的代表验证；这仍不等于“全部计分时效果逐牌审计完成”。逐牌全审必须继续使用本文的对象全集矩阵逐行闭合。
+
 ## 审计范围
 
 ### 本轮覆盖

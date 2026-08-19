@@ -286,77 +286,80 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
     // ========================================================================
     // 神圣祝福
     // ========================================================================
-    describe('paladin-blessing-prevent (神圣祝福：免疫致死+HP设为1)', () => {
-        it('致死伤害时消耗1层，免除伤害+HP设为1', () => {
+    describe('神圣祝福（正式扣血入口：致死后HP设为1）', () => {
+        it('致死伤害仍生成原始伤害事件，结算后消耗1层并把HP保留为1', () => {
             const state = createState({ attackerBlessing: 1, attackerHP: 3 });
-            const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-            const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            // 注入致死伤害参数（createDamageCalculation 的 PassiveTriggerHandler 会自动注入）
-            ctx.action = { ...ctx.action, params: { damageAmount: 10 } } as any;
-            const events = handler(ctx);
+            state.tokenDefinitions = PALADIN_TOKENS;
+            const events = resolveEffectsToEvents([{
+                description: '10 点致死主伤害',
+                timing: 'withDamage',
+                action: { type: 'damage', target: 'opponent', value: 10 },
+            }], 'withDamage', {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'test-lethal-attack',
+                state,
+                damageDealt: 0,
+                timestamp: 1000,
+            });
 
-            // 消耗token
-            const consumed = eventsOfType(events, 'TOKEN_CONSUMED');
-            expect(consumed).toHaveLength(1);
-
-            // 免除伤害
-            const prevent = eventsOfType(events, 'PREVENT_DAMAGE');
-            expect(prevent).toHaveLength(1);
-            expect((prevent[0] as any).payload.amount).toBe(9999);
-
-            // HP 扣至 1（DAMAGE_DEALT amount = currentHp - 1 = 2）
+            expect(eventsOfType(events, 'PREVENT_DAMAGE')).toHaveLength(0);
+            expect(eventsOfType(events, 'TOKEN_CONSUMED')).toHaveLength(0);
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
-            expect((dmg[0] as any).payload.amount).toBe(2);
+            expect((dmg[0] as any).payload.amount).toBe(10);
 
-            // 卡牌描述：移除此标记并将 HP 回到 1，不回复额外 HP
-            const heal = eventsOfType(events, 'HEAL_APPLIED');
-            expect(heal).toHaveLength(0);
+            const after = applyEvents(state, events, reduce);
+            expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(0);
+            expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
         });
 
-        it('非致死伤害时不触发', () => {
+        it('非致死伤害正常扣血，不消耗神圣祝福', () => {
             const state = createState({ attackerBlessing: 1, attackerHP: 30 });
-            const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-            const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            ctx.action = { ...ctx.action, params: { damageAmount: 5 } } as any;
-            const events = handler(ctx);
-            expect(events).toHaveLength(0);
+            state.tokenDefinitions = PALADIN_TOKENS;
+            const events = resolveEffectsToEvents([{
+                description: '5 点非致死伤害',
+                timing: 'withDamage',
+                action: { type: 'damage', target: 'opponent', value: 5 },
+            }], 'withDamage', {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'test-non-lethal-attack',
+                state,
+                damageDealt: 0,
+                timestamp: 1000,
+            });
+
+            expect(eventsOfType(events, 'PREVENT_DAMAGE')).toHaveLength(0);
+            const after = applyEvents(state, events, reduce);
+            expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(1);
+            expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(25);
         });
 
-        it('无祝福时不生成事件', () => {
-            const state = createState({ attackerBlessing: 0 });
-            const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-            const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            ctx.action = { ...ctx.action, params: { damageAmount: 100 } } as any;
-            const events = handler(ctx);
-            expect(events).toHaveLength(0);
-        });
+        it('HP=1时仍承接原始伤害事件，结算只消耗神圣祝福并保持HP=1', () => {
+            const state = createState({ attackerBlessing: 1, attackerHP: 1 });
+            state.tokenDefinitions = PALADIN_TOKENS;
+            const events = resolveEffectsToEvents([{
+                description: '5 点致死伤害',
+                timing: 'withDamage',
+                action: { type: 'damage', target: 'opponent', value: 5 },
+            }], 'withDamage', {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'test-lethal-at-one-hp',
+                state,
+                damageDealt: 0,
+                timestamp: 1000,
+            });
 
-        it('DAMAGE_DEALT 带 bypassShields 标记（不被护盾吸收）', () => {
-            const state = createState({ attackerBlessing: 1, attackerHP: 10 });
-            const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-            const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            ctx.action = { ...ctx.action, params: { damageAmount: 20 } } as any;
-            const events = handler(ctx);
-
+            expect(eventsOfType(events, 'PREVENT_DAMAGE')).toHaveLength(0);
             const dmg = eventsOfType(events, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
-            expect((dmg[0] as any).payload.bypassShields).toBe(true);
-            expect((dmg[0] as any).payload.amount).toBe(9); // HP 10 → 1
-        });
+            expect((dmg[0] as any).payload.amount).toBe(5);
 
-        it('HP=1 时致死伤害触发但不产生 DAMAGE_DEALT（无需扣血）', () => {
-            const state = createState({ attackerBlessing: 1, attackerHP: 1 });
-            const handler = getCustomActionHandler('paladin-blessing-prevent')!;
-            const ctx = buildCtx(state, 'paladin-blessing-prevent');
-            ctx.action = { ...ctx.action, params: { damageAmount: 5 } } as any;
-            const events = handler(ctx);
-
-            // 消耗 + 免除，但无 DAMAGE_DEALT（hpToRemove = 0）也无 HEAL
-            expect(eventsOfType(events, 'TOKEN_CONSUMED')).toHaveLength(1);
-            expect(eventsOfType(events, 'PREVENT_DAMAGE')).toHaveLength(1);
-            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
-            expect(eventsOfType(events, 'HEAL_APPLIED')).toHaveLength(0);
+            const after = applyEvents(state, events, reduce);
+            expect(after.players['0'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY]).toBe(0);
+            expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
         });
 
         it('基础伤害不足但叠加攻击修正后致死时，仍应消耗祝福并保留 1 点生命', () => {

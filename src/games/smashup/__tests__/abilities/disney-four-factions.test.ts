@@ -6,7 +6,7 @@ import { FROZEN_CARDS } from '../../data/factions/frozen';
 import { LION_KING_CARDS } from '../../data/factions/lion_king';
 import { MULAN_CARDS } from '../../data/factions/mulan';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
-import { isMinionProtected } from '../../domain/ongoingEffects';
+import { getModifiedBaseVp, isMinionProtected } from '../../domain/ongoingEffects';
 import type { AbilityTag } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { runCommand } from '../testRunner';
@@ -256,6 +256,70 @@ describe('迪士尼四派系代表性玩法行为', () => {
             tempProtectAffectUntilTurnNumber: 1,
             tempProtectSourcePlayerId: '0',
         });
+    });
+
+    it('冰雪奇缘：冻结的港口不阻止打出角色，冰宫减力和安娜保护按同基地条件生效', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('saucy', 'pirate_saucy_wench', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_ice_palace',
+                minions: [
+                    makeMinion('anna', 'frozen_anna', '1', 4),
+                ],
+                ongoingActions: [{ uid: 'port', defId: 'frozen_frozen_port', ownerId: '1' }],
+            })],
+        });
+        const anna = core.bases[0].minions[0];
+
+        expect(isMinionProtected(core, anna, 0, '0', 'affect', { sourceKind: 'action' })).toBe(false);
+        expect(isMinionProtected(core, anna, 0, '0', 'move', { sourceKind: 'action' })).toBe(true);
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'saucy', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success, played.error).toBe(true);
+        const after = played.finalState.core;
+        const playedAnna = after.bases[0].minions.find(minion => minion.uid === 'anna');
+        const saucy = after.bases[0].minions.find(minion => minion.uid === 'saucy');
+        expect(saucy).toBeTruthy();
+        expect(playedAnna ? getEffectivePower(after, playedAnna, 0) : undefined).toBe(3);
+        expect(saucy ? getEffectivePower(after, saucy, 0) : undefined).toBe(2);
+
+        const withKristoff = makeState({
+            bases: [makeBase('base_ice_palace', [
+                makeMinion('protected-anna', 'frozen_anna', '1', 4),
+                makeMinion('kristoff', 'frozen_kristoff', '1', 4),
+                makeMinion('enemy', 'pirate_saucy_wench', '0', 3),
+            ])],
+        });
+        const protectedAnna = withKristoff.bases[0].minions[0];
+        expect(isMinionProtected(withKristoff, protectedAnna, 0, '0', 'affect', { sourceKind: 'action' })).toBe(true);
+        expect(isMinionProtected(withKristoff, protectedAnna, 0, '1', 'affect', { sourceKind: 'action' })).toBe(false);
+    });
+
+    it('冰雪奇缘：阿伦黛尔只在基地计分 VP 奖励时给最多角色玩家额外 1 VP', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_arendelle', [
+                makeMinion('first-mate', 'pirate_first_mate', '0', 2),
+                makeMinion('anna', 'frozen_anna', '1', 4),
+                makeMinion('snowgie', 'frozen_snowgie', '1', 2),
+            ])],
+        });
+
+        expect(getModifiedBaseVp(core, 0, '0', 3)).toBe(3);
+        expect(getModifiedBaseVp(core, 0, '1', 2)).toBe(3);
     });
 
     it('狮子王：木法沙在弃牌堆时触发弃牌条件，并让荣耀石给玩家额外力量', () => {

@@ -176,6 +176,9 @@ describe('CreateRoomModal AI default state', () => {
         fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
+        const submittedConfig = onConfirm.mock.calls[0]?.[0];
+        expect(submittedConfig?.seatControllers?.['1']).not.toHaveProperty('manualSetupSelection');
+        expect(submittedConfig?.seatControllers?.['1']).not.toHaveProperty('manualFactionSelection');
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             enableAi: true,
             seatControllers: expect.objectContaining({

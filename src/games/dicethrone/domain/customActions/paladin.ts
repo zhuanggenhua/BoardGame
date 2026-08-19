@@ -8,7 +8,6 @@ import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../ids';
 import type {
     DiceThroneEvent,
     TokenGrantedEvent,
-    PreventDamageEvent,
     PendingInteraction,
     InteractionRequestedEvent,
 } from '../types';
@@ -129,80 +128,6 @@ function handleHolyDefenseRoll3(ctx: CustomActionContext): DiceThroneEvent[] {
 } // Corrected: Leve3 passes true
 
 /**
- * 神圣祝福 (Blessing of Divinity) — 免疫致死伤害
- * 当受到致死伤害时，移除此标记，免除伤害并将 HP 保留为 1。
- *
- * 规则语义：
- * 1. 只在伤害会致死（damageAmount >= currentHp）时触发
- * 2. 免除全部伤害（PREVENT_DAMAGE）
- * 3. 将 HP 扣至 1（通过 DAMAGE_DEALT 扣除 currentHp - 1）
- * 4. 不回复额外 HP，最终生命值保持为 1
- */
-function handleBlessingPrevent({ targetId, state, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
-    const events: DiceThroneEvent[] = [];
-    const player = state.players[targetId];
-    if (!player) return events;
-
-    const blessingCount = player.tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0;
-    if (blessingCount <= 0) return events;
-
-    // 致死判定：只有伤害 >= 当前 HP 时才触发
-    const currentHp = player.resources[RESOURCE_IDS.HP] ?? 0;
-    const params = action.params as { damageAmount?: number } | undefined;
-    const damageAmount = params?.damageAmount ?? 0;
-    if (damageAmount < currentHp) return events;
-
-    // 消耗 1 层神圣祝福
-    events.push({
-        type: 'TOKEN_CONSUMED',
-        payload: {
-            playerId: targetId,
-            tokenId: TOKEN_IDS.BLESSING_OF_DIVINITY,
-            amount: 1,
-            newTotal: blessingCount - 1,
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp,
-    } as DiceThroneEvent);
-
-    // 免除全部伤害
-    events.push({
-        type: 'PREVENT_DAMAGE',
-        payload: {
-            targetId,
-            amount: 9999,
-            sourceAbilityId: 'paladin-blessing-prevent',
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp: timestamp + 1,
-    } as PreventDamageEvent);
-
-    // 规则："将 HP 设为 1" → 最终 HP = 1
-    // 实现：先扣到 1（通过 DAMAGE_DEALT + bypassShields），不回复额外 HP
-    // bypassShields: 此扣血是 HP 重置，不应被护盾吸收
-    // 【已迁移到新伤害计算管线】
-    const hpToRemove = currentHp - 1;
-    if (hpToRemove > 0) {
-        const damageCalc = createDamageCalculation({
-            source: { playerId: targetId, abilityId: 'paladin-blessing-prevent' },
-            target: { playerId: targetId },
-            baseDamage: hpToRemove,
-            state,
-            timestamp: timestamp + 2,
-            autoCollectShields: false, // bypassShields: 不收集护盾修正
-        });
-        const damageEvents = damageCalc.toEvents();
-        // 手动添加 bypassShields 标记（引擎层暂不支持）
-        if (damageEvents[0]?.type === 'DAMAGE_DEALT') {
-            (damageEvents[0].payload as { bypassShields?: boolean }).bypassShields = true;
-        }
-        events.push(...damageEvents);
-    }
-
-    return events;
-}
-
-/**
  * 反击 II 主技能 — 选择任意玩家授予 1 层神罚
  */
 function handleVengeanceSelectPlayer({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
@@ -267,7 +192,6 @@ export function registerPaladinCustomActions(): void {
     registerCustomActionHandler('paladin-holy-defense-3', handleHolyDefenseRoll3, { categories: ['dice', 'damage', 'defense'] });
     registerCustomActionHandler('paladin-holy-light-heal', handleHolyLightHeal, { categories: ['resource'] });
 
-    registerCustomActionHandler('paladin-blessing-prevent', handleBlessingPrevent, { categories: ['token', 'defense'] });
     registerCustomActionHandler('paladin-vengeance-select-player', handleVengeanceSelectPlayer, {
         categories: ['token'],
         requiresInteraction: true,

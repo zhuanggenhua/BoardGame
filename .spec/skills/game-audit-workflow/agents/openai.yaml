@@ -1,4 +1,4 @@
 interface:
   display_name: "全游戏审计流程"
-  short_description: "按D维度库执行全游戏审计并生成证据链与测试回填"
-  default_prompt: "Use -audit-workflow to 依据 testing-audit-dimensions.md 的D维度库审计指定游戏并产出证据链。"
+  short_description: "按描述到实现主源执行游戏审计并生成证据链与测试回填"
+  default_prompt: "Use -audit-workflow to 依据 description-to-implementation-audit.md 审计指定游戏并产出证据链。"

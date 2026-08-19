@@ -586,6 +586,26 @@
       }
     }
   },
+  "debug": {
+    "tools": {
+      "sectionTitle": "Seven Hatreds Tools",
+      "regionMask": {
+        "title": "Region Mask And Passage Editor",
+        "description": "Open the editor for map hit masks, centers, passages, and boundary rules."
+      },
+      "runtimePreview": {
+        "title": "Runtime Preview",
+        "description": "Read-only check for how the current workspace is consumed by runtime data."
+      }
+    },
+    "stateSummary": {
+      "sectionTitle": "State Snapshot",
+      "turn": "Current Turn",
+      "phase": "Phase",
+      "wheel": "Wheel",
+      "empty": "No state data yet."
+    }
+  },
   "devtools": {
     "runtimePreview": {
       "eyebrow": "Qidahen Runtime Preview",

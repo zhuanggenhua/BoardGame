@@ -647,6 +647,14 @@ export default defineConfig(({ mode }) => {
     return err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.code === 'EPIPE'
   }
 
+  const isIgnorableViteProxyLog = (msg: string) => {
+    const isWsProxyLog = msg.includes('ws proxy error') || msg.includes('ws proxy socket error')
+    if (!isWsProxyLog) return false
+    if (msg.includes('ECONNABORTED')) return true
+    if (!suppressE2EProxyNoise) return false
+    return msg.includes('ECONNREFUSED') || msg.includes('ECONNRESET') || msg.includes('EPIPE')
+  }
+
   const logProxyError = (label: string, err: Error & NodeJS.ErrnoException) => {
     if (isIgnorableProxyError(err)) return
     console.error(`[proxy ${label}]`, err.message)
@@ -675,13 +683,12 @@ export default defineConfig(({ mode }) => {
         },
       },
       {
-        name: 'suppress-e2e-proxy-noise',
+        name: 'suppress-ignorable-proxy-noise',
         enforce: 'pre' as const,
         configResolved(config) {
-          if (!suppressE2EProxyNoise) return
           const originalError = config.logger.error
           config.logger.error = (msg, options) => {
-            if (typeof msg === 'string' && msg.includes('ws proxy error')) return
+            if (typeof msg === 'string' && isIgnorableViteProxyLog(msg)) return
             originalError(msg, options)
           }
         },

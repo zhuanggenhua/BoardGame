@@ -290,6 +290,14 @@ else if (modifiers && modifiers.length > 0) {
 }
 ```
 
+### 正式净掉血合同（强制）
+
+- `DAMAGE_DEALT.payload.amount` 表示进入扣血处理的伤害输入；它可以来自技能计算、奖励骰、Token 或其它规则结算。
+- `DAMAGE_DEALT.payload.actualDamage` 在伤害事件被 reducer 结算后，必须表示本次事件造成的**正式净掉血**：护盾、防止、闪避、无敌、HP 下限钳制和队伍共享 HP 同步都已经处理完。
+- reducer 是正式 HP / 队伍 HP 的唯一写入口。动画、行动日志、当前伤害摘要和 AI 后续结算只能读取 reducer 已经写入的正式 HP 或 reducer 回填的正式净掉血；不得再按护盾消耗、技能预估、骰面、custom action 估算或 UI 展示值二次推导一个“最终伤害”。
+- 任何会把致死伤害替换成“保留 1 点生命 / 防止死亡 / 消耗保命资源”的规则，必须在正式扣血入口保留不变量；事件构造阶段可以提前产生日志和副作用，但不能成为唯一保护点。旧手写 `DAMAGE_DEALT`、状态伤害、Token 反伤、奖励骰伤害和迁移中入口都不得绕过最终保命规则。
+- 如果某个游戏的事件系统不能安全回填原事件，必须由 reducer 产出等价的 post-settlement 事件或结果字段；不得让表现层自己复算正式数值。
+
 ### 注意事项
 
 1. **自动收集依赖 tokenDefinitions**：如果 `state.core.tokenDefinitions` 为空或未正确设置，自动收集不会工作，需要手动添加修正。

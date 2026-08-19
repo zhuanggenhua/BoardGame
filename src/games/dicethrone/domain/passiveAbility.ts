@@ -233,6 +233,7 @@ export function isPassiveActionUsable(
     }
 
     // rerollDie 额外检查：只能重掷当前骰区里规则允许自己重掷的骰子。
+    // 锁定只影响普通投骰时“保留哪些骰子”，不限制花费 Token / 被动动作指定重掷某颗骰子。
     if (action.type === 'rerollDie') {
         const currentRollContext = resolveCurrentRollContext(state, phase);
         if (!currentRollContext) return false;
@@ -242,8 +243,7 @@ export function isPassiveActionUsable(
         })) return false;
         // 旧主骰兼容路径仍要求已投掷过；显式 currentRollContext（如闪避/奖励骰）以自身存在为准。
         if (!state.currentRollContext && state.rollCount === 0) return false;
-        const hasUnlockedDie = currentRollContext.dice.some((d) => !d.isKept);
-        if (!hasUnlockedDie) return false;
+        if (currentRollContext.dice.length === 0) return false;
     }
 
     // 时机检查

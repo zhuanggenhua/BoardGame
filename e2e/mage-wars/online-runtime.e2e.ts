@@ -2109,6 +2109,8 @@ async function captureMageWarsFxProcessScreenshots(
             const float = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
             if (!float) return false;
             const rect = float.getBoundingClientRect();
+            const textNode = float.querySelector<HTMLElement>('span') ?? float;
+            const fontSize = Number.parseFloat(window.getComputedStyle(textNode).fontSize || '0');
             let effectiveOpacity = 1;
             let current: HTMLElement | null = float;
             while (current) {
@@ -2116,9 +2118,10 @@ async function captureMageWarsFxProcessScreenshots(
                 if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
                 current = current.parentElement;
             }
-            return rect.width > 0
-                && rect.height > 0
-                && effectiveOpacity > 0.35
+            return rect.width >= 24
+                && rect.height >= 24
+                && fontSize >= 30
+                && effectiveOpacity > 0.78
                 && (float.textContent?.includes('-') ?? false);
         }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
             const message = error instanceof Error ? error.message : String(error);
@@ -2129,6 +2132,7 @@ async function captureMageWarsFxProcessScreenshots(
                 `debug=${JSON.stringify(debug, null, 2)}`,
             ].join('\n'));
         });
+        await page.waitForTimeout(160);
         await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-命中和伤害飘字`);
         await saveEvidenceScreenshot(page, testInfo, `${label}-命中动画和伤害飘字过程帧`, { animations: 'allow' });
     } else {

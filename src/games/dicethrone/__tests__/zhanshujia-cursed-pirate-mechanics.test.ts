@@ -1362,7 +1362,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         reroll.sys.phase = 'offensiveRoll';
         reroll.core.rollCount = 1;
         reroll.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 1;
-        reroll.core.dice[0] = { ...reroll.core.dice[0], id: 0, value: 1, isKept: false };
+        reroll.core.dice[0] = { ...reroll.core.dice[0], id: 0, value: 1, isKept: true };
         events = execute(reroll, command('USE_PASSIVE_ABILITY', '0', {
             passiveId: 'zhanshujia-tactical-advantage',
             actionIndex: 1,
@@ -1371,6 +1371,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         next = applyEvents(reroll.core, events);
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
         expect(next.dice[0].value).toBe(6);
+        expect(next.dice[0].isKept).toBe(true);
 
         const draw = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         draw.sys.phase = 'main1';

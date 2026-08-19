@@ -352,6 +352,8 @@ export interface SimpleChoiceData<T = unknown> {
     allowedCommands?: string[];
     /** AI 支持声明：语义描述、游戏适配器或明确不支持。 */
     ai?: AiInteractionSupportDeclaration;
+    /** Choice Request 诊断摘要；仅供 AI/线上恢复定位，不参与规则执行或 UI 候选真相。 */
+    choiceRequest?: Record<string, unknown>;
 }
 
 /**

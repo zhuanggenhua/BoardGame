@@ -52,6 +52,125 @@ async function screenshotStep(
     return path;
 }
 
+async function openActionLogPanel(page: Page) {
+    const panel = page.locator('[data-testid="fab-panel-action-log"]').first();
+    if (await panel.isVisible().catch(() => false)) {
+        return panel;
+    }
+
+    const actionLogButton = page.locator('[data-fab-id="action-log"]').first();
+    if (!await actionLogButton.isVisible().catch(() => false)) {
+        for (const selector of ['[data-fab-id="chat"]', '[data-fab-id="exit"]', '[data-testid="fab-menu"] [data-fab-id]']) {
+            const mainButton = page.locator(selector).first();
+            if (await mainButton.isVisible().catch(() => false)) {
+                await mainButton.click();
+                if (await actionLogButton.isVisible({ timeout: 1200 }).catch(() => false)) {
+                    break;
+                }
+            }
+        }
+    }
+
+    await expect(actionLogButton).toBeVisible({ timeout: 10000 });
+    await actionLogButton.click();
+    await expect(panel).toBeVisible({ timeout: 10000 });
+    return panel;
+}
+
+async function closeActionLogPanel(page: Page): Promise<void> {
+    const panel = page.locator('[data-testid="fab-panel-action-log"]').first();
+    if (!await panel.isVisible().catch(() => false)) {
+        return;
+    }
+    const actionLogButton = page.locator('[data-fab-id="action-log"]').first();
+    await expect(actionLogButton).toBeVisible({ timeout: 5000 });
+    await actionLogButton.click();
+    await expect(panel).toBeHidden({ timeout: 10000 });
+}
+
+async function readActionLogRowTexts(page: Page): Promise<string[]> {
+    await openActionLogPanel(page);
+    const rows = page.locator('[data-testid="hud-action-log-row"]');
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    const texts = (await rows.allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim());
+    await closeActionLogPanel(page);
+    return texts;
+}
+
+async function screenshotActionLogPanel(
+    page: Page,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+    name: string,
+): Promise<string> {
+    const panel = await openActionLogPanel(page);
+    await expect(page.locator('[data-testid="hud-action-log-row"]').first()).toBeVisible({ timeout: 10000 });
+    const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
+    await panel.screenshot(withJpegEvidenceScreenshotOptions({ path, timeout: 20000 }));
+    await closeActionLogPanel(page);
+    return path;
+}
+
+async function readBonusActionLogEntries(page: Page) {
+    return page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const entries = state?.sys?.actionLog?.entries ?? [];
+        return entries
+            .filter((entry: any) => (
+                entry?.kind === 'BONUS_DIE_ROLLED'
+                || entry?.kind === 'BONUS_DICE_SETTLED'
+                || entry?.kind === 'CARD_ROLL_RESULT'
+            ))
+            .map((entry: any) => ({
+                kind: entry.kind,
+                keys: (entry.segments ?? [])
+                    .filter((segment: any) => segment?.type === 'i18n')
+                    .map((segment: any) => segment.key),
+                diceValues: (entry.segments ?? [])
+                    .filter((segment: any) => segment?.type === 'diceResult')
+                    .flatMap((segment: any) => (
+                        Array.isArray(segment.dice)
+                            ? segment.dice.map((die: any) => (typeof die === 'number' ? die : die?.value))
+                            : []
+                    )),
+            }));
+    });
+}
+
+async function expectVolleyActionLogPendingOnly(page: Page, forbiddenBowCounts: number[]): Promise<void> {
+    const entries = await readBonusActionLogEntries(page);
+    expect(entries.some((entry: any) => (
+        entry.kind === 'BONUS_DIE_ROLLED'
+        && entry.keys.includes('actionLog.bonusDiceRolled')
+    )), `奖励骰待确认时必须只写“掷出”日志，实际=${JSON.stringify(entries)}`).toBe(true);
+    expect(entries.some((entry: any) => entry.kind === 'BONUS_DICE_SETTLED')).toBe(false);
+    expect(entries.some((entry: any) => entry.keys.includes('bonusDie.effect.volley.result'))).toBe(false);
+
+    const visibleLog = (await readActionLogRowTexts(page)).join('\n');
+    expect(visibleLog).toContain('奖励骰掷出');
+    expect(visibleLog).not.toContain('奖励骰确认结果');
+    for (const bowCount of forbiddenBowCounts) {
+        expect(visibleLog).not.toContain(`${bowCount} 个弓面`);
+    }
+}
+
+async function expectVolleyActionLogSettled(
+    page: Page,
+    finalDiceValues: number[],
+    finalBowCount: number,
+): Promise<void> {
+    const entries = await readBonusActionLogEntries(page);
+    expect(entries.some((entry: any) => (
+        entry.kind === 'BONUS_DICE_SETTLED'
+        && entry.keys.includes('actionLog.bonusDiceSettled')
+        && entry.keys.includes('bonusDie.effect.volley.result')
+        && JSON.stringify(entry.diceValues) === JSON.stringify(finalDiceValues)
+    )), `奖励骰确认后必须按最终骰面写最终结果日志，实际=${JSON.stringify(entries)}`).toBe(true);
+
+    const visibleLog = (await readActionLogRowTexts(page)).join('\n');
+    expect(visibleLog).toContain('奖励骰确认结果');
+    expect(visibleLog).toContain(`${finalBowCount} 个弓面`);
+}
+
 async function dispatch(page: Page, type: string, playerId: string, payload: Record<string, unknown> = {}) {
     await dispatchDiceThroneCommand(page, { type, playerId, payload });
     await page.waitForTimeout(350);
@@ -733,6 +852,11 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: 'volley',
             });
             await expect(hostPage.getByTestId('restore-covered-roll-button')).toHaveCount(0);
+            await expectVolleyActionLogPendingOnly(hostPage, [
+                volleyChoice.beforeBowCount,
+                volleyChoice.afterBowCount,
+            ]);
+            await screenshotActionLogPanel(hostPage, testInfo, '06A-万箭齐发-确认前日志只显示奖励骰掷出不显示最终结果');
             await screenshotStep(hostPage, testInfo, '06-万箭齐发-改后奖励骰等待攻击方确认且总伤害已更新');
 
             await settleCurrentBonusDice(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
@@ -749,6 +873,8 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             });
             await closeCardSpotlightIfVisible(hostPage);
             await hostPage.waitForTimeout(900);
+            await expectVolleyActionLogSettled(hostPage, volleyAfterValues, volleyChoice.afterBowCount);
+            await screenshotActionLogPanel(hostPage, testInfo, '07A-万箭齐发-确认后日志按改后奖励骰写最终结果');
             await screenshotStep(hostPage, testInfo, '07-万箭齐发-改后弓面数已写入加伤并施加缠绕');
         } finally {
             await guestContext.close();

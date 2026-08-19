@@ -36,7 +36,7 @@ import {
 } from './test-utils';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { executePipeline } from '../../../engine/pipeline';
+import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
 import { resolveDiceThroneLocalPregameControlledPlayerId } from '../localPregameControl';
 import { RESOURCE_IDS } from '../domain/resources';
@@ -2423,6 +2423,37 @@ describe('AI legal actions', () => {
         expect(selectableCharacterIds).not.toContain('monk');
     });
 
+    it('玩家选择 AI 已选角色时，应释放 AI 角色并让 AI 重新准备', () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom, {
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        });
+        core.selectedCharacters['1'] = 'monk';
+        core.readyPlayers['1'] = true;
+        core.players['1'] = {
+            ...core.players['1'],
+            characterId: 'monk',
+        };
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                ...createInitialSystemState(['0', '1'], testSystems, undefined),
+                phase: 'setup',
+            },
+        };
+
+        const result = tryCmd(state, cmd('SELECT_CHARACTER', '0', { characterId: 'monk' }));
+
+        expect(result.success).toBe(true);
+        const nextState = result.state as MatchState<DiceThroneCore>;
+        expect(nextState.core.selectedCharacters['0']).toBe('monk');
+        expect(nextState.core.selectedCharacters['1']).toBe('unselected');
+        expect(nextState.core.readyPlayers['1']).toBe(false);
+        expect(nextState.core.players['1']?.characterId).toBe('unselected');
+    });
+
     it('本地 AI 在已选角色后应进入准备动作，而不是重复选角', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         core.selectedCharacters['1'] = 'monk';
@@ -4311,6 +4342,39 @@ describe('AI legal actions', () => {
                     && typeof payload?.targetDieId === 'number';
             })
         ))).toBe(true);
+    });
+
+    it('本地 AI 的被动重掷候选应包含已锁定骰子', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+        state.core.dice = state.core.dice.map((die, index) => ({ ...die, id: index, isKept: true }));
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        const passiveRerollTargetDieIds = actions.flatMap((action) => {
+            if (action.kind !== 'use-passive-ability') return [];
+            return action.commands.flatMap((cmd) => {
+                if (cmd.type !== 'USE_PASSIVE_ABILITY') return [];
+                const payload = cmd.payload as { passiveId?: string; actionIndex?: number; targetDieId?: number } | undefined;
+                const targetDieId = payload?.targetDieId;
+                return payload?.passiveId === 'tithes'
+                    && payload?.actionIndex === 0
+                    && typeof targetDieId === 'number'
+                    ? [targetDieId]
+                    : [];
+            });
+        });
+
+        expect([...new Set(passiveRerollTargetDieIds)].sort()).toEqual([0, 1, 2, 3, 4]);
     });
 
     it('本地 AI 用教皇税重掷时应按技能线选废面，而不是只盯低点数', async () => {

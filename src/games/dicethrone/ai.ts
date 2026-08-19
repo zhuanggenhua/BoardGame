@@ -2580,7 +2580,6 @@ const buildPassiveActions = (
 
             if (passiveAction.type === 'rerollDie') {
                 activeDice
-                    .filter((die) => !die.isKept)
                     .forEach((die) => {
                         appendAction(actions, state, playerId, {
                             actionId: createAiLegalActionId('passive', passive.id, actionIndex, die.id),

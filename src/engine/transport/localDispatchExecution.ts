@@ -8,6 +8,7 @@ import { refreshInteractionOptions } from '../systems/InteractionSystem';
 import { buildAiProgressMarker } from './onlineAiRecovery';
 import type { GameEngineConfig } from './server';
 import type { LocalProviderRandom } from './localProviderBootstrap';
+import type { AiSeatController } from '../ai/types';
 import {
     buildLocalAiCommandAppliedPayload,
     buildLocalAiCommandStateSnapshot,
@@ -18,6 +19,34 @@ import { logLocalAiPerfInfo, logLocalAiPerfWarn } from './localAiDiagnostics';
 import { buildLocalDispatchCommand } from './localDispatchCommand';
 import { normalizeStateForConfig } from './stateNormalization';
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function withLocalSeatControllers(
+    state: MatchState<unknown>,
+    seatControllers: Record<string, AiSeatController>,
+): MatchState<unknown> {
+    if (Object.keys(seatControllers).length === 0 || !isPlainRecord(state.core)) {
+        return state;
+    }
+
+    const existingSeatControllers = isPlainRecord(state.core.seatControllers)
+        ? state.core.seatControllers as Record<string, AiSeatController>
+        : {};
+
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            seatControllers: {
+                ...seatControllers,
+                ...existingSeatControllers,
+            },
+        },
+    };
+}
+
 export function executeLocalDispatch(args: {
     commandType: string;
     payload: unknown;
@@ -26,6 +55,7 @@ export function executeLocalDispatch(args: {
     seed: string;
     random: LocalProviderRandom;
     setupPlayerIds: string[];
+    seatControllers: Record<string, AiSeatController>;
     localPregameControlledPlayerId: string | null;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     onCommandRejected?: (commandType: string, error: string) => void;
@@ -38,6 +68,7 @@ export function executeLocalDispatch(args: {
         seed,
         random,
         setupPlayerIds,
+        seatControllers,
         localPregameControlledPlayerId,
         commandEffectsByToken,
         onCommandRejected,
@@ -63,7 +94,7 @@ export function executeLocalDispatch(args: {
 
     const result = executePipeline(
         pipelineConfig,
-        prevState,
+        withLocalSeatControllers(prevState, seatControllers),
         command,
         random,
         setupPlayerIds,

@@ -981,6 +981,10 @@ export interface BonusDiceSettledEvent extends GameEvent<'BONUS_DICE_SETTLED'> {
         targetId: PlayerId;
         /** 来源技能 ID */
         sourceAbilityId: string;
+        /** 确认时按最终骰面生成的效果描述 key（行动日志 / UI 展示用） */
+        effectKey?: string;
+        /** 确认时按最终骰面生成的效果描述参数 */
+        effectParams?: Record<string, string | number>;
         /** 纯展示回放；若 allowDiceModification 为 true，则仍表示刚收口的可交互当前骰。 */
         displayOnly?: boolean;
         /** 该奖励骰是否曾允许规则改骰/重掷，用于系统层释放交互。 */
