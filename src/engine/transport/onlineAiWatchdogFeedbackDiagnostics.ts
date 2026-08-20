@@ -295,6 +295,59 @@ export function buildOnlineAiRecoveryStateSnapshot(args: {
     });
 }
 
+export function buildOnlineAiUnsatisfiableInteractionStateSnapshot(args: {
+    matchId: string;
+    gameId: string;
+    state: MatchState<unknown>;
+    seatState: MatchState<unknown>;
+    playerId: string;
+    reason: string;
+    commandType: string;
+    progressMarker: string;
+    aiSummary: OnlineAiRecoveryAiSummary;
+}): string {
+    const diagnostics = buildOnlineAiFeedbackDiagnosticsContext({
+        sharedState: args.state,
+        seatState: args.seatState,
+        seatUnsatisfiableReasonOverride: args.reason,
+    });
+    const blockerFingerprint = buildOnlineAiWatchdogBlockerFingerprint({
+        phase: args.seatState.sys?.phase ?? args.state.sys?.phase ?? null,
+        reason: args.reason,
+        sharedInteraction: diagnostics.sharedInteraction,
+        seatInteraction: diagnostics.seatInteraction,
+        responseWindow: diagnostics.seatResponseWindow,
+        pendingDamage: diagnostics.pendingDamage,
+    });
+
+    return JSON.stringify({
+        matchId: args.matchId,
+        gameId: args.gameId,
+        playerId: args.playerId,
+        reason: args.reason,
+        commandType: args.commandType,
+        blockerFingerprint,
+        phase: args.seatState.sys?.phase ?? args.state.sys?.phase ?? null,
+        turnNumber: args.seatState.sys?.turnNumber ?? args.state.sys?.turnNumber ?? null,
+        currentPlayerId: resolveCurrentPlayerId(args.seatState),
+        progressMarker: args.progressMarker,
+        recentActionLogTail: extractOnlineAiRecoveryActionLogTail(args.state),
+        recentEventStreamTail: extractOnlineAiRecoveryEventTail(args.state),
+        interaction: {
+            shared: diagnostics.sharedInteraction,
+            sharedSelectability: diagnostics.sharedSelectability,
+            sharedUnsatisfiableReason: diagnostics.sharedUnsatisfiableReason,
+            seat: diagnostics.seatInteraction,
+            seatSelectability: diagnostics.seatSelectability,
+            seatUnsatisfiableReason: diagnostics.seatUnsatisfiableReason,
+        },
+        seatControllerType: args.aiSummary.seatControllerType,
+        legalActions: args.aiSummary.legalActions,
+        aiDecisionPreview: args.aiSummary.decisionPreview,
+        responseWindow: diagnostics.seatResponseWindow,
+    });
+}
+
 export function extractOnlineAiRecoveryActionLogTail(
     state: MatchState<unknown>,
 ): OnlineAiRecoveryActionLogTailEntry[] {

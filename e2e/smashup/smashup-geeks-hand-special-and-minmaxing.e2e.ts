@@ -82,7 +82,7 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         await game.screenshot('geeks-fan-03-resolved', testInfo);
     });
 
-    test('粉丝普通打出和 special 同时合法时，先弹出打出/使用能力/取消仲裁', async ({ page, game }, testInfo) => {
+    test('粉丝普通打出和 special 同时合法时，复用浮动动作栏仲裁打出/使用能力/取消', async ({ page, game }, testInfo) => {
         test.setTimeout(180000);
 
         await openGeeksScene(game, {
@@ -106,13 +106,16 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         const playAsMinionButton = page.getByRole('button', { name: /打出为随从|Play as Minion/ });
         const useAbilityButton = page.getByRole('button', { name: /使用能力|Use Ability/ });
         const cancelButton = page.getByRole('button', { name: /取消 \/ 跳过|Cancel \/ Skip/ });
+        const actionChoiceBar = page.getByTestId('su-hand-action-choice-bar');
 
         await expect(fanCard).toBeVisible({ timeout: 10000 });
         await fanCard.click();
 
+        await expect(actionChoiceBar).toBeVisible({ timeout: 10000 });
         await expect(playAsMinionButton).toBeVisible({ timeout: 10000 });
         await expect(useAbilityButton).toBeVisible();
         await expect(cancelButton).toBeVisible();
+        await expect(page.locator('.fixed.inset-0').filter({ has: actionChoiceBar })).toHaveCount(0);
         await expect(page.getByText(/选择要对|Choose what to do with/)).toHaveCount(0);
         await expect(page.getByText(/既可以正常打出|can be played normally/)).toHaveCount(0);
         await game.screenshot('geeks-fan-choice-01-options', testInfo);

@@ -18,7 +18,7 @@
 ## 3. 结论等级
 
 - 结论：功能实现已验证。
-- 判定理由：服务端在线 AI 已按游戏 runtime 白名单判断可见 / 静默动作；连续可见动作改为按“上一次可见动作成功完成时间”重新计时。Summoner Wars 真实在线 E2E 通过，连续两次可见召唤的服务端事件间隔为 1020ms。
+- 判定理由：服务端在线 AI 已按游戏 runtime 白名单判断可见 / 静默动作；连续可见动作改为按“上一次可见动作成功完成时间”重新计时。Summoner Wars 真实在线 E2E 通过，连续两次可见召唤的服务端事件间隔最新为 1005ms。
 
 ## 4. 根因分层
 
@@ -45,8 +45,8 @@
 | legal-action 执行器拆分 | watchdog legal-action 的可见等待、命令串行执行、权威预检、执行后归属复查、无进展判定和最终广播必须保持旧合同 | `onlineAiLegalActionRecoveryExecutor.executeOnlineAiLegalActionRecovery()` | `server.ts` 只注入 seat controller、playerView、validate、execute、broadcast、tracker、circuit 和 feedback hooks；执行器不拥有房间状态写入口 | `onlineAiLegalActionRecoveryExecutor.test.ts`；`server.test.ts` targeted legal-action 回归 | 通过 |
 | repeated recovery 强制解卡拆分 | 同一卡点重复恢复达到上限后，只能在 AI seat 且无响应窗口时取消当前 AI interaction，再按正式 phase advance 规则推进；有 response window 时不得裸推进 | `onlineAiRepeatedRecoveryUnblockExecutor.tryForceUnblockRepeatedOnlineAiRecovery()` | `server.ts` 只注入 circuit、命令执行、suppressed/force-unblocked feedback、tracker 清理和队列 drain；执行器不拥有第二套房间状态写入口 | `onlineAiRepeatedRecoveryUnblockExecutor.test.ts`；`server.test.ts` repeated recovery targeted 回归 | 通过 |
 | recovery fingerprint 迁移 | 同一 AI 卡点的 tracker key、feedback blocker fingerprint 和状态 fallback fingerprint 必须继续使用同一语义，不因拆分改变去重和诊断定位 | `onlineAiWatchdogSequenceFingerprinting.ts` | `server.ts` 只保留兼容测试入口的薄包装；真实 fingerprint 生成、tracker key 提取和 private overlay 失败后缀归入现有 fingerprint 模块 | `onlineAiWatchdogSequenceFingerprinting.test.ts`；`server.test.ts` fingerprint targeted 回归 | 通过 |
-| feedback 诊断格式迁移 | 自动反馈里的 action log tail、event stream tail、interaction options、responseWindow、pendingDamage、commandPayload 和 blockerFingerprint 必须保持同一 JSON 诊断格式 | `onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiDiagnosticActionLog()`；`onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiWatchdogBlockerFingerprint()` | `server.ts` 不再本地维护纯诊断 JSON 和 blocker fingerprint 拼接；诊断模块复用 action/event tail 提取、结构化克隆和 fingerprint 归一化，不拥有状态写入口、tracker 或 feedback 入库权 | `onlineAiWatchdogFeedbackDiagnostics.test.ts`；`server.test.ts` targeted feedback / blocker 回归 | 通过 |
-| Summoner Wars 真实入口 | 连续两次可见召唤之间应保留约 1 秒节奏 | Summoner Wars 在线 E2E | match `UpA4UAe3ZXb`：召唤事件间隔 `1020ms`；页面轮询采样间隔 `1065ms`，不作为节奏断言权威 | `e2e/summonerwars/summonerwars-ai-delay-diagnostic.e2e.ts` | 通过 |
+| feedback 诊断格式迁移 | 自动反馈里的 action log tail、event stream tail、interaction options、responseWindow、pendingDamage、commandPayload、blockerFingerprint、recovery state snapshot 和 legalActions 摘要必须保持同一 JSON 诊断格式 | `onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiDiagnosticActionLog()`；`onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiWatchdogBlockerFingerprint()`；`onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiRecoveryStateSnapshot()`；`onlineAiWatchdogFeedbackDiagnostics.summarizeOnlineAiRecoveryLegalActions()` | `server.ts` 不再本地维护纯诊断 JSON、blocker fingerprint 拼接、recovery state snapshot JSON 和 legalActions 摘要；诊断模块复用 action/event tail 提取、结构化克隆、fingerprint 归一化和交互可解性摘要，不拥有状态写入口、tracker 或 feedback 入库权 | `onlineAiWatchdogFeedbackDiagnostics.test.ts`；`server.test.ts` targeted feedback / blocker 回归 | 通过 |
+| Summoner Wars 真实入口 | 连续两次可见召唤之间应保留约 1 秒节奏 | Summoner Wars 在线 E2E | match `RSzRvcwwwdk`：召唤事件间隔 `1005ms`；页面轮询采样间隔 `1031ms`，不作为节奏断言权威 | `e2e/summonerwars/summonerwars-ai-delay-diagnostic.e2e.ts` | 通过 |
 
 ## 6. AI-only guard
 
@@ -77,7 +77,8 @@
 - 第十一刀：`onlineAiWatchdogSequenceFingerprinting.ts` 接管 `server.ts` 内原本重复维护的 recovery fingerprint、tracker key 提取和 feedback blocker fingerprint 失败后缀；`server.ts` 仅保留薄包装以兼容现有测试入口。
 - 第十二刀：`onlineAiWatchdogFeedbackDiagnostics.ts` 承接 action/event tail 提取和自动反馈 diagnostic actionLog JSON 构造；`server.ts` 不再维护这份纯诊断格式，仍只负责何时上报和状态写入。
 - 第十三刀：删除 `server.ts` 内重复的 blocker fingerprint 纯诊断构造，统一调用 `onlineAiWatchdogFeedbackDiagnostics.buildOnlineAiWatchdogBlockerFingerprint()`；两个原调用点保留原参数和上报时机，不改变 feedback 入库、tracker 或恢复执行语义。
-- 当前行数：`server.ts = 6333`，`onlineAiSeatControllers.ts = 145`，`onlineAiExecutor.ts = 285`，`onlineAiActionDelay.ts = 109`，`onlineAiRecoveryOwnership.ts = 60`，`onlineAiRecoveryResolved.ts = 178`，`onlineAiRecoveryDispatch.ts = 130`，`commandFailureReason.ts = 68`，`onlineAiLegalActionCommand.ts = 58`，`onlineAiLegalActionRecoveryExecutor.ts = 203`，`onlineAiRepeatedRecoveryUnblockExecutor.ts = 255`，`onlineAiWatchdogSequenceFingerprinting.ts = 203`，`onlineAiWatchdogFeedbackDiagnostics.ts = 441`，`onlineAiRecoveryDispatch.test.ts = 226`，`commandFailureReason.test.ts = 46`，`onlineAiLegalActionCommand.test.ts = 99`，`onlineAiLegalActionRecoveryExecutor.test.ts = 159`，`onlineAiRepeatedRecoveryUnblockExecutor.test.ts = 204`，`onlineAiWatchdogSequenceFingerprinting.test.ts = 53`，`onlineAiWatchdogFeedbackDiagnostics.test.ts = 112`。这只是分层进度，不代表 `server.ts` 已完成全部重构。
+- 第十四刀：`onlineAiWatchdogFeedbackDiagnostics.ts` 承接 recovery state snapshot JSON 和 legalActions 摘要；`server.ts` 只提供 seat playerView、AI 摘要、blockerFingerprint 和上报时机，不新增第二套 tracker、feedback 入库或房间状态写入口。
+- 当前行数：`server.ts = 6255`，`onlineAiSeatControllers.ts = 145`，`onlineAiExecutor.ts = 285`，`onlineAiActionDelay.ts = 109`，`onlineAiRecoveryOwnership.ts = 60`，`onlineAiRecoveryResolved.ts = 178`，`onlineAiRecoveryDispatch.ts = 130`，`commandFailureReason.ts = 68`，`onlineAiLegalActionCommand.ts = 58`，`onlineAiLegalActionRecoveryExecutor.ts = 203`，`onlineAiRepeatedRecoveryUnblockExecutor.ts = 255`，`onlineAiWatchdogSequenceFingerprinting.ts = 203`，`onlineAiWatchdogFeedbackDiagnostics.ts = 545`，`onlineAiRecoveryDispatch.test.ts = 226`，`commandFailureReason.test.ts = 46`，`onlineAiLegalActionCommand.test.ts = 99`，`onlineAiLegalActionRecoveryExecutor.test.ts = 159`，`onlineAiRepeatedRecoveryUnblockExecutor.test.ts = 204`，`onlineAiWatchdogSequenceFingerprinting.test.ts = 53`，`onlineAiWatchdogFeedbackDiagnostics.test.ts = 201`。这只是分层进度，不代表 `server.ts` 已完成全部重构。
 - 行为合同：未改变 watchdog fallback 顺序、AI 决策来源、命令执行回滚和服务端锁管理。
 
 ## 9. 验证证据
@@ -94,14 +95,14 @@
   - 结果：1 file passed；4 passed。
   - 关键结果：human/manual guard 不进 dispatch；emergency 第二次拿 raw playerView；response-loop 经 emergency 后仍 stale 不触发 overlay resync；非 response-loop blocked 保留 overlay resync 建议。
 - 命令：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiWatchdogFeedbackDiagnostics.test.ts src/engine/transport/__tests__/onlineAiWatchdogSequenceFingerprinting.test.ts src/engine/transport/__tests__/onlineAiRepeatedRecoveryUnblockExecutor.test.ts src/engine/transport/__tests__/onlineAiLegalActionRecoveryExecutor.test.ts src/engine/transport/__tests__/commandFailureReason.test.ts src/engine/transport/__tests__/onlineAiLegalActionCommand.test.ts src/engine/transport/__tests__/onlineAiRecoveryDispatch.test.ts src/engine/transport/__tests__/onlineAiRecoveryOwnership.test.ts src/engine/transport/__tests__/onlineAiExecutor.test.ts --configLoader native`
-  - 结果：9 files passed；28 passed。
-  - 关键结果：feedback diagnostics、dispatch、ownership、executor、命令失败原因、legal-action 权威预检、legal-action recovery 执行器、repeated recovery 强制解卡执行器、recovery fingerprint 九个拆分模块的直接合同均通过。
+  - 结果：9 files passed；29 passed。
+  - 关键结果：feedback diagnostics、dispatch、ownership、executor、命令失败原因、legal-action 权威预检、legal-action recovery 执行器、repeated recovery 强制解卡执行器、recovery fingerprint 九个拆分模块的直接合同均通过；recovery state snapshot 保留卡点现场、seat 视角、交互可解性和 AI 摘要。
 - 命令：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts -t "buildOnlineAiRecoveryFingerprint|blockerFingerprint|在线 AI watchdog 选出的动作若被权威领域状态拒绝|同一卡点重复恢复三次|同一合法动作连续命令失败达到上限" --configLoader native`
   - 结果：1 file passed；15 passed，266 skipped。
   - 关键结果：server 兼容入口委托到 fingerprint / diagnostics 模块后，fingerprint 与 blocker fingerprint 漂移断言仍通过；权威预检失败不进 execute；repeated recovery 上限后能强制解卡，存在 response window 时不裸 `ADVANCE_PHASE`；同一合法动作连续失败达到上限后不无限重试。
-- 命令：`npx cross-env PW_E2E_SERVICE_REUSE=isolated npm run test:e2e:ci:file -- e2e/summonerwars/summonerwars-ai-delay-diagnostic.e2e.ts`
+- 命令：`npm run test:e2e:file -- e2e/summonerwars/summonerwars-ai-delay-diagnostic.e2e.ts`
   - 结果：2 passed。
-  - 关键结果：空回合 match `Eyn0DuRnSw0`，`returnedElapsedMs=2434`；连续召唤 match `UpA4UAe3ZXb`，`firstToSecondSummonEventGapMs=1020`，`firstToSecondSummonGapMs=1065`（页面轮询采样值，不作为 1 秒节奏断言权威）；运行权归属为 `server-online-ai-executor`。
+  - 关键结果：空回合 match `xUrpB_oYmt1`，`returnedElapsedMs=2692`；连续召唤 match `RSzRvcwwwdk`，`firstToSecondSummonEventGapMs=1005`，`firstToSecondSummonGapMs=1031`（页面轮询采样值，不作为 1 秒节奏断言权威）；运行权归属为 `server-online-ai-executor`。
 - 命令：`npm run test:ai:decision-view`
   - 结果：未作为通过项；脚本当前失败。当前统计为 4 个测试文件中 3 个通过、1 个失败；477 个用例中 476 个通过、1 个失败。
   - 当前失败：1 个测试失败，`src/pages/__tests__/matchSeatValidation.test.ts > resolveNextAiAction 在线视角 > DiceThrone 右侧奖励骰普通确认应允许在线 AI 基于共享状态收口`。

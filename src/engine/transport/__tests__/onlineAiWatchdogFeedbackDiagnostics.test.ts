@@ -4,6 +4,7 @@ import type { ForceEndTurnStalledAiResolution } from '../onlineAiRecovery';
 import {
     buildOnlineAiDiagnosticActionLog,
     buildOnlineAiRecoveryStateSnapshot,
+    buildOnlineAiUnsatisfiableInteractionStateSnapshot,
     extractOnlineAiRecoveryFingerprintFromTrackerKey,
     resolveOnlineAiRecoveryBlockerFingerprint,
 } from '../onlineAiWatchdogFeedbackDiagnostics';
@@ -197,5 +198,87 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
         expect(parsed.seatControllerType).toBe('local-ai');
         expect(parsed.legalActions?.total).toBe(1);
         expect(parsed.legalActions?.items?.[0]?.commandTypes).toEqual(['SYS_INTERACTION_RESPOND']);
+    });
+
+    it('unsatisfiable interaction snapshot 保留无解交互现场和 AI 摘要', () => {
+        const snapshot = buildOnlineAiUnsatisfiableInteractionStateSnapshot({
+            matchId: 'match-unsat',
+            gameId: 'test-game',
+            state: createState({
+                sys: {
+                    phase: 'main',
+                    turnNumber: 3,
+                    interaction: {
+                        isBlocked: true,
+                        current: {
+                            id: 'shared-choice',
+                            kind: 'simple-choice',
+                            playerId: '1',
+                            data: { sourceId: 'shared-source', options: [] },
+                        },
+                    },
+                    actionLog: {
+                        entries: [{ text: 'latest action', event: { type: 'LATEST_ACTION' } }],
+                    },
+                    eventStream: {
+                        entries: [{ type: 'LATEST_EVENT', timestamp: 30 }],
+                    },
+                },
+            } as unknown as MatchState<unknown>),
+            seatState: createState({
+                sys: {
+                    phase: 'main',
+                    turnNumber: 3,
+                    interaction: {
+                        isBlocked: true,
+                        current: {
+                            id: 'seat-choice',
+                            kind: 'simple-choice',
+                            playerId: '1',
+                            data: { sourceId: 'seat-source', options: [] },
+                        },
+                    },
+                    eventStream: { entries: [] },
+                },
+            } as unknown as MatchState<unknown>),
+            playerId: '1',
+            reason: 'empty-options',
+            commandType: 'SYS_INTERACTION_RESPOND',
+            progressMarker: 'marker-unsat',
+            aiSummary: {
+                seatControllerType: 'local-ai',
+                legalActions: {
+                    total: 0,
+                    truncated: false,
+                    items: [],
+                },
+                decisionPreview: null,
+            },
+        });
+
+        const parsed = JSON.parse(snapshot) as {
+            matchId?: string;
+            commandType?: string;
+            blockerFingerprint?: string;
+            recentActionLogTail?: Array<{ type?: string }>;
+            interaction?: {
+                sharedUnsatisfiableReason?: string;
+                seat?: { id?: string; sourceId?: string };
+                seatSelectability?: { totalOptions?: number; selectionState?: string };
+                seatUnsatisfiableReason?: string;
+            };
+            legalActions?: { total?: number };
+        };
+        expect(parsed.matchId).toBe('match-unsat');
+        expect(parsed.commandType).toBe('SYS_INTERACTION_RESPOND');
+        expect(parsed.blockerFingerprint).toBe('main:empty-options:interaction:simple-choice:seat-source');
+        expect(parsed.recentActionLogTail?.[0]?.type).toBe('LATEST_ACTION');
+        expect(parsed.interaction?.sharedUnsatisfiableReason).toBe('empty-options');
+        expect(parsed.interaction?.seat?.id).toBe('seat-choice');
+        expect(parsed.interaction?.seat?.sourceId).toBe('seat-source');
+        expect(parsed.interaction?.seatSelectability?.totalOptions).toBe(0);
+        expect(parsed.interaction?.seatSelectability?.selectionState).toBe('no-options');
+        expect(parsed.interaction?.seatUnsatisfiableReason).toBe('empty-options');
+        expect(parsed.legalActions?.total).toBe(0);
     });
 });

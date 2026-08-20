@@ -4478,6 +4478,46 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     )}
                 </AnimatePresence>
 
+                {/* --- 手牌多动作仲裁浮动操作栏（打出/使用能力/跳过） --- */}
+                <AnimatePresence>
+                    {pendingHandActionChoiceCard && (
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            className={floatingHintClassName}
+                            style={floatingHintStyle}
+                        >
+                            <div data-testid="su-hand-action-choice-bar" className="flex gap-3 pointer-events-auto">
+                                <SmashUpGameButton
+                                    variant="primary"
+                                    size="md"
+                                    data-testid="su-hand-action-play-minion"
+                                    onClick={() => confirmHandActionChoice('minion')}
+                                >
+                                    {t('ui.hand_action_play_minion')}
+                                </SmashUpGameButton>
+                                <SmashUpGameButton
+                                    variant="primary"
+                                    size="md"
+                                    data-testid="su-hand-action-use-special"
+                                    onClick={() => confirmHandActionChoice('hand-special')}
+                                >
+                                    {t('ui.hand_action_use_special')}
+                                </SmashUpGameButton>
+                                <SmashUpGameButton
+                                    variant="secondary"
+                                    size="md"
+                                    data-testid="su-hand-action-cancel"
+                                    onClick={closeHandActionChoice}
+                                >
+                                    {t('ui.hand_action_cancel')}
+                                </SmashUpGameButton>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* --- 响应窗口浮动操作栏（让过/场上能力；手牌响应由手牌本体承接） --- */}
                 <AnimatePresence>
                     {isReactionChoicePrompt && !isTitanReactionPrompt && (reactionChoicePlayableCardUids.size > 0 || reactionChoiceExtraOptions.length > 0) && (
@@ -4945,53 +4985,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                 onClick={() => confirmFusionPlayAs('action')}
                                             >
                                                 {t('ui.play_as_action')}
-                                            </SmashUpGameButton>
-                                        </div>
-                                    </motion.div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Hand card normal play / special action selector */}
-                        <AnimatePresence>
-                            {pendingHandActionChoiceCard && (
-                                <motion.div
-                                    className="fixed inset-0 flex items-center justify-center"
-                                    style={{ zIndex: UI_Z_INDEX.overlayRaised }}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    onClick={closeHandActionChoice}
-                                >
-                                    <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-                                    <motion.div
-                                        className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-3 pointer-events-auto"
-                                        initial={{ y: 16, scale: 0.98 }}
-                                        animate={{ y: 0, scale: 1 }}
-                                        exit={{ y: 10, scale: 0.98 }}
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <SmashUpGameButton
-                                                variant="primary"
-                                                className="flex-1"
-                                                onClick={() => confirmHandActionChoice('minion')}
-                                            >
-                                                {t('ui.hand_action_play_minion')}
-                                            </SmashUpGameButton>
-                                            <SmashUpGameButton
-                                                variant="primary"
-                                                className="flex-1"
-                                                onClick={() => confirmHandActionChoice('hand-special')}
-                                            >
-                                                {t('ui.hand_action_use_special')}
-                                            </SmashUpGameButton>
-                                            <SmashUpGameButton
-                                                variant="secondary"
-                                                className="flex-1"
-                                                onClick={closeHandActionChoice}
-                                            >
-                                                {t('ui.hand_action_cancel')}
                                             </SmashUpGameButton>
                                         </div>
                                     </motion.div>

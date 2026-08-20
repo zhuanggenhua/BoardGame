@@ -95,6 +95,11 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         const source = readBoardSource();
         const zh = readSmashUpLocale('zh-CN').ui;
         const en = readSmashUpLocale('en').ui;
+        const handActionBarIndex = source.indexOf('data-testid="su-hand-action-choice-bar"');
+        const handActionBarSnippet = source.slice(
+            Math.max(0, handActionBarIndex - 700),
+            handActionBarIndex + 1800,
+        );
 
         expect(source.match(/shouldOfferHandSpecialActionChoice/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
         expect(source.match(/setPendingHandActionChoiceUid\(card\.uid\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
@@ -102,7 +107,15 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("confirmHandActionChoice('minion')");
         expect(source).toContain("confirmHandActionChoice('hand-special')");
         expect(source).toContain('const closeHandActionChoice = useCallback');
-        expect(source).toContain('pendingHandActionChoiceCard &&');
+        expect(handActionBarIndex).toBeGreaterThan(0);
+        expect(handActionBarSnippet).toContain('pendingHandActionChoiceCard &&');
+        expect(handActionBarSnippet).toContain('className={floatingHintClassName}');
+        expect(handActionBarSnippet).toContain('style={floatingHintStyle}');
+        expect(handActionBarSnippet).toContain('data-testid="su-hand-action-play-minion"');
+        expect(handActionBarSnippet).toContain('data-testid="su-hand-action-use-special"');
+        expect(handActionBarSnippet).toContain('data-testid="su-hand-action-cancel"');
+        expect(handActionBarSnippet).not.toContain('fixed inset-0');
+        expect(handActionBarSnippet).not.toContain('bg-black/45');
         expect(source).not.toContain("t('ui.hand_action_choose')");
         expect(source).not.toContain("t('ui.hand_action_choose_desc')");
         expect(source).toContain("t('ui.hand_action_play_minion')");

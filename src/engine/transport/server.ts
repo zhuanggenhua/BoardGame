@@ -69,7 +69,6 @@ import {
     buildResponseWindowRecoveryFingerprintHint,
     resolveCurrentPlayerId,
     resolveOnlineAiCurrentPlayerId,
-    resolveUnsatisfiableReasonFromInteraction,
     resolveForceEndTurnForStalledAi,
     resolveManualForceEndAiPhase,
     resolveForceAdvancePhaseAfterRecovery,
@@ -88,17 +87,16 @@ import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
 import {
     buildOnlineAiDiagnosticActionLog,
     buildInteractionSelectabilityDiagnostic,
+    buildOnlineAiPendingDamageDiagnostic,
     buildOnlineAiRecoveryStateSnapshot as buildOnlineAiRecoveryStateSnapshotJson,
+    buildOnlineAiUnsatisfiableInteractionStateSnapshot as buildOnlineAiUnsatisfiableInteractionStateSnapshotJson,
     buildOnlineAiWatchdogBlockerFingerprint,
-    extractOnlineAiRecoveryActionLogTail,
-    extractOnlineAiRecoveryEventTail,
     resolveOnlineAiRecoveryBlockerFingerprint,
     summarizeOnlineAiRecoveryLegalActions,
     resolveUnsatisfiableReasonFromSelectability,
     type InteractionSelectabilityDiagnostic,
     type OnlineAiRecoveryAiSummary,
     type OnlineAiRecoveryLegalActionSummary,
-    type OnlineAiRecoveryPendingDamageDiagnostic,
 } from './onlineAiWatchdogFeedbackDiagnostics';
 import {
     OnlineAiCircuitBreaker,
@@ -4057,7 +4055,7 @@ export class GameTransportServer {
         const sharedInteraction = extractAiInteractionSnapshot(match.state);
         const seatInteraction = extractAiInteractionSnapshot(seatView);
         const responseWindow = extractAiResponseWindowSnapshot(seatView);
-        const pendingDamage = this.buildOnlineAiPendingDamageDiagnostic(match.state);
+        const pendingDamage = buildOnlineAiPendingDamageDiagnostic(match.state);
         const blockerFingerprint = this.resolveOnlineAiRecoveryFeedbackFingerprint(
             match,
             candidate,
@@ -4077,29 +4075,6 @@ export class GameTransportServer {
             responseWindow,
             pendingDamage,
         });
-    }
-
-    private buildOnlineAiPendingDamageDiagnostic(
-        state: MatchState<unknown>,
-    ): OnlineAiRecoveryPendingDamageDiagnostic | null {
-        const pendingDamage = (state.core as {
-            pendingDamage?: {
-                id?: unknown;
-                responderId?: unknown;
-                responseType?: unknown;
-                currentDamage?: unknown;
-                sourceAbilityId?: unknown;
-                tokenUsageTotals?: unknown;
-            };
-        } | undefined)?.pendingDamage;
-        return pendingDamage ? {
-            id: pendingDamage.id ?? null,
-            responderId: pendingDamage.responderId ?? null,
-            responseType: pendingDamage.responseType ?? null,
-            currentDamage: pendingDamage.currentDamage ?? null,
-            sourceAbilityId: pendingDamage.sourceAbilityId ?? null,
-            tokenUsageTotals: pendingDamage.tokenUsageTotals ?? null,
-        } : null;
     }
 
     private resolveOnlineAiRecoveryFeedbackFingerprint(
@@ -4155,58 +4130,17 @@ export class GameTransportServer {
         preCommandSeatView: MatchState<unknown>;
     }): Promise<string> {
         const { match, playerId, reason, commandType, progressMarkerBefore, preCommandSeatView } = args;
-        const sharedInteraction = extractAiInteractionSnapshot(match.state);
-        const interaction = extractAiInteractionSnapshot(preCommandSeatView);
-        const sharedInteractionState = (match.state.sys?.interaction as { current?: unknown } | undefined)?.current;
-        const responseWindow = extractAiResponseWindowSnapshot(preCommandSeatView);
         const aiSummary = await this.buildOnlineAiRecoveryAiSummary(match, playerId, preCommandSeatView);
-        const sharedUnsatisfiableReasonDetailed = resolveUnsatisfiableReasonFromInteraction(
-            match.state,
-            sharedInteractionState as HiddenInteractionDescriptor | undefined,
-        );
-        const seatUnsatisfiableReasonDetailed = resolveUnsatisfiableReasonFromInteraction(
-            preCommandSeatView,
-            (preCommandSeatView.sys?.interaction as { current?: unknown } | undefined)?.current as HiddenInteractionDescriptor | undefined,
-        );
-        const sharedUnsatisfiableReason = resolveUnsatisfiableReasonFromSelectability(sharedInteraction)
-            ?? sharedUnsatisfiableReasonDetailed;
-        const seatUnsatisfiableReason = reason
-            ?? resolveUnsatisfiableReasonFromSelectability(interaction)
-            ?? seatUnsatisfiableReasonDetailed;
-        const blockerFingerprint = buildOnlineAiWatchdogBlockerFingerprint({
-            phase: preCommandSeatView.sys?.phase ?? match.state.sys?.phase ?? null,
-            reason,
-            sharedInteraction,
-            seatInteraction: interaction,
-            responseWindow,
-            pendingDamage: this.buildOnlineAiPendingDamageDiagnostic(match.state),
-        });
-
-        return JSON.stringify({
+        return buildOnlineAiUnsatisfiableInteractionStateSnapshotJson({
             matchId: match.matchID,
             gameId: match.gameId,
+            state: match.state,
+            seatState: preCommandSeatView,
             playerId,
             reason,
             commandType,
-            blockerFingerprint,
-            phase: preCommandSeatView.sys?.phase ?? match.state.sys?.phase ?? null,
-            turnNumber: preCommandSeatView.sys?.turnNumber ?? match.state.sys?.turnNumber ?? null,
-            currentPlayerId: resolveCurrentPlayerId(preCommandSeatView),
             progressMarker: progressMarkerBefore,
-            recentActionLogTail: extractOnlineAiRecoveryActionLogTail(match.state),
-            recentEventStreamTail: extractOnlineAiRecoveryEventTail(match.state),
-            interaction: {
-                shared: sharedInteraction,
-                sharedSelectability: buildInteractionSelectabilityDiagnostic(sharedInteraction),
-                sharedUnsatisfiableReason,
-                seat: interaction,
-                seatSelectability: buildInteractionSelectabilityDiagnostic(interaction),
-                seatUnsatisfiableReason,
-            },
-            seatControllerType: aiSummary.seatControllerType,
-            legalActions: aiSummary.legalActions,
-            aiDecisionPreview: aiSummary.decisionPreview,
-            responseWindow,
+            aiSummary,
         });
     }
 
@@ -5837,7 +5771,7 @@ export class GameTransportServer {
                         sharedInteraction,
                         seatInteraction: interaction,
                         responseWindow,
-                        pendingDamage: this.buildOnlineAiPendingDamageDiagnostic(match.state),
+                        pendingDamage: buildOnlineAiPendingDamageDiagnostic(match.state),
                     });
                     const trackerKey = `${playerID}:unsatisfiable-interaction:${typeof payload?.interactionId === 'string' ? payload.interactionId : 'unknown'}:${reason}:${progressMarkerBeforeCommand}`;
                     unsatisfiableInteractionFeedback = {
@@ -5869,7 +5803,7 @@ export class GameTransportServer {
                             sharedInteraction,
                             interaction,
                             responseWindow,
-                            pendingDamage: this.buildOnlineAiPendingDamageDiagnostic(match.state),
+                            pendingDamage: buildOnlineAiPendingDamageDiagnostic(match.state),
                             commandType: effectiveCommandType,
                             reason,
                         }),

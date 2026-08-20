@@ -26,6 +26,8 @@ type ParsedRect = {
 const DEFAULT_DURATION_MS = 380;
 const COMPLETION_PROGRESS_THRESHOLD = 0.86;
 const COMPLETION_FALLBACK_EXTRA_MS = 80;
+const TURN_OVERLAY_READY_MAX_FRAMES = 12;
+const TURN_OVERLAY_RECT_TOLERANCE_PX = 8;
 const TURNJS_OVERVIEW_PAGE = 2;
 const TURNJS_DETAIL_PAGE = 4;
 const JQUERY_SCRIPT_PATH = '/vendor/jquery/jquery-1.12.0.min.js';
@@ -263,6 +265,17 @@ function sanitizeOverlayDom(root: HTMLElement) {
     });
 }
 
+function toRoundedRect(rect: DOMRect) {
+    return {
+        left: Math.round(rect.left * 10) / 10,
+        top: Math.round(rect.top * 10) / 10,
+        width: Math.round(rect.width * 10) / 10,
+        height: Math.round(rect.height * 10) / 10,
+        right: Math.round(rect.right * 10) / 10,
+        bottom: Math.round(rect.bottom * 10) / 10,
+    };
+}
+
 export interface FoldLinePageFlipStageProps {
     mode: FlipMode;
     renderOverviewStage: RenderStage;
@@ -313,6 +326,7 @@ export function FoldLinePageFlipStage({
     const rawProgressRef = React.useRef(0);
     const [turnReady, setTurnReady] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
+    const [turnOverlayVisible, setTurnOverlayVisible] = React.useState(false);
     const [progress, setProgress] = React.useState(0);
     const [rawProgress, setRawProgress] = React.useState(0);
     const [turnError, setTurnError] = React.useState<string | null>(null);
@@ -358,6 +372,7 @@ export function FoldLinePageFlipStage({
         cancelProgressLoopRef.current = null;
         setTurnReady(false);
         setIsAnimating(false);
+        setTurnOverlayVisible(false);
         setProgress(1);
         setRawProgress(1);
         if (turningToDetail) {
@@ -395,7 +410,7 @@ export function FoldLinePageFlipStage({
         : renderDetailStage({ includeTestId: false });
     const targetVisibleStage = turningToDetail ? detailStageForTurn : overviewStageForTurn;
     const flippingShellStage = flippingShellContent === 'source' ? sourceVisibleStage : targetVisibleStage;
-    const shouldHoldSourceStage = isFlipping && !isAnimating;
+    const shouldHoldSourceStage = isFlipping && (!isAnimating || !turnOverlayVisible);
     const detailPreviewOpacity = enableDetailPreview && turningToDetail && isFlipping
         ? Math.min(0.92, Math.max(0, (progress - 0.12) / 0.32) * 0.92)
         : 0;
@@ -627,6 +642,7 @@ export function FoldLinePageFlipStage({
         setTurnReady(false);
         setTurnError(null);
         setIsAnimating(false);
+        setTurnOverlayVisible(false);
         if (shouldResetAnimationState) {
             setProgress(isFlipping ? 0 : 1);
             setRawProgress(isFlipping ? 0 : 1);
@@ -714,13 +730,25 @@ export function FoldLinePageFlipStage({
                             if (disposed || !instance) {
                                 return;
                             }
-                            animationStartedAtRef.current = performance.now();
-                            setIsAnimating(true);
-                            setProgress(0);
-                            setRawProgress(0);
                             instance.turn('peel', false);
                             instance.turn(turningToDetail ? 'next' : 'previous');
                             writeTurnSnapshot();
+                            window.requestAnimationFrame(() => {
+                                if (disposed || !instance) {
+                                    return;
+                                }
+                                window.requestAnimationFrame(() => {
+                                    if (disposed || !instance) {
+                                        return;
+                                    }
+                                    animationStartedAtRef.current = performance.now();
+                                    setProgress(0);
+                                    setRawProgress(0);
+                                    setTurnOverlayVisible(true);
+                                    setIsAnimating(true);
+                                    writeTurnSnapshot();
+                                });
+                            });
                         });
                         return;
                     }
@@ -770,6 +798,7 @@ export function FoldLinePageFlipStage({
             data-turn-error={turnError ?? ''}
             data-turn-source-snapshot-ready={activeSourceReady ? 'true' : 'false'}
             data-turn-source-hold-visible={shouldHoldSourceStage ? 'true' : 'false'}
+            data-turn-overlay-visible={turnOverlayVisible ? 'true' : 'false'}
         >
             <StageCanvas>
                 <StageFrame stageSize={activeStageSize}>
