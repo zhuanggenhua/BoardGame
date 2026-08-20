@@ -77,6 +77,8 @@ public/**/*.avif
 public/**/*.tiff
 public/**/*.bmp
 public/**/*.ico
+!public/logos/
+!public/logos/**
 public/**/*.wav
 public/**/*.ogg
 public/**/*.mp3

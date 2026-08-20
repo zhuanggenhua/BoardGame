@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
     CLOUDFLARE_PAGES_MAX_FILE_BYTES,
@@ -13,6 +15,15 @@ import {
 } from '../../../scripts/deploy/prune-web-dist-assets.mjs';
 
 describe('Android embedded 资源裁剪', () => {
+    it('Docker 构建上下文会保留首页 logo 和二维码文件', () => {
+        const dockerignore = readFileSync(join(process.cwd(), '.dockerignore'), 'utf8');
+
+        expect(dockerignore).toContain('public/**/*.png');
+        expect(dockerignore).toContain('public/**/*.jpg');
+        expect(dockerignore).toContain('!public/logos/');
+        expect(dockerignore).toContain('!public/logos/**');
+    });
+
     it('只为王权骰铸首页保留压缩缩略图，不回塞大图资源', () => {
         expect(isRetainedDistI18nFile('zh-CN/dicethrone/thumbnails/compressed/fengm.webp')).toBe(true);
 
