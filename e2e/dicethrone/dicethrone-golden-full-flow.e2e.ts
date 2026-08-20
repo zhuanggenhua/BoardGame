@@ -573,9 +573,18 @@ async function closeBoardMagnifyIfVisible(page: Page): Promise<void> {
 
 async function waitForCardSpotlightClear(page: Page): Promise<void> {
     await page.waitForTimeout(250);
-    const overlay = page.getByTestId('card-spotlight-overlay').first();
+    const overlays = page.getByTestId('card-spotlight-overlay');
+    const overlay = overlays.first();
     if (!(await overlay.isVisible({ timeout: 500 }).catch(() => false))) return;
-    await expect(overlay, '阶段截图前卡牌特写必须退场，避免把遮挡图当作流程证据').toBeHidden({ timeout: 7000 });
+
+    const spotlightRoot = page.getByTestId('spotlight-container-root').filter({ has: overlay }).first();
+    if (await spotlightRoot.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await spotlightRoot.click({ position: { x: 12, y: 12 } });
+    } else {
+        await page.mouse.click(8, 8);
+    }
+
+    await expect(overlays, '阶段截图前卡牌特写必须由玩家关闭并退场，避免把遮挡图当作流程证据').toHaveCount(0, { timeout: 7000 });
 }
 
 async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {
