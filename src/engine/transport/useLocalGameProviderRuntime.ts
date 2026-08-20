@@ -8,7 +8,7 @@ import {
 } from '../ai/seatControllers';
 import type { AiSeatController } from '../ai/types';
 import type { GameClientContextValue } from './reactContext';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import { resolveLocalPregameControlledPlayerId } from './followCurrentTurnPlayer';
 import { useLocalAiRuntime } from './useLocalAiRuntime';
 import { useLocalProviderDebugEffects } from './useLocalProviderDebugEffects';

@@ -9,7 +9,7 @@ import { createInitialSystemState } from '../pipeline';
 import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     createInitialLocalProviderState,
     createLocalProviderRandom,

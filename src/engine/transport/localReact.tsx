@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
 import { useLocalGameProviderRuntime } from './useLocalGameProviderRuntime';
 import { GameClientContext } from './reactContext';

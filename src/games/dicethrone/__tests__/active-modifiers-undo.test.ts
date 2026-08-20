@@ -294,6 +294,43 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).not.toContain('absolute inset-x-0 bottom-full');
     });
 
+    it('右侧栏阶段推进按钮不可用时仍应保留显示，只禁用点击', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 0,
+                rollLimit: 3,
+                rollConfirmed: false,
+                currentPhase: 'upkeep',
+                canInteractDice: false,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: true,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+            })
+        );
+
+        expect(html).toContain('data-tutorial-id="advance-phase-button"');
+        expect(html).toContain('disabled=""');
+        expect(html).not.toContain('invisible pointer-events-none');
+    });
+
     it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {
         const html = renderToStaticMarkup(
             React.createElement(RightSidebar, {

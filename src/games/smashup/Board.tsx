@@ -103,7 +103,14 @@ import {
     shouldOfferHandSpecialActionChoice,
     shouldPreferHandSpecialSelection,
 } from './ui/handSpecialSelection';
-import { resolveMinionUiPlayPlan } from './ui/resolveMinionUiPlayPlan';
+import {
+    getMinionReplacementPlayableBaseIndices,
+    getRegularMinionPlayableBaseIndices,
+    resolveMinionUiPlayPlan,
+    shouldOfferMinionReplacementActionChoice,
+    shouldPreferMinionReplacementSelection,
+    type MinionUiPlayIntent,
+} from './ui/resolveMinionUiPlayPlan';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
@@ -367,6 +374,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         ? 'absolute inset-x-0 flex justify-center pointer-events-auto'
         : 'fixed inset-x-0 flex justify-center pointer-events-auto';
     const floatingHintStyle = { zIndex: UI_Z_INDEX.hint, bottom: `${layout.floatingActionBottom}px` };
+    const handActionChoiceStyle = {
+        ...floatingHintStyle,
+        bottom: `${layout.floatingActionBottom + (isMobileViewport ? 76 : 96)}px`,
+    };
     const battlefieldBottomInset = layout.handAreaHeight;
     const battlefieldBaseTopPadding = `max(${layout.boardPaddingTop}px, calc(${layoutInlineSize((layout.minionCardWidth / 0.714) - 0.6, layout)} + 4px))`;
     const topFloatingBannerClassName = isMobileViewport
@@ -506,12 +517,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     });
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
-    const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
+    const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'minion-replacement' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
     const [selectedFieldPromptSourceUid, setSelectedFieldPromptSourceUid] = useState<string | null>(null);
     const pendingReactionFieldTriggerSourceUidRef = useRef<string | null>(null);
     const [pendingFusionChoiceUid, setPendingFusionChoiceUid] = useState<string | null>(null);
     const [pendingHandActionChoiceUid, setPendingHandActionChoiceUid] = useState<string | null>(null);
+    const [pendingHandActionSpecialMode, setPendingHandActionSpecialMode] = useState<'hand-special' | 'minion-replacement' | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
     const [meFirstPendingCard, setMeFirstPendingCard] = useState<MeFirstPendingCard | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1859,7 +1871,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return next;
     }, [G, core, coreTitans, playerID]);
 
-    const resolvePlayableCardMode = useCallback((card: CardInstance): 'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | null => {
+    const resolvePlayableCardMode = useCallback((card: CardInstance): 'minion' | 'minion-replacement' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null => {
         if (card.uid === selectedCardUid && selectedCardMode) return selectedCardMode;
         if (card.type === 'minion') return 'minion';
         if (card.type !== 'action') return null;
@@ -1872,7 +1884,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return 'action';
     }, [selectedCardMode, selectedCardUid]);
 
-    const getDeployableBaseStateForCard = useCallback((card: CardInstance, cardMode: 'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | null): { deployableBaseIndices: Set<number>; deployBlockReason: string | null } => {
+    const getDeployableBaseStateForCard = useCallback((card: CardInstance, cardMode: 'minion' | 'minion-replacement' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null): { deployableBaseIndices: Set<number>; deployBlockReason: string | null } => {
         const indices = new Set<number>();
         if (!playerID || !cardMode) return { deployableBaseIndices: indices, deployBlockReason: null };
         let firstValidationError: string | null = null;
@@ -1921,8 +1933,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
 
         for (let i = 0; i < core.bases.length; i++) {
-            if (cardMode === 'minion') {
-                const playPlan = resolveMinionUiPlayPlan(matchState, playerID, card, i);
+            if (cardMode === 'minion' || cardMode === 'minion-replacement') {
+                const playPlan = resolveMinionUiPlayPlan(matchState, playerID, card, i, {
+                    intent: cardMode === 'minion-replacement' ? 'replacement' : 'auto',
+                });
                 if (playPlan.validation.valid) {
                     indices.add(i);
                 } else if (!firstValidationError && playPlan.validation.error) {
@@ -2003,7 +2017,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return {
             deployableBaseIndices: indices,
-            deployBlockReason: cardMode === 'minion' ? firstValidationError : null,
+            deployBlockReason: cardMode === 'minion' || cardMode === 'minion-replacement' ? firstValidationError : null,
         };
     }, [core, getBaseLimitedQuotaMeta, isAfterScoringResponse, isCurrentPromptForPlayer, isMeFirstResponse, isReactionChoicePrompt, matchState, playerID, reactionChoiceTargetStateByCardUid, reactionWindow?.sourceBaseIndex, reactionWindow?.windowType, t]);
 
@@ -2199,9 +2213,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             cardData: { defId: payload.defId },
         };
     }, []);
+    const actionSpotlightViewerId = playerID ?? rootPid;
     const actionSpotlight = useCardSpotlightQueue<SmashUpActionSpotlightData>({
         entries: eventStreamEntries,
-        currentPlayerId: null,
+        currentPlayerId: actionSpotlightViewerId,
         consumeOnReconcile: true,
         triggerEventTypes: [SU_EVENTS.ACTION_PLAYED],
         extractCard: actionSpotlightExtractCard,
@@ -2376,6 +2391,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardMode(null);
             setPendingFusionChoiceUid(null);
             setPendingHandActionChoiceUid(null);
+            setPendingHandActionSpecialMode(null);
             setMeFirstPendingCard(null);
             setSelectedSetAsideTitanUid(null);
         });
@@ -2387,13 +2403,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 卡牌和基地图集已在模块顶层 initSmashUpAtlases() 同步注册，无需异步加载
 
     // --- Handlers ---
-    const handlePlayMinion = useCallback((cardUid: string, baseIndex: number) => {
+    const handlePlayMinion = useCallback((cardUid: string, baseIndex: number, intent: MinionUiPlayIntent = 'auto') => {
         if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION)) {
             playDeniedSound();
             return;
         }
         const card = myPlayer?.hand.find(entry => entry.uid === cardUid);
-        const playPlan = card ? resolveMinionUiPlayPlan(G, rootPid, card, baseIndex) : null;
+        const playPlan = card ? resolveMinionUiPlayPlan(G, rootPid, card, baseIndex, { intent }) : null;
         const playAsAction = playPlan?.playAsAction === true;
         if (!playAsAction && respondReactionPlayOption({ kind: 'play_minion', cardUid, baseIndex })) {
             setSelectedCardUid(null);
@@ -2407,7 +2423,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardMode(null);
             return;
         }
-        dispatch(SU_COMMANDS.PLAY_MINION, { cardUid, baseIndex, ...(playAsAction ? { playAsAction: true } : {}) });
+        dispatch(SU_COMMANDS.PLAY_MINION, {
+            cardUid,
+            baseIndex,
+            ...(playAsAction ? { playAsAction: true } : {}),
+            ...(playPlan?.replacementHandCardUid ? { replacementHandCardUid: playPlan.replacementHandCardUid } : {}),
+        });
         setSelectedCardUid(null);
         setSelectedCardMode(null);
     }, [G, dispatch, isCurrentPromptForPlayer, isReactionChoicePrompt, isTutorialCommandAllowed, myPlayer?.hand, respondReactionPlayOption, rootPid, t]);
@@ -2855,6 +2876,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             if (selectedCardMode === 'ongoing') {
                 handlePlayOngoingAction(selectedCardUid, index);
+            } else if (selectedCardMode === 'minion-replacement') {
+                handlePlayMinion(selectedCardUid, index, 'replacement');
             } else {
                 handlePlayMinion(selectedCardUid, index);
             }
@@ -3074,14 +3097,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
 
         if (card.type === 'minion') {
-            const normalMinionBaseState = getDeployableBaseStateForCard(card, 'minion');
+            const regularMinionBaseIndices = getRegularMinionPlayableBaseIndices(matchState, rootPid, card.uid);
             if (shouldOfferHandSpecialActionChoice({
                 matchState,
                 playerId: rootPid,
                 card,
-                normalPlayableBaseIndices: normalMinionBaseState.deployableBaseIndices,
+                normalPlayableBaseIndices: regularMinionBaseIndices,
             })) {
                 setPendingHandActionChoiceUid(card.uid);
+                setPendingHandActionSpecialMode('hand-special');
                 setPendingFusionChoiceUid(null);
                 setSelectedCardUid(card.uid);
                 setSelectedCardMode(null);
@@ -3091,17 +3115,49 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 matchState,
                 playerId: rootPid,
                 card,
-                normalPlayableBaseIndices: normalMinionBaseState.deployableBaseIndices,
+                normalPlayableBaseIndices: regularMinionBaseIndices,
             })) {
                 if (selectedCardUid === card.uid && selectedCardMode === 'hand-special') {
                     setSelectedCardUid(null);
                     setSelectedCardMode(null);
                     setPendingHandActionChoiceUid(null);
+                    setPendingHandActionSpecialMode(null);
                 } else {
                     setSelectedCardUid(card.uid);
                     setSelectedCardMode('hand-special');
                     setPendingHandActionChoiceUid(null);
+                    setPendingHandActionSpecialMode(null);
                 }
+                return;
+            }
+            if (shouldOfferMinionReplacementActionChoice({
+                matchState,
+                playerId: rootPid,
+                card,
+                regularPlayableBaseIndices: regularMinionBaseIndices,
+            })) {
+                setPendingHandActionChoiceUid(card.uid);
+                setPendingHandActionSpecialMode('minion-replacement');
+                setPendingFusionChoiceUid(null);
+                setSelectedCardUid(card.uid);
+                setSelectedCardMode(null);
+                return;
+            }
+            if (shouldPreferMinionReplacementSelection({
+                matchState,
+                playerId: rootPid,
+                card,
+                regularPlayableBaseIndices: regularMinionBaseIndices,
+            })) {
+                if (selectedCardUid === card.uid && selectedCardMode === 'minion-replacement') {
+                    setSelectedCardUid(null);
+                    setSelectedCardMode(null);
+                } else {
+                    setSelectedCardUid(card.uid);
+                    setSelectedCardMode('minion-replacement');
+                }
+                setPendingHandActionChoiceUid(null);
+                setPendingHandActionSpecialMode(null);
                 return;
             }
         }
@@ -3114,6 +3170,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             setPendingFusionChoiceUid(card.uid);
             setPendingHandActionChoiceUid(null);
+            setPendingHandActionSpecialMode(null);
             setSelectedCardUid(card.uid);
             setSelectedCardMode(null);
             return;
@@ -3159,10 +3216,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             setPendingHandActionChoiceUid(null);
+            setPendingHandActionSpecialMode(null);
         } else {
             setSelectedCardUid(card.uid);
             setSelectedCardMode('minion');
             setPendingHandActionChoiceUid(null);
+            setPendingHandActionSpecialMode(null);
         }
     }, [activeSelectedSetAsideTitanUid, currentPrompt, discardCount, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isCurrentPromptForPlayer, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isMultiDirectHandSelect, isReactionChoicePrompt, isTutorialCommandAllowed, isTutorialTargetAllowed, matchState, multiMinionConstraints.max, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionChoicePlayableCardUids, reactionChoiceTargetStateByCardUid, reactionWindow, resolvePlayableCardMode, respondReactionPlayOption, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
 
@@ -3206,6 +3265,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const closeHandActionChoice = useCallback(() => {
         setPendingHandActionChoiceUid(null);
+        setPendingHandActionSpecialMode(null);
         setSelectedCardUid(null);
         setSelectedCardMode(null);
     }, []);
@@ -3213,7 +3273,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const confirmHandActionChoice = useCallback((mode: 'minion' | 'hand-special') => {
         if (!pendingHandActionChoiceUid || !myPlayer) return;
         const card = myPlayer.hand.find(c => c.uid === pendingHandActionChoiceUid);
+        const specialMode = pendingHandActionSpecialMode ?? 'hand-special';
         setPendingHandActionChoiceUid(null);
+        setPendingHandActionSpecialMode(null);
         if (!card || card.type !== 'minion') {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
@@ -3221,15 +3283,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
 
         if (mode === 'minion') {
-            const { deployableBaseIndices: normalPlayableBaseIndices, deployBlockReason: normalDeployBlockReason } = getDeployableBaseStateForCard(card, 'minion');
+            const normalPlayableBaseIndices = getRegularMinionPlayableBaseIndices(G, rootPid, card.uid);
             if (normalPlayableBaseIndices.size === 0) {
                 playDeniedSound();
-                toastCommandFeedback(normalDeployBlockReason || t('ui.no_valid_targets'));
+                toastCommandFeedback(t('ui.no_valid_targets'));
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
                 return;
             }
-        } else if (getHandSpecialPlayableBaseIndices(G, rootPid, card.uid).size === 0) {
+        } else if (
+            specialMode === 'hand-special'
+                ? getHandSpecialPlayableBaseIndices(G, rootPid, card.uid).size === 0
+                : getMinionReplacementPlayableBaseIndices(G, rootPid, card).size === 0
+        ) {
             playDeniedSound();
             toastCommandFeedback(t('ui.no_valid_targets'));
             setSelectedCardUid(null);
@@ -3238,8 +3304,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
 
         setSelectedCardUid(card.uid);
-        setSelectedCardMode(mode);
-    }, [G, getDeployableBaseStateForCard, myPlayer, pendingHandActionChoiceUid, rootPid, t, toastCommandFeedback]);
+        setSelectedCardMode(mode === 'minion' ? 'minion' : specialMode);
+    }, [G, myPlayer, pendingHandActionChoiceUid, pendingHandActionSpecialMode, rootPid, t, toastCommandFeedback]);
 
     const pendingHandActionChoiceCard = useMemo(() => {
         if (!pendingHandActionChoiceUid || !myPlayer) return null;
@@ -3537,21 +3603,22 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
 
-        const commandType = cardMode === 'minion' ? SU_COMMANDS.PLAY_MINION : SU_COMMANDS.PLAY_ACTION;
+        const commandType = cardMode === 'minion' || cardMode === 'minion-replacement' ? SU_COMMANDS.PLAY_MINION : SU_COMMANDS.PLAY_ACTION;
         if (!isTutorialCommandAllowed(commandType) || !isTutorialTargetAllowed(card.uid)) {
             playDeniedSound();
             return;
         }
 
         if (card.type === 'minion' && cardMode === 'minion') {
-            const normalMinionBaseState = getDeployableBaseStateForCard(card, 'minion');
+            const regularMinionBaseIndices = getRegularMinionPlayableBaseIndices(G, rootPid, card.uid);
             if (shouldOfferHandSpecialActionChoice({
                 matchState: G,
                 playerId: rootPid,
                 card,
-                normalPlayableBaseIndices: normalMinionBaseState.deployableBaseIndices,
+                normalPlayableBaseIndices: regularMinionBaseIndices,
             })) {
                 setPendingHandActionChoiceUid(card.uid);
+                setPendingHandActionSpecialMode('hand-special');
                 setPendingFusionChoiceUid(null);
                 setSelectedCardUid(card.uid);
                 setSelectedCardMode(null);
@@ -3562,7 +3629,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 matchState: G,
                 playerId: rootPid,
                 card,
-                normalPlayableBaseIndices: normalMinionBaseState.deployableBaseIndices,
+                normalPlayableBaseIndices: regularMinionBaseIndices,
             })) {
                 const handSpecialBaseIndices = getHandSpecialPlayableBaseIndices(G, rootPid, card.uid);
                 if (dropTarget.kind !== 'base' || !handSpecialBaseIndices.has(dropTarget.baseIndex)) {
@@ -3573,6 +3640,38 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
                 setPendingHandActionChoiceUid(null);
+                setPendingHandActionSpecialMode(null);
+                return;
+            }
+
+            if (shouldOfferMinionReplacementActionChoice({
+                matchState: G,
+                playerId: rootPid,
+                card,
+                regularPlayableBaseIndices: regularMinionBaseIndices,
+            })) {
+                setPendingHandActionChoiceUid(card.uid);
+                setPendingHandActionSpecialMode('minion-replacement');
+                setPendingFusionChoiceUid(null);
+                setSelectedCardUid(card.uid);
+                setSelectedCardMode(null);
+                return;
+            }
+
+            if (shouldPreferMinionReplacementSelection({
+                matchState: G,
+                playerId: rootPid,
+                card,
+                regularPlayableBaseIndices: regularMinionBaseIndices,
+            })) {
+                const replacementBaseIndices = getMinionReplacementPlayableBaseIndices(G, rootPid, card);
+                if (dropTarget.kind !== 'base' || !replacementBaseIndices.has(dropTarget.baseIndex)) {
+                    playDeniedSound();
+                    return;
+                }
+                handlePlayMinion(card.uid, dropTarget.baseIndex, 'replacement');
+                setPendingHandActionChoiceUid(null);
+                setPendingHandActionSpecialMode(null);
                 return;
             }
         }
@@ -3618,7 +3717,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        handlePlayMinion(card.uid, dropTarget.baseIndex);
+        handlePlayMinion(card.uid, dropTarget.baseIndex, cardMode === 'minion-replacement' ? 'replacement' : 'auto');
     }, [G, activePromptSurface, dispatch, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, handlePlayMinion, handlePlayOngoingAction, handlePlayOngoingToMinion, handInteractionMode, isMyTurn, isTutorialCommandAllowed, isTutorialTargetAllowed, needDiscard, phase, resolvePlayableCardMode, rootPid, shouldLockNormalHandInteraction]);
 
 
@@ -4478,7 +4577,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     )}
                 </AnimatePresence>
 
-                {/* --- 手牌多动作仲裁浮动操作栏（打出/使用能力/跳过） --- */}
+                {/* --- 手牌多动作仲裁浮动操作栏（打出/使用能力/取消） --- */}
                 <AnimatePresence>
                     {pendingHandActionChoiceCard && (
                         <motion.div
@@ -4486,9 +4585,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 40, opacity: 0 }}
                             className={floatingHintClassName}
-                            style={floatingHintStyle}
+                            style={handActionChoiceStyle}
                         >
-                            <div data-testid="su-hand-action-choice-bar" className="flex gap-3 pointer-events-auto">
+                            <div data-testid="su-hand-action-choice-bar" className="flex flex-wrap justify-center gap-3 pointer-events-auto">
                                 <SmashUpGameButton
                                     variant="primary"
                                     size="md"

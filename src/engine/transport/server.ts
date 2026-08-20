@@ -9,8 +9,8 @@
 
 import { execSync } from 'node:child_process';
 import type { Server as IOServer, Socket as IOSocket } from 'socket.io';
-import type { Command, DomainCore, GameEvent, MatchState, PlayerId, RandomFn } from '../types';
-import type { EngineSystem, GameSystemsConfig } from '../systems/types';
+import type { GameEvent, MatchState, PlayerId, RandomFn } from '../types';
+import type { EngineSystem } from '../systems/types';
 import type {
     MatchStorage,
     StoredMatchState,
@@ -26,33 +26,23 @@ import type {
     OnlineAiClientTransportDiagnostics,
 } from './protocol';
 import type {
-    TrainingCompletedMatch,
     TrainingDataRecorder,
-    TrainingDecisionSample,
-    TrainingMatchCommitResult,
 } from './trainingData';
-import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
 import * as aiModule from '../ai';
 import {
-    applyPlayerViewToState,
     buildAiDecisionContext,
     getAiSeatIds,
     getGameAiRuntime,
     resolveOnlineAiDecisionView,
-    resolveSeatPlayerDisplayName,
 } from '../ai';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
-import type { AiInteractionSnapshot } from '../ai/types';
 import {
-    executePipeline,
     createSeededRandom,
     createInitialSystemState,
-    type PipelineConfig,
 } from '../pipeline';
 import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../systems/InteractionSystem';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
-import { computeDiff } from './patch';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import {
     parseDispatchPayloadMeta,
@@ -78,11 +68,14 @@ import {
     type HiddenSimpleChoiceInteraction,
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
-import type {
-    LocalPregameControlResolver,
-    LocalRuntimeControlResolver,
-} from './followCurrentTurnPlayer';
 import { injectTutorialInteractionId } from './tutorialAiCommand';
+import type { GameEngineConfig } from './engineConfig';
+export type {
+    AnyGameEngineConfig,
+    GameEngineConfig,
+    GameEventTelemetryFormatter,
+    GameEventTelemetryRecord,
+} from './engineConfig';
 import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
 import {
     buildOnlineAiDiagnosticActionLog,
@@ -94,7 +87,6 @@ import {
     resolveOnlineAiRecoveryBlockerFingerprint,
     summarizeOnlineAiRecoveryLegalActions,
     resolveUnsatisfiableReasonFromSelectability,
-    type InteractionSelectabilityDiagnostic,
     type OnlineAiRecoveryAiSummary,
     type OnlineAiRecoveryLegalActionSummary,
 } from './onlineAiWatchdogFeedbackDiagnostics';
@@ -118,14 +110,16 @@ import {
     tryExecuteOnlineAiImmediateAction,
 } from './onlineAiExecutor';
 import {
-    GENERIC_COMMAND_FAILURE_REASON,
     formatOnlineAiCommandFailureReason,
-    formatPipelineFailureReason,
-    normalizeCommandFailureReason,
-    resolveCommandFailureFeedbackSeverity,
     shouldAutoReportCommandFailure,
 } from './commandFailureReason';
 import {
+    buildCommandFailureFeedbackPayload as buildCommandFailureFeedbackPayloadData,
+    type CommandFailureFeedbackPayload,
+} from './commandFailureFeedbackPayload';
+import { buildOnlineAiCircuitStateSnapshot } from './onlineAiCircuitFeedbackDiagnostics';
+import {
+    resolveOnlineAiRecoveryPhaseLabel,
     type OnlineAiLegalActionRecoveryResult,
     type OnlineAiRecoveryReportedLegalAction,
 } from './onlineAiWatchdogSequenceHelpers';
@@ -136,6 +130,7 @@ import {
     normalizeOnlineAiWatchdogSeatControllerType,
     resolveRawOnlineAiWatchdogSeatControllers,
     resolveSeatControllerTypeForTraining,
+    type GameManifestIndex,
     type OnlineAiSeatControllerType,
 } from './onlineAiSeatControllers';
 import { isOnlineAiRecoveryStillOwnedByAi } from './onlineAiRecoveryOwnership';
@@ -154,6 +149,26 @@ import {
 import {
     resolveOnlineAiRecoveryFingerprint as resolveRecoveryFingerprint,
 } from './onlineAiWatchdogSequenceFingerprinting';
+import {
+    isOnlineAiUnsatisfiableInteractionReason,
+    shouldSuppressUnsatisfiableInteractionFeedback,
+} from './onlineAiUnsatisfiableInteraction';
+import {
+    applyMatchPlayerView,
+    buildTransportMatchPlayers,
+    broadcastProjectedMatchState,
+    stripStateForTraining as stripProjectedStateForTraining,
+    stripStateForTransport as stripProjectedStateForTransport,
+} from './stateProjection';
+import { AuthoritativeCommandExecutor } from './authoritativeCommandExecutor';
+import { executeAuthoritativeCommandBatch } from './authoritativeBatchExecutor';
+import { commitAuthoritativeCommandSuccess } from './authoritativeCommandCommit';
+import {
+    drainAuthoritativeCommandQueue,
+    type AuthoritativeCommandQueueItem,
+    type QueuedAuthoritativeCommand,
+} from './authoritativeCommandQueue';
+import { TrainingDataCapture } from './trainingDataCapture';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令。
 // null 表示该交互不允许离线代裁决，必须保留给真实玩家入口继续处理。
@@ -276,7 +291,6 @@ function resolveManualSetupSelectionIdFromAction(
     return null;
 }
 
-const DEFAULT_TRAINING_CAPTURE_POLICY = 'human-only' as const;
 const DEFAULT_ONLINE_AI_RECOVERY_TICK_MS = 500;
 const DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS = 8000;
 const DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS = 16;
@@ -317,21 +331,6 @@ type OnlineAiRecoveryFeedbackPayload = {
     actionLog?: string;
 };
 
-type CommandFailureFeedbackPayload = {
-    matchId: string;
-    gameId: string;
-    playerId: string;
-    incidentKind: 'command-failed';
-    feedbackSource: 'player-command-failure' | 'online-ai-watchdog';
-    severity: 'medium' | 'high';
-    commandType: string;
-    reason: string;
-    incidentKey: string;
-    progressMarker: string;
-    stateSnapshot: string;
-    actionLog?: string;
-};
-
 const buildOnlineAiRecoveryResolvedMethod = (
     payload: Pick<OnlineAiRecoveryFeedbackPayload, 'incidentKind'>,
 ): string => {
@@ -347,122 +346,13 @@ const buildOnlineAiRecoveryResolvedMethod = (
     return '系统已自动恢复这次在线 AI 步骤，对局已继续运行。';
 };
 
-const UNSATISFIABLE_INTERACTION_REASONS = new Set([
-    'empty-options',
-    'all-options-disabled',
-    'min-selection-unreachable',
-]);
-
-type OnlineAiRecoveryPhaseLabel = 'recover-interaction' | 'follow-up-advance';
+type OnlineAiRecoveryPhaseLabel = ReturnType<typeof resolveOnlineAiRecoveryPhaseLabel>;
 type OnlineAiLegalActionMissOutcome = Exclude<OnlineAiLegalActionRecoveryResult['outcome'], 'applied'>;
 type OnlineAiLegalActionReportedAction = OnlineAiRecoveryReportedLegalAction;
 export const canManualForceAdvanceAfterConfirmedRoll = (
     reportedAction: Pick<OnlineAiLegalActionReportedAction, 'actionKind' | 'metadata'> | null | undefined,
 ): boolean => reportedAction?.actionKind === 'confirm-roll'
     && reportedAction.metadata?.rollConfirmScope === 'main-roll';
-
-const isEmergencySkipOnlySelectability = (
-    diagnostic: InteractionSelectabilityDiagnostic | null | undefined,
-): boolean => {
-    if (!diagnostic) {
-        return false;
-    }
-    return diagnostic.totalOptions === 1
-        && diagnostic.enabledOptions === 1
-        && diagnostic.disabledOptions === 0
-        && diagnostic.selectionState === 'recoverable-option-available'
-        && diagnostic.enabledOptionIds[0] === '__emergency_skip__';
-};
-
-const resolveOnlineAiRecoveryPhaseLabel = (
-    candidate: ForceEndTurnStalledAiResolution,
-): OnlineAiRecoveryPhaseLabel => (
-    candidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance'
-);
-
-const shouldSuppressUnsatisfiableInteractionFeedback = (args: {
-    sharedInteraction: AiInteractionSnapshot | null | undefined;
-    seatInteraction: AiInteractionSnapshot | null | undefined;
-    sharedSelectability?: InteractionSelectabilityDiagnostic | null;
-    seatSelectability?: InteractionSelectabilityDiagnostic | null;
-}): boolean => {
-    const sharedSelectability = args.sharedSelectability
-        ?? buildInteractionSelectabilityDiagnostic(args.sharedInteraction);
-    if (isEmergencySkipOnlySelectability(sharedSelectability)) {
-        return true;
-    }
-
-    return false;
-};
-
-const shouldTranslateAiEmergencySkipToCancel = (payload: unknown): boolean => {
-    if (!payload || typeof payload !== 'object') {
-        return false;
-    }
-
-    const candidate = payload as {
-        optionId?: unknown;
-        optionIds?: unknown;
-        mergedValue?: unknown;
-    };
-    if (candidate.optionId === '__emergency_skip__') {
-        return true;
-    }
-    if (
-        Array.isArray(candidate.optionIds)
-        && candidate.optionIds.length === 1
-        && candidate.optionIds[0] === '__emergency_skip__'
-    ) {
-        return true;
-    }
-
-    const mergedValue = candidate.mergedValue as { __emergency_skip__?: unknown } | undefined;
-    return mergedValue?.__emergency_skip__ === true;
-};
-
-const resolveAiEmergencySkipCancelPayload = (
-    preCommandSeatState: MatchState<unknown>,
-    payload: unknown,
-): { interactionId?: string; reason?: string } | null => {
-    if (!shouldTranslateAiEmergencySkipToCancel(payload)) {
-        return null;
-    }
-
-    const interaction = extractAiInteractionSnapshot(preCommandSeatState);
-    if (!interaction) {
-        return null;
-    }
-
-    const payloadInteractionId = payload && typeof payload === 'object'
-        ? (payload as { interactionId?: unknown }).interactionId
-        : undefined;
-    if (
-        typeof payloadInteractionId === 'string'
-        && typeof interaction.id === 'string'
-        && payloadInteractionId !== interaction.id
-    ) {
-        return null;
-    }
-
-    const options = Array.isArray(interaction.options) ? interaction.options : [];
-    const emergencyOption = options.find((option) => option.id === '__emergency_skip__' && option.disabled !== true);
-    if (!emergencyOption) {
-        return null;
-    }
-
-    const reasonFromOption = emergencyOption.value
-        && typeof emergencyOption.value === 'object'
-        ? (emergencyOption.value as { __emergency_skip_reason__?: unknown }).__emergency_skip_reason__
-        : undefined;
-    const reason = typeof reasonFromOption === 'string'
-        ? reasonFromOption
-        : resolveUnsatisfiableReasonFromSelectability(interaction) ?? 'empty-options';
-
-    return {
-        interactionId: typeof interaction.id === 'string' ? interaction.id : undefined,
-        reason,
-    };
-};
 
 const INTERNAL_FEEDBACK_PATH = '/internal/feedback/system';
 
@@ -564,167 +454,6 @@ function emitOnlineAiBatchTrace(stage: string, payload: Record<string, unknown>)
 }
 
 // ============================================================================
-// 游戏引擎定义
-// ============================================================================
-
-/**
- * 游戏引擎配置
- *
- * 每个游戏注册一个 GameEngineConfig，由 GameTransportServer 统一管理。
- */
-export interface GameEngineConfig<
-    TCore = unknown,
-    TCommand extends Command = Command,
-    TEvent extends GameEvent = GameEvent,
-> {
-    /** 游戏 ID */
-    gameId: string;
-    /** 领域内核 */
-    domain: DomainCore<TCore, TCommand, TEvent>;
-    /** 启用的系统 */
-    systems: EngineSystem<TCore>[];
-    /** 系统配置 */
-    systemsConfig?: GameSystemsConfig;
-    /** 命令类型列表 */
-    commandTypes?: string[];
-    /** 游戏事件遥测格式化；传输层只负责写日志，不识别具体游戏事件语义 */
-    eventTelemetry?: GameEventTelemetryFormatter<TEvent>;
-    /** 玩家数量范围 */
-    minPlayers?: number;
-    maxPlayers?: number;
-    /** 是否禁用撤销 */
-    disableUndo?: boolean;
-    /** 本地模式开局阶段由游戏声明是否需要代控某个 seat */
-    resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
-    /** 本地热座运行中由游戏声明实际操作者；在线命令不会使用此解析。 */
-    resolveLocalRuntimeControlledPlayerId?: LocalRuntimeControlResolver;
-    /** 本地测试壳的游戏专属初始状态构造；传输层不识别具体游戏 setup 命令。 */
-    createLocalTestInitialState?: (args: {
-        testConfig: Record<string, unknown>;
-        random: RandomFn;
-        setupData: unknown;
-        setupPlayerIds: string[];
-        aiSeatIds: string[];
-    }) => MatchState<unknown> | null | undefined;
-    /** 本地测试壳的游戏专属 setup 命令构造；页面层只负责分发，不识别具体游戏命令。 */
-    createLocalTestSetupCommands?: (args: {
-        testConfig: Record<string, unknown>;
-        state: MatchState<unknown>;
-    }) => Array<Pick<Command, 'type' | 'payload' | 'playerId'>>;
-    /** 在线 AI watchdog 的游戏级恢复策略 */
-    onlineAiRecovery?: {
-        advancePhaseCommandType?: string;
-        disableFallbackAdvancePhase?: boolean;
-        reportObservedRecoveryWithoutForcedCommand?: boolean;
-        publicPregameLegalActionPhases?: string[];
-        activeTurnLegalActionOnlyPhases?: string[];
-        humanTurnLegalActionProbePhases?: string[];
-        shouldProbeHumanTurnLegalActionOnlyCandidate?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            currentPlayerId: string;
-        }) => boolean | undefined;
-        autoSelectFirstTriggerOnlySimpleChoiceSourceIds?: string[];
-        /** 历史存档里残留的私有响应轮镜像；watchdog 恢复真实交互后可按 sourceId 清理，避免误走通用 RESPONSE_PASS。 */
-        legacyResponseWindowMirrorSourceIds?: string[];
-        allowForceCommandAfterLegalActionExhausted?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            previousCandidate: ForceEndTurnStalledAiResolution;
-            nextCandidate: ForceEndTurnStalledAiResolution;
-        }) => boolean;
-        resolveCurrentPlayerId?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            fallbackPlayerId: string | null;
-        }) => string | null | undefined;
-        resolveManualSetupSelectionTakeoverPlayerId?: (args: {
-            sharedState: MatchState<unknown>;
-            seatControllers: Record<string, unknown>;
-            currentPlayerId: string | null;
-            hasManualDispatch: boolean;
-        }) => string | null | undefined;
-        shouldReleaseManualSetupAttemptFromSharedState?: (args: {
-            sharedState: MatchState<unknown>;
-            playerId: string;
-            actionKind: string;
-            selectionId: string;
-        }) => boolean | undefined;
-        resolveManualSetupSelectionActionKindFromCommand?: (args: {
-            type: string;
-            payload: unknown;
-        }) => string | null | undefined;
-        resolveManualSetupSelectionId?: (args: {
-            actionKind: string;
-            payload: unknown;
-        }) => string | null | undefined;
-        shouldAwaitManualSetupSharedConfirmation?: (args: {
-            playerId: string;
-            actionKind: string;
-            selectionId: string | null;
-        }) => boolean | undefined;
-        shouldTreatActionAsManualSetupSelection?: (args: {
-            actionKind: string;
-            actionId: string;
-            commandTypes: string[];
-        }) => boolean | undefined;
-        resolveManualSetupSelectionIdFromAction?: (args: {
-            actionKind: string;
-            actionId: string;
-            command: aiModule.AiCommandSpec | null;
-        }) => string | null | undefined;
-        buildPregameSelectionProgressSignature?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            fallbackSignature: string;
-        }) => string | undefined;
-        buildInteractionRecoveryFingerprintHint?: (args: {
-            state: MatchState<unknown>;
-            playerId: string;
-            phase: string;
-            interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
-            fallbackFingerprintHint: string;
-        }) => string | undefined;
-        resolveForcedInteractionCommand?: (args: {
-            state: MatchState<unknown>;
-            playerId: string;
-            phase: string;
-            interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
-            fallbackCommand: { type: string; payload: unknown } | null;
-        }) => { type: string; payload: unknown } | false | null | undefined;
-        resolveSeatLegalOnlyRecovery?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-        }) => {
-            playerId: string;
-            command: { type: string; payload: unknown };
-            fingerprintHint: string;
-            attemptSuffix?: string;
-        } | null | undefined;
-        shouldSuppressActiveTurnCandidate?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            currentPlayerId: string;
-            turnNumber: number | null;
-        }) => boolean;
-        shouldSuppressUnsatisfiableInteractionFeedback?: (args: {
-            state: MatchState<unknown>;
-            phase: string;
-            playerId: string;
-            reason: string;
-            sharedInteraction: AiInteractionSnapshot | null | undefined;
-            seatInteraction: AiInteractionSnapshot | null | undefined;
-            sharedSelectability: InteractionSelectabilityDiagnostic | null;
-            seatSelectability: InteractionSelectabilityDiagnostic | null;
-        }) => boolean;
-        offlineAdjudicationCommandByInteractionKind?: Record<string, string | null>;
-    };
-}
-
-/** Type-erased engine config used by registries/providers that only pass configs through. */
-export type AnyGameEngineConfig = GameEngineConfig<unknown, Command, GameEvent>;
-
-// ============================================================================
 // 内部类型
 // ============================================================================
 
@@ -756,20 +485,7 @@ interface ActiveMatch {
     /** 对局已被外部销毁/卸载，后台任务不得继续写回状态。 */
     unloaded: boolean;
     /** 待执行命令队列（普通命令 + batch 任务共用同一队列保证串行） */
-    commandQueue: Array<{
-        commandType: string;
-        payload: unknown;
-        playerID: string;
-        /** 入队时的权威状态号；消费时若已变化，说明命令来自旧画面，应丢弃。 */
-        stateIDAtEnqueue: number;
-        options?: ExecuteCommandInternalOptions;
-        resolve: (success: boolean) => void;
-    } | {
-        /** batch 任务标记 */
-        _batch: true;
-        execute: () => Promise<void>;
-        resolve: (success: boolean) => void;
-    }>;
+    commandQueue: Array<AuthoritativeCommandQueueItem<ExecuteCommandInternalOptions>>;
     /** 最近一次 executeCommandInternal 失败的真实原因，供 batch 回滚后透传给客户端。 */
     lastCommandFailureReason: string | null;
 }
@@ -976,15 +692,6 @@ function normalizeOnlineAiClientTransportDiagnostics(
     };
 }
 
-export interface GameEventTelemetryRecord {
-    eventType: string;
-    [key: string]: unknown;
-}
-
-export type GameEventTelemetryFormatter<TEvent extends GameEvent = GameEvent> = (
-    event: TEvent,
-) => GameEventTelemetryRecord | null | undefined;
-
 export class GameTransportServer {
     private readonly io: IOServer;
     private readonly storage: MatchStorage;
@@ -995,8 +702,7 @@ export class GameTransportServer {
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
     private readonly onCommandSucceeded?: GameTransportServerConfig['onCommandSucceeded'];
-    private readonly trainingDataRecorder?: TrainingDataRecorder;
-    private readonly trainingDataMinCompletedMatchDurationMs: number | null;
+    private readonly trainingDataCapture: TrainingDataCapture;
     private readonly rulesVersion: string | null;
     private readonly gameManifests: GameManifestIndex;
     private readonly onlineAiRecoveryTickMs: number;
@@ -1016,6 +722,7 @@ export class GameTransportServer {
     private readonly commandFailureFeedbackCooldown = new Map<string, number>();
     private readonly onlineAiOverlayResyncCooldown = new Map<string, number>();
     private readonly onlineAiRecoveryInFlight = new Set<string>();
+    private readonly authoritativeCommandExecutor: AuthoritativeCommandExecutor;
     private onlineAiRecoveryTimer: ReturnType<typeof setInterval> | null = null;
 
     constructor(config: GameTransportServerConfig) {
@@ -1028,15 +735,20 @@ export class GameTransportServer {
         this.authenticate = config.authenticate;
         this.onGameOver = config.onGameOver;
         this.onCommandSucceeded = config.onCommandSucceeded;
-        this.trainingDataRecorder = config.trainingDataRecorder;
-        this.trainingDataMinCompletedMatchDurationMs = (
-            Number.isFinite(config.trainingDataMinCompletedMatchDurationMs)
-            && (config.trainingDataMinCompletedMatchDurationMs ?? 0) > 0
-        )
-            ? config.trainingDataMinCompletedMatchDurationMs!
-            : null;
         this.rulesVersion = config.rulesVersion ?? null;
         this.gameManifests = config.gameManifests ?? {};
+        this.trainingDataCapture = new TrainingDataCapture({
+            recorder: config.trainingDataRecorder,
+            defaultMinCompletedMatchDurationMs: (
+                Number.isFinite(config.trainingDataMinCompletedMatchDurationMs)
+                && (config.trainingDataMinCompletedMatchDurationMs ?? 0) > 0
+            )
+                ? config.trainingDataMinCompletedMatchDurationMs!
+                : null,
+            rulesVersion: this.rulesVersion,
+            gameManifests: this.gameManifests,
+            logWarning: (message, payload) => logger.warn(message, payload),
+        });
         this.onlineAiRecoveryTickMs = config.onlineAiRecoveryTickMs ?? DEFAULT_ONLINE_AI_RECOVERY_TICK_MS;
         this.onlineAiRecoveryTimeoutMs = config.onlineAiRecoveryTimeoutMs ?? DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS;
         this.onlineAiRecoveryMaxAdvanceSteps = config.onlineAiRecoveryMaxAdvanceSteps ?? DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS;
@@ -1061,6 +773,7 @@ export class GameTransportServer {
         this.onlineAiFeedbackReporter = config.onlineAiFeedbackReporter;
         this.commandFailureFeedbackCooldownMs = config.commandFailureFeedbackCooldownMs ?? DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS;
         this.commandFailureFeedbackReporter = config.commandFailureFeedbackReporter;
+        this.authoritativeCommandExecutor = new AuthoritativeCommandExecutor();
     }
 
     /** 启动传输层，监听 /game namespace */
@@ -1703,57 +1416,6 @@ export class GameTransportServer {
         return { accepted: false, reason: 'rejected' };
     }
 
-    private buildOnlineAiCircuitQueueDiagnostic(match: ActiveMatch): Array<Record<string, unknown>> {
-        return match.commandQueue.slice(0, 8).map((queued) => {
-            if ('_batch' in queued) {
-                return { kind: 'batch', commandCount: 'unknown' };
-            }
-            return {
-                kind: 'command',
-                playerId: queued.playerID,
-                commandType: queued.commandType,
-                stateIDAtEnqueue: queued.stateIDAtEnqueue,
-                payload: cloneDiagnosticValue(queued.payload),
-            };
-        });
-    }
-
-    private buildOnlineAiCircuitStateSnapshot(args: {
-        match: ActiveMatch;
-        snapshot: OnlineAiCircuitSnapshot;
-        commandType?: string;
-        commandPayload?: unknown;
-        reason?: string;
-        onlineAiAttemptKey?: string | null;
-        clientTransport?: OnlineAiClientTransportDiagnostics | null;
-    }): string {
-        return JSON.stringify({
-            feedbackSource: 'online-ai-circuit-breaker',
-            matchId: args.match.matchID,
-            gameId: args.match.gameId,
-            playerId: args.snapshot.playerId,
-            command: args.commandType
-                ? {
-                    type: args.commandType,
-                    payload: cloneDiagnosticValue(args.commandPayload),
-                }
-                : null,
-            reason: args.reason ?? null,
-            onlineAiAttemptKey: args.onlineAiAttemptKey ?? null,
-            clientTransport: args.clientTransport ?? null,
-            stateID: args.match.stateID,
-            progressMarker: buildAiProgressMarker(args.match.state, {
-                engineConfig: args.match.engineConfig,
-                gameId: args.match.gameId,
-            }),
-            circuit: args.snapshot,
-            queue: {
-                length: args.match.commandQueue.length,
-                items: this.buildOnlineAiCircuitQueueDiagnostic(args.match),
-            },
-        });
-    }
-
     private async recordOnlineAiCircuitFailure(args: {
         match: ActiveMatch;
         playerId: string;
@@ -1811,8 +1473,13 @@ export class GameTransportServer {
                     engineConfig: args.match.engineConfig,
                     gameId: args.match.gameId,
                 }),
-                stateSnapshot: this.buildOnlineAiCircuitStateSnapshot({
-                    match: args.match,
+                stateSnapshot: buildOnlineAiCircuitStateSnapshot({
+                    matchId: args.match.matchID,
+                    gameId: args.match.gameId,
+                    state: args.match.state,
+                    stateID: args.match.stateID,
+                    engineConfig: args.match.engineConfig,
+                    commandQueue: args.match.commandQueue,
                     snapshot,
                     commandType: args.commandType,
                     commandPayload: args.commandPayload,
@@ -4229,57 +3896,25 @@ export class GameTransportServer {
         visibleState: MatchState<unknown>;
         feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
     }): CommandFailureFeedbackPayload {
-        const incidentKey = [
-            args.playerId,
-            args.commandType,
-            args.reason,
-            args.progressMarker,
-        ].join(':');
-        const phase = typeof args.match.state.sys?.phase === 'string' ? args.match.state.sys.phase : null;
-        const turnNumber = typeof args.match.state.sys?.turnNumber === 'number' ? args.match.state.sys.turnNumber : null;
         const aiContext = this.buildCommandFailureAiDiagnostic({
             match: args.match,
             playerId: args.playerId,
             visibleState: args.visibleState,
         });
-
-        return {
+        return buildCommandFailureFeedbackPayloadData({
             matchId: args.match.matchID,
             gameId: args.match.gameId,
+            state: args.match.state,
             playerId: args.playerId,
-            incidentKind: 'command-failed',
-            feedbackSource: args.feedbackSource,
-            severity: resolveCommandFailureFeedbackSeverity(args.reason),
             commandType: args.commandType,
             reason: args.reason,
-            incidentKey,
+            commandPayload: args.commandPayload,
             progressMarker: args.progressMarker,
-            stateSnapshot: JSON.stringify({
-                kind: 'command-failure-feedback',
-                commandType: args.commandType,
-                reason: args.reason,
-                progressMarker: args.progressMarker,
-                stateIDBefore: args.stateIdBefore,
-                feedbackSource: args.feedbackSource,
-                phase,
-                turnNumber,
-                command: {
-                    type: args.commandType,
-                    payload: cloneDiagnosticValue(args.commandPayload),
-                },
-                aiContext,
-                visibleState: args.visibleState,
-            }),
-            actionLog: buildOnlineAiDiagnosticActionLog({
-                state: args.match.state,
-                phase,
-                progressMarker: args.progressMarker,
-                commandType: args.commandType,
-                reason: args.reason,
-                feedbackSource: args.feedbackSource,
-                commandPayload: args.commandPayload,
-            }),
-        };
+            stateIdBefore: args.stateIdBefore,
+            visibleState: args.visibleState,
+            feedbackSource: args.feedbackSource,
+            aiContext,
+        });
     }
 
     private async reportCommandFailureFeedback(payload: CommandFailureFeedbackPayload): Promise<void> {
@@ -4648,77 +4283,68 @@ export class GameTransportServer {
     }
 
     private async drainCommandQueue(match: ActiveMatch): Promise<void> {
-        while (match.commandQueue.length > 0) {
-            if (match.unloaded) {
-                while (match.commandQueue.length > 0) {
-                    match.commandQueue.shift()?.resolve(false);
-                }
-                return;
-            }
-            const next = match.commandQueue.shift()!;
-            try {
-                if ('_batch' in next) {
-                    await next.execute();
-                    next.resolve(true);
-                } else {
-                    if (next.stateIDAtEnqueue !== match.stateID) {
-                        if (this.resolveOnlineAiSeatControllerType(match, next.playerID) !== 'human') {
-                            const expectedStateID = next.options?.expectedStateID ?? next.stateIDAtEnqueue;
-                            const circuitAdmission = this.onlineAiCircuitBreaker.admit({
-                                matchId: match.matchID,
-                                playerId: next.playerID,
-                                source: next.options?.onlineAiCircuitSource
-                                    ?? (next.options?.feedbackSource === 'online-ai-watchdog' ? 'watchdog' : 'client'),
-                                expectedStateID,
-                                stateID: match.stateID,
-                            });
-                            if (circuitAdmission.allowed) {
-                                await this.recordOnlineAiCircuitFailure({
-                                    match,
-                                    playerId: next.playerID,
-                                    source: next.options?.onlineAiCircuitSource
-                                        ?? (next.options?.feedbackSource === 'online-ai-watchdog' ? 'watchdog' : 'client'),
-                                    commandType: next.commandType,
-                                    commandPayload: next.payload,
-                                    reason: 'stale_state',
-                                    expectedStateID,
-                                    stateID: match.stateID,
-                                    progressMarker: buildAiProgressMarker(match.state, {
-                                        engineConfig: match.engineConfig,
-                                        gameId: match.gameId,
-                                    }),
-                                    onlineAiAttemptKey: next.options?.onlineAiAttemptKey,
-                                    clientTransport: next.options?.clientTransport,
-                                });
-                            }
-                        }
-                        logger.warn('[GameTransport] dropped stale queued command', {
-                            matchID: match.matchID,
-                            playerID: next.playerID,
-                            commandType: next.commandType,
-                            stateIDAtEnqueue: next.stateIDAtEnqueue,
-                            currentStateID: match.stateID,
-                        });
-                        next.resolve(false);
-                        continue;
-                    }
-                    const queuedSuccess = await this.executeCommandInternal(
-                        match,
-                        next.playerID,
-                        next.commandType,
-                        next.payload,
-                        next.options,
-                    );
-                    next.resolve(queuedSuccess);
-                }
-            } catch (error) {
+        await drainAuthoritativeCommandQueue(match, {
+            executeQueuedCommand: (activeMatch, command) => this.executeCommandInternal(
+                activeMatch,
+                command.playerID,
+                command.commandType,
+                command.payload,
+                command.options,
+            ),
+            rejectStaleQueuedCommand: (activeMatch, command) => this.rejectStaleQueuedCommand(
+                activeMatch,
+                command,
+            ),
+            onQueuedExecutionError: (activeMatch, _item, error) => {
                 logger.error('[GameTransport] 队列中命令执行异常', {
-                    matchID: match.matchID,
+                    matchID: activeMatch.matchID,
                     error: error instanceof Error ? error.message : String(error),
                 });
-                next.resolve(false);
+            },
+        });
+    }
+
+    private async rejectStaleQueuedCommand(
+        match: ActiveMatch,
+        command: QueuedAuthoritativeCommand<ExecuteCommandInternalOptions>,
+    ): Promise<void> {
+        if (this.resolveOnlineAiSeatControllerType(match, command.playerID) !== 'human') {
+            const expectedStateID = command.options?.expectedStateID ?? command.stateIDAtEnqueue;
+            const circuitSource = command.options?.onlineAiCircuitSource
+                ?? (command.options?.feedbackSource === 'online-ai-watchdog' ? 'watchdog' : 'client');
+            const circuitAdmission = this.onlineAiCircuitBreaker.admit({
+                matchId: match.matchID,
+                playerId: command.playerID,
+                source: circuitSource,
+                expectedStateID,
+                stateID: match.stateID,
+            });
+            if (circuitAdmission.allowed) {
+                await this.recordOnlineAiCircuitFailure({
+                    match,
+                    playerId: command.playerID,
+                    source: circuitSource,
+                    commandType: command.commandType,
+                    commandPayload: command.payload,
+                    reason: 'stale_state',
+                    expectedStateID,
+                    stateID: match.stateID,
+                    progressMarker: buildAiProgressMarker(match.state, {
+                        engineConfig: match.engineConfig,
+                        gameId: match.gameId,
+                    }),
+                    onlineAiAttemptKey: command.options?.onlineAiAttemptKey,
+                    clientTransport: command.options?.clientTransport,
+                });
             }
         }
+        logger.warn('[GameTransport] dropped stale queued command', {
+            matchID: match.matchID,
+            playerID: command.playerID,
+            commandType: command.commandType,
+            stateIDAtEnqueue: command.stateIDAtEnqueue,
+            currentStateID: match.stateID,
+        });
     }
 
     // ========================================================================
@@ -4928,68 +4554,54 @@ export class GameTransportServer {
 
         let batchSucceeded = false;
         match.executing = true;
-        // 在执行前保存内存快照，用于批次失败时回滚
-        // rollbackToStateID 依赖存储层，但存储层只保存最新状态，无法回到中间状态
-        const snapshotState = match.state;
-        const snapshotStateID = match.stateID;
 
         try {
-            if (await this.rejectBatchWhenStatePreconditionFails(socket, matchID, batchId, match, meta, commands, playerID)) {
-                emitOnlineAiBatchTrace('handle-batch-stale-rejected', {
+            const batchResult = await executeAuthoritativeCommandBatch({
+                match,
+                commands,
+                tracePrefix: 'handle-batch',
+                tracePayload: {
+                    matchID,
+                    playerID,
+                    batchId,
+                },
+                staleTracePayload: {
                     matchID,
                     playerID,
                     batchId,
                     expectedStateID: meta?.expectedStateID ?? null,
                     actualStateID: match.stateID,
-                });
-                return;
-            }
-            // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
-            for (const cmd of commands) {
-                match.lastCommandFailureReason = null;
-                const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
+                },
+                emitTrace: emitOnlineAiBatchTrace,
+                rejectWhenStatePreconditionFails: () => this.rejectBatchWhenStatePreconditionFails(
+                    socket,
+                    matchID,
+                    batchId,
+                    match,
+                    meta,
+                    commands,
+                    playerID,
+                ),
+                executeCommand: (cmd) => this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
                     suppressBroadcast: true,
                     reportFailureFeedback: true,
                     onlineAiAttemptKey: normalizeOnlineAiAttemptKey(meta?.onlineAiAttemptKey),
                     clientTransport: normalizeOnlineAiClientTransportDiagnostics(meta?.clientTransport),
-                });
-                if (!success) {
-                    const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
-                    emitOnlineAiBatchTrace('handle-batch-command-failed', {
-                        matchID,
-                        playerID,
-                        batchId,
-                        commandType: cmd.type,
-                        failureReason,
-                    });
-                    // 命令失败 - 从内存快照恢复到批次开始前的状态
-                    match.state = snapshotState;
-                    match.stateID = snapshotStateID;
-                    // 持久化回滚后的状态，确保存储层与内存一致
-                    const rollbackStored = {
-                        G: snapshotState,
-                        _stateID: snapshotStateID,
-                        randomSeed: match.randomSeed,
-                        randomCursor: match.getRandomCursor(),
-                    };
-                    await this.storage.setState(matchID, rollbackStored);
-                    this.broadcastState(match);
-                    socket.emit('batch:rejected', matchID, batchId, failureReason);
-                    return;
-                }
-            }
-
-            // 批次成功 - 广播最终状态给所有玩家（包括对手），然后发送确认给发送者
-            this.broadcastState(match);
-            // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
-            const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
-            emitOnlineAiBatchTrace('handle-batch-confirmed', {
-                matchID,
-                playerID,
-                batchId,
-                stateID: match.stateID,
+                }),
+                persistRollbackState: (storedState) => this.storage.setState(matchID, storedState),
+                broadcastState: () => this.broadcastState(match),
+                buildAuthoritativeState: () => this.stripStateForTransport(match.state, { stripEventStream: true }),
             });
-            socket.emit('batch:confirmed', matchID, batchId, authoritative);
+
+            if (batchResult.status === 'stale-rejected') {
+                return;
+            }
+            if (batchResult.status === 'command-rejected') {
+                socket.emit('batch:rejected', matchID, batchId, batchResult.failureReason);
+                return;
+            }
+            // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
+            socket.emit('batch:confirmed', matchID, batchId, batchResult.authoritativeState);
             batchSucceeded = true;
         } finally {
             await this.drainCommandQueue(match);
@@ -5013,63 +4625,53 @@ export class GameTransportServer {
         meta?: BatchDispatchMeta,
     ): Promise<void> {
         const matchID = match.matchID;
-        const snapshotState = match.state;
-        const snapshotStateID = match.stateID;
-
-        if (await this.rejectBatchWhenStatePreconditionFails(socket, matchID, batchId, match, meta, commands, playerID)) {
-            emitOnlineAiBatchTrace('execute-batch-stale-rejected', {
+        const batchResult = await executeAuthoritativeCommandBatch({
+            match,
+            commands,
+            tracePrefix: 'execute-batch',
+            tracePayload: {
+                matchID,
+                playerID,
+                batchId,
+            },
+            staleTracePayload: {
                 matchID,
                 playerID,
                 batchId,
                 expectedStateID: meta?.expectedStateID ?? null,
                 actualStateID: match.stateID,
-            });
-            return;
-        }
-
-        // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
-        for (const cmd of commands) {
-            match.lastCommandFailureReason = null;
-            const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
+            },
+            emitTrace: emitOnlineAiBatchTrace,
+            rejectWhenStatePreconditionFails: () => this.rejectBatchWhenStatePreconditionFails(
+                socket,
+                matchID,
+                batchId,
+                match,
+                meta,
+                commands,
+                playerID,
+            ),
+            executeCommand: (cmd) => this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
                 suppressBroadcast: true,
                 reportFailureFeedback: true,
                 onlineAiAttemptKey: normalizeOnlineAiAttemptKey(meta?.onlineAiAttemptKey),
                 clientTransport: normalizeOnlineAiClientTransportDiagnostics(meta?.clientTransport),
-            });
-            if (!success) {
-                const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
-                emitOnlineAiBatchTrace('execute-batch-command-failed', {
-                    matchID,
-                    playerID,
-                    batchId,
-                    commandType: cmd.type,
-                    failureReason,
-                });
-                match.state = snapshotState;
-                match.stateID = snapshotStateID;
-                const rollbackStored = {
-                    G: snapshotState,
-                    _stateID: snapshotStateID,
-                    randomSeed: match.randomSeed,
-                    randomCursor: match.getRandomCursor(),
-                };
-                await this.storage.setState(matchID, rollbackStored);
-                this.broadcastState(match);
-                socket.emit('batch:rejected', matchID, batchId, failureReason);
-                return;
-            }
+            }),
+            persistRollbackState: (storedState) => this.storage.setState(matchID, storedState),
+            broadcastState: () => this.broadcastState(match),
+            buildAuthoritativeState: () => this.stripStateForTransport(match.state, { stripEventStream: true }),
+        });
+
+        if (batchResult.status === 'stale-rejected') {
+            return;
+        }
+        if (batchResult.status === 'command-rejected') {
+            socket.emit('batch:rejected', matchID, batchId, batchResult.failureReason);
+            return;
         }
 
         // 批次成功 - 广播最终状态给所有玩家，然后发送确认给发送者
-        this.broadcastState(match);
-        const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
-        emitOnlineAiBatchTrace('execute-batch-confirmed', {
-            matchID,
-            playerID,
-            batchId,
-            stateID: match.stateID,
-        });
-        socket.emit('batch:confirmed', matchID, batchId, authoritative);
+        socket.emit('batch:confirmed', matchID, batchId, batchResult.authoritativeState);
     }
 
     private async rejectBatchWhenStatePreconditionFails(
@@ -5148,288 +4750,12 @@ export class GameTransportServer {
         this.broadcastState(match);
     }
 
-    /**
-     * 传输前状态裁剪（统一入口）
-     *
-     * 在 playerView 过滤之后、socket.emit 之前调用，移除客户端不需要的大体积数据：
-     * 1. undo.snapshots — 完整 MatchState 深拷贝，客户端只需 length（判断能否撤回）
-     *    ⚠️ 安全：快照含所有玩家完整状态（手牌/牌库），不过滤会泄漏隐私信息
-     * 2. eventStream.entries — 仅在 batch 确认时清空；正常广播与 state:sync 都保留（客户端需消费事件驱动动画，且 patch baseline 依赖完整 entries）
-     * 3. log.entries — 引擎级调试日志（command/event 完整对象），客户端 UI 层不读取
-     * 4. tutorial.steps — 客户端只用 step（当前步骤）和 stepIndex，steps 数组只需 length
-     *
-     * @param options.stripEventStream 是否清空 eventStream.entries（默认 false）
-     *   - true: 仅用于 batch:confirmed（乐观确认），客户端不需要历史事件
-     *   - false: 用于 state:sync / state:update，客户端需要保留完整 baseline 与事件驱动动画/特效/交互
-     */
     private stripStateForTransport(viewState: unknown, options?: { stripEventStream?: boolean }): unknown {
-        const serializeTransportState = <T,>(state: T): T => JSON.parse(JSON.stringify(state)) as T;
-        const state = viewState as { sys?: Record<string, unknown> };
-        if (!state.sys) return serializeTransportState(viewState);
-
-        const sys = state.sys;
-        const patches: Record<string, unknown> = {};
-
-        // 1. undo: 清空 snapshots，保留 length 供客户端判断"能否撤回"
-        const undo = sys.undo as { snapshots?: unknown[]; maxSnapshots?: number; pendingRequest?: unknown } | undefined;
-        if (undo?.snapshots && undo.snapshots.length > 0) {
-            patches.undo = {
-                ...undo,
-                snapshots: [],
-                /** 客户端通过此字段判断是否有可撤回的快照 */
-                snapshotCount: undo.snapshots.length,
-            };
-        }
-
-        // 2. eventStream: 仅在 stripEventStream=true 时清空 entries（批次确认）
-        //    state:sync / broadcastState 都需要保留 entries：
-        //    - state:sync: 作为后续 patch apply 的完整 baseline
-        //    - broadcastState: 供客户端 EventStream 消费（如技能触发事件）
-        const shouldStripEventStream = options?.stripEventStream ?? false;
-        if (shouldStripEventStream) {
-            const es = sys.eventStream as { entries?: unknown[]; nextId?: number; maxEntries?: number } | undefined;
-            if (es?.entries && es.entries.length > 0) {
-                const lastEntry = es.entries[es.entries.length - 1] as { id?: number } | undefined;
-                patches.eventStream = {
-                    ...es,
-                    entries: [],
-                    nextId: (lastEntry?.id ?? (es.nextId ?? 1) - 1) + 1,
-                };
-            }
-        }
-
-        // 3. log: LogSystem 已移除，无需裁剪（entries 始终为空）
-
-        // 4. tutorial: 只保留 step + stepIndex + 标量字段，steps 数组替换为空数组 + totalSteps
-        const tutorial = sys.tutorial as {
-            active?: boolean;
-            steps?: unknown[];
-            step?: unknown;
-            stepIndex?: number;
-        } | undefined;
-        if (tutorial?.steps && tutorial.steps.length > 0) {
-            patches.tutorial = {
-                ...tutorial,
-                steps: [],
-                /** 客户端通过此字段判断 isLastStep */
-                totalSteps: tutorial.steps.length,
-            };
-        }
-
-        // 无需裁剪
-        if (Object.keys(patches).length === 0) {
-            return serializeTransportState(viewState);
-        }
-
-        return serializeTransportState({
-            ...state,
-            sys: { ...sys, ...patches },
-        });
+        return stripProjectedStateForTransport(viewState, options);
     }
 
     private stripStateForTraining(viewState: unknown): unknown {
-        const stripped = this.stripStateForTransport(viewState, { stripEventStream: true }) as {
-            sys?: Record<string, unknown>;
-        };
-
-        if (!stripped?.sys) return stripped;
-
-        const sys = stripped.sys;
-        const patches: Record<string, unknown> = {};
-
-        const actionLog = sys.actionLog as { entries?: unknown[] } | undefined;
-        if (actionLog?.entries && actionLog.entries.length > 0) {
-            patches.actionLog = {
-                ...actionLog,
-                entries: [],
-                entryCount: actionLog.entries.length,
-            };
-        }
-
-        const log = sys.log as { entries?: unknown[] } | undefined;
-        if (log?.entries && log.entries.length > 0) {
-            patches.log = {
-                ...log,
-                entries: [],
-                entryCount: log.entries.length,
-            };
-        }
-
-        if (Object.keys(patches).length === 0) return stripped;
-
-        return {
-            ...stripped,
-            sys: { ...sys, ...patches },
-        };
-    }
-
-    private resolveTrainingMatchDurationMs(match: ActiveMatch): number | null {
-        const createdAt = match.metadata.createdAt;
-        if (typeof createdAt !== 'number' || !Number.isFinite(createdAt)) {
-            return null;
-        }
-        return Date.now() - createdAt;
-    }
-
-    private resolveTrainingMinCompletedDurationMs(match: ActiveMatch): number | null {
-        const manifestDurationMs = this.gameManifests[
-            match.engineConfig.gameId
-        ]?.ai?.trainingMinCompletedDurationMs;
-        if (Number.isFinite(manifestDurationMs) && (manifestDurationMs ?? 0) > 0) {
-            return manifestDurationMs!;
-        }
-        return this.trainingDataMinCompletedMatchDurationMs;
-    }
-
-    private recordTrainingDecisionSample(args: {
-        match: ActiveMatch;
-        playerID: string;
-        commandType: string;
-        payload: unknown;
-        stateIdBefore: number;
-        stateIdAfter: number;
-        preState: unknown;
-        postState: unknown;
-        gameOver?: unknown;
-    }): void {
-        if (!this.trainingDataRecorder) return;
-
-        const matchIdentity = {
-            schemaVersion: 1,
-            gameId: args.match.engineConfig.gameId,
-            matchId: args.match.matchID,
-        } as const;
-        const isCompleted = args.gameOver !== undefined && args.gameOver !== null;
-        const manifest = this.gameManifests[args.match.engineConfig.gameId];
-        if (manifest?.ai?.capture === false) {
-            if (isCompleted) {
-                this.discardPendingTrainingMatch(matchIdentity);
-            }
-            return;
-        }
-
-        const minDurationMs = this.resolveTrainingMinCompletedDurationMs(args.match);
-        if (minDurationMs === null) {
-            if (isCompleted) {
-                this.discardPendingTrainingMatch(matchIdentity);
-            }
-            return;
-        }
-
-        const seatControllers = extractTrustedSetupSeatControllers(args.match.metadata.setupData);
-        const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);
-        const capturePolicy = manifest?.ai?.capturePolicy ?? DEFAULT_TRAINING_CAPTURE_POLICY;
-        const shouldCaptureCommand = (
-            capturePolicy !== 'human-only'
-            || seatControllerType === 'human'
-        );
-        const sample = shouldCaptureCommand
-            ? buildTrainingDecisionSample({
-                rulesVersion: this.rulesVersion,
-                gameId: args.match.engineConfig.gameId,
-                matchId: args.match.matchID,
-                playerId: args.playerID,
-                seatControllerType,
-                stateIdBefore: args.stateIdBefore,
-                stateIdAfter: args.stateIdAfter,
-                commandType: args.commandType,
-                payload: args.payload,
-                preState: args.preState,
-                postState: args.postState,
-                legalActions: buildAiDecisionContext({
-                    gameId: args.match.engineConfig.gameId,
-                    matchId: args.match.matchID,
-                    playerId: args.playerID,
-                    visibleState: args.preState as MatchState<unknown>,
-                    rulesVersion: this.rulesVersion,
-                    decisionBudgetMs: 250,
-                    source: 'online',
-                }).legalActions,
-                gameOver: args.gameOver,
-            })
-            : undefined;
-
-        if (!isCompleted) {
-            if (sample) {
-                this.stageTrainingDecisionSample(sample);
-            }
-            return;
-        }
-
-        const durationMs = this.resolveTrainingMatchDurationMs(args.match);
-        if (durationMs === null || durationMs < minDurationMs) {
-            this.discardPendingTrainingMatch(matchIdentity);
-            return;
-        }
-
-        this.commitCompletedTrainingMatch({
-            ...matchIdentity,
-            completedAt: Date.now(),
-            durationMs,
-            ...(sample ? { finalSample: sample } : {}),
-        });
-    }
-
-    private stageTrainingDecisionSample(sample: TrainingDecisionSample): void {
-        Promise.resolve(this.trainingDataRecorder?.stageDecisionSample(sample)).catch((error) => {
-            this.logTrainingDataFailure('stage', sample, error);
-        });
-    }
-
-    private commitCompletedTrainingMatch(match: TrainingCompletedMatch): void {
-        Promise.resolve(this.trainingDataRecorder?.commitCompletedMatch(match))
-            .then((result) => {
-                if (!result) return;
-                this.logTrainingCommitResult(match, result);
-            })
-            .catch((error) => {
-                this.logTrainingDataFailure('commit', match, error);
-            });
-    }
-
-    private discardPendingTrainingMatch(
-        match: Pick<TrainingCompletedMatch, 'schemaVersion' | 'gameId' | 'matchId'>,
-    ): void {
-        Promise.resolve(this.trainingDataRecorder?.discardPendingMatch(match)).catch((error) => {
-            this.logTrainingDataFailure('discard', match, error);
-        });
-    }
-
-    private logTrainingCommitResult(
-        match: TrainingCompletedMatch,
-        result: TrainingMatchCommitResult,
-    ): void {
-        if (result.status === 'capacity-reached') {
-            logger.warn('[GameTransport] training data game capacity reached', {
-                matchID: match.matchId,
-                gameId: match.gameId,
-                pendingBytes: result.pendingBytes,
-                gameBytes: result.gameBytes,
-                maxBytes: result.maxBytes,
-            });
-        } else if (result.status === 'failed') {
-            logger.warn('[GameTransport] training data match commit skipped after staging failure', {
-                matchID: match.matchId,
-                gameId: match.gameId,
-            });
-        }
-    }
-
-    private logTrainingDataFailure(
-        operation: 'stage' | 'commit' | 'discard',
-        context: Pick<TrainingCompletedMatch, 'gameId' | 'matchId'> | TrainingDecisionSample,
-        error: unknown,
-    ): void {
-        logger.warn('[GameTransport] training data capture failed', {
-            operation,
-            matchID: context.matchId,
-            gameId: context.gameId,
-            ...('command' in context ? {
-                commandType: context.command.type,
-                playerID: context.playerId,
-            } : {}),
-            error: error instanceof Error ? error.message : String(error),
-        });
+        return stripProjectedStateForTraining(viewState);
     }
 
     private async executeCommandInternal(
@@ -5443,7 +4769,6 @@ export class GameTransportServer {
             return false;
         }
 
-        const startTime = Date.now();
         match.lastCommandFailureReason = null;
         const { engineConfig, state, random, playerIds } = match;
         const stateIdBefore = match.stateID;
@@ -5481,17 +4806,17 @@ export class GameTransportServer {
 
         const preTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
 
-        let effectiveCommandType = commandType;
-        let effectivePayload = payload;
         const feedbackSource: CommandFailureFeedbackPayload['feedbackSource'] =
             options?.feedbackSource ?? 'player-command-failure';
-        if (seatControllerType !== 'human' && commandType === INTERACTION_COMMANDS.RESPOND) {
-            const cancelPayload = resolveAiEmergencySkipCancelPayload(preTrainingState, payload);
-            if (cancelPayload) {
-                effectiveCommandType = INTERACTION_COMMANDS.CANCEL;
-                effectivePayload = cancelPayload;
-            }
-        }
+        const authoritativeCommand = this.authoritativeCommandExecutor.buildCommand({
+            playerId: playerID,
+            commandType,
+            payload,
+            seatControllerType,
+            preCommandSeatView: preTrainingState,
+        });
+        let effectiveCommandType = authoritativeCommand.type;
+        let effectivePayload = authoritativeCommand.payload;
 
         if (
             onlineAiSeatControllerType !== 'human'
@@ -5562,24 +4887,22 @@ export class GameTransportServer {
             return false;
         }
 
-        const command: Command = {
-            type: effectiveCommandType,
+        const execution = this.authoritativeCommandExecutor.execute({
+            engineConfig,
+            state,
+            random,
+            playerIds,
             playerId: playerID,
+            commandType: effectiveCommandType,
             payload: effectivePayload,
-            timestamp: Date.now(),
-        };
+            seatControllerType,
+            preCommandSeatView: preTrainingState,
+        });
+        effectiveCommandType = execution.command.type;
+        effectivePayload = execution.command.payload;
 
-        const pipelineConfig: PipelineConfig<unknown, Command, GameEvent> = {
-            domain: engineConfig.domain as DomainCore<unknown, Command, GameEvent>,
-            systems: engineConfig.systems as EngineSystem<unknown>[],
-            systemsConfig: engineConfig.systemsConfig,
-        };
-
-        let result;
-        try {
-            result = executePipeline(pipelineConfig, state, command, random, playerIds);
-        } catch (error) {
-            const failureReason = formatPipelineFailureReason(error);
+        if (!execution.success) {
+            const failureReason = execution.failureReason;
             match.lastCommandFailureReason = failureReason;
             if (onlineAiSeatControllerType !== 'human') {
                 await this.recordOnlineAiCircuitFailure({
@@ -5600,7 +4923,7 @@ export class GameTransportServer {
                 match.matchID,
                 commandType,
                 playerID,
-                error instanceof Error ? error : new Error(String(error)),
+                execution.error,
                 {
                     gameId: engineConfig.gameId,
                     stateIDBefore: stateIdBefore,
@@ -5632,76 +4955,20 @@ export class GameTransportServer {
                     feedbackSource,
                 }));
             }
-
-            // 自动取消 pending interaction（防止游戏卡死）
-            // 但如果当前命令本身就是 CANCEL，不能再次递归触发取消.
-            if (effectiveCommandType !== INTERACTION_COMMANDS.CANCEL) {
+            if (
+                execution.kind === 'pipeline-exception'
+                && effectiveCommandType !== INTERACTION_COMMANDS.CANCEL
+            ) {
+                // 自动取消 pending interaction（防止游戏卡死）
+                // 但如果当前命令本身就是 CANCEL，不能再次递归触发取消.
                 await this.cancelInteractionOnError(match, playerID);
                 match.lastCommandFailureReason = failureReason;
             }
-
             return false;
         }
 
-        const duration = Date.now() - startTime;
-
-        if (!result.success) {
-            const failureReason = normalizeCommandFailureReason(result.error);
-            match.lastCommandFailureReason = failureReason;
-            if (onlineAiSeatControllerType !== 'human') {
-                await this.recordOnlineAiCircuitFailure({
-                    match,
-                    playerId: playerID,
-                    source: onlineAiCircuitSource,
-                    commandType: effectiveCommandType,
-                    commandPayload: effectivePayload,
-                    reason: failureReason,
-                    expectedStateID: options?.expectedStateID,
-                    stateID: stateIdBefore,
-                    progressMarker: progressMarkerBeforeCommand,
-                    onlineAiAttemptKey: options?.onlineAiAttemptKey,
-                    clientTransport: options?.clientTransport,
-                });
-            }
-            gameLogger.commandFailed(
-                match.matchID,
-                commandType,
-                playerID,
-                new Error(failureReason),
-                {
-                    gameId: engineConfig.gameId,
-                    stateIDBefore: stateIdBefore,
-                    progressMarker: progressMarkerBeforeCommand,
-                    feedbackSource,
-                    commandPayload: cloneDiagnosticValue(effectivePayload),
-                },
-            );
-
-            // 通知发送者
-            const nsp = this.io.of('/game');
-            const sockets = match.connections.get(playerID);
-            if (sockets) {
-                for (const sid of sockets) {
-                    nsp.to(sid).emit('error', match.matchID, failureReason);
-                }
-            }
-
-            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason, feedbackSource)) {
-                await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
-                    match,
-                    playerId: playerID,
-                    commandType: effectiveCommandType,
-                    reason: failureReason,
-                    commandPayload: effectivePayload,
-                    progressMarker: progressMarkerBeforeCommand,
-                    stateIdBefore,
-                    visibleState: preTrainingState,
-                    feedbackSource,
-                }));
-            }
-            return false;
-        }
-
+        const result = execution.result;
+        const duration = execution.durationMs;
         match.lastCommandFailureReason = null;
 
         // 记录成功日志
@@ -5736,7 +5003,7 @@ export class GameTransportServer {
                     extractAiInteractionSnapshot(preTrainingState),
                 );
                 const reason = inferredReason;
-                if (reason && UNSATISFIABLE_INTERACTION_REASONS.has(reason)) {
+                if (isOnlineAiUnsatisfiableInteractionReason(reason)) {
                     const interaction = extractAiInteractionSnapshot(preTrainingState);
                     const sharedInteraction = extractAiInteractionSnapshot(match.state);
                     const sharedSelectability = buildInteractionSelectabilityDiagnostic(sharedInteraction);
@@ -5812,65 +5079,39 @@ export class GameTransportServer {
             }
         }
 
-        // 更新状态
-        match.state = result.state;
-        match.stateID += 1;
-        // 记录最后执行命令的玩家，供 broadcastState 携带到 meta
-        match.lastCommandPlayerId = playerID;
+        const commitResult = await commitAuthoritativeCommandSuccess({
+            match,
+            playerId: playerID,
+            commandType: effectiveCommandType,
+            nextState: result.state,
+            createTrackedRandom,
+            persistState: (storedState) => this.storage.setState(match.matchID, storedState),
+            onCommandSucceeded: this.onCommandSucceeded,
+            logRandomCursorRestored: (restoredCursor) => {
+                logger.info('[UndoServer] random-cursor-restored', {
+                    matchID: match.matchID,
+                    restoredCursor,
+                });
+            },
+        });
 
-        // 撤回恢复：检测 UndoSystem 是否请求重置随机数游标
-        const restoredCursor = (result.state.sys?.undo as { restoredRandomCursor?: number } | undefined)?.restoredRandomCursor;
-        if (typeof restoredCursor === 'number' && restoredCursor >= 0) {
-            // 重建 trackedRandom，从快照记录的游标位置恢复随机序列
-            const rebuilt = createTrackedRandom(match.randomSeed, restoredCursor);
-            match.random = rebuilt.random;
-            match.getRandomCursor = rebuilt.getCursor;
-            logger.info('[UndoServer] random-cursor-restored', {
-                matchID: match.matchID,
-                restoredCursor,
-            });
-
-            // 撤回导致大规模状态变更，增量 patch 极易产生无效路径。
-            // 清空广播缓存，强制下次 broadcastState 对所有客户端只发送全量状态，
-            // 避免客户端 patch 应用失败后触发 resync 的额外延迟。
-            match.lastBroadcastedViews.clear();
-
-            // 清除信号，避免持久化到存储层
-            match.state = {
-                ...match.state,
-                sys: {
-                    ...match.state.sys,
-                    undo: {
-                        ...match.state.sys.undo,
-                        restoredRandomCursor: undefined,
-                    },
-                },
-            };
-        }
-
-        if (match.unloaded) {
+        if (!commitResult.committed) {
             return false;
         }
 
-        // 持久化
-        const storedState: StoredMatchState = {
-            G: match.state,
-            _stateID: match.stateID,
-            randomSeed: match.randomSeed,
-            randomCursor: match.getRandomCursor(),
-        };
-        await this.storage.setState(match.matchID, storedState);
-        this.onCommandSucceeded?.(match.matchID, engineConfig.gameId, effectiveCommandType);
-
-        const gameOver = result.state.sys.gameover;
+        const gameOver = commitResult.gameOver;
         const postTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
-        this.recordTrainingDecisionSample({
-            match,
+        this.trainingDataCapture.recordDecisionSample({
+            match: {
+                matchID: match.matchID,
+                gameId: match.engineConfig.gameId,
+                metadata: match.metadata,
+            },
             playerID,
             commandType: effectiveCommandType,
             payload: effectivePayload,
             stateIdBefore,
-            stateIdAfter: match.stateID,
+            stateIdAfter: commitResult.stateIdAfter,
             preState: preTrainingState,
             postState: postTrainingState,
             gameOver,
@@ -6023,102 +5264,16 @@ export class GameTransportServer {
         await this.handleCommand(match.matchID, playerID, commandType, {});
     }
 
-    // ========================================================================
-    // 状态广播
-    // ========================================================================
-
-    /**
-     * 对单个玩家/旁观者执行增量 diff 并推送状态
-     * 
-     * - 首次广播 → 全量（state:update）
-     * - 后续广播 → 增量（state:patch）或全量（fallback）
-     * - 状态无变化 → 不发送
-     */
-    private emitStateToSockets(
-        match: ActiveMatch,
-        viewState: unknown,
-        cacheKey: string,
-        sockets: Set<string>,
-        matchPlayers: MatchPlayerInfo[],
-        meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number },
-    ): void {
-        const nsp = this.io.of('/game');
-        const cached = match.lastBroadcastedViews.get(cacheKey);
-
-        if (cached === undefined) {
-            // 首次广播 → 全量
-            for (const socketId of sockets) {
-                nsp.to(socketId).emit('state:update', match.matchID, viewState, matchPlayers, meta);
-            }
-        } else {
-            const diff = computeDiff(cached, viewState);
-
-            if (diff.type === 'full') {
-                // Fallback 到全量
-                for (const socketId of sockets) {
-                    nsp.to(socketId).emit('state:update', match.matchID, viewState, matchPlayers, meta);
-                }
-            } else if (diff.patches && diff.patches.length > 0) {
-                // 增量 patch
-                for (const socketId of sockets) {
-                    nsp.to(socketId).emit('state:patch', match.matchID, diff.patches, matchPlayers, meta);
-                }
-            }
-            // else: 状态无变化，不发送
-        }
-
-        // 始终更新缓存
-        // JSON round-trip 消除 undefined 值的 key，确保缓存结构与客户端（经 socket.io JSON 序列化）一致。
-        // 否则 fast-json-patch 的 compare 会对 { key: undefined } → { key: value } 生成 replace 而非 add，
-        // 导致客户端 patch 应用失败（路径不存在）。
-        match.lastBroadcastedViews.set(cacheKey, JSON.parse(JSON.stringify(viewState)));
-    }
-
     private broadcastState(match: ActiveMatch): void {
-        const matchPlayers = this.buildMatchPlayers(match);
-
-        // 附带 stateID + lastCommandPlayerId + randomCursor 元数据，供乐观引擎精确匹配和随机数同步
-        const meta: { stateID: number; lastCommandPlayerId?: string; randomCursor: number } = {
-            stateID: match.stateID,
-            randomCursor: match.getRandomCursor(),
-        };
-        if (match.lastCommandPlayerId) {
-            meta.lastCommandPlayerId = match.lastCommandPlayerId;
-        }
-
-        // 对每个已连接的玩家发送经 playerView 过滤 + 传输裁剪的状态（增量 diff）
-        for (const [playerID, sockets] of match.connections) {
-            const viewState = this.stripStateForTransport(this.applyPlayerView(match, playerID));
-            this.emitStateToSockets(match, viewState, playerID, sockets, matchPlayers, meta);
-        }
-
-        // 旁观者使用 spectator 视图（当前默认完整视图）
-        if (match.spectatorSockets.size > 0) {
-            const spectatorView = this.stripStateForTransport(this.applyPlayerView(match, null));
-            this.emitStateToSockets(match, spectatorView, 'spectator', match.spectatorSockets, matchPlayers, meta);
-        }
+        broadcastProjectedMatchState({ io: this.io, match });
     }
 
     private applyPlayerView(match: ActiveMatch, playerID: string | null): unknown {
-        return applyPlayerViewToState(match.engineConfig, match.state, playerID);
+        return applyMatchPlayerView(match, playerID);
     }
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {
-        const seatControllers = extractTrustedSetupSeatControllers(match.metadata.setupData);
-        const setupData = match.metadata.setupData;
-        const ownerKey = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
-            ? (setupData as { ownerKey?: string }).ownerKey
-            : undefined;
-        return Object.entries(match.metadata.players).map(([id, data]) => ({
-            id: Number(id),
-            name: resolveSeatPlayerDisplayName({
-                playerId: id,
-                name: data.name,
-                seatControllers,
-            }),
-            isConnected: data.isConnected,
-            isOwner: typeof ownerKey === 'string' && ownerKey.length > 0 && data.ownerKey === ownerKey,
-        }));
+        return buildTransportMatchPlayers(match);
     }
 
     // ========================================================================

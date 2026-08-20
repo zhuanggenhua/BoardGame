@@ -1096,7 +1096,7 @@
     "play_as_action": "作为战术",
     "hand_action_play_minion": "打出为随从",
     "hand_action_use_special": "使用能力",
-    "hand_action_cancel": "取消 / 跳过",
+    "hand_action_cancel": "取消",
     "duel_in_progress": "决斗进行中：先结算平克顿 / 决斗牌 / 副警长，再决定胜负",
     "duel_prompt_pinkerton_title": "平克顿：选择在本次决斗前放置多少个 +1 力量指示物",
     "duel_prompt_card_title": "决斗：从手牌中选择 1 张决斗牌，或跳过",

@@ -1,6 +1,6 @@
 import { buildAiProgressMarker } from '../engine/transport/react';
 import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameEngineConfig } from '../engine/transport/engineConfig';
 import type { MatchState } from '../engine/types';
 import {
     getGameAiRuntime,

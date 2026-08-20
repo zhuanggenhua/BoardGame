@@ -1,7 +1,7 @@
 import type { CancelableAiDelayHandle } from '../ai/actionDelay';
 import type { AiSeatController } from '../ai/types';
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import { runLocalAiTurnAttempt } from './localAiTurnAttempt';
 import type { LocalAiCommandEffect } from './localAiCommandEffects';
 import type { LocalAiTurnTimeline } from './localAiDiagnostics';

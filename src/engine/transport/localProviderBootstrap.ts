@@ -1,6 +1,6 @@
 import type { MatchState, RandomFn } from '../types';
 import type { EngineSystem } from '../systems/types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     createSeededRandom,
     createInitialSystemState,

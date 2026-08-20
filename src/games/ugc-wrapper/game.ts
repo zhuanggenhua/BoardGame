@@ -71,7 +71,7 @@ const buildDomainCore = (packageId: string, domain: UGCDomainCore): DomainCore<u
 };
 
 export interface UgcGameResult {
-    engineConfig: import('../../engine/transport/server').GameEngineConfig;
+    engineConfig: import('../../engine/transport/engineConfig').GameEngineConfig;
 }
 
 export const createUgcGame = async (options: UgcGameOptions): Promise<UgcGameResult> => {

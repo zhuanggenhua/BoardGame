@@ -6,7 +6,7 @@ import {
 } from '../pipeline';
 import { refreshInteractionOptions } from '../systems/InteractionSystem';
 import { buildAiProgressMarker } from './onlineAiRecovery';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import type { LocalProviderRandom } from './localProviderBootstrap';
 import type { AiSeatController } from '../ai/types';
 import {

@@ -1,7 +1,7 @@
 import * as aiModule from '../ai';
 import type { AiResolution, AiSeatController } from '../ai';
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     shouldUseOnlineAiEmergencyOverlayFallback,
     type ForceEndTurnStalledAiResolution,

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import type { GameBoardRenderer } from '../engine/boardRenderer';
 import { BoardBridge, LocalGameProvider } from '../engine/transport/react';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameEngineConfig } from '../engine/transport/engineConfig';
 import type { AiSeatController } from '../engine/ai/types';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LoadingScreen } from '../components/system/LoadingScreen';

@@ -24,6 +24,7 @@ import {
 } from '../domain/ids';
 import type { BaseCardDef, CardDef } from '../domain/types';
 import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const CARD_ASSETS = [
     'half_the_battle_geckos',
@@ -279,28 +280,44 @@ describe('半场战争扩四派系 intake 静态合同', () => {
             const pngPath = `public/assets/i18n/zh-CN/smashup/cards/${asset}.png`;
             const webpPath = `public/assets/i18n/zh-CN/smashup/cards/compressed/${asset}.webp`;
 
-            expect(rootManifest.files[`zh-CN/smashup/cards/compressed/${asset}`].variants.webp.sha256)
-                .toBe(sha256(webpPath));
-            expect(gameManifest.files[`cards/compressed/${asset}`].variants.webp.sha256)
-                .toBe(sha256(webpPath));
-            expect(rootManifest.files[`zh-CN/smashup/cards/${asset}`].variants.png.sha256)
-                .toBeTypeOf('string');
-            expect(gameManifest.files[`cards/${asset}`].variants.png.sha256)
-                .toBeTypeOf('string');
+            expectManifestAssetHash({
+                rootManifest,
+                gameManifest,
+                rootKey: `zh-CN/smashup/cards/${asset}`,
+                gameKey: `cards/${asset}`,
+                variant: 'png',
+                localPath: pngPath,
+            });
+            expectManifestAssetHash({
+                rootManifest,
+                gameManifest,
+                rootKey: `zh-CN/smashup/cards/compressed/${asset}`,
+                gameKey: `cards/compressed/${asset}`,
+                variant: 'webp',
+                localPath: webpPath,
+            });
             expect(existsSync(pngPath), `${asset}.png 仍缺本地源图`).toBe(false);
         }
 
         const basePngPath = `public/assets/i18n/zh-CN/smashup/base/${BASE_ASSET}.png`;
         const baseWebpPath = `public/assets/i18n/zh-CN/smashup/base/compressed/${BASE_ASSET}.webp`;
 
-        expect(rootManifest.files[`zh-CN/smashup/base/compressed/${BASE_ASSET}`].variants.webp.sha256)
-            .toBe(sha256(baseWebpPath));
-        expect(gameManifest.files[`base/compressed/${BASE_ASSET}`].variants.webp.sha256)
-            .toBe(sha256(baseWebpPath));
-        expect(rootManifest.files[`zh-CN/smashup/base/${BASE_ASSET}`].variants.png.sha256)
-            .toBeTypeOf('string');
-        expect(gameManifest.files[`base/${BASE_ASSET}`].variants.png.sha256)
-            .toBeTypeOf('string');
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: `zh-CN/smashup/base/${BASE_ASSET}`,
+            gameKey: `base/${BASE_ASSET}`,
+            variant: 'png',
+            localPath: basePngPath,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: `zh-CN/smashup/base/compressed/${BASE_ASSET}`,
+            gameKey: `base/compressed/${BASE_ASSET}`,
+            variant: 'webp',
+            localPath: baseWebpPath,
+        });
         expect(existsSync(basePngPath), `${BASE_ASSET}.png 仍缺本地源图`).toBe(false);
 
         for (const fixture of HALF_THE_BATTLE_FACTIONS) {

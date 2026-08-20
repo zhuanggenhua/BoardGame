@@ -476,6 +476,40 @@ describe('scoreBases 多基地计分链恢复', () => {
         };
     }
 
+    function createPirateKingBroodHiveBeforeScoringSetup(): MatchState<SmashUpCore> {
+        const core: SmashUpCore = {
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.EXTRAMORPHS],
+                    deck: [makeCard('brood-top-0', 'extramorphs_chestbreaker', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_brood_hive', [
+                    makeMinion('brood-power-0', 'test_minion', '0', 22),
+                ]),
+                makeBase('base_the_jungle', [
+                    makeMinion('king-0', 'pirate_king', '0', 5),
+                ]),
+            ],
+            baseDeck: ['base_central_brain'],
+            factionSelection: undefined,
+            scoringEligibleBases: undefined,
+        };
+
+        return {
+            core,
+            sys: {
+                ...createInitialSystemState(smashUpSystemsForTest, ['0', '1']),
+                phase: 'playCards',
+            },
+        };
+    }
+
     function createPirateKingFirstMateWithHandSpecialSetup(): MatchState<SmashUpCore> {
         const state = createPirateKingFirstMateEndToEndSetup();
         state.core.players['0'].hand = [
@@ -759,6 +793,100 @@ describe('scoreBases 多基地计分链恢复', () => {
             chain.finalState,
             [...advance.events, ...chain.chainEvents] as SmashUpEvent[],
         );
+    });
+
+    it('海盗王阻塞恢复后，育巢 beforeScoring 仍应继续执行且只入队一次', () => {
+        const initialState = createPirateKingBroodHiveBeforeScoringSetup();
+        const allEvents: SmashUpEvent[] = [];
+        const observedPromptSources: string[] = [];
+
+        const advance = runCommand(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1000,
+        });
+        expect(advance.success).toBe(true);
+        allEvents.push(...(advance.events as SmashUpEvent[]));
+
+        let state = advance.finalState;
+        let prompt = getActiveSimpleChoice(state);
+        if (prompt?.sourceId === 'smashup_reaction_choose') {
+            const choosePirateKing = runCommand(
+                state,
+                respondCommand(findReactionOptionOrPass(prompt, ['pirate_king', '海盗王']), prompt.playerId),
+            );
+            expect(choosePirateKing.success).toBe(true);
+            allEvents.push(...(choosePirateKing.events as SmashUpEvent[]));
+            state = choosePirateKing.finalState;
+            prompt = getActiveSimpleChoice(state);
+        }
+
+        const pirateKingPrompt = prompt;
+        expect(pirateKingPrompt?.sourceId).toBe('pirate_king_move');
+        observedPromptSources.push(pirateKingPrompt!.sourceId);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_TRIGGERED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
+
+        const stayPirateKing = findOption(
+            pirateKingPrompt,
+            (option: any) => option.value?.move === false,
+        );
+        const resolvePirateKing = runCommand(
+            state,
+            respondCommand(stayPirateKing, pirateKingPrompt!.playerId),
+        );
+        expect(resolvePirateKing.success).toBe(true);
+        allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
+
+        state = resolvePirateKing.finalState;
+        prompt = getActiveSimpleChoice(state);
+        if (prompt?.sourceId === 'smashup_reaction_choose') {
+            const chooseBroodHive = runCommand(
+                state,
+                respondCommand(findReactionOptionOrPass(prompt, ['base_brood_hive', '育巢']), prompt.playerId),
+            );
+            expect(chooseBroodHive.success).toBe(true);
+            allEvents.push(...(chooseBroodHive.events as SmashUpEvent[]));
+            state = chooseBroodHive.finalState;
+            prompt = getActiveSimpleChoice(state);
+        }
+
+        const broodHivePrompt = prompt;
+        expect(broodHivePrompt?.sourceId).toBe('base_brood_hive');
+        observedPromptSources.push(broodHivePrompt!.sourceId);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
+
+        const skipBroodHive = findOption(
+            broodHivePrompt,
+            (option: any) => option.id === 'skip' || option.value?.skip === true,
+        );
+        const resolveBroodHive = runCommand(
+            state,
+            respondCommand(skipBroodHive, broodHivePrompt!.playerId),
+        );
+        expect(resolveBroodHive.success).toBe(true);
+        allEvents.push(...(resolveBroodHive.events as SmashUpEvent[]));
+
+        const finalState = drainScoreBasesDelayUntilPromptOrIdle(
+            resolveBroodHive.finalState,
+            runCommand,
+            allEvents,
+        );
+        expectNoPrompt(finalState);
+
+        const queuedTriggers = allEvents.flatMap((event: any) =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED ? event.payload?.triggers ?? [] : [],
+        );
+        expect(queuedTriggers.filter((trigger: any) =>
+            trigger.timing === 'beforeScoring' && trigger.sourceDefId === 'pirate_king',
+        )).toHaveLength(1);
+        expect(queuedTriggers.filter((trigger: any) =>
+            trigger.timing === 'beforeScoring' && trigger.sourceDefId === 'base_brood_hive',
+        )).toHaveLength(1);
+        expect(observedPromptSources).toEqual(['pirate_king_move', 'base_brood_hive']);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BEFORE_SCORING_TRIGGERED)).toHaveLength(1);
+        expect(allEvents.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
     });
 
     it('反馈 69a27d：海盗王移动到托尔图加后，计分交互链结束应退出 scoreBases 而不是卡死', () => {

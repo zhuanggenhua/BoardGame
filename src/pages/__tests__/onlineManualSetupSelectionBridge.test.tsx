@@ -6,7 +6,7 @@ import type { MatchState } from '../../engine/types';
 import type { GameClientContextValue } from '../../engine/transport/reactContext';
 import { GameClientContext } from '../../engine/transport/reactContext';
 import { useGameClient } from '../../engine/transport/react';
-import type { GameEngineConfig } from '../../engine/transport/server';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { OnlineManualSetupSelectionBridge } from '../onlineManualSetupSelectionBridge';
 
 const buildSetupState = (): MatchState<unknown> => ({

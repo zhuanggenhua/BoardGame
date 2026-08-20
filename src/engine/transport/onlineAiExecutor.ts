@@ -5,7 +5,7 @@ import {
     type AiSeatController,
 } from '../ai';
 import type { MatchState, RandomFn } from '../types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     markOnlineAiVisibleActionCompleted,
     waitForOnlineAiActionDelay,

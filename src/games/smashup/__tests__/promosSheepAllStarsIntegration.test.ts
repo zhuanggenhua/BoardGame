@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -12,6 +11,7 @@ import { SHEEP_CARDS } from '../data/factions/sheep';
 import { SMASHUP_ATLAS_DEFINITIONS, getSmashUpAtlasImageById } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { FACTION_METADATA } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 function physicalCardCount(cards: Array<{ count: number }>): number {
     return cards.reduce((total, card) => total + card.count, 0);
@@ -19,10 +19,6 @@ function physicalCardCount(cards: Array<{ count: number }>): number {
 
 const CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/promos_sheep_all_stars.png';
 const CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/promos_sheep_all_stars.webp';
-
-function sha256(path: string): string {
-    return createHash('sha256').update(readFileSync(path)).digest('hex');
-}
 
 describe('Promo 绵羊与全明星接入', () => {
     it('两派系注册为正确实体牌数量且定义 ID 唯一', () => {
@@ -67,14 +63,22 @@ describe('Promo 绵羊与全明星接入', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
-        expect(rootManifest.files['zh-CN/smashup/cards/promos_sheep_all_stars'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/promos_sheep_all_stars'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
-        expect(gameManifest.files['cards/promos_sheep_all_stars'].variants.png.sha256)
-            .toBe(sha256(CARD_PNG));
-        expect(gameManifest.files['cards/compressed/promos_sheep_all_stars'].variants.webp.sha256)
-            .toBe(sha256(CARD_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/promos_sheep_all_stars',
+            gameKey: 'cards/promos_sheep_all_stars',
+            variant: 'png',
+            localPath: CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/promos_sheep_all_stars',
+            gameKey: 'cards/compressed/promos_sheep_all_stars',
+            variant: 'webp',
+            localPath: CARD_WEBP,
+        });
     });
 
     it('复用 BASE4 槽位 8-11 注册绵羊与全明星基地', () => {

@@ -263,31 +263,54 @@ async function captureHomeV2FlipFrameAtProgress(
 
     try {
         while (Date.now() - startedAt < 4000) {
-            lastSnapshot = await flipStage.evaluate((stage) => ({
-                mode: stage.getAttribute('data-flip-mode'),
-                raw: stage.getAttribute('data-flip-progress-raw'),
-                progress: stage.getAttribute('data-flip-progress'),
-                animating: stage.getAttribute('data-turn-animating'),
-                ready: stage.getAttribute('data-turn-ready'),
-                error: stage.getAttribute('data-turn-error'),
-                sourceSnapshotReady: stage.getAttribute('data-turn-source-snapshot-ready'),
-                mainEffectRuns: stage.getAttribute('data-turn-main-effect-runs'),
-                progressLoopStarts: stage.getAttribute('data-turn-progress-loop-starts'),
-                progressTicks: stage.getAttribute('data-turn-progress-ticks'),
-                progressLastRaw: stage.getAttribute('data-turn-progress-last-raw'),
-                pluginPage: stage.getAttribute('data-turn-plugin-page'),
-                pluginView: stage.getAttribute('data-turn-plugin-view'),
-                pluginAnimating: stage.getAttribute('data-turn-plugin-animating'),
-                pageWrappers: Array.from(stage.querySelectorAll<HTMLElement>('.page-wrapper')).map((wrapper) => ({
-                    page: wrapper.getAttribute('page'),
-                    display: getComputedStyle(wrapper).display,
-                    left: wrapper.style.left,
-                    top: wrapper.style.top,
-                    width: wrapper.style.width,
-                    height: wrapper.style.height,
-                    zIndex: wrapper.style.zIndex,
-                })),
-            }));
+            lastSnapshot = await flipStage.evaluate((stage) => {
+                const rectOf = (element: Element) => {
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        left: Math.round(rect.left * 10) / 10,
+                        top: Math.round(rect.top * 10) / 10,
+                        width: Math.round(rect.width * 10) / 10,
+                        height: Math.round(rect.height * 10) / 10,
+                        right: Math.round(rect.right * 10) / 10,
+                        bottom: Math.round(rect.bottom * 10) / 10,
+                    };
+                };
+
+                const turnBook = stage.querySelector<HTMLElement>('[data-home-v2-turn-book="true"]');
+                return {
+                    mode: stage.getAttribute('data-flip-mode'),
+                    raw: stage.getAttribute('data-flip-progress-raw'),
+                    progress: stage.getAttribute('data-flip-progress'),
+                    animating: stage.getAttribute('data-turn-animating'),
+                    ready: stage.getAttribute('data-turn-ready'),
+                    error: stage.getAttribute('data-turn-error'),
+                    sourceSnapshotReady: stage.getAttribute('data-turn-source-snapshot-ready'),
+                    mainEffectRuns: stage.getAttribute('data-turn-main-effect-runs'),
+                    progressLoopStarts: stage.getAttribute('data-turn-progress-loop-starts'),
+                    progressTicks: stage.getAttribute('data-turn-progress-ticks'),
+                    progressLastRaw: stage.getAttribute('data-turn-progress-last-raw'),
+                    pluginPage: stage.getAttribute('data-turn-plugin-page'),
+                    pluginView: stage.getAttribute('data-turn-plugin-view'),
+                    pluginAnimating: stage.getAttribute('data-turn-plugin-animating'),
+                    overlayVisible: stage.getAttribute('data-turn-overlay-visible'),
+                    overlayGeometryReady: stage.getAttribute('data-turn-overlay-geometry-ready'),
+                    overlayReadyFrames: stage.getAttribute('data-turn-overlay-ready-frames'),
+                    overlayMotionPage: stage.getAttribute('data-turn-overlay-motion-page'),
+                    overlayMotionRect: stage.getAttribute('data-turn-overlay-motion-rect'),
+                    overlayExpectedRect: stage.getAttribute('data-turn-overlay-expected-rect'),
+                    turnBookRect: turnBook ? rectOf(turnBook) : null,
+                    pageWrappers: Array.from(stage.querySelectorAll<HTMLElement>('.page-wrapper')).map((wrapper) => ({
+                        page: wrapper.getAttribute('page'),
+                        display: getComputedStyle(wrapper).display,
+                        left: wrapper.style.left,
+                        top: wrapper.style.top,
+                        width: wrapper.style.width,
+                        height: wrapper.style.height,
+                        zIndex: wrapper.style.zIndex,
+                        rect: rectOf(wrapper),
+                    })),
+                };
+            });
             const raw = Number.parseFloat(String(lastSnapshot.raw ?? ''));
             const animating = lastSnapshot.animating === 'true';
             if (Number.isFinite(raw) && animating && raw >= targetProgress) {
@@ -305,6 +328,167 @@ async function captureHomeV2FlipFrameAtProgress(
     }
 
     throw new Error(`HomeV2 翻页进度未达目标，最后快照=${JSON.stringify(lastSnapshot)}`);
+}
+
+type HomeV2FlipBootstrapSnapshot = {
+    mode: string | null;
+    animating: string | null;
+    holdVisible: string | null;
+    overlayVisible: string | null;
+    geometryReady: string | null;
+    readyFrames: string | null;
+    motionPage: string | null;
+    motionRect: string | null;
+    expectedRect: string | null;
+    flipbookRect: string | null;
+    ready: string | null;
+};
+
+type HomeV2FlipBootstrapResult = {
+    seenHold: boolean;
+    seenOverlay: boolean;
+    firstOverlay: HomeV2FlipBootstrapSnapshot | null;
+    snapshots: HomeV2FlipBootstrapSnapshot[];
+};
+
+type HomeV2RectSnapshot = {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+};
+
+async function observeHomeV2FlipBootstrap(page: Page): Promise<HomeV2FlipBootstrapResult> {
+    return page.evaluate(() => {
+        type FlipBootstrapSnapshot = {
+            mode: string | null;
+            animating: string | null;
+            holdVisible: string | null;
+            overlayVisible: string | null;
+            geometryReady: string | null;
+            readyFrames: string | null;
+            motionPage: string | null;
+            motionRect: string | null;
+            expectedRect: string | null;
+            flipbookRect: string | null;
+            ready: string | null;
+        };
+
+        return new Promise<{
+            seenHold: boolean;
+            seenOverlay: boolean;
+            firstOverlay: FlipBootstrapSnapshot | null;
+            snapshots: FlipBootstrapSnapshot[];
+        }>((resolve) => {
+            const stage = document.querySelector('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]');
+            if (!stage) {
+                resolve({ seenHold: false, seenOverlay: false, firstOverlay: null, snapshots: [] });
+                return;
+            }
+
+            const snapshots: FlipBootstrapSnapshot[] = [];
+            let seenHold = false;
+            let settled = false;
+            let timeoutId: number | null = null;
+            let observer: MutationObserver | null = null;
+            const readSnapshot = (): FlipBootstrapSnapshot => ({
+                mode: stage.getAttribute('data-flip-mode'),
+                animating: stage.getAttribute('data-turn-animating'),
+                holdVisible: stage.getAttribute('data-turn-source-hold-visible'),
+                overlayVisible: stage.getAttribute('data-turn-overlay-visible'),
+                geometryReady: stage.getAttribute('data-turn-overlay-geometry-ready'),
+                readyFrames: stage.getAttribute('data-turn-overlay-ready-frames'),
+                motionPage: stage.getAttribute('data-turn-overlay-motion-page'),
+                motionRect: stage.getAttribute('data-turn-overlay-motion-rect'),
+                expectedRect: stage.getAttribute('data-turn-overlay-expected-rect'),
+                flipbookRect: stage.getAttribute('data-turn-overlay-flipbook-rect'),
+                ready: stage.getAttribute('data-turn-ready'),
+            });
+            const finish = (firstOverlay: FlipBootstrapSnapshot | null) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                observer?.disconnect();
+                if (timeoutId !== null) {
+                    window.clearTimeout(timeoutId);
+                }
+                resolve({
+                    seenHold,
+                    seenOverlay: firstOverlay !== null,
+                    firstOverlay,
+                    snapshots,
+                });
+            };
+            observer = new MutationObserver(() => {
+                const snapshot = readSnapshot();
+                snapshots.push(snapshot);
+                if (snapshot.mode?.startsWith('flipping') && snapshot.holdVisible === 'true' && snapshot.animating === 'false') {
+                    seenHold = true;
+                }
+                if (snapshot.mode?.startsWith('flipping') && snapshot.overlayVisible === 'true' && snapshot.animating === 'true') {
+                    finish(snapshot);
+                }
+            });
+
+            timeoutId = window.setTimeout(() => finish(null), 3000);
+            observer.observe(stage, {
+                attributes: true,
+                attributeFilter: [
+                    'data-flip-mode',
+                    'data-turn-animating',
+                    'data-turn-ready',
+                    'data-turn-source-hold-visible',
+                    'data-turn-overlay-visible',
+                    'data-turn-overlay-geometry-ready',
+                    'data-turn-overlay-ready-frames',
+                    'data-turn-overlay-motion-page',
+                    'data-turn-overlay-motion-rect',
+                    'data-turn-overlay-expected-rect',
+                    'data-turn-overlay-flipbook-rect',
+                ],
+            });
+        });
+    });
+}
+
+function parseHomeV2RectSnapshot(raw: string | null | undefined): HomeV2RectSnapshot | null {
+    if (!raw) {
+        return null;
+    }
+    try {
+        const parsed = JSON.parse(raw) as Partial<HomeV2RectSnapshot>;
+        if (
+            typeof parsed.left === 'number'
+            && typeof parsed.top === 'number'
+            && typeof parsed.width === 'number'
+            && typeof parsed.height === 'number'
+        ) {
+            return parsed as HomeV2RectSnapshot;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+function expectHomeV2FlipBootstrapAligned(result: HomeV2FlipBootstrapResult, label: string): void {
+    expect(result.seenHold, `${label} 未观察到翻页层显示前保留源页面，snapshots=${JSON.stringify(result.snapshots)}`).toBe(true);
+    expect(result.seenOverlay, `${label} 未观察到 turn.js 翻页层首次显示，snapshots=${JSON.stringify(result.snapshots)}`).toBe(true);
+    expect(result.firstOverlay?.geometryReady, `${label} 翻页层首次显示时页片尚未对齐，firstOverlay=${JSON.stringify(result.firstOverlay)}`).toBe('true');
+
+    const motionRect = parseHomeV2RectSnapshot(result.firstOverlay?.motionRect);
+    const expectedRect = parseHomeV2RectSnapshot(result.firstOverlay?.expectedRect);
+    expect(motionRect, `${label} 缺少运动页片矩形，firstOverlay=${JSON.stringify(result.firstOverlay)}`).not.toBeNull();
+    expect(expectedRect, `${label} 缺少期望页片矩形，firstOverlay=${JSON.stringify(result.firstOverlay)}`).not.toBeNull();
+    if (!motionRect || !expectedRect) {
+        return;
+    }
+
+    expect(Math.abs(motionRect.left - expectedRect.left), `${label} 运动页片 left 错位`).toBeLessThanOrEqual(8);
+    expect(Math.abs(motionRect.top - expectedRect.top), `${label} 运动页片 top 错位`).toBeLessThanOrEqual(8);
+    expect(Math.abs(motionRect.width - expectedRect.width), `${label} 运动页片 width 错位`).toBeLessThanOrEqual(8);
+    expect(Math.abs(motionRect.height - expectedRect.height), `${label} 运动页片 height 错位`).toBeLessThanOrEqual(8);
 }
 
 async function waitForHomeV2FlipMode(page: Page, expectedMode: 'overview' | 'detail'): Promise<void> {
@@ -1510,73 +1694,17 @@ test.describe('Lobby E2E', () => {
             );
             expect(firstPageGameIds.length).toBeGreaterThan(1);
 
-            const flipStage = page.getByTestId('home-v2-fold-line-flip');
-            const sourceHoldBootstrap = page.evaluate(() => {
-                type FlipBootstrapSnapshot = {
-                    mode: string | null;
-                    animating: string | null;
-                    holdVisible: string | null;
-                    ready: string | null;
-                };
-
-                return new Promise<{ seen: boolean; snapshots: FlipBootstrapSnapshot[] }>((resolve) => {
-                    const stage = document.querySelector('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]');
-                    if (!stage) {
-                        resolve({ seen: false, snapshots: [] });
-                        return;
-                    }
-
-                    const snapshots: FlipBootstrapSnapshot[] = [];
-                    let settled = false;
-                    let timeoutId: number | null = null;
-                    const readSnapshot = (): FlipBootstrapSnapshot => ({
-                        mode: stage.getAttribute('data-flip-mode'),
-                        animating: stage.getAttribute('data-turn-animating'),
-                        holdVisible: stage.getAttribute('data-turn-source-hold-visible'),
-                        ready: stage.getAttribute('data-turn-ready'),
-                    });
-                    const observer = new MutationObserver(() => {
-                        const snapshot = readSnapshot();
-                        snapshots.push(snapshot);
-                        if (snapshot.mode?.startsWith('flipping') && snapshot.holdVisible === 'true' && snapshot.animating === 'false') {
-                            settled = true;
-                            observer.disconnect();
-                            if (timeoutId !== null) {
-                                window.clearTimeout(timeoutId);
-                            }
-                            resolve({ seen: true, snapshots });
-                        }
-                    });
-
-                    timeoutId = window.setTimeout(() => {
-                        if (settled) {
-                            return;
-                        }
-                        settled = true;
-                        observer.disconnect();
-                        resolve({ seen: false, snapshots });
-                    }, 1500);
-                    observer.observe(stage, {
-                        attributes: true,
-                        attributeFilter: [
-                            'data-flip-mode',
-                            'data-turn-animating',
-                            'data-turn-ready',
-                            'data-turn-source-hold-visible',
-                        ],
-                    });
-                });
-            });
-
             await page.evaluate(() => {
                 (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = 0.5;
             });
+            const nextBootstrap = observeHomeV2FlipBootstrap(page);
             await expect(page.getByTestId('home-v2-catalog-next-page')).toBeEnabled({ timeout: 10000 });
             await page.getByTestId('home-v2-catalog-next-page').click();
-            const bootstrapResult = await sourceHoldBootstrap;
-            expect(bootstrapResult.seen, `未观察到翻页启动前保持源页面，snapshots=${JSON.stringify(bootstrapResult.snapshots)}`).toBe(true);
+            const nextBootstrapResult = await nextBootstrap;
+            expectHomeV2FlipBootstrapAligned(nextBootstrapResult, '目录下一页启动帧');
             const nextFlipSnapshot = await captureHomeV2FlipFrameAtProgress(page, testInfo, 'catalog-next-page-flip-50', 0.5);
             expect(nextFlipSnapshot.pluginAnimating).toBe('true');
+            expect(nextFlipSnapshot.overlayGeometryReady).toBe('true');
             await waitForHomeV2FlipMode(page, 'overview');
             await expect(pageLabel).toHaveText(/2\s*\/\s*\d+/, { timeout: 10000 });
 
@@ -1591,10 +1719,14 @@ test.describe('Lobby E2E', () => {
             await page.evaluate(() => {
                 (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = 0.5;
             });
+            const previousBootstrap = observeHomeV2FlipBootstrap(page);
             await expect(page.getByTestId('home-v2-catalog-prev-page')).toBeEnabled({ timeout: 10000 });
             await page.getByTestId('home-v2-catalog-prev-page').click();
+            const previousBootstrapResult = await previousBootstrap;
+            expectHomeV2FlipBootstrapAligned(previousBootstrapResult, '目录上一页启动帧');
             const previousFlipSnapshot = await captureHomeV2FlipFrameAtProgress(page, testInfo, 'catalog-prev-page-flip-50', 0.5);
             expect(previousFlipSnapshot.pluginAnimating).toBe('true');
+            expect(previousFlipSnapshot.overlayGeometryReady).toBe('true');
             await waitForHomeV2FlipMode(page, 'overview');
             await expect(pageLabel).toHaveText(/1\s*\/\s*\d+/, { timeout: 10000 });
 

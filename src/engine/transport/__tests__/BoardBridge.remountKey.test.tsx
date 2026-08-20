@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { GameEngineConfig } from '../server';
+import type { GameEngineConfig } from '../engineConfig';
 import type { GameBoardProps } from '../protocol';
 import type { ImperativeBoardRenderer } from '../../boardRenderer';
 import { BoardBridge, GameClientOverrideProvider, LocalGameProvider, useGameClient } from '../react';

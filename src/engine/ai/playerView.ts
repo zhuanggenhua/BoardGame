@@ -1,6 +1,6 @@
 import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
-import type { GameEngineConfig } from '../transport/server';
+import type { GameEngineConfig } from '../transport/engineConfig';
 
 const SPECTATOR_PLAYER_ID = '__spectator__';
 

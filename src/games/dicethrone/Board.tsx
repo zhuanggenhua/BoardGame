@@ -1072,8 +1072,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }, 100);
         return () => clearTimeout(timer);
     }, [gameMode?.mode, isResponseWindowOpen, currentResponderId, rootPid, engineMoves]);
-    // upkeep/income 是规则自动阶段，玩家不应取得阶段推进入口。
-    const showAdvancePhaseButton = shouldShowManualPhaseAdvance(currentPhase, isSpectator) && !isResponseWindowOpen;
+    // 自动推进只是便利；按钮保持常驻显示，能否点击交给 canAdvancePhase 控制。
+    const showAdvancePhaseButton = shouldShowManualPhaseAdvance(currentPhase, isSpectator);
     const handleCancelInteraction = React.useCallback(() => {
         if (pendingInteraction?.sourceCardId) {
             setLastUndoCardId(pendingInteraction.sourceCardId);

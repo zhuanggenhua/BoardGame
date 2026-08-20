@@ -90,7 +90,7 @@ export const resolvePlayerRange = (manifest: Record<string, unknown> | null | un
 
 const normalizeGameId = (name?: string) => (name || '').toLowerCase();
 
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameEngineConfig } from '../engine/transport/engineConfig';
 
 export const buildUgcServerGames = async (options?: {
     existingGameIds?: Set<string>;

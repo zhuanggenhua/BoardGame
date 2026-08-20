@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchRoomTutorialBoardRuntime, type MatchRoomTutorialBoardRuntimeModel } from '../matchRoomTutorialStageRuntime';
 import { buildTutorialProgressSeed } from '../useMatchRoomTutorialLifecycle';
 import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot } from '../../engine/transport/localSession';
-import type { GameEngineConfig } from '../../engine/transport/server';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import type { MatchState, TutorialManifest } from '../../engine/types';
 
 let latestModalEntry: null | {

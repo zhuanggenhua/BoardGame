@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getBaseDefIdsForFactions, getFactionCards } from '../data/cards';
@@ -9,14 +8,13 @@ import { WRECK_IT_RALPH_BASES, WRECK_IT_RALPH_CARDS } from '../data/factions/wre
 import { getSmashUpAtlasImageById } from '../domain/atlasCatalog';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { FACTION_METADATA } from '../ui/factionMeta';
+import { expectManifestAssetHash } from './helpers/assetManifestTestUtils';
 
 const CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/disney.png';
 const CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/disney.webp';
 const BASE_JPG = 'public/assets/i18n/zh-CN/smashup/base/disney_bases.jpg';
 const BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp';
 const PLACEHOLDER_RULE_TEXT = /TODO|pending|Card rules pending|牌面规则|待补/i;
-
-const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 function physicalCardCount(cards: ReadonlyArray<{ count: number }>): number {
     return cards.reduce((total, card) => total + card.count, 0);
@@ -152,14 +150,38 @@ describe('Disney Edition 四派系静态接入', () => {
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
-        expect(rootManifest.files['zh-CN/smashup/cards/disney'].variants.png.sha256).toBe(sha256(CARD_PNG));
-        expect(rootManifest.files['zh-CN/smashup/cards/compressed/disney'].variants.webp.sha256).toBe(sha256(CARD_WEBP));
-        expect(rootManifest.files['zh-CN/smashup/base/disney_bases'].variants.jpg.sha256).toBe(sha256(BASE_JPG));
-        expect(rootManifest.files['zh-CN/smashup/base/compressed/disney_bases'].variants.webp.sha256).toBe(sha256(BASE_WEBP));
-        expect(gameManifest.files['cards/disney'].variants.png.sha256).toBe(sha256(CARD_PNG));
-        expect(gameManifest.files['cards/compressed/disney'].variants.webp.sha256).toBe(sha256(CARD_WEBP));
-        expect(gameManifest.files['base/disney_bases'].variants.jpg.sha256).toBe(sha256(BASE_JPG));
-        expect(gameManifest.files['base/compressed/disney_bases'].variants.webp.sha256).toBe(sha256(BASE_WEBP));
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/disney',
+            gameKey: 'cards/disney',
+            variant: 'png',
+            localPath: CARD_PNG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/cards/compressed/disney',
+            gameKey: 'cards/compressed/disney',
+            variant: 'webp',
+            localPath: CARD_WEBP,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/disney_bases',
+            gameKey: 'base/disney_bases',
+            variant: 'jpg',
+            localPath: BASE_JPG,
+        });
+        expectManifestAssetHash({
+            rootManifest,
+            gameManifest,
+            rootKey: 'zh-CN/smashup/base/compressed/disney_bases',
+            gameKey: 'base/compressed/disney_bases',
+            variant: 'webp',
+            localPath: BASE_WEBP,
+        });
     });
 
     it('四个派系进入派系选择 metadata，且 locale 已覆盖所有卡牌与基地', () => {

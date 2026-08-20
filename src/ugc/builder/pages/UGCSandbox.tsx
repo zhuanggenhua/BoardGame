@@ -15,7 +15,7 @@ import { migrateLayoutComponents } from '../../utils/layout';
 import { LoadingScreen } from '../../../components/system/LoadingScreen';
 import { useTranslation } from 'react-i18next';
 import { LocalGameProvider, BoardBridge } from '../../../engine/transport/react';
-import type { GameEngineConfig } from '../../../engine/transport/server';
+import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { UGCGameState } from '../../sdk/types';
 

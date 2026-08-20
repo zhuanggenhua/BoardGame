@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createInteractionSystem, createSimpleChoice } from '../../systems/InteractionSystem';
 import { applyPlayerViewToState } from '../playerView';
-import type { GameEngineConfig } from '../../transport/server';
+import type { GameEngineConfig } from '../../transport/engineConfig';
 import type { MatchState } from '../../types';
 
 const engineConfig: GameEngineConfig = {

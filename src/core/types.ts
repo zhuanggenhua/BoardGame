@@ -6,7 +6,7 @@
  */
 
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameEngineConfig } from '../engine/transport/engineConfig';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 import type { GameAudioConfig } from '../lib/audio/types';
 import type { GameBoardRenderer } from '../engine/boardRenderer';

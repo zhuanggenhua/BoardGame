@@ -22,7 +22,7 @@
 /* eslint-disable react-refresh/only-export-components -- Public transport entry keeps legacy component and helper re-exports. */
 
 import type { ReactNode } from 'react';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import type { LatencyOptimizationConfig } from './latency/types';
 import type { AiSeatController } from '../ai/types';
 import {

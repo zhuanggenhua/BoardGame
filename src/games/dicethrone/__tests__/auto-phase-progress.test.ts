@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { executePipeline } from '../../../engine/pipeline';
 import { DiceThroneDomain } from '../domain';
+import { initializeCustomActions } from '../domain/customActions';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
-import { TOKEN_IDS } from '../domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { DiceThroneCore } from '../domain/types';
 import { shouldShowManualPhaseAdvance } from '../ui/viewMode';
 import { cmd, createHeroMatchup, createQueuedRandom, fixedRandom, testSystems } from './test-utils';
+
+initializeCustomActions();
 
 type TestState = ReturnType<ReturnType<typeof createHeroMatchup>>;
 
@@ -53,10 +56,11 @@ describe('DiceThrone 开局自动推进门禁', () => {
         expect(auto).toEqual({ autoContinue: true, playerId: '0' });
     });
 
-    it('维护与收入阶段不应给玩家手动阶段推进入口', () => {
-        expect(shouldShowManualPhaseAdvance('upkeep', false)).toBe(false);
-        expect(shouldShowManualPhaseAdvance('income', false)).toBe(false);
+    it('维护与收入阶段停住时应保留手动阶段推进入口', () => {
+        expect(shouldShowManualPhaseAdvance('upkeep', false)).toBe(true);
+        expect(shouldShowManualPhaseAdvance('income', false)).toBe(true);
         expect(shouldShowManualPhaseAdvance('main1', false)).toBe(true);
+        expect(shouldShowManualPhaseAdvance('upkeep', true)).toBe(false);
     });
 
     it('工匠在 upkeep 有可点纳米机器人时应停住等待玩家', () => {
@@ -81,6 +85,43 @@ describe('DiceThrone 开局自动推进门禁', () => {
         } as Parameters<NonNullable<typeof diceThroneFlowHooks.onAutoContinueCheck>>[0]);
 
         expect(auto).toBeUndefined();
+    });
+
+    it('工匠 upkeep 点击纳米机器人后若自动推进未接手，玩家仍可手动离开维护阶段', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'upkeep';
+        state.core.activePlayerId = '0';
+        state.core.turnNumber = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.NANOBOT] = 1;
+        state.core.players['0'].tokenStackLimits = {
+            ...(state.core.players['0'].tokenStackLimits ?? {}),
+            [TOKEN_IDS.NANOBOT]: 1,
+        };
+        state.core.players['0'].artificerBotState = {
+            ...(state.core.players['0'].artificerBotState ?? {}),
+            [TOKEN_IDS.NANOBOT]: {
+                built: true,
+                upgraded: false,
+                activationsUsedThisTurn: 0,
+            },
+        } as DiceThroneCore['players'][string]['artificerBotState'];
+        state.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] = 2;
+
+        const detonated = runCommand(
+            state,
+            cmd('USE_PASSIVE_ABILITY', '0', { passiveId: 'artificer-workshop', actionIndex: 0 }),
+        );
+
+        expect(detonated.success, detonated.error ?? '').toBe(true);
+        expect(detonated.state?.sys.phase).toBe('upkeep');
+        expect(detonated.state?.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
+        expect(shouldShowManualPhaseAdvance(detonated.state!.sys.phase, false)).toBe(true);
+
+        const advanced = runCommand(detonated.state as TestState, cmd('ADVANCE_PHASE', '0'));
+
+        expect(advanced.success, advanced.error ?? '').toBe(true);
+        expect(advanced.state?.sys.phase).toBe('main1');
     });
 
     it('选择进攻技能只应创建当前攻击，不应自动跳到防御阶段', () => {

@@ -6,7 +6,7 @@ import {
     type SetStateAction,
 } from 'react';
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     exposeLocalProviderDebugBridge,
     syncLocalProviderTestHarness,

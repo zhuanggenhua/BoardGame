@@ -53,6 +53,16 @@ async function expectActionSpotlightClosesOnBlankClick(page: Page, defId: string
     await expect(spotlightQueue).toHaveCount(0);
 }
 
+async function expectNoActionSpotlightForOwnPlay(page: Page): Promise<void> {
+    const fxCard = page.getByTestId('smashup-action-fx-card');
+    const spotlightQueue = page.getByTestId('card-spotlight-queue');
+
+    await expect(fxCard).toHaveCount(0);
+    await expect(spotlightQueue).toHaveCount(0, { timeout: 1000 });
+    await page.waitForTimeout(500);
+    await expect(spotlightQueue).toHaveCount(0);
+}
+
 
 test.describe('测试框架试点 - 简化版', () => {
     test('应该能构建场景并通过命令打出卡牌', async ({ page, game }, testInfo) => {
@@ -201,7 +211,7 @@ test.describe('测试框架试点 - 简化版', () => {
         console.log('📸 截图已保存: final-state.png');
     });
 
-    test('本地模式双方打出行动卡特写都应保持到点击空白关闭', async ({ page, game }) => {
+    test('本地模式当前玩家打出行动卡不弹特写', async ({ page, game }) => {
         test.setTimeout(60000);
 
         await page.goto('/play/smashup');
@@ -233,7 +243,7 @@ test.describe('测试框架试点 - 简化版', () => {
         });
 
         await game.playCard('wizard_mystic_studies');
-        await expectActionSpotlightClosesOnBlankClick(page, 'wizard_mystic_studies');
+        await expectNoActionSpotlightForOwnPlay(page);
 
         await game.advancePhase();
         await expect.poll(async () => {
@@ -259,6 +269,6 @@ test.describe('测试框架试点 - 简化版', () => {
         await expect(page.locator(`[data-card-uid="${p1ActionUid}"]`)).toBeVisible({ timeout: 5000 });
 
         await game.playCard('wizard_mystic_studies');
-        await expectActionSpotlightClosesOnBlankClick(page, 'wizard_mystic_studies');
+        await expectNoActionSpotlightForOwnPlay(page);
     });
 });

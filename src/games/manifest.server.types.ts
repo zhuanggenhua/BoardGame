@@ -1,5 +1,5 @@
 import type { GameManifestEntry } from './manifest.types';
-import type { AnyGameEngineConfig } from '../engine/transport/server';
+import type { AnyGameEngineConfig } from '../engine/transport/engineConfig';
 
 export interface GameServerManifestEntry {
     manifest: GameManifestEntry;

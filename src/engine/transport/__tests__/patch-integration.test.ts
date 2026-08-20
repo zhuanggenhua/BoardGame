@@ -11,7 +11,8 @@
 
 import fc from 'fast-check';
 import { describe, it, expect, vi } from 'vitest';
-import { GameTransportServer, type GameEngineConfig } from '../server';
+import { GameTransportServer } from '../server';
+import type { GameEngineConfig } from '../engineConfig';
 import type {
     CreateMatchData,
     FetchOpts,

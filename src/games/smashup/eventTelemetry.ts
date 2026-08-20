@@ -1,5 +1,5 @@
 import type { GameEvent } from '../../engine/types';
-import type { GameEventTelemetryRecord } from '../../engine/transport/server';
+import type { GameEventTelemetryRecord } from '../../engine/transport/engineConfig';
 import { SU_EVENTS, type BaseScoredEvent, type VpAwardedEvent } from './domain/types';
 
 export function formatSmashUpEventTelemetry(event: GameEvent): GameEventTelemetryRecord | null {

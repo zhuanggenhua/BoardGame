@@ -1,6 +1,6 @@
 import type { MatchState } from '../types';
 import { TestHarness, isTestEnvironment } from '../testing';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import { normalizeStateForConfig } from './stateNormalization';
 
 function buildHarnessDispatchPayload(command: {

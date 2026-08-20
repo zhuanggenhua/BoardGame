@@ -1,5 +1,5 @@
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from '../transport/server';
+import type { GameEngineConfig } from '../transport/engineConfig';
 import { applyPlayerViewToState } from './playerView';
 import { buildAiDecisionContext, createAiLegalActionId, resolveAiActionDecision } from './context';
 import { isResolvedOnlineAiDecisionView, type ResolvedOnlineAiDecisionView } from './onlineDecisionView';

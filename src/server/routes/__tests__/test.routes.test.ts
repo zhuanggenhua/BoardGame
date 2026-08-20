@@ -19,7 +19,7 @@ import type { MatchState } from '../../../core/types';
 import type { MatchStorage, StoredMatchState, MatchMetadata } from '../../../engine/transport/storage';
 import { resolveMatchStatus } from '../../../engine/transport/storage';
 import { GameTransportServer } from '../../../engine/transport/server';
-import type { GameEngineConfig } from '../../../engine/transport/server';
+import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import { resolveAllowedPlayerCountsForGame } from '../../../shared/roomSetup';
 import type { GameManifestEntry } from '../../../games/manifest.types';
 import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';

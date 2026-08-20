@@ -9,7 +9,7 @@ import {
     GameProvider,
     useGameClient,
 } from '../engine/transport/react';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameEngineConfig } from '../engine/transport/engineConfig';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import { ConnectionLoadingScreen } from '../components/system/ConnectionLoadingScreen';
 import { HudPortal } from '../core';

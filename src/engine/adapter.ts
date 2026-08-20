@@ -13,7 +13,7 @@ import type {
     PlayerId,
 } from './types';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
-import type { GameEventTelemetryFormatter } from './transport/server';
+import type { GameEngineConfig, GameEventTelemetryFormatter } from './transport/engineConfig';
 import {
     createInitialSystemState,
     createSeededRandom,
@@ -92,7 +92,7 @@ export function createGameEngine<
     TCore,
     TCommand extends Command = Command,
     TEvent extends GameEvent = GameEvent
->(config: AdapterConfig<TCore, TCommand, TEvent>): import('./transport/server').GameEngineConfig<TCore, TCommand, TEvent> {
+>(config: AdapterConfig<TCore, TCommand, TEvent>): GameEngineConfig<TCore, TCommand, TEvent> {
     return {
         gameId: config.domain.gameId,
         domain: config.domain,

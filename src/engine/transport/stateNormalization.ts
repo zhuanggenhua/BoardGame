@@ -1,5 +1,5 @@
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
 
 function extractStateSeatControllers(

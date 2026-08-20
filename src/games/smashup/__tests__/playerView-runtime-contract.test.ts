@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyPlayerViewToState } from '../../../engine/ai/playerView';
-import type { GameEngineConfig } from '../../../engine/transport/server';
+import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import type { MatchState } from '../../../engine/types';
 import { SmashUpDomain } from '../domain';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';

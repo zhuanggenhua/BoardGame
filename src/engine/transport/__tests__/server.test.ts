@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { canManualForceAdvanceAfterConfirmedRoll, GameTransportServer, type GameEngineConfig } from '../server';
+import { canManualForceAdvanceAfterConfirmedRoll, GameTransportServer } from '../server';
+import type { GameEngineConfig } from '../engineConfig';
 import {
     buildAiProgressMarker,
     resolveCurrentPlayerId,

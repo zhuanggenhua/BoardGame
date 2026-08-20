@@ -102,7 +102,10 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         );
 
         expect(source.match(/shouldOfferHandSpecialActionChoice/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+        expect(source.match(/shouldOfferMinionReplacementActionChoice/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
         expect(source.match(/setPendingHandActionChoiceUid\(card\.uid\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+        expect(source).toContain("setPendingHandActionSpecialMode('hand-special')");
+        expect(source).toContain("setPendingHandActionSpecialMode('minion-replacement')");
         expect(source).toContain('const confirmHandActionChoice = useCallback');
         expect(source).toContain("confirmHandActionChoice('minion')");
         expect(source).toContain("confirmHandActionChoice('hand-special')");
@@ -110,7 +113,9 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(handActionBarIndex).toBeGreaterThan(0);
         expect(handActionBarSnippet).toContain('pendingHandActionChoiceCard &&');
         expect(handActionBarSnippet).toContain('className={floatingHintClassName}');
-        expect(handActionBarSnippet).toContain('style={floatingHintStyle}');
+        expect(handActionBarSnippet).toContain('style={handActionChoiceStyle}');
+        expect(source).toContain('const handActionChoiceStyle = {');
+        expect(source).toContain('layout.floatingActionBottom + (isMobileViewport ? 76 : 96)');
         expect(handActionBarSnippet).toContain('data-testid="su-hand-action-play-minion"');
         expect(handActionBarSnippet).toContain('data-testid="su-hand-action-use-special"');
         expect(handActionBarSnippet).toContain('data-testid="su-hand-action-cancel"');
@@ -122,6 +127,9 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("t('ui.hand_action_use_special')");
         expect(source).toContain("t('ui.hand_action_cancel')");
         expect(source).toContain('dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { handCardUid: card.uid, baseIndex: dropTarget.baseIndex })');
+        expect(source).toContain("handlePlayMinion(card.uid, dropTarget.baseIndex, 'replacement')");
+        expect(source).toContain("selectedCardMode === 'minion-replacement'");
+        expect(source).toContain('replacementHandCardUid: playPlan.replacementHandCardUid');
 
         expect('hand_action_choose' in zh).toBe(false);
         expect('hand_action_choose_desc' in zh).toBe(false);
@@ -129,10 +137,10 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect('hand_action_choose_desc' in en).toBe(false);
         expect(zh.hand_action_play_minion).toBe('打出为随从');
         expect(zh.hand_action_use_special).toBe('使用能力');
-        expect(zh.hand_action_cancel).toContain('跳过');
+        expect(zh.hand_action_cancel).toBe('取消');
         expect(en.hand_action_play_minion).toBe('Play as Minion');
         expect(en.hand_action_use_special).toBe('Use Ability');
-        expect(en.hand_action_cancel).toContain('Skip');
+        expect(en.hand_action_cancel).toBe('Cancel');
     });
 
     it('smashup_reaction_choose 选项语义必须由共享 helper 解析', () => {

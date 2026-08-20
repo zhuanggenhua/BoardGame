@@ -15,7 +15,7 @@ import type {
     ManualSetupSelectionResult,
     MatchPlayerInfo,
 } from './protocol';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import { GameTransportClient } from './client';
 import type { LatencyOptimizationConfig } from './latency/types';
 import { createOptimisticEngine, filterPlayedEvents, type OptimisticEngine as OptimisticEngineType } from './latency/optimisticEngine';

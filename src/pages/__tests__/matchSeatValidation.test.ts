@@ -22,7 +22,7 @@ import {
 } from '../onlineAiSeats';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
-import type { GameEngineConfig } from '../../engine/transport/server';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView, getGameAiRuntime } from '../../engine/ai';
 import {
     buildAiProgressMarker,

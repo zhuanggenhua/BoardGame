@@ -885,7 +885,7 @@ export function injectPendingInteraction(
 // ============================================================================
 
 /**
- * 可通过 ADVANCE_PHASE 到达的阶段顺序（不含 setup/upkeep/income，它们由引擎自动推进）。
+ * 常规测试推进路径（setup/upkeep/income 通常由引擎自动推进）。
  * createInitializedState 返回 main1，所以 advanceTo 从 main1 开始计算。
  */
 const ADVANCEABLE_PHASES: TurnPhase[] = [
@@ -905,7 +905,7 @@ const ADVANCEABLE_PHASES: TurnPhase[] = [
  * 注意：
  * - 仅支持从 main1 开始的线性推进（main1 → offensiveRoll → main2 → discard）
  * - defensiveRoll 需要通过攻击流程进入，不在此 helper 范围内
- * - upkeep/income 由引擎自动推进，不需要手动 ADVANCE_PHASE
+ * - upkeep/income 常规路径由引擎自动推进；若被玩家可选动作打断，手动 ADVANCE_PHASE 仍是合法收口入口
  *
  * @param target 目标阶段
  * @param playerId 执行推进的玩家 ID（默认 '0'）

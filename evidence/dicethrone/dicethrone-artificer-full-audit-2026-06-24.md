@@ -1,5 +1,11 @@
 # DiceThrone 工匠全面审计
 
+> 2026-08-20 维护阶段手动推进兜底回写：用户复报“发明家第二回合进入维持阶段后出不去”，本轮定位到旧证据只证明“纳米机器人在维护阶段可点击并能引爆纳米爆弹”，没有证明“点击后阶段能收口”。真实故障不是纳米爆弹伤害或机器人本体结算错误，而是自动推进被玩家可选动作打断后，UI 仍把维护 / 收入阶段的手动推进按钮隐藏，导致玩家没有正常出口。
+>
+> 本轮修复口径：自动推进只是便利，不是删除或隐藏手动推进按钮的理由。非旁观者进入正式对局后保持阶段推进按钮常驻显示，能否点击由当前阶段权限统一控制；`upkeep / income` 被玩家可选动作打断时，按钮会从禁用/等待口径回到可点击收口口径。旁观者和 setup 仍不显示。代码改动落在 `src/games/dicethrone/ui/viewMode.ts` 与 `src/games/dicethrone/Board.tsx`，并在 `src/games/dicethrone/__tests__/auto-phase-progress.test.ts` 新增“工匠 upkeep 点击纳米机器人后若自动推进未接手，玩家仍可手动离开维护阶段”的回归断言。
+>
+> 本轮验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/auto-phase-progress.test.ts src/games/dicethrone/__tests__/artificer-mechanics.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` 结果为 `2 files / 71 tests passed`；增强现有真实入口 E2E 后，`node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/artificer-intake.e2e.ts "真实入口应通过工坊按钮激活纳米机器人并引爆纳米爆弹"` 结果为 `1 passed`。新增截图证明：`04-引爆后-推进按钮可手动收口.jpg` 显示仍在维护阶段、对手 HP 已从 50 降到 47、右侧“下一阶段”按钮可见可点；`05-手动推进后进入主要阶段.jpg` 显示点击后阶段已进入主要阶段（1）。目录级 `npm run test:dicethrone` 在 184 秒后由命令超时打断，未取得完成结果，不能作为通过证据。
+
 > 2026-08-06 FAQ 规则重构回写：本次以 `C:\Users\zhuagenbao\Downloads\王权骰铸常见问题总览2.1.1.docx` 第 2、7 页为规则真相源，覆盖超频运行、超频运行 II 上半区、电能脉冲、电能脉冲 III 上半区、真本能量共五条技能。FAQ 要求忽略这些字段里的“然后”：机器人改为在伤害结算前选择，赠送激活免费且无视正常激活条件；机器人仍须已建造、仍受每回合激活次数限制，同一技能不能重复选择同一机器人。电能机器人的 `+3` 并入当前攻击，不再生成独立伤害。
 >
 > 当前重构把机器人建造、升级、剩余激活次数和激活计数集中到 `src/games/dicethrone/domain/artificerBots.ts`；五条技能的选择时机统一迁到 `preDefense`，赠送选择统一发送机器人使用事件，由战斗状态处理器记录次数并把电能机器人加伤写入当前攻击。正常工坊 / Token 主动激活仍保留原时机和基础/高级机器人 `2/1` 合成器成本。

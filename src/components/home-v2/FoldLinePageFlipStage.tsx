@@ -462,6 +462,7 @@ export function FoldLinePageFlipStage({
                             <div
                                 ref={flipbookRef}
                                 key={`turnjs-visible-${mode}-${Math.round(unionWidth)}x${Math.round(unionHeight)}`}
+                                data-home-v2-turn-book="true"
                                 className="relative h-full w-full"
                                 style={{
                                     width: unionWidth,
@@ -636,6 +637,13 @@ export function FoldLinePageFlipStage({
         mainEffectRunCountRef.current += 1;
         if (rootRef.current) {
             rootRef.current.dataset.turnMainEffectRuns = String(mainEffectRunCountRef.current);
+            rootRef.current.dataset.turnOverlayGeometryReady = 'false';
+            rootRef.current.dataset.turnOverlayReadyFrames = '';
+            rootRef.current.dataset.turnOverlayMotionPage = '';
+            rootRef.current.dataset.turnOverlayMotionDisplay = '';
+            rootRef.current.dataset.turnOverlayFlipbookRect = '';
+            rootRef.current.dataset.turnOverlayExpectedRect = '';
+            rootRef.current.dataset.turnOverlayMotionRect = '';
         }
         completeOnceRef.current = false;
         const shouldResetAnimationState = !isFlipping || animationStartedAtRef.current === null;
@@ -671,6 +679,52 @@ export function FoldLinePageFlipStage({
                         rootRef.current.dataset.turnPluginView = '[]';
                         rootRef.current.dataset.turnPluginAnimating = '';
                     }
+                };
+                const motionPage = turningToDetail ? TURNJS_OVERVIEW_PAGE + 1 : TURNJS_DETAIL_PAGE;
+                const writeTurnOverlayGeometrySnapshot = () => {
+                    const root = rootRef.current;
+                    if (!root) {
+                        return false;
+                    }
+
+                    const flipbookRect = node.getBoundingClientRect();
+                    const motionWrapper = node.querySelector<HTMLElement>(`.page-wrapper[page="${motionPage}"]`);
+                    const motionRect = motionWrapper?.getBoundingClientRect() ?? null;
+                    const expectedLeft = turningToDetail
+                        ? flipbookRect.left + (flipbookRect.width / 2)
+                        : flipbookRect.left;
+                    const expectedRect = {
+                        left: expectedLeft,
+                        top: flipbookRect.top,
+                        width: flipbookRect.width / 2,
+                        height: flipbookRect.height,
+                    };
+                    const motionDisplay = motionWrapper ? window.getComputedStyle(motionWrapper).display : '';
+                    const geometryReady = Boolean(
+                        motionWrapper
+                        && motionDisplay !== 'none'
+                        && flipbookRect.width > 0
+                        && flipbookRect.height > 0
+                        && motionRect
+                        && Math.abs(motionRect.left - expectedRect.left) <= TURN_OVERLAY_RECT_TOLERANCE_PX
+                        && Math.abs(motionRect.top - expectedRect.top) <= TURN_OVERLAY_RECT_TOLERANCE_PX
+                        && Math.abs(motionRect.width - expectedRect.width) <= TURN_OVERLAY_RECT_TOLERANCE_PX
+                        && Math.abs(motionRect.height - expectedRect.height) <= TURN_OVERLAY_RECT_TOLERANCE_PX
+                    );
+
+                    root.dataset.turnOverlayGeometryReady = geometryReady ? 'true' : 'false';
+                    root.dataset.turnOverlayMotionPage = String(motionPage);
+                    root.dataset.turnOverlayMotionDisplay = motionDisplay;
+                    root.dataset.turnOverlayFlipbookRect = JSON.stringify(toRoundedRect(flipbookRect));
+                    root.dataset.turnOverlayExpectedRect = JSON.stringify({
+                        left: Math.round(expectedRect.left * 10) / 10,
+                        top: Math.round(expectedRect.top * 10) / 10,
+                        width: Math.round(expectedRect.width * 10) / 10,
+                        height: Math.round(expectedRect.height * 10) / 10,
+                    });
+                    root.dataset.turnOverlayMotionRect = motionRect ? JSON.stringify(toRoundedRect(motionRect)) : '';
+
+                    return geometryReady;
                 };
                 const handleTurnEvent = () => {
                     writeTurnSnapshot();
@@ -733,13 +787,22 @@ export function FoldLinePageFlipStage({
                             instance.turn('peel', false);
                             instance.turn(turningToDetail ? 'next' : 'previous');
                             writeTurnSnapshot();
-                            window.requestAnimationFrame(() => {
+                            const revealOverlayWhenGeometryReady = (frameCount: number) => {
                                 if (disposed || !instance) {
                                     return;
                                 }
-                                window.requestAnimationFrame(() => {
-                                    if (disposed || !instance) {
-                                        return;
+
+                                try {
+                                    instance.turn('resize');
+                                    instance.turn('update');
+                                } catch {
+                                    // turn.js may be between internal setup frames.
+                                }
+
+                                const geometryReady = writeTurnOverlayGeometrySnapshot();
+                                if (geometryReady || frameCount >= TURN_OVERLAY_READY_MAX_FRAMES) {
+                                    if (rootRef.current) {
+                                        rootRef.current.dataset.turnOverlayReadyFrames = String(frameCount);
                                     }
                                     animationStartedAtRef.current = performance.now();
                                     setProgress(0);
@@ -747,8 +810,13 @@ export function FoldLinePageFlipStage({
                                     setTurnOverlayVisible(true);
                                     setIsAnimating(true);
                                     writeTurnSnapshot();
-                                });
-                            });
+                                    return;
+                                }
+
+                                window.requestAnimationFrame(() => revealOverlayWhenGeometryReady(frameCount + 1));
+                            };
+
+                            window.requestAnimationFrame(() => revealOverlayWhenGeometryReady(1));
                         });
                         return;
                     }

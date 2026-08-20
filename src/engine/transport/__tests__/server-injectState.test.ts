@@ -11,7 +11,7 @@ import { Server as IOServer } from 'socket.io';
 import { createServer } from 'http';
 import type { MatchState, PlayerId } from '../../types';
 import type { MatchStorage, StoredMatchState, MatchMetadata } from '../storage';
-import type { GameEngineConfig } from '../server';
+import type { GameEngineConfig } from '../engineConfig';
 
 // 创建最小化的 mock storage
 const createMockStorage = (): MatchStorage => {

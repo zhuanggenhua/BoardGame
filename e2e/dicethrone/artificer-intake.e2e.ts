@@ -369,6 +369,25 @@ test.describe('DiceThrone 工匠真实入口', () => {
             });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-工坊-纳米机器人引爆后');
+
+            const advanceButton = match.hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+            await expect(advanceButton).toBeVisible({ timeout: 10000 });
+            await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-引爆后-推进按钮可手动收口');
+
+            await advanceButton.click();
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const sys = asRecord(root.sys);
+                return sys.phase ?? null;
+            }, {
+                timeout: 15000,
+                message: '纳米机器人引爆后点击推进按钮应离开维护阶段并进入主要阶段',
+            }).toBe('main1');
+
+            await expect(match.hostPage.locator('[data-tutorial-id="dice-roll-button"]')).toBeVisible({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-手动推进后进入主要阶段');
         } finally {
             await cleanupDTMatch(match);
         }

@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "玩家点击原随从时必须先看到动作选择，不能默认吞掉跳舞企鹅替代能力。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 su-hand-action-choice-bar 可见，并显示“打出为随从 / 使用能力 / 取消”。",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-geeks-hand-special-and-minmaxing.e2e\\跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力\\penguins-dancing-choice-01-options.jpg"
+      ]
+    },
+    {
+      "requirement": "手牌动作仲裁必须复用现有浮动动作栏，不新造弹窗、遮罩或内部说明 UI。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言包含动作栏且不存在包含该动作栏的 .fixed.inset-0 遮罩。",
+        "E2E 断言页面没有“选择要对 / Choose what to do with”“既可以正常打出 / can be played normally”等说明文案。"
+      ]
+    },
+    {
+      "requirement": "取消按钮必须只表示取消当前选择，不写成跳过。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 su-hand-action-cancel 文案精确匹配“取消”或“Cancel”。",
+        "取消后状态断言手牌仍为 original-card 与 dancing-card，基地和牌库未改变。"
+      ]
+    },
+    {
+      "requirement": "选择“使用能力”后必须按跳舞企鹅规则结算：原随从回牌库底，跳舞企鹅进场。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言手牌清空，牌库变为 original-card，基地随从为 dancing-card。",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-geeks-hand-special-and-minmaxing.e2e\\跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力\\penguins-dancing-choice-02-replacement-resolved.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-geeks-hand-special-and-minmaxing.e2e\\跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-geeks-hand-special-and-minmaxing.e2e\\跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力\\_labeled-for-pureref\\01-labeled-penguins-dancing-choice-01-options.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\smashup\\smashup-geeks-hand-special-and-minmaxing.e2e\\跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力\\_labeled-for-pureref\\02-labeled-penguins-dancing-choice-02-replacement-resolved.png"
+  ]
+}

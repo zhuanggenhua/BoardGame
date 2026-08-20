@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { GameEngineConfig } from '../../../engine/transport/server';
+import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import { BoardBridge, LocalGameProvider, useGameClient } from '../../../engine/transport/react';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';

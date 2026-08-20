@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { GameTutorialSource, TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameManifestEntry } from './manifest.types';
-import type { AnyGameEngineConfig } from '../engine/transport/server';
+import type { AnyGameEngineConfig } from '../engine/transport/engineConfig';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import type { CriticalImageResolver } from '../core/types';
 import type { GameRuntimeAdapter } from './gameRuntimeAdapter';

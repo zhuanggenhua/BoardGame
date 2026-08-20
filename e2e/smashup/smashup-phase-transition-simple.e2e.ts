@@ -55,6 +55,16 @@ async function expectActionSpotlightClosesOnBlankClick(page: Page, defId: string
     await expect(spotlightQueue).toHaveCount(0);
 }
 
+async function expectNoActionSpotlightForOwnPlay(page: Page): Promise<void> {
+    const fxCard = page.getByTestId('smashup-action-fx-card');
+    const spotlightQueue = page.getByTestId('card-spotlight-queue');
+
+    await expect(fxCard).toHaveCount(0);
+    await expect(spotlightQueue).toHaveCount(0, { timeout: 1000 });
+    await page.waitForTimeout(500);
+    await expect(spotlightQueue).toHaveCount(0);
+}
+
 async function applyOnlineMatchState(
     matchId: string,
     page: Page,
@@ -2314,7 +2324,7 @@ test('Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行�
     await saveEvidenceScreenshot(page, testInfo, 'oops-extra-play-after-resolve');
 });
 
-test('在线模式行动卡特写应保持到玩家点击空白背景关闭', async ({ browser }, testInfo) => {
+test('在线模式自己打出行动卡不弹特写，对手行动卡保持到点击空白背景关闭', async ({ browser }, testInfo) => {
     test.setTimeout(120000);
 
     const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -2336,7 +2346,7 @@ test('在线模式行动卡特写应保持到玩家点击空白背景关闭', as
         expect(hostActionUid).toBeTruthy();
         await playActionCardWithoutTargetByUi(hostPage, firstSetup.matchId, '0', hostActionUid);
         await expectActionSpotlightClosesOnBlankClick(guestPage, 'wizard_mystic_studies');
-        await expectActionSpotlightClosesOnBlankClick(hostPage, 'wizard_mystic_studies');
+        await expectNoActionSpotlightForOwnPlay(hostPage);
         await saveEvidenceScreenshot(guestPage, testInfo, 'action-spotlight-blank-dismissed-online-p0');
     } finally {
         await firstSetup.guestContext.close();
@@ -2361,7 +2371,7 @@ test('在线模式行动卡特写应保持到玩家点击空白背景关闭', as
         expect(guestActionUid).toBeTruthy();
         await playActionCardWithoutTargetByUi(guestPage, secondSetup.matchId, '1', guestActionUid);
         await expectActionSpotlightClosesOnBlankClick(hostPage, 'wizard_mystic_studies');
-        await expectActionSpotlightClosesOnBlankClick(guestPage, 'wizard_mystic_studies');
+        await expectNoActionSpotlightForOwnPlay(guestPage);
         await saveEvidenceScreenshot(hostPage, testInfo, 'action-spotlight-blank-dismissed-online-p1');
     } finally {
         await secondSetup.guestContext.close();

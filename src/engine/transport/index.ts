@@ -25,7 +25,8 @@ export type {
 
 // 服务端
 export { GameTransportServer } from './server';
-export type { GameEngineConfig, GameTransportServerConfig } from './server';
+export type { GameTransportServerConfig } from './server';
+export type { GameEngineConfig } from './engineConfig';
 
 // 客户端
 export { GameTransportClient } from './client';

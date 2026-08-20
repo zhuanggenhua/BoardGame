@@ -14,7 +14,7 @@ import type {
 } from '../../engine/types';
 import { createBaseSystems } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
-import type { GameEngineConfig } from '../../engine/transport/server';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { RuntimeDomainExecutor, type RuntimeDomainCore } from '../runtime/domainExecutor';
 import type { UGCGameState } from '../sdk/types';
 import { loadUgcRuntimeConfig, type UgcRuntimeConfig } from './loader';

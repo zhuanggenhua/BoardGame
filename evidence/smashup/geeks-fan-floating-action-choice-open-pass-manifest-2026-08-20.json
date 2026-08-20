@@ -1,0 +1,86 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-08-20T10:08:37+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "粉丝同时可以普通打出和使用能力时，玩家看到的是复用现有浮动动作栏的三个动作按钮。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/smashup/Board.tsx 使用 data-testid=\"su-hand-action-choice-bar\" 渲染三个按钮：打出为随从、使用能力、取消。",
+        "test-results/evidence-screenshots/smashup/smashup-geeks-hand-special-and-minmaxing.e2e/粉丝普通打出和-special-同时合法时，复用浮动动作栏仲裁打出-使用能力-取消/geeks-fan-choice-01-options.jpg"
+      ]
+    },
+    {
+      "requirement": "粉丝动作仲裁不得为单卡新造独立 modal、overlay 或黑色 backdrop。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/smashup/__tests__/Board.interactionBars.test.ts 约束 su-hand-action-choice-bar 片段必须使用 floatingHintClassName 和 handActionChoiceStyle，且不含 fixed inset-0 / bg-black/45。",
+        "e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e 断言 su-hand-action-choice-bar 不在 .fixed.inset-0 内。"
+      ]
+    },
+    {
+      "requirement": "玩家可见 UI 不暴露内部解释，只保留可执行动作按钮。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/smashup/__tests__/Board.interactionBars.test.ts 反向断言 hand_action_choose / hand_action_choose_desc 不存在，并保留三个动作按钮文案。",
+        "e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e 断言选择说明文案和“既可以正常打出”类解释文案不可见。"
+      ]
+    },
+    {
+      "requirement": "动作按钮栏不压住选中的粉丝手牌。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e 几何断言按钮栏底部在粉丝卡顶部上方至少 8px。",
+        "src/games/smashup/Board.tsx 使用 handActionChoiceStyle 将按钮栏放到常规浮动动作栏上方。"
+      ]
+    },
+    {
+      "requirement": "规范已沉淀同类错误：同类卡牌动作必须复用既有动作承载，不得为单卡新造 UI 外壳。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-ux.md 的 UI 同类交互统一门禁已补充同类卡牌动作复用既有承载。",
+        ".spec/knowledge/standards/rule-driven-interaction-design.md 的多动作仲裁规则已补充不得为单卡仲裁新造独立 UI 外壳。",
+        "npm run spec:lint: OK"
+      ]
+    }
+  ],
+  "sourceImages": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-geeks-hand-special-and-minmaxing.e2e/粉丝普通打出和-special-同时合法时，复用浮动动作栏仲裁打出-使用能力-取消/geeks-fan-choice-01-options.jpg",
+      "size": "1920x1080",
+      "sha256": "E5D9AF166CAC8189CBE9CC0FFBB191E22DB9E6978FE226296E22F47D195556DC"
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-geeks-hand-special-and-minmaxing.e2e/粉丝普通打出和-special-同时合法时，复用浮动动作栏仲裁打出-使用能力-取消/geeks-fan-choice-01-options.jpg"
+  ],
+  "verification": [
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/Board.interactionBars.test.ts src/games/smashup/__tests__/handSpecialSelection.test.ts --configLoader native",
+      "result": "2 files / 15 tests passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "npm run spec:lint",
+      "result": "OK"
+    },
+    {
+      "command": "$env:PW_E2E_SERVICE_REUSE='isolated'; $env:PW_RUNTIME_SCOPE='smashup-geeks-fan-cancel-only'; $env:BG_HEAVY_WAIT_FOR_BUDGET='1'; $env:BG_HEAVY_WAIT_TIMEOUT_MS='300000'; node scripts/infra/run-e2e-command.mjs isolated e2e/smashup/smashup-geeks-hand-special-and-minmaxing.e2e.ts --grep \"粉丝\"",
+      "result": "3 passed"
+    }
+  ],
+  "notes": [
+    "旧的 geeks-fan-buttons-only 弹窗 PASS 清单已删除，不再作为最终证据。",
+    "本清单只覆盖本轮粉丝多动作入口、玩家可见 UI 和规范回代要求。"
+  ]
+}

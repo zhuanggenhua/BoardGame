@@ -50,10 +50,16 @@ function makeActionPlayedEntry(id: number, playerId: string, defId: string): Eve
   });
 }
 
-function SpotlightHarness({ entries }: { entries: EventStreamEntry[] }) {
+function SpotlightHarness({
+  entries,
+  currentPlayerId = '0',
+}: {
+  entries: EventStreamEntry[];
+  currentPlayerId?: string | null;
+}) {
   const { queue, dismiss } = useCardSpotlightQueue<{ defId: string }>({
     entries,
-    currentPlayerId: null,
+    currentPlayerId,
     consumeOnReconcile: true,
     triggerEventTypes: [SU_EVENTS.ACTION_PLAYED],
     extractCard: (event) => {
@@ -165,6 +171,18 @@ describe('SmashUp action spotlight suppression', () => {
     });
 
     rerender(<SpotlightHarness entries={eventEntries} />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('smashup-action-spotlight-card')).toBeNull();
+      expect(screen.queryByTestId('card-spotlight-queue')).toBeNull();
+    });
+  });
+
+  it('当前玩家自己打出的行动卡不生成特写', async () => {
+    const ownActionEntry = [makeActionPlayedEntry(3, '0', 'wizard_mystic_studies')];
+    const { rerender } = render(<SpotlightHarness entries={[]} currentPlayerId="0" />);
+
+    rerender(<SpotlightHarness entries={ownActionEntry} currentPlayerId="0" />);
 
     await waitFor(() => {
       expect(screen.queryByTestId('smashup-action-spotlight-card')).toBeNull();

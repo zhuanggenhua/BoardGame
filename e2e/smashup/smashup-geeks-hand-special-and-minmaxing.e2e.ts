@@ -105,8 +105,8 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         const fanCard = page.locator('[data-testid="su-hand-area"] [data-card-uid="fan-1"]');
         const playAsMinionButton = page.getByRole('button', { name: /打出为随从|Play as Minion/ });
         const useAbilityButton = page.getByRole('button', { name: /使用能力|Use Ability/ });
-        const cancelButton = page.getByRole('button', { name: /取消 \/ 跳过|Cancel \/ Skip/ });
         const actionChoiceBar = page.getByTestId('su-hand-action-choice-bar');
+        const cancelButton = page.getByTestId('su-hand-action-cancel');
 
         await expect(fanCard).toBeVisible({ timeout: 10000 });
         await fanCard.click();
@@ -115,7 +115,20 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         await expect(playAsMinionButton).toBeVisible({ timeout: 10000 });
         await expect(useAbilityButton).toBeVisible();
         await expect(cancelButton).toBeVisible();
+        await expect(cancelButton).toHaveText(/^(取消|Cancel)$/);
         await expect(page.locator('.fixed.inset-0').filter({ has: actionChoiceBar })).toHaveCount(0);
+        const choiceGeometry = await page.evaluate(() => {
+            const card = document.querySelector<HTMLElement>('[data-testid="su-hand-area"] [data-card-uid="fan-1"]');
+            const bar = document.querySelector<HTMLElement>('[data-testid="su-hand-action-choice-bar"]');
+            const cardRect = card?.getBoundingClientRect();
+            const barRect = bar?.getBoundingClientRect();
+            return cardRect && barRect ? {
+                cardTop: cardRect.top,
+                barBottom: barRect.bottom,
+            } : null;
+        });
+        expect(choiceGeometry).toBeTruthy();
+        expect(choiceGeometry!.barBottom).toBeLessThan(choiceGeometry!.cardTop - 8);
         await expect(page.getByText(/选择要对|Choose what to do with/)).toHaveCount(0);
         await expect(page.getByText(/既可以正常打出|can be played normally/)).toHaveCount(0);
         await game.screenshot('geeks-fan-choice-01-options', testInfo);
@@ -237,5 +250,90 @@ test.describe('SmashUp 极客真实手牌入口回归', () => {
         expect(state.core.players['0'].discard.map((card: any) => card.uid)).toContain('minmax-1');
 
         await game.screenshot('geeks-minmax-04-resolved', testInfo);
+    });
+});
+
+test.describe('SmashUp 手牌替代打出真实入口回归', () => {
+    test('跳舞企鹅替代打出时，点原随从必须先复用动作栏选择普通打出或使用能力', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+
+        await game.openTestGame('smashup', {
+            p0: 'penguins,geeks',
+            p1: 'superheroes,aliens',
+            skipFactionSelect: true,
+        }, 90000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            currentPlayer: '0',
+            phase: 'playCards',
+            player0: {
+                hand: [
+                    { uid: 'original-card', defId: 'penguins_surfing_penguin', type: 'minion', owner: '0' },
+                    { uid: 'dancing-card', defId: 'penguins_dancing_penguin', type: 'minion', owner: '0' },
+                ],
+                deck: [],
+                discard: [],
+                factions: ['penguins', 'geeks'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['superheroes', 'aliens'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_ice_floe', minions: [] },
+                { defId: 'base_the_colony', minions: [] },
+            ],
+        });
+
+        const originalCard = page.locator('[data-testid="su-hand-area"] [data-card-uid="original-card"]');
+        const playAsMinionButton = page.getByRole('button', { name: /打出为随从|Play as Minion/ });
+        const useAbilityButton = page.getByRole('button', { name: /使用能力|Use Ability/ });
+        const actionChoiceBar = page.getByTestId('su-hand-action-choice-bar');
+        const cancelButton = page.getByTestId('su-hand-action-cancel');
+
+        await expect(originalCard).toBeVisible({ timeout: 10000 });
+        await originalCard.click();
+
+        await expect(actionChoiceBar).toBeVisible({ timeout: 10000 });
+        await expect(playAsMinionButton).toBeVisible();
+        await expect(useAbilityButton).toBeVisible();
+        await expect(cancelButton).toHaveText(/^(取消|Cancel)$/);
+        await expect(page.locator('.fixed.inset-0').filter({ has: actionChoiceBar })).toHaveCount(0);
+        await expect(page.getByText(/选择要对|Choose what to do with/)).toHaveCount(0);
+        await expect(page.getByText(/既可以正常打出|can be played normally/)).toHaveCount(0);
+        await game.screenshot('penguins-dancing-choice-01-options', testInfo);
+
+        await cancelButton.click();
+        await expect(actionChoiceBar).toHaveCount(0);
+        let state = await game.getState();
+        expect(state.core.players['0'].hand.map((card: any) => card.uid)).toEqual(['original-card', 'dancing-card']);
+        expect(state.core.players['0'].deck).toHaveLength(0);
+        expect(state.core.bases[0].minions).toHaveLength(0);
+
+        await originalCard.click();
+        await expect(useAbilityButton).toBeVisible({ timeout: 10000 });
+        await useAbilityButton.click();
+        await game.selectBase(0);
+        await game.waitForNoInteraction(10000);
+
+        state = await game.getState();
+        expect(state.core.players['0'].hand).toHaveLength(0);
+        expect(state.core.players['0'].deck.map((card: any) => card.uid)).toEqual(['original-card']);
+        expect(state.core.bases[0].minions.map((minion: any) => minion.uid)).toEqual(['dancing-card']);
+        expect(state.core.players['0'].minionsPlayed).toBe(1);
+        expect(state.core.players['0'].actionsPlayed).toBe(0);
+
+        await game.screenshot('penguins-dancing-choice-02-replacement-resolved', testInfo);
     });
 });

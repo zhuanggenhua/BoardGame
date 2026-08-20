@@ -17,7 +17,7 @@ import {
     type ResponseWindowCurrentSummary,
     responseWindowSeatViewBelongsToResponder,
 } from '../responseWindowInteractionLock';
-import type { GameEngineConfig } from './server';
+import type { GameEngineConfig } from './engineConfig';
 import {
     isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase,
     shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice,

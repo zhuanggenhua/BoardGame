@@ -1,5 +1,5 @@
 import type { EngineSystem } from '../../engine/systems/types';
-import type { GameEngineConfig } from '../../engine/transport/server';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import type { MatchState } from '../../engine/types';
 import {
     createInitialSystemState,
