@@ -165,6 +165,9 @@ import { executeAuthoritativeCommandBatch } from './authoritativeBatchExecutor';
 import { commitAuthoritativeCommandSuccess } from './authoritativeCommandCommit';
 import {
     drainAuthoritativeCommandQueue,
+    enqueueAuthoritativeBatch,
+    enqueueAuthoritativeCommand,
+    runAuthoritativeCommandQueueExclusive,
     type AuthoritativeCommandQueueItem,
     type QueuedAuthoritativeCommand,
 } from './authoritativeCommandQueue';
@@ -4462,29 +4465,24 @@ export class GameTransportServer {
 
         // 串行执行：如果正在执行，加入队列
         if (match.executing) {
-            return new Promise<boolean>((resolve) => {
-                match.commandQueue.push({
-                    commandType,
-                    payload,
-                    playerID,
-                    stateIDAtEnqueue: match.stateID,
-                    options: {
-                        reportFailureFeedback: true,
-                        feedbackSource: options?.feedbackSource,
-                        expectedStateID: options?.expectedStateID,
-                        onlineAiCircuitSource: options?.onlineAiCircuitSource,
-                        onlineAiAttemptKey: options?.onlineAiAttemptKey,
-                        clientTransport: options?.clientTransport,
-                    },
-                    resolve,
-                });
+            return enqueueAuthoritativeCommand(match, {
+                commandType,
+                payload,
+                playerID,
+                stateIDAtEnqueue: match.stateID,
+                options: {
+                    reportFailureFeedback: true,
+                    feedbackSource: options?.feedbackSource,
+                    expectedStateID: options?.expectedStateID,
+                    onlineAiCircuitSource: options?.onlineAiCircuitSource,
+                    onlineAiAttemptKey: options?.onlineAiAttemptKey,
+                    clientTransport: options?.clientTransport,
+                },
             });
         }
 
-        let success = false;
-        match.executing = true;
-        try {
-            success = await this.executeCommandInternal(
+        const success = await runAuthoritativeCommandQueueExclusive(match, {
+            execute: () => this.executeCommandInternal(
                 match,
                 playerID,
                 commandType,
@@ -4495,11 +4493,9 @@ export class GameTransportServer {
                     onlineAiAttemptKey: options?.onlineAiAttemptKey,
                     clientTransport: options?.clientTransport,
                 },
-            );
-            await this.drainCommandQueue(match);
-        } finally {
-            match.executing = false;
-        }
+            ),
+            drain: () => this.drainCommandQueue(match),
+        });
         if (success) {
             await this.runOnlineAiImmediateExecution(match, 'command-succeeded');
         }
@@ -4542,71 +4538,65 @@ export class GameTransportServer {
                 batchId,
                 queuedLength: match.commandQueue.length,
             });
-            await new Promise<void>((resolve) => {
-                match.commandQueue.push({
-                    _batch: true,
-                    execute: () => this.executeBatchInternal(socket, match, playerID, batchId, commands, meta),
-                    resolve: () => resolve(),
-                });
+            await enqueueAuthoritativeBatch(match, {
+                _batch: true,
+                execute: () => this.executeBatchInternal(socket, match, playerID, batchId, commands, meta),
             });
             return;
         }
 
-        let batchSucceeded = false;
-        match.executing = true;
-
-        try {
-            const batchResult = await executeAuthoritativeCommandBatch({
-                match,
-                commands,
-                tracePrefix: 'handle-batch',
-                tracePayload: {
-                    matchID,
-                    playerID,
-                    batchId,
-                },
-                staleTracePayload: {
-                    matchID,
-                    playerID,
-                    batchId,
-                    expectedStateID: meta?.expectedStateID ?? null,
-                    actualStateID: match.stateID,
-                },
-                emitTrace: emitOnlineAiBatchTrace,
-                rejectWhenStatePreconditionFails: () => this.rejectBatchWhenStatePreconditionFails(
-                    socket,
-                    matchID,
-                    batchId,
+        const batchSucceeded = await runAuthoritativeCommandQueueExclusive(match, {
+            execute: async () => {
+                const batchResult = await executeAuthoritativeCommandBatch({
                     match,
-                    meta,
                     commands,
-                    playerID,
-                ),
-                executeCommand: (cmd) => this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
-                    suppressBroadcast: true,
-                    reportFailureFeedback: true,
-                    onlineAiAttemptKey: normalizeOnlineAiAttemptKey(meta?.onlineAiAttemptKey),
-                    clientTransport: normalizeOnlineAiClientTransportDiagnostics(meta?.clientTransport),
-                }),
-                persistRollbackState: (storedState) => this.storage.setState(matchID, storedState),
-                broadcastState: () => this.broadcastState(match),
-                buildAuthoritativeState: () => this.stripStateForTransport(match.state, { stripEventStream: true }),
-            });
+                    tracePrefix: 'handle-batch',
+                    tracePayload: {
+                        matchID,
+                        playerID,
+                        batchId,
+                    },
+                    staleTracePayload: {
+                        matchID,
+                        playerID,
+                        batchId,
+                        expectedStateID: meta?.expectedStateID ?? null,
+                        actualStateID: match.stateID,
+                    },
+                    emitTrace: emitOnlineAiBatchTrace,
+                    rejectWhenStatePreconditionFails: () => this.rejectBatchWhenStatePreconditionFails(
+                        socket,
+                        matchID,
+                        batchId,
+                        match,
+                        meta,
+                        commands,
+                        playerID,
+                    ),
+                    executeCommand: (cmd) => this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
+                        suppressBroadcast: true,
+                        reportFailureFeedback: true,
+                        onlineAiAttemptKey: normalizeOnlineAiAttemptKey(meta?.onlineAiAttemptKey),
+                        clientTransport: normalizeOnlineAiClientTransportDiagnostics(meta?.clientTransport),
+                    }),
+                    persistRollbackState: (storedState) => this.storage.setState(matchID, storedState),
+                    broadcastState: () => this.broadcastState(match),
+                    buildAuthoritativeState: () => this.stripStateForTransport(match.state, { stripEventStream: true }),
+                });
 
-            if (batchResult.status === 'stale-rejected') {
-                return;
-            }
-            if (batchResult.status === 'command-rejected') {
-                socket.emit('batch:rejected', matchID, batchId, batchResult.failureReason);
-                return;
-            }
-            // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
-            socket.emit('batch:confirmed', matchID, batchId, batchResult.authoritativeState);
-            batchSucceeded = true;
-        } finally {
-            await this.drainCommandQueue(match);
-            match.executing = false;
-        }
+                if (batchResult.status === 'stale-rejected') {
+                    return false;
+                }
+                if (batchResult.status === 'command-rejected') {
+                    socket.emit('batch:rejected', matchID, batchId, batchResult.failureReason);
+                    return false;
+                }
+                // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
+                socket.emit('batch:confirmed', matchID, batchId, batchResult.authoritativeState);
+                return true;
+            },
+            drain: () => this.drainCommandQueue(match),
+        });
         if (batchSucceeded) {
             await this.runOnlineAiImmediateExecution(match, 'command-succeeded');
         }

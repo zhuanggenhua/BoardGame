@@ -18,7 +18,7 @@ export interface CommandBatcher {
      * 入队命令
      *
      * 将命令加入待发送队列，并启动/重置时间窗口定时器。
-     * 若命令在 immediateCommands 列表中，则立即发送并 flush 队列。
+     * 若命令在 immediateCommands 列表中，则先 flush 已排队命令，再单独发送当前命令。
      * 若队列达到 maxBatchSize，则自动 flush。
      */
     enqueue(type: string, payload: unknown): void;
@@ -145,14 +145,14 @@ export function createCommandBatcher(config: CommandBatcherConfig): CommandBatch
                 return;
             }
 
-            // 将命令加入队列
-            state.queue.push({ type, payload });
-
-            // immediateCommands：立即发送并 flush 整个队列
             if (state.config.immediateCommands.has(type)) {
                 doFlush();
+                config.onFlush([{ type, payload }]);
                 return;
             }
+
+            // 将命令加入队列
+            state.queue.push({ type, payload });
 
             // 队列达到 maxBatchSize：自动 flush
             if (state.queue.length >= state.config.maxBatchSize) {

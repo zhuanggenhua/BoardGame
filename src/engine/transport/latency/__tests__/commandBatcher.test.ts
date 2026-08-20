@@ -3,7 +3,7 @@
  *
  * 覆盖以下场景：
  * - windowMs=0 退化为逐条发送
- * - immediateCommands 立即发送并 flush 队列
+ * - immediateCommands 先 flush 旧队列，再单独立即发送当前命令
  * - maxBatchSize 边界触发自动 flush
  * - destroy 后不再发送
  *
@@ -74,11 +74,11 @@ describe('CommandBatcher 单元测试', () => {
     });
 
     // ========================================================================
-    // immediateCommands 立即发送并 flush 队列
+    // immediateCommands 先 flush 旧队列，再单独立即发送当前命令
     // ========================================================================
 
-    describe('immediateCommands 立即发送并 flush 队列', () => {
-        it('immediate 命令触发整个队列的 flush（包含之前排队的命令）', () => {
+    describe('immediateCommands 立即发送', () => {
+        it('immediate 命令先 flush 已排队命令，再单独发送当前命令', () => {
             const flushCalls: BatchedCommand[][] = [];
 
             const batcher = createCommandBatcher({
@@ -98,13 +98,13 @@ describe('CommandBatcher 单元测试', () => {
             // 入队一个 immediate 命令
             batcher.enqueue('URGENT', { urgent: true });
 
-            // 应立即 flush，包含所有 3 条命令
-            expect(flushCalls.length).toBe(1);
+            // 旧队列和当前 immediate 命令必须拆成两次发送，避免跨阻塞交互合批。
+            expect(flushCalls.length).toBe(2);
             expect(flushCalls[0]).toEqual([
                 { type: 'NORMAL_A', payload: { a: 1 } },
                 { type: 'NORMAL_B', payload: { b: 2 } },
-                { type: 'URGENT', payload: { urgent: true } },
             ]);
+            expect(flushCalls[1]).toEqual([{ type: 'URGENT', payload: { urgent: true } }]);
 
             batcher.destroy();
         });
@@ -127,6 +127,36 @@ describe('CommandBatcher 单元测试', () => {
             batcher.destroy();
         });
 
+        it('回归：阻塞交互响应不能和前一拍阶段推进合批', () => {
+            const flushCalls: BatchedCommand[][] = [];
+
+            const batcher = createCommandBatcher({
+                windowMs: 100,
+                maxBatchSize: 20,
+                immediateCommands: ['SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CANCEL'],
+                onFlush: (cmds) => flushCalls.push([...cmds]),
+            });
+
+            batcher.enqueue('ADVANCE_PHASE', {});
+            batcher.enqueue('SYS_INTERACTION_RESPOND', {
+                interactionId: 'after-scoring-choice',
+                optionId: 'choose-source',
+            });
+
+            expect(flushCalls).toEqual([
+                [{ type: 'ADVANCE_PHASE', payload: {} }],
+                [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: {
+                        interactionId: 'after-scoring-choice',
+                        optionId: 'choose-source',
+                    },
+                }],
+            ]);
+
+            batcher.destroy();
+        });
+
         it('immediate 命令 flush 后，后续命令进入新的批次', () => {
             const flushCalls: BatchedCommand[][] = [];
 
@@ -140,15 +170,15 @@ describe('CommandBatcher 单元测试', () => {
             batcher.enqueue('NORMAL_A', 1);
             batcher.enqueue('URGENT', 2);
 
-            // 第一次 flush
-            expect(flushCalls.length).toBe(1);
+            // 第一次 flush：NORMAL_A 和 URGENT 被拆成两个发送批次
+            expect(flushCalls.length).toBe(2);
 
             // 后续命令进入新批次
             batcher.enqueue('NORMAL_B', 3);
             vi.advanceTimersByTime(101);
 
-            expect(flushCalls.length).toBe(2);
-            expect(flushCalls[1]).toEqual([{ type: 'NORMAL_B', payload: 3 }]);
+            expect(flushCalls.length).toBe(3);
+            expect(flushCalls[2]).toEqual([{ type: 'NORMAL_B', payload: 3 }]);
 
             batcher.destroy();
         });

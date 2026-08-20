@@ -66,11 +66,11 @@ describe('CommandBatcher 单元测试', () => {
     });
 
     // ========================================================================
-    // immediateCommands 立即发送并 flush 队列
+    // immediateCommands 先 flush 旧队列，再单独立即发送当前命令
     // ========================================================================
 
     describe('immediateCommands', () => {
-        it('immediate 命令立即发送，并 flush 队列中已有的命令', () => {
+        it('immediate 命令先发送旧队列，再单独立即发送当前命令', () => {
             const flushCalls: BatchedCommand[][] = [];
             const batcher = createCommandBatcher({
                 windowMs: 100,
@@ -84,14 +84,14 @@ describe('CommandBatcher 单元测试', () => {
             batcher.enqueue('NORMAL_B', 2);
             expect(flushCalls.length).toBe(0);
 
-            // 入队 immediate 命令 → 立即 flush 整个队列（含 immediate 命令本身）
+            // 入队 immediate 命令 → 先 flush 旧队列，再单独发送 immediate 命令。
             batcher.enqueue('URGENT', 'go');
-            expect(flushCalls.length).toBe(1);
+            expect(flushCalls.length).toBe(2);
             expect(flushCalls[0]).toEqual([
                 { type: 'NORMAL_A', payload: 1 },
                 { type: 'NORMAL_B', payload: 2 },
-                { type: 'URGENT', payload: 'go' },
             ]);
+            expect(flushCalls[1]).toEqual([{ type: 'URGENT', payload: 'go' }]);
 
             batcher.destroy();
         });

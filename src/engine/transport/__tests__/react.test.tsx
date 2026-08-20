@@ -125,6 +125,25 @@ function WaitingPromptProbe({ playerID }: { playerID: string }): JSX.Element {
     return <div data-testid="no-waiting-prompt" />;
 }
 
+function DispatchProbe(): JSX.Element {
+    const { dispatch } = useGameClient();
+
+    return (
+        <button
+            data-testid="dispatch-advance-then-interaction"
+            onClick={() => {
+                dispatch('ADVANCE_PHASE', {});
+                dispatch('SYS_INTERACTION_RESPOND', {
+                    interactionId: 'sea-dogs-from-base',
+                    optionId: 'base_0',
+                });
+            }}
+        >
+            dispatch
+        </button>
+    );
+}
+
 describe('GameProvider transport baseline', () => {
     beforeEach(() => {
         mockClientInstances.length = 0;
@@ -955,6 +974,41 @@ describe('GameProvider transport baseline', () => {
 
         expect(client.updateLatestState).toHaveBeenLastCalledWith(authoritativeClosedState);
         expect(screen.queryByText('正在等待 {{player}}')).not.toBeInTheDocument();
+    });
+
+    it('sends an immediate interaction response separately from a queued phase advance', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-batching-interaction-separation"
+                playerId="0"
+                latencyConfig={{
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CANCEL'],
+                    },
+                } as any}
+            >
+                <DispatchProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            screen.getByTestId('dispatch-advance-then-interaction').click();
+        });
+
+        expect(client.sendBatch).not.toHaveBeenCalled();
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', {});
+        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'SYS_INTERACTION_RESPOND', {
+            interactionId: 'sea-dogs-from-base',
+            optionId: 'base_0',
+        });
     });
 
     it('clears stale owner-only current prompt on optimistic reconcile when authoritative close arrives', () => {
