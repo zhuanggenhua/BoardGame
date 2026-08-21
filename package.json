@@ -1,8 +1,8 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.6.46",
-  "androidVersionCode": 609,
+  "version": "0.6.47",
+  "androidVersionCode": 610,
   "type": "module",
   "engines": {
     "node": "24.1.0"
