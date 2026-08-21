@@ -24,6 +24,7 @@ import {
     SERVER_PUBLISH_MANIFEST_FILE,
 } from './publish-primary-assets.mjs';
 import { resolveActiveAssetSet } from './active-server-assets.mjs';
+import { normalizePathOwnership } from './asset-publish-ownership.mjs';
 import { selectRetainedReleaseIds } from './release-retention.mjs';
 import { refreshAndroidPackageIndexesForPublishedAssets } from './server-android-package-refresh.mjs';
 
@@ -274,6 +275,11 @@ for (const key of Object.keys(assetIndex)) {
 writeAssetIndex(releaseDir, assetIndex);
 rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
 
+const releaseOwnership = normalizePathOwnership({
+    assetsRoot,
+    targetPath: releaseDir,
+});
+
 const nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
 symlinkSync(releaseDir, nextLink, 'dir');
 renameSync(nextLink, currentLink);
@@ -309,6 +315,10 @@ appendFileSync(
     `${JSON.stringify(auditEntry)}\n`,
     { encoding: 'utf8', mode: 0o600 },
 );
+normalizePathOwnership({
+    assetsRoot,
+    targetPath: auditRoot,
+});
 
 const releaseIds = readdirSync(releasesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^\d{17}$/.test(entry.name))
@@ -335,5 +345,6 @@ console.log(`androidPackageRefreshGames=${androidPackageRefresh.gameIds.join(','
 console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join(',') || 'none'}`);
 console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
 console.log(`serverPrimaryIndexObjects=${Object.keys(assetIndex).length}`);
+console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
 console.log(`serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size} deleted=${deletedReleaseIds.length}`);
 console.log('assetBackupQueue=disabled');
