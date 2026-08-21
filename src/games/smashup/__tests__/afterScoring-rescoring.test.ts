@@ -171,6 +171,68 @@ beforeAll(() => {
 });
 
 describe('After Scoring 响应窗口 - 真实链路', () => {
+    it('万圣节镇经统一 afterScoring 响应入口触发时，不应因同时改 core 和发事件导致管线失败', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    instanceId: 'halloween-town-instance',
+                    defId: 'base_halloween_town',
+                    minions: [
+                        {
+                            ...makeMinion('host', 'nightmare_before_christmas_the_mayor_of_halloween_town', '0', '0', 26, 0),
+                            attachedActions: [
+                                {
+                                    uid: 'garland',
+                                    defId: 'nightmare_before_christmas_monster_garland',
+                                    ownerId: '0',
+                                    talentUsed: false,
+                                },
+                            ],
+                        },
+                    ],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].deck = [
+                { uid: 'deck-a', defId: 'aladdin_wish', type: 'action', owner: '0' },
+            ];
+            core.players['0'].hand = [];
+            core.players['1'].hand = [];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner, '0');
+        expect(choice.sourceId).toBe('smashup_reaction_choose');
+
+        const chooseHalloweenTown = runner.resolveInteraction('0', {
+            optionId: findQueuedTriggerOptionId(
+                runner.getState(),
+                choice,
+                'base_halloween_town',
+                '找不到万圣节镇的统一 afterScoring 触发入口',
+            ),
+        });
+        expect(chooseHalloweenTown.success).toBe(true);
+        eventLog.push(...chooseHalloweenTown.events);
+
+        expect(chooseHalloweenTown.events.map(event => event.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.ONGOING_DETACHED,
+            SU_EVENTS.DECK_REORDERED,
+        ]));
+        const deckReordered = chooseHalloweenTown.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        expect(deckReordered?.payload?.playerId).toBe('0');
+        expect([...deckReordered.payload.deckUids].sort()).toEqual(['deck-a', 'garland']);
+
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
+    });
+
     it('afterScoring 通过统一反应入口打出我们乃最强后，不会重新给同一基地计分', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);

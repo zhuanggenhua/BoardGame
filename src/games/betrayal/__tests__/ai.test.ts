@@ -376,6 +376,67 @@ describe('小黑屋本地 AI', () => {
         expect(candidate).toBeNull();
     });
 
+    test('事件骰确认缺少非当前 AI 座位时，watchdog 应代该座位确认而不是推进当前 AI 阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.pendingEventRollResolution = {
+            rollId: 'ai-event-roll-recovery',
+            playerId: '0',
+            sourceTitle: '墙中低语',
+            requiredPlayerIds: ['0', '1', '2'],
+            acknowledgedPlayerIds: ['1', '2'],
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+        };
+        const state = stateOf(core, 'betrayal-ai-event-roll-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'local-ai' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('0');
+        expect(candidate?.resolution.action.commands).toEqual([{
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            payload: { rollId: 'ai-event-roll-recovery' },
+        }]);
+    });
+
+    test('事件骰确认缺少真人座位时，watchdog 不应替当前 AI 强推阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.pendingEventRollResolution = {
+            rollId: 'human-event-roll-recovery',
+            playerId: '0',
+            sourceTitle: '墙中低语',
+            requiredPlayerIds: ['0', '1', '2'],
+            acknowledgedPlayerIds: ['1', '2'],
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+        };
+        const state = stateOf(core, 'betrayal-human-event-roll-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate).toBeNull();
+    });
+
     test('AI 会先确认翻牌结算，避免在线 watchdog 裸过阶段被拒', async () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.ground = [

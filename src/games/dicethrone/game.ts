@@ -50,6 +50,7 @@ import type {
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
 import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
+import { isCurrentBonusRollSettlement } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
@@ -1577,24 +1578,76 @@ const shouldSuppressDiceThroneUnsatisfiableInteractionFeedback = (args: {
     && args.seatSelectability?.selectionState === 'no-options'
 );
 
+type DiceThroneBonusRecoveryCore = DiceThroneCore & {
+    currentRollContext?: {
+        id?: unknown;
+        kind?: unknown;
+        status?: unknown;
+        display?: { replayOnly?: unknown };
+        policy?: { blocksPhaseFlow?: unknown };
+    };
+    pendingBonusDiceSettlement?: {
+        id?: unknown;
+        attackerId?: unknown;
+        displayOnly?: unknown;
+    };
+};
+
+const getRecoverableCurrentDisplayOnlyBonusSettlement = (
+    core: DiceThroneBonusRecoveryCore | undefined,
+) => {
+    const settlement = core?.pendingBonusDiceSettlement;
+    if (!core || settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+        return null;
+    }
+
+    const currentContext = core.currentRollContext;
+    if (currentContext) {
+        if (currentContext.kind !== 'bonus') {
+            return null;
+        }
+        if (typeof settlement.id === 'string' && currentContext.id !== `bonus:${settlement.id}`) {
+            return null;
+        }
+        if (
+            currentContext.status === 'settled'
+            && currentContext.display?.replayOnly === true
+            && currentContext.policy?.blocksPhaseFlow === false
+        ) {
+            return null;
+        }
+    }
+
+    return isCurrentBonusRollSettlement(
+        core,
+        settlement as DiceThroneCore['pendingBonusDiceSettlement'],
+    )
+        ? settlement
+        : null;
+};
+
+const getCurrentBonusRollActorId = (
+    core: DiceThroneBonusRecoveryCore | undefined,
+): string | null => {
+    const settlement = core?.pendingBonusDiceSettlement;
+    if (!core || typeof settlement?.attackerId !== 'string') {
+        return null;
+    }
+    return isCurrentBonusRollSettlement(
+        core,
+        settlement as DiceThroneCore['pendingBonusDiceSettlement'],
+    )
+        ? settlement.attackerId
+        : null;
+};
+
 const resolveDiceThroneSeatLegalOnlyRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => {
-    if (args.phase === 'offensiveRoll' || args.phase === 'targetingRoll' || args.phase === 'defensiveRoll') {
-        return null;
-    }
-
-    const core = args.state.core as {
-        pendingAttack?: unknown;
-        pendingBonusDiceSettlement?: {
-            id?: unknown;
-            attackerId?: unknown;
-            displayOnly?: unknown;
-        };
-    } | undefined;
-    const settlement = core?.pendingBonusDiceSettlement;
-    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+    const core = args.state.core as DiceThroneBonusRecoveryCore | undefined;
+    const settlement = getRecoverableCurrentDisplayOnlyBonusSettlement(core);
+    if (!settlement) {
         return null;
     }
 
@@ -1619,7 +1672,7 @@ const resolveDiceThroneRuntimeActorId = (args: {
         return args.fallbackPlayerId;
     }
 
-    const core = args.state.core as {
+    const core = args.state.core as DiceThroneBonusRecoveryCore & {
         pendingAttack?: {
             defenderId?: unknown;
         };
@@ -1627,6 +1680,11 @@ const resolveDiceThroneRuntimeActorId = (args: {
             responderId?: unknown;
         };
     } | undefined;
+
+    const currentBonusRollActorId = getCurrentBonusRollActorId(core);
+    if (currentBonusRollActorId) {
+        return currentBonusRollActorId;
+    }
 
     const pendingDamageResponderId = core?.pendingDamage?.responderId;
     if (typeof pendingDamageResponderId === 'string') {

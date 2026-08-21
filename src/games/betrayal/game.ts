@@ -23204,14 +23204,53 @@ const resolveBetrayalPendingCardResolutionRecovery = (args: {
     };
 };
 
+const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingEventRollResolution' | 'playerIds'>> | undefined;
+    const pendingResolution = core?.pendingEventRollResolution;
+    if (!pendingResolution) {
+        return null;
+    }
+
+    const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(
+        { playerIds: core?.playerIds ?? [] },
+        pendingResolution,
+    );
+    const acknowledgedPlayerIds = new Set(resolvePendingEventRollResolutionAcknowledgedPlayerIds(pendingResolution));
+    const playerId = requiredPlayerIds.find((candidate) => !acknowledgedPlayerIds.has(candidate));
+    if (!playerId) {
+        return null;
+    }
+
+    return {
+        playerId,
+        fingerprintHint: `event-roll-resolution:${playerId}:${args.phase}:${pendingResolution.rollId}:${requiredPlayerIds.join(',')}:${[...acknowledgedPlayerIds].join(',')}`,
+        attemptSuffix: `event-roll-resolution:${playerId}:${pendingResolution.rollId}`,
+        command: {
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            payload: { rollId: pendingResolution.rollId },
+        },
+    };
+};
+
+const resolveBetrayalSeatLegalOnlyRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => (
+    resolveBetrayalPendingCardResolutionRecovery(args)
+    ?? resolveBetrayalPendingEventRollResolutionRecovery(args)
+);
+
 const shouldSuppressBetrayalActiveTurnRecovery = (args: {
     state: MatchState<unknown>;
 }) => {
-    return (args.state.core as Partial<Pick<BetrayalCore, 'pendingCardResolutionQueue'>> | undefined)
-        ?.pendingCardResolutionQueue
-        ?.length
-        ? true
-        : false;
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingCardResolutionQueue' | 'pendingEventRollResolution'>> | undefined;
+    return Boolean(
+        core?.pendingCardResolutionQueue?.length
+        || core?.pendingEventRollResolution,
+    );
 };
 
 const systems = [
@@ -23239,7 +23278,7 @@ export const engineConfig = {
     ...baseEngineConfig,
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['characterSelect'],
-        resolveSeatLegalOnlyRecovery: resolveBetrayalPendingCardResolutionRecovery,
+        resolveSeatLegalOnlyRecovery: resolveBetrayalSeatLegalOnlyRecovery,
         shouldSuppressActiveTurnCandidate: shouldSuppressBetrayalActiveTurnRecovery,
     },
 };

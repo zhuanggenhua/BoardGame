@@ -25760,6 +25760,139 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
+    it('dicethrone: defensiveRoll 当前奖励骰属于真人攻击方时，watchdog 不应对 AI 防御方强推阶段', () => {
+        const state = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1'],
+                players: {
+                    '0': { characterId: 'shadow_thief' },
+                    '1': { characterId: 'samurai' },
+                },
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                    isDefendable: true,
+                    sourceAbilityId: 'pickpocket-2',
+                    defenseAbilityId: 'stand-tall',
+                },
+                pendingBonusDiceSettlement: {
+                    id: 'shadow-thief-sneak-attack-display-test',
+                    sourceAbilityId: 'shadow-thief-sneak-attack',
+                    attackerId: '0',
+                    targetId: '1',
+                    dice: [{ index: 0, value: 3, face: 'bag' }],
+                    displayOnly: true,
+                    continuation: { kind: 'complete' },
+                    customResolutionId: 'shadow-thief-sneak-attack',
+                },
+                currentRollContext: {
+                    id: 'bonus:shadow-thief-sneak-attack-display-test',
+                    kind: 'bonus',
+                    ownerPlayerId: '0',
+                    targetPlayerId: '1',
+                    dice: [{ id: 0, value: 3, ownerId: '0', displayOnly: true }],
+                    status: 'open',
+                    policy: { blocksPhaseFlow: true },
+                    display: { replayOnly: false },
+                    suspendedParent: {
+                        id: 'roll:defensive:1:1',
+                        kind: 'defensive',
+                        ownerPlayerId: '1',
+                        phase: 'defensiveRoll',
+                        status: 'settling',
+                        policy: { blocksPhaseFlow: true },
+                        display: { replayOnly: false },
+                    },
+                },
+            },
+            sys: {
+                phase: 'defensiveRoll',
+                turnNumber: 4,
+                eventStream: { nextId: 1 },
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        } as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        });
+
+        expect(resolveOnlineAiCurrentPlayerId(state, {
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        })).toBe('0');
+        expect(candidate).toBeNull();
+    });
+
+    it('dicethrone: defensiveRoll 当前 displayOnly 奖励骰属于 AI 时，watchdog 应先替骰主确认收口', () => {
+        const state = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1'],
+                players: {
+                    '0': { characterId: 'shadow_thief' },
+                    '1': { characterId: 'samurai' },
+                },
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                    isDefendable: true,
+                    sourceAbilityId: 'pickpocket-2',
+                    defenseAbilityId: 'stand-tall',
+                },
+                pendingBonusDiceSettlement: {
+                    id: 'samurai-display-bonus-test',
+                    attackerId: '1',
+                    targetId: '0',
+                    dice: [{ index: 0, value: 4, face: 'katana' }],
+                    displayOnly: true,
+                },
+                currentRollContext: {
+                    id: 'bonus:samurai-display-bonus-test',
+                    kind: 'bonus',
+                    ownerPlayerId: '1',
+                    dice: [{ id: 0, value: 4, ownerId: '1', displayOnly: true }],
+                    status: 'open',
+                    policy: { blocksPhaseFlow: true },
+                    display: { replayOnly: false },
+                },
+            },
+            sys: {
+                phase: 'defensiveRoll',
+                turnNumber: 4,
+                eventStream: { nextId: 1 },
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        } as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('1');
+        expect(candidate?.resolution.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
+    });
+
     it('dicethrone: human main1 遗留 AI displayOnly pendingBonusDiceSettlement 时，watchdog 应直接替 AI 确认收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
