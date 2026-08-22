@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
 import { UI_Z_INDEX } from '../../core';
 import type { MatchState } from '../../engine/types';
@@ -95,6 +95,10 @@ const buildFeedbackState = (): MatchState<unknown> => ({
 } as MatchState<unknown>);
 
 describe('GameHUD chat preview helpers', () => {
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
     it('isSelfChatMessage 使用 senderId 判断自身消息', () => {
         const message = buildMessage({ senderId: '2', senderName: '玩家2' });
         expect(isSelfChatMessage(message, '2', '玩家1')).toBe(true);
@@ -154,6 +158,18 @@ describe('GameHUD chat preview helpers', () => {
     });
 
     it('手工反馈操作日志应带机器可读诊断窗口', () => {
+        document.body.innerHTML = `
+            <div
+                data-testid="dt-opponent-player-1-hp"
+                data-feedback-game="dicethrone"
+                data-feedback-player-id="1"
+                data-feedback-resource="hp"
+                data-feedback-resource-value="49"
+                aria-label="HP 49"
+                title="HP 49"
+            >49</div>
+        `;
+
         const payload = JSON.parse(buildGameHudFeedbackActionLog(buildFeedbackState(), [
             { timeLabel: '08:00:00', playerLabel: '矞皇', text: '开始回合' },
         ]));
@@ -164,6 +180,18 @@ describe('GameHUD chat preview helpers', () => {
             turnNumber: 7,
             humanReadableLog: '[08:00:00] 矞皇: 开始回合',
         });
+        expect(payload.visibleResourceSnapshot).toEqual([
+            expect.objectContaining({
+                gameId: 'dicethrone',
+                playerId: '1',
+                resource: 'hp',
+                value: 49,
+                text: '49',
+                testId: 'dt-opponent-player-1-hp',
+                ariaLabel: 'HP 49',
+                title: 'HP 49',
+            }),
+        ]);
         expect(payload.actionLogTail).toEqual([
             expect.objectContaining({ text: '基地开始结算', type: 'BASE_SCORING_STARTED' }),
         ]);

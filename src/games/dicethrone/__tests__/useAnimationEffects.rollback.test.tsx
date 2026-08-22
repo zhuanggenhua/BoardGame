@@ -212,6 +212,43 @@ describe('useAnimationEffects rollback consumer', () => {
         });
     });
 
+    it('首次可见时已有伤害事件，也应作为必播动画消费', async () => {
+        const fxBus = {
+            push: vi.fn(() => 'fx-1'),
+        } as unknown as FxBus;
+
+        const damageEntry: EventStreamEntry = {
+            id: 7,
+            event: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '1',
+                    amount: 3,
+                    actualDamage: 2,
+                    sourceAbilityId: 'pickpocket',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        render(
+            <HookProbe
+                entries={[damageEntry]}
+                fxBus={fxBus}
+                opponentHp={47}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(fxBus.push).toHaveBeenCalledTimes(1);
+        });
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.damage',
+            {},
+            expect.objectContaining({ damage: 2 }),
+        );
+    });
+
     it('FX 没有成功入队时应立即释放 HP 冻结，避免血量 UI 卡在旧值', async () => {
         const fxBus = {
             push: vi.fn(() => null),

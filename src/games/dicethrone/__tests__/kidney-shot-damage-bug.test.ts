@@ -30,7 +30,27 @@ import {
     assertState,
     createHeroMatchup,
     advanceTo,
+    cancelPromptCommand,
 } from './test-utils';
+
+const advancePickpocketSamuraiToTokenResponseCommands = () => [
+    ...advanceTo('offensiveRoll'),
+    cmd('ROLL_DICE', '0'),
+    cmd('CONFIRM_ROLL', '0'),
+    cmd('SELECT_ABILITY', '0', { abilityId: 'pickpocket' }),
+    cmd('ADVANCE_PHASE', '0'),
+    cmd('ROLL_DICE', '1'),
+    cmd('CONFIRM_ROLL', '1'),
+    cmd('ADVANCE_PHASE', '1'),
+];
+
+const requirePendingDamageId = (core: DiceThroneCore): string => {
+    const pendingDamageId = core.pendingDamage?.id;
+    if (!pendingDamageId) {
+        throw new Error('Expected current token response to have a pending damage id.');
+    }
+    return pendingDamageId;
+};
 
 describe('破隐一击伤害计算 Bug 复现', () => {
     it('标准场景：伤害应等于 gainCp 后的 CP 值', () => {
@@ -103,24 +123,39 @@ describe('破隐一击伤害计算 Bug 复现', () => {
             silent: true,
         });
 
-        const result = runner.run({
+        const beforeTokenResponse = runner.run({
+            name: 'pickpocket + stand-tall reaches live token response',
+            commands: advancePickpocketSamuraiToTokenResponseCommands(),
+            expect: { turnPhase: 'defensiveRoll' },
+        });
+
+        expect(beforeTokenResponse.assertionErrors).toEqual([]);
+        const pendingDamageId = requirePendingDamageId(beforeTokenResponse.finalState.core);
+
+        const afterBackStrikeAndDamage = runner.run({
             name: 'pickpocket + stand-tall + back-strike should not replay pickpocket damage',
+            setup: () => beforeTokenResponse.finalState,
             commands: [
-                ...advanceTo('offensiveRoll'),
-                cmd('ROLL_DICE', '0'),
-                cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: 'pickpocket' }),
-                cmd('ADVANCE_PHASE', '0'),
-                cmd('ROLL_DICE', '1'),
-                cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
-                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 }),
+                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1, pendingDamageId }),
                 cmd('SKIP_BONUS_DICE_REROLL', '1'),
-                cmd('SKIP_TOKEN_RESPONSE', '1'),
+                cmd('SKIP_TOKEN_RESPONSE', '1', { pendingDamageId }),
+            ],
+        });
+
+        expect(afterBackStrikeAndDamage.steps.every(step => step.success)).toBe(true);
+        expect(afterBackStrikeAndDamage.finalState.sys.phase).toBe('defensiveRoll');
+        expect(afterBackStrikeAndDamage.finalState.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+
+        const result = runner.run({
+            name: 'pickpocket + stand-tall + back-strike closes bonus dice display',
+            setup: () => afterBackStrikeAndDamage.finalState,
+            commands: [
+                cancelPromptCommand(afterBackStrikeAndDamage.finalState, '1', 'bonus-dice-display-ack'),
             ],
             expect: { turnPhase: 'main2' },
         });
 
+        expect(result.steps.every(step => step.success)).toBe(true);
         expect(result.assertionErrors).toEqual([]);
         const core = result.finalState.core;
         expect(core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
@@ -161,19 +196,21 @@ describe('破隐一击伤害计算 Bug 复现', () => {
             silent: true,
         });
 
+        const beforeTokenResponse = runner.run({
+            name: 'pickpocket + back-strike reaches live token response',
+            commands: advancePickpocketSamuraiToTokenResponseCommands(),
+            expect: { turnPhase: 'defensiveRoll' },
+        });
+
+        expect(beforeTokenResponse.assertionErrors).toEqual([]);
+        const pendingDamageId = requirePendingDamageId(beforeTokenResponse.finalState.core);
+
         const result = runner.run({
             name: 'pickpocket + back-strike should not rewind attack when response closes before bonus die confirmation',
+            setup: () => beforeTokenResponse.finalState,
             commands: [
-                ...advanceTo('offensiveRoll'),
-                cmd('ROLL_DICE', '0'),
-                cmd('CONFIRM_ROLL', '0'),
-                cmd('SELECT_ABILITY', '0', { abilityId: 'pickpocket' }),
-                cmd('ADVANCE_PHASE', '0'),
-                cmd('ROLL_DICE', '1'),
-                cmd('CONFIRM_ROLL', '1'),
-                cmd('ADVANCE_PHASE', '1'),
-                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 }),
-                cmd('SKIP_TOKEN_RESPONSE', '1'),
+                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1, pendingDamageId }),
+                cmd('SKIP_TOKEN_RESPONSE', '1', { pendingDamageId }),
                 cmd('SKIP_BONUS_DICE_REROLL', '1'),
             ],
             expect: { turnPhase: 'main2' },

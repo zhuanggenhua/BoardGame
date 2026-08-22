@@ -124,6 +124,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     // ========================================================================
     const { consumeNew } = useEventStreamCursor({
         entries: eventStreamEntries,
+        consumeInitialEntries: true,
         consumeOnReconcile: true,
     });
 

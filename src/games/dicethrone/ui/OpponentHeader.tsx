@@ -89,6 +89,7 @@ export const OpponentHeader = ({
     const heroLabel = t(getDiceThroneCharacterNameKey(opponent.characterId) ?? 'selection.notSelected');
     const isObserved = observed ?? viewMode === 'opponent';
     const pointerEventsClassName = allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none';
+    const feedbackPlayerId = playerId ?? opponent.id;
     const baseContainerClassName = isMobileNarrowViewport
         ? `flex flex-col items-center gap-[0.4vw] ${pointerEventsClassName} scale-[0.88] origin-top`
         : `flex flex-col items-center gap-1 ${pointerEventsClassName}`;
@@ -213,6 +214,10 @@ export const OpponentHeader = ({
                                                 <div
                                                     className={`${resourceStatClassName} text-red-100`}
                                                     data-testid={testId ? `${testId}-hp` : undefined}
+                                                    data-feedback-game="dicethrone"
+                                                    data-feedback-player-id={feedbackPlayerId}
+                                                    data-feedback-resource={RESOURCE_IDS.HP}
+                                                    data-feedback-resource-value={hpValue}
                                                     aria-label={`HP ${hpValue}`}
                                                     title={`HP ${hpValue}`}
                                                 >
@@ -242,6 +247,10 @@ export const OpponentHeader = ({
                                             <div
                                                 className={`${resourceStatClassName} text-amber-100`}
                                                 data-testid={testId ? `${testId}-cp` : undefined}
+                                                data-feedback-game="dicethrone"
+                                                data-feedback-player-id={feedbackPlayerId}
+                                                data-feedback-resource={RESOURCE_IDS.CP}
+                                                data-feedback-resource-value={cpValue}
                                                 aria-label={`CP ${cpValue}`}
                                                 title={`CP ${cpValue}`}
                                             >

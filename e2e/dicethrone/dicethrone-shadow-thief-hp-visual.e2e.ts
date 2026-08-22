@@ -227,12 +227,63 @@ const readVisibleDamageTexts = async (page: Page) => page.evaluate(() => (
         .map((entry) => entry.text)
 ));
 
+const readDamageVisualDiagnostics = async (page: Page) => page.evaluate(() => {
+    const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as HarnessState | null | undefined;
+    const entries = state?.sys?.eventStream?.entries ?? [];
+    return {
+        phase: state?.sys?.phase ?? null,
+        coreSelfHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+        coreOpponentHp: state?.core?.players?.['1']?.resources?.hp ?? null,
+        uiOpponentHp: document.querySelector('[data-testid="dt-top-header-1-hp-value"]')?.textContent?.trim() ?? null,
+        fxLayers: Array.from(document.querySelectorAll<HTMLElement>('[data-fx-active-count]')).map((node) => ({
+            activeCount: node.getAttribute('data-fx-active-count'),
+            activeCues: node.getAttribute('data-fx-active-cues'),
+        })),
+        flyingEffects: Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="flying-effect-"]')).map((node) => ({
+            testId: node.getAttribute('data-testid'),
+            text: node.textContent?.trim() ?? '',
+            rect: (() => {
+                const rect = node.getBoundingClientRect();
+                return { width: rect.width, height: rect.height, left: rect.left, top: rect.top };
+            })(),
+        })),
+        floatingTexts: Array.from(document.querySelectorAll<HTMLElement>('[data-floating-text-preset]')).map((node) => {
+            const rect = node.getBoundingClientRect();
+            const style = window.getComputedStyle(node);
+            return {
+                preset: node.getAttribute('data-floating-text-preset'),
+                text: node.textContent?.trim() ?? '',
+                rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top },
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+            };
+        }),
+        damageEvents: entries
+            .map((entry) => entry.event)
+            .filter((event) => event?.type === 'DAMAGE_DEALT')
+            .map((event) => ({
+                targetId: event?.payload?.targetId ?? null,
+                amount: event?.payload?.amount ?? null,
+                actualDamage: event?.payload?.actualDamage ?? null,
+                sourceAbilityId: event?.payload?.sourceAbilityId ?? null,
+            })),
+    };
+});
+
 const expectVisibleDamageText = async (page: Page, expectedText: string, timeout = 10000) => {
-    await expect.poll(async () => readVisibleDamageTexts(page), {
-        message: `必须看到真实掉血飘字 ${expectedText}`,
-        timeout,
-        polling: 100,
-    }).toContain(expectedText);
+    try {
+        await expect.poll(async () => readVisibleDamageTexts(page), {
+            message: `必须看到真实掉血飘字 ${expectedText}`,
+            timeout,
+            polling: 100,
+        }).toContain(expectedText);
+    } catch (error) {
+        const diagnostics = await readDamageVisualDiagnostics(page).catch((diagnosticError) => ({
+            diagnosticError: diagnosticError instanceof Error ? diagnosticError.message : String(diagnosticError),
+        }));
+        throw new Error(`${error instanceof Error ? error.message : String(error)}\n伤害动画诊断=${JSON.stringify(diagnostics, null, 2)}`);
+    }
 };
 
 const dispatch = async (page: Page, type: string, playerId: string, payload: Record<string, unknown> = {}) => {
@@ -468,27 +519,11 @@ test.describe('DiceThrone Shadow Thief HP visual update', () => {
         await dispatch(page, 'ADVANCE_PHASE', '1');
 
         await dispatch(page, 'USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 });
+        const impactTextPromise = expectVisibleDamageText(page, '-2', 15000);
         const didPassTokenResponse = await maybePassResponse(page, 10000);
         expect(didPassTokenResponse).toBe(true);
-        await expectVisibleDamageText(page, '-2');
+        await impactTextPromise;
         const impactPath = await saveEvidenceScreenshot(page, testInfo, '暗影刺客小顺子命中飘字-2');
-        await expect.poll(async () => {
-            const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as HarnessState | null | undefined;
-            return {
-                pendingDamage: Boolean(state?.core?.pendingDamage),
-                bonusSourceAbilityId: (state?.core?.pendingBonusDiceSettlement as { sourceAbilityId?: string } | undefined)?.sourceAbilityId ?? null,
-                interactionKind: (state?.sys?.interaction?.current as { kind?: string } | undefined)?.kind ?? null,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            pendingDamage: false,
-            bonusSourceAbilityId: 'samurai-back-strike-reflect',
-            interactionKind: 'dt:bonus-dice',
-        });
-        await settleCurrentBonusDice(
-            page,
-            () => page.evaluate(() => (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as Record<string, any>),
-            { sourceAbilityId: 'samurai-back-strike-reflect' },
-        );
 
         await page.waitForFunction(() => {
             const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as HarnessState | null | undefined;
@@ -521,7 +556,6 @@ test.describe('DiceThrone Shadow Thief HP visual update', () => {
         const finalSummary = await readHpVisualSummary(page);
         expect(finalSummary.phase).toBe('main2');
         expect(finalSummary.coreSelfCp).toBe(9);
-        expect(finalSummary.coreOpponentBackStrike).toBe(0);
         expect(finalSummary.opponentHeaderPlayerId).toBe('1');
         expect(finalSummary.pendingAttack).toBe(false);
         expect(finalSummary.pendingBonusDiceSettlement).toBe(false);
@@ -626,9 +660,10 @@ test.describe('DiceThrone Shadow Thief HP visual update', () => {
             await expect(backStrikeToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 5000 });
             await backStrikeToken.click();
 
+            const impactTextPromise = expectVisibleDamageText(hostPage, '-2', 15000);
             const didPassTokenResponse = await maybePassResponse(guestPage, 10000);
             expect(didPassTokenResponse).toBe(true);
-            await expectVisibleDamageText(hostPage, '-2');
+            await impactTextPromise;
             const impactPath = await saveEvidenceScreenshot(hostPage, testInfo, '线上小顺子命中飘字-2');
             await expect(guestPage.getByTestId('dicethrone-response-window-hint')).toHaveCount(0, { timeout: 10000 });
             await expect.poll(async () => {

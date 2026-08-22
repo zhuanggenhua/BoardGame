@@ -95,12 +95,17 @@ export const PlayerStats = ({
     const renderResourceBar = (key: string, value: number) => {
         const config = resourceConfig[key as keyof typeof resourceConfig];
         if (!config) return null;
+        const feedbackResource = key === 'health' ? RESOURCE_IDS.HP : key;
 
         const percentage = Math.min(100, Math.max(0, (value / config.max) * 100));
 
         return (
             <div
                 data-dicethrone-resource={key}
+                data-feedback-game="dicethrone"
+                data-feedback-player-id={player.id ?? '0'}
+                data-feedback-resource={feedbackResource}
+                data-feedback-resource-value={value}
                 className={[
                     'relative h-[1.85vw] w-full overflow-hidden box-border bg-black/60',
                     'border-[0.18vw]',
