@@ -3,6 +3,11 @@ import { buildChoiceRequestFromOpportunity, createTimingPoint, discoverTimingOpp
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createTimingOpportunitySystem } from '../../../engine/systems/TimingOpportunitySystem';
 import { SYSTEM_IDS } from '../../../engine/systems/types';
+import {
+    getCurrentInteractionData,
+    getCurrentInteractionSummary,
+    injectRawBlockingInteraction,
+} from '../../../engine/testing/interactionTestFacade';
 import type { MatchState } from '../../../engine/types';
 import { DiceThroneDomain, TOKEN_IDS } from '../domain';
 import { createDiceThroneEventSystem } from '../domain/systems';
@@ -119,7 +124,7 @@ describe('DiceThrone timing opportunities', () => {
         });
 
         expect(result).toBeUndefined();
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionSummary(state).id).toBeUndefined();
         expect(state.core.currentChoiceSourceAbilityId).toBe('old-choice-source');
     });
 
@@ -378,41 +383,41 @@ describe('DiceThrone timing opportunities', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(result!.state)).toMatchObject({
             id: 'dt-token-response-damage-test-1',
             kind: 'dt:token-response',
             playerId: '1',
             resolutionFrameId: 'dicethrone:token-response-frame:damage-test-1',
-            data: {
-                choiceRequest: {
-                    requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
-                    choiceKind: 'choose-option',
-                    sourceId: 'dicethrone_token_response',
-                    aiStatus: 'game-policy',
-                    metadata: {
-                        opportunityId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
-                        pendingDamageId: 'damage-test-1',
-                        resolutionFrameId: 'dicethrone:token-response-frame:damage-test-1',
-                    },
+        });
+        expect(getCurrentInteractionData(result!.state)).toMatchObject({
+            choiceRequest: {
+                requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
+                choiceKind: 'choose-option',
+                sourceId: 'dicethrone_token_response',
+                aiStatus: 'game-policy',
+                metadata: {
+                    opportunityId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
+                    pendingDamageId: 'damage-test-1',
+                    resolutionFrameId: 'dicethrone:token-response-frame:damage-test-1',
                 },
-                choiceRequestContract: {
-                    requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
-                    kind: 'choose-option',
-                    sourceId: 'dicethrone_token_response',
-                    resolution: { type: 'candidate-commands' },
-                    candidates: expect.arrayContaining([
-                        expect.objectContaining({
-                            id: `use-token:${TOKEN_IDS.TAIJI}:1`,
-                            actionKind: 'token-response',
-                            commands: [{ type: 'USE_TOKEN', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'damage-test-1' } }],
-                        }),
-                        expect.objectContaining({
-                            id: 'skip',
-                            actionKind: 'skip-token-response',
-                            commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: { pendingDamageId: 'damage-test-1' } }],
-                        }),
-                    ]),
-                },
+            },
+            choiceRequestContract: {
+                requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
+                kind: 'choose-option',
+                sourceId: 'dicethrone_token_response',
+                resolution: { type: 'candidate-commands' },
+                candidates: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: `use-token:${TOKEN_IDS.TAIJI}:1`,
+                        actionKind: 'token-response',
+                        commands: [{ type: 'USE_TOKEN', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'damage-test-1' } }],
+                    }),
+                    expect.objectContaining({
+                        id: 'skip',
+                        actionKind: 'skip-token-response',
+                        commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: { pendingDamageId: 'damage-test-1' } }],
+                    }),
+                ]),
             },
         });
         expect(result?.state.sys.resolution).toMatchObject({
@@ -440,12 +445,12 @@ describe('DiceThrone timing opportunities', () => {
             responderId: '0',
         });
         const state = makeState(pendingDamage);
-        state.sys.interaction.current = {
+        injectRawBlockingInteraction(state, {
             id: 'dt-token-response-damage-test-1',
             kind: 'dt:token-response',
             playerId: '1',
             data: null,
-        };
+        });
         const system = createTimingOpportunitySystem(
             DiceThroneDomain,
             createDiceThroneTimingOpportunitySystemConfig(),
@@ -459,22 +464,22 @@ describe('DiceThrone timing opportunities', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(result!.state)).toMatchObject({
             id: 'dt-token-response-damage-test-2',
             kind: 'dt:token-response',
             playerId: '0',
             resolutionFrameId: 'dicethrone:token-response-frame:damage-test-2',
-            data: {
-                choiceRequest: {
-                    requestId: 'dicethrone:token-response:damage-test-2:beforeDamageDealt:0',
-                    sourceId: 'dicethrone_token_response',
-                    metadata: {
-                        opportunityId: 'dicethrone:token-response:damage-test-2:beforeDamageDealt:0',
-                        pendingDamageId: 'damage-test-2',
-                        resolutionFrameId: 'dicethrone:token-response-frame:damage-test-2',
-                        responseType: 'beforeDamageDealt',
-                        responderId: '0',
-                    },
+        });
+        expect(getCurrentInteractionData(result!.state)).toMatchObject({
+            choiceRequest: {
+                requestId: 'dicethrone:token-response:damage-test-2:beforeDamageDealt:0',
+                sourceId: 'dicethrone_token_response',
+                metadata: {
+                    opportunityId: 'dicethrone:token-response:damage-test-2:beforeDamageDealt:0',
+                    pendingDamageId: 'damage-test-2',
+                    resolutionFrameId: 'dicethrone:token-response-frame:damage-test-2',
+                    responseType: 'beforeDamageDealt',
+                    responderId: '0',
                 },
             },
         });
@@ -483,12 +488,12 @@ describe('DiceThrone timing opportunities', () => {
 
     it('旧 dt:token-response 已存在时，TimingOpportunitySystem 不重复排队', () => {
         const state = makeState(makePendingDamage());
-        state.sys.interaction.current = {
+        injectRawBlockingInteraction(state, {
             id: 'dt-token-response-damage-test-1',
             kind: 'dt:token-response',
             playerId: '1',
             data: null,
-        };
+        });
         const system = createTimingOpportunitySystem(
             DiceThroneDomain,
             createDiceThroneTimingOpportunitySystemConfig(),
@@ -502,16 +507,16 @@ describe('DiceThrone timing opportunities', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(result!.state)).toMatchObject({
             id: 'dt-token-response-damage-test-1',
             kind: 'dt:token-response',
             playerId: '1',
             resolutionFrameId: 'dicethrone:token-response-frame:damage-test-1',
-            data: {
-                choiceRequestContract: expect.objectContaining({
-                    requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
-                }),
-            },
+        });
+        expect(getCurrentInteractionData(result!.state)).toMatchObject({
+            choiceRequestContract: expect.objectContaining({
+                requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
+            }),
         });
         expect(result?.state.sys.interaction.queue).toEqual([]);
         expect(result?.state.sys.resolution?.frames).toHaveLength(1);

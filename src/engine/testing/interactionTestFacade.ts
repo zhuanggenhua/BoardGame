@@ -9,7 +9,8 @@ type InteractionLike = {
     playerId: PlayerId;
     kind: string;
     sourceId?: string;
-    data?: Record<string, unknown>;
+    resolutionFrameId?: string;
+    data?: Record<string, unknown> | null;
 };
 
 type PromptOptionLike = {
@@ -49,6 +50,9 @@ export function injectRawBlockingInteraction<TCore>(
     state: MatchState<TCore>,
     interaction: InteractionLike,
 ): void {
+    const data = Object.prototype.hasOwnProperty.call(interaction, 'data')
+        ? interaction.data
+        : {};
     state.sys.interaction = {
         ...state.sys.interaction,
         current: {
@@ -56,7 +60,8 @@ export function injectRawBlockingInteraction<TCore>(
             kind: interaction.kind,
             playerId: interaction.playerId,
             ...(interaction.sourceId ? { sourceId: interaction.sourceId } : {}),
-            data: interaction.data ?? {},
+            ...(interaction.resolutionFrameId ? { resolutionFrameId: interaction.resolutionFrameId } : {}),
+            data,
         } as never,
     };
 }
@@ -66,12 +71,14 @@ export function getCurrentInteractionSummary<TCore>(state: MatchState<TCore>): {
     kind?: string;
     playerId?: string;
     sourceId?: string;
+    resolutionFrameId?: string;
 } {
     const current = state.sys.interaction?.current as {
         id?: unknown;
         kind?: unknown;
         playerId?: unknown;
         sourceId?: unknown;
+        resolutionFrameId?: unknown;
         data?: { sourceId?: unknown };
     } | null | undefined;
 
@@ -84,7 +91,16 @@ export function getCurrentInteractionSummary<TCore>(state: MatchState<TCore>): {
             : typeof current?.data?.sourceId === 'string'
                 ? { sourceId: current.data.sourceId }
                 : {}),
+        ...(typeof current?.resolutionFrameId === 'string' ? { resolutionFrameId: current.resolutionFrameId } : {}),
     };
+}
+
+export function getCurrentInteractionData<TData = unknown, TCore = unknown>(state: MatchState<TCore>): TData | undefined {
+    const current = state.sys.interaction?.current as {
+        data?: unknown;
+    } | null | undefined;
+
+    return current?.data as TData | undefined;
 }
 
 export function getPromptOptions<TCore>(state: MatchState<TCore>): PromptOptionLike[] {
@@ -113,6 +129,75 @@ export function getPromptOption<TCore>(
         throw new Error(`Missing prompt option: ${description}`);
     }
     return option;
+}
+
+export function attachCurrentInteractionFrame<TCore>(
+    state: MatchState<TCore>,
+    frameId: string,
+): void {
+    const current = state.sys.interaction.current as Record<string, unknown> | null | undefined;
+    if (!current) {
+        throw new Error('Expected an active prompt to attach a resolution frame');
+    }
+
+    state.sys.interaction.current = {
+        ...current,
+        resolutionFrameId: frameId,
+    } as never;
+}
+
+export function replaceCurrentInteractionAndQueuePrevious<TCore>(
+    state: MatchState<TCore>,
+    interaction: InteractionLike,
+): void {
+    const previous = state.sys.interaction.current;
+    injectRawBlockingInteraction(state, interaction);
+    state.sys.interaction.queue = previous ? [previous] : [];
+}
+
+export function setInteractionQueue<TCore>(
+    state: MatchState<TCore>,
+    interactions: InteractionLike[],
+): void {
+    state.sys.interaction.queue = interactions.map(interaction => {
+        const data = Object.prototype.hasOwnProperty.call(interaction, 'data')
+            ? interaction.data
+            : {};
+        return {
+            id: interaction.id,
+            kind: interaction.kind,
+            playerId: interaction.playerId,
+            ...(interaction.sourceId ? { sourceId: interaction.sourceId } : {}),
+            ...(interaction.resolutionFrameId ? { resolutionFrameId: interaction.resolutionFrameId } : {}),
+            data,
+        } as never;
+    });
+}
+
+export function cancelPrompt<TCore>(
+    state: MatchState<TCore>,
+    args: {
+        playerId?: PlayerId;
+        reason?: string;
+    } = {},
+): { type: string; playerId: PlayerId; payload: Record<string, unknown> } {
+    const summary = getCurrentInteractionSummary(state);
+    if (!summary.id) {
+        throw new Error('No current prompt to cancel');
+    }
+    const playerId = args.playerId ?? summary.playerId;
+    if (!playerId) {
+        throw new Error('No prompt player to cancel as');
+    }
+
+    return {
+        type: INTERACTION_COMMANDS.CANCEL,
+        playerId,
+        payload: {
+            interactionId: summary.id,
+            ...(args.reason ? { reason: args.reason } : {}),
+        },
+    };
 }
 
 export function createRespondToPromptCommand<TCore>(

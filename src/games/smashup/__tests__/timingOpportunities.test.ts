@@ -6,6 +6,11 @@ import {
 } from '../../../engine/TimingOpportunity';
 import { createTimingOpportunitySystem } from '../../../engine/systems/TimingOpportunitySystem';
 import { SYSTEM_IDS } from '../../../engine/systems/types';
+import {
+    getCurrentInteractionData,
+    getCurrentInteractionSummary,
+    getPromptOptions,
+} from '../../../engine/testing/interactionTestFacade';
 import { makeMatchState, makeState } from './helpers';
 import { defaultTestRandom } from './testRunner';
 import { SmashUpDomain, SU_COMMANDS, SU_EVENTS } from '../domain';
@@ -149,7 +154,7 @@ describe('SmashUp timing opportunities', () => {
         }, { activeOnly: true, sorted: true });
 
         expect(result.opportunities).toEqual([]);
-        expect(state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionSummary(state).id).toBeUndefined();
     });
 
     it('projects SmashUp reaction opportunities through the generic timing opportunity system', () => {
@@ -176,36 +181,37 @@ describe('SmashUp timing opportunities', () => {
             random: defaultTestRandom,
             playerIds: ['0', '1'],
         });
-        const current = result?.state?.sys.interaction.current;
+        const current = getCurrentInteractionSummary(result!.state);
+        const promptData = getCurrentInteractionData(result!.state);
 
         expect(current).toMatchObject({
             id: 'smashup:reaction:score-after:base-0:mandatory:0',
             kind: 'simple-choice',
             playerId: '0',
             resolutionFrameId: 'score-after:base-0',
-            data: {
-                title: 'ui.reaction_choose_mandatory_title',
+        });
+        expect(promptData).toMatchObject({
+            title: 'ui.reaction_choose_mandatory_title',
+            sourceId: 'smashup_reaction_choose',
+            targetType: 'field-source-action',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+            allowedCommands: [SU_COMMANDS.REACTION_PASS],
+            choiceRequest: {
+                requestId: 'smashup:reaction:score-after:base-0:mandatory:0',
+                choiceKind: 'choose-option',
                 sourceId: 'smashup_reaction_choose',
-                targetType: 'field-source-action',
-                responseValidationMode: 'live',
-                autoResolveIfSingle: false,
-                allowedCommands: [SU_COMMANDS.REACTION_PASS],
-                choiceRequest: {
-                    requestId: 'smashup:reaction:score-after:base-0:mandatory:0',
-                    choiceKind: 'choose-option',
-                    sourceId: 'smashup_reaction_choose',
-                    aiStatus: 'game-policy',
-                },
+                aiStatus: 'game-policy',
             },
         });
-        expect(current?.data.options).toEqual([
+        expect(getPromptOptions(result!.state)).toEqual([
             expect.objectContaining({
                 id: 'trigger:trigger-1',
                 value: { kind: 'trigger', triggerId: 'trigger-1' },
                 displayMode: 'button',
             }),
         ]);
-        expect(current?.data.optionsGenerator).toBeTypeOf('function');
+        expect((promptData as { optionsGenerator?: unknown } | undefined)?.optionsGenerator).toBeTypeOf('function');
     });
 
     it('builds the production reaction prompt from the ChoiceRequest contract while keeping the legacy interaction id', () => {
@@ -230,31 +236,32 @@ describe('SmashUp timing opportunities', () => {
         );
 
         const advanced = advanceSmashUpReactionSession(state, defaultTestRandom, 99);
-        const current = advanced?.state.sys.interaction.current;
+        const current = getCurrentInteractionSummary(advanced!.state);
+        const promptData = getCurrentInteractionData(advanced!.state);
 
         expect(current).toMatchObject({
             id: 'smashup_reaction_score-after:base-0_0_99',
             kind: 'simple-choice',
             playerId: '0',
-            data: {
+        });
+        expect(promptData).toMatchObject({
+            sourceId: 'smashup_reaction_choose',
+            targetType: 'field-source-action',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+            allowedCommands: [SU_COMMANDS.REACTION_PASS],
+            choiceRequest: {
+                requestId: 'smashup_reaction_score-after:base-0_0_99',
+                choiceKind: 'choose-option',
                 sourceId: 'smashup_reaction_choose',
-                targetType: 'field-source-action',
-                responseValidationMode: 'live',
-                autoResolveIfSingle: false,
-                allowedCommands: [SU_COMMANDS.REACTION_PASS],
-                choiceRequest: {
-                    requestId: 'smashup_reaction_score-after:base-0_0_99',
-                    choiceKind: 'choose-option',
-                    sourceId: 'smashup_reaction_choose',
-                    aiStatus: 'game-policy',
-                    metadata: {
-                        opportunityId: 'smashup:reaction:score-after:base-0:mandatory:0',
-                        legacyInteractionId: 'smashup_reaction_score-after:base-0_0_99',
-                    },
+                aiStatus: 'game-policy',
+                metadata: {
+                    opportunityId: 'smashup:reaction:score-after:base-0:mandatory:0',
+                    legacyInteractionId: 'smashup_reaction_score-after:base-0_0_99',
                 },
             },
         });
-        expect(current?.data.options).toEqual([
+        expect(getPromptOptions(advanced!.state)).toEqual([
             expect.objectContaining({
                 id: 'trigger:trigger-1',
                 value: { kind: 'trigger', triggerId: 'trigger-1' },
@@ -264,9 +271,9 @@ describe('SmashUp timing opportunities', () => {
                 value: { kind: 'trigger', triggerId: 'trigger-2' },
             }),
         ]);
-        expect(current?.data.optionsGenerator).toBeTypeOf('function');
-        expect(current?.data.runtimePrompt).toBeUndefined();
-        expect((current?.data.ai as { decisions?: Array<{ metadata?: Record<string, unknown> }> } | undefined)
+        expect((promptData as { optionsGenerator?: unknown } | undefined)?.optionsGenerator).toBeTypeOf('function');
+        expect((promptData as { runtimePrompt?: unknown } | undefined)?.runtimePrompt).toBeUndefined();
+        expect((promptData as { ai?: { decisions?: Array<{ metadata?: Record<string, unknown> }> } } | undefined)?.ai
             ?.decisions?.[0]?.metadata).toMatchObject({
             opportunityId: 'smashup:reaction:score-after:base-0:mandatory:0',
             legacyInteractionId: 'smashup_reaction_score-after:base-0_0_99',
@@ -310,7 +317,7 @@ describe('SmashUp timing opportunities', () => {
         });
 
         expect(result).toBeUndefined();
-        expect(legacyPrompted?.state.sys.interaction.current?.id)
+        expect(getCurrentInteractionSummary(legacyPrompted!.state).id)
             .toBe('smashup_reaction_score-after:base-0_0_99');
         expect(legacyPrompted?.state.sys.interaction.queue).toEqual([]);
     });

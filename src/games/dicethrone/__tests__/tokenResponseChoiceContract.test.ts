@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ChoiceRequest } from '../../../engine/ChoiceRequest';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import {
+    attachCurrentInteractionFrame,
+    cancelPrompt,
+    getCurrentInteractionSummary,
+    injectRawBlockingInteraction,
+    replaceCurrentInteractionAndQueuePrevious,
+    setInteractionQueue,
+} from '../../../engine/testing/interactionTestFacade';
 import type { MatchState } from '../../../engine/types';
 import { DiceThroneDomain, TOKEN_IDS } from '../domain';
 import type { DiceThroneCore, PendingDamage } from '../domain/types';
@@ -75,12 +83,7 @@ function makeDomainState(choiceRequestContract: ChoiceRequest | null): MatchStat
 }
 
 function attachTokenResponseFrame(state: MatchState<DiceThroneCore>, frameId = 'dicethrone:token-response-frame:dmg-1'): void {
-    if (state.sys.interaction.current) {
-        state.sys.interaction.current = {
-            ...state.sys.interaction.current,
-            resolutionFrameId: frameId,
-        };
-    }
+    attachCurrentInteractionFrame(state, frameId);
     state.sys.resolution = {
         activeFrameId: frameId,
         frames: [{
@@ -98,6 +101,10 @@ function attachTokenResponseFrame(state: MatchState<DiceThroneCore>, frameId = '
             },
         }],
     };
+}
+
+function makeCancelFallbackCommand() {
+    return cancelPrompt(makeDomainState(null), { playerId: '0' });
 }
 
 describe('DiceThrone token response choice contract projection', () => {
@@ -230,7 +237,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: { choiceRequestContract: makeChoiceRequest() },
             },
-            fallbackCommand: { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            fallbackCommand: makeCancelFallbackCommand(),
         })).toEqual({ type: 'SKIP_TOKEN_RESPONSE', payload: { pendingDamageId: 'dmg-1' } });
 
         expect(resolveForced?.({
@@ -251,7 +258,7 @@ describe('DiceThrone token response choice contract projection', () => {
                     }),
                 },
             },
-            fallbackCommand: { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            fallbackCommand: makeCancelFallbackCommand(),
         })).toEqual({
             type: 'SKIP_TOKEN_RESPONSE',
             payload: { pendingDamageId: 'dmg-1' },
@@ -272,7 +279,7 @@ describe('DiceThrone token response choice contract projection', () => {
                     }),
                 },
             },
-            fallbackCommand: { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            fallbackCommand: makeCancelFallbackCommand(),
         })).toBe(false);
 
         expect(resolveForced?.({
@@ -283,7 +290,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: {},
             },
-            fallbackCommand: { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            fallbackCommand: makeCancelFallbackCommand(),
         })).toEqual({ type: 'SKIP_TOKEN_RESPONSE', payload: {} });
 
         expect(resolveDiceThroneTokenResponseInteractionPendingDamageId({
@@ -301,7 +308,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: {},
             },
-            fallbackCommand: { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            fallbackCommand: makeCancelFallbackCommand(),
         })).toEqual({ type: 'SKIP_TOKEN_RESPONSE', payload: { pendingDamageId: 'dmg-legacy' } });
     });
 
@@ -316,7 +323,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: { choiceRequestContract: makeChoiceRequest() },
             },
-            fallbackCommandType: 'SYS_INTERACTION_CANCEL',
+            fallbackCommandType: makeCancelFallbackCommand().type,
         })).toBe('SKIP_TOKEN_RESPONSE');
 
         expect(resolveOffline?.({
@@ -333,7 +340,7 @@ describe('DiceThrone token response choice contract projection', () => {
                     }),
                 },
             },
-            fallbackCommandType: 'SYS_INTERACTION_CANCEL',
+            fallbackCommandType: makeCancelFallbackCommand().type,
         })).toBeNull();
 
         expect(resolveOffline?.({
@@ -343,7 +350,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: { choiceRequestContract: makeChoiceRequest() },
             },
-            fallbackCommandType: 'SYS_INTERACTION_CANCEL',
+            fallbackCommandType: makeCancelFallbackCommand().type,
         })).toBeNull();
 
         expect(resolveOffline?.({
@@ -353,7 +360,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 kind: 'dt:token-response',
                 data: {},
             },
-            fallbackCommandType: 'SYS_INTERACTION_CANCEL',
+            fallbackCommandType: makeCancelFallbackCommand().type,
         })).toBe('SKIP_TOKEN_RESPONSE');
     });
 
@@ -559,7 +566,7 @@ describe('DiceThrone token response choice contract projection', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state?.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionSummary(result!.state).id).toBeUndefined();
         expect(result?.state?.sys.resolution).toBeUndefined();
     });
 
@@ -567,8 +574,7 @@ describe('DiceThrone token response choice contract projection', () => {
         const state = makeDomainState(makeChoiceRequest({
             metadata: { opportunityId: 'opportunity:dmg-1' },
         }));
-        const tokenResponseInteraction = state.sys.interaction.current;
-        state.sys.interaction.current = {
+        replaceCurrentInteractionAndQueuePrevious(state, {
             id: 'dt-card-interaction-live',
             kind: 'dt:card-interaction',
             playerId: '0',
@@ -577,8 +583,7 @@ describe('DiceThrone token response choice contract projection', () => {
                 playerId: '0',
                 sourceCardId: 'card-live',
             },
-        };
-        state.sys.interaction.queue = tokenResponseInteraction ? [tokenResponseInteraction] : [];
+        });
         const system = createDiceThroneEventSystem();
 
         const result = system.afterEvents?.({
@@ -606,7 +611,7 @@ describe('DiceThrone token response choice contract projection', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state?.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(result!.state)).toMatchObject({
             id: 'dt-card-interaction-live',
             kind: 'dt:card-interaction',
         });
@@ -615,7 +620,7 @@ describe('DiceThrone token response choice contract projection', () => {
 
     it('旧裸 TOKEN_RESPONSE_CLOSED 按 pendingDamageId 移除队列 Token 响应，不关闭前台交互', () => {
         const state = makeDomainState(null);
-        state.sys.interaction.current = {
+        injectRawBlockingInteraction(state, {
             id: 'dt-card-interaction-live',
             kind: 'dt:card-interaction',
             playerId: '0',
@@ -624,13 +629,13 @@ describe('DiceThrone token response choice contract projection', () => {
                 playerId: '0',
                 sourceCardId: 'card-live',
             },
-        };
-        state.sys.interaction.queue = [{
+        });
+        setInteractionQueue(state, [{
             id: 'dt-token-response-dmg-1',
             kind: 'dt:token-response',
             playerId: '0',
             data: {},
-        }];
+        }]);
         const system = createDiceThroneEventSystem();
 
         const result = system.afterEvents?.({
@@ -655,7 +660,7 @@ describe('DiceThrone token response choice contract projection', () => {
             playerIds: ['0', '1'],
         });
 
-        expect(result?.state?.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(result!.state)).toMatchObject({
             id: 'dt-card-interaction-live',
             kind: 'dt:card-interaction',
         });
